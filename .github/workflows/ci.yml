@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    uses: nandohdc/gh-pipelines/.github/workflows/ci-with-sonar-node.yml@v1
+    with:
+      node-version: "26"                     # matches package.json engines >=26.5.0
+      working-directory: "research/browser-telemetry"
+      package-manager: "npm"
+      lint-script: "lint"
+      test-script: "test"
+      coverage-min: 0                        # gate deferred (see follow-up)
+      run-audit: true
+      audit-level: "high"
+      sonar-working-directory: "research/browser-telemetry"
+      sonar-quality-gate-timeout-minutes: 5
+      sonar-scanner-host-url: ${{ vars.SONAR_SCANNER_HOST_URL }}
+      sonar-public-base-url: ${{ vars.SONAR_PUBLIC_BASE_URL }}
+      runner-label: ${{ vars.RUNNER_LABEL }}
+      doppler-project: "sonar"
+      doppler-config: "prd"
+    secrets:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
