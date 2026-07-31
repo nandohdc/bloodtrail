@@ -1,0 +1,181 @@
+{
+  "event": {
+    "id": "11111111-1111-4111-8111-000000000023",
+    "name": "bloodtrail.audit.security.configuration.changed",
+    "category": "security_configuration",
+    "action": "change_security_configuration",
+    "lifecycle_phase": "completed",
+    "outcome": "success",
+    "outcome_reason": {
+      "code": "completed"
+    },
+    "commit_state": "committed",
+    "timestamp": "2026-07-31T12:22:00.000Z",
+    "observed_at": "2026-07-31T12:22:01.000Z",
+    "delivery_class": "transaction_critical"
+  },
+  "schema": {
+    "name": "com.bloodtrail.security-audit.event",
+    "version": "1.0.0"
+  },
+  "producer": {
+    "name": "configuration-transaction-owner",
+    "version": "1.0.0",
+    "instance_id": "producer_23"
+  },
+  "environment": {
+    "name": "development"
+  },
+  "service": {
+    "name": "configuration-transaction-owner",
+    "version": "1.0.0"
+  },
+  "deployment": {
+    "id": "deploy_contract_fixture",
+    "region": "local",
+    "zone": "local-a"
+  },
+  "tenant": {
+    "scope": "platform",
+    "actor_tenant_id": "tenant_platform"
+  },
+  "actor": {
+    "type": "workload_identity",
+    "provenance": {
+      "trust_level": "authoritative_server",
+      "source": "authentication_authority"
+    },
+    "id": "workload_identity_001",
+    "tenant_id": "tenant_platform"
+  },
+  "subject": {
+    "type": "security_configuration",
+    "id": "security_configuration_subject_23",
+    "tenant_id": "tenant_none"
+  },
+  "credential": {
+    "type": "session",
+    "reference": "cred_ref_23",
+    "key_id": "pseudonym-key-v1"
+  },
+  "initiator": {
+    "type": "workload",
+    "id": "workload_fixture",
+    "version": "1.0.0"
+  },
+  "session": {
+    "id": "session_ref_23",
+    "created_at": "2026-07-31T11:55:00.000Z",
+    "age_seconds": 300,
+    "assurance_level": "aal2"
+  },
+  "authentication": {
+    "method": "session",
+    "assurance_level": "aal2",
+    "mfa_state": "satisfied",
+    "credential_type": "session",
+    "authenticated_at": "2026-07-31T11:55:00.000Z",
+    "identity_provider": "https://idp.example.test",
+    "delegated": false,
+    "impersonated": false
+  },
+  "authorization": {
+    "decision": "allow",
+    "policy_id": "policy.audit-fixture",
+    "policy_version": "1.0.0",
+    "capability": "change_security_configuration",
+    "enforcement_point": "configuration-transaction-owner",
+    "decision_reason": "accepted",
+    "resource_context": {
+      "type": "security_configuration",
+      "id": "security_configuration_23"
+    },
+    "tenant_context": {
+      "effective_tenant_id": "tenant_none"
+    },
+    "override": false,
+    "break_glass": false,
+    "policy_correlation_id": "policy_corr_23"
+  },
+  "source": {
+    "observed": {
+      "address": "203.0.113.10",
+      "port": 443,
+      "proxy_chain": [
+        {
+          "address": "198.51.100.10",
+          "trust_level": "observed_transport",
+          "observed_by": "trusted-ingress"
+        }
+      ]
+    },
+    "client_reported": {
+      "user_agent_family": "ExampleBrowser",
+      "user_agent_version": "1"
+    }
+  },
+  "destination": {
+    "service": "configuration-transaction-owner",
+    "address": "service.local",
+    "port": 443
+  },
+  "resource": {
+    "type": "security_configuration",
+    "id": "security_configuration_23",
+    "owning_tenant_id": "tenant_none",
+    "data_classification": "confidential",
+    "operation_type": "configure",
+    "change_categories": [
+      "metadata"
+    ]
+  },
+  "request": {
+    "id": "request_23",
+    "method": "POST",
+    "route": "/contract-fixtures/{resource}",
+    "user_agent": "ExampleBrowser/1",
+    "message_id": "message_23"
+  },
+  "correlation": {
+    "trace_id": "1234567890abcdef1234567890abcde2",
+    "span_id": "1234567890abcde2",
+    "correlation_id": "corr_23",
+    "causation_id": "11111111-1111-4111-8111-000000000022",
+    "operation_id": "operation_security_configuration_changed",
+    "transaction_id": "txn_23",
+    "request_id": "request_23",
+    "message_id": "message_23",
+    "retry_attempt": 0
+  },
+  "risk": {
+    "level": "low",
+    "score": 15,
+    "reason_codes": [
+      "policy_baseline"
+    ],
+    "model": {
+      "name": "fixture-risk",
+      "version": "1.0.0",
+      "provenance": {
+        "trust_level": "derived_server"
+      }
+    }
+  },
+  "data": {
+    "classification": "confidential",
+    "retention_class": "security_elevated",
+    "field_policy_version": "1.0.0"
+  },
+  "integrity": {
+    "transport_authentication": {
+      "method": "mtls",
+      "verified": true,
+      "peer": "producer-registry/ref"
+    }
+  },
+  "authenticated_principal": {
+    "type": "workload",
+    "id": "principal_23",
+    "issuer": "https://idp.example.test"
+  }
+}

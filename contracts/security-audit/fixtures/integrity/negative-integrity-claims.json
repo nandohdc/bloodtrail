@@ -1,0 +1,58 @@
+[
+  {
+    "name": "transport_authenticity-does-not-prove-truth-or-completeness",
+    "mechanism_valid": true,
+    "established": "authenticated channel and receiver-side peer verification",
+    "not_established": "payload facts are truthful or complete",
+    "expected": "valid_integrity_metadata_does_not_upgrade_producer_truth_or_completeness"
+  },
+  {
+    "name": "producer_identity-does-not-prove-truth-or-completeness",
+    "mechanism_valid": true,
+    "established": "authenticated workload/service plus registry",
+    "not_established": "authorized compromised producer behaved correctly",
+    "expected": "valid_integrity_metadata_does_not_upgrade_producer_truth_or_completeness"
+  },
+  {
+    "name": "event_byte_integrity-does-not-prove-truth-or-completeness",
+    "mechanism_valid": true,
+    "established": "canonicalization plus signature, MAC, or hash verification",
+    "not_established": "correctness of pre-signing state or timestamp",
+    "expected": "valid_integrity_metadata_does_not_upgrade_producer_truth_or_completeness"
+  },
+  {
+    "name": "storage_integrity-does-not-prove-truth-or-completeness",
+    "mechanism_valid": true,
+    "established": "access controls, immutable storage, checksums, and attestation",
+    "not_established": "records omitted before storage",
+    "expected": "valid_integrity_metadata_does_not_upgrade_producer_truth_or_completeness"
+  },
+  {
+    "name": "completeness-does-not-prove-truth-or-completeness",
+    "mechanism_valid": true,
+    "established": "bounded reconciliation against independent authoritative sequence/outbox",
+    "not_established": "global completeness under compromised producer",
+    "expected": "valid_integrity_metadata_does_not_upgrade_producer_truth_or_completeness"
+  },
+  {
+    "name": "ordering-does-not-prove-truth-or-completeness",
+    "mechanism_valid": true,
+    "established": "per-producer sequence or transaction/queue scope",
+    "not_established": "global causal or wall-clock total order",
+    "expected": "valid_integrity_metadata_does_not_upgrade_producer_truth_or_completeness"
+  },
+  {
+    "name": "truthful_application_state-does-not-prove-truth-or-completeness",
+    "mechanism_valid": true,
+    "established": "independent state reconciliation and trustworthy producer logic",
+    "not_established": "truth by signing alone",
+    "expected": "valid_integrity_metadata_does_not_upgrade_producer_truth_or_completeness"
+  },
+  {
+    "name": "non_repudiation-does-not-prove-truth-or-completeness",
+    "mechanism_valid": true,
+    "established": "legal identity key-control process outside this contract",
+    "not_established": "legal non-repudiation from contract conformance alone",
+    "expected": "valid_integrity_metadata_does_not_upgrade_producer_truth_or_completeness"
+  }
+]

@@ -1,0 +1,1493 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bloodtrail.dev/contracts/security-audit/1.0.0/security-audit-event.schema.json",
+  "$comment": "GENERATED FROM contracts/security-audit/source/contract.source.json. DO NOT EDIT BY HAND.",
+  "title": "Bloodtrail Security Audit Event",
+  "type": "object",
+  "additionalProperties": false,
+  "unevaluatedProperties": false,
+  "required": [
+    "event",
+    "schema",
+    "producer",
+    "environment",
+    "service",
+    "tenant",
+    "actor",
+    "initiator",
+    "resource",
+    "correlation",
+    "data"
+  ],
+  "properties": {
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "enum": [
+            "bloodtrail.audit.account.registration.attempted",
+            "bloodtrail.audit.account.registration.completed",
+            "bloodtrail.audit.authentication.succeeded",
+            "bloodtrail.audit.authentication.failed",
+            "bloodtrail.audit.authentication.mfa.enrolled",
+            "bloodtrail.audit.authentication.mfa.removed",
+            "bloodtrail.audit.session.created",
+            "bloodtrail.audit.session.revoked",
+            "bloodtrail.audit.account.password_reset.requested",
+            "bloodtrail.audit.account.password_reset.completed",
+            "bloodtrail.audit.authorization.allowed",
+            "bloodtrail.audit.authorization.denied",
+            "bloodtrail.audit.authorization.role.assigned",
+            "bloodtrail.audit.authorization.role.removed",
+            "bloodtrail.audit.authorization.privilege.elevated",
+            "bloodtrail.audit.administration.impersonation.started",
+            "bloodtrail.audit.administration.impersonation.ended",
+            "bloodtrail.audit.data.sensitive_resource.viewed",
+            "bloodtrail.audit.data.sensitive_resource.created",
+            "bloodtrail.audit.data.sensitive_resource.modified",
+            "bloodtrail.audit.data.sensitive_resource.deleted",
+            "bloodtrail.audit.data.sensitive_data.exported",
+            "bloodtrail.audit.security.configuration.changed",
+            "bloodtrail.audit.tenant.context_violation.detected"
+          ]
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "account",
+            "authentication",
+            "session",
+            "authorization",
+            "privilege",
+            "administration",
+            "data_access",
+            "security_configuration",
+            "tenant_security"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "register",
+            "authenticate",
+            "enroll_mfa",
+            "remove_mfa",
+            "create_session",
+            "revoke_session",
+            "request_password_reset",
+            "complete_password_reset",
+            "evaluate_authorization",
+            "assign_role",
+            "remove_role",
+            "elevate_privilege",
+            "start_impersonation",
+            "end_impersonation",
+            "view",
+            "create",
+            "modify",
+            "delete",
+            "export",
+            "change_security_configuration",
+            "detect_tenant_violation"
+          ]
+        },
+        "lifecycle_phase": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "attempted",
+            "completed",
+            "compensating"
+          ]
+        },
+        "outcome": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "success",
+            "failure",
+            "denied",
+            "partial",
+            "unknown",
+            "cancelled"
+          ]
+        },
+        "outcome_reason": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "enum": [
+                "accepted",
+                "completed",
+                "cancelled_by_actor",
+                "commit_failed",
+                "policy_denied",
+                "tenant_mismatch",
+                "credential_invalid",
+                "mfa_failed",
+                "rate_limited",
+                "break_glass",
+                "delegation_expired",
+                "not_found_or_not_disclosed",
+                "system_error",
+                "compensated",
+                "partial_limit",
+                "operator_requested",
+                "policy_baseline"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          "required": []
+        },
+        "commit_state": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "not_applicable",
+            "not_started",
+            "pending",
+            "committed",
+            "not_committed",
+            "partially_committed",
+            "compensated",
+            "unknown"
+          ]
+        },
+        "timestamp": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "format": "date-time"
+        },
+        "observed_at": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "format": "date-time"
+        },
+        "delivery_class": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "best_effort",
+            "security_significant",
+            "transaction_critical",
+            "policy_critical"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "category",
+        "action",
+        "lifecycle_phase",
+        "outcome",
+        "timestamp",
+        "observed_at",
+        "delivery_class"
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ]
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ]
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "region": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "zone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": []
+    },
+    "tenant": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "scope": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "tenant",
+            "cross_tenant",
+            "platform",
+            "tenantless"
+          ]
+        },
+        "actor_tenant_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "effective_tenant_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "resource_tenant_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "parent_tenant_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "claimed_tenant_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "scope"
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48,
+          "enum": [
+            "authenticated_human",
+            "anonymous",
+            "service_account",
+            "workload_identity",
+            "api_credential",
+            "administrator",
+            "background_job",
+            "scheduled_process",
+            "external_integration"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "trust_level": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "enum": [
+                "authoritative_server",
+                "verified_assertion",
+                "observed_transport",
+                "derived_server",
+                "downstream_enrichment",
+                "client_claim",
+                "unknown"
+              ]
+            },
+            "source": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": []
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "account",
+            "credential",
+            "session",
+            "role",
+            "privilege_grant",
+            "impersonation_session",
+            "tenant",
+            "sensitive_record",
+            "sensitive_collection",
+            "security_configuration",
+            "authorization_policy",
+            "platform_control"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": []
+    },
+    "authenticated_principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48,
+          "enum": [
+            "human_user",
+            "service_account",
+            "workload",
+            "external_integration",
+            "anonymous"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "issuer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "format": "uri"
+        }
+      },
+      "required": []
+    },
+    "delegation": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "principal_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "scope": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": [
+              "string",
+              "object"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "reason_code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "accepted",
+            "completed",
+            "cancelled_by_actor",
+            "commit_failed",
+            "policy_denied",
+            "tenant_mismatch",
+            "credential_invalid",
+            "mfa_failed",
+            "rate_limited",
+            "break_glass",
+            "delegation_expired",
+            "not_found_or_not_disclosed",
+            "system_error",
+            "compensated",
+            "partial_limit",
+            "operator_requested",
+            "policy_baseline"
+          ]
+        },
+        "expires_at": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "format": "date-time"
+        },
+        "chain": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": [
+              "string",
+              "object"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": []
+    },
+    "credential": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48,
+          "enum": [
+            "password",
+            "session",
+            "api_credential",
+            "workload_federation",
+            "mfa_factor",
+            "recovery_flow",
+            "federated_assertion",
+            "none"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "key_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": []
+    },
+    "initiator": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "application",
+            "service",
+            "workload",
+            "background_job",
+            "scheduled_process",
+            "external_integration",
+            "browser_client",
+            "api_client"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "format": "date-time"
+        },
+        "age_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 86400
+        },
+        "assurance_level": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        }
+      },
+      "required": []
+    },
+    "authentication": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "method": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "assurance_level": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "mfa_state": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "not_used",
+            "required",
+            "satisfied",
+            "failed",
+            "not_applicable",
+            "unknown"
+          ]
+        },
+        "credential_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48,
+          "enum": [
+            "password",
+            "session",
+            "api_credential",
+            "workload_federation",
+            "mfa_factor",
+            "recovery_flow",
+            "federated_assertion",
+            "none"
+          ]
+        },
+        "authenticated_at": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "format": "date-time"
+        },
+        "identity_provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "format": "uri"
+        },
+        "account_recovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "flow": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "state": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "reason_code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "enum": [
+                "accepted",
+                "completed",
+                "cancelled_by_actor",
+                "commit_failed",
+                "policy_denied",
+                "tenant_mismatch",
+                "credential_invalid",
+                "mfa_failed",
+                "rate_limited",
+                "break_glass",
+                "delegation_expired",
+                "not_found_or_not_disclosed",
+                "system_error",
+                "compensated",
+                "partial_limit",
+                "operator_requested",
+                "policy_baseline"
+              ]
+            }
+          },
+          "required": []
+        },
+        "failure_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "accepted",
+            "completed",
+            "cancelled_by_actor",
+            "commit_failed",
+            "policy_denied",
+            "tenant_mismatch",
+            "credential_invalid",
+            "mfa_failed",
+            "rate_limited",
+            "break_glass",
+            "delegation_expired",
+            "not_found_or_not_disclosed",
+            "system_error",
+            "compensated",
+            "partial_limit",
+            "operator_requested",
+            "policy_baseline"
+          ]
+        },
+        "delegated": {
+          "type": "boolean"
+        },
+        "impersonated": {
+          "type": "boolean"
+        }
+      },
+      "required": []
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "decision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "allow",
+            "deny",
+            "not_applicable",
+            "indeterminate",
+            "error"
+          ]
+        },
+        "policy_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "capability": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96
+        },
+        "enforcement_point": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96
+        },
+        "decision_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "accepted",
+            "completed",
+            "cancelled_by_actor",
+            "commit_failed",
+            "policy_denied",
+            "tenant_mismatch",
+            "credential_invalid",
+            "mfa_failed",
+            "rate_limited",
+            "break_glass",
+            "delegation_expired",
+            "not_found_or_not_disclosed",
+            "system_error",
+            "compensated",
+            "partial_limit",
+            "operator_requested",
+            "policy_baseline"
+          ]
+        },
+        "resource_context": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": []
+        },
+        "tenant_context": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "effective_tenant_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": []
+        },
+        "override": {
+          "type": "boolean"
+        },
+        "break_glass": {
+          "type": "boolean"
+        },
+        "policy_correlation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": []
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "observed": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "address": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "proxy_chain": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": [
+                  "string",
+                  "object"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": []
+        },
+        "client_reported": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "user_agent_family": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "user_agent_version": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32
+            }
+          },
+          "required": []
+        }
+      },
+      "required": []
+    },
+    "destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "service": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96
+        },
+        "address": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        }
+      },
+      "required": []
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "account",
+            "credential",
+            "session",
+            "role",
+            "privilege_grant",
+            "impersonation_session",
+            "tenant",
+            "sensitive_record",
+            "sensitive_collection",
+            "security_configuration",
+            "authorization_policy",
+            "platform_control"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "parent_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "enum": [
+            "account",
+            "credential",
+            "session",
+            "role",
+            "privilege_grant",
+            "impersonation_session",
+            "tenant",
+            "sensitive_record",
+            "sensitive_collection",
+            "security_configuration",
+            "authorization_policy",
+            "platform_control"
+          ]
+        },
+        "parent_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "owning_tenant_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "data_classification": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted"
+          ]
+        },
+        "operation_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "create",
+            "read",
+            "update",
+            "delete",
+            "execute",
+            "export",
+            "administer",
+            "configure"
+          ]
+        },
+        "bulk": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "scope": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "child_event_policy": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          "required": []
+        },
+        "change_categories": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": [
+              "string",
+              "object"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "deletion_mode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "export": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "destination_class": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "size_class": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "record_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            }
+          },
+          "required": []
+        }
+      },
+      "required": [
+        "operation_type"
+      ]
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "route": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "user_agent": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": []
+    },
+    "correlation": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "trace_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "pattern": "^(?!0{32})[0-9a-f]{32}$"
+        },
+        "span_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16,
+          "pattern": "^(?!0{16})[0-9a-f]{16}$"
+        },
+        "correlation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "causation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "operation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "transaction_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "retry_attempt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "original_event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "correlation_id",
+        "operation_id"
+      ]
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "level": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "critical",
+            "unknown"
+          ]
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "reason_codes": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": [
+              "string",
+              "object"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "model": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 96
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$"
+            },
+            "provenance": {
+              "type": "object",
+              "additionalProperties": false,
+              "unevaluatedProperties": false,
+              "properties": {
+                "trust_level": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 32,
+                  "enum": [
+                    "authoritative_server",
+                    "verified_assertion",
+                    "observed_transport",
+                    "derived_server",
+                    "downstream_enrichment",
+                    "client_claim",
+                    "unknown"
+                  ]
+                }
+              },
+              "required": []
+            }
+          },
+          "required": []
+        }
+      },
+      "required": []
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "classification": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted"
+          ]
+        },
+        "retention_class": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "operational_short",
+            "security_standard",
+            "security_elevated",
+            "policy_governed"
+          ]
+        },
+        "field_policy_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$"
+        }
+      },
+      "required": [
+        "classification",
+        "retention_class",
+        "field_policy_version"
+      ]
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "attestations": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": [
+              "string",
+              "object"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "transport_authentication": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "method": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "verified": {
+              "type": "boolean"
+            },
+            "peer": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": []
+        }
+      },
+      "required": []
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "maxProperties": 4,
+      "properties": {
+        "bloodtrail.audit.enrichment.v1": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "required": [
+            "provenance"
+          ],
+          "properties": {
+            "provenance": {
+              "type": "object",
+              "additionalProperties": false,
+              "unevaluatedProperties": false,
+              "required": [
+                "trust_level",
+                "source",
+                "version"
+              ],
+              "properties": {
+                "trust_level": {
+                  "const": "downstream_enrichment"
+                },
+                "source": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "version": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$"
+                }
+              }
+            },
+            "risk": {
+              "type": "object",
+              "additionalProperties": false,
+              "unevaluatedProperties": false,
+              "properties": {
+                "level": {
+                  "enum": [
+                    "none",
+                    "low",
+                    "medium",
+                    "high",
+                    "critical",
+                    "unknown"
+                  ]
+                },
+                "reason_codes": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "enum": [
+                      "accepted",
+                      "completed",
+                      "cancelled_by_actor",
+                      "commit_failed",
+                      "policy_denied",
+                      "tenant_mismatch",
+                      "credential_invalid",
+                      "mfa_failed",
+                      "rate_limited",
+                      "break_glass",
+                      "delegation_expired",
+                      "not_found_or_not_disclosed",
+                      "system_error",
+                      "compensated",
+                      "partial_limit",
+                      "operator_requested",
+                      "policy_baseline"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

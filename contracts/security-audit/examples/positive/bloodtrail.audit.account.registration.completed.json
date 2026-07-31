@@ -1,0 +1,177 @@
+{
+  "event": {
+    "id": "11111111-1111-4111-8111-000000000002",
+    "name": "bloodtrail.audit.account.registration.completed",
+    "category": "account",
+    "action": "register",
+    "lifecycle_phase": "completed",
+    "outcome": "success",
+    "outcome_reason": {
+      "code": "completed"
+    },
+    "commit_state": "committed",
+    "timestamp": "2026-07-31T12:01:00.000Z",
+    "observed_at": "2026-07-31T12:01:01.000Z",
+    "delivery_class": "transaction_critical"
+  },
+  "schema": {
+    "name": "com.bloodtrail.security-audit.event",
+    "version": "1.0.0"
+  },
+  "producer": {
+    "name": "account-transaction-owner",
+    "version": "1.0.0",
+    "instance_id": "producer_02"
+  },
+  "environment": {
+    "name": "development"
+  },
+  "service": {
+    "name": "account-transaction-owner",
+    "version": "1.0.0"
+  },
+  "deployment": {
+    "id": "deploy_contract_fixture",
+    "region": "local",
+    "zone": "local-a"
+  },
+  "tenant": {
+    "scope": "tenant",
+    "actor_tenant_id": "tenant_alpha",
+    "effective_tenant_id": "tenant_alpha",
+    "resource_tenant_id": "tenant_alpha"
+  },
+  "actor": {
+    "type": "anonymous",
+    "provenance": {
+      "trust_level": "client_claim",
+      "source": "request_boundary"
+    }
+  },
+  "subject": {
+    "type": "account",
+    "id": "account_subject_2",
+    "tenant_id": "tenant_alpha"
+  },
+  "credential": {
+    "type": "session",
+    "reference": "cred_ref_2",
+    "key_id": "pseudonym-key-v1"
+  },
+  "initiator": {
+    "type": "application",
+    "id": "application_fixture",
+    "version": "1.0.0"
+  },
+  "session": {
+    "id": "session_ref_2",
+    "created_at": "2026-07-31T11:55:00.000Z",
+    "age_seconds": 300,
+    "assurance_level": "aal2"
+  },
+  "authentication": {
+    "method": "session",
+    "assurance_level": "aal2",
+    "mfa_state": "satisfied",
+    "credential_type": "session",
+    "authenticated_at": "2026-07-31T11:55:00.000Z",
+    "identity_provider": "https://idp.example.test",
+    "delegated": false,
+    "impersonated": false
+  },
+  "authorization": {
+    "decision": "allow",
+    "policy_id": "policy.audit-fixture",
+    "policy_version": "1.0.0",
+    "capability": "register",
+    "enforcement_point": "account-transaction-owner",
+    "decision_reason": "accepted",
+    "resource_context": {
+      "type": "account",
+      "id": "account_2"
+    },
+    "tenant_context": {
+      "effective_tenant_id": "tenant_alpha"
+    },
+    "override": false,
+    "break_glass": false,
+    "policy_correlation_id": "policy_corr_2"
+  },
+  "source": {
+    "observed": {
+      "address": "203.0.113.10",
+      "port": 443,
+      "proxy_chain": [
+        {
+          "address": "198.51.100.10",
+          "trust_level": "observed_transport",
+          "observed_by": "trusted-ingress"
+        }
+      ]
+    },
+    "client_reported": {
+      "user_agent_family": "ExampleBrowser",
+      "user_agent_version": "1"
+    }
+  },
+  "destination": {
+    "service": "account-transaction-owner",
+    "address": "service.local",
+    "port": 443
+  },
+  "resource": {
+    "type": "account",
+    "id": "account_2",
+    "owning_tenant_id": "tenant_alpha",
+    "data_classification": "confidential",
+    "operation_type": "create",
+    "change_categories": [
+      "metadata"
+    ]
+  },
+  "request": {
+    "id": "request_2",
+    "method": "POST",
+    "route": "/contract-fixtures/{resource}",
+    "user_agent": "ExampleBrowser/1",
+    "message_id": "message_2"
+  },
+  "correlation": {
+    "trace_id": "1234567890abcdef1234567890abcde1",
+    "span_id": "1234567890abcde1",
+    "correlation_id": "corr_2",
+    "causation_id": "11111111-1111-4111-8111-000000000001",
+    "operation_id": "operation_account_registration_completed",
+    "transaction_id": "txn_2",
+    "request_id": "request_2",
+    "message_id": "message_2",
+    "retry_attempt": 0,
+    "original_event_id": "11111111-1111-4111-8111-000000000001"
+  },
+  "risk": {
+    "level": "low",
+    "score": 15,
+    "reason_codes": [
+      "policy_baseline"
+    ],
+    "model": {
+      "name": "fixture-risk",
+      "version": "1.0.0",
+      "provenance": {
+        "trust_level": "derived_server"
+      }
+    }
+  },
+  "data": {
+    "classification": "confidential",
+    "retention_class": "security_elevated",
+    "field_policy_version": "1.0.0"
+  },
+  "integrity": {
+    "transport_authentication": {
+      "method": "mtls",
+      "verified": true,
+      "peer": "producer-registry/ref"
+    }
+  }
+}

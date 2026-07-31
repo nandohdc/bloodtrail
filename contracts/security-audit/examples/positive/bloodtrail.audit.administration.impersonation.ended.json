@@ -1,0 +1,200 @@
+{
+  "event": {
+    "id": "11111111-1111-4111-8111-000000000017",
+    "name": "bloodtrail.audit.administration.impersonation.ended",
+    "category": "administration",
+    "action": "end_impersonation",
+    "lifecycle_phase": "completed",
+    "outcome": "success",
+    "outcome_reason": {
+      "code": "completed"
+    },
+    "commit_state": "committed",
+    "timestamp": "2026-07-31T12:16:00.000Z",
+    "observed_at": "2026-07-31T12:16:01.000Z",
+    "delivery_class": "policy_critical"
+  },
+  "schema": {
+    "name": "com.bloodtrail.security-audit.event",
+    "version": "1.0.0"
+  },
+  "producer": {
+    "name": "impersonation-session-authority",
+    "version": "1.0.0",
+    "instance_id": "producer_17"
+  },
+  "environment": {
+    "name": "development"
+  },
+  "service": {
+    "name": "impersonation-session-authority",
+    "version": "1.0.0"
+  },
+  "deployment": {
+    "id": "deploy_contract_fixture",
+    "region": "local",
+    "zone": "local-a"
+  },
+  "tenant": {
+    "scope": "cross_tenant",
+    "actor_tenant_id": "tenant_platform",
+    "effective_tenant_id": "tenant_beta",
+    "resource_tenant_id": "tenant_beta",
+    "claimed_tenant_id": "claimed_tenant_alpha"
+  },
+  "actor": {
+    "type": "scheduled_process",
+    "provenance": {
+      "trust_level": "authoritative_server",
+      "source": "authentication_authority"
+    },
+    "id": "scheduled_process_001",
+    "tenant_id": "tenant_platform"
+  },
+  "subject": {
+    "type": "impersonation_session",
+    "id": "impersonation_session_subject_17",
+    "tenant_id": "tenant_beta"
+  },
+  "credential": {
+    "type": "session",
+    "reference": "cred_ref_17",
+    "key_id": "pseudonym-key-v1"
+  },
+  "initiator": {
+    "type": "scheduled_process",
+    "id": "scheduled_process_fixture",
+    "version": "1.0.0"
+  },
+  "session": {
+    "id": "session_ref_17",
+    "created_at": "2026-07-31T11:55:00.000Z",
+    "age_seconds": 300,
+    "assurance_level": "aal2"
+  },
+  "authentication": {
+    "method": "session",
+    "assurance_level": "aal2",
+    "mfa_state": "satisfied",
+    "credential_type": "session",
+    "authenticated_at": "2026-07-31T11:55:00.000Z",
+    "identity_provider": "https://idp.example.test",
+    "delegated": false,
+    "impersonated": true
+  },
+  "authorization": {
+    "decision": "allow",
+    "policy_id": "policy.audit-fixture",
+    "policy_version": "1.0.0",
+    "capability": "end_impersonation",
+    "enforcement_point": "impersonation-session-authority",
+    "decision_reason": "accepted",
+    "resource_context": {
+      "type": "impersonation_session",
+      "id": "impersonation_session_17"
+    },
+    "tenant_context": {
+      "effective_tenant_id": "tenant_beta"
+    },
+    "override": false,
+    "break_glass": false,
+    "policy_correlation_id": "policy_corr_17"
+  },
+  "source": {
+    "observed": {
+      "address": "203.0.113.10",
+      "port": 443,
+      "proxy_chain": [
+        {
+          "address": "198.51.100.10",
+          "trust_level": "observed_transport",
+          "observed_by": "trusted-ingress"
+        }
+      ]
+    },
+    "client_reported": {
+      "user_agent_family": "ExampleBrowser",
+      "user_agent_version": "1"
+    }
+  },
+  "destination": {
+    "service": "impersonation-session-authority",
+    "address": "service.local",
+    "port": 443
+  },
+  "resource": {
+    "type": "impersonation_session",
+    "id": "impersonation_session_17",
+    "owning_tenant_id": "tenant_beta",
+    "data_classification": "restricted",
+    "operation_type": "administer",
+    "change_categories": [
+      "metadata"
+    ]
+  },
+  "request": {
+    "id": "request_17",
+    "method": "POST",
+    "route": "/contract-fixtures/{resource}",
+    "user_agent": "ExampleBrowser/1",
+    "message_id": "message_17"
+  },
+  "correlation": {
+    "trace_id": "1234567890abcdef1234567890abcde6",
+    "span_id": "1234567890abcde6",
+    "correlation_id": "corr_17",
+    "causation_id": "11111111-1111-4111-8111-000000000016",
+    "operation_id": "operation_impersonation_ended",
+    "transaction_id": "txn_17",
+    "request_id": "request_17",
+    "message_id": "message_17",
+    "retry_attempt": 0
+  },
+  "risk": {
+    "level": "high",
+    "score": 80,
+    "reason_codes": [
+      "policy_baseline"
+    ],
+    "model": {
+      "name": "fixture-risk",
+      "version": "1.0.0",
+      "provenance": {
+        "trust_level": "derived_server"
+      }
+    }
+  },
+  "data": {
+    "classification": "restricted",
+    "retention_class": "policy_governed",
+    "field_policy_version": "1.0.0"
+  },
+  "integrity": {
+    "transport_authentication": {
+      "method": "mtls",
+      "verified": true,
+      "peer": "producer-registry/ref"
+    }
+  },
+  "authenticated_principal": {
+    "type": "human_user",
+    "id": "principal_17",
+    "issuer": "https://idp.example.test"
+  },
+  "delegation": {
+    "mode": "impersonation",
+    "principal_id": "delegated_principal_17",
+    "scope": [
+      "end_impersonation"
+    ],
+    "reason_code": "operator_requested",
+    "expires_at": "2026-07-31T13:00:00.000Z",
+    "chain": [
+      {
+        "type": "human_user",
+        "principal_id": "principal_17",
+        "mode": "approved"
+      }
+    ]
+  }
+}

@@ -1,0 +1,746 @@
+[
+  {
+    "canonical_event_name": "bloodtrail.audit.account.registration.attempted",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:00:00.000Z",
+    "observed_timestamp": "2026-07-31T12:00:01.000Z",
+    "event_name": "bloodtrail.audit.account.registration.attempted",
+    "trace_id": "1234567890abcdef1234567890abcde0",
+    "span_id": "1234567890abcde0",
+    "resource": {
+      "service.name": "registration-boundary",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "account",
+      "bloodtrail.audit.action": "register",
+      "bloodtrail.audit.delivery_class": "security_significant"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000001"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.account.registration.completed",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:01:00.000Z",
+    "observed_timestamp": "2026-07-31T12:01:01.000Z",
+    "event_name": "bloodtrail.audit.account.registration.completed",
+    "trace_id": "1234567890abcdef1234567890abcde1",
+    "span_id": "1234567890abcde1",
+    "resource": {
+      "service.name": "account-transaction-owner",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "account",
+      "bloodtrail.audit.action": "register",
+      "bloodtrail.audit.delivery_class": "transaction_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000002"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.authentication.succeeded",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:02:00.000Z",
+    "observed_timestamp": "2026-07-31T12:02:01.000Z",
+    "event_name": "bloodtrail.audit.authentication.succeeded",
+    "trace_id": "1234567890abcdef1234567890abcde2",
+    "span_id": "1234567890abcde2",
+    "resource": {
+      "service.name": "authentication-authority",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "authentication",
+      "bloodtrail.audit.action": "authenticate",
+      "bloodtrail.audit.delivery_class": "security_significant"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000003"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.authentication.failed",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:03:00.000Z",
+    "observed_timestamp": "2026-07-31T12:03:01.000Z",
+    "event_name": "bloodtrail.audit.authentication.failed",
+    "trace_id": "1234567890abcdef1234567890abcde3",
+    "span_id": "1234567890abcde3",
+    "resource": {
+      "service.name": "authentication-authority",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "authentication",
+      "bloodtrail.audit.action": "authenticate",
+      "bloodtrail.audit.delivery_class": "security_significant"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000004"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.authentication.mfa.enrolled",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:04:00.000Z",
+    "observed_timestamp": "2026-07-31T12:04:01.000Z",
+    "event_name": "bloodtrail.audit.authentication.mfa.enrolled",
+    "trace_id": "1234567890abcdef1234567890abcde4",
+    "span_id": "1234567890abcde4",
+    "resource": {
+      "service.name": "mfa-account-authority",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "authentication",
+      "bloodtrail.audit.action": "enroll_mfa",
+      "bloodtrail.audit.delivery_class": "transaction_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000005"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.authentication.mfa.removed",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:05:00.000Z",
+    "observed_timestamp": "2026-07-31T12:05:01.000Z",
+    "event_name": "bloodtrail.audit.authentication.mfa.removed",
+    "trace_id": "1234567890abcdef1234567890abcde5",
+    "span_id": "1234567890abcde5",
+    "resource": {
+      "service.name": "mfa-account-authority",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "authentication",
+      "bloodtrail.audit.action": "remove_mfa",
+      "bloodtrail.audit.delivery_class": "transaction_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000006"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.session.created",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:06:00.000Z",
+    "observed_timestamp": "2026-07-31T12:06:01.000Z",
+    "event_name": "bloodtrail.audit.session.created",
+    "trace_id": "1234567890abcdef1234567890abcde6",
+    "span_id": "1234567890abcde6",
+    "resource": {
+      "service.name": "session-authority",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "session",
+      "bloodtrail.audit.action": "create_session",
+      "bloodtrail.audit.delivery_class": "security_significant"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000007"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.session.revoked",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:07:00.000Z",
+    "observed_timestamp": "2026-07-31T12:07:01.000Z",
+    "event_name": "bloodtrail.audit.session.revoked",
+    "trace_id": "1234567890abcdef1234567890abcde7",
+    "span_id": "1234567890abcde7",
+    "resource": {
+      "service.name": "session-authority",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "session",
+      "bloodtrail.audit.action": "revoke_session",
+      "bloodtrail.audit.delivery_class": "transaction_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000008"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.account.password_reset.requested",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:08:00.000Z",
+    "observed_timestamp": "2026-07-31T12:08:01.000Z",
+    "event_name": "bloodtrail.audit.account.password_reset.requested",
+    "trace_id": "1234567890abcdef1234567890abcde8",
+    "span_id": "1234567890abcde8",
+    "resource": {
+      "service.name": "recovery-authority",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "account",
+      "bloodtrail.audit.action": "request_password_reset",
+      "bloodtrail.audit.delivery_class": "security_significant"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000009"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.account.password_reset.completed",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:09:00.000Z",
+    "observed_timestamp": "2026-07-31T12:09:01.000Z",
+    "event_name": "bloodtrail.audit.account.password_reset.completed",
+    "trace_id": "1234567890abcdef1234567890abcde9",
+    "span_id": "1234567890abcde9",
+    "resource": {
+      "service.name": "recovery-transaction-owner",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "account",
+      "bloodtrail.audit.action": "complete_password_reset",
+      "bloodtrail.audit.delivery_class": "transaction_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000010"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.authorization.allowed",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:10:00.000Z",
+    "observed_timestamp": "2026-07-31T12:10:01.000Z",
+    "event_name": "bloodtrail.audit.authorization.allowed",
+    "trace_id": "1234567890abcdef1234567890abcde0",
+    "span_id": "1234567890abcde0",
+    "resource": {
+      "service.name": "policy-enforcement-point",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "authorization",
+      "bloodtrail.audit.action": "evaluate_authorization",
+      "bloodtrail.audit.delivery_class": "best_effort"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000011"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.authorization.denied",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:11:00.000Z",
+    "observed_timestamp": "2026-07-31T12:11:01.000Z",
+    "event_name": "bloodtrail.audit.authorization.denied",
+    "trace_id": "1234567890abcdef1234567890abcde1",
+    "span_id": "1234567890abcde1",
+    "resource": {
+      "service.name": "policy-enforcement-point",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "authorization",
+      "bloodtrail.audit.action": "evaluate_authorization",
+      "bloodtrail.audit.delivery_class": "security_significant"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000012"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.authorization.role.assigned",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:12:00.000Z",
+    "observed_timestamp": "2026-07-31T12:12:01.000Z",
+    "event_name": "bloodtrail.audit.authorization.role.assigned",
+    "trace_id": "1234567890abcdef1234567890abcde2",
+    "span_id": "1234567890abcde2",
+    "resource": {
+      "service.name": "authorization-transaction-owner",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "authorization",
+      "bloodtrail.audit.action": "assign_role",
+      "bloodtrail.audit.delivery_class": "transaction_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000013"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.authorization.role.removed",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:13:00.000Z",
+    "observed_timestamp": "2026-07-31T12:13:01.000Z",
+    "event_name": "bloodtrail.audit.authorization.role.removed",
+    "trace_id": "1234567890abcdef1234567890abcde3",
+    "span_id": "1234567890abcde3",
+    "resource": {
+      "service.name": "authorization-transaction-owner",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "authorization",
+      "bloodtrail.audit.action": "remove_role",
+      "bloodtrail.audit.delivery_class": "transaction_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000014"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.authorization.privilege.elevated",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:14:00.000Z",
+    "observed_timestamp": "2026-07-31T12:14:01.000Z",
+    "event_name": "bloodtrail.audit.authorization.privilege.elevated",
+    "trace_id": "1234567890abcdef1234567890abcde4",
+    "span_id": "1234567890abcde4",
+    "resource": {
+      "service.name": "privilege-authority",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "privilege",
+      "bloodtrail.audit.action": "elevate_privilege",
+      "bloodtrail.audit.delivery_class": "policy_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000015"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.administration.impersonation.started",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:15:00.000Z",
+    "observed_timestamp": "2026-07-31T12:15:01.000Z",
+    "event_name": "bloodtrail.audit.administration.impersonation.started",
+    "trace_id": "1234567890abcdef1234567890abcde5",
+    "span_id": "1234567890abcde5",
+    "resource": {
+      "service.name": "impersonation-authority",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "administration",
+      "bloodtrail.audit.action": "start_impersonation",
+      "bloodtrail.audit.delivery_class": "policy_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000016"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.administration.impersonation.ended",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:16:00.000Z",
+    "observed_timestamp": "2026-07-31T12:16:01.000Z",
+    "event_name": "bloodtrail.audit.administration.impersonation.ended",
+    "trace_id": "1234567890abcdef1234567890abcde6",
+    "span_id": "1234567890abcde6",
+    "resource": {
+      "service.name": "impersonation-session-authority",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "administration",
+      "bloodtrail.audit.action": "end_impersonation",
+      "bloodtrail.audit.delivery_class": "policy_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000017"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.data.sensitive_resource.viewed",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:17:00.000Z",
+    "observed_timestamp": "2026-07-31T12:17:01.000Z",
+    "event_name": "bloodtrail.audit.data.sensitive_resource.viewed",
+    "trace_id": "1234567890abcdef1234567890abcde7",
+    "span_id": "1234567890abcde7",
+    "resource": {
+      "service.name": "resource-access-owner",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "data_access",
+      "bloodtrail.audit.action": "view",
+      "bloodtrail.audit.delivery_class": "security_significant"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000018"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.data.sensitive_resource.created",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:18:00.000Z",
+    "observed_timestamp": "2026-07-31T12:18:01.000Z",
+    "event_name": "bloodtrail.audit.data.sensitive_resource.created",
+    "trace_id": "1234567890abcdef1234567890abcde8",
+    "span_id": "1234567890abcde8",
+    "resource": {
+      "service.name": "resource-transaction-owner",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "data_access",
+      "bloodtrail.audit.action": "create",
+      "bloodtrail.audit.delivery_class": "transaction_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000019"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.data.sensitive_resource.modified",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:19:00.000Z",
+    "observed_timestamp": "2026-07-31T12:19:01.000Z",
+    "event_name": "bloodtrail.audit.data.sensitive_resource.modified",
+    "trace_id": "1234567890abcdef1234567890abcde9",
+    "span_id": "1234567890abcde9",
+    "resource": {
+      "service.name": "resource-transaction-owner",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "data_access",
+      "bloodtrail.audit.action": "modify",
+      "bloodtrail.audit.delivery_class": "transaction_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000020"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.data.sensitive_resource.deleted",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:20:00.000Z",
+    "observed_timestamp": "2026-07-31T12:20:01.000Z",
+    "event_name": "bloodtrail.audit.data.sensitive_resource.deleted",
+    "trace_id": "1234567890abcdef1234567890abcde0",
+    "span_id": "1234567890abcde0",
+    "resource": {
+      "service.name": "resource-transaction-owner",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "data_access",
+      "bloodtrail.audit.action": "delete",
+      "bloodtrail.audit.delivery_class": "transaction_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000021"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.data.sensitive_data.exported",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:21:00.000Z",
+    "observed_timestamp": "2026-07-31T12:21:01.000Z",
+    "event_name": "bloodtrail.audit.data.sensitive_data.exported",
+    "trace_id": "1234567890abcdef1234567890abcde1",
+    "span_id": "1234567890abcde1",
+    "resource": {
+      "service.name": "export-transaction-owner",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "data_access",
+      "bloodtrail.audit.action": "export",
+      "bloodtrail.audit.delivery_class": "policy_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000022"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.security.configuration.changed",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:22:00.000Z",
+    "observed_timestamp": "2026-07-31T12:22:01.000Z",
+    "event_name": "bloodtrail.audit.security.configuration.changed",
+    "trace_id": "1234567890abcdef1234567890abcde2",
+    "span_id": "1234567890abcde2",
+    "resource": {
+      "service.name": "configuration-transaction-owner",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "security_configuration",
+      "bloodtrail.audit.action": "change_security_configuration",
+      "bloodtrail.audit.delivery_class": "transaction_critical"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000023"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  },
+  {
+    "canonical_event_name": "bloodtrail.audit.tenant.context_violation.detected",
+    "target": "OpenTelemetry",
+    "spec_version": "1.59.0",
+    "semconv_version": "1.43.0",
+    "timestamp": "2026-07-31T12:23:00.000Z",
+    "observed_timestamp": "2026-07-31T12:23:01.000Z",
+    "event_name": "bloodtrail.audit.tenant.context_violation.detected",
+    "trace_id": "1234567890abcdef1234567890abcde3",
+    "span_id": "1234567890abcde3",
+    "resource": {
+      "service.name": "tenant-enforcement-boundary",
+      "service.version": "1.0.0",
+      "deployment.environment.name": "development"
+    },
+    "instrumentation_scope": {
+      "name": "com.bloodtrail.security-audit.contract",
+      "version": "1.0.0"
+    },
+    "attributes": {
+      "bloodtrail.audit.category": "tenant_security",
+      "bloodtrail.audit.action": "detect_tenant_violation",
+      "bloodtrail.audit.delivery_class": "security_significant"
+    },
+    "body": {
+      "schema_name": "com.bloodtrail.security-audit.event",
+      "schema_version": "1.0.0",
+      "event_id": "11111111-1111-4111-8111-000000000024"
+    },
+    "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+  }
+]

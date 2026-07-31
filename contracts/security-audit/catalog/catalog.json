@@ -1,0 +1,1392 @@
+[
+  {
+    "semantic": "account_registration_attempted",
+    "name": "bloodtrail.audit.account.registration.attempted",
+    "category": "account",
+    "action": "register",
+    "purpose": "Record accepted, rejected, or failed registration attempt without asserting account creation.",
+    "trigger": "registration request reaches server registration boundary",
+    "phase": [
+      "attempted"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied",
+      "cancelled"
+    ],
+    "commit": [
+      "not_started",
+      "not_applicable",
+      "unknown"
+    ],
+    "producer": "registration-boundary",
+    "required_context": [
+      "actor",
+      "tenant",
+      "request",
+      "source",
+      "correlation"
+    ],
+    "tenant_rule": "tenantless or resolved tenant; claimed tenant remains client claim",
+    "actor_rule": "anonymous actor permitted; no fabricated principal",
+    "resource_rule": "account resource only after server resolution",
+    "authorization_rule": "not applicable unless policy denied the attempt",
+    "privacy": [
+      "account claims restricted",
+      "source minimized"
+    ],
+    "retention": "security_standard",
+    "delivery": "security_significant",
+    "investigation": "abuse patterns and correlation to completion",
+    "ocsf": {
+      "class": "account_change",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "anonymous",
+      "tenant": "tenantless",
+      "outcome": "success",
+      "commit": "not_started",
+      "resource": "account",
+      "operation": "create",
+      "initiator": "browser_client"
+    }
+  },
+  {
+    "semantic": "account_registration_completed",
+    "name": "bloodtrail.audit.account.registration.completed",
+    "category": "account",
+    "action": "register",
+    "purpose": "Record final committed registration result.",
+    "trigger": "account transaction reaches authoritative completion",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "partial",
+      "cancelled"
+    ],
+    "commit": [
+      "committed",
+      "not_committed",
+      "partially_committed"
+    ],
+    "producer": "account-transaction-owner",
+    "required_context": [
+      "actor",
+      "tenant",
+      "subject",
+      "resource",
+      "correlation"
+    ],
+    "tenant_rule": "effective and resource tenant required",
+    "actor_rule": "anonymous source may be linked but subject is server-resolved",
+    "resource_rule": "account resource required",
+    "authorization_rule": "not applicable or policy context when tenant controls registration",
+    "privacy": [
+      "account identifiers restricted"
+    ],
+    "retention": "security_elevated",
+    "delivery": "transaction_critical",
+    "investigation": "account creation provenance",
+    "ocsf": {
+      "class": "account_change",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "anonymous",
+      "tenant": "tenant",
+      "outcome": "success",
+      "commit": "committed",
+      "resource": "account",
+      "operation": "create",
+      "initiator": "application"
+    }
+  },
+  {
+    "semantic": "authentication_succeeded",
+    "name": "bloodtrail.audit.authentication.succeeded",
+    "category": "authentication",
+    "action": "authenticate",
+    "purpose": "Record authoritative successful authentication.",
+    "trigger": "authentication authority completes successful transaction",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success"
+    ],
+    "commit": [
+      "not_applicable"
+    ],
+    "producer": "authentication-authority",
+    "required_context": [
+      "actor",
+      "authenticated_principal",
+      "authentication",
+      "credential",
+      "session",
+      "source"
+    ],
+    "tenant_rule": "validated principal tenant when tenant scoped",
+    "actor_rule": "authenticated human or service principal",
+    "resource_rule": "credential/session references only; no secrets",
+    "authorization_rule": "not applicable",
+    "privacy": [
+      "identity session source restricted"
+    ],
+    "retention": "security_standard",
+    "delivery": "security_significant",
+    "investigation": "account access and assurance lineage",
+    "ocsf": {
+      "class": "authentication",
+      "status": "exact"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "authenticated_human",
+      "tenant": "tenant",
+      "outcome": "success",
+      "commit": "not_applicable",
+      "resource": "credential",
+      "operation": "execute",
+      "initiator": "api_client"
+    }
+  },
+  {
+    "semantic": "authentication_failed",
+    "name": "bloodtrail.audit.authentication.failed",
+    "category": "authentication",
+    "action": "authenticate",
+    "purpose": "Record failed authentication without account enumeration or secret leakage.",
+    "trigger": "authentication authority rejects or cannot complete authentication",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "failure"
+    ],
+    "commit": [
+      "not_applicable"
+    ],
+    "producer": "authentication-authority",
+    "required_context": [
+      "actor",
+      "authentication",
+      "source",
+      "request",
+      "correlation"
+    ],
+    "tenant_rule": "tenantless or resolved tenant; claimed tenant remains claim",
+    "actor_rule": "anonymous actor permitted",
+    "resource_rule": "credential type only when safe",
+    "authorization_rule": "not applicable",
+    "privacy": [
+      "claims source restricted"
+    ],
+    "retention": "security_standard",
+    "delivery": "security_significant",
+    "investigation": "credential abuse and brute force investigation",
+    "ocsf": {
+      "class": "authentication",
+      "status": "exact"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "anonymous",
+      "tenant": "tenantless",
+      "outcome": "failure",
+      "commit": "not_applicable",
+      "resource": "credential",
+      "operation": "execute",
+      "initiator": "browser_client"
+    }
+  },
+  {
+    "semantic": "mfa_enrolled",
+    "name": "bloodtrail.audit.authentication.mfa.enrolled",
+    "category": "authentication",
+    "action": "enroll_mfa",
+    "purpose": "Record committed enrollment of an MFA method without factor contents.",
+    "trigger": "MFA/account authority commits enrollment",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied"
+    ],
+    "commit": [
+      "committed",
+      "not_committed"
+    ],
+    "producer": "mfa-account-authority",
+    "required_context": [
+      "actor",
+      "subject",
+      "tenant",
+      "authentication",
+      "authorization",
+      "resource"
+    ],
+    "tenant_rule": "tenant scoped",
+    "actor_rule": "authenticated human required",
+    "resource_rule": "credential resource without factor contents",
+    "authorization_rule": "policy decision and enforcement required",
+    "privacy": [
+      "factor metadata restricted"
+    ],
+    "retention": "security_elevated",
+    "delivery": "transaction_critical",
+    "investigation": "account security posture change",
+    "ocsf": {
+      "class": "account_change",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "authenticated_human",
+      "tenant": "tenant",
+      "outcome": "success",
+      "commit": "committed",
+      "resource": "credential",
+      "operation": "create",
+      "initiator": "application"
+    }
+  },
+  {
+    "semantic": "mfa_removed",
+    "name": "bloodtrail.audit.authentication.mfa.removed",
+    "category": "authentication",
+    "action": "remove_mfa",
+    "purpose": "Record committed or denied MFA removal.",
+    "trigger": "MFA/account authority completes removal decision",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied"
+    ],
+    "commit": [
+      "committed",
+      "not_committed"
+    ],
+    "producer": "mfa-account-authority",
+    "required_context": [
+      "actor",
+      "subject",
+      "tenant",
+      "authentication",
+      "authorization",
+      "resource"
+    ],
+    "tenant_rule": "tenant scoped",
+    "actor_rule": "authenticated human or administrator",
+    "resource_rule": "credential resource without factor contents",
+    "authorization_rule": "policy decision and reason required",
+    "privacy": [
+      "factor metadata and recovery context restricted"
+    ],
+    "retention": "security_elevated",
+    "delivery": "transaction_critical",
+    "investigation": "takeover and recovery investigation",
+    "ocsf": {
+      "class": "account_change",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "administrator",
+      "tenant": "tenant",
+      "outcome": "denied",
+      "commit": "not_committed",
+      "resource": "credential",
+      "operation": "delete",
+      "initiator": "application"
+    }
+  },
+  {
+    "semantic": "session_created",
+    "name": "bloodtrail.audit.session.created",
+    "category": "session",
+    "action": "create_session",
+    "purpose": "Record creation of an authenticated session.",
+    "trigger": "session authority creates non-secret session reference",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success"
+    ],
+    "commit": [
+      "not_applicable"
+    ],
+    "producer": "session-authority",
+    "required_context": [
+      "authenticated_principal",
+      "authentication",
+      "session",
+      "tenant",
+      "source"
+    ],
+    "tenant_rule": "validated principal tenant",
+    "actor_rule": "authenticated actor required",
+    "resource_rule": "session resource reference",
+    "authorization_rule": "not applicable",
+    "privacy": [
+      "session identity source restricted"
+    ],
+    "retention": "security_standard",
+    "delivery": "security_significant",
+    "investigation": "session provenance and login correlation",
+    "ocsf": {
+      "class": "session",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "service_account",
+      "tenant": "tenant",
+      "outcome": "success",
+      "commit": "not_applicable",
+      "resource": "session",
+      "operation": "create",
+      "initiator": "service"
+    }
+  },
+  {
+    "semantic": "session_revoked",
+    "name": "bloodtrail.audit.session.revoked",
+    "category": "session",
+    "action": "revoke_session",
+    "purpose": "Record committed session revocation.",
+    "trigger": "session authority commits revocation or records denial",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied"
+    ],
+    "commit": [
+      "committed",
+      "not_committed"
+    ],
+    "producer": "session-authority",
+    "required_context": [
+      "actor",
+      "subject",
+      "tenant",
+      "authorization",
+      "correlation"
+    ],
+    "tenant_rule": "tenant scoped or cross-tenant admin with policy",
+    "actor_rule": "authenticated actor required",
+    "resource_rule": "session subject and original session link",
+    "authorization_rule": "policy decision required for admin revocation",
+    "privacy": [
+      "session identity restricted"
+    ],
+    "retention": "security_elevated",
+    "delivery": "transaction_critical",
+    "investigation": "containment and logout history",
+    "ocsf": {
+      "class": "session",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "administrator",
+      "tenant": "cross_tenant",
+      "outcome": "success",
+      "commit": "committed",
+      "resource": "session",
+      "operation": "delete",
+      "initiator": "application"
+    }
+  },
+  {
+    "semantic": "password_reset_requested",
+    "name": "bloodtrail.audit.account.password_reset.requested",
+    "category": "account",
+    "action": "request_password_reset",
+    "purpose": "Record reset request handling without revealing account existence externally.",
+    "trigger": "recovery authority handles reset request",
+    "phase": [
+      "attempted"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied"
+    ],
+    "commit": [
+      "not_applicable",
+      "not_started"
+    ],
+    "producer": "recovery-authority",
+    "required_context": [
+      "actor",
+      "request",
+      "source",
+      "correlation"
+    ],
+    "tenant_rule": "tenantless or resolved tenant; subject only if safely resolved",
+    "actor_rule": "anonymous actor permitted",
+    "resource_rule": "account only if resolved safely",
+    "authorization_rule": "not applicable or abuse policy denial",
+    "privacy": [
+      "recovery identity source restricted"
+    ],
+    "retention": "security_standard",
+    "delivery": "security_significant",
+    "investigation": "reset abuse precursor correlation",
+    "ocsf": {
+      "class": "account_change",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "anonymous",
+      "tenant": "tenantless",
+      "outcome": "success",
+      "commit": "not_started",
+      "resource": "account",
+      "operation": "execute",
+      "initiator": "browser_client"
+    }
+  },
+  {
+    "semantic": "password_reset_completed",
+    "name": "bloodtrail.audit.account.password_reset.completed",
+    "category": "account",
+    "action": "complete_password_reset",
+    "purpose": "Record committed password reset without credential contents.",
+    "trigger": "account/recovery transaction owner commits reset result",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied"
+    ],
+    "commit": [
+      "committed",
+      "not_committed"
+    ],
+    "producer": "recovery-transaction-owner",
+    "required_context": [
+      "actor",
+      "subject",
+      "tenant",
+      "authentication",
+      "session",
+      "correlation"
+    ],
+    "tenant_rule": "tenant scoped",
+    "actor_rule": "authenticated or recovery-verified actor",
+    "resource_rule": "credential/account resource without new credential material",
+    "authorization_rule": "recovery policy context required",
+    "privacy": [
+      "recovery identity restricted"
+    ],
+    "retention": "security_elevated",
+    "delivery": "transaction_critical",
+    "investigation": "takeover and credential lifecycle",
+    "ocsf": {
+      "class": "account_change",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "authenticated_human",
+      "tenant": "tenant",
+      "outcome": "success",
+      "commit": "committed",
+      "resource": "credential",
+      "operation": "update",
+      "initiator": "application"
+    }
+  },
+  {
+    "semantic": "authorization_allowed",
+    "name": "bloodtrail.audit.authorization.allowed",
+    "category": "authorization",
+    "action": "evaluate_authorization",
+    "purpose": "Preserve policy allow decision independently of operation result.",
+    "trigger": "policy decision and enforcement point records allow",
+    "phase": [
+      "attempted"
+    ],
+    "outcomes": [
+      "success"
+    ],
+    "commit": [
+      "not_applicable"
+    ],
+    "producer": "policy-enforcement-point",
+    "required_context": [
+      "actor",
+      "tenant",
+      "resource",
+      "authorization",
+      "request"
+    ],
+    "tenant_rule": "tenant scoped or cross-tenant with policy",
+    "actor_rule": "resolved actor or service identity required",
+    "resource_rule": "evaluated resource context required",
+    "authorization_rule": "decision must be allow",
+    "privacy": [
+      "policy resource identity restricted"
+    ],
+    "retention": "operational_short",
+    "delivery": "best_effort",
+    "investigation": "explain access path and policy version",
+    "ocsf": {
+      "class": "authorization",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "workload_identity",
+      "tenant": "tenant",
+      "outcome": "success",
+      "commit": "not_applicable",
+      "resource": "authorization_policy",
+      "operation": "execute",
+      "initiator": "workload",
+      "authorization": "allow"
+    }
+  },
+  {
+    "semantic": "authorization_denied",
+    "name": "bloodtrail.audit.authorization.denied",
+    "category": "authorization",
+    "action": "evaluate_authorization",
+    "purpose": "Preserve policy deny decision and attempted action.",
+    "trigger": "policy decision and enforcement point records deny",
+    "phase": [
+      "attempted"
+    ],
+    "outcomes": [
+      "denied"
+    ],
+    "commit": [
+      "not_applicable",
+      "not_started"
+    ],
+    "producer": "policy-enforcement-point",
+    "required_context": [
+      "actor",
+      "tenant",
+      "resource",
+      "authorization",
+      "source"
+    ],
+    "tenant_rule": "tenant scoped or tenant violation linked",
+    "actor_rule": "resolved actor or claim per catalog",
+    "resource_rule": "attempted resource context required",
+    "authorization_rule": "decision must be deny",
+    "privacy": [
+      "policy resource identity restricted"
+    ],
+    "retention": "security_standard",
+    "delivery": "security_significant",
+    "investigation": "attack and access-control investigation",
+    "ocsf": {
+      "class": "authorization",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "api_credential",
+      "tenant": "tenant",
+      "outcome": "denied",
+      "commit": "not_started",
+      "resource": "authorization_policy",
+      "operation": "execute",
+      "initiator": "api_client",
+      "authorization": "deny"
+    }
+  },
+  {
+    "semantic": "role_assigned",
+    "name": "bloodtrail.audit.authorization.role.assigned",
+    "category": "authorization",
+    "action": "assign_role",
+    "purpose": "Record committed role assignment.",
+    "trigger": "identity/authorization transaction owner commits assignment",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied"
+    ],
+    "commit": [
+      "committed",
+      "not_committed"
+    ],
+    "producer": "authorization-transaction-owner",
+    "required_context": [
+      "administrator",
+      "subject",
+      "tenant",
+      "role",
+      "authorization",
+      "reason"
+    ],
+    "tenant_rule": "tenant scoped or cross-tenant platform admin",
+    "actor_rule": "administrator actor required",
+    "resource_rule": "role resource required",
+    "authorization_rule": "policy allow required for success",
+    "privacy": [
+      "role identity restricted"
+    ],
+    "retention": "security_elevated",
+    "delivery": "transaction_critical",
+    "investigation": "privilege provenance",
+    "ocsf": {
+      "class": "iam",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "administrator",
+      "tenant": "tenant",
+      "outcome": "success",
+      "commit": "committed",
+      "resource": "role",
+      "operation": "administer",
+      "initiator": "application"
+    }
+  },
+  {
+    "semantic": "role_removed",
+    "name": "bloodtrail.audit.authorization.role.removed",
+    "category": "authorization",
+    "action": "remove_role",
+    "purpose": "Record committed role removal.",
+    "trigger": "identity/authorization transaction owner commits removal",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied"
+    ],
+    "commit": [
+      "committed",
+      "not_committed"
+    ],
+    "producer": "authorization-transaction-owner",
+    "required_context": [
+      "administrator",
+      "subject",
+      "tenant",
+      "role",
+      "authorization",
+      "reason"
+    ],
+    "tenant_rule": "tenant scoped or cross-tenant platform admin",
+    "actor_rule": "administrator actor required",
+    "resource_rule": "role resource required",
+    "authorization_rule": "policy allow required for success",
+    "privacy": [
+      "role identity restricted"
+    ],
+    "retention": "security_elevated",
+    "delivery": "transaction_critical",
+    "investigation": "privilege revocation history",
+    "ocsf": {
+      "class": "iam",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "administrator",
+      "tenant": "tenant",
+      "outcome": "success",
+      "commit": "committed",
+      "resource": "role",
+      "operation": "administer",
+      "initiator": "application"
+    }
+  },
+  {
+    "semantic": "privilege_elevated",
+    "name": "bloodtrail.audit.authorization.privilege.elevated",
+    "category": "privilege",
+    "action": "elevate_privilege",
+    "purpose": "Record temporary or permanent privilege elevation or break-glass use.",
+    "trigger": "privilege authority records elevation decision",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied"
+    ],
+    "commit": [
+      "committed",
+      "not_committed"
+    ],
+    "producer": "privilege-authority",
+    "required_context": [
+      "real_actor",
+      "subject",
+      "delegation",
+      "tenant",
+      "authorization",
+      "reason",
+      "expiry"
+    ],
+    "tenant_rule": "platform or cross-tenant authority explicit",
+    "actor_rule": "real actor preserved; privilege label alone insufficient",
+    "resource_rule": "privilege grant resource required",
+    "authorization_rule": "override and break-glass explicit when used",
+    "privacy": [
+      "highly restricted"
+    ],
+    "retention": "policy_governed",
+    "delivery": "policy_critical",
+    "investigation": "high-value escalation and abuse evidence",
+    "ocsf": {
+      "class": "iam",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "administrator",
+      "tenant": "platform",
+      "outcome": "success",
+      "commit": "committed",
+      "resource": "privilege_grant",
+      "operation": "administer",
+      "initiator": "application",
+      "break_glass": true
+    }
+  },
+  {
+    "semantic": "impersonation_started",
+    "name": "bloodtrail.audit.administration.impersonation.started",
+    "category": "administration",
+    "action": "start_impersonation",
+    "purpose": "Record start of approved administrative impersonation.",
+    "trigger": "impersonation authority commits start",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied"
+    ],
+    "commit": [
+      "committed",
+      "not_committed"
+    ],
+    "producer": "impersonation-authority",
+    "required_context": [
+      "real_admin_actor",
+      "impersonated_subject",
+      "tenants",
+      "scope",
+      "policy",
+      "session",
+      "expiry"
+    ],
+    "tenant_rule": "cross-tenant or tenant admin with explicit target",
+    "actor_rule": "real administrator and impersonated subject both required",
+    "resource_rule": "impersonation session resource required",
+    "authorization_rule": "policy allow and reason required for success",
+    "privacy": [
+      "highly restricted"
+    ],
+    "retention": "policy_governed",
+    "delivery": "policy_critical",
+    "investigation": "accountability during impersonation",
+    "ocsf": {
+      "class": "admin_activity",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "administrator",
+      "tenant": "cross_tenant",
+      "outcome": "success",
+      "commit": "committed",
+      "resource": "impersonation_session",
+      "operation": "administer",
+      "initiator": "application",
+      "impersonated": true
+    }
+  },
+  {
+    "semantic": "impersonation_ended",
+    "name": "bloodtrail.audit.administration.impersonation.ended",
+    "category": "administration",
+    "action": "end_impersonation",
+    "purpose": "Record termination or expiry of impersonation.",
+    "trigger": "impersonation/session authority terminates interval",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure"
+    ],
+    "commit": [
+      "committed",
+      "not_committed"
+    ],
+    "producer": "impersonation-session-authority",
+    "required_context": [
+      "real_actor_or_process",
+      "impersonated_subject",
+      "original_start",
+      "reason"
+    ],
+    "tenant_rule": "same target tenant and original start correlation",
+    "actor_rule": "real actor or scheduled expiry process",
+    "resource_rule": "impersonation session resource required",
+    "authorization_rule": "not applicable or termination policy",
+    "privacy": [
+      "highly restricted"
+    ],
+    "retention": "policy_governed",
+    "delivery": "policy_critical",
+    "investigation": "close accountability interval",
+    "ocsf": {
+      "class": "admin_activity",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "scheduled_process",
+      "tenant": "cross_tenant",
+      "outcome": "success",
+      "commit": "committed",
+      "resource": "impersonation_session",
+      "operation": "administer",
+      "initiator": "scheduled_process",
+      "impersonated": true
+    }
+  },
+  {
+    "semantic": "sensitive_resource_viewed",
+    "name": "bloodtrail.audit.data.sensitive_resource.viewed",
+    "category": "data_access",
+    "action": "view",
+    "purpose": "Record read of cataloged sensitive resource.",
+    "trigger": "resource access/enforcement owner observes read result",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied"
+    ],
+    "commit": [
+      "not_applicable"
+    ],
+    "producer": "resource-access-owner",
+    "required_context": [
+      "actor",
+      "principal",
+      "tenant",
+      "resource",
+      "authorization",
+      "request"
+    ],
+    "tenant_rule": "tenant scoped or authorized cross-tenant access",
+    "actor_rule": "resolved actor or service identity required",
+    "resource_rule": "sensitive resource and classification required",
+    "authorization_rule": "decision independent from outcome",
+    "privacy": [
+      "resource identity restricted"
+    ],
+    "retention": "security_elevated",
+    "delivery": "security_significant",
+    "investigation": "inappropriate access and disclosure investigation",
+    "ocsf": {
+      "class": "data_access",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "external_integration",
+      "tenant": "tenant",
+      "outcome": "success",
+      "commit": "not_applicable",
+      "resource": "sensitive_record",
+      "operation": "read",
+      "initiator": "external_integration"
+    }
+  },
+  {
+    "semantic": "sensitive_resource_created",
+    "name": "bloodtrail.audit.data.sensitive_resource.created",
+    "category": "data_access",
+    "action": "create",
+    "purpose": "Record committed creation of sensitive resource.",
+    "trigger": "resource transaction owner commits creation",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied"
+    ],
+    "commit": [
+      "committed",
+      "not_committed"
+    ],
+    "producer": "resource-transaction-owner",
+    "required_context": [
+      "actor",
+      "tenant",
+      "resource",
+      "authorization",
+      "operation",
+      "transaction"
+    ],
+    "tenant_rule": "effective and owning tenant required",
+    "actor_rule": "resolved actor required",
+    "resource_rule": "resource id and owner required after commit",
+    "authorization_rule": "policy allow required for success",
+    "privacy": [
+      "resource metadata restricted"
+    ],
+    "retention": "security_elevated",
+    "delivery": "transaction_critical",
+    "investigation": "creation provenance",
+    "ocsf": {
+      "class": "data_activity",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "authenticated_human",
+      "tenant": "tenant",
+      "outcome": "success",
+      "commit": "committed",
+      "resource": "sensitive_record",
+      "operation": "create",
+      "initiator": "application"
+    }
+  },
+  {
+    "semantic": "sensitive_resource_modified",
+    "name": "bloodtrail.audit.data.sensitive_resource.modified",
+    "category": "data_access",
+    "action": "modify",
+    "purpose": "Record committed modification of sensitive resource without before/after bodies.",
+    "trigger": "resource transaction owner records modification or compensation",
+    "phase": [
+      "completed",
+      "compensating"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied",
+      "partial"
+    ],
+    "commit": [
+      "committed",
+      "not_committed",
+      "partially_committed",
+      "compensated"
+    ],
+    "producer": "resource-transaction-owner",
+    "required_context": [
+      "actor",
+      "tenant",
+      "resource",
+      "authorization",
+      "change_categories",
+      "transaction"
+    ],
+    "tenant_rule": "effective and owning tenant required",
+    "actor_rule": "resolved actor required",
+    "resource_rule": "no raw before/after payload",
+    "authorization_rule": "policy allow required for success",
+    "privacy": [
+      "no body; restricted metadata"
+    ],
+    "retention": "security_elevated",
+    "delivery": "transaction_critical",
+    "investigation": "tampering and change investigation",
+    "ocsf": {
+      "class": "data_activity",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "background_job",
+      "tenant": "tenant",
+      "outcome": "success",
+      "commit": "compensated",
+      "resource": "sensitive_record",
+      "operation": "update",
+      "initiator": "background_job",
+      "phase": "compensating"
+    }
+  },
+  {
+    "semantic": "sensitive_resource_deleted",
+    "name": "bloodtrail.audit.data.sensitive_resource.deleted",
+    "category": "data_access",
+    "action": "delete",
+    "purpose": "Record committed deletion of sensitive resource without deleted content.",
+    "trigger": "resource transaction owner records deletion",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied",
+      "partial"
+    ],
+    "commit": [
+      "committed",
+      "not_committed",
+      "partially_committed"
+    ],
+    "producer": "resource-transaction-owner",
+    "required_context": [
+      "actor",
+      "tenant",
+      "resource",
+      "authorization",
+      "deletion_mode",
+      "transaction"
+    ],
+    "tenant_rule": "effective and owning tenant required",
+    "actor_rule": "resolved actor required",
+    "resource_rule": "deleted content prohibited",
+    "authorization_rule": "policy allow required for success",
+    "privacy": [
+      "deleted content prohibited"
+    ],
+    "retention": "security_elevated",
+    "delivery": "transaction_critical",
+    "investigation": "destructive action accountability",
+    "ocsf": {
+      "class": "data_activity",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "service_account",
+      "tenant": "tenant",
+      "outcome": "partial",
+      "commit": "partially_committed",
+      "resource": "sensitive_collection",
+      "operation": "delete",
+      "initiator": "service"
+    }
+  },
+  {
+    "semantic": "sensitive_data_exported",
+    "name": "bloodtrail.audit.data.sensitive_data.exported",
+    "category": "data_access",
+    "action": "export",
+    "purpose": "Record export without exported data.",
+    "trigger": "export transaction owner records export attempt or completion",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied",
+      "partial",
+      "cancelled"
+    ],
+    "commit": [
+      "committed",
+      "not_committed",
+      "partially_committed"
+    ],
+    "producer": "export-transaction-owner",
+    "required_context": [
+      "actor",
+      "tenant",
+      "resource_scope",
+      "authorization",
+      "bounded_volume",
+      "destination_class"
+    ],
+    "tenant_rule": "effective and owning tenant required; cross-tenant export requires explicit policy",
+    "actor_rule": "resolved actor required",
+    "resource_rule": "bounded aggregate metadata only",
+    "authorization_rule": "policy decision required",
+    "privacy": [
+      "highly restricted export metadata"
+    ],
+    "retention": "policy_governed",
+    "delivery": "policy_critical",
+    "investigation": "exfiltration and compliance investigation",
+    "ocsf": {
+      "class": "data_exfiltration",
+      "status": "lossy"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "api_credential",
+      "tenant": "tenant",
+      "outcome": "cancelled",
+      "commit": "not_committed",
+      "resource": "sensitive_collection",
+      "operation": "export",
+      "initiator": "api_client"
+    }
+  },
+  {
+    "semantic": "security_configuration_changed",
+    "name": "bloodtrail.audit.security.configuration.changed",
+    "category": "security_configuration",
+    "action": "change_security_configuration",
+    "purpose": "Record committed change to security-relevant configuration.",
+    "trigger": "configuration transaction owner records change",
+    "phase": [
+      "completed"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied",
+      "partial"
+    ],
+    "commit": [
+      "committed",
+      "not_committed",
+      "partially_committed"
+    ],
+    "producer": "configuration-transaction-owner",
+    "required_context": [
+      "actor",
+      "tenant_or_platform_scope",
+      "config_resource",
+      "authorization",
+      "change_category"
+    ],
+    "tenant_rule": "tenant, platform, or tenantless explicitly cataloged",
+    "actor_rule": "administrator or workload identity required",
+    "resource_rule": "configuration resource and category required",
+    "authorization_rule": "policy allow required for success",
+    "privacy": [
+      "configuration metadata restricted"
+    ],
+    "retention": "security_elevated",
+    "delivery": "transaction_critical",
+    "investigation": "control-plane change history",
+    "ocsf": {
+      "class": "configuration_change",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "workload_identity",
+      "tenant": "platform",
+      "outcome": "success",
+      "commit": "committed",
+      "resource": "security_configuration",
+      "operation": "configure",
+      "initiator": "workload"
+    }
+  },
+  {
+    "semantic": "tenant_context_violation_detected",
+    "name": "bloodtrail.audit.tenant.context_violation.detected",
+    "category": "tenant_security",
+    "action": "detect_tenant_violation",
+    "purpose": "Record mismatch, spoofing, or prohibited cross-tenant attempt.",
+    "trigger": "tenancy/resource/enforcement boundary detects conflict",
+    "phase": [
+      "attempted"
+    ],
+    "outcomes": [
+      "denied",
+      "failure",
+      "unknown"
+    ],
+    "commit": [
+      "not_applicable",
+      "not_started"
+    ],
+    "producer": "tenant-enforcement-boundary",
+    "required_context": [
+      "actor_or_claim",
+      "authoritative_tenants",
+      "claimed_tenant",
+      "resource_owner",
+      "request_source",
+      "authorization"
+    ],
+    "tenant_rule": "claimed and authoritative tenants separately recorded",
+    "actor_rule": "actor claim allowed only as claim",
+    "resource_rule": "resource owner required when available",
+    "authorization_rule": "decision deny or indeterminate expected",
+    "privacy": [
+      "tenant identity source highly restricted"
+    ],
+    "retention": "security_elevated",
+    "delivery": "security_significant",
+    "investigation": "isolation failure and attack detection",
+    "ocsf": {
+      "class": "finding",
+      "status": "extended"
+    },
+    "otel": {
+      "status": "transformed"
+    },
+    "cloud_events": {
+      "status": "optional_envelope"
+    },
+    "example": {
+      "actor": "anonymous",
+      "tenant": "cross_tenant",
+      "outcome": "denied",
+      "commit": "not_started",
+      "resource": "tenant",
+      "operation": "execute",
+      "initiator": "browser_client",
+      "authorization": "deny",
+      "claimed_tenant": true
+    }
+  }
+]
