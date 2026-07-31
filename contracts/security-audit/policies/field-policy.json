@@ -1,0 +1,1342 @@
+[
+  {
+    "path": "event.id",
+    "authority": "event_identity_catalog",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "event.name",
+    "authority": "event_identity_catalog",
+    "trust": "authoritative_server",
+    "privacy": "public_metadata",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "event.category",
+    "authority": "event_identity_catalog",
+    "trust": "authoritative_server",
+    "privacy": "public_metadata",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "event.action",
+    "authority": "event_identity_catalog",
+    "trust": "authoritative_server",
+    "privacy": "public_metadata",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "event.lifecycle_phase",
+    "authority": "lifecycle_outcome_commit",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "event.outcome",
+    "authority": "lifecycle_outcome_commit",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable_registry"
+  },
+  {
+    "path": "event.outcome_reason.code",
+    "authority": "lifecycle_outcome_commit",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "event.outcome_reason.message",
+    "authority": "lifecycle_outcome_commit",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "event.commit_state",
+    "authority": "lifecycle_outcome_commit",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "event.timestamp",
+    "authority": "timestamps",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "event.observed_at",
+    "authority": "timestamps",
+    "trust": "observed_transport",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "event.delivery_class",
+    "authority": "data_privacy_delivery",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "schema.name",
+    "authority": "event_identity_catalog",
+    "trust": "authoritative_server",
+    "privacy": "public_metadata",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "schema.version",
+    "authority": "event_identity_catalog",
+    "trust": "authoritative_server",
+    "privacy": "public_metadata",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "producer.name",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "producer.version",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "producer.instance_id",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "environment.name",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "service.name",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "service.version",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "service.instance_id",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "deployment.id",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "deployment.region",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "deployment.zone",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "tenant.scope",
+    "authority": "tenant_context",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "tenant.actor_tenant_id",
+    "authority": "tenant_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "tenant.effective_tenant_id",
+    "authority": "tenant_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "tenant.resource_tenant_id",
+    "authority": "tenant_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "tenant.parent_tenant_id",
+    "authority": "tenant_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "additive"
+  },
+  {
+    "path": "tenant.claimed_tenant_id",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "restricted",
+    "policy": "transform_required",
+    "retention": "operational_short",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "additive"
+  },
+  {
+    "path": "actor.type",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "actor.id",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "actor.tenant_id",
+    "authority": "tenant_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "actor.display_name",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "actor.provenance.trust_level",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "actor.provenance.source",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "subject.type",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "subject.id",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "subject.tenant_id",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "subject.display_name",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "authenticated_principal.type",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "authenticated_principal.id",
+    "authority": "authenticated_identity",
+    "trust": "verified_assertion",
+    "privacy": "confidential",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authenticated_principal.issuer",
+    "authority": "authenticated_identity",
+    "trust": "verified_assertion",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "delegation.mode",
+    "authority": "delegation_impersonation",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "delegation.principal_id",
+    "authority": "delegation_impersonation",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "transform_required",
+    "retention": "security_elevated",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "delegation.scope",
+    "authority": "delegation_impersonation",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable_registry"
+  },
+  {
+    "path": "delegation.reason_code",
+    "authority": "delegation_impersonation",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "delegation.expires_at",
+    "authority": "delegation_impersonation",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "delegation.chain",
+    "authority": "delegation_impersonation",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "credential.type",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "credential.reference",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "credential.key_id",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "initiator.type",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "initiator.id",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "initiator.version",
+    "authority": "producer_service_deployment",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "session.id",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "session.created_at",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "session.age_seconds",
+    "authority": "authenticated_identity",
+    "trust": "derived_server",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "session.assurance_level",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "authentication.method",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "authentication.assurance_level",
+    "authority": "authenticated_identity",
+    "trust": "verified_assertion",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "authentication.mfa_state",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "authentication.credential_type",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "authentication.authenticated_at",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authentication.identity_provider",
+    "authority": "authenticated_identity",
+    "trust": "verified_assertion",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authentication.account_recovery.flow",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authentication.account_recovery.state",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "authentication.account_recovery.reason_code",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "authentication.failure_reason",
+    "authority": "authenticated_identity",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "authentication.delegated",
+    "authority": "delegation_impersonation",
+    "trust": "derived_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authentication.impersonated",
+    "authority": "delegation_impersonation",
+    "trust": "derived_server",
+    "privacy": "restricted",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authorization.decision",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable_registry"
+  },
+  {
+    "path": "authorization.policy_id",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authorization.policy_version",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authorization.capability",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "authorization.enforcement_point",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "authorization.decision_reason",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "authorization.resource_context.type",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authorization.resource_context.id",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authorization.tenant_context.effective_tenant_id",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authorization.override",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authorization.break_glass",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "allowed",
+    "retention": "policy_governed",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "authorization.policy_correlation_id",
+    "authority": "authorization_context",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "source.observed.address",
+    "authority": "network_observation",
+    "trust": "observed_transport",
+    "privacy": "restricted",
+    "policy": "transform_required",
+    "retention": "operational_short",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "source.observed.port",
+    "authority": "network_observation",
+    "trust": "observed_transport",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "source.observed.proxy_chain",
+    "authority": "network_observation",
+    "trust": "observed_transport",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "source.client_reported.user_agent_family",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "source.client_reported.user_agent_version",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "destination.service",
+    "authority": "network_observation",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "destination.address",
+    "authority": "network_observation",
+    "trust": "observed_transport",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "destination.port",
+    "authority": "network_observation",
+    "trust": "observed_transport",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "resource.type",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "resource.id",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "resource.parent_type",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "resource.parent_id",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "additive"
+  },
+  {
+    "path": "resource.owning_tenant_id",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "transform_required",
+    "retention": "security_standard",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "resource.data_classification",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "resource.operation_type",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "resource.bulk.count",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "resource.bulk.scope",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "resource.bulk.child_event_policy",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "resource.change_categories",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "resource.deletion_mode",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "resource.export.destination_class",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "policy_governed",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "resource.export.size_class",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "policy_governed",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "resource.export.record_count",
+    "authority": "resource_context",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "policy_governed",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "request.id",
+    "authority": "correlation_causality",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "request.method",
+    "authority": "correlation_causality",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "request.route",
+    "authority": "correlation_causality",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "request.user_agent",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "request.message_id",
+    "authority": "correlation_causality",
+    "trust": "observed_transport",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "correlation.trace_id",
+    "authority": "correlation_causality",
+    "trust": "observed_transport",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "correlation.span_id",
+    "authority": "correlation_causality",
+    "trust": "observed_transport",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "correlation.correlation_id",
+    "authority": "correlation_causality",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "correlation.causation_id",
+    "authority": "correlation_causality",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "correlation.operation_id",
+    "authority": "correlation_causality",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "correlation.transaction_id",
+    "authority": "correlation_causality",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "transform_required",
+    "retention": "security_elevated",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "stable"
+  },
+  {
+    "path": "correlation.request_id",
+    "authority": "correlation_causality",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "correlation.message_id",
+    "authority": "correlation_causality",
+    "trust": "observed_transport",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "correlation.retry_attempt",
+    "authority": "correlation_causality",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "correlation.original_event_id",
+    "authority": "correlation_causality",
+    "trust": "authoritative_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "risk.level",
+    "authority": "risk_enrichment",
+    "trust": "derived_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "risk.score",
+    "authority": "risk_enrichment",
+    "trust": "derived_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "risk.reason_codes",
+    "authority": "risk_enrichment",
+    "trust": "derived_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "risk.model.name",
+    "authority": "risk_enrichment",
+    "trust": "derived_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "risk.model.version",
+    "authority": "risk_enrichment",
+    "trust": "derived_server",
+    "privacy": "confidential",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "risk.model.provenance.trust_level",
+    "authority": "risk_enrichment",
+    "trust": "derived_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "data.classification",
+    "authority": "data_privacy_delivery",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "data.retention_class",
+    "authority": "data_privacy_delivery",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "registry"
+  },
+  {
+    "path": "data.field_policy_version",
+    "authority": "data_privacy_delivery",
+    "trust": "authoritative_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "stable"
+  },
+  {
+    "path": "integrity.attestations",
+    "authority": "integrity_metadata",
+    "trust": "authoritative_server",
+    "privacy": "restricted",
+    "policy": "conditionally_allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "integrity.transport_authentication.method",
+    "authority": "integrity_metadata",
+    "trust": "observed_transport",
+    "privacy": "restricted",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "integrity.transport_authentication.verified",
+    "authority": "integrity_metadata",
+    "trust": "observed_transport",
+    "privacy": "restricted",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "integrity.transport_authentication.peer",
+    "authority": "integrity_metadata",
+    "trust": "observed_transport",
+    "privacy": "restricted",
+    "policy": "transform_required",
+    "retention": "security_elevated",
+    "redaction": "purpose-scoped keyed transform or approved direct-reference exception",
+    "compatibility": "additive"
+  }
+]

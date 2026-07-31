@@ -1,0 +1,20 @@
+{
+  "name": "bloodtrail-security-audit-contract",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Development-only Bloodtrail security audit contract artifacts and validation.",
+  "engines": {
+    "node": ">=26.5.0"
+  },
+  "scripts": {
+    "generate": "node scripts/generate-artifacts.mjs",
+    "check:generated": "node scripts/generate-artifacts.mjs --check",
+    "test": "node --test tests/*.test.mjs",
+    "validate": "node scripts/validate-contract.mjs --all && node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}

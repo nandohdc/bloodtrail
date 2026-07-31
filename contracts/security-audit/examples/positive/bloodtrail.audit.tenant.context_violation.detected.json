@@ -1,0 +1,176 @@
+{
+  "event": {
+    "id": "11111111-1111-4111-8111-000000000024",
+    "name": "bloodtrail.audit.tenant.context_violation.detected",
+    "category": "tenant_security",
+    "action": "detect_tenant_violation",
+    "lifecycle_phase": "attempted",
+    "outcome": "denied",
+    "outcome_reason": {
+      "code": "policy_denied"
+    },
+    "commit_state": "not_started",
+    "timestamp": "2026-07-31T12:23:00.000Z",
+    "observed_at": "2026-07-31T12:23:01.000Z",
+    "delivery_class": "security_significant"
+  },
+  "schema": {
+    "name": "com.bloodtrail.security-audit.event",
+    "version": "1.0.0"
+  },
+  "producer": {
+    "name": "tenant-enforcement-boundary",
+    "version": "1.0.0",
+    "instance_id": "producer_24"
+  },
+  "environment": {
+    "name": "development"
+  },
+  "service": {
+    "name": "tenant-enforcement-boundary",
+    "version": "1.0.0"
+  },
+  "deployment": {
+    "id": "deploy_contract_fixture",
+    "region": "local",
+    "zone": "local-a"
+  },
+  "tenant": {
+    "scope": "cross_tenant",
+    "actor_tenant_id": "tenant_platform",
+    "effective_tenant_id": "tenant_beta",
+    "resource_tenant_id": "tenant_beta",
+    "claimed_tenant_id": "claimed_tenant_alpha"
+  },
+  "actor": {
+    "type": "anonymous",
+    "provenance": {
+      "trust_level": "client_claim",
+      "source": "request_boundary"
+    }
+  },
+  "subject": {
+    "type": "tenant",
+    "id": "tenant_subject_24",
+    "tenant_id": "tenant_beta"
+  },
+  "credential": {
+    "type": "session",
+    "reference": "cred_ref_24",
+    "key_id": "pseudonym-key-v1"
+  },
+  "initiator": {
+    "type": "browser_client",
+    "id": "browser_client_fixture",
+    "version": "1.0.0"
+  },
+  "session": {
+    "id": "session_ref_24",
+    "created_at": "2026-07-31T11:55:00.000Z",
+    "age_seconds": 300,
+    "assurance_level": "aal2"
+  },
+  "authentication": {
+    "method": "session",
+    "assurance_level": "aal2",
+    "mfa_state": "satisfied",
+    "credential_type": "session",
+    "authenticated_at": "2026-07-31T11:55:00.000Z",
+    "identity_provider": "https://idp.example.test",
+    "delegated": false,
+    "impersonated": false
+  },
+  "authorization": {
+    "decision": "deny",
+    "policy_id": "policy.audit-fixture",
+    "policy_version": "1.0.0",
+    "capability": "detect_tenant_violation",
+    "enforcement_point": "tenant-enforcement-boundary",
+    "decision_reason": "policy_denied",
+    "resource_context": {
+      "type": "tenant",
+      "id": "tenant_24"
+    },
+    "tenant_context": {
+      "effective_tenant_id": "tenant_beta"
+    },
+    "override": false,
+    "break_glass": false,
+    "policy_correlation_id": "policy_corr_24"
+  },
+  "source": {
+    "observed": {
+      "address": "203.0.113.10",
+      "port": 443,
+      "proxy_chain": [
+        {
+          "address": "198.51.100.10",
+          "trust_level": "observed_transport",
+          "observed_by": "trusted-ingress"
+        }
+      ]
+    },
+    "client_reported": {
+      "user_agent_family": "ExampleBrowser",
+      "user_agent_version": "1"
+    }
+  },
+  "destination": {
+    "service": "tenant-enforcement-boundary",
+    "address": "service.local",
+    "port": 443
+  },
+  "resource": {
+    "type": "tenant",
+    "id": "tenant_24",
+    "owning_tenant_id": "tenant_beta",
+    "data_classification": "confidential",
+    "operation_type": "execute",
+    "change_categories": [
+      "metadata"
+    ]
+  },
+  "request": {
+    "id": "request_24",
+    "method": "POST",
+    "route": "/contract-fixtures/{resource}",
+    "user_agent": "ExampleBrowser/1",
+    "message_id": "message_24"
+  },
+  "correlation": {
+    "trace_id": "1234567890abcdef1234567890abcde3",
+    "span_id": "1234567890abcde3",
+    "correlation_id": "corr_24",
+    "causation_id": "11111111-1111-4111-8111-000000000023",
+    "operation_id": "operation_tenant_context_violation_detected",
+    "request_id": "request_24",
+    "message_id": "message_24",
+    "retry_attempt": 0
+  },
+  "risk": {
+    "level": "low",
+    "score": 15,
+    "reason_codes": [
+      "policy_baseline"
+    ],
+    "model": {
+      "name": "fixture-risk",
+      "version": "1.0.0",
+      "provenance": {
+        "trust_level": "derived_server"
+      }
+    }
+  },
+  "data": {
+    "classification": "confidential",
+    "retention_class": "security_elevated",
+    "field_policy_version": "1.0.0"
+  },
+  "integrity": {
+    "transport_authentication": {
+      "method": "mtls",
+      "verified": true,
+      "peer": "producer-registry/ref"
+    }
+  }
+}

@@ -1,0 +1,4164 @@
+{
+  "$schema": "https://bloodtrail.dev/contracts/security-audit/source.schema.json",
+  "authoritative_source": true,
+  "metadata": {
+    "contract": "bloodtrail-security-audit-event",
+    "schema_name": "com.bloodtrail.security-audit.event",
+    "schema_version": "1.0.0",
+    "catalog_version": "1.0.0",
+    "field_policy_version": "1.0.0",
+    "schema_dialect": "https://json-schema.org/draft/2020-12/schema",
+    "schema_id": "https://bloodtrail.dev/contracts/security-audit/1.0.0/security-audit-event.schema.json",
+    "catalog_id": "https://bloodtrail.dev/contracts/security-audit/1.0.0/catalog.json",
+    "owner": "Bloodtrail project owner",
+    "generated_artifact_notice": "GENERATED FROM contracts/security-audit/source/contract.source.json. DO NOT EDIT BY HAND.",
+    "retrieval_date": "2026-07-31",
+    "production_authorization": "blocked_pending_project_owner_exact_commit_approval",
+    "sdk_authorization": "blocked",
+    "canonical_boundary": "Bloodtrail is canonical. OCSF 1.8.0 is export-only. OpenTelemetry 1.59.0 and Semantic Conventions 1.43.0 are transport-only. CloudEvents 1.0.2 is optional envelope-only."
+  },
+  "bounds": {
+    "event_max_bytes": 65536,
+    "object_max_depth": 8,
+    "default_string_max": 256,
+    "display_string_max": 128,
+    "message_string_max": 512,
+    "array_max_items": 32,
+    "extension_max_namespaces": 4,
+    "clock_skew_max_seconds": 300,
+    "retry_attempt_max": 1000
+  },
+  "standards": [
+    {
+      "id": "nist-sp-800-53-rev5",
+      "name": "NIST SP 800-53 Rev. 5 AU controls",
+      "version": "Rev. 5",
+      "url": "https://github.com/usnistgov/oscal-content/tree/main/nist.gov/SP800-53/rev5",
+      "normative_scope": "AU-2, AU-3, AU-5, AU-8, AU-9, AU-11, AU-12 event selection, content, timestamp, protection, retention, and generation guidance.",
+      "facts": [
+        "Identifies audit event selection and content concerns.",
+        "Does not define Bloodtrail JSON envelope, actor model, tenant authority, or producer SDK behavior."
+      ],
+      "recommendation": "Use as evidence input only; do not treat it as a complete Bloodtrail requirement.",
+      "support_type": "recommendation",
+      "design_decision": "Use NIST AU control objectives as evidence for event selection, content, timestamp, protection, retention, and generation concerns; Bloodtrail defines the project-specific contract."
+    },
+    {
+      "id": "ocsf-1.8.0",
+      "name": "OCSF schema",
+      "version": "1.8.0",
+      "url": "https://github.com/ocsf/ocsf-schema/releases/tag/1.8.0",
+      "normative_scope": "Cybersecurity event normalization categories, classes, profiles, objects, attributes, extensions, and versioning.",
+      "facts": [
+        "Provides downstream normalization vocabulary.",
+        "Does not own Bloodtrail tenant, transaction, delivery, privacy, or producer authority semantics."
+      ],
+      "recommendation": "Use only at ingestion/export with tested event and field mappings.",
+      "support_type": "mapping_option",
+      "design_decision": "Keep OCSF 1.8.0 as a version-pinned downstream ingestion/export mapping with explicit exact, transformed, extended, unmapped, and lossy status."
+    },
+    {
+      "id": "otel-spec-1.59.0",
+      "name": "OpenTelemetry Specification Logs Data Model",
+      "version": "1.59.0",
+      "url": "https://github.com/open-telemetry/opentelemetry-specification/blob/v1.59.0/specification/logs/data-model.md",
+      "normative_scope": "LogRecord timestamps, trace/span context, resource, instrumentation scope, attributes, body, and event name fields.",
+      "facts": [
+        "Supports native occurrence and observation time plus W3C trace/span fields.",
+        "Does not define Bloodtrail audit authority, privacy, catalog, or delivery classes."
+      ],
+      "recommendation": "Use only as optional transport representation.",
+      "support_type": "mapping_option",
+      "design_decision": "Represent canonical occurrence/observation timestamps, trace/span context, resource, instrumentation scope, attributes, body, and event name through an optional OpenTelemetry transport mapping."
+    },
+    {
+      "id": "otel-semconv-1.43.0",
+      "name": "OpenTelemetry Semantic Conventions events guidance",
+      "version": "1.43.0",
+      "url": "https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/general/events.md",
+      "normative_scope": "Stable event names without dynamic values and occurrence time guidance.",
+      "facts": [
+        "Supports low-cardinality event naming and occurrence time separation.",
+        "Leaves domain event structure to Bloodtrail."
+      ],
+      "recommendation": "Pin mapping tests to 1.43.0.",
+      "support_type": "mapping_option",
+      "design_decision": "Use stable low-cardinality EventName and occurrence-time guidance in the optional OpenTelemetry transport mapping."
+    },
+    {
+      "id": "cloudevents-1.0.2",
+      "name": "CloudEvents specification",
+      "version": "1.0.2",
+      "url": "https://github.com/cloudevents/spec/blob/ce%40v1.0.2/cloudevents/spec.md",
+      "normative_scope": "Protocol-neutral event envelope context attributes and duplicate identity using source plus id.",
+      "facts": [
+        "Defines envelope metadata and data separation.",
+        "Does not define canonical audit payload semantics or trust elevation."
+      ],
+      "recommendation": "Permit only optional envelope wrapping; reject envelope/payload conflicts.",
+      "support_type": "mapping_option",
+      "design_decision": "Allow CloudEvents 1.0.2 only as an optional transport envelope; preserve the canonical event in data and reject envelope/payload conflicts."
+    },
+    {
+      "id": "w3c-trace-context",
+      "name": "W3C Trace Context",
+      "version": "Recommendation",
+      "url": "https://www.w3.org/TR/trace-context/",
+      "normative_scope": "traceparent/tracestate trace-id and parent-id propagation plus privacy and trust-boundary considerations.",
+      "facts": [
+        "Defines trace-id and span-id shape and propagation concerns.",
+        "Trace context is correlation-only, not identity or authorization."
+      ],
+      "recommendation": "Validate structure and restart/omit at trust boundaries when needed.",
+      "support_type": "requirement",
+      "design_decision": "When trace context is present, validate W3C trace/span formats and treat propagated context as correlation-only and untrusted at external boundaries."
+    },
+    {
+      "id": "json-schema-2020-12",
+      "name": "JSON Schema",
+      "version": "Draft 2020-12",
+      "url": "https://json-schema.org/draft/2020-12/",
+      "normative_scope": "Schema dialect, identifiers, references, vocabularies, validation, and unevaluated property behavior.",
+      "facts": [
+        "Provides language-neutral structural validation.",
+        "Cannot express every producer authority or tenant/resource invariant alone."
+      ],
+      "recommendation": "Use Draft 2020-12 plus deterministic semantic validation.",
+      "support_type": "requirement",
+      "design_decision": "Declare JSON Schema Draft 2020-12 for structural validation and supplement it with deterministic semantic validation for cross-field authority rules."
+    },
+    {
+      "id": "semver-2.0.0",
+      "name": "Semantic Versioning",
+      "version": "2.0.0",
+      "url": "https://semver.org/spec/v2.0.0.html",
+      "normative_scope": "Major, minor, and patch compatibility terminology after defining the public API.",
+      "facts": [
+        "Provides vocabulary for compatible and incompatible change classes.",
+        "Bloodtrail must define its own compatibility surface first."
+      ],
+      "recommendation": "Apply to schema/catalog field paths, requiredness, privacy, authority, vocabularies, mappings, and validation results.",
+      "support_type": "recommendation",
+      "design_decision": "Apply SemVer terminology only after defining Bloodtrail public compatibility as field paths, types, authority, privacy, requiredness, catalog semantics, validation results, and mapping guarantees."
+    },
+    {
+      "id": "owasp-logging",
+      "name": "OWASP Logging Cheat Sheet",
+      "version": "current referenced guidance",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
+      "normative_scope": "Application event logging selection, when/where/who/what context, sanitization, and data to exclude.",
+      "facts": [
+        "Supports event selection, sanitization, and excluded-data reasoning.",
+        "Does not approve Bloodtrail retention, legal basis, or production architecture."
+      ],
+      "recommendation": "Use as privacy and misuse-resistance evidence input only.",
+      "support_type": "recommendation",
+      "design_decision": "Use allowlist-first event selection, sanitization, and excluded-data guidance to support Bloodtrail privacy and misuse-resistance policy without asserting external approval."
+    }
+  ],
+  "standards_matrix": [
+    {
+      "semantic": "server authoritative audit boundary",
+      "nist": "partial",
+      "ocsf": "partial",
+      "otel": "application_defined",
+      "cloudevents": "application_defined",
+      "trace_context": "not_applicable",
+      "json_schema": "partial",
+      "semver": "not_applicable",
+      "owasp": "partial"
+    },
+    {
+      "semantic": "tenant authority and claimed tenant separation",
+      "nist": "application_defined",
+      "ocsf": "partial",
+      "otel": "application_defined",
+      "cloudevents": "application_defined",
+      "trace_context": "not_applicable",
+      "json_schema": "partial",
+      "semver": "not_applicable",
+      "owasp": "partial"
+    },
+    {
+      "semantic": "actor subject principal delegation credential separation",
+      "nist": "partial",
+      "ocsf": "partial",
+      "otel": "application_defined",
+      "cloudevents": "application_defined",
+      "trace_context": "not_applicable",
+      "json_schema": "partial",
+      "semver": "not_applicable",
+      "owasp": "partial"
+    },
+    {
+      "semantic": "authorization decision separated from business outcome",
+      "nist": "partial",
+      "ocsf": "partial",
+      "otel": "application_defined",
+      "cloudevents": "application_defined",
+      "trace_context": "not_applicable",
+      "json_schema": "partial",
+      "semver": "not_applicable",
+      "owasp": "partial"
+    },
+    {
+      "semantic": "occurrence observed time and trace correlation",
+      "nist": "partial",
+      "ocsf": "partial",
+      "otel": "defines",
+      "cloudevents": "partial",
+      "trace_context": "defines",
+      "json_schema": "partial",
+      "semver": "not_applicable",
+      "owasp": "partial"
+    },
+    {
+      "semantic": "privacy prohibited data and transformations",
+      "nist": "partial",
+      "ocsf": "partial",
+      "otel": "application_defined",
+      "cloudevents": "application_defined",
+      "trace_context": "partial",
+      "json_schema": "partial",
+      "semver": "not_applicable",
+      "owasp": "partial"
+    },
+    {
+      "semantic": "delivery classes and failure posture",
+      "nist": "partial",
+      "ocsf": "application_defined",
+      "otel": "application_defined",
+      "cloudevents": "application_defined",
+      "trace_context": "not_applicable",
+      "json_schema": "partial",
+      "semver": "not_applicable",
+      "owasp": "partial"
+    },
+    {
+      "semantic": "versioned schema compatibility",
+      "nist": "not_applicable",
+      "ocsf": "partial",
+      "otel": "partial",
+      "cloudevents": "partial",
+      "trace_context": "not_applicable",
+      "json_schema": "defines",
+      "semver": "defines_terms",
+      "owasp": "not_applicable"
+    },
+    {
+      "semantic": "OCSF export mapping",
+      "nist": "not_applicable",
+      "ocsf": "defines_target",
+      "otel": "not_applicable",
+      "cloudevents": "not_applicable",
+      "trace_context": "not_applicable",
+      "json_schema": "partial",
+      "semver": "partial",
+      "owasp": "partial"
+    },
+    {
+      "semantic": "OpenTelemetry transport mapping",
+      "nist": "not_applicable",
+      "ocsf": "not_applicable",
+      "otel": "defines_target",
+      "cloudevents": "not_applicable",
+      "trace_context": "defines",
+      "json_schema": "partial",
+      "semver": "partial",
+      "owasp": "partial"
+    },
+    {
+      "semantic": "CloudEvents optional envelope mapping",
+      "nist": "not_applicable",
+      "ocsf": "not_applicable",
+      "otel": "not_applicable",
+      "cloudevents": "defines_target",
+      "trace_context": "partial",
+      "json_schema": "partial",
+      "semver": "partial",
+      "owasp": "partial"
+    }
+  ],
+  "registries": {
+    "categories": [
+      "account",
+      "authentication",
+      "session",
+      "authorization",
+      "privilege",
+      "administration",
+      "data_access",
+      "security_configuration",
+      "tenant_security"
+    ],
+    "actions": [
+      "register",
+      "authenticate",
+      "enroll_mfa",
+      "remove_mfa",
+      "create_session",
+      "revoke_session",
+      "request_password_reset",
+      "complete_password_reset",
+      "evaluate_authorization",
+      "assign_role",
+      "remove_role",
+      "elevate_privilege",
+      "start_impersonation",
+      "end_impersonation",
+      "view",
+      "create",
+      "modify",
+      "delete",
+      "export",
+      "change_security_configuration",
+      "detect_tenant_violation"
+    ],
+    "lifecycle_phases": [
+      "attempted",
+      "completed",
+      "compensating"
+    ],
+    "outcomes": [
+      "success",
+      "failure",
+      "denied",
+      "partial",
+      "unknown",
+      "cancelled"
+    ],
+    "commit_states": [
+      "not_applicable",
+      "not_started",
+      "pending",
+      "committed",
+      "not_committed",
+      "partially_committed",
+      "compensated",
+      "unknown"
+    ],
+    "delivery_classes": [
+      "best_effort",
+      "security_significant",
+      "transaction_critical",
+      "policy_critical"
+    ],
+    "trust_levels": [
+      "authoritative_server",
+      "verified_assertion",
+      "observed_transport",
+      "derived_server",
+      "downstream_enrichment",
+      "client_claim",
+      "unknown"
+    ],
+    "field_policy_values": [
+      "allowed",
+      "conditionally_allowed",
+      "transform_required",
+      "prohibited"
+    ],
+    "privacy_classifications": [
+      "public_metadata",
+      "internal",
+      "confidential",
+      "restricted"
+    ],
+    "retention_classes": [
+      "operational_short",
+      "security_standard",
+      "security_elevated",
+      "policy_governed"
+    ],
+    "tenant_scopes": [
+      "tenant",
+      "cross_tenant",
+      "platform",
+      "tenantless"
+    ],
+    "actor_types": [
+      "authenticated_human",
+      "anonymous",
+      "service_account",
+      "workload_identity",
+      "api_credential",
+      "administrator",
+      "background_job",
+      "scheduled_process",
+      "external_integration"
+    ],
+    "principal_types": [
+      "human_user",
+      "service_account",
+      "workload",
+      "external_integration",
+      "anonymous"
+    ],
+    "credential_types": [
+      "password",
+      "session",
+      "api_credential",
+      "workload_federation",
+      "mfa_factor",
+      "recovery_flow",
+      "federated_assertion",
+      "none"
+    ],
+    "initiator_types": [
+      "application",
+      "service",
+      "workload",
+      "background_job",
+      "scheduled_process",
+      "external_integration",
+      "browser_client",
+      "api_client"
+    ],
+    "resource_types": [
+      "account",
+      "credential",
+      "session",
+      "role",
+      "privilege_grant",
+      "impersonation_session",
+      "tenant",
+      "sensitive_record",
+      "sensitive_collection",
+      "security_configuration",
+      "authorization_policy",
+      "platform_control"
+    ],
+    "operation_types": [
+      "create",
+      "read",
+      "update",
+      "delete",
+      "execute",
+      "export",
+      "administer",
+      "configure"
+    ],
+    "auth_decisions": [
+      "allow",
+      "deny",
+      "not_applicable",
+      "indeterminate",
+      "error"
+    ],
+    "mfa_states": [
+      "not_used",
+      "required",
+      "satisfied",
+      "failed",
+      "not_applicable",
+      "unknown"
+    ],
+    "risk_levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "critical",
+      "unknown"
+    ],
+    "data_classifications": [
+      "public",
+      "internal",
+      "confidential",
+      "restricted"
+    ],
+    "reason_codes": [
+      "accepted",
+      "completed",
+      "cancelled_by_actor",
+      "commit_failed",
+      "policy_denied",
+      "tenant_mismatch",
+      "credential_invalid",
+      "mfa_failed",
+      "rate_limited",
+      "break_glass",
+      "delegation_expired",
+      "not_found_or_not_disclosed",
+      "system_error",
+      "compensated",
+      "partial_limit",
+      "operator_requested",
+      "policy_baseline"
+    ],
+    "validation_error_codes": [
+      "MISSING_REQUIRED_ACTOR",
+      "MISSING_TENANT_CONTEXT",
+      "TENANT_RESOURCE_CONFLICT",
+      "UNKNOWN_CATALOG_VALUE",
+      "UNSUPPORTED_SCHEMA_VERSION",
+      "PROHIBITED_DATA",
+      "FIELD_LIMIT_EXCEEDED",
+      "AUTHORITY_ESCALATION",
+      "PREMATURE_SUCCESS",
+      "AUTHORIZATION_OUTCOME_CONFLICT",
+      "BAD_CAUSALITY",
+      "INVALID_DELEGATION",
+      "UNKNOWN_EXTENSION",
+      "ENVELOPE_PAYLOAD_CONFLICT",
+      "UNSUPPORTED_MAPPING_VERSION",
+      "DUPLICATE_AUTHORITY",
+      "PROHIBITED_BODY_ATTRIBUTES",
+      "MISSING_NATIVE_MAPPING",
+      "MAPPING_SCOPE_OVERCLAIM",
+      "UNAPPROVED_POLICY_CRITICAL_POSTURE",
+      "UNSUPPORTED_COMPATIBILITY_VERSION"
+    ],
+    "extension_namespaces": [
+      "bloodtrail.audit.enrichment.v1"
+    ]
+  },
+  "delivery_class_contracts": {
+    "best_effort": {
+      "semantic": "At-most-once acceptable with bounded loss reporting.",
+      "durability": "direct attempt or bounded memory buffer",
+      "idempotency": "unique event id; duplicates tolerated but not guaranteed",
+      "retry": "none or bounded retry",
+      "backpressure": "drop with bounded counter and health signal",
+      "shutdown": "no unbounded delay",
+      "outage": "health signal records loss estimate",
+      "business_failure_posture": "fail_open"
+    },
+    "security_significant": {
+      "semantic": "At-least-once after required producer boundary accepts the occurrence.",
+      "durability": "durable or protected bounded queue in later implementation",
+      "idempotency": "same event id on retry; consumers dedupe",
+      "retry": "bounded retry with jitter and retry exhaustion alert",
+      "backpressure": "alert before silent loss",
+      "shutdown": "bounded flush or durable handoff",
+      "outage": "delay accounting and operator alert",
+      "business_failure_posture": "normally fail_open unless event-specific policy strengthens"
+    },
+    "transaction_critical": {
+      "semantic": "Audit durability atomic with successful business commit; downstream at-least-once.",
+      "durability": "transactional outbox or equivalent behavior, product not selected",
+      "idempotency": "dedupe by event id and transaction id",
+      "retry": "persistent retry after commit",
+      "backpressure": "commit gate before durability point; backlog alert after commit",
+      "shutdown": "durable handoff required",
+      "outage": "defer downstream delivery from durable record",
+      "business_failure_posture": "fail_closed before business commit if audit durability cannot be reached"
+    },
+    "policy_critical": {
+      "semantic": "Policy owner must approve exact fail-open, fail-closed, or deferred-completion behavior before production.",
+      "durability": "at least security-significant; may require transaction-critical semantics",
+      "idempotency": "same event id on retry with policy-specific reconciliation",
+      "retry": "policy-defined",
+      "backpressure": "policy-defined operator escalation",
+      "shutdown": "policy-defined durable handoff",
+      "outage": "production blocked until reviewed policy exists",
+      "business_failure_posture": "blocked_pending_qualified_review"
+    }
+  },
+  "compatibility_policy": [
+    {
+      "change": "documentation or test correction without accepted-data or interpretation change",
+      "classification": "patch",
+      "producer": "compatible",
+      "consumer": "compatible"
+    },
+    {
+      "change": "optional field with absence meaning, new catalog entry, new reason/action, non-breaking mapping extension",
+      "classification": "minor",
+      "producer": "compatible when producer declares version",
+      "consumer": "compatible only through unsupported-event handling for new events"
+    },
+    {
+      "change": "required field addition, narrowed value, type or authority change, privacy weakening, removal or semantic reuse",
+      "classification": "major",
+      "producer": "breaking",
+      "consumer": "breaking"
+    },
+    {
+      "change": "deprecation without removal",
+      "classification": "minor",
+      "producer": "compatible during support window",
+      "consumer": "must preserve original meaning and replacement guidance"
+    },
+    {
+      "change": "unknown or unsupported schema version",
+      "classification": "unsupported",
+      "producer": "reject",
+      "consumer": "reject_or_quarantine"
+    }
+  ],
+  "authority_matrix": [
+    {
+      "category": "event_identity_catalog",
+      "fields": [
+        "event.id",
+        "event.name",
+        "event.category",
+        "event.action",
+        "schema.*"
+      ],
+      "authoritative_producer": "canonical producer boundary",
+      "allowed_source": "server-generated registry values",
+      "trust": "authoritative_server",
+      "validation": "registered value, stable id, no dynamic name",
+      "enrichment": "none",
+      "user_controlled": false,
+      "enforcement": "routing and dedupe only"
+    },
+    {
+      "category": "lifecycle_outcome_commit",
+      "fields": [
+        "event.lifecycle_phase",
+        "event.outcome",
+        "event.outcome_reason.*",
+        "event.commit_state"
+      ],
+      "authoritative_producer": "operation or transaction owner",
+      "allowed_source": "server state after relevant phase",
+      "trust": "authoritative_server",
+      "validation": "allowed phase outcome commit combinations",
+      "enrichment": "none",
+      "user_controlled": false,
+      "enforcement": "investigation only; not retroactive authorization"
+    },
+    {
+      "category": "timestamps",
+      "fields": [
+        "event.timestamp",
+        "event.observed_at"
+      ],
+      "authoritative_producer": "operation owner and first trusted observation boundary",
+      "allowed_source": "trusted clocks",
+      "trust": "authoritative_server",
+      "validation": "RFC 3339 UTC and skew visibility",
+      "enrichment": "pipeline appends separate stage timestamp",
+      "user_controlled": false,
+      "enforcement": "correlation only"
+    },
+    {
+      "category": "producer_service_deployment",
+      "fields": [
+        "producer.*",
+        "environment.*",
+        "service.*",
+        "deployment.*"
+      ],
+      "authoritative_producer": "authenticated runtime configuration",
+      "allowed_source": "trusted config and transport identity",
+      "trust": "authoritative_server",
+      "validation": "registered producer and payload/transport match",
+      "enrichment": "ingestion may append own stage identity",
+      "user_controlled": false,
+      "enforcement": "producer policy and routing only"
+    },
+    {
+      "category": "claimed_identity",
+      "fields": [
+        "tenant.claimed_tenant_id",
+        "source.client_reported.*",
+        "request.user_agent"
+      ],
+      "authoritative_producer": "request input boundary",
+      "allowed_source": "client or external input",
+      "trust": "client_claim",
+      "validation": "allowlist, size, privacy label",
+      "enrichment": "none",
+      "user_controlled": true,
+      "enforcement": "never sole evidence"
+    },
+    {
+      "category": "authenticated_identity",
+      "fields": [
+        "authenticated_principal.*",
+        "authentication.*",
+        "session.*"
+      ],
+      "authoritative_producer": "authentication authority",
+      "allowed_source": "validated session, token, or assertion context",
+      "trust": "authoritative_server or verified_assertion",
+      "validation": "issuer audience time session binding and no secrets",
+      "enrichment": "none",
+      "user_controlled": false,
+      "enforcement": "eligible only within validated scope"
+    },
+    {
+      "category": "delegation_impersonation",
+      "fields": [
+        "delegation.*"
+      ],
+      "authoritative_producer": "delegation or impersonation authority",
+      "allowed_source": "validated server-side delegation record",
+      "trust": "authoritative_server",
+      "validation": "actor subject scope reason expiry chain",
+      "enrichment": "none",
+      "user_controlled": "reason display text only; reason code server controlled",
+      "enforcement": "eligible only within recorded scope"
+    },
+    {
+      "category": "tenant_context",
+      "fields": [
+        "tenant.actor_tenant_id",
+        "tenant.effective_tenant_id",
+        "tenant.resource_tenant_id",
+        "tenant.parent_tenant_id"
+      ],
+      "authoritative_producer": "tenancy authority, auth scope, and resource owner",
+      "allowed_source": "trusted route, auth, and resource state",
+      "trust": "authoritative_server",
+      "validation": "actor effective and resource tenant consistency",
+      "enrichment": "none",
+      "user_controlled": false,
+      "enforcement": "authoritative context eligible; claimed tenant prohibited"
+    },
+    {
+      "category": "resource_context",
+      "fields": [
+        "resource.*",
+        "subject.*"
+      ],
+      "authoritative_producer": "resource-owning component or registry",
+      "allowed_source": "committed server state",
+      "trust": "authoritative_server",
+      "validation": "resource type id owner classification and action consistency",
+      "enrichment": "classification service may append versioned enrichment",
+      "user_controlled": "locator may start as request input but must be resolved",
+      "enforcement": "eligible after authoritative resolution"
+    },
+    {
+      "category": "authorization_context",
+      "fields": [
+        "authorization.*"
+      ],
+      "authoritative_producer": "policy decision point and enforcement point",
+      "allowed_source": "direct decision response plus enforcement result",
+      "trust": "authoritative_server",
+      "validation": "policy version capability tenant resource decision override",
+      "enrichment": "downstream analysis cannot alter decision",
+      "user_controlled": "request asks action but cannot choose decision",
+      "enforcement": "decision evidence; not reusable grant"
+    },
+    {
+      "category": "network_observation",
+      "fields": [
+        "source.observed.*",
+        "destination.*"
+      ],
+      "authoritative_producer": "trusted ingress or egress boundary",
+      "allowed_source": "direct socket TLS or trusted proxy observation",
+      "trust": "observed_transport",
+      "validation": "canonical address and trusted-hop rules",
+      "enrichment": "geolocation/threat intelligence downstream only",
+      "user_controlled": "forwarding headers are claims until trusted-hop validation",
+      "enforcement": "corroborating only"
+    },
+    {
+      "category": "correlation_causality",
+      "fields": [
+        "request.*",
+        "correlation.*"
+      ],
+      "authoritative_producer": "request, message, operation, or transaction owner",
+      "allowed_source": "validated W3C/header/message metadata or server generated id",
+      "trust": "authoritative_server or observed_transport",
+      "validation": "format, relationship, retry stability, no PII",
+      "enrichment": "pipeline may append stage ids",
+      "user_controlled": "incoming trace can be attacker supplied",
+      "enforcement": "correlation and dedupe only"
+    },
+    {
+      "category": "risk_enrichment",
+      "fields": [
+        "risk.*",
+        "extensions.bloodtrail.audit.enrichment.v1.*"
+      ],
+      "authoritative_producer": "named producer derivation or downstream engine",
+      "allowed_source": "identified inputs and algorithm version",
+      "trust": "derived_server or downstream_enrichment",
+      "validation": "bounds provenance reason-code registry",
+      "enrichment": "producer or registered downstream namespace",
+      "user_controlled": "client inputs only labeled inputs",
+      "enforcement": "only under separately approved risk policy"
+    },
+    {
+      "category": "data_privacy_delivery",
+      "fields": [
+        "data.*",
+        "event.delivery_class"
+      ],
+      "authoritative_producer": "catalog and resource classification authority",
+      "allowed_source": "registry and authoritative metadata",
+      "trust": "authoritative_server",
+      "validation": "catalog minimum and policy version",
+      "enrichment": "downstream may strengthen but not weaken",
+      "user_controlled": false,
+      "enforcement": "handling controls, not user authorization"
+    },
+    {
+      "category": "integrity_metadata",
+      "fields": [
+        "integrity.*"
+      ],
+      "authoritative_producer": "attester or verifier at its boundary",
+      "allowed_source": "mechanism output",
+      "trust": "authoritative_server or observed_transport",
+      "validation": "algorithm format key id scope result without secrets",
+      "enrichment": "each boundary appends separate record",
+      "user_controlled": false,
+      "enforcement": "transport/storage gates only"
+    }
+  ],
+  "privacy_transformations": [
+    {
+      "field_family": "observed_ip",
+      "policy": "transform_required when exact address is unnecessary",
+      "method": "coarsen or purpose-scoped keyed transform",
+      "key_scope": "tenant and purpose scoped by default",
+      "plain_hash_allowed": false
+    },
+    {
+      "field_family": "user_agent",
+      "policy": "conditionally_allowed",
+      "method": "parse/coarsen family and major version; omit raw string by default",
+      "key_scope": "not applicable",
+      "plain_hash_allowed": false
+    },
+    {
+      "field_family": "email_phone",
+      "policy": "transform_required unless direct display is explicitly cataloged",
+      "method": "purpose-scoped keyed transform or tokenization",
+      "key_scope": "tenant and purpose scoped by default",
+      "plain_hash_allowed": false
+    },
+    {
+      "field_family": "business_identifier",
+      "policy": "allowed only for stable opaque IDs needed by purpose",
+      "method": "direct opaque id or purpose-scoped keyed transform",
+      "key_scope": "tenant and purpose scoped by default",
+      "plain_hash_allowed": false
+    },
+    {
+      "field_family": "session_credential_reference",
+      "policy": "transform_required unless server reference is non-secret and purpose-scoped",
+      "method": "keyed fingerprint or opaque reference; never bearer value",
+      "key_scope": "tenant and purpose scoped by default",
+      "plain_hash_allowed": false
+    },
+    {
+      "field_family": "cross_tenant_correlation",
+      "policy": "prohibited by default",
+      "method": "requires explicit reviewed platform-security use case",
+      "key_scope": "broader scope blocked pending qualified review",
+      "plain_hash_allowed": false
+    }
+  ],
+  "prohibited_data": [
+    "password",
+    "password_verifier",
+    "raw_token",
+    "access_token",
+    "refresh_token",
+    "id_token",
+    "api_key",
+    "private_key",
+    "session_cookie",
+    "cookie",
+    "recovery_code",
+    "factor_content",
+    "factor_value",
+    "payment_card",
+    "card_number",
+    "raw_secret",
+    "secret",
+    "request_body",
+    "response_body",
+    "raw_body",
+    "full_request",
+    "full_response",
+    "serialized_object",
+    "connection_string",
+    "dsn"
+  ],
+  "fields": [
+    {
+      "p": "event.id",
+      "t": "string",
+      "fmt": "uuid",
+      "r": "required",
+      "a": "event_identity_catalog",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 80,
+      "compat": "stable"
+    },
+    {
+      "p": "event.name",
+      "t": "string",
+      "r": "required",
+      "a": "event_identity_catalog",
+      "trust": "authoritative_server",
+      "privacy": "public_metadata",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 96,
+      "compat": "registry",
+      "enum": "event_names"
+    },
+    {
+      "p": "event.category",
+      "t": "string",
+      "r": "required",
+      "a": "event_identity_catalog",
+      "trust": "authoritative_server",
+      "privacy": "public_metadata",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "registry",
+      "enum": "categories"
+    },
+    {
+      "p": "event.action",
+      "t": "string",
+      "r": "required",
+      "a": "event_identity_catalog",
+      "trust": "authoritative_server",
+      "privacy": "public_metadata",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "registry",
+      "enum": "actions"
+    },
+    {
+      "p": "event.lifecycle_phase",
+      "t": "string",
+      "r": "required",
+      "a": "lifecycle_outcome_commit",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "registry",
+      "enum": "lifecycle_phases"
+    },
+    {
+      "p": "event.outcome",
+      "t": "string",
+      "r": "required",
+      "a": "lifecycle_outcome_commit",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "stable_registry",
+      "enum": "outcomes"
+    },
+    {
+      "p": "event.outcome_reason.code",
+      "t": "string",
+      "r": "conditional",
+      "a": "lifecycle_outcome_commit",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "registry",
+      "enum": "reason_codes"
+    },
+    {
+      "p": "event.outcome_reason.message",
+      "t": "string",
+      "r": "optional",
+      "a": "lifecycle_outcome_commit",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 512,
+      "compat": "additive"
+    },
+    {
+      "p": "event.commit_state",
+      "t": "string",
+      "r": "conditional",
+      "a": "lifecycle_outcome_commit",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "registry",
+      "enum": "commit_states"
+    },
+    {
+      "p": "event.timestamp",
+      "t": "string",
+      "fmt": "date-time",
+      "r": "required",
+      "a": "timestamps",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 40,
+      "compat": "stable"
+    },
+    {
+      "p": "event.observed_at",
+      "t": "string",
+      "fmt": "date-time",
+      "r": "required",
+      "a": "timestamps",
+      "trust": "observed_transport",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 40,
+      "compat": "stable"
+    },
+    {
+      "p": "event.delivery_class",
+      "t": "string",
+      "r": "required",
+      "a": "data_privacy_delivery",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "registry",
+      "enum": "delivery_classes"
+    },
+    {
+      "p": "schema.name",
+      "t": "string",
+      "r": "required",
+      "a": "event_identity_catalog",
+      "trust": "authoritative_server",
+      "privacy": "public_metadata",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "schema.version",
+      "t": "string",
+      "fmt": "semver",
+      "r": "required",
+      "a": "event_identity_catalog",
+      "trust": "authoritative_server",
+      "privacy": "public_metadata",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "stable"
+    },
+    {
+      "p": "producer.name",
+      "t": "string",
+      "r": "required",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 96,
+      "compat": "registry"
+    },
+    {
+      "p": "producer.version",
+      "t": "string",
+      "fmt": "semver",
+      "r": "required",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "stable"
+    },
+    {
+      "p": "producer.instance_id",
+      "t": "string",
+      "r": "optional",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 128,
+      "compat": "additive"
+    },
+    {
+      "p": "environment.name",
+      "t": "string",
+      "r": "required",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "registry"
+    },
+    {
+      "p": "service.name",
+      "t": "string",
+      "r": "required",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 96,
+      "compat": "registry"
+    },
+    {
+      "p": "service.version",
+      "t": "string",
+      "fmt": "semver",
+      "r": "conditional",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "stable"
+    },
+    {
+      "p": "service.instance_id",
+      "t": "string",
+      "r": "optional",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 128,
+      "compat": "additive"
+    },
+    {
+      "p": "deployment.id",
+      "t": "string",
+      "r": "conditional",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "deployment.region",
+      "t": "string",
+      "r": "optional",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "additive"
+    },
+    {
+      "p": "deployment.zone",
+      "t": "string",
+      "r": "optional",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "additive"
+    },
+    {
+      "p": "tenant.scope",
+      "t": "string",
+      "r": "required",
+      "a": "tenant_context",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "registry",
+      "enum": "tenant_scopes"
+    },
+    {
+      "p": "tenant.actor_tenant_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "tenant_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "tenant.effective_tenant_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "tenant_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "tenant.resource_tenant_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "tenant_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "tenant.parent_tenant_id",
+      "t": "string",
+      "r": "optional",
+      "a": "tenant_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "additive"
+    },
+    {
+      "p": "tenant.claimed_tenant_id",
+      "t": "string",
+      "r": "optional",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "restricted",
+      "policy": "transform_required",
+      "retention": "operational_short",
+      "max": 128,
+      "compat": "additive"
+    },
+    {
+      "p": "actor.type",
+      "t": "string",
+      "r": "required",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 48,
+      "compat": "registry",
+      "enum": "actor_types"
+    },
+    {
+      "p": "actor.id",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "actor.tenant_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "tenant_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "actor.display_name",
+      "t": "string",
+      "r": "optional",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 128,
+      "compat": "additive"
+    },
+    {
+      "p": "actor.provenance.trust_level",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "stable",
+      "enum": "trust_levels"
+    },
+    {
+      "p": "actor.provenance.source",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "subject.type",
+      "t": "string",
+      "r": "conditional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "registry",
+      "enum": "resource_types"
+    },
+    {
+      "p": "subject.id",
+      "t": "string",
+      "r": "conditional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "subject.tenant_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "subject.display_name",
+      "t": "string",
+      "r": "optional",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 128,
+      "compat": "additive"
+    },
+    {
+      "p": "authenticated_principal.type",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 48,
+      "compat": "registry",
+      "enum": "principal_types"
+    },
+    {
+      "p": "authenticated_principal.id",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "verified_assertion",
+      "privacy": "confidential",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "authenticated_principal.issuer",
+      "t": "string",
+      "fmt": "uri",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "verified_assertion",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 256,
+      "compat": "stable"
+    },
+    {
+      "p": "delegation.mode",
+      "t": "string",
+      "r": "conditional",
+      "a": "delegation_impersonation",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "max": 32,
+      "compat": "registry"
+    },
+    {
+      "p": "delegation.principal_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "delegation_impersonation",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "transform_required",
+      "retention": "security_elevated",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "delegation.scope",
+      "t": "array",
+      "r": "conditional",
+      "a": "delegation_impersonation",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 32,
+      "compat": "stable_registry"
+    },
+    {
+      "p": "delegation.reason_code",
+      "t": "string",
+      "r": "conditional",
+      "a": "delegation_impersonation",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "max": 64,
+      "compat": "registry",
+      "enum": "reason_codes"
+    },
+    {
+      "p": "delegation.expires_at",
+      "t": "string",
+      "fmt": "date-time",
+      "r": "conditional",
+      "a": "delegation_impersonation",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "max": 40,
+      "compat": "stable"
+    },
+    {
+      "p": "delegation.chain",
+      "t": "array",
+      "r": "optional",
+      "a": "delegation_impersonation",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 8,
+      "compat": "additive"
+    },
+    {
+      "p": "credential.type",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 48,
+      "compat": "registry",
+      "enum": "credential_types"
+    },
+    {
+      "p": "credential.reference",
+      "t": "string",
+      "r": "optional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "credential.key_id",
+      "t": "string",
+      "r": "optional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "additive"
+    },
+    {
+      "p": "initiator.type",
+      "t": "string",
+      "r": "required",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "registry",
+      "enum": "initiator_types"
+    },
+    {
+      "p": "initiator.id",
+      "t": "string",
+      "r": "required",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "initiator.version",
+      "t": "string",
+      "fmt": "semver",
+      "r": "optional",
+      "a": "producer_service_deployment",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "additive"
+    },
+    {
+      "p": "session.id",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "session.created_at",
+      "t": "string",
+      "fmt": "date-time",
+      "r": "optional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 40,
+      "compat": "additive"
+    },
+    {
+      "p": "session.age_seconds",
+      "t": "integer",
+      "r": "optional",
+      "a": "authenticated_identity",
+      "trust": "derived_server",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 86400,
+      "compat": "additive"
+    },
+    {
+      "p": "session.assurance_level",
+      "t": "string",
+      "r": "optional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "registry"
+    },
+    {
+      "p": "authentication.method",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "registry"
+    },
+    {
+      "p": "authentication.assurance_level",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "verified_assertion",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "registry"
+    },
+    {
+      "p": "authentication.mfa_state",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "registry",
+      "enum": "mfa_states"
+    },
+    {
+      "p": "authentication.credential_type",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 48,
+      "compat": "registry",
+      "enum": "credential_types"
+    },
+    {
+      "p": "authentication.authenticated_at",
+      "t": "string",
+      "fmt": "date-time",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 40,
+      "compat": "stable"
+    },
+    {
+      "p": "authentication.identity_provider",
+      "t": "string",
+      "fmt": "uri",
+      "r": "optional",
+      "a": "authenticated_identity",
+      "trust": "verified_assertion",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 256,
+      "compat": "stable"
+    },
+    {
+      "p": "authentication.account_recovery.flow",
+      "t": "string",
+      "r": "optional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 64,
+      "compat": "stable"
+    },
+    {
+      "p": "authentication.account_recovery.state",
+      "t": "string",
+      "r": "optional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 64,
+      "compat": "additive"
+    },
+    {
+      "p": "authentication.account_recovery.reason_code",
+      "t": "string",
+      "r": "optional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 64,
+      "compat": "registry",
+      "enum": "reason_codes"
+    },
+    {
+      "p": "authentication.failure_reason",
+      "t": "string",
+      "r": "conditional",
+      "a": "authenticated_identity",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "registry",
+      "enum": "reason_codes"
+    },
+    {
+      "p": "authentication.delegated",
+      "t": "boolean",
+      "r": "conditional",
+      "a": "delegation_impersonation",
+      "trust": "derived_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "compat": "stable"
+    },
+    {
+      "p": "authentication.impersonated",
+      "t": "boolean",
+      "r": "conditional",
+      "a": "delegation_impersonation",
+      "trust": "derived_server",
+      "privacy": "restricted",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "compat": "stable"
+    },
+    {
+      "p": "authorization.decision",
+      "t": "string",
+      "r": "conditional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "stable_registry",
+      "enum": "auth_decisions"
+    },
+    {
+      "p": "authorization.policy_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "authorization.policy_version",
+      "t": "string",
+      "fmt": "semver",
+      "r": "conditional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "stable"
+    },
+    {
+      "p": "authorization.capability",
+      "t": "string",
+      "r": "conditional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 96,
+      "compat": "registry"
+    },
+    {
+      "p": "authorization.enforcement_point",
+      "t": "string",
+      "r": "conditional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 96,
+      "compat": "registry"
+    },
+    {
+      "p": "authorization.decision_reason",
+      "t": "string",
+      "r": "conditional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "registry",
+      "enum": "reason_codes"
+    },
+    {
+      "p": "authorization.resource_context.type",
+      "t": "string",
+      "r": "conditional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "stable"
+    },
+    {
+      "p": "authorization.resource_context.id",
+      "t": "string",
+      "r": "conditional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "authorization.tenant_context.effective_tenant_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "authorization.override",
+      "t": "boolean",
+      "r": "conditional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "compat": "stable"
+    },
+    {
+      "p": "authorization.break_glass",
+      "t": "boolean",
+      "r": "conditional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "allowed",
+      "retention": "policy_governed",
+      "compat": "stable"
+    },
+    {
+      "p": "authorization.policy_correlation_id",
+      "t": "string",
+      "r": "optional",
+      "a": "authorization_context",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "additive"
+    },
+    {
+      "p": "source.observed.address",
+      "t": "string",
+      "r": "optional",
+      "a": "network_observation",
+      "trust": "observed_transport",
+      "privacy": "restricted",
+      "policy": "transform_required",
+      "retention": "operational_short",
+      "max": 64,
+      "compat": "stable"
+    },
+    {
+      "p": "source.observed.port",
+      "t": "integer",
+      "r": "optional",
+      "a": "network_observation",
+      "trust": "observed_transport",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 65535,
+      "compat": "stable"
+    },
+    {
+      "p": "source.observed.proxy_chain",
+      "t": "array",
+      "r": "optional",
+      "a": "network_observation",
+      "trust": "observed_transport",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 8,
+      "compat": "stable"
+    },
+    {
+      "p": "source.client_reported.user_agent_family",
+      "t": "string",
+      "r": "optional",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 64,
+      "compat": "additive"
+    },
+    {
+      "p": "source.client_reported.user_agent_version",
+      "t": "string",
+      "r": "optional",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 32,
+      "compat": "additive"
+    },
+    {
+      "p": "destination.service",
+      "t": "string",
+      "r": "conditional",
+      "a": "network_observation",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 96,
+      "compat": "registry"
+    },
+    {
+      "p": "destination.address",
+      "t": "string",
+      "r": "optional",
+      "a": "network_observation",
+      "trust": "observed_transport",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "destination.port",
+      "t": "integer",
+      "r": "optional",
+      "a": "network_observation",
+      "trust": "observed_transport",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 65535,
+      "compat": "stable"
+    },
+    {
+      "p": "resource.type",
+      "t": "string",
+      "r": "conditional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "registry",
+      "enum": "resource_types"
+    },
+    {
+      "p": "resource.id",
+      "t": "string",
+      "r": "conditional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "resource.parent_type",
+      "t": "string",
+      "r": "optional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 64,
+      "compat": "registry",
+      "enum": "resource_types"
+    },
+    {
+      "p": "resource.parent_id",
+      "t": "string",
+      "r": "optional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "additive"
+    },
+    {
+      "p": "resource.owning_tenant_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "transform_required",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "resource.data_classification",
+      "t": "string",
+      "r": "conditional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "registry",
+      "enum": "data_classifications"
+    },
+    {
+      "p": "resource.operation_type",
+      "t": "string",
+      "r": "required",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "registry",
+      "enum": "operation_types"
+    },
+    {
+      "p": "resource.bulk.count",
+      "t": "integer",
+      "r": "optional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 1000000,
+      "compat": "stable"
+    },
+    {
+      "p": "resource.bulk.scope",
+      "t": "string",
+      "r": "optional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "resource.bulk.child_event_policy",
+      "t": "string",
+      "r": "optional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "max": 64,
+      "compat": "stable"
+    },
+    {
+      "p": "resource.change_categories",
+      "t": "array",
+      "r": "optional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 16,
+      "compat": "registry"
+    },
+    {
+      "p": "resource.deletion_mode",
+      "t": "string",
+      "r": "optional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 64,
+      "compat": "registry"
+    },
+    {
+      "p": "resource.export.destination_class",
+      "t": "string",
+      "r": "optional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "policy_governed",
+      "max": 64,
+      "compat": "stable"
+    },
+    {
+      "p": "resource.export.size_class",
+      "t": "string",
+      "r": "optional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "policy_governed",
+      "max": 64,
+      "compat": "stable"
+    },
+    {
+      "p": "resource.export.record_count",
+      "t": "integer",
+      "r": "optional",
+      "a": "resource_context",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "policy_governed",
+      "max": 1000000,
+      "compat": "stable"
+    },
+    {
+      "p": "request.id",
+      "t": "string",
+      "r": "conditional",
+      "a": "correlation_causality",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "request.method",
+      "t": "string",
+      "r": "optional",
+      "a": "correlation_causality",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "operational_short",
+      "max": 16,
+      "compat": "additive"
+    },
+    {
+      "p": "request.route",
+      "t": "string",
+      "r": "optional",
+      "a": "correlation_causality",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 128,
+      "compat": "additive"
+    },
+    {
+      "p": "request.user_agent",
+      "t": "string",
+      "r": "optional",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "operational_short",
+      "max": 128,
+      "compat": "additive"
+    },
+    {
+      "p": "request.message_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "correlation_causality",
+      "trust": "observed_transport",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "correlation.trace_id",
+      "t": "string",
+      "fmt": "w3c-trace-id",
+      "r": "optional",
+      "a": "correlation_causality",
+      "trust": "observed_transport",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "stable"
+    },
+    {
+      "p": "correlation.span_id",
+      "t": "string",
+      "fmt": "w3c-span-id",
+      "r": "optional",
+      "a": "correlation_causality",
+      "trust": "observed_transport",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 16,
+      "compat": "stable"
+    },
+    {
+      "p": "correlation.correlation_id",
+      "t": "string",
+      "r": "required",
+      "a": "correlation_causality",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "correlation.causation_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "correlation_causality",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "correlation.operation_id",
+      "t": "string",
+      "r": "required",
+      "a": "correlation_causality",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "correlation.transaction_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "correlation_causality",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "transform_required",
+      "retention": "security_elevated",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "correlation.request_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "correlation_causality",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "correlation.message_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "correlation_causality",
+      "trust": "observed_transport",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "correlation.retry_attempt",
+      "t": "integer",
+      "r": "conditional",
+      "a": "correlation_causality",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "operational_short",
+      "max": 1000,
+      "compat": "stable"
+    },
+    {
+      "p": "correlation.original_event_id",
+      "t": "string",
+      "r": "conditional",
+      "a": "correlation_causality",
+      "trust": "authoritative_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "max": 128,
+      "compat": "stable"
+    },
+    {
+      "p": "risk.level",
+      "t": "string",
+      "r": "optional",
+      "a": "risk_enrichment",
+      "trust": "derived_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 32,
+      "compat": "registry",
+      "enum": "risk_levels"
+    },
+    {
+      "p": "risk.score",
+      "t": "number",
+      "r": "optional",
+      "a": "risk_enrichment",
+      "trust": "derived_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 100,
+      "compat": "stable"
+    },
+    {
+      "p": "risk.reason_codes",
+      "t": "array",
+      "r": "optional",
+      "a": "risk_enrichment",
+      "trust": "derived_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 16,
+      "compat": "registry"
+    },
+    {
+      "p": "risk.model.name",
+      "t": "string",
+      "r": "conditional",
+      "a": "risk_enrichment",
+      "trust": "derived_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "max": 96,
+      "compat": "stable"
+    },
+    {
+      "p": "risk.model.version",
+      "t": "string",
+      "fmt": "semver",
+      "r": "conditional",
+      "a": "risk_enrichment",
+      "trust": "derived_server",
+      "privacy": "confidential",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "max": 64,
+      "compat": "stable"
+    },
+    {
+      "p": "risk.model.provenance.trust_level",
+      "t": "string",
+      "r": "conditional",
+      "a": "risk_enrichment",
+      "trust": "derived_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "max": 32,
+      "compat": "stable",
+      "enum": "trust_levels"
+    },
+    {
+      "p": "data.classification",
+      "t": "string",
+      "r": "required",
+      "a": "data_privacy_delivery",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "registry",
+      "enum": "data_classifications"
+    },
+    {
+      "p": "data.retention_class",
+      "t": "string",
+      "r": "required",
+      "a": "data_privacy_delivery",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "registry",
+      "enum": "retention_classes"
+    },
+    {
+      "p": "data.field_policy_version",
+      "t": "string",
+      "fmt": "semver",
+      "r": "required",
+      "a": "data_privacy_delivery",
+      "trust": "authoritative_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "stable"
+    },
+    {
+      "p": "integrity.attestations",
+      "t": "array",
+      "r": "optional",
+      "a": "integrity_metadata",
+      "trust": "authoritative_server",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "retention": "security_elevated",
+      "max": 8,
+      "compat": "additive"
+    },
+    {
+      "p": "integrity.transport_authentication.method",
+      "t": "string",
+      "r": "optional",
+      "a": "integrity_metadata",
+      "trust": "observed_transport",
+      "privacy": "restricted",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "max": 64,
+      "compat": "additive"
+    },
+    {
+      "p": "integrity.transport_authentication.verified",
+      "t": "boolean",
+      "r": "optional",
+      "a": "integrity_metadata",
+      "trust": "observed_transport",
+      "privacy": "restricted",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "compat": "additive"
+    },
+    {
+      "p": "integrity.transport_authentication.peer",
+      "t": "string",
+      "r": "optional",
+      "a": "integrity_metadata",
+      "trust": "observed_transport",
+      "privacy": "restricted",
+      "policy": "transform_required",
+      "retention": "security_elevated",
+      "max": 128,
+      "compat": "additive"
+    }
+  ],
+  "extension_namespaces": [
+    {
+      "namespace": "bloodtrail.audit.enrichment.v1",
+      "owner": "Bloodtrail contract maintainers",
+      "version": "1.0.0",
+      "authority": "downstream enrichment owner",
+      "trust": "downstream_enrichment",
+      "privacy": "restricted",
+      "policy": "conditionally_allowed",
+      "max_bytes": 4096,
+      "allowed_fields": [
+        "provenance.trust_level",
+        "provenance.source",
+        "provenance.version",
+        "risk.level",
+        "risk.reason_codes"
+      ],
+      "mapping_behavior": "export only when downstream mapping policy names it; never redefines canonical fields"
+    }
+  ],
+  "catalog": [
+    {
+      "semantic": "account_registration_attempted",
+      "name": "bloodtrail.audit.account.registration.attempted",
+      "category": "account",
+      "action": "register",
+      "purpose": "Record accepted, rejected, or failed registration attempt without asserting account creation.",
+      "trigger": "registration request reaches server registration boundary",
+      "phase": [
+        "attempted"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied",
+        "cancelled"
+      ],
+      "commit": [
+        "not_started",
+        "not_applicable",
+        "unknown"
+      ],
+      "producer": "registration-boundary",
+      "required_context": [
+        "actor",
+        "tenant",
+        "request",
+        "source",
+        "correlation"
+      ],
+      "tenant_rule": "tenantless or resolved tenant; claimed tenant remains client claim",
+      "actor_rule": "anonymous actor permitted; no fabricated principal",
+      "resource_rule": "account resource only after server resolution",
+      "authorization_rule": "not applicable unless policy denied the attempt",
+      "privacy": [
+        "account claims restricted",
+        "source minimized"
+      ],
+      "retention": "security_standard",
+      "delivery": "security_significant",
+      "investigation": "abuse patterns and correlation to completion",
+      "ocsf": {
+        "class": "account_change",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "anonymous",
+        "tenant": "tenantless",
+        "outcome": "success",
+        "commit": "not_started",
+        "resource": "account",
+        "operation": "create",
+        "initiator": "browser_client"
+      }
+    },
+    {
+      "semantic": "account_registration_completed",
+      "name": "bloodtrail.audit.account.registration.completed",
+      "category": "account",
+      "action": "register",
+      "purpose": "Record final committed registration result.",
+      "trigger": "account transaction reaches authoritative completion",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "partial",
+        "cancelled"
+      ],
+      "commit": [
+        "committed",
+        "not_committed",
+        "partially_committed"
+      ],
+      "producer": "account-transaction-owner",
+      "required_context": [
+        "actor",
+        "tenant",
+        "subject",
+        "resource",
+        "correlation"
+      ],
+      "tenant_rule": "effective and resource tenant required",
+      "actor_rule": "anonymous source may be linked but subject is server-resolved",
+      "resource_rule": "account resource required",
+      "authorization_rule": "not applicable or policy context when tenant controls registration",
+      "privacy": [
+        "account identifiers restricted"
+      ],
+      "retention": "security_elevated",
+      "delivery": "transaction_critical",
+      "investigation": "account creation provenance",
+      "ocsf": {
+        "class": "account_change",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "anonymous",
+        "tenant": "tenant",
+        "outcome": "success",
+        "commit": "committed",
+        "resource": "account",
+        "operation": "create",
+        "initiator": "application"
+      }
+    },
+    {
+      "semantic": "authentication_succeeded",
+      "name": "bloodtrail.audit.authentication.succeeded",
+      "category": "authentication",
+      "action": "authenticate",
+      "purpose": "Record authoritative successful authentication.",
+      "trigger": "authentication authority completes successful transaction",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success"
+      ],
+      "commit": [
+        "not_applicable"
+      ],
+      "producer": "authentication-authority",
+      "required_context": [
+        "actor",
+        "authenticated_principal",
+        "authentication",
+        "credential",
+        "session",
+        "source"
+      ],
+      "tenant_rule": "validated principal tenant when tenant scoped",
+      "actor_rule": "authenticated human or service principal",
+      "resource_rule": "credential/session references only; no secrets",
+      "authorization_rule": "not applicable",
+      "privacy": [
+        "identity session source restricted"
+      ],
+      "retention": "security_standard",
+      "delivery": "security_significant",
+      "investigation": "account access and assurance lineage",
+      "ocsf": {
+        "class": "authentication",
+        "status": "exact"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "authenticated_human",
+        "tenant": "tenant",
+        "outcome": "success",
+        "commit": "not_applicable",
+        "resource": "credential",
+        "operation": "execute",
+        "initiator": "api_client"
+      }
+    },
+    {
+      "semantic": "authentication_failed",
+      "name": "bloodtrail.audit.authentication.failed",
+      "category": "authentication",
+      "action": "authenticate",
+      "purpose": "Record failed authentication without account enumeration or secret leakage.",
+      "trigger": "authentication authority rejects or cannot complete authentication",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "failure"
+      ],
+      "commit": [
+        "not_applicable"
+      ],
+      "producer": "authentication-authority",
+      "required_context": [
+        "actor",
+        "authentication",
+        "source",
+        "request",
+        "correlation"
+      ],
+      "tenant_rule": "tenantless or resolved tenant; claimed tenant remains claim",
+      "actor_rule": "anonymous actor permitted",
+      "resource_rule": "credential type only when safe",
+      "authorization_rule": "not applicable",
+      "privacy": [
+        "claims source restricted"
+      ],
+      "retention": "security_standard",
+      "delivery": "security_significant",
+      "investigation": "credential abuse and brute force investigation",
+      "ocsf": {
+        "class": "authentication",
+        "status": "exact"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "anonymous",
+        "tenant": "tenantless",
+        "outcome": "failure",
+        "commit": "not_applicable",
+        "resource": "credential",
+        "operation": "execute",
+        "initiator": "browser_client"
+      }
+    },
+    {
+      "semantic": "mfa_enrolled",
+      "name": "bloodtrail.audit.authentication.mfa.enrolled",
+      "category": "authentication",
+      "action": "enroll_mfa",
+      "purpose": "Record committed enrollment of an MFA method without factor contents.",
+      "trigger": "MFA/account authority commits enrollment",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied"
+      ],
+      "commit": [
+        "committed",
+        "not_committed"
+      ],
+      "producer": "mfa-account-authority",
+      "required_context": [
+        "actor",
+        "subject",
+        "tenant",
+        "authentication",
+        "authorization",
+        "resource"
+      ],
+      "tenant_rule": "tenant scoped",
+      "actor_rule": "authenticated human required",
+      "resource_rule": "credential resource without factor contents",
+      "authorization_rule": "policy decision and enforcement required",
+      "privacy": [
+        "factor metadata restricted"
+      ],
+      "retention": "security_elevated",
+      "delivery": "transaction_critical",
+      "investigation": "account security posture change",
+      "ocsf": {
+        "class": "account_change",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "authenticated_human",
+        "tenant": "tenant",
+        "outcome": "success",
+        "commit": "committed",
+        "resource": "credential",
+        "operation": "create",
+        "initiator": "application"
+      }
+    },
+    {
+      "semantic": "mfa_removed",
+      "name": "bloodtrail.audit.authentication.mfa.removed",
+      "category": "authentication",
+      "action": "remove_mfa",
+      "purpose": "Record committed or denied MFA removal.",
+      "trigger": "MFA/account authority completes removal decision",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied"
+      ],
+      "commit": [
+        "committed",
+        "not_committed"
+      ],
+      "producer": "mfa-account-authority",
+      "required_context": [
+        "actor",
+        "subject",
+        "tenant",
+        "authentication",
+        "authorization",
+        "resource"
+      ],
+      "tenant_rule": "tenant scoped",
+      "actor_rule": "authenticated human or administrator",
+      "resource_rule": "credential resource without factor contents",
+      "authorization_rule": "policy decision and reason required",
+      "privacy": [
+        "factor metadata and recovery context restricted"
+      ],
+      "retention": "security_elevated",
+      "delivery": "transaction_critical",
+      "investigation": "takeover and recovery investigation",
+      "ocsf": {
+        "class": "account_change",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "administrator",
+        "tenant": "tenant",
+        "outcome": "denied",
+        "commit": "not_committed",
+        "resource": "credential",
+        "operation": "delete",
+        "initiator": "application"
+      }
+    },
+    {
+      "semantic": "session_created",
+      "name": "bloodtrail.audit.session.created",
+      "category": "session",
+      "action": "create_session",
+      "purpose": "Record creation of an authenticated session.",
+      "trigger": "session authority creates non-secret session reference",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success"
+      ],
+      "commit": [
+        "not_applicable"
+      ],
+      "producer": "session-authority",
+      "required_context": [
+        "authenticated_principal",
+        "authentication",
+        "session",
+        "tenant",
+        "source"
+      ],
+      "tenant_rule": "validated principal tenant",
+      "actor_rule": "authenticated actor required",
+      "resource_rule": "session resource reference",
+      "authorization_rule": "not applicable",
+      "privacy": [
+        "session identity source restricted"
+      ],
+      "retention": "security_standard",
+      "delivery": "security_significant",
+      "investigation": "session provenance and login correlation",
+      "ocsf": {
+        "class": "session",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "service_account",
+        "tenant": "tenant",
+        "outcome": "success",
+        "commit": "not_applicable",
+        "resource": "session",
+        "operation": "create",
+        "initiator": "service"
+      }
+    },
+    {
+      "semantic": "session_revoked",
+      "name": "bloodtrail.audit.session.revoked",
+      "category": "session",
+      "action": "revoke_session",
+      "purpose": "Record committed session revocation.",
+      "trigger": "session authority commits revocation or records denial",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied"
+      ],
+      "commit": [
+        "committed",
+        "not_committed"
+      ],
+      "producer": "session-authority",
+      "required_context": [
+        "actor",
+        "subject",
+        "tenant",
+        "authorization",
+        "correlation"
+      ],
+      "tenant_rule": "tenant scoped or cross-tenant admin with policy",
+      "actor_rule": "authenticated actor required",
+      "resource_rule": "session subject and original session link",
+      "authorization_rule": "policy decision required for admin revocation",
+      "privacy": [
+        "session identity restricted"
+      ],
+      "retention": "security_elevated",
+      "delivery": "transaction_critical",
+      "investigation": "containment and logout history",
+      "ocsf": {
+        "class": "session",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "administrator",
+        "tenant": "cross_tenant",
+        "outcome": "success",
+        "commit": "committed",
+        "resource": "session",
+        "operation": "delete",
+        "initiator": "application"
+      }
+    },
+    {
+      "semantic": "password_reset_requested",
+      "name": "bloodtrail.audit.account.password_reset.requested",
+      "category": "account",
+      "action": "request_password_reset",
+      "purpose": "Record reset request handling without revealing account existence externally.",
+      "trigger": "recovery authority handles reset request",
+      "phase": [
+        "attempted"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied"
+      ],
+      "commit": [
+        "not_applicable",
+        "not_started"
+      ],
+      "producer": "recovery-authority",
+      "required_context": [
+        "actor",
+        "request",
+        "source",
+        "correlation"
+      ],
+      "tenant_rule": "tenantless or resolved tenant; subject only if safely resolved",
+      "actor_rule": "anonymous actor permitted",
+      "resource_rule": "account only if resolved safely",
+      "authorization_rule": "not applicable or abuse policy denial",
+      "privacy": [
+        "recovery identity source restricted"
+      ],
+      "retention": "security_standard",
+      "delivery": "security_significant",
+      "investigation": "reset abuse precursor correlation",
+      "ocsf": {
+        "class": "account_change",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "anonymous",
+        "tenant": "tenantless",
+        "outcome": "success",
+        "commit": "not_started",
+        "resource": "account",
+        "operation": "execute",
+        "initiator": "browser_client"
+      }
+    },
+    {
+      "semantic": "password_reset_completed",
+      "name": "bloodtrail.audit.account.password_reset.completed",
+      "category": "account",
+      "action": "complete_password_reset",
+      "purpose": "Record committed password reset without credential contents.",
+      "trigger": "account/recovery transaction owner commits reset result",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied"
+      ],
+      "commit": [
+        "committed",
+        "not_committed"
+      ],
+      "producer": "recovery-transaction-owner",
+      "required_context": [
+        "actor",
+        "subject",
+        "tenant",
+        "authentication",
+        "session",
+        "correlation"
+      ],
+      "tenant_rule": "tenant scoped",
+      "actor_rule": "authenticated or recovery-verified actor",
+      "resource_rule": "credential/account resource without new credential material",
+      "authorization_rule": "recovery policy context required",
+      "privacy": [
+        "recovery identity restricted"
+      ],
+      "retention": "security_elevated",
+      "delivery": "transaction_critical",
+      "investigation": "takeover and credential lifecycle",
+      "ocsf": {
+        "class": "account_change",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "authenticated_human",
+        "tenant": "tenant",
+        "outcome": "success",
+        "commit": "committed",
+        "resource": "credential",
+        "operation": "update",
+        "initiator": "application"
+      }
+    },
+    {
+      "semantic": "authorization_allowed",
+      "name": "bloodtrail.audit.authorization.allowed",
+      "category": "authorization",
+      "action": "evaluate_authorization",
+      "purpose": "Preserve policy allow decision independently of operation result.",
+      "trigger": "policy decision and enforcement point records allow",
+      "phase": [
+        "attempted"
+      ],
+      "outcomes": [
+        "success"
+      ],
+      "commit": [
+        "not_applicable"
+      ],
+      "producer": "policy-enforcement-point",
+      "required_context": [
+        "actor",
+        "tenant",
+        "resource",
+        "authorization",
+        "request"
+      ],
+      "tenant_rule": "tenant scoped or cross-tenant with policy",
+      "actor_rule": "resolved actor or service identity required",
+      "resource_rule": "evaluated resource context required",
+      "authorization_rule": "decision must be allow",
+      "privacy": [
+        "policy resource identity restricted"
+      ],
+      "retention": "operational_short",
+      "delivery": "best_effort",
+      "investigation": "explain access path and policy version",
+      "ocsf": {
+        "class": "authorization",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "workload_identity",
+        "tenant": "tenant",
+        "outcome": "success",
+        "commit": "not_applicable",
+        "resource": "authorization_policy",
+        "operation": "execute",
+        "initiator": "workload",
+        "authorization": "allow"
+      }
+    },
+    {
+      "semantic": "authorization_denied",
+      "name": "bloodtrail.audit.authorization.denied",
+      "category": "authorization",
+      "action": "evaluate_authorization",
+      "purpose": "Preserve policy deny decision and attempted action.",
+      "trigger": "policy decision and enforcement point records deny",
+      "phase": [
+        "attempted"
+      ],
+      "outcomes": [
+        "denied"
+      ],
+      "commit": [
+        "not_applicable",
+        "not_started"
+      ],
+      "producer": "policy-enforcement-point",
+      "required_context": [
+        "actor",
+        "tenant",
+        "resource",
+        "authorization",
+        "source"
+      ],
+      "tenant_rule": "tenant scoped or tenant violation linked",
+      "actor_rule": "resolved actor or claim per catalog",
+      "resource_rule": "attempted resource context required",
+      "authorization_rule": "decision must be deny",
+      "privacy": [
+        "policy resource identity restricted"
+      ],
+      "retention": "security_standard",
+      "delivery": "security_significant",
+      "investigation": "attack and access-control investigation",
+      "ocsf": {
+        "class": "authorization",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "api_credential",
+        "tenant": "tenant",
+        "outcome": "denied",
+        "commit": "not_started",
+        "resource": "authorization_policy",
+        "operation": "execute",
+        "initiator": "api_client",
+        "authorization": "deny"
+      }
+    },
+    {
+      "semantic": "role_assigned",
+      "name": "bloodtrail.audit.authorization.role.assigned",
+      "category": "authorization",
+      "action": "assign_role",
+      "purpose": "Record committed role assignment.",
+      "trigger": "identity/authorization transaction owner commits assignment",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied"
+      ],
+      "commit": [
+        "committed",
+        "not_committed"
+      ],
+      "producer": "authorization-transaction-owner",
+      "required_context": [
+        "administrator",
+        "subject",
+        "tenant",
+        "role",
+        "authorization",
+        "reason"
+      ],
+      "tenant_rule": "tenant scoped or cross-tenant platform admin",
+      "actor_rule": "administrator actor required",
+      "resource_rule": "role resource required",
+      "authorization_rule": "policy allow required for success",
+      "privacy": [
+        "role identity restricted"
+      ],
+      "retention": "security_elevated",
+      "delivery": "transaction_critical",
+      "investigation": "privilege provenance",
+      "ocsf": {
+        "class": "iam",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "administrator",
+        "tenant": "tenant",
+        "outcome": "success",
+        "commit": "committed",
+        "resource": "role",
+        "operation": "administer",
+        "initiator": "application"
+      }
+    },
+    {
+      "semantic": "role_removed",
+      "name": "bloodtrail.audit.authorization.role.removed",
+      "category": "authorization",
+      "action": "remove_role",
+      "purpose": "Record committed role removal.",
+      "trigger": "identity/authorization transaction owner commits removal",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied"
+      ],
+      "commit": [
+        "committed",
+        "not_committed"
+      ],
+      "producer": "authorization-transaction-owner",
+      "required_context": [
+        "administrator",
+        "subject",
+        "tenant",
+        "role",
+        "authorization",
+        "reason"
+      ],
+      "tenant_rule": "tenant scoped or cross-tenant platform admin",
+      "actor_rule": "administrator actor required",
+      "resource_rule": "role resource required",
+      "authorization_rule": "policy allow required for success",
+      "privacy": [
+        "role identity restricted"
+      ],
+      "retention": "security_elevated",
+      "delivery": "transaction_critical",
+      "investigation": "privilege revocation history",
+      "ocsf": {
+        "class": "iam",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "administrator",
+        "tenant": "tenant",
+        "outcome": "success",
+        "commit": "committed",
+        "resource": "role",
+        "operation": "administer",
+        "initiator": "application"
+      }
+    },
+    {
+      "semantic": "privilege_elevated",
+      "name": "bloodtrail.audit.authorization.privilege.elevated",
+      "category": "privilege",
+      "action": "elevate_privilege",
+      "purpose": "Record temporary or permanent privilege elevation or break-glass use.",
+      "trigger": "privilege authority records elevation decision",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied"
+      ],
+      "commit": [
+        "committed",
+        "not_committed"
+      ],
+      "producer": "privilege-authority",
+      "required_context": [
+        "real_actor",
+        "subject",
+        "delegation",
+        "tenant",
+        "authorization",
+        "reason",
+        "expiry"
+      ],
+      "tenant_rule": "platform or cross-tenant authority explicit",
+      "actor_rule": "real actor preserved; privilege label alone insufficient",
+      "resource_rule": "privilege grant resource required",
+      "authorization_rule": "override and break-glass explicit when used",
+      "privacy": [
+        "highly restricted"
+      ],
+      "retention": "policy_governed",
+      "delivery": "policy_critical",
+      "investigation": "high-value escalation and abuse evidence",
+      "ocsf": {
+        "class": "iam",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "administrator",
+        "tenant": "platform",
+        "outcome": "success",
+        "commit": "committed",
+        "resource": "privilege_grant",
+        "operation": "administer",
+        "initiator": "application",
+        "break_glass": true
+      }
+    },
+    {
+      "semantic": "impersonation_started",
+      "name": "bloodtrail.audit.administration.impersonation.started",
+      "category": "administration",
+      "action": "start_impersonation",
+      "purpose": "Record start of approved administrative impersonation.",
+      "trigger": "impersonation authority commits start",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied"
+      ],
+      "commit": [
+        "committed",
+        "not_committed"
+      ],
+      "producer": "impersonation-authority",
+      "required_context": [
+        "real_admin_actor",
+        "impersonated_subject",
+        "tenants",
+        "scope",
+        "policy",
+        "session",
+        "expiry"
+      ],
+      "tenant_rule": "cross-tenant or tenant admin with explicit target",
+      "actor_rule": "real administrator and impersonated subject both required",
+      "resource_rule": "impersonation session resource required",
+      "authorization_rule": "policy allow and reason required for success",
+      "privacy": [
+        "highly restricted"
+      ],
+      "retention": "policy_governed",
+      "delivery": "policy_critical",
+      "investigation": "accountability during impersonation",
+      "ocsf": {
+        "class": "admin_activity",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "administrator",
+        "tenant": "cross_tenant",
+        "outcome": "success",
+        "commit": "committed",
+        "resource": "impersonation_session",
+        "operation": "administer",
+        "initiator": "application",
+        "impersonated": true
+      }
+    },
+    {
+      "semantic": "impersonation_ended",
+      "name": "bloodtrail.audit.administration.impersonation.ended",
+      "category": "administration",
+      "action": "end_impersonation",
+      "purpose": "Record termination or expiry of impersonation.",
+      "trigger": "impersonation/session authority terminates interval",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure"
+      ],
+      "commit": [
+        "committed",
+        "not_committed"
+      ],
+      "producer": "impersonation-session-authority",
+      "required_context": [
+        "real_actor_or_process",
+        "impersonated_subject",
+        "original_start",
+        "reason"
+      ],
+      "tenant_rule": "same target tenant and original start correlation",
+      "actor_rule": "real actor or scheduled expiry process",
+      "resource_rule": "impersonation session resource required",
+      "authorization_rule": "not applicable or termination policy",
+      "privacy": [
+        "highly restricted"
+      ],
+      "retention": "policy_governed",
+      "delivery": "policy_critical",
+      "investigation": "close accountability interval",
+      "ocsf": {
+        "class": "admin_activity",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "scheduled_process",
+        "tenant": "cross_tenant",
+        "outcome": "success",
+        "commit": "committed",
+        "resource": "impersonation_session",
+        "operation": "administer",
+        "initiator": "scheduled_process",
+        "impersonated": true
+      }
+    },
+    {
+      "semantic": "sensitive_resource_viewed",
+      "name": "bloodtrail.audit.data.sensitive_resource.viewed",
+      "category": "data_access",
+      "action": "view",
+      "purpose": "Record read of cataloged sensitive resource.",
+      "trigger": "resource access/enforcement owner observes read result",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied"
+      ],
+      "commit": [
+        "not_applicable"
+      ],
+      "producer": "resource-access-owner",
+      "required_context": [
+        "actor",
+        "principal",
+        "tenant",
+        "resource",
+        "authorization",
+        "request"
+      ],
+      "tenant_rule": "tenant scoped or authorized cross-tenant access",
+      "actor_rule": "resolved actor or service identity required",
+      "resource_rule": "sensitive resource and classification required",
+      "authorization_rule": "decision independent from outcome",
+      "privacy": [
+        "resource identity restricted"
+      ],
+      "retention": "security_elevated",
+      "delivery": "security_significant",
+      "investigation": "inappropriate access and disclosure investigation",
+      "ocsf": {
+        "class": "data_access",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "external_integration",
+        "tenant": "tenant",
+        "outcome": "success",
+        "commit": "not_applicable",
+        "resource": "sensitive_record",
+        "operation": "read",
+        "initiator": "external_integration"
+      }
+    },
+    {
+      "semantic": "sensitive_resource_created",
+      "name": "bloodtrail.audit.data.sensitive_resource.created",
+      "category": "data_access",
+      "action": "create",
+      "purpose": "Record committed creation of sensitive resource.",
+      "trigger": "resource transaction owner commits creation",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied"
+      ],
+      "commit": [
+        "committed",
+        "not_committed"
+      ],
+      "producer": "resource-transaction-owner",
+      "required_context": [
+        "actor",
+        "tenant",
+        "resource",
+        "authorization",
+        "operation",
+        "transaction"
+      ],
+      "tenant_rule": "effective and owning tenant required",
+      "actor_rule": "resolved actor required",
+      "resource_rule": "resource id and owner required after commit",
+      "authorization_rule": "policy allow required for success",
+      "privacy": [
+        "resource metadata restricted"
+      ],
+      "retention": "security_elevated",
+      "delivery": "transaction_critical",
+      "investigation": "creation provenance",
+      "ocsf": {
+        "class": "data_activity",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "authenticated_human",
+        "tenant": "tenant",
+        "outcome": "success",
+        "commit": "committed",
+        "resource": "sensitive_record",
+        "operation": "create",
+        "initiator": "application"
+      }
+    },
+    {
+      "semantic": "sensitive_resource_modified",
+      "name": "bloodtrail.audit.data.sensitive_resource.modified",
+      "category": "data_access",
+      "action": "modify",
+      "purpose": "Record committed modification of sensitive resource without before/after bodies.",
+      "trigger": "resource transaction owner records modification or compensation",
+      "phase": [
+        "completed",
+        "compensating"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied",
+        "partial"
+      ],
+      "commit": [
+        "committed",
+        "not_committed",
+        "partially_committed",
+        "compensated"
+      ],
+      "producer": "resource-transaction-owner",
+      "required_context": [
+        "actor",
+        "tenant",
+        "resource",
+        "authorization",
+        "change_categories",
+        "transaction"
+      ],
+      "tenant_rule": "effective and owning tenant required",
+      "actor_rule": "resolved actor required",
+      "resource_rule": "no raw before/after payload",
+      "authorization_rule": "policy allow required for success",
+      "privacy": [
+        "no body; restricted metadata"
+      ],
+      "retention": "security_elevated",
+      "delivery": "transaction_critical",
+      "investigation": "tampering and change investigation",
+      "ocsf": {
+        "class": "data_activity",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "background_job",
+        "tenant": "tenant",
+        "outcome": "success",
+        "commit": "compensated",
+        "resource": "sensitive_record",
+        "operation": "update",
+        "initiator": "background_job",
+        "phase": "compensating"
+      }
+    },
+    {
+      "semantic": "sensitive_resource_deleted",
+      "name": "bloodtrail.audit.data.sensitive_resource.deleted",
+      "category": "data_access",
+      "action": "delete",
+      "purpose": "Record committed deletion of sensitive resource without deleted content.",
+      "trigger": "resource transaction owner records deletion",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied",
+        "partial"
+      ],
+      "commit": [
+        "committed",
+        "not_committed",
+        "partially_committed"
+      ],
+      "producer": "resource-transaction-owner",
+      "required_context": [
+        "actor",
+        "tenant",
+        "resource",
+        "authorization",
+        "deletion_mode",
+        "transaction"
+      ],
+      "tenant_rule": "effective and owning tenant required",
+      "actor_rule": "resolved actor required",
+      "resource_rule": "deleted content prohibited",
+      "authorization_rule": "policy allow required for success",
+      "privacy": [
+        "deleted content prohibited"
+      ],
+      "retention": "security_elevated",
+      "delivery": "transaction_critical",
+      "investigation": "destructive action accountability",
+      "ocsf": {
+        "class": "data_activity",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "service_account",
+        "tenant": "tenant",
+        "outcome": "partial",
+        "commit": "partially_committed",
+        "resource": "sensitive_collection",
+        "operation": "delete",
+        "initiator": "service"
+      }
+    },
+    {
+      "semantic": "sensitive_data_exported",
+      "name": "bloodtrail.audit.data.sensitive_data.exported",
+      "category": "data_access",
+      "action": "export",
+      "purpose": "Record export without exported data.",
+      "trigger": "export transaction owner records export attempt or completion",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied",
+        "partial",
+        "cancelled"
+      ],
+      "commit": [
+        "committed",
+        "not_committed",
+        "partially_committed"
+      ],
+      "producer": "export-transaction-owner",
+      "required_context": [
+        "actor",
+        "tenant",
+        "resource_scope",
+        "authorization",
+        "bounded_volume",
+        "destination_class"
+      ],
+      "tenant_rule": "effective and owning tenant required; cross-tenant export requires explicit policy",
+      "actor_rule": "resolved actor required",
+      "resource_rule": "bounded aggregate metadata only",
+      "authorization_rule": "policy decision required",
+      "privacy": [
+        "highly restricted export metadata"
+      ],
+      "retention": "policy_governed",
+      "delivery": "policy_critical",
+      "investigation": "exfiltration and compliance investigation",
+      "ocsf": {
+        "class": "data_exfiltration",
+        "status": "lossy"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "api_credential",
+        "tenant": "tenant",
+        "outcome": "cancelled",
+        "commit": "not_committed",
+        "resource": "sensitive_collection",
+        "operation": "export",
+        "initiator": "api_client"
+      }
+    },
+    {
+      "semantic": "security_configuration_changed",
+      "name": "bloodtrail.audit.security.configuration.changed",
+      "category": "security_configuration",
+      "action": "change_security_configuration",
+      "purpose": "Record committed change to security-relevant configuration.",
+      "trigger": "configuration transaction owner records change",
+      "phase": [
+        "completed"
+      ],
+      "outcomes": [
+        "success",
+        "failure",
+        "denied",
+        "partial"
+      ],
+      "commit": [
+        "committed",
+        "not_committed",
+        "partially_committed"
+      ],
+      "producer": "configuration-transaction-owner",
+      "required_context": [
+        "actor",
+        "tenant_or_platform_scope",
+        "config_resource",
+        "authorization",
+        "change_category"
+      ],
+      "tenant_rule": "tenant, platform, or tenantless explicitly cataloged",
+      "actor_rule": "administrator or workload identity required",
+      "resource_rule": "configuration resource and category required",
+      "authorization_rule": "policy allow required for success",
+      "privacy": [
+        "configuration metadata restricted"
+      ],
+      "retention": "security_elevated",
+      "delivery": "transaction_critical",
+      "investigation": "control-plane change history",
+      "ocsf": {
+        "class": "configuration_change",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "workload_identity",
+        "tenant": "platform",
+        "outcome": "success",
+        "commit": "committed",
+        "resource": "security_configuration",
+        "operation": "configure",
+        "initiator": "workload"
+      }
+    },
+    {
+      "semantic": "tenant_context_violation_detected",
+      "name": "bloodtrail.audit.tenant.context_violation.detected",
+      "category": "tenant_security",
+      "action": "detect_tenant_violation",
+      "purpose": "Record mismatch, spoofing, or prohibited cross-tenant attempt.",
+      "trigger": "tenancy/resource/enforcement boundary detects conflict",
+      "phase": [
+        "attempted"
+      ],
+      "outcomes": [
+        "denied",
+        "failure",
+        "unknown"
+      ],
+      "commit": [
+        "not_applicable",
+        "not_started"
+      ],
+      "producer": "tenant-enforcement-boundary",
+      "required_context": [
+        "actor_or_claim",
+        "authoritative_tenants",
+        "claimed_tenant",
+        "resource_owner",
+        "request_source",
+        "authorization"
+      ],
+      "tenant_rule": "claimed and authoritative tenants separately recorded",
+      "actor_rule": "actor claim allowed only as claim",
+      "resource_rule": "resource owner required when available",
+      "authorization_rule": "decision deny or indeterminate expected",
+      "privacy": [
+        "tenant identity source highly restricted"
+      ],
+      "retention": "security_elevated",
+      "delivery": "security_significant",
+      "investigation": "isolation failure and attack detection",
+      "ocsf": {
+        "class": "finding",
+        "status": "extended"
+      },
+      "otel": {
+        "status": "transformed"
+      },
+      "cloud_events": {
+        "status": "optional_envelope"
+      },
+      "example": {
+        "actor": "anonymous",
+        "tenant": "cross_tenant",
+        "outcome": "denied",
+        "commit": "not_started",
+        "resource": "tenant",
+        "operation": "execute",
+        "initiator": "browser_client",
+        "authorization": "deny",
+        "claimed_tenant": true
+      }
+    }
+  ],
+  "mapping_policy": {
+    "ocsf": {
+      "target_version": "1.8.0",
+      "boundary": "ingestion/export only",
+      "allowed_claim": "OCSF compatibility only for version 1.8.0, tested catalog events, selected classes/profiles, and explicit Bloodtrail extension losses.",
+      "statuses": [
+        "exact",
+        "transformed",
+        "extended",
+        "unmapped",
+        "lossy"
+      ]
+    },
+    "opentelemetry": {
+      "spec_version": "1.59.0",
+      "semconv_version": "1.43.0",
+      "boundary": "transport adapter only",
+      "native_fields": [
+        "Timestamp",
+        "ObservedTimestamp",
+        "TraceId",
+        "SpanId",
+        "EventName",
+        "Resource",
+        "InstrumentationScope"
+      ],
+      "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
+    },
+    "cloudevents": {
+      "specversion": "1.0",
+      "standard_version": "1.0.2",
+      "boundary": "optional transport envelope only",
+      "data_policy": "canonical event remains data contract",
+      "conflict_policy": "reject envelope/payload conflicts",
+      "attributes": [
+        "id",
+        "source",
+        "type",
+        "time",
+        "dataschema",
+        "subject",
+        "data"
+      ]
+    }
+  },
+  "validation_layers": [
+    {
+      "layer": "contract_authoring",
+      "responsibility": "meta-schema, registry references, collisions, field policy coverage, catalog completeness"
+    },
+    {
+      "layer": "type_generation_compile_time",
+      "responsibility": "deterministic TypeScript types and constants for developer feedback only"
+    },
+    {
+      "layer": "producer_runtime",
+      "responsibility": "structural schema, catalog, lifecycle, authority, tenant/resource, privacy, bounds before enqueue"
+    },
+    {
+      "layer": "ci",
+      "responsibility": "schemas, generated drift, examples, negative fixtures, mapping fixtures, compatibility"
+    },
+    {
+      "layer": "ingestion",
+      "responsibility": "authenticated producer, version, duplicate identity, revalidation, prohibited content, transport conflict"
+    },
+    {
+      "layer": "downstream",
+      "responsibility": "supported-version gate, provenance preservation, tenant access, mapping-loss awareness"
+    }
+  ],
+  "integrity_claims": [
+    {
+      "claim": "transport_authenticity",
+      "can_establish": "authenticated channel and receiver-side peer verification",
+      "cannot_establish": "payload facts are truthful or complete"
+    },
+    {
+      "claim": "producer_identity",
+      "can_establish": "authenticated workload/service plus registry",
+      "cannot_establish": "authorized compromised producer behaved correctly"
+    },
+    {
+      "claim": "event_byte_integrity",
+      "can_establish": "canonicalization plus signature, MAC, or hash verification",
+      "cannot_establish": "correctness of pre-signing state or timestamp"
+    },
+    {
+      "claim": "storage_integrity",
+      "can_establish": "access controls, immutable storage, checksums, and attestation",
+      "cannot_establish": "records omitted before storage"
+    },
+    {
+      "claim": "completeness",
+      "can_establish": "bounded reconciliation against independent authoritative sequence/outbox",
+      "cannot_establish": "global completeness under compromised producer"
+    },
+    {
+      "claim": "ordering",
+      "can_establish": "per-producer sequence or transaction/queue scope",
+      "cannot_establish": "global causal or wall-clock total order"
+    },
+    {
+      "claim": "truthful_application_state",
+      "can_establish": "independent state reconciliation and trustworthy producer logic",
+      "cannot_establish": "truth by signing alone"
+    },
+    {
+      "claim": "non_repudiation",
+      "can_establish": "legal identity key-control process outside this contract",
+      "cannot_establish": "legal non-repudiation from contract conformance alone"
+    }
+  ],
+  "adrs": [
+    {
+      "id": "ADR-001",
+      "title": "Bloodtrail-owned canonical model versus direct OCSF",
+      "decision": "Bloodtrail owns the canonical application-facing model; OCSF 1.8.0 is export-only at ingestion/export.",
+      "status": "accepted_for_contract_review",
+      "consequences": [
+        "Producers do not emit OCSF numeric classes as authoritative fields.",
+        "Mapping losses are explicit and tested."
+      ],
+      "unresolved": [
+        "Final approval commit pending project owner review."
+      ]
+    },
+    {
+      "id": "ADR-002",
+      "title": "Authoritative source and JSON Schema dialect",
+      "decision": "contracts/security-audit/source/contract.source.json is the sole authored source. Draft 2020-12 JSON Schema is generated with deterministic provenance.",
+      "status": "accepted_for_contract_review",
+      "consequences": [
+        "Human docs, schema, examples, mappings, and tests are generated or cross-checked from one source.",
+        "No TypeScript source becomes schema authority."
+      ],
+      "unresolved": [
+        "Generated TypeScript may be added only in a later SDK change."
+      ]
+    },
+    {
+      "id": "ADR-003",
+      "title": "Identifier timestamp and causality formats",
+      "decision": "Opaque UUID event IDs, RFC 3339 UTC timestamps, zero-based retry attempts, 300 second skew alert threshold, and W3C trace/span as correlation-only context.",
+      "status": "accepted_for_contract_review",
+      "consequences": [
+        "Event ID remains stable on redelivery.",
+        "Trace IDs are never identity or authorization evidence."
+      ],
+      "unresolved": [
+        "Concrete clock and ID library selection is deferred to later implementation."
+      ]
+    },
+    {
+      "id": "ADR-004",
+      "title": "OpenTelemetry and CloudEvents representation",
+      "decision": "OpenTelemetry 1.59.0/SemConv 1.43.0 are transport-only; native timestamps, trace/span, resource, instrumentation scope, and EventName are used. CloudEvents 1.0.2 remains optional envelope-only.",
+      "status": "accepted_for_contract_review",
+      "consequences": [
+        "Canonical payload remains authoritative.",
+        "Envelope/body conflicts are rejected."
+      ],
+      "unresolved": [
+        "No collector, exporter, or protocol binding is selected here."
+      ]
+    },
+    {
+      "id": "ADR-005",
+      "title": "Delivery classes and failure posture",
+      "decision": "best_effort, security_significant, transaction_critical, and policy_critical classes define observable behavior without selecting queue, broker, collector, or outbox products.",
+      "status": "accepted_for_contract_review",
+      "consequences": [
+        "Catalog assigns exactly one minimum class per event.",
+        "Policy-critical production remains blocked without qualified review."
+      ],
+      "unresolved": [
+        "Actual alert thresholds and policy-critical posture require future owner approval."
+      ]
+    },
+    {
+      "id": "ADR-006",
+      "title": "Privacy pseudonymization and retention classes",
+      "decision": "Every field has allowed, conditionally_allowed, transform_required, or prohibited policy. Purpose- and tenant-scoped keyed transforms are the default for direct identifiers when direct display is unnecessary.",
+      "status": "accepted_for_contract_review",
+      "consequences": [
+        "Secrets and raw bodies are prohibited everywhere, including examples and diagnostics.",
+        "Actual retention durations and legal basis are not invented."
+      ],
+      "unresolved": [
+        "Durations, residency, legal hold, and cross-tenant export require qualified review."
+      ]
+    },
+    {
+      "id": "ADR-007",
+      "title": "Actor tenant and resource authority",
+      "decision": "Actor, subject, authenticated principal, delegation/impersonation, credential, service/workload, tenant hierarchy, and resource-owner fields have separate authority and trust rules.",
+      "status": "accepted_for_contract_review",
+      "consequences": [
+        "Client claimed tenant or browser data cannot become authoritative by relabeling.",
+        "Cross-tenant and platform actions require explicit policy context."
+      ],
+      "unresolved": [
+        "Concrete tenancy and identity providers are later implementation choices."
+      ]
+    },
+    {
+      "id": "ADR-008",
+      "title": "Schema evolution and compatibility",
+      "decision": "SemVer applies to field paths, types, authority, privacy, requiredness, catalog meanings, validation results, and mapping guarantees. Required or semantic changes are major.",
+      "status": "accepted_for_contract_review",
+      "consequences": [
+        "Released meanings are never reused.",
+        "Compatibility fixtures define expected producer and consumer behavior."
+      ],
+      "unresolved": [
+        "Removal windows need project-owner policy before release."
+      ]
+    }
+  ]
+}

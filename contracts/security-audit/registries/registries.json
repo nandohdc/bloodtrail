@@ -1,0 +1,234 @@
+{
+  "categories": [
+    "account",
+    "authentication",
+    "session",
+    "authorization",
+    "privilege",
+    "administration",
+    "data_access",
+    "security_configuration",
+    "tenant_security"
+  ],
+  "actions": [
+    "register",
+    "authenticate",
+    "enroll_mfa",
+    "remove_mfa",
+    "create_session",
+    "revoke_session",
+    "request_password_reset",
+    "complete_password_reset",
+    "evaluate_authorization",
+    "assign_role",
+    "remove_role",
+    "elevate_privilege",
+    "start_impersonation",
+    "end_impersonation",
+    "view",
+    "create",
+    "modify",
+    "delete",
+    "export",
+    "change_security_configuration",
+    "detect_tenant_violation"
+  ],
+  "lifecycle_phases": [
+    "attempted",
+    "completed",
+    "compensating"
+  ],
+  "outcomes": [
+    "success",
+    "failure",
+    "denied",
+    "partial",
+    "unknown",
+    "cancelled"
+  ],
+  "commit_states": [
+    "not_applicable",
+    "not_started",
+    "pending",
+    "committed",
+    "not_committed",
+    "partially_committed",
+    "compensated",
+    "unknown"
+  ],
+  "delivery_classes": [
+    "best_effort",
+    "security_significant",
+    "transaction_critical",
+    "policy_critical"
+  ],
+  "trust_levels": [
+    "authoritative_server",
+    "verified_assertion",
+    "observed_transport",
+    "derived_server",
+    "downstream_enrichment",
+    "client_claim",
+    "unknown"
+  ],
+  "field_policy_values": [
+    "allowed",
+    "conditionally_allowed",
+    "transform_required",
+    "prohibited"
+  ],
+  "privacy_classifications": [
+    "public_metadata",
+    "internal",
+    "confidential",
+    "restricted"
+  ],
+  "retention_classes": [
+    "operational_short",
+    "security_standard",
+    "security_elevated",
+    "policy_governed"
+  ],
+  "tenant_scopes": [
+    "tenant",
+    "cross_tenant",
+    "platform",
+    "tenantless"
+  ],
+  "actor_types": [
+    "authenticated_human",
+    "anonymous",
+    "service_account",
+    "workload_identity",
+    "api_credential",
+    "administrator",
+    "background_job",
+    "scheduled_process",
+    "external_integration"
+  ],
+  "principal_types": [
+    "human_user",
+    "service_account",
+    "workload",
+    "external_integration",
+    "anonymous"
+  ],
+  "credential_types": [
+    "password",
+    "session",
+    "api_credential",
+    "workload_federation",
+    "mfa_factor",
+    "recovery_flow",
+    "federated_assertion",
+    "none"
+  ],
+  "initiator_types": [
+    "application",
+    "service",
+    "workload",
+    "background_job",
+    "scheduled_process",
+    "external_integration",
+    "browser_client",
+    "api_client"
+  ],
+  "resource_types": [
+    "account",
+    "credential",
+    "session",
+    "role",
+    "privilege_grant",
+    "impersonation_session",
+    "tenant",
+    "sensitive_record",
+    "sensitive_collection",
+    "security_configuration",
+    "authorization_policy",
+    "platform_control"
+  ],
+  "operation_types": [
+    "create",
+    "read",
+    "update",
+    "delete",
+    "execute",
+    "export",
+    "administer",
+    "configure"
+  ],
+  "auth_decisions": [
+    "allow",
+    "deny",
+    "not_applicable",
+    "indeterminate",
+    "error"
+  ],
+  "mfa_states": [
+    "not_used",
+    "required",
+    "satisfied",
+    "failed",
+    "not_applicable",
+    "unknown"
+  ],
+  "risk_levels": [
+    "none",
+    "low",
+    "medium",
+    "high",
+    "critical",
+    "unknown"
+  ],
+  "data_classifications": [
+    "public",
+    "internal",
+    "confidential",
+    "restricted"
+  ],
+  "reason_codes": [
+    "accepted",
+    "completed",
+    "cancelled_by_actor",
+    "commit_failed",
+    "policy_denied",
+    "tenant_mismatch",
+    "credential_invalid",
+    "mfa_failed",
+    "rate_limited",
+    "break_glass",
+    "delegation_expired",
+    "not_found_or_not_disclosed",
+    "system_error",
+    "compensated",
+    "partial_limit",
+    "operator_requested",
+    "policy_baseline"
+  ],
+  "validation_error_codes": [
+    "MISSING_REQUIRED_ACTOR",
+    "MISSING_TENANT_CONTEXT",
+    "TENANT_RESOURCE_CONFLICT",
+    "UNKNOWN_CATALOG_VALUE",
+    "UNSUPPORTED_SCHEMA_VERSION",
+    "PROHIBITED_DATA",
+    "FIELD_LIMIT_EXCEEDED",
+    "AUTHORITY_ESCALATION",
+    "PREMATURE_SUCCESS",
+    "AUTHORIZATION_OUTCOME_CONFLICT",
+    "BAD_CAUSALITY",
+    "INVALID_DELEGATION",
+    "UNKNOWN_EXTENSION",
+    "ENVELOPE_PAYLOAD_CONFLICT",
+    "UNSUPPORTED_MAPPING_VERSION",
+    "DUPLICATE_AUTHORITY",
+    "PROHIBITED_BODY_ATTRIBUTES",
+    "MISSING_NATIVE_MAPPING",
+    "MAPPING_SCOPE_OVERCLAIM",
+    "UNAPPROVED_POLICY_CRITICAL_POSTURE",
+    "UNSUPPORTED_COMPATIBILITY_VERSION"
+  ],
+  "extension_namespaces": [
+    "bloodtrail.audit.enrichment.v1"
+  ]
+}

@@ -1,0 +1,167 @@
+{
+  "event": {
+    "id": "11111111-1111-4111-8111-000000000004",
+    "name": "bloodtrail.audit.authentication.failed",
+    "category": "authentication",
+    "action": "authenticate",
+    "lifecycle_phase": "completed",
+    "outcome": "failure",
+    "outcome_reason": {
+      "code": "system_error"
+    },
+    "commit_state": "not_applicable",
+    "timestamp": "2026-07-31T12:03:00.000Z",
+    "observed_at": "2026-07-31T12:03:01.000Z",
+    "delivery_class": "security_significant"
+  },
+  "schema": {
+    "name": "com.bloodtrail.security-audit.event",
+    "version": "1.0.0"
+  },
+  "producer": {
+    "name": "authentication-authority",
+    "version": "1.0.0",
+    "instance_id": "producer_04"
+  },
+  "environment": {
+    "name": "development"
+  },
+  "service": {
+    "name": "authentication-authority",
+    "version": "1.0.0"
+  },
+  "deployment": {
+    "id": "deploy_contract_fixture",
+    "region": "local",
+    "zone": "local-a"
+  },
+  "tenant": {
+    "scope": "tenantless"
+  },
+  "actor": {
+    "type": "anonymous",
+    "provenance": {
+      "trust_level": "client_claim",
+      "source": "request_boundary"
+    }
+  },
+  "subject": {
+    "type": "credential",
+    "id": "credential_subject_4",
+    "tenant_id": "tenant_none"
+  },
+  "credential": {
+    "type": "password",
+    "reference": "cred_ref_4",
+    "key_id": "pseudonym-key-v1"
+  },
+  "initiator": {
+    "type": "browser_client",
+    "id": "browser_client_fixture",
+    "version": "1.0.0"
+  },
+  "authentication": {
+    "method": "password_mfa",
+    "assurance_level": "aal2",
+    "mfa_state": "failed",
+    "credential_type": "session",
+    "authenticated_at": "2026-07-31T11:55:00.000Z",
+    "identity_provider": "https://idp.example.test",
+    "delegated": false,
+    "impersonated": false,
+    "failure_reason": "credential_invalid"
+  },
+  "authorization": {
+    "decision": "allow",
+    "policy_id": "policy.audit-fixture",
+    "policy_version": "1.0.0",
+    "capability": "authenticate",
+    "enforcement_point": "authentication-authority",
+    "decision_reason": "accepted",
+    "resource_context": {
+      "type": "credential",
+      "id": "credential_4"
+    },
+    "tenant_context": {
+      "effective_tenant_id": "tenant_none"
+    },
+    "override": false,
+    "break_glass": false,
+    "policy_correlation_id": "policy_corr_4"
+  },
+  "source": {
+    "observed": {
+      "address": "203.0.113.10",
+      "port": 443,
+      "proxy_chain": [
+        {
+          "address": "198.51.100.10",
+          "trust_level": "observed_transport",
+          "observed_by": "trusted-ingress"
+        }
+      ]
+    },
+    "client_reported": {
+      "user_agent_family": "ExampleBrowser",
+      "user_agent_version": "1"
+    }
+  },
+  "destination": {
+    "service": "authentication-authority",
+    "address": "service.local",
+    "port": 443
+  },
+  "resource": {
+    "type": "credential",
+    "id": "credential_4",
+    "owning_tenant_id": "tenant_none",
+    "data_classification": "confidential",
+    "operation_type": "execute",
+    "change_categories": [
+      "metadata"
+    ]
+  },
+  "request": {
+    "id": "request_4",
+    "method": "POST",
+    "route": "/contract-fixtures/{resource}",
+    "user_agent": "ExampleBrowser/1",
+    "message_id": "message_4"
+  },
+  "correlation": {
+    "trace_id": "1234567890abcdef1234567890abcde3",
+    "span_id": "1234567890abcde3",
+    "correlation_id": "corr_4",
+    "causation_id": "11111111-1111-4111-8111-000000000003",
+    "operation_id": "operation_authentication_failed",
+    "request_id": "request_4",
+    "message_id": "message_4",
+    "retry_attempt": 0
+  },
+  "risk": {
+    "level": "low",
+    "score": 15,
+    "reason_codes": [
+      "policy_baseline"
+    ],
+    "model": {
+      "name": "fixture-risk",
+      "version": "1.0.0",
+      "provenance": {
+        "trust_level": "derived_server"
+      }
+    }
+  },
+  "data": {
+    "classification": "confidential",
+    "retention_class": "security_standard",
+    "field_policy_version": "1.0.0"
+  },
+  "integrity": {
+    "transport_authentication": {
+      "method": "mtls",
+      "verified": true,
+      "peer": "producer-registry/ref"
+    }
+  }
+}

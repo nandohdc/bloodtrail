@@ -1,0 +1,44 @@
+[
+  {
+    "name": "duplicate-redelivery",
+    "delivery_class": "security_significant",
+    "expected": "same_event_id_consumer_dedupes"
+  },
+  {
+    "name": "re-executed-operation",
+    "delivery_class": "security_significant",
+    "expected": "new_event_id_same_operation_or_causation_link"
+  },
+  {
+    "name": "collector-outage",
+    "delivery_class": "security_significant",
+    "expected": "delay_accounting_and_operator_alert"
+  },
+  {
+    "name": "buffer-exhaustion",
+    "delivery_class": "security_significant",
+    "expected": "bounded_alert_without_secret_payload"
+  },
+  {
+    "name": "graceful-shutdown",
+    "delivery_class": "transaction_critical",
+    "expected": "durable_handoff_before_exit"
+  },
+  {
+    "name": "retry-exhaustion",
+    "delivery_class": "security_significant",
+    "expected": "safe_operational_signal_not_recursive_audit_claim"
+  },
+  {
+    "name": "atomic-business-audit-commit",
+    "delivery_class": "transaction_critical",
+    "expected": "fail_closed_before_commit_if_audit_durability_unavailable"
+  },
+  {
+    "name": "missing-policy-critical-failure-posture",
+    "delivery_class": "policy_critical",
+    "expected_errors": [
+      "UNAPPROVED_POLICY_CRITICAL_POSTURE"
+    ]
+  }
+]

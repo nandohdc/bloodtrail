@@ -1,0 +1,50 @@
+[
+  {
+    "name": "patch-documentation-correction",
+    "change_class": "patch",
+    "expected": "compatible"
+  },
+  {
+    "name": "minor-optional-field-addition",
+    "change_class": "minor",
+    "expected": "compatible_with_absence_meaning"
+  },
+  {
+    "name": "minor-catalog-addition",
+    "change_class": "minor",
+    "expected": "older_consumer_must_reject_or_quarantine_unknown_event"
+  },
+  {
+    "name": "minor-enum-addition",
+    "change_class": "minor",
+    "expected": "compatible_only_when registry version is supported"
+  },
+  {
+    "name": "minor-deprecation",
+    "change_class": "minor",
+    "expected": "compatible_during_support_window"
+  },
+  {
+    "name": "major-required-field-addition",
+    "change_class": "major",
+    "expected": "breaking"
+  },
+  {
+    "name": "major-authority-change",
+    "change_class": "major",
+    "expected": "breaking"
+  },
+  {
+    "name": "major-privacy-weakening",
+    "change_class": "major",
+    "expected": "breaking"
+  },
+  {
+    "name": "unsupported-version",
+    "change_class": "unsupported",
+    "expected": "reject_or_quarantine",
+    "expected_errors": [
+      "UNSUPPORTED_COMPATIBILITY_VERSION"
+    ]
+  }
+]
