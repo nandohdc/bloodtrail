@@ -1,22 +1,16 @@
-export const SDK_ERROR_CODES = [
-  "SDK_INVALID_CONFIGURATION",
-  "SDK_NOT_READY",
-  "SDK_SHUTTING_DOWN",
-  "SDK_SHUT_DOWN",
-  "SDK_SCHEMA_VALIDATION_FAILED",
-  "SDK_SEMANTIC_VALIDATION_FAILED",
-  "SDK_SINK_REJECTED",
-  "SDK_SINK_FAILURE",
-  "SDK_SHUTDOWN_TIMEOUT",
-] as const;
+import { SDK_ERROR_CODES } from "./generated/contract.generated.js";
+import type { AuditErrorCode, SdkGeneratedErrorCode } from "./generated/contract.generated.js";
+import { boundedPath } from "./internal.js";
 
-export type SdkErrorCode = (typeof SDK_ERROR_CODES)[number];
 export type AuditErrorCategory = "configuration" | "validation" | "authority" | "privacy" | "lifecycle" | "sink";
+export type SdkErrorCode = SdkGeneratedErrorCode;
 
 export interface SafeAuditError {
-  readonly code: string;
+  readonly code: AuditErrorCode | string;
   readonly category: AuditErrorCategory;
   readonly path?: string;
+  readonly eventName?: string;
+  readonly eventId?: string;
 }
 
 export type AuditResult<T> =
@@ -24,11 +18,11 @@ export type AuditResult<T> =
   | { readonly ok: false; readonly error: SafeAuditError };
 
 export class SecurityAuditSdkError extends Error {
-  readonly code: SdkErrorCode;
+  readonly code: AuditErrorCode | string;
   readonly category: AuditErrorCategory;
   readonly path: string | undefined;
 
-  constructor(code: SdkErrorCode, category: AuditErrorCategory, path?: string) {
+  constructor(code: AuditErrorCode | string, category: AuditErrorCategory, path?: string) {
     super(code);
     this.name = "SecurityAuditSdkError";
     this.code = code;
@@ -39,15 +33,28 @@ export class SecurityAuditSdkError extends Error {
   toJSON(): SafeAuditError {
     return this.path === undefined
       ? { code: this.code, category: this.category }
-      : { code: this.code, category: this.category, path: this.path };
+      : { code: this.code, category: this.category, path: boundedPath(this.path) };
   }
 }
 
-export function failure(code: string, category: AuditErrorCategory, path?: string): AuditResult<never> {
-  return { ok: false, error: path === undefined ? { code, category } : { code, category, path: boundPath(path) } };
+export function failure(
+  code: AuditErrorCode | string,
+  category: AuditErrorCategory,
+  path?: string,
+  metadata?: { readonly eventName?: string; readonly eventId?: string },
+): AuditResult<never> {
+  const error: SafeAuditError = path === undefined ? { code, category } : { code, category, path: boundedPath(path) };
+  if (metadata?.eventName !== undefined || metadata?.eventId !== undefined) {
+    return {
+      ok: false,
+      error: {
+        ...error,
+        ...(metadata.eventName === undefined ? {} : { eventName: boundedPath(metadata.eventName) }),
+        ...(metadata.eventId === undefined ? {} : { eventId: boundedPath(metadata.eventId) }),
+      },
+    };
+  }
+  return { ok: false, error };
 }
 
-function boundPath(path: string): string {
-  const normalized = path.replace(/[^A-Za-z0-9_./-]/g, "_");
-  return normalized.slice(0, 160);
-}
+export { SDK_ERROR_CODES };

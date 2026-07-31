@@ -116,6 +116,12 @@ function emitConstants(source, fieldPolicy) {
     delivery: entry.delivery,
     retention: entry.retention,
   }));
+  const methods = source.catalog.map((entry) => ({
+    method: toCamelCase(entry.semantic),
+    inputType: `${toPascalCase(entry.semantic)}EventInput`,
+    semantic: entry.semantic,
+    name: entry.name,
+  }));
   const extensions = source.extension_namespaces.map((entry) => ({
     namespace: entry.namespace,
     version: entry.version,
@@ -125,23 +131,156 @@ function emitConstants(source, fieldPolicy) {
     max_bytes: entry.max_bytes,
     allowed_fields: entry.allowed_fields,
   }));
+  const sdkErrorCodes = [
+    "SDK_INVALID_CONFIGURATION",
+    "SDK_UNSUPPORTED_CONTRACT_VERSION",
+    "SDK_MISSING_AUTHORITATIVE_CONTEXT",
+    "SDK_MISSING_EVENT_FIELD",
+    "SDK_NOT_READY",
+    "SDK_SHUTTING_DOWN",
+    "SDK_SHUT_DOWN",
+    "SDK_SCHEMA_VALIDATION_FAILED",
+    "SDK_SEMANTIC_VALIDATION_FAILED",
+    "SDK_SINK_REJECTED",
+    "SDK_SINK_FAILURE",
+    "SDK_SHUTDOWN_TIMEOUT",
+    "SDK_INVALID_OPERATION_TRANSITION",
+    "SDK_INVALID_IDENTIFIER",
+    "SDK_INVALID_CLOCK",
+    "SDK_HOOK_FAILURE",
+    "SDK_DUPLICATE_SUCCESS",
+    "SDK_OPERATION_EVENT_MISMATCH",
+    "SDK_UNSUPPORTED_HOOK_RESULT",
+  ];
+  const eventInputAliases = methods.map((method) => {
+    return `export type ${method.inputType} = EventBuilderInputForName<${JSON.stringify(method.name)}>;`;
+  }).join("\n\n");
   return [
     `export const CONTRACT_VERSION = "1.0.0" as const;`,
     `export const CONTRACT_SCHEMA_NAME = ${JSON.stringify(source.metadata.schema_name)} as const;`,
     `export const CONTRACT_SCHEMA_ID = ${JSON.stringify(source.metadata.schema_id)} as const;`,
     `export const REGISTRIES = ${JSON.stringify(registries, null, 2)} as const;`,
     `export const EVENT_CATALOG = ${JSON.stringify(catalog, null, 2)} as const;`,
+    `export const EVENT_METHODS = ${JSON.stringify(methods, null, 2)} as const;`,
     `export const EXTENSION_NAMESPACES = ${JSON.stringify(extensions, null, 2)} as const;`,
     `export const FIELD_POLICY = ${JSON.stringify(fieldPolicy, null, 2)} as const;`,
     `export const PROHIBITED_DATA_KEYS = ${JSON.stringify([...source.prohibited_data].sort(), null, 2)} as const;`,
+    `export const CONTRACT_ERROR_CODES = REGISTRIES.validation_error_codes;`,
+    `export const SDK_ERROR_CODES = ${JSON.stringify(sdkErrorCodes, null, 2)} as const;`,
     `export type EventDefinition = (typeof EVENT_CATALOG)[number];`,
     `export type EventName = EventDefinition["name"];`,
     `export type EventSemantic = EventDefinition["semantic"];`,
+    `export type EventMethodDefinition = (typeof EVENT_METHODS)[number];`,
+    `export type EventMethodName = EventMethodDefinition["method"];`,
     `export type EventNameFor<S extends EventSemantic> = Extract<EventDefinition, { readonly semantic: S }>["name"];`,
     `export type EventForName<N extends EventName> = SecurityAuditEvent & { readonly event: SecurityAuditEvent["event"] & { readonly name: N } };`,
+    `export type EventDefinitionForName<N extends EventName> = Extract<EventDefinition, { readonly name: N }>;`,
+    `export type EventPhaseForName<N extends EventName> = EventDefinitionForName<N>["phase"][number];`,
+    `export type EventOutcomeForName<N extends EventName> = EventDefinitionForName<N>["outcomes"][number];`,
+    `export type EventCommitForName<N extends EventName> = EventDefinitionForName<N>["commit"][number];`,
+    `export type RequiredContextForName<N extends EventName> = EventDefinitionForName<N>["required_context"][number];`,
     `export type RegistryName = keyof typeof REGISTRIES;`,
     `export type RegistryValue<N extends RegistryName> = (typeof REGISTRIES)[N][number];`,
+    `export type ContractErrorCode = (typeof CONTRACT_ERROR_CODES)[number];`,
+    `export type SdkGeneratedErrorCode = (typeof SDK_ERROR_CODES)[number];`,
+    `export type AuditErrorCode = ContractErrorCode | SdkGeneratedErrorCode;`,
+    emitEventInputTypes(),
+    eventInputAliases,
+    `export type NamedAuditEventInputMap = {\n${methods.map((method) => `  readonly ${JSON.stringify(method.method)}: ${method.inputType};`).join("\n")}\n};`,
   ].join("\n\n");
+}
+
+function emitEventInputTypes() {
+  return `type UnionToIntersection<T> = (T extends unknown ? (value: T) => void : never) extends (value: infer I) => void ? I : never;
+
+export interface GeneratedOperationContext {
+  readonly operation_id?: string;
+  readonly transaction_id?: string;
+  readonly state?: "started" | "committed" | "not_committed" | "partially_committed" | "compensated" | "cancelled";
+  readonly commit_state?: SecurityAuditEvent["event"]["commit_state"];
+  readonly bound_event?: string;
+  readonly transactional?: boolean;
+}
+
+export interface RetryRelationshipInput {
+  readonly retry_attempt: number;
+  readonly original_event_id: string;
+  readonly causation_id?: string;
+}
+
+export interface RedeliveryInput<N extends EventName = EventName> {
+  readonly event: EventForName<N>;
+}
+
+export type EventBuilderBaseInput<N extends EventName> = {
+  readonly event?: {
+    readonly lifecycle_phase?: EventPhaseForName<N>;
+    readonly outcome?: EventOutcomeForName<N>;
+    readonly outcome_reason?: SecurityAuditEvent["event"]["outcome_reason"];
+    readonly commit_state?: EventCommitForName<N>;
+    readonly timestamp?: string;
+    readonly observed_at?: string;
+  };
+  readonly tenant?: SecurityAuditEvent["tenant"];
+  readonly claimedTenant?: Pick<SecurityAuditEvent["tenant"], "claimed_tenant_id">;
+  readonly actor?: SecurityAuditEvent["actor"];
+  readonly subject?: SecurityAuditEvent["subject"];
+  readonly authenticated_principal?: SecurityAuditEvent["authenticated_principal"];
+  readonly delegation?: SecurityAuditEvent["delegation"];
+  readonly credential?: SecurityAuditEvent["credential"];
+  readonly initiator?: SecurityAuditEvent["initiator"];
+  readonly session?: SecurityAuditEvent["session"];
+  readonly authentication?: SecurityAuditEvent["authentication"];
+  readonly authorization?: SecurityAuditEvent["authorization"];
+  readonly source?: SecurityAuditEvent["source"];
+  readonly destination?: SecurityAuditEvent["destination"];
+  readonly resource?: SecurityAuditEvent["resource"];
+  readonly request?: SecurityAuditEvent["request"];
+  readonly correlation?: Partial<SecurityAuditEvent["correlation"]>;
+  readonly risk?: SecurityAuditEvent["risk"];
+  readonly data?: Partial<SecurityAuditEvent["data"]>;
+  readonly integrity?: SecurityAuditEvent["integrity"];
+  readonly extensions?: SecurityAuditEvent["extensions"];
+  readonly operation?: GeneratedOperationContext;
+  readonly retry?: RetryRelationshipInput;
+  readonly redelivery?: RedeliveryInput<N>;
+};
+
+type RequiredContextProperty<C extends string> =
+  C extends "actor" | "administrator" | "real_actor" | "real_admin_actor" | "real_actor_or_process" | "actor_or_claim" ? { readonly actor: SecurityAuditEvent["actor"] } :
+  C extends "tenant" | "tenants" | "authoritative_tenants" | "tenant_or_platform_scope" ? { readonly tenant: SecurityAuditEvent["tenant"] } :
+  C extends "resource" | "role" | "resource_scope" | "config_resource" | "resource_owner" ? { readonly resource: SecurityAuditEvent["resource"] } :
+  C extends "authorization" | "policy" ? { readonly authorization: SecurityAuditEvent["authorization"] } :
+  C extends "authentication" ? { readonly authentication: SecurityAuditEvent["authentication"] } :
+  C extends "session" ? { readonly session: SecurityAuditEvent["session"] } :
+  C extends "credential" ? { readonly credential: SecurityAuditEvent["credential"] } :
+  C extends "source" | "request_source" ? { readonly source: SecurityAuditEvent["source"] } :
+  C extends "request" ? { readonly request: SecurityAuditEvent["request"] } :
+  C extends "correlation" | "original_start" ? { readonly correlation: Partial<SecurityAuditEvent["correlation"]> } :
+  C extends "subject" | "impersonated_subject" ? { readonly subject: SecurityAuditEvent["subject"] } :
+  C extends "principal" | "authenticated_principal" ? { readonly authenticated_principal: SecurityAuditEvent["authenticated_principal"] } :
+  C extends "delegation" | "scope" | "expiry" ? { readonly delegation: SecurityAuditEvent["delegation"] } :
+  C extends "operation" | "transaction" ? { readonly operation: GeneratedOperationContext } :
+  C extends "change_categories" | "change_category" ? { readonly resource: SecurityAuditEvent["resource"] & { readonly change_categories: NonNullable<SecurityAuditEvent["resource"]["change_categories"]> } } :
+  C extends "deletion_mode" ? { readonly resource: SecurityAuditEvent["resource"] & { readonly deletion_mode: NonNullable<SecurityAuditEvent["resource"]["deletion_mode"]> } } :
+  C extends "bounded_volume" | "destination_class" ? { readonly resource: SecurityAuditEvent["resource"] & { readonly export: NonNullable<SecurityAuditEvent["resource"]["export"]> } } :
+  C extends "claimed_tenant" ? { readonly claimedTenant: Pick<SecurityAuditEvent["tenant"], "claimed_tenant_id"> } :
+  {};
+
+export type EventBuilderInputForName<N extends EventName> =
+  EventBuilderBaseInput<N> & UnionToIntersection<RequiredContextProperty<RequiredContextForName<N>>>;`;
+}
+
+function toCamelCase(value) {
+  const pascal = toPascalCase(value);
+  return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+}
+
+function toPascalCase(value) {
+  return value.split(/[_\-.]+/g).filter(Boolean).map((part) => {
+    if (part.toLowerCase() === "mfa") return "Mfa";
+    return part.charAt(0).toUpperCase() + part.slice(1);
+  }).join("");
 }
 
 async function emitStandaloneValidator(schema) {

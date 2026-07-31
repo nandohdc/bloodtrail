@@ -104,7 +104,7 @@ test("invalid initialization returns a bounded safe structured error without inp
   assert.throws(
     () => createSecurityAuditSdk({
       contractVersion: "1.0.0",
-      producer: { name: marker },
+      producer: { name: marker, version: "1.0.0" },
       service: { name: "service" },
       environment: { name: "test" },
       sink: {} as AuditEventSink,

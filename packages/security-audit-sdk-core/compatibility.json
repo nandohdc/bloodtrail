@@ -8,5 +8,11 @@
     "ciVersion": "5.9.2"
   },
   "modulePolicy": "esm-public-cjs-standalone-validator",
-  "contractVersion": "1.0.0"
+  "contractVersion": "1.0.0",
+  "semverClassification": {
+    "patch": ["bug fix preserving contract 1.0.0 interpretation", "safe diagnostic bound tightening"],
+    "minor": ["additive optional public API", "new SDK error code without changing existing meaning"],
+    "major": ["public API removal", "generated type incompatibility", "Node or TypeScript baseline removal", "error code removal or meaning change"]
+  },
+  "unsupportedContractVersions": ["0.9.0", "2.0.0"]
 }

@@ -1152,6 +1152,153 @@ export const EVENT_CATALOG = [
   }
 ] as const;
 
+export const EVENT_METHODS = [
+  {
+    "method": "accountRegistrationAttempted",
+    "inputType": "AccountRegistrationAttemptedEventInput",
+    "semantic": "account_registration_attempted",
+    "name": "bloodtrail.audit.account.registration.attempted"
+  },
+  {
+    "method": "accountRegistrationCompleted",
+    "inputType": "AccountRegistrationCompletedEventInput",
+    "semantic": "account_registration_completed",
+    "name": "bloodtrail.audit.account.registration.completed"
+  },
+  {
+    "method": "authenticationSucceeded",
+    "inputType": "AuthenticationSucceededEventInput",
+    "semantic": "authentication_succeeded",
+    "name": "bloodtrail.audit.authentication.succeeded"
+  },
+  {
+    "method": "authenticationFailed",
+    "inputType": "AuthenticationFailedEventInput",
+    "semantic": "authentication_failed",
+    "name": "bloodtrail.audit.authentication.failed"
+  },
+  {
+    "method": "mfaEnrolled",
+    "inputType": "MfaEnrolledEventInput",
+    "semantic": "mfa_enrolled",
+    "name": "bloodtrail.audit.authentication.mfa.enrolled"
+  },
+  {
+    "method": "mfaRemoved",
+    "inputType": "MfaRemovedEventInput",
+    "semantic": "mfa_removed",
+    "name": "bloodtrail.audit.authentication.mfa.removed"
+  },
+  {
+    "method": "sessionCreated",
+    "inputType": "SessionCreatedEventInput",
+    "semantic": "session_created",
+    "name": "bloodtrail.audit.session.created"
+  },
+  {
+    "method": "sessionRevoked",
+    "inputType": "SessionRevokedEventInput",
+    "semantic": "session_revoked",
+    "name": "bloodtrail.audit.session.revoked"
+  },
+  {
+    "method": "passwordResetRequested",
+    "inputType": "PasswordResetRequestedEventInput",
+    "semantic": "password_reset_requested",
+    "name": "bloodtrail.audit.account.password_reset.requested"
+  },
+  {
+    "method": "passwordResetCompleted",
+    "inputType": "PasswordResetCompletedEventInput",
+    "semantic": "password_reset_completed",
+    "name": "bloodtrail.audit.account.password_reset.completed"
+  },
+  {
+    "method": "authorizationAllowed",
+    "inputType": "AuthorizationAllowedEventInput",
+    "semantic": "authorization_allowed",
+    "name": "bloodtrail.audit.authorization.allowed"
+  },
+  {
+    "method": "authorizationDenied",
+    "inputType": "AuthorizationDeniedEventInput",
+    "semantic": "authorization_denied",
+    "name": "bloodtrail.audit.authorization.denied"
+  },
+  {
+    "method": "roleAssigned",
+    "inputType": "RoleAssignedEventInput",
+    "semantic": "role_assigned",
+    "name": "bloodtrail.audit.authorization.role.assigned"
+  },
+  {
+    "method": "roleRemoved",
+    "inputType": "RoleRemovedEventInput",
+    "semantic": "role_removed",
+    "name": "bloodtrail.audit.authorization.role.removed"
+  },
+  {
+    "method": "privilegeElevated",
+    "inputType": "PrivilegeElevatedEventInput",
+    "semantic": "privilege_elevated",
+    "name": "bloodtrail.audit.authorization.privilege.elevated"
+  },
+  {
+    "method": "impersonationStarted",
+    "inputType": "ImpersonationStartedEventInput",
+    "semantic": "impersonation_started",
+    "name": "bloodtrail.audit.administration.impersonation.started"
+  },
+  {
+    "method": "impersonationEnded",
+    "inputType": "ImpersonationEndedEventInput",
+    "semantic": "impersonation_ended",
+    "name": "bloodtrail.audit.administration.impersonation.ended"
+  },
+  {
+    "method": "sensitiveResourceViewed",
+    "inputType": "SensitiveResourceViewedEventInput",
+    "semantic": "sensitive_resource_viewed",
+    "name": "bloodtrail.audit.data.sensitive_resource.viewed"
+  },
+  {
+    "method": "sensitiveResourceCreated",
+    "inputType": "SensitiveResourceCreatedEventInput",
+    "semantic": "sensitive_resource_created",
+    "name": "bloodtrail.audit.data.sensitive_resource.created"
+  },
+  {
+    "method": "sensitiveResourceModified",
+    "inputType": "SensitiveResourceModifiedEventInput",
+    "semantic": "sensitive_resource_modified",
+    "name": "bloodtrail.audit.data.sensitive_resource.modified"
+  },
+  {
+    "method": "sensitiveResourceDeleted",
+    "inputType": "SensitiveResourceDeletedEventInput",
+    "semantic": "sensitive_resource_deleted",
+    "name": "bloodtrail.audit.data.sensitive_resource.deleted"
+  },
+  {
+    "method": "sensitiveDataExported",
+    "inputType": "SensitiveDataExportedEventInput",
+    "semantic": "sensitive_data_exported",
+    "name": "bloodtrail.audit.data.sensitive_data.exported"
+  },
+  {
+    "method": "securityConfigurationChanged",
+    "inputType": "SecurityConfigurationChangedEventInput",
+    "semantic": "security_configuration_changed",
+    "name": "bloodtrail.audit.security.configuration.changed"
+  },
+  {
+    "method": "tenantContextViolationDetected",
+    "inputType": "TenantContextViolationDetectedEventInput",
+    "semantic": "tenant_context_violation_detected",
+    "name": "bloodtrail.audit.tenant.context_violation.detected"
+  }
+] as const;
+
 export const EXTENSION_NAMESPACES = [
   {
     "namespace": "bloodtrail.audit.enrichment.v1",
@@ -2541,16 +2688,214 @@ export const PROHIBITED_DATA_KEYS = [
   "session_cookie"
 ] as const;
 
+export const CONTRACT_ERROR_CODES = REGISTRIES.validation_error_codes;
+
+export const SDK_ERROR_CODES = [
+  "SDK_INVALID_CONFIGURATION",
+  "SDK_UNSUPPORTED_CONTRACT_VERSION",
+  "SDK_MISSING_AUTHORITATIVE_CONTEXT",
+  "SDK_MISSING_EVENT_FIELD",
+  "SDK_NOT_READY",
+  "SDK_SHUTTING_DOWN",
+  "SDK_SHUT_DOWN",
+  "SDK_SCHEMA_VALIDATION_FAILED",
+  "SDK_SEMANTIC_VALIDATION_FAILED",
+  "SDK_SINK_REJECTED",
+  "SDK_SINK_FAILURE",
+  "SDK_SHUTDOWN_TIMEOUT",
+  "SDK_INVALID_OPERATION_TRANSITION",
+  "SDK_INVALID_IDENTIFIER",
+  "SDK_INVALID_CLOCK",
+  "SDK_HOOK_FAILURE",
+  "SDK_DUPLICATE_SUCCESS",
+  "SDK_OPERATION_EVENT_MISMATCH",
+  "SDK_UNSUPPORTED_HOOK_RESULT"
+] as const;
+
 export type EventDefinition = (typeof EVENT_CATALOG)[number];
 
 export type EventName = EventDefinition["name"];
 
 export type EventSemantic = EventDefinition["semantic"];
 
+export type EventMethodDefinition = (typeof EVENT_METHODS)[number];
+
+export type EventMethodName = EventMethodDefinition["method"];
+
 export type EventNameFor<S extends EventSemantic> = Extract<EventDefinition, { readonly semantic: S }>["name"];
 
 export type EventForName<N extends EventName> = SecurityAuditEvent & { readonly event: SecurityAuditEvent["event"] & { readonly name: N } };
 
+export type EventDefinitionForName<N extends EventName> = Extract<EventDefinition, { readonly name: N }>;
+
+export type EventPhaseForName<N extends EventName> = EventDefinitionForName<N>["phase"][number];
+
+export type EventOutcomeForName<N extends EventName> = EventDefinitionForName<N>["outcomes"][number];
+
+export type EventCommitForName<N extends EventName> = EventDefinitionForName<N>["commit"][number];
+
+export type RequiredContextForName<N extends EventName> = EventDefinitionForName<N>["required_context"][number];
+
 export type RegistryName = keyof typeof REGISTRIES;
 
 export type RegistryValue<N extends RegistryName> = (typeof REGISTRIES)[N][number];
+
+export type ContractErrorCode = (typeof CONTRACT_ERROR_CODES)[number];
+
+export type SdkGeneratedErrorCode = (typeof SDK_ERROR_CODES)[number];
+
+export type AuditErrorCode = ContractErrorCode | SdkGeneratedErrorCode;
+
+type UnionToIntersection<T> = (T extends unknown ? (value: T) => void : never) extends (value: infer I) => void ? I : never;
+
+export interface GeneratedOperationContext {
+  readonly operation_id?: string;
+  readonly transaction_id?: string;
+  readonly state?: "started" | "committed" | "not_committed" | "partially_committed" | "compensated" | "cancelled";
+  readonly commit_state?: SecurityAuditEvent["event"]["commit_state"];
+  readonly bound_event?: string;
+  readonly transactional?: boolean;
+}
+
+export interface RetryRelationshipInput {
+  readonly retry_attempt: number;
+  readonly original_event_id: string;
+  readonly causation_id?: string;
+}
+
+export interface RedeliveryInput<N extends EventName = EventName> {
+  readonly event: EventForName<N>;
+}
+
+export type EventBuilderBaseInput<N extends EventName> = {
+  readonly event?: {
+    readonly lifecycle_phase?: EventPhaseForName<N>;
+    readonly outcome?: EventOutcomeForName<N>;
+    readonly outcome_reason?: SecurityAuditEvent["event"]["outcome_reason"];
+    readonly commit_state?: EventCommitForName<N>;
+    readonly timestamp?: string;
+    readonly observed_at?: string;
+  };
+  readonly tenant?: SecurityAuditEvent["tenant"];
+  readonly claimedTenant?: Pick<SecurityAuditEvent["tenant"], "claimed_tenant_id">;
+  readonly actor?: SecurityAuditEvent["actor"];
+  readonly subject?: SecurityAuditEvent["subject"];
+  readonly authenticated_principal?: SecurityAuditEvent["authenticated_principal"];
+  readonly delegation?: SecurityAuditEvent["delegation"];
+  readonly credential?: SecurityAuditEvent["credential"];
+  readonly initiator?: SecurityAuditEvent["initiator"];
+  readonly session?: SecurityAuditEvent["session"];
+  readonly authentication?: SecurityAuditEvent["authentication"];
+  readonly authorization?: SecurityAuditEvent["authorization"];
+  readonly source?: SecurityAuditEvent["source"];
+  readonly destination?: SecurityAuditEvent["destination"];
+  readonly resource?: SecurityAuditEvent["resource"];
+  readonly request?: SecurityAuditEvent["request"];
+  readonly correlation?: Partial<SecurityAuditEvent["correlation"]>;
+  readonly risk?: SecurityAuditEvent["risk"];
+  readonly data?: Partial<SecurityAuditEvent["data"]>;
+  readonly integrity?: SecurityAuditEvent["integrity"];
+  readonly extensions?: SecurityAuditEvent["extensions"];
+  readonly operation?: GeneratedOperationContext;
+  readonly retry?: RetryRelationshipInput;
+  readonly redelivery?: RedeliveryInput<N>;
+};
+
+type RequiredContextProperty<C extends string> =
+  C extends "actor" | "administrator" | "real_actor" | "real_admin_actor" | "real_actor_or_process" | "actor_or_claim" ? { readonly actor: SecurityAuditEvent["actor"] } :
+  C extends "tenant" | "tenants" | "authoritative_tenants" | "tenant_or_platform_scope" ? { readonly tenant: SecurityAuditEvent["tenant"] } :
+  C extends "resource" | "role" | "resource_scope" | "config_resource" | "resource_owner" ? { readonly resource: SecurityAuditEvent["resource"] } :
+  C extends "authorization" | "policy" ? { readonly authorization: SecurityAuditEvent["authorization"] } :
+  C extends "authentication" ? { readonly authentication: SecurityAuditEvent["authentication"] } :
+  C extends "session" ? { readonly session: SecurityAuditEvent["session"] } :
+  C extends "credential" ? { readonly credential: SecurityAuditEvent["credential"] } :
+  C extends "source" | "request_source" ? { readonly source: SecurityAuditEvent["source"] } :
+  C extends "request" ? { readonly request: SecurityAuditEvent["request"] } :
+  C extends "correlation" | "original_start" ? { readonly correlation: Partial<SecurityAuditEvent["correlation"]> } :
+  C extends "subject" | "impersonated_subject" ? { readonly subject: SecurityAuditEvent["subject"] } :
+  C extends "principal" | "authenticated_principal" ? { readonly authenticated_principal: SecurityAuditEvent["authenticated_principal"] } :
+  C extends "delegation" | "scope" | "expiry" ? { readonly delegation: SecurityAuditEvent["delegation"] } :
+  C extends "operation" | "transaction" ? { readonly operation: GeneratedOperationContext } :
+  C extends "change_categories" | "change_category" ? { readonly resource: SecurityAuditEvent["resource"] & { readonly change_categories: NonNullable<SecurityAuditEvent["resource"]["change_categories"]> } } :
+  C extends "deletion_mode" ? { readonly resource: SecurityAuditEvent["resource"] & { readonly deletion_mode: NonNullable<SecurityAuditEvent["resource"]["deletion_mode"]> } } :
+  C extends "bounded_volume" | "destination_class" ? { readonly resource: SecurityAuditEvent["resource"] & { readonly export: NonNullable<SecurityAuditEvent["resource"]["export"]> } } :
+  C extends "claimed_tenant" ? { readonly claimedTenant: Pick<SecurityAuditEvent["tenant"], "claimed_tenant_id"> } :
+  {};
+
+export type EventBuilderInputForName<N extends EventName> =
+  EventBuilderBaseInput<N> & UnionToIntersection<RequiredContextProperty<RequiredContextForName<N>>>;
+
+export type AccountRegistrationAttemptedEventInput = EventBuilderInputForName<"bloodtrail.audit.account.registration.attempted">;
+
+export type AccountRegistrationCompletedEventInput = EventBuilderInputForName<"bloodtrail.audit.account.registration.completed">;
+
+export type AuthenticationSucceededEventInput = EventBuilderInputForName<"bloodtrail.audit.authentication.succeeded">;
+
+export type AuthenticationFailedEventInput = EventBuilderInputForName<"bloodtrail.audit.authentication.failed">;
+
+export type MfaEnrolledEventInput = EventBuilderInputForName<"bloodtrail.audit.authentication.mfa.enrolled">;
+
+export type MfaRemovedEventInput = EventBuilderInputForName<"bloodtrail.audit.authentication.mfa.removed">;
+
+export type SessionCreatedEventInput = EventBuilderInputForName<"bloodtrail.audit.session.created">;
+
+export type SessionRevokedEventInput = EventBuilderInputForName<"bloodtrail.audit.session.revoked">;
+
+export type PasswordResetRequestedEventInput = EventBuilderInputForName<"bloodtrail.audit.account.password_reset.requested">;
+
+export type PasswordResetCompletedEventInput = EventBuilderInputForName<"bloodtrail.audit.account.password_reset.completed">;
+
+export type AuthorizationAllowedEventInput = EventBuilderInputForName<"bloodtrail.audit.authorization.allowed">;
+
+export type AuthorizationDeniedEventInput = EventBuilderInputForName<"bloodtrail.audit.authorization.denied">;
+
+export type RoleAssignedEventInput = EventBuilderInputForName<"bloodtrail.audit.authorization.role.assigned">;
+
+export type RoleRemovedEventInput = EventBuilderInputForName<"bloodtrail.audit.authorization.role.removed">;
+
+export type PrivilegeElevatedEventInput = EventBuilderInputForName<"bloodtrail.audit.authorization.privilege.elevated">;
+
+export type ImpersonationStartedEventInput = EventBuilderInputForName<"bloodtrail.audit.administration.impersonation.started">;
+
+export type ImpersonationEndedEventInput = EventBuilderInputForName<"bloodtrail.audit.administration.impersonation.ended">;
+
+export type SensitiveResourceViewedEventInput = EventBuilderInputForName<"bloodtrail.audit.data.sensitive_resource.viewed">;
+
+export type SensitiveResourceCreatedEventInput = EventBuilderInputForName<"bloodtrail.audit.data.sensitive_resource.created">;
+
+export type SensitiveResourceModifiedEventInput = EventBuilderInputForName<"bloodtrail.audit.data.sensitive_resource.modified">;
+
+export type SensitiveResourceDeletedEventInput = EventBuilderInputForName<"bloodtrail.audit.data.sensitive_resource.deleted">;
+
+export type SensitiveDataExportedEventInput = EventBuilderInputForName<"bloodtrail.audit.data.sensitive_data.exported">;
+
+export type SecurityConfigurationChangedEventInput = EventBuilderInputForName<"bloodtrail.audit.security.configuration.changed">;
+
+export type TenantContextViolationDetectedEventInput = EventBuilderInputForName<"bloodtrail.audit.tenant.context_violation.detected">;
+
+export type NamedAuditEventInputMap = {
+  readonly "accountRegistrationAttempted": AccountRegistrationAttemptedEventInput;
+  readonly "accountRegistrationCompleted": AccountRegistrationCompletedEventInput;
+  readonly "authenticationSucceeded": AuthenticationSucceededEventInput;
+  readonly "authenticationFailed": AuthenticationFailedEventInput;
+  readonly "mfaEnrolled": MfaEnrolledEventInput;
+  readonly "mfaRemoved": MfaRemovedEventInput;
+  readonly "sessionCreated": SessionCreatedEventInput;
+  readonly "sessionRevoked": SessionRevokedEventInput;
+  readonly "passwordResetRequested": PasswordResetRequestedEventInput;
+  readonly "passwordResetCompleted": PasswordResetCompletedEventInput;
+  readonly "authorizationAllowed": AuthorizationAllowedEventInput;
+  readonly "authorizationDenied": AuthorizationDeniedEventInput;
+  readonly "roleAssigned": RoleAssignedEventInput;
+  readonly "roleRemoved": RoleRemovedEventInput;
+  readonly "privilegeElevated": PrivilegeElevatedEventInput;
+  readonly "impersonationStarted": ImpersonationStartedEventInput;
+  readonly "impersonationEnded": ImpersonationEndedEventInput;
+  readonly "sensitiveResourceViewed": SensitiveResourceViewedEventInput;
+  readonly "sensitiveResourceCreated": SensitiveResourceCreatedEventInput;
+  readonly "sensitiveResourceModified": SensitiveResourceModifiedEventInput;
+  readonly "sensitiveResourceDeleted": SensitiveResourceDeletedEventInput;
+  readonly "sensitiveDataExported": SensitiveDataExportedEventInput;
+  readonly "securityConfigurationChanged": SecurityConfigurationChangedEventInput;
+  readonly "tenantContextViolationDetected": TenantContextViolationDetectedEventInput;
+};
