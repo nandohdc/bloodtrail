@@ -1,0 +1,856 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "sanitized_local_baseline",
+  "measured_at": "2026-07-30T16:49:58.299Z",
+  "sanitized_at": "2026-07-30T18:27:37.000Z",
+  "environment": {
+    "os": "macOS 26.5.2 (build 25F84)",
+    "browser": "Google Chrome 150.0.7871.188",
+    "node": "26.5.0",
+    "npm": "11.17.0",
+    "playwright": "1.62.1"
+  },
+  "packages": {
+    "fingerprintjs": "5.2.0",
+    "botd": "2.0.0"
+  },
+  "methodology": {
+    "origin": "local first-party HTTP server on 127.0.0.1",
+    "cold_and_warm_runs": true,
+    "cpu_throttling": "Chrome DevTools Protocol Emulation.setCPUThrottlingRate rate=6",
+    "monitoring_negative_control": "Math.random forced to zero; external requests recorded and aborted"
+  },
+  "limitations": [
+    "Single macOS/Chrome host; not physical-mobile or Safari evidence.",
+    "CPU throttling is synthetic and not a low-end-device benchmark.",
+    "No production traffic, customer data, conversion measurement, or population false-positive rate.",
+    "No advanced stealth, patched-CDP, distributed low-and-slow, or longitudinal stability study."
+  ],
+  "scenarios": [
+    {
+      "name": "headless_chrome_baseline",
+      "sample_count": 15,
+      "webdriver_exposed": true,
+      "fingerprintjs_version": "5.2.0",
+      "environment_cluster_count": 1,
+      "fingerprintjs_confidence_score": 0.5,
+      "fingerprintjs_load": {
+        "n": 15,
+        "min_ms": 15.700000000186265,
+        "median_ms": 17.299999999813735,
+        "p95_ms": 45.6999999997206,
+        "max_ms": 45.6999999997206
+      },
+      "fingerprintjs_collect": {
+        "n": 15,
+        "min_ms": 0.599999999627471,
+        "median_ms": 0.7000000001862645,
+        "p95_ms": 48,
+        "max_ms": 48
+      },
+      "fingerprintjs_component_error_names": [],
+      "fingerprintjs_slowest_components": [
+        {
+          "name": "userAgentData",
+          "duration_ms": 46,
+          "status": "ok"
+        },
+        {
+          "name": "fonts",
+          "duration_ms": 45,
+          "status": "ok"
+        },
+        {
+          "name": "fontPreferences",
+          "duration_ms": 40,
+          "status": "ok"
+        },
+        {
+          "name": "domBlockers",
+          "duration_ms": 38,
+          "status": "ok"
+        },
+        {
+          "name": "plugins",
+          "duration_ms": 28,
+          "status": "ok"
+        },
+        {
+          "name": "canvas",
+          "duration_ms": 17,
+          "status": "ok"
+        },
+        {
+          "name": "webGlExtensions",
+          "duration_ms": 8,
+          "status": "ok"
+        },
+        {
+          "name": "timezone",
+          "duration_ms": 5,
+          "status": "ok"
+        }
+      ],
+      "botd_result": {
+        "bot": true,
+        "botKind": "headless_chrome"
+      },
+      "botd_load": {
+        "n": 15,
+        "min_ms": 2.7000000001862645,
+        "median_ms": 50.1999999997206,
+        "p95_ms": 58,
+        "max_ms": 58
+      },
+      "botd_detect": {
+        "n": 15,
+        "min_ms": 0,
+        "median_ms": 0,
+        "p95_ms": 0.2999999998137355,
+        "max_ms": 0.2999999998137355
+      },
+      "botd_positive_detector_names": [
+        "detectAppVersion",
+        "detectUserAgent",
+        "detectWebDriver"
+      ],
+      "botd_component_error_names": [
+        "process"
+      ],
+      "observed_request_origins": [],
+      "approximate_heap_bytes_after_first_run": 3127064
+    },
+    {
+      "name": "headless_chrome_cold_pages",
+      "sample_count": 10,
+      "webdriver_exposed": true,
+      "fingerprintjs_version": "5.2.0",
+      "environment_cluster_count": 1,
+      "fingerprintjs_confidence_score": 0.5,
+      "fingerprintjs_load": {
+        "n": 10,
+        "min_ms": 35.5,
+        "median_ms": 39.5,
+        "p95_ms": 49,
+        "max_ms": 49
+      },
+      "fingerprintjs_collect": {
+        "n": 10,
+        "min_ms": 46.39999999990687,
+        "median_ms": 51.89999999990687,
+        "p95_ms": 61.40000000037253,
+        "max_ms": 61.40000000037253
+      },
+      "fingerprintjs_component_error_names": [],
+      "fingerprintjs_slowest_components": [
+        {
+          "name": "userAgentData",
+          "duration_ms": 40,
+          "status": "ok"
+        },
+        {
+          "name": "fonts",
+          "duration_ms": 40,
+          "status": "ok"
+        },
+        {
+          "name": "fontPreferences",
+          "duration_ms": 35,
+          "status": "ok"
+        },
+        {
+          "name": "plugins",
+          "duration_ms": 33,
+          "status": "ok"
+        },
+        {
+          "name": "domBlockers",
+          "duration_ms": 32,
+          "status": "ok"
+        },
+        {
+          "name": "canvas",
+          "duration_ms": 12,
+          "status": "ok"
+        },
+        {
+          "name": "webGlExtensions",
+          "duration_ms": 8,
+          "status": "ok"
+        },
+        {
+          "name": "timezone",
+          "duration_ms": 6,
+          "status": "ok"
+        }
+      ],
+      "botd_result": {
+        "bot": true,
+        "botKind": "headless_chrome"
+      },
+      "botd_load": {
+        "n": 10,
+        "min_ms": 2.5,
+        "median_ms": 2.7999999998137355,
+        "p95_ms": 5.699999999720603,
+        "max_ms": 5.699999999720603
+      },
+      "botd_detect": {
+        "n": 10,
+        "min_ms": 0.09999999962747097,
+        "median_ms": 0.10000000009313226,
+        "p95_ms": 0.39999999990686774,
+        "max_ms": 0.39999999990686774
+      },
+      "botd_positive_detector_names": [
+        "detectAppVersion",
+        "detectUserAgent",
+        "detectWebDriver"
+      ],
+      "botd_component_error_names": [
+        "process"
+      ],
+      "observed_request_origins": [],
+      "approximate_heap_bytes_after_first_run": 3202808
+    },
+    {
+      "name": "headless_chrome_webdriver_patched",
+      "sample_count": 15,
+      "webdriver_exposed": false,
+      "fingerprintjs_version": "5.2.0",
+      "environment_cluster_count": 1,
+      "fingerprintjs_confidence_score": 0.5,
+      "fingerprintjs_load": {
+        "n": 15,
+        "min_ms": 15.899999999906868,
+        "median_ms": 17.200000000186265,
+        "p95_ms": 37.6999999997206,
+        "max_ms": 37.6999999997206
+      },
+      "fingerprintjs_collect": {
+        "n": 15,
+        "min_ms": 0.6000000000931323,
+        "median_ms": 0.7999999998137355,
+        "p95_ms": 49.40000000037253,
+        "max_ms": 49.40000000037253
+      },
+      "fingerprintjs_component_error_names": [],
+      "fingerprintjs_slowest_components": [
+        {
+          "name": "userAgentData",
+          "duration_ms": 38,
+          "status": "ok"
+        },
+        {
+          "name": "fonts",
+          "duration_ms": 37,
+          "status": "ok"
+        },
+        {
+          "name": "fontPreferences",
+          "duration_ms": 32,
+          "status": "ok"
+        },
+        {
+          "name": "plugins",
+          "duration_ms": 32,
+          "status": "ok"
+        },
+        {
+          "name": "domBlockers",
+          "duration_ms": 30,
+          "status": "ok"
+        },
+        {
+          "name": "canvas",
+          "duration_ms": 11,
+          "status": "ok"
+        },
+        {
+          "name": "webGlExtensions",
+          "duration_ms": 7,
+          "status": "ok"
+        },
+        {
+          "name": "timezone",
+          "duration_ms": 5,
+          "status": "ok"
+        }
+      ],
+      "botd_result": {
+        "bot": true,
+        "botKind": "headless_chrome"
+      },
+      "botd_load": {
+        "n": 15,
+        "min_ms": 2.8999999999068677,
+        "median_ms": 50.5,
+        "p95_ms": 61,
+        "max_ms": 61
+      },
+      "botd_detect": {
+        "n": 15,
+        "min_ms": 0,
+        "median_ms": 0,
+        "p95_ms": 0.19999999972060323,
+        "max_ms": 0.19999999972060323
+      },
+      "botd_positive_detector_names": [
+        "detectAppVersion",
+        "detectUserAgent"
+      ],
+      "botd_component_error_names": [
+        "process"
+      ],
+      "observed_request_origins": [],
+      "approximate_heap_bytes_after_first_run": 3193080
+    },
+    {
+      "name": "headless_chrome_basic_stealth",
+      "sample_count": 10,
+      "webdriver_exposed": false,
+      "fingerprintjs_version": "5.2.0",
+      "environment_cluster_count": 1,
+      "fingerprintjs_confidence_score": 0.5,
+      "fingerprintjs_load": {
+        "n": 10,
+        "min_ms": 35,
+        "median_ms": 38.6999999997206,
+        "p95_ms": 49.200000000186265,
+        "max_ms": 49.200000000186265
+      },
+      "fingerprintjs_collect": {
+        "n": 10,
+        "min_ms": 46.10000000009313,
+        "median_ms": 51.1999999997206,
+        "p95_ms": 59.6999999997206,
+        "max_ms": 59.6999999997206
+      },
+      "fingerprintjs_component_error_names": [],
+      "fingerprintjs_slowest_components": [
+        {
+          "name": "userAgentData",
+          "duration_ms": 40,
+          "status": "ok"
+        },
+        {
+          "name": "fonts",
+          "duration_ms": 38,
+          "status": "ok"
+        },
+        {
+          "name": "fontPreferences",
+          "duration_ms": 34,
+          "status": "ok"
+        },
+        {
+          "name": "domBlockers",
+          "duration_ms": 32,
+          "status": "ok"
+        },
+        {
+          "name": "plugins",
+          "duration_ms": 31,
+          "status": "ok"
+        },
+        {
+          "name": "canvas",
+          "duration_ms": 11,
+          "status": "ok"
+        },
+        {
+          "name": "webGlExtensions",
+          "duration_ms": 7,
+          "status": "ok"
+        },
+        {
+          "name": "timezone",
+          "duration_ms": 6,
+          "status": "ok"
+        }
+      ],
+      "botd_result": {
+        "bot": false
+      },
+      "botd_load": {
+        "n": 10,
+        "min_ms": 2.5,
+        "median_ms": 2.8999999999068677,
+        "p95_ms": 3.400000000372529,
+        "max_ms": 3.400000000372529
+      },
+      "botd_detect": {
+        "n": 10,
+        "min_ms": 0.09999999962747097,
+        "median_ms": 0.19999999972060323,
+        "p95_ms": 0.20000000018626451,
+        "max_ms": 0.20000000018626451
+      },
+      "botd_positive_detector_names": [],
+      "botd_component_error_names": [
+        "process"
+      ],
+      "observed_request_origins": [],
+      "approximate_heap_bytes_after_first_run": 3179838
+    },
+    {
+      "name": "headless_chrome_6x_cpu_cold_pages",
+      "sample_count": 10,
+      "webdriver_exposed": true,
+      "fingerprintjs_version": "5.2.0",
+      "environment_cluster_count": 2,
+      "fingerprintjs_confidence_score": 0.5,
+      "fingerprintjs_load": {
+        "n": 10,
+        "min_ms": 114.39999999990687,
+        "median_ms": 117.8000000002794,
+        "p95_ms": 122.3000000002794,
+        "max_ms": 122.3000000002794
+      },
+      "fingerprintjs_collect": {
+        "n": 10,
+        "min_ms": 168.39999999990687,
+        "median_ms": 173,
+        "p95_ms": 183.5,
+        "max_ms": 183.5
+      },
+      "fingerprintjs_component_error_names": [],
+      "fingerprintjs_slowest_components": [
+        {
+          "name": "userAgentData",
+          "duration_ms": 121,
+          "status": "ok"
+        },
+        {
+          "name": "fonts",
+          "duration_ms": 117,
+          "status": "ok"
+        },
+        {
+          "name": "webGlExtensions",
+          "duration_ms": 41,
+          "status": "ok"
+        },
+        {
+          "name": "canvas",
+          "duration_ms": 35,
+          "status": "ok"
+        },
+        {
+          "name": "timezone",
+          "duration_ms": 34,
+          "status": "ok"
+        },
+        {
+          "name": "fontPreferences",
+          "duration_ms": 29,
+          "status": "ok"
+        },
+        {
+          "name": "webGlBasics",
+          "duration_ms": 11,
+          "status": "ok"
+        },
+        {
+          "name": "audio",
+          "duration_ms": 8,
+          "status": "ok"
+        }
+      ],
+      "botd_result": {
+        "bot": true,
+        "botKind": "headless_chrome"
+      },
+      "botd_load": {
+        "n": 10,
+        "min_ms": 10.199999999720603,
+        "median_ms": 11.899999999906868,
+        "p95_ms": 12.800000000279397,
+        "max_ms": 12.800000000279397
+      },
+      "botd_detect": {
+        "n": 10,
+        "min_ms": 0.20000000018626451,
+        "median_ms": 1.2999999998137355,
+        "p95_ms": 1.3999999999068677,
+        "max_ms": 1.3999999999068677
+      },
+      "botd_positive_detector_names": [
+        "detectAppVersion",
+        "detectUserAgent",
+        "detectWebDriver"
+      ],
+      "botd_component_error_names": [
+        "process"
+      ],
+      "observed_request_origins": [],
+      "approximate_heap_bytes_after_first_run": 3704640
+    },
+    {
+      "name": "monitoring_enabled_negative_control",
+      "sample_count": 1,
+      "webdriver_exposed": true,
+      "fingerprintjs_version": "5.2.0",
+      "environment_cluster_count": 1,
+      "fingerprintjs_confidence_score": 0.5,
+      "fingerprintjs_load": {
+        "n": 1,
+        "min_ms": 50,
+        "median_ms": 50,
+        "p95_ms": 50,
+        "max_ms": 50
+      },
+      "fingerprintjs_collect": {
+        "n": 1,
+        "min_ms": 54.700000000186265,
+        "median_ms": 54.700000000186265,
+        "p95_ms": 54.700000000186265,
+        "max_ms": 54.700000000186265
+      },
+      "fingerprintjs_component_error_names": [],
+      "fingerprintjs_slowest_components": [
+        {
+          "name": "userAgentData",
+          "duration_ms": 50,
+          "status": "ok"
+        },
+        {
+          "name": "fonts",
+          "duration_ms": 48,
+          "status": "ok"
+        },
+        {
+          "name": "fontPreferences",
+          "duration_ms": 43,
+          "status": "ok"
+        },
+        {
+          "name": "domBlockers",
+          "duration_ms": 41,
+          "status": "ok"
+        },
+        {
+          "name": "plugins",
+          "duration_ms": 36,
+          "status": "ok"
+        },
+        {
+          "name": "canvas",
+          "duration_ms": 11,
+          "status": "ok"
+        },
+        {
+          "name": "webGlExtensions",
+          "duration_ms": 7,
+          "status": "ok"
+        },
+        {
+          "name": "timezone",
+          "duration_ms": 6,
+          "status": "ok"
+        }
+      ],
+      "botd_result": {
+        "bot": true,
+        "botKind": "headless_chrome"
+      },
+      "botd_load": {
+        "n": 1,
+        "min_ms": 3.599999999627471,
+        "median_ms": 3.599999999627471,
+        "p95_ms": 3.599999999627471,
+        "max_ms": 3.599999999627471
+      },
+      "botd_detect": {
+        "n": 1,
+        "min_ms": 0.20000000018626451,
+        "median_ms": 0.20000000018626451,
+        "p95_ms": 0.20000000018626451,
+        "max_ms": 0.20000000018626451
+      },
+      "botd_positive_detector_names": [
+        "detectAppVersion",
+        "detectUserAgent",
+        "detectWebDriver"
+      ],
+      "botd_component_error_names": [
+        "process"
+      ],
+      "observed_request_origins": [
+        "https://m1.openfpcdn.io"
+      ],
+      "approximate_heap_bytes_after_first_run": 3465734
+    },
+    {
+      "name": "headless_chrome_different_screen",
+      "sample_count": 15,
+      "webdriver_exposed": false,
+      "fingerprintjs_version": "5.2.0",
+      "environment_cluster_count": 1,
+      "fingerprintjs_confidence_score": 0.5,
+      "fingerprintjs_load": {
+        "n": 15,
+        "min_ms": 16.100000000093132,
+        "median_ms": 17.600000000093132,
+        "p95_ms": 39.89999999990687,
+        "max_ms": 39.89999999990687
+      },
+      "fingerprintjs_collect": {
+        "n": 15,
+        "min_ms": 0.6000000000931323,
+        "median_ms": 0.7999999998137355,
+        "p95_ms": 51.90000000037253,
+        "max_ms": 51.90000000037253
+      },
+      "fingerprintjs_component_error_names": [],
+      "fingerprintjs_slowest_components": [
+        {
+          "name": "userAgentData",
+          "duration_ms": 41,
+          "status": "ok"
+        },
+        {
+          "name": "fonts",
+          "duration_ms": 39,
+          "status": "ok"
+        },
+        {
+          "name": "fontPreferences",
+          "duration_ms": 33,
+          "status": "ok"
+        },
+        {
+          "name": "plugins",
+          "duration_ms": 33,
+          "status": "ok"
+        },
+        {
+          "name": "domBlockers",
+          "duration_ms": 32,
+          "status": "ok"
+        },
+        {
+          "name": "canvas",
+          "duration_ms": 11,
+          "status": "ok"
+        },
+        {
+          "name": "webGlExtensions",
+          "duration_ms": 8,
+          "status": "ok"
+        },
+        {
+          "name": "timezone",
+          "duration_ms": 5,
+          "status": "ok"
+        }
+      ],
+      "botd_result": {
+        "bot": true,
+        "botKind": "headless_chrome"
+      },
+      "botd_load": {
+        "n": 15,
+        "min_ms": 3.099999999627471,
+        "median_ms": 50.09999999962747,
+        "p95_ms": 54.09999999962747,
+        "max_ms": 54.09999999962747
+      },
+      "botd_detect": {
+        "n": 15,
+        "min_ms": 0,
+        "median_ms": 0,
+        "p95_ms": 0.10000000009313226,
+        "max_ms": 0.10000000009313226
+      },
+      "botd_positive_detector_names": [
+        "detectAppVersion",
+        "detectUserAgent"
+      ],
+      "botd_component_error_names": [
+        "process"
+      ],
+      "observed_request_origins": [],
+      "approximate_heap_bytes_after_first_run": 3227716
+    },
+    {
+      "name": "headed_chrome_playwright_cold_pages",
+      "sample_count": 5,
+      "webdriver_exposed": true,
+      "fingerprintjs_version": "5.2.0",
+      "environment_cluster_count": 1,
+      "fingerprintjs_confidence_score": 0.5,
+      "fingerprintjs_load": {
+        "n": 5,
+        "min_ms": 32,
+        "median_ms": 37.89999999990687,
+        "p95_ms": 45.5,
+        "max_ms": 45.5
+      },
+      "fingerprintjs_collect": {
+        "n": 5,
+        "min_ms": 48.6999999997206,
+        "median_ms": 51.39999999990687,
+        "p95_ms": 56.3000000002794,
+        "max_ms": 56.3000000002794
+      },
+      "fingerprintjs_component_error_names": [],
+      "fingerprintjs_slowest_components": [
+        {
+          "name": "userAgentData",
+          "duration_ms": 46,
+          "status": "ok"
+        },
+        {
+          "name": "fonts",
+          "duration_ms": 45,
+          "status": "ok"
+        },
+        {
+          "name": "fontPreferences",
+          "duration_ms": 41,
+          "status": "ok"
+        },
+        {
+          "name": "domBlockers",
+          "duration_ms": 39,
+          "status": "ok"
+        },
+        {
+          "name": "plugins",
+          "duration_ms": 27,
+          "status": "ok"
+        },
+        {
+          "name": "canvas",
+          "duration_ms": 20,
+          "status": "ok"
+        },
+        {
+          "name": "webGlExtensions",
+          "duration_ms": 8,
+          "status": "ok"
+        },
+        {
+          "name": "timezone",
+          "duration_ms": 5,
+          "status": "ok"
+        }
+      ],
+      "botd_result": {
+        "bot": true,
+        "botKind": "headless_chrome"
+      },
+      "botd_load": {
+        "n": 5,
+        "min_ms": 2.7999999998137355,
+        "median_ms": 2.900000000372529,
+        "p95_ms": 3.400000000372529,
+        "max_ms": 3.400000000372529
+      },
+      "botd_detect": {
+        "n": 5,
+        "min_ms": 0.10000000009313226,
+        "median_ms": 0.19999999972060323,
+        "p95_ms": 0.20000000018626451,
+        "max_ms": 0.20000000018626451
+      },
+      "botd_positive_detector_names": [
+        "detectWebDriver"
+      ],
+      "botd_component_error_names": [
+        "process"
+      ],
+      "observed_request_origins": [],
+      "approximate_heap_bytes_after_first_run": 3390956
+    },
+    {
+      "name": "headed_chrome_playwright_webdriver_patched_cold_pages",
+      "sample_count": 5,
+      "webdriver_exposed": false,
+      "fingerprintjs_version": "5.2.0",
+      "environment_cluster_count": 1,
+      "fingerprintjs_confidence_score": 0.5,
+      "fingerprintjs_load": {
+        "n": 5,
+        "min_ms": 37.299999999813735,
+        "median_ms": 38.5,
+        "p95_ms": 40.39999999990687,
+        "max_ms": 40.39999999990687
+      },
+      "fingerprintjs_collect": {
+        "n": 5,
+        "min_ms": 49.60000000009313,
+        "median_ms": 51.6999999997206,
+        "p95_ms": 56.3000000002794,
+        "max_ms": 56.3000000002794
+      },
+      "fingerprintjs_component_error_names": [],
+      "fingerprintjs_slowest_components": [
+        {
+          "name": "userAgentData",
+          "duration_ms": 38,
+          "status": "ok"
+        },
+        {
+          "name": "fonts",
+          "duration_ms": 37,
+          "status": "ok"
+        },
+        {
+          "name": "plugins",
+          "duration_ms": 32,
+          "status": "ok"
+        },
+        {
+          "name": "fontPreferences",
+          "duration_ms": 31,
+          "status": "ok"
+        },
+        {
+          "name": "domBlockers",
+          "duration_ms": 30,
+          "status": "ok"
+        },
+        {
+          "name": "canvas",
+          "duration_ms": 11,
+          "status": "ok"
+        },
+        {
+          "name": "webGlExtensions",
+          "duration_ms": 9,
+          "status": "ok"
+        },
+        {
+          "name": "timezone",
+          "duration_ms": 5,
+          "status": "ok"
+        }
+      ],
+      "botd_result": {
+        "bot": false
+      },
+      "botd_load": {
+        "n": 5,
+        "min_ms": 2.7000000001862645,
+        "median_ms": 2.7999999998137355,
+        "p95_ms": 3,
+        "max_ms": 3
+      },
+      "botd_detect": {
+        "n": 5,
+        "min_ms": 0.19999999972060323,
+        "median_ms": 0.20000000018626451,
+        "p95_ms": 0.3000000002793968,
+        "max_ms": 0.3000000002793968
+      },
+      "botd_positive_detector_names": [],
+      "botd_component_error_names": [
+        "process"
+      ],
+      "observed_request_origins": [],
+      "approximate_heap_bytes_after_first_run": 3307676
+    }
+  ]
+}

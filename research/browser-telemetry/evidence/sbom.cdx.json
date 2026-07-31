@@ -1,0 +1,248 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:f0119536-db52-4d6a-b7c5-e1c4709a9241",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-07-30T21:23:36.280Z",
+    "lifecycles": [
+      {
+        "phase": "build"
+      }
+    ],
+    "tools": [
+      {
+        "vendor": "npm",
+        "name": "cli",
+        "version": "11.17.0"
+      }
+    ],
+    "component": {
+      "bom-ref": "bloodtrail-browser-telemetry-research@0.0.0-research",
+      "type": "library",
+      "name": "browser-telemetry",
+      "version": "0.0.0-research",
+      "scope": "required",
+      "description": "Research-only FingerprintJS and BotD reproducibility harness. Not a production dependency.",
+      "purl": "pkg:npm/bloodtrail-browser-telemetry-research@0.0.0-research",
+      "properties": [
+        {
+          "name": "cdx:npm:package:private",
+          "value": "true"
+        }
+      ],
+      "externalReferences": []
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "@fingerprintjs/botd@2.0.0",
+      "type": "library",
+      "name": "@fingerprintjs/botd",
+      "version": "2.0.0",
+      "scope": "required",
+      "author": "FingerprintJS, Inc (https://fingerprint.com)",
+      "description": "botd is a browser library for JavaScript bot detection",
+      "purl": "pkg:npm/%40fingerprintjs/botd@2.0.0",
+      "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/@fingerprintjs/botd/-/botd-2.0.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/fingerprintjs/botd.git"
+        },
+        {
+          "type": "website",
+          "url": "https://fingerprintjs.github.io/BotD/"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/fingerprintjs/botd/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "ca1bb3db734a11c0434c7986cff50bad79469db1de9cefb1666570b8192ea87524aaf699e53000d24020711cb85b2a3974805d9087f9ed45d7f3f73d52530b26"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "@fingerprintjs/fingerprintjs@5.2.0",
+      "type": "library",
+      "name": "@fingerprintjs/fingerprintjs",
+      "version": "5.2.0",
+      "scope": "required",
+      "author": "FingerprintJS, Inc (https://fingerprint.com)",
+      "description": "Browser fingerprinting library with the highest accuracy and stability",
+      "purl": "pkg:npm/%40fingerprintjs/fingerprintjs@5.2.0",
+      "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/@fingerprintjs/fingerprintjs/-/fingerprintjs-5.2.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/fingerprintjs/fingerprintjs.git"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/fingerprintjs/fingerprintjs"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/fingerprintjs/fingerprintjs/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "8feda722793009035325c3613a3be418cfe72d14ee1894c2eb16a2e2abaabd4a63a1bdacb2b1b00598d2ee4e799ce98abe07bbaaf253da74b78bf211bd049340"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "playwright@1.62.1",
+      "type": "library",
+      "name": "playwright",
+      "version": "1.62.1",
+      "scope": "required",
+      "author": "Microsoft Corporation",
+      "description": "A high-level API to automate web browsers",
+      "purl": "pkg:npm/playwright@1.62.1",
+      "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/playwright/-/playwright-1.62.1.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/microsoft/playwright.git"
+        },
+        {
+          "type": "website",
+          "url": "https://playwright.dev"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "d0cf8bdcb003f3f9e6e79e0b3a56bd032c748f4b66159d0505ca10ec5d55b951e933f5e9882f11703cc1401f16e7e840f0bdb64c7c442f3785fb659c533bdc2e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "playwright-core@1.62.1",
+      "type": "library",
+      "name": "playwright-core",
+      "version": "1.62.1",
+      "scope": "required",
+      "author": "Microsoft Corporation",
+      "description": "A high-level API to automate web browsers",
+      "purl": "pkg:npm/playwright-core@1.62.1",
+      "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.62.1.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/microsoft/playwright.git"
+        },
+        {
+          "type": "website",
+          "url": "https://playwright.dev"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "c0f612c0404963d187ada2125eacaab71d276b42e93b75c45fb8cd0e19ed6dec7bb73512ee42e766c3a516bb85241e078bfae10cc8d71aa1dec0367af2761957"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "bloodtrail-browser-telemetry-research@0.0.0-research",
+      "dependsOn": [
+        "@fingerprintjs/botd@2.0.0",
+        "@fingerprintjs/fingerprintjs@5.2.0",
+        "playwright@1.62.1"
+      ]
+    },
+    {
+      "ref": "@fingerprintjs/botd@2.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "@fingerprintjs/fingerprintjs@5.2.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "playwright@1.62.1",
+      "dependsOn": [
+        "playwright-core@1.62.1"
+      ]
+    },
+    {
+      "ref": "playwright-core@1.62.1",
+      "dependsOn": []
+    }
+  ]
+}

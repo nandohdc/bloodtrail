@@ -1,0 +1,26 @@
+{
+  "sanitized_at": "2026-07-30T18:27:37.000Z",
+  "environment": {
+    "os": "macOS 26.5.2 (build 25F84)",
+    "browser": "Google Chrome 150.0.7871.188",
+    "node": "26.5.0",
+    "npm": "11.17.0",
+    "playwright": "1.62.1"
+  },
+  "packages": {
+    "fingerprintjs": "5.2.0",
+    "botd": "2.0.0"
+  },
+  "methodology": {
+    "origin": "local first-party HTTP server on 127.0.0.1",
+    "cold_and_warm_runs": true,
+    "cpu_throttling": "Chrome DevTools Protocol Emulation.setCPUThrottlingRate rate=6",
+    "monitoring_negative_control": "Math.random forced to zero; external requests recorded and aborted"
+  },
+  "limitations": [
+    "Single macOS/Chrome host; not physical-mobile or Safari evidence.",
+    "CPU throttling is synthetic and not a low-end-device benchmark.",
+    "No production traffic, customer data, conversion measurement, or population false-positive rate.",
+    "No advanced stealth, patched-CDP, distributed low-and-slow, or longitudinal stability study."
+  ]
+}
