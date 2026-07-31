@@ -1,6 +1,6 @@
 # Research Harness Dependency and Supply-Chain Evidence
 
-Status: technical evidence complete; project-owner dependency and license acceptance **pending**.
+Status: technical evidence and project-owner dependency and license acceptance **complete for the isolated research harness**.
 
 This directory is isolated research tooling. All packages are development dependencies in a private package, and no repository production manifest depends on them. `npm ci --ignore-scripts` is the required installation mode.
 
@@ -54,4 +54,4 @@ Both inspected npm packages default monitoring on in their `load` API and may at
 
 ## Disposition
 
-The dependencies remain confined to isolated repository research pending written project-owner dependency and license acceptance by Fernando Homem da Costa (`nandohdc`). That acceptance is not formal legal advice or external open-source governance approval. No conclusion here authorizes production adoption, real-user browser collection, or redistribution.
+The project-owner dependency and license acceptance is complete and applies only to the isolated research harness. It is not formal legal advice or external open-source governance approval. No production dependency adoption, real-user browser collection, or redistribution is authorized. Any version change or production use requires a new dependency, license, vulnerability, SBOM, maintenance, and outbound-network review.

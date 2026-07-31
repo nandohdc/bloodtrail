@@ -1,10 +1,12 @@
 # Browser Telemetry Research
 
-Status: **research-only; six project-owner governance records pending**
+Status: **research-only; six project-owner governance records complete; 22/22 OpenSpec tasks complete**
 
-Provisional decision: **DEFER BROWSER TELEMETRY**
+Provisional and final decision: **DEFER BROWSER TELEMETRY — no adoption at this time**
 
 Production authorization: none.
+
+Real-user collection authorization: none.
 
 This directory materializes the completed FingerprintJS/BotD research, its sanitized local PoC evidence, a reproducible first-party harness, supply-chain evidence, and the packet for documented project-owner governance. It is not imported by any storefront or service and does not modify production behavior.
 
@@ -40,7 +42,7 @@ Any future bounded research would require a separate reviewed OpenSpec change, s
 - `evidence/upstream-licenses/`: preserved license notices for every locked package entry.
 - `source-evidence.md`: claim-to-source matrix.
 - `DEPENDENCIES.md`: dependency, license, SBOM, audit, and update posture.
-- `reviews/README.md`: six pending project-owner governance records, assurance boundaries, and unsigned record templates.
+- `reviews/README.md`: six completed project-owner governance records and their assurance and review-binding boundaries.
 
 ## Reproducibility
 
@@ -205,6 +207,11 @@ No production or real-user experiment, shadow collection, pilot, analytics use, 
 
 ## Review state
 
-Exactly six project-owner governance records remain pending: security architecture self-review, privacy restriction, technical self-review, product decision, dependency and license acceptance, and final project-owner outcome. Their tasks must stay unchecked until Fernando Homem da Costa (`nandohdc`), acting as project owner and maintainer, supplies explicit written records. These are self-reviews or owner decisions, not independent assurance, legal advice, certification, or organizational approval.
+The six project-owner governance records have been completed and are stored under `research/browser-telemetry/reviews/`: security architecture self-review, privacy restriction, technical self-review, product decision, dependency and license acceptance, and final project-owner outcome. They provide documented project-owner governance, not independent assurance, legal advice, certification, or organizational approval.
 
-Until Fernando records the owner outcomes, the provisional decision remains **DEFER BROWSER TELEMETRY**, production authorization remains **none**, and real-user collection authorization remains **none**.
+Review bindings:
+
+- First five records: Commit A, `b6bb577b1fda865610ef93ec8ef31527046c3c44`
+- Final outcome: Commit B, `e3f2f1f323a94a9fffe0f7ddfc6fcf8ec8bbd26f`
+
+The binding privacy restriction is active: no production or real-user browser telemetry is authorized, and qualified privacy/legal review is mandatory before any future continuation involving real-user collection. The research conclusion remains **DEFER BROWSER TELEMETRY — no adoption at this time**. Production authorization remains **none**, and real-user collection authorization remains **none**.
