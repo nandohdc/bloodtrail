@@ -1,0 +1,4 @@
+node_modules/
+evidence/runs/*.json
+evidence/*.tmp
+test-results/

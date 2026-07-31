@@ -40,7 +40,7 @@ The platform can prioritize server-observed controls that do not depend on coope
 - Any future browser sensor must be small, first-party, privacy-reviewed, independently versioned, reversible, and justified by measurable incremental value.
 - Browser telemetry does not become authoritative merely because its payload is signed or bound to a server-issued challenge. Binding can improve freshness and replay control, not truthfulness.
 
-This change does **not** authorize production adoption. A later implementation would require a separately reviewed OpenSpec change, such as `add-browser-telemetry-signals`, after all decision gates are met.
+This change does **not** authorize or plan production adoption. The current evidence supports only a separately approved bounded research continuation, such as `continue-browser-telemetry-poc`. A production implementation change may be considered only if that continuation demonstrates measurable incremental value and receives every required review.
 
 ### Decision rationale
 

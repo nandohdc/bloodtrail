@@ -27,7 +27,7 @@ Evidence in this document is labeled by origin:
 - Calibrate risk weights or permanent performance thresholds.
 - Treat one desktop PoC as physical-mobile, compatibility, conversion, or labeled-production evidence.
 - Establish a legal basis or provide legal advice.
-- Modify `bootstrap-risk-service` or authorize `add-browser-telemetry-signals`.
+- Modify `bootstrap-risk-service` or authorize any production browser-telemetry implementation change.
 
 ## Decisions
 
@@ -336,6 +336,6 @@ These gaps block production reconsideration and must not be reframed as implemen
 - No labeled storefront dataset comparing behavior-only decisions with behavior-plus-browser-signal decisions.
 - No measured false-positive or false-negative rate for the target customer and attacker populations.
 - No proof that the incremental value exceeds equivalent investment in Redis correlation and outcome feedback.
-- No completed license/SBOM, security architecture, privacy/legal, frontend/platform, or product approval.
+- Technical dependency evidence now exists: dependency inventory, preserved license notices, a CycloneDX SBOM, and point-in-time npm audit results. Organizational dependency/license or open-source governance approval remains pending, as do security architecture, privacy/legal, frontend/platform, and product approval.
 
 Until these gaps are resolved, the formal decision remains **defer browser telemetry**.

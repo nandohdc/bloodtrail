@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-30T21:23:35.836Z",
+  "method": "Node.js readFile plus zlib gzip level 9 and Brotli default settings",
+  "measurements": [
+    {
+      "name": "fingerprintjs_esm",
+      "file": "node_modules/@fingerprintjs/fingerprintjs/dist/fp.esm.js",
+      "raw_bytes": 129311,
+      "gzip_bytes": 37548,
+      "brotli_bytes": 31484
+    },
+    {
+      "name": "fingerprintjs_minified_esm",
+      "file": "node_modules/@fingerprintjs/fingerprintjs/dist/fp.min.js",
+      "raw_bytes": 36746,
+      "gzip_bytes": 16178,
+      "brotli_bytes": 14239
+    },
+    {
+      "name": "botd_esm",
+      "file": "node_modules/@fingerprintjs/botd/dist/botd.esm.js",
+      "raw_bytes": 27519,
+      "gzip_bytes": 6596,
+      "brotli_bytes": 5750
+    }
+  ]
+}
