@@ -1,0 +1,25 @@
+{
+  "contractName": "Bloodtrail Security Audit Event Contract",
+  "contractVersion": "1.0.0",
+  "normativeTechnicalTarget": "8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993",
+  "proposalBaseline": "94dc6e3bcc74beecd1fca2832948b139167fdd3b",
+  "canonicalCapability": "openspec/specs/security-audit-event-contract/spec.md",
+  "archivedChange": "openspec/changes/archive/2026-07-31-define-security-audit-event-contract",
+  "sources": {
+    "source": "contracts/security-audit/source/contract.source.json",
+    "schema": "contracts/security-audit/schema/security-audit-event.schema.json",
+    "catalog": "contracts/security-audit/catalog/catalog.json",
+    "policies": "contracts/security-audit/policies",
+    "registries": "contracts/security-audit/registries",
+    "positiveFixtures": "contracts/security-audit/examples/positive/all-events.json",
+    "negativeFixtures": "contracts/security-audit/examples/negative/all-negative.json"
+  },
+  "authorization": {
+    "sdkCoreImplementation": true,
+    "productionDeployment": false,
+    "productionCollection": false,
+    "realUserData": false,
+    "frameworkInstrumentation": false,
+    "productionDelivery": false
+  }
+}

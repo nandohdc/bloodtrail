@@ -1,49 +1,49 @@
 ## 1. Contract baseline and architecture decisions
 
-- [ ] 1.1 Record Contract Commit A `8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993`, contract version `1.0.0`, canonical capability path, and authoritative source/schema/catalog/policy/registry/fixture paths in the SDK package provenance manifest.
-- [ ] 1.2 Add a guard that fails if implementation modifies `openspec/specs/security-audit-event-contract/spec.md`, the archived contract change, or canonical version 1.0.0 semantics instead of proposing a separate versioned contract change.
-- [ ] 1.3 Complete ADR-SDK-001 for package path/name, ESM and exports policy, Node 24/26 support matrix, exact CI runtime versions, strict TypeScript baseline, and compatibility consequences.
-- [ ] 1.4 Complete ADR-SDK-002 for canonical type generation inputs, generator ownership, event-specific discriminants, deterministic output, drift checks, and source/schema/catalog cross-checks.
-- [ ] 1.5 Complete ADR-SDK-003 for the pinned Draft 2020-12 engine, strict mode and formats, standalone versus runtime dependency, generated validator packaging, conformance evidence, and correctness-over-zero-dependency fallback.
-- [ ] 1.6 Complete ADR-SDK-004 for configured authority providers, claimed and observed context, runtime provenance, TypeScript branding, `AsyncLocalStorage` inheritance/override/isolation, and producer-truth limitations.
-- [ ] 1.7 Complete ADR-SDK-005 for result-versus-exception behavior, safe error registry, bounded paths/metadata, dependency and sink cause handling, serialization, and error-code compatibility.
-- [ ] 1.8 Complete ADR-SDK-006 for immutable initialization, lifecycle states, in-flight shutdown policy and timeout, transport-neutral sink result semantics, included test sinks, and exclusion of console/file and production sinks.
-- [ ] 1.9 Complete ADR-SDK-007 for transaction-aware operation states, trusted commit transitions, authorization/outcome separation, asynchronous completion, retry/redelivery IDs, sink failure after commit, and explicit non-atomicity.
-- [ ] 1.10 Complete ADR-SDK-008 for prohibited-data pre/post scans, field-scoped transformations, purpose/tenant key scope, metadata, extension typing, and canonical authority override prevention.
-- [ ] 1.11 Complete ADR-SDK-009 for SDK SemVer versus contract version 1.0.0, public/generated API changes, error-code evolution, Node/TypeScript support, migration, and unsupported contract behavior.
-- [ ] 1.12 Verify all nine ADRs are internally coherent with the capability spec and accepted before marking dependent implementation tasks complete; record that ADR acceptance is not production authorization.
+- [x] 1.1 Record Contract Commit A `8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993`, contract version `1.0.0`, canonical capability path, and authoritative source/schema/catalog/policy/registry/fixture paths in the SDK package provenance manifest.
+- [x] 1.2 Add a guard that fails if implementation modifies `openspec/specs/security-audit-event-contract/spec.md`, the archived contract change, or canonical version 1.0.0 semantics instead of proposing a separate versioned contract change.
+- [x] 1.3 Complete ADR-SDK-001 for package path/name, ESM and exports policy, Node 24/26 support matrix, exact CI runtime versions, strict TypeScript baseline, and compatibility consequences.
+- [x] 1.4 Complete ADR-SDK-002 for canonical type generation inputs, generator ownership, event-specific discriminants, deterministic output, drift checks, and source/schema/catalog cross-checks.
+- [x] 1.5 Complete ADR-SDK-003 for the pinned Draft 2020-12 engine, strict mode and formats, standalone versus runtime dependency, generated validator packaging, conformance evidence, and correctness-over-zero-dependency fallback.
+- [x] 1.6 Complete ADR-SDK-004 for configured authority providers, claimed and observed context, runtime provenance, TypeScript branding, `AsyncLocalStorage` inheritance/override/isolation, and producer-truth limitations.
+- [x] 1.7 Complete ADR-SDK-005 for result-versus-exception behavior, safe error registry, bounded paths/metadata, dependency and sink cause handling, serialization, and error-code compatibility.
+- [x] 1.8 Complete ADR-SDK-006 for immutable initialization, lifecycle states, in-flight shutdown policy and timeout, transport-neutral sink result semantics, included test sinks, and exclusion of console/file and production sinks.
+- [x] 1.9 Complete ADR-SDK-007 for transaction-aware operation states, trusted commit transitions, authorization/outcome separation, asynchronous completion, retry/redelivery IDs, sink failure after commit, and explicit non-atomicity.
+- [x] 1.10 Complete ADR-SDK-008 for prohibited-data pre/post scans, field-scoped transformations, purpose/tenant key scope, metadata, extension typing, and canonical authority override prevention.
+- [x] 1.11 Complete ADR-SDK-009 for SDK SemVer versus contract version 1.0.0, public/generated API changes, error-code evolution, Node/TypeScript support, migration, and unsupported contract behavior.
+- [x] 1.12 Verify all nine ADRs are internally coherent with the capability spec and accepted before marking dependent implementation tasks complete; record that ADR acceptance is not production authorization.
 
 ## 2. Isolated package scaffolding and dependency posture
 
-- [ ] 2.1 Create the isolated `packages/security-audit-sdk-core` ESM TypeScript package named `@bloodtrail/security-audit-sdk-core` without modifying a production application.
-- [ ] 2.2 Add strict build, test, type-test, generate, generated-drift, validate, package-export, compatibility, audit, and complete verification scripts.
-- [ ] 2.3 Configure a public exports map that exposes only documented SDK entry points and prevents imports of internal generated, raw assembly, unchecked sink, and validator implementation modules.
-- [ ] 2.4 Pin all build/test dependencies and lockfile versions; document each dependency's purpose, license, runtime/development classification, integrity, and vulnerability posture.
-- [ ] 2.5 Prove that runtime dependencies are empty when standalone schema validation is selected, or include only the exact ADR-approved standards-compliant validator dependency if correctness requires it.
-- [ ] 2.6 Add Node 24 and Node 26 compatibility configuration with exact versions and strict TypeScript/module-resolution settings from ADR-SDK-001.
-- [ ] 2.7 Add source/package scope checks that reject framework, transport/exporter, collector, broker/queue/outbox, storage, SIEM, analytics/detection, browser telemetry, instrumentation, cryptographic-chain, and diagnostic-logging implementations or dependencies.
+- [x] 2.1 Create the isolated `packages/security-audit-sdk-core` ESM TypeScript package named `@bloodtrail/security-audit-sdk-core` without modifying a production application.
+- [x] 2.2 Add strict build, test, type-test, generate, generated-drift, validate, package-export, compatibility, audit, and complete verification scripts.
+- [x] 2.3 Configure a public exports map that exposes only documented SDK entry points and prevents imports of internal generated, raw assembly, unchecked sink, and validator implementation modules.
+- [x] 2.4 Pin all build/test dependencies and lockfile versions; document each dependency's purpose, license, runtime/development classification, integrity, and vulnerability posture.
+- [x] 2.5 Prove that runtime dependencies are empty when standalone schema validation is selected, or include only the exact ADR-approved standards-compliant validator dependency if correctness requires it.
+- [x] 2.6 Add Node 24 and Node 26 compatibility configuration with exact versions and strict TypeScript/module-resolution settings from ADR-SDK-001.
+- [x] 2.7 Add source/package scope checks that reject framework, transport/exporter, collector, broker/queue/outbox, storage, SIEM, analytics/detection, browser telemetry, instrumentation, cryptographic-chain, and diagnostic-logging implementations or dependencies.
 
 ## 3. Deterministic canonical generation
 
-- [ ] 3.1 Implement a deterministic generator that reads the approved canonical source plus generated schema, catalog, policy, and registries and rejects version/provenance disagreement.
-- [ ] 3.2 Generate canonical event structures, controlled string unions/constants, event-name discriminants, and contract version metadata with generated-file headers and no timestamps.
+- [x] 3.1 Implement a deterministic generator that reads the approved canonical source plus generated schema, catalog, policy, and registries and rejects version/provenance disagreement.
+- [x] 3.2 Generate canonical event structures, controlled string unions/constants, event-name discriminants, and contract version metadata with generated-file headers and no timestamps.
 - [ ] 3.3 Generate event-specific builder input types for all 24 catalog entries, including required and conditionally required contexts, allowed lifecycle/outcome/commit combinations, and fixed minimum delivery class.
-- [ ] 3.4 Generate actor, subject, authenticated principal, credential reference, delegation/impersonation, tenant, resource, authentication, authorization, request, correlation, data, integrity, and registered extension types from canonical metadata.
+- [x] 3.4 Generate actor, subject, authenticated principal, credential reference, delegation/impersonation, tenant, resource, authentication, authorization, request, correlation, data, integrity, and registered extension types from canonical metadata.
 - [ ] 3.5 Generate canonical and SDK error-code constants with separately governed namespaces and no manually maintained duplicate registry.
-- [ ] 3.6 Generate or package the strict Draft 2020-12 standalone validator according to ADR-SDK-003 and prove it compiles on every supported Node runtime.
-- [ ] 3.7 Implement `--check` byte-drift mode with stable sorting/newlines and tests proving two unchanged generation runs are byte-identical.
-- [ ] 3.8 Add cross-checks proving all 24 catalog entries and every canonical/extension field, registry value, privacy assignment, authority category, and delivery class are represented in generated SDK metadata.
-- [ ] 3.9 Add strict compile-time positive and expected-error fixtures proving generated discriminants, required fields, controlled values, and extension rules correspond to contract version 1.0.0.
+- [x] 3.6 Generate or package the strict Draft 2020-12 standalone validator according to ADR-SDK-003 and prove it compiles on every supported Node runtime.
+- [x] 3.7 Implement `--check` byte-drift mode with stable sorting/newlines and tests proving two unchanged generation runs are byte-identical.
+- [x] 3.8 Add cross-checks proving all 24 catalog entries and every canonical/extension field, registry value, privacy assignment, authority category, and delivery class are represented in generated SDK metadata.
+- [x] 3.9 Add strict compile-time positive and expected-error fixtures proving generated discriminants, required fields, controlled values, and extension rules correspond to contract version 1.0.0.
 
 ## 4. Initialization, public API, clock, and identifiers
 
 - [ ] 4.1 Implement immutable configuration cloning, normalization, validation, and freezing for contract version, producer, service, environment, deployment, authority providers, transformations, sink, clock, and identifiers.
 - [ ] 4.2 Reject missing configuration, unsupported contract/schema version, invalid provider/hook/sink shapes, and unsafe defaults before the SDK becomes ready.
-- [ ] 4.3 Implement the documented public SDK factory and result/error types while keeping raw canonical assembly and unchecked sink invocation internal.
-- [ ] 4.4 Implement trusted default occurrence/observation clocks and collision-resistant event, operation, correlation, causation, request, message, and transaction identifier providers using supported Node APIs.
+- [x] 4.3 Implement the documented public SDK factory and result/error types while keeping raw canonical assembly and unchecked sink invocation internal.
+- [x] 4.4 Implement trusted default occurrence/observation clocks and collision-resistant event, operation, correlation, causation, request, message, and transaction identifier providers using supported Node APIs.
 - [ ] 4.5 Implement fixed initialization-time clock and identifier injection for deterministic testing and reject malformed, invalidly reused, or contract-incompatible provider output.
 - [ ] 4.6 Deep-clone and freeze configuration, context frames, intermediate authoritative values, and validated output so caller mutation cannot change post-validation behavior.
-- [ ] 4.7 Add package export and JavaScript/untyped-use tests proving public imports work and internal subpaths remain inaccessible.
+- [x] 4.7 Add package export and JavaScript/untyped-use tests proving public imports work and internal subpaths remain inaccessible.
 
 ## 5. Authority-specific context builders
 
@@ -100,25 +100,25 @@
 
 ## 10. Safe errors, sink abstraction, and lifecycle
 
-- [ ] 10.1 Implement the ADR-SDK-005 safe public error/result model with stable codes, bounded paths/categories, and no raw value, full event, payload, unbounded cause, or stack in serialized output.
+- [x] 10.1 Implement the ADR-SDK-005 safe public error/result model with stable codes, bounded paths/categories, and no raw value, full event, payload, unbounded cause, or stack in serialized output.
 - [ ] 10.2 Cover invalid configuration, unsupported version, missing authority/context/field, registry, authority escalation, tenant-resource conflict, schema/semantic, prohibited data, extension, premature success, causality, sink failure, and shutdown errors.
 - [ ] 10.3 Implement the immutable transport-neutral `AuditEventSink` and bounded accepted/rejected/unknown result model while preserving event ID and cataloged delivery class.
 - [ ] 10.4 Implement in-memory and capturing test sinks with deterministic capture and failure injection, no network/filesystem behavior, and no durability/delivery claim.
 - [ ] 10.5 Exclude console and file sinks unless a separately reviewed in-scope ADR amendment justifies conspicuous non-production behavior and complete privacy controls.
-- [ ] 10.6 Implement ready, shutting-down, and shut-down lifecycle states, a documented no-new-emissions boundary, tracked in-flight calls, bounded wait, ordered optional flush/shutdown, and idempotent shutdown.
+- [x] 10.6 Implement ready, shutting-down, and shut-down lifecycle states, a documented no-new-emissions boundary, tracked in-flight calls, bounded wait, ordered optional flush/shutdown at most once, shared concurrent shutdown, and safe `SDK_SHUT_DOWN` results for lifecycle calls after shutdown.
 - [ ] 10.7 Sanitize thrown/rejected sink causes and test unbounded, secret-bearing, cyclic, and hostile error objects without leaking their content.
 - [ ] 10.8 Add sink accepted/rejected/unknown, post-commit sink failure, shutdown race, timeout, duplicate shutdown, and after-shutdown emission tests without claiming durable handoff.
 
 ## 11. Complete verification and compatibility evidence
 
 - [ ] 11.1 Add one reproducible complete verification command covering generation, strict compilation, type tests, runtime tests, fixtures, package exports, compatibility, dependency/audit, OpenSpec, whitespace, and exact scope.
-- [ ] 11.2 Run and record all 24 approved positive fixtures through the standards-compliant schema engine and SDK semantic boundary.
+- [x] 11.2 Run and record all 24 approved positive fixtures through the standards-compliant schema engine and SDK semantic boundary.
 - [ ] 11.3 Run every approved negative fixture and assert its exact bounded safe code, path limit, and absence of secret markers in serialized diagnostics.
 - [ ] 11.4 Add package API and generated-type compatibility fixtures for patch/minor/major changes, error-code additions/removals, Node/TypeScript support, and unsupported contract versions.
-- [ ] 11.5 Add Node 24 and 26 execution evidence and strict TypeScript compile-time evidence without claiming untested runtime/compiler compatibility.
-- [ ] 11.6 Add dependency license, lockfile integrity, vulnerability, runtime dependency, package content, and no-production-implementation evidence.
+- [x] 11.5 Add Node 24 and 26 execution evidence and strict TypeScript compile-time evidence without claiming untested runtime/compiler compatibility.
+- [x] 11.6 Add dependency license, lockfile integrity, vulnerability, runtime dependency, package content, and no-production-implementation evidence.
 - [ ] 11.7 Add exact changed-path and import/dependency scans proving no framework middleware, exporter/transport, collector, broker/queue/outbox, storage, SIEM, analytics/detection, browser telemetry, production instrumentation, cryptographic chain, or diagnostic logging was implemented.
-- [ ] 11.8 Verify the canonical contract capability, archived change, Contract Commit A technical artifacts, and approved fixtures were not modified except through a separately approved genuine contract correction.
+- [x] 11.8 Verify the canonical contract capability, archived change, Contract Commit A technical artifacts, and approved fixtures were not modified except through a separately approved genuine contract correction.
 - [ ] 11.9 Run a terminology and cross-artifact semantic-coherence sweep across proposal, design, spec, ADRs, package API, generated code, validator, tests, and documentation; resolve contradictions rather than relying on structural validation.
 
 ## 12. Documentation and migration policy

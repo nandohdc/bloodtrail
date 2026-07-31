@@ -235,7 +235,7 @@ No included sink SHALL perform network export, broker/queue access, collector co
 - **THEN** package boundaries or sink validation prevent it from being represented as successfully emitted SDK output
 
 ### Requirement: Lifecycle behavior is explicit and race-safe
-The SDK SHALL define states for uninitialized, ready, shutting down, and shut down. Initialization SHALL be graceful and deterministic; duplicate initialization behavior SHALL be documented and SHALL NOT silently replace immutable authority or sink configuration. Shutdown SHALL stop acceptance of new emissions at a defined point, await or report in-flight sink operations according to a bounded policy, invoke optional sink flush/shutdown at most as documented, and be idempotent.
+The SDK SHALL define states for uninitialized, ready, shutting down, and shut down. Initialization SHALL be graceful and deterministic; duplicate initialization behavior SHALL be documented and SHALL NOT silently replace immutable authority or sink configuration. Shutdown SHALL stop acceptance of new emissions at a defined point, await or report in-flight sink operations according to a bounded policy, and invoke optional sink flush/shutdown at most once. Concurrent callers MAY share the in-progress shutdown result, but lifecycle operations attempted after the SDK reaches shut down SHALL return `SDK_SHUT_DOWN`.
 
 The core SHALL NOT promise durable handoff during shutdown. Events attempted after shutdown begins SHALL fail with a safe lifecycle error rather than being silently dropped or reported as delivered.
 
@@ -244,8 +244,12 @@ The core SHALL NOT promise durable handoff during shutdown. Events attempted aft
 - **THEN** the SDK returns a safe shutdown error and does not invoke the sink for that event
 
 #### Scenario: Shutdown is called twice
-- **WHEN** multiple callers request shutdown
-- **THEN** the operation is idempotent and does not duplicate sink shutdown or falsely report delivery
+- **WHEN** shutdown has completed and a caller requests shutdown again
+- **THEN** the SDK returns `SDK_SHUT_DOWN`, does not duplicate sink shutdown, and does not falsely report delivery
+
+#### Scenario: Flush is called after shutdown
+- **WHEN** shutdown has completed and a caller requests flush
+- **THEN** the SDK returns `SDK_SHUT_DOWN` and does not invoke the sink again
 
 #### Scenario: In-flight sink operation does not finish
 - **WHEN** shutdown reaches its configured bounded wait with an unresolved in-flight emission

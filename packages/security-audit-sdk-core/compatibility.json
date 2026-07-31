@@ -1,0 +1,12 @@
+{
+  "node": {
+    "supportedMajors": [24, 26],
+    "ciVersions": ["24.2.0", "26.5.0"]
+  },
+  "typescript": {
+    "supported": ">=5.9.2 <6",
+    "ciVersion": "5.9.2"
+  },
+  "modulePolicy": "esm-public-cjs-standalone-validator",
+  "contractVersion": "1.0.0"
+}

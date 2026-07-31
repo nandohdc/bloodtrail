@@ -233,7 +233,7 @@ uninitialized -> ready -> shutting_down -> shut_down
 
 `createSecurityAuditSdk` performs synchronous configuration validation plus any explicit asynchronous `initialize` step selected by ADR-SDK-006. No emissions are accepted before ready. Configuration is immutable thereafter.
 
-Shutdown establishes a no-new-emissions boundary, waits for tracked in-flight `emit` calls up to a configured bounded duration, calls sink `flush`/`shutdown` in documented order at most once, and reports unresolved operations without exposing events or claiming durable handoff. Repeated shutdown is idempotent. The default timeout is a package behavior selected and tested by ADR; it is not a production delivery policy.
+Shutdown establishes a no-new-emissions boundary, waits for tracked in-flight `emit` calls up to a configured bounded duration, calls sink `flush`/`shutdown` in documented order at most once, and reports unresolved operations without exposing events or claiming durable handoff. Concurrent callers may share an in-progress shutdown result; after shutdown completes, emission, flush, and repeated shutdown return `SDK_SHUT_DOWN` without invoking the sink again. The default timeout is a package behavior selected and tested by ADR; it is not a production delivery policy.
 
 ## Extension Model
 
