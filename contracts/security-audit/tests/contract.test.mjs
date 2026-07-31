@@ -19,7 +19,7 @@ test("generated artifacts are deterministic and current", async () => {
 
 test("source declares canonical boundaries and blocked production/SDK authorization", () => {
   assert.equal(source.authoritative_source, true);
-  assert.equal(source.metadata.production_authorization, "blocked_pending_project_owner_exact_commit_approval");
+  assert.equal(source.metadata.production_authorization, "blocked_no_production_authorization");
   assert.equal(source.metadata.sdk_authorization, "blocked");
   assert.match(source.metadata.canonical_boundary, /Bloodtrail is canonical/);
   assert.match(source.metadata.canonical_boundary, /OCSF 1\.8\.0 is export-only/);
@@ -170,5 +170,5 @@ test("package has no production implementation dependencies or runtime integrati
   assert.deepEqual(pkg.devDependencies, { ajv: "^8.20.0", "ajv-formats": "^3.0.1" });
   const docs = `${await readFile(resolve(root, "README.md"), "utf8")}\n${await readFile(resolve(root, "docs/readiness-report.md"), "utf8")}`;
   assert.match(docs, /adds no SDK/i);
-  assert.match(docs, /SDK authorization: explicitly blocked/);
+  assert.match(docs, /SDK authorization: none/i);
 });
