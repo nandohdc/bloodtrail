@@ -22,8 +22,6 @@ jobs:
       audit-level: "high"
       sonar-working-directory: "research/browser-telemetry"
       sonar-quality-gate-timeout-minutes: 5
-      sonar-scanner-host-url: ${{ vars.SONAR_SCANNER_HOST_URL }}
-      sonar-public-base-url: ${{ vars.SONAR_PUBLIC_BASE_URL }}
       runner-label: ${{ vars.RUNNER_LABEL }}
       doppler-project: "sonar"
       doppler-config: "prd"
