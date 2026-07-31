@@ -1,6 +1,6 @@
-# Project-Owner Product Decision — Pending
+# Project-Owner Product Decision
 
-Status: **pending; unsigned; no decision recorded**.
+Status: **complete; explicit project-owner decision recorded**.
 
 ## Review record
 
@@ -8,34 +8,16 @@ Status: **pending; unsigned; no decision recorded**.
 - **GitHub handle:** `nandohdc`
 - **Role:** Project owner and maintainer
 - **Review type:** project-owner decision
-- **Date:** pending
-- **Commit reviewed:** pending — enter the exact Git commit hash actually reviewed
-- **Material reviewed:** pending — list the exact paths and evidence reviewed
-- **Decision:** pending
-- **Conditions:** pending
-- **Concerns:** pending
-- **Follow-up owner:** pending
-- **Reconsideration requirements:** pending
+- **Date:** 2026-07-31
+- **Commit reviewed:** `b6bb577b1fda865610ef93ec8ef31527046c3c44`
+- **Material reviewed:** `openspec/changes/investigate-browser-telemetry-signals/proposal.md`, `openspec/changes/investigate-browser-telemetry-signals/design.md`, `openspec/changes/investigate-browser-telemetry-signals/tasks.md`, `research/browser-telemetry/README.md`, `research/browser-telemetry/source-evidence.md`, `research/browser-telemetry/DEPENDENCIES.md`, `research/browser-telemetry/evidence/baseline-2026-07-30.sanitized.json`, and `research/browser-telemetry/evidence/bundle-sizes.json`
+- **Decision:** No adoption at this time.
+- **Conditions:** Continue prioritizing server-observed behavioral correlation, Redis-backed cross-store detection, and commercial-outcome feedback.
+- **Concerns:** No measurable incremental detection lift, false-positive improvement, conversion impact, or advantage over further behavioral-detector investment has been demonstrated.
+- **Follow-up owner:** Fernando Homem da Costa
+- **Reconsideration requirements:** A future continuation must use the separate OpenSpec change `continue-browser-telemetry-poc` and define measurable detection lift, false-positive limits, performance limits, privacy approval, conversion-impact limits, success criteria, and kill criteria.
 - **Assurance limitation:** This is a project-owner product decision for a personal open-source project, not independent product assurance or organizational approval.
 
-## Required decision scope
+## Decision boundary
 
-Fernando must determine whether current evidence supports:
-
-- no further browser-telemetry work;
-- a bounded continuation PoC; or
-- production implementation.
-
-The decision must account for the current evidence boundaries:
-
-- production implementation remains unauthorized;
-- browser telemetry remains deferred;
-- Redis-backed behavioral correlation and commercial outcomes remain primary;
-- no measurable incremental detection lift has been demonstrated;
-- no acceptable real-user privacy basis has been established;
-- any continuation requires a separate OpenSpec change; and
-- `continue-browser-telemetry-poc` is the only named possible successor.
-
-## Completion rule
-
-This template does not select an outcome. Task 3.5 must remain unchecked until Fernando supplies the date, exact commit hash, material reviewed, written decision, conditions, concerns, follow-up owner, and reconsideration requirements.
+Browser telemetry remains deferred. Production implementation and real-user collection are not authorized.

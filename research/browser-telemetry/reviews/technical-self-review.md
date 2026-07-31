@@ -1,6 +1,6 @@
-# Project-Owner Technical Self-Review — Pending
+# Project-Owner Technical Self-Review
 
-Status: **pending; unsigned; no decision recorded**.
+Status: **complete; explicit project-owner self-review recorded**.
 
 ## Review record
 
@@ -8,36 +8,18 @@ Status: **pending; unsigned; no decision recorded**.
 - **GitHub handle:** `nandohdc`
 - **Role:** Project owner and maintainer
 - **Review type:** project-owner self-review
-- **Date:** pending
-- **Commit reviewed:** pending — enter the exact Git commit hash actually reviewed
-- **Material reviewed:** pending — list the exact paths and evidence reviewed
-- **Decision:** pending
-- **Conditions:** pending
-- **Concerns:** pending
-- **Follow-up owner:** pending
-- **Reconsideration requirements:** pending
+- **Date:** 2026-07-31
+- **Commit reviewed:** `b6bb577b1fda865610ef93ec8ef31527046c3c44`
+- **Material reviewed:** `openspec/changes/investigate-browser-telemetry-signals/proposal.md`, `openspec/changes/investigate-browser-telemetry-signals/design.md`, `openspec/changes/investigate-browser-telemetry-signals/tasks.md`, `research/browser-telemetry/README.md`, `research/browser-telemetry/DEPENDENCIES.md`, `research/browser-telemetry/package.json`, `research/browser-telemetry/package-lock.json`, `research/browser-telemetry/lib/`, `research/browser-telemetry/poc/`, `research/browser-telemetry/tests/`, `research/browser-telemetry/scripts/`, and `research/browser-telemetry/evidence/`
+- **Decision:** Approved for research closure.
+- **Conditions:** The research harness must remain isolated from production code, deployment resources, APIs, storefront behavior, risk scoring, and customer enforcement.
+- **Concerns:** The existing measurements are desktop and synthetic. They do not establish mobile performance, longitudinal identifier stability, production detection lift, or conversion impact.
+- **Follow-up owner:** Fernando Homem da Costa
+- **Reconsideration requirements:** Any continuation must use a separate OpenSpec change with explicit test scope, success and kill criteria, physical-device coverage, performance limits, and privacy restrictions.
 - **Assurance limitation:**
   - This review was performed by the project owner and implementer. It provides documented project governance but not independent assurance.
   - This is a project-owner self-review and does not constitute independent technical assurance.
 
-## Required assessment scope
+## Assessment
 
-Fernando's written review must cover:
-
-- browser and Web API assumptions;
-- PoC reproducibility;
-- parsed exact-origin egress validation;
-- monitoring-request observation and blocking;
-- evidence sanitization;
-- credential and token rejection;
-- dependency isolation;
-- local server binding;
-- browser automation scenarios;
-- performance and bundle-size evidence;
-- absence of production imports;
-- absence of deployment or infrastructure coupling; and
-- test and validation results.
-
-## Completion rule
-
-This template does not constitute a review. Task 3.3 must remain unchecked until Fernando supplies the date, exact commit hash, material reviewed, written decision, conditions, concerns, follow-up owner, and reconsideration requirements.
+The isolated PoC, evidence package, sanitization controls, origin validation, egress tests, dependency pins, and reproducibility instructions are sufficient for preserving the research findings. They do not constitute a production implementation.

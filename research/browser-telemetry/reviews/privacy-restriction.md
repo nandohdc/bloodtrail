@@ -1,6 +1,6 @@
-# Project-Owner Privacy Restriction — Pending
+# Project-Owner Privacy Restriction
 
-Status: **pending; unsigned; no owner approval recorded**.
+Status: **complete; explicit project-owner decision recorded**.
 
 ## Review record
 
@@ -8,29 +8,18 @@ Status: **pending; unsigned; no owner approval recorded**.
 - **GitHub handle:** `nandohdc`
 - **Role:** Project owner and maintainer
 - **Review type:** project-owner decision
-- **Date:** pending
-- **Commit reviewed:** pending — enter the exact Git commit hash actually reviewed
-- **Material reviewed:** pending — list the exact paths and evidence reviewed
-- **Decision:** pending — Fernando must explicitly approve or reject the restriction
-- **Conditions:** pending
-- **Concerns:** pending
-- **Follow-up owner:** pending
-- **Reconsideration requirements:** pending
+- **Date:** 2026-07-31
+- **Commit reviewed:** `b6bb577b1fda865610ef93ec8ef31527046c3c44`
+- **Material reviewed:** `openspec/changes/investigate-browser-telemetry-signals/proposal.md`, `openspec/changes/investigate-browser-telemetry-signals/design.md`, `openspec/changes/investigate-browser-telemetry-signals/tasks.md`, `research/browser-telemetry/README.md`, `research/browser-telemetry/source-evidence.md`, and `research/browser-telemetry/evidence/baseline-2026-07-30.sanitized.json`
+- **Decision:** Approved.
+- **Conditions:** No real-user experiments, shadow collection, pilots, analytics, enforcement, or production browser telemetry may occur without a separate OpenSpec change and qualified privacy/legal review.
+- **Concerns:** Browser-derived identifiers and environment signals may constitute personal data or increase privacy and correlation risks. No legal-compliance conclusion is made by this project-owner restriction.
+- **Follow-up owner:** Fernando Homem da Costa
+- **Reconsideration requirements:** Qualified privacy/legal review, documented purpose and legal basis, data-flow mapping, minimization policy, retention policy, deletion handling, tenant boundaries, and explicit authorization for a bounded experiment.
 - **Assurance limitation:** This project-owner restriction documents project governance; it is not legal advice, a privacy-law compliance conclusion, or independent privacy assurance.
 
-## Required restriction
+## Approved restriction
 
 > No production or real-user browser telemetry is authorized. A qualified privacy/legal review is mandatory before any future continuation involving real-user collection.
 
-The written record must clarify that:
-
-- this is not legal advice;
-- no privacy-law compliance conclusion is asserted;
-- no real-user experiment is authorized;
-- no production collection is authorized;
-- the restriction applies before shadow collection, pilots, analytics, enforcement, or any other real-user browser telemetry; and
-- Fernando must explicitly approve this record before task 3.2 may be checked.
-
-## Completion rule
-
-This template does not approve the restriction on Fernando's behalf. Task 3.2 must remain unchecked until Fernando supplies the date, exact commit hash, material reviewed, written decision, conditions, concerns, follow-up owner, and reconsideration requirements.
+This decision authorizes no real-user experiment and no production collection. It applies before shadow collection, pilots, analytics, enforcement, or any other real-user browser telemetry. It is not legal advice and asserts no privacy-law compliance conclusion.
