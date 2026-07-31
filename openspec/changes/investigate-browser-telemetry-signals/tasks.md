@@ -16,18 +16,21 @@
 - [x] 2.4 Add and test a sanitization/validation step that rejects evidence containing `visitorId`, raw component values, developer paths, secrets, tokens, or unapproved request URLs.
 - [x] 2.5 Complete dependency-license and SBOM technical evidence review for the research harness, recording MIT obligations, development dependencies, copied-source status, package integrity, notices, vulnerability results, and a disposition that remains pending external governance approval under task 3.6.
 
-## 3. Research Review
+Governance migration note: the technical evidence and completion state of task 2.5 are unchanged. Its former external-governance disposition is superseded for this personal project by the project-owner dependency and license acceptance in task 3.6, with the assurance limitation stated there.
 
-- [ ] 3.1 Obtain security architecture review of the attacker-controlled browser trust model, freshness-versus-authenticity distinction, replay controls, fail-open semantics, bypass findings, supply-chain controls, and prohibition on enforcement authority.
-- [ ] 3.2 Obtain privacy/legal review of necessity and proportionality, terminal-device-access rules, lawful basis or exemption, notice, DPIA/LIA needs, data minimization, retention, deletion, tenant access, cross-restaurant correlation, jurisdictions, and prohibition on advertising or unrelated analytics reuse.
-- [ ] 3.3 Obtain frontend review of collection timing, main-thread work, bundle impact, browser compatibility, failure isolation, menu-usability risk, and the prohibition on synchronous full collection during initial menu rendering.
-- [ ] 3.4 Obtain platform review of first-party asset delivery, version pinning, CSP/egress restrictions, test reproducibility, CI isolation, observability, ownership, rollback, and confirmation that the harness cannot enter production builds.
-- [ ] 3.5 Obtain product review of customer-experience risk, conversion evidence gaps, behavioral-detector priority, challenge principles, and the requirement for measured incremental value before reconsideration.
-- [ ] 3.6 Obtain dependency/license or open-source governance review of the exact lock integrity, license notices and obligations, SBOM, vulnerability evidence, package egress, copied-source status, and research-only disposition.
+## 3. Project-Owner Governance Records
+
+- [ ] 3.1 Fernando Homem da Costa (`nandohdc`) records a project-owner security architecture self-review covering browser trust assumptions; correlation versus identity; authenticity versus truthfulness; integrity versus completeness; FingerprintJS, BotD, and server-challenge limitations; client manipulation; enforcement risk; production exclusions; and support for deferral. The record must state that it is a project-owner self-review and does not constitute independent security assurance.
+- [ ] 3.2 Fernando Homem da Costa (`nandohdc`) records the binding project-owner privacy restriction: **No production or real-user browser telemetry is authorized. A qualified privacy/legal review is mandatory before any future continuation involving real-user collection.** The record must state that it is not legal advice, asserts no privacy-law compliance conclusion, and applies before experiments, shadow collection, pilots, analytics, or enforcement involving real-user telemetry.
+- [ ] 3.3 Fernando Homem da Costa (`nandohdc`) records a project-owner technical self-review covering browser/Web API assumptions, PoC reproducibility, exact-origin egress, monitoring blocking, sanitization, credential/token rejection, dependency isolation, local binding, automation scenarios, performance and bundle evidence, production isolation, and validation results. The record must state that it does not constitute independent technical assurance.
+- [ ] 3.5 Fernando Homem da Costa (`nandohdc`) records the project-owner product decision among no further browser-telemetry work, a bounded continuation PoC, or production implementation, preserving that current evidence authorizes no production implementation, demonstrates no incremental lift or acceptable real-user privacy basis, keeps behavior and commercial outcomes primary, and names only `continue-browser-telemetry-poc` as a possible successor.
+- [ ] 3.6 Fernando Homem da Costa (`nandohdc`) records project-owner dependency and license acceptance covering inventory, exact lockfile and integrity, notices, CycloneDX SBOM, npm audit, bundle evidence, reuse classifications, and development-only scope. The record must state that it is not formal legal advice or external open-source governance approval.
+
+Task 3.4 was consolidated into the project-owner technical self-review in task 3.3. Existing numbering is retained so completed task 2.5 continues to reference dependency and license acceptance under task 3.6.
 
 ## 4. Decision Record and Validation
 
-- [ ] 4.1 Record exactly one reviewed final outcome in the permanent research report: `no adoption`, `bounded continuation PoC`, or `small internal sensor`, including owners, review dates, evidence relied on, unresolved gaps, and reconsideration/expiry conditions.
+- [ ] 4.1 Fernando Homem da Costa (`nandohdc`) records the final project-owner outcome consolidating the security self-review, privacy restriction, technical self-review, dependency/license acceptance, product decision, remaining limitations, unresolved concerns, follow-up actions, reconsideration requirements, and explicit production and real-user authorization status. Unless his written evidence supports a stricter decision, the expected outcome is no adoption at this time, browser telemetry deferred, production authorization none, real-user collection authorization none, and only a separately approved bounded continuation PoC through `continue-browser-telemetry-poc`.
 - [x] 4.2 If the outcome is `bounded continuation PoC` or `small internal sensor`, require a separate OpenSpec proposal and explicitly prohibit using this research change to modify `bootstrap-risk-service`, storefront code, risk scoring, enforcement, or production dependencies.
 - [x] 4.3 Confirm with repository and dependency diffs that no production browser telemetry, runtime application behavior, public/internal API field, Kong behavior, Go risk-service behavior, Redis state, deployment resource, or customer-facing control was introduced.
 - [x] 4.4 Run the permanent PoC and its egress, sanitization, and reproducibility checks; record real command output and investigate every difference from the preserved baseline without silently replacing it.
@@ -35,7 +38,7 @@
 
 ## 5. Unresolved Evidence Gaps — Not Production Implementation Tasks
 
-The following gaps block a future adoption claim. They do not authorize browser collection or runtime work under this change. They may be resolved only by an approved research protocol and, where applicable, prior privacy/legal review:
+The following gaps block a future adoption claim. They do not authorize browser collection or runtime work under this change. They may be resolved only by a separately approved research protocol. A qualified privacy/legal review is mandatory before any protocol involving real-user collection, including experiments, shadow collection, pilots, analytics, or enforcement.
 
 - Physical high-end and low-end Android plus iOS Safari performance, compatibility, battery, memory, and failure evidence.
 - WhatsApp, Instagram, Facebook, Telegram, and other embedded-browser/WebView evidence.
@@ -45,4 +48,4 @@ The following gaps block a future adoption claim. They do not authorize browser 
 - Labeled shadow traffic comparing behavior-only decisions with behavior-plus-browser-signal decisions, including false-positive, false-negative, conversion, and incremental-lift analysis.
 - Evidence that any measured lift is greater than investing equivalent effort in Redis-backed cross-store correlation and commercial-outcome feedback.
 
-Until a separately approved process resolves the relevant gaps and the reviews accept the result, the decision remains **defer browser telemetry**.
+Until a separately approved process resolves the relevant gaps and the required project-owner records accept the result, the decision remains **defer browser telemetry**. Production authorization and real-user collection authorization remain **none**.

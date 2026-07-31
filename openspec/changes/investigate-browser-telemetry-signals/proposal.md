@@ -15,7 +15,7 @@ The storefront must remain fast and broadly available across mobile Safari, Andr
 - Materialize the FingerprintJS 5.2.0 and BotD 2.0.0 source review, threat analysis, privacy findings, local PoC measurements, bypass evidence, and evidence limitations as repository-owned research artifacts.
 - Recreate the PoC with pinned dependencies, a lockfile, sanitized evidence, and deterministic checks for unexpected third-party requests.
 - Record a provisional decision to **defer browser telemetry**.
-- Define the evidence and cross-functional approvals required before that decision may be reconsidered.
+- Define proportionate project-owner governance for this personal open-source project and the evidence and qualified external review required before real-user work may be reconsidered.
 - Keep this research independent from `bootstrap-risk-service` and every production implementation change.
 
 ### Non-goals
@@ -37,10 +37,22 @@ The platform can prioritize server-observed controls that do not depend on coope
 - Neither project should be forked.
 - Full browser collectors must not run synchronously on every initial menu visit.
 - Redis-backed behavioral correlation and server-side commercial outcomes remain the primary detector.
-- Any future browser sensor must be small, first-party, privacy-reviewed, independently versioned, reversible, and justified by measurable incremental value.
+- Any future browser sensor must be small, first-party, independently versioned, reversible, and justified by measurable incremental value; qualified privacy/legal review is mandatory before any continuation involving real-user collection.
 - Browser telemetry does not become authoritative merely because its payload is signed or bound to a server-issued challenge. Binding can improve freshness and replay control, not truthfulness.
 
 This change does **not** authorize or plan production adoption. The current evidence supports only a separately approved bounded research continuation, such as `continue-browser-telemetry-poc`. A production implementation change may be considered only if that continuation demonstrates measurable incremental value and receives every required review.
+
+### Project ownership and assurance boundary
+
+Bloodtrail is a personal open-source project owned and maintained by Fernando Homem da Costa (`nandohdc`), acting as project owner and maintainer. Fernando may perform and record the project-owner reviews for this change. Each such review must be labeled as a project-owner self-review or project-owner decision and must not be described as independent review, third-party assurance, formal certification, legal advice, or organizational approval.
+
+Project-owner self-reviews provide documented project governance but not independent assurance. Hermes may prepare templates and verify that required fields are present, but it may not sign for Fernando, invent his decisions, mark owner-review tasks complete without his written decision, represent AI verification as Fernando's approval, or represent the privacy restriction as legal advice.
+
+This governance update does not alter the decision boundary:
+
+- **Provisional decision:** `DEFER BROWSER TELEMETRY`
+- **Production authorization:** `none`
+- **Real-user collection authorization:** `none`
 
 ### Decision rationale
 
@@ -58,17 +70,17 @@ The local PoC found that BotD detects default headless and headed Playwright thr
 
 ### Decision gates
 
-Reconsideration requires all of the following:
+Reconsideration requires all applicable evidence gates and the following proportionate governance records:
 
 1. A representative physical-device and browser matrix, including low-end Android, iOS Safari, private modes, in-app browsers, privacy tools, extensions, and accessibility configurations.
 2. An adversarial matrix covering plain HTTP clients, default and stealth Selenium/Playwright/Puppeteer, headed Chromium, patched properties, profile/session rotation, real-browser automation, and distributed low-and-slow collection.
 3. Labeled shadow data demonstrating incremental detection or false-positive reduction against a behavior-only baseline; absence of measured lift is a stop condition.
-4. Frontend and product approval of explicit bundle, main-thread, failure-rate, menu-usability, battery, and conversion budgets.
-5. Security approval of the untrusted-client threat model, replay controls, fail-open semantics, abuse resistance, and operational kill switch.
-6. Privacy/legal approval of necessity, proportionality, purpose, lawful basis or applicable terminal-device exemption, notice, retention, deletion, cross-restaurant correlation, and jurisdictional obligations.
-7. A first-party delivery model with pinned assets, license/SBOM review, monitoring disabled, CSP/egress controls, and an automated no-unexpected-outbound-request test.
-8. Named maintenance ownership, independent sensor versioning, telemetry schema governance, observability, rollback, and decommission criteria.
-9. A recorded final decision of `no adoption`, `bounded continuation PoC`, or `small internal sensor`.
+4. A project-owner security architecture self-review covering the attacker-controlled trust model, correlation versus identity, authenticity versus truthfulness, integrity versus completeness, package and challenge limitations, manipulation risk, enforcement risk, production exclusions, and support for deferral.
+5. A binding project-owner privacy safeguard: **No production or real-user browser telemetry is authorized. A qualified privacy/legal review is mandatory before any future continuation involving real-user collection.** This restriction is not legal advice and asserts no privacy-law compliance conclusion.
+6. A project-owner technical self-review covering browser assumptions, reproducibility, exact-origin egress, monitoring blocking, sanitization, credential rejection, dependency isolation, local binding, automation scenarios, performance evidence, production isolation, and validation results.
+7. Project-owner dependency and license acceptance covering the inventory, exact lockfile and integrity, preserved notices, CycloneDX SBOM, npm audit, bundle evidence, reuse classifications, and development-only scope. This is not legal advice or external open-source governance approval.
+8. A project-owner product decision choosing among no further browser-telemetry work, a bounded continuation PoC, or production implementation. Current evidence leaves production unauthorized, behavior and commercial outcomes primary, incremental lift unproven, and `continue-browser-telemetry-poc` as the only named possible successor.
+9. A final project-owner outcome consolidating all owner records, limitations, unresolved concerns, follow-up actions, reconsideration requirements, and explicit production and real-user authorization status.
 
 ### Relationship to `bootstrap-risk-service`
 

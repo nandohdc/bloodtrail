@@ -1,6 +1,6 @@
 # Research Harness Dependency and Supply-Chain Evidence
 
-Status: technical evidence complete; dependency/license or open-source governance approval **pending**.
+Status: technical evidence complete; project-owner dependency and license acceptance **pending**.
 
 This directory is isolated research tooling. All packages are development dependencies in a private package, and no repository production manifest depends on them. `npm ci --ignore-scripts` is the required installation mode.
 
@@ -22,7 +22,7 @@ The lockfile also pins `playwright-core@1.62.1` and optional `fsevents@2.3.2` wi
 - Upstream license texts are preserved under `evidence/upstream-licenses/`; repository line endings are normalized without changing the text.
 - No upstream implementation source is copied into this repository. The harness imports exact npm package assets after `npm ci`.
 - Neither FingerprintJS nor BotD is forked.
-- Distribution or production-use obligations require governance review; this document is evidence, not legal approval.
+- Distribution or production-use obligations require a new project-owner acceptance decision and qualified advice where applicable; this document is evidence, not legal approval.
 
 ## SBOM and vulnerability evidence
 
@@ -54,4 +54,4 @@ Both inspected npm packages default monitoring on in their `load` API and may at
 
 ## Disposition
 
-The dependencies are acceptable only for isolated repository research pending real dependency/license governance review. No conclusion here authorizes production adoption, browser collection, or redistribution.
+The dependencies remain confined to isolated repository research pending written project-owner dependency and license acceptance by Fernando Homem da Costa (`nandohdc`). That acceptance is not formal legal advice or external open-source governance approval. No conclusion here authorizes production adoption, real-user browser collection, or redistribution.

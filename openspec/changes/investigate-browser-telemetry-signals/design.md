@@ -10,7 +10,7 @@ Evidence in this document is labeled by origin:
 - **Local measurement**: PoC executed on one macOS/Chrome host on 2026-07-30.
 - **Upstream issue evidence**: a reported behavior, not an independently reproduced population rate.
 - **Recommendation**: a design choice based on the available evidence and stated constraints.
-- **Evidence gap**: a required measurement or approval that remains unresolved.
+- **Evidence gap**: a required measurement, project-owner governance record, or qualified future review that remains unresolved.
 
 ## Goals / Non-Goals
 
@@ -164,7 +164,7 @@ Sizes were measured from the exact unpacked package assets with gzip level 9:
 | FingerprintJS `dist/fp.esm.js` | 129,311 | 37,558 | ESM asset imported by the PoC |
 | BotD `dist/botd.esm.js` | 27,519 | 6,608 | ESM asset imported by the PoC |
 
-A future application bundler could produce different output, so these are package-asset observations, not a production bundle budget. Both inspected packages declare MIT licenses and no runtime package dependencies; transitive development/build tooling, copied source, notices, and the eventual application SBOM still require formal review.
+A future application bundler could produce different output, so these are package-asset observations, not a production bundle budget. Both inspected packages declare MIT licenses and no runtime package dependencies; current research evidence is subject to project-owner dependency and license acceptance, while any future application dependencies, copied source, notices, and application SBOM require a new acceptance decision.
 
 ### 5. Browser trust model separates freshness, integrity, authenticity, and truth
 
@@ -220,7 +220,11 @@ These states measure coverage and abuse attempts only in context. None automatic
 
 ### 8. Apply privacy minimization before any continuation PoC
 
-Browser fingerprints and probabilistic identifiers can constitute personal data or online identifiers and can implicate terminal-device access rules. First-party delivery and self-hosting reduce third-party exposure but do not remove legal obligations. The relevant review includes, at minimum:
+Browser fingerprints and probabilistic identifiers can constitute personal data or online identifiers and can implicate terminal-device access rules. First-party delivery and self-hosting reduce third-party exposure but do not remove legal obligations.
+
+**Binding project restriction:** **No production or real-user browser telemetry is authorized. A qualified privacy/legal review is mandatory before any future continuation involving real-user collection.** This is not legal advice, and this change asserts no privacy-law compliance conclusion. The restriction applies before experiments, shadow collection, pilots, analytics, or enforcement involving real-user browser telemetry.
+
+Any future qualified privacy/legal review would need to consider, at minimum:
 
 - GDPR definitions and principles, including online identifiers, purpose limitation, data minimization, storage limitation, lawful basis, and privacy by design;
 - ePrivacy Directive Article 5(3) and EDPB Guidelines 2/2023 on its technical scope, including device fingerprinting;
@@ -228,7 +232,7 @@ Browser fingerprints and probabilistic identifiers can constitute personal data 
 - California and other applicable definitions of probabilistic identifiers and internet activity;
 - cross-restaurant correlation, controller/processor roles, tenant access, deletion/DSR handling, retention, residency, and purpose governance.
 
-Legal applicability and any exemption are review questions, not conclusions in this technical design.
+Legal applicability, compliance, lawful basis, and any exemption are future qualified-review questions, not conclusions in this technical design or in a project-owner self-review.
 
 **Recommended minimization if a bounded PoC is approved:**
 
@@ -300,12 +304,100 @@ The permanent source/evidence matrix must pin source files, tags or package inte
 - EDPB Guidelines 2/2023: https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-22023-technical-scope-art-53-eprivacy-directive_en
 - California Civil Code section 1798.140: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1798.140.&lawCode=CIV
 
+### 12. Personal-project governance and review records
+
+#### Project owner
+
+- **Name:** Fernando Homem da Costa
+- **GitHub handle:** `nandohdc`
+- **Role:** Project owner and maintainer
+
+Bloodtrail is a personal open-source project. Fernando may perform and record the project-owner reviews below. These records are self-reviews or owner decisions; they are not independent review, third-party assurance, formal certification, legal advice, or organizational approval.
+
+#### Required record fields and assurance boundary
+
+Every owner record must contain:
+
+- Reviewer
+- GitHub handle, when applicable
+- Role
+- Review type: `project-owner self-review` or `project-owner decision`
+- Date
+- Commit reviewed
+- Material reviewed
+- Decision
+- Conditions
+- Concerns
+- Follow-up owner
+- Reconsideration requirements
+- Assurance limitation
+
+`Commit reviewed` must contain the exact Git commit hash reviewed. Every self-review must use this assurance limitation:
+
+> This review was performed by the project owner and implementer. It provides documented project governance but not independent assurance.
+
+Hermes may prepare templates and verify that required fields are present. It must not sign records for Fernando, invent Fernando's decisions, mark owner-review tasks complete without Fernando's written decision, represent AI verification as Fernando's approval, describe self-review as independent assurance, or describe the privacy restriction as legal advice.
+
+#### 1. Project-owner security architecture self-review
+
+- **Reviewer:** Fernando Homem da Costa (`nandohdc`)
+- **Role:** Project owner performing a security architecture self-review
+
+The owner must assess browser trust assumptions; correlation versus identity; event authenticity versus truthfulness; integrity versus completeness; FingerprintJS, BotD, and server-issued challenge limitations; client-controlled manipulation; enforcement risks; production-scope exclusions; and whether the defer decision is supported. The record must state:
+
+> This is a project-owner self-review and does not constitute independent security assurance.
+
+#### 2. Project-owner privacy restriction
+
+Fernando may record and approve this restriction as project owner, without representing himself as a lawyer, privacy professional, or independent privacy reviewer:
+
+> No production or real-user browser telemetry is authorized. A qualified privacy/legal review is mandatory before any future continuation involving real-user collection.
+
+The record must state that it is not legal advice, asserts no privacy-law compliance conclusion, authorizes no production or real-user collection, and applies before experiments, shadow collection, pilots, analytics, or enforcement involving real-user browser telemetry.
+
+#### 3. Project-owner technical self-review
+
+- **Reviewer:** Fernando Homem da Costa (`nandohdc`)
+- **Role:** Project owner performing a technical self-review
+
+The owner must review browser and Web API assumptions; PoC reproducibility; exact-origin egress validation; monitoring-request blocking; evidence sanitization; credential and token rejection; dependency isolation; local server binding; browser automation scenarios; performance and bundle-size evidence; absence of production imports; absence of deployment or infrastructure coupling; and test and validation results. The record must state:
+
+> This is a project-owner self-review and does not constitute independent technical assurance.
+
+#### 4. Project-owner dependency and license acceptance
+
+- **Reviewer:** Fernando Homem da Costa (`nandohdc`)
+- **Role:** Project owner and maintainer
+
+The owner decision must reference the dependency inventory, exact package lockfile, package integrity values, preserved upstream license notices, CycloneDX SBOM, npm audit evidence, bundle-size evidence, reuse classifications, and development-only dependency scope. The record must state:
+
+> This is project-owner dependency and license acceptance, not formal legal advice or external open-source governance approval.
+
+#### 5. Project-owner product decision
+
+- **Reviewer and decision owner:** Fernando Homem da Costa (`nandohdc`)
+
+The owner must decide among no further browser-telemetry work, a bounded continuation PoC, or production implementation. Under the current evidence, production implementation remains unauthorized; browser telemetry remains deferred; Redis-backed behavioral correlation and commercial outcomes remain primary; measurable incremental detection lift and an acceptable real-user privacy basis have not been demonstrated; any continuation requires a separate OpenSpec change; and `continue-browser-telemetry-poc` is the only named possible successor. Do not name or create an implementation change before those gates are met.
+
+#### 6. Final project-owner outcome
+
+Fernando must consolidate the security architecture self-review, privacy restriction, technical self-review, dependency and license acceptance, product decision, remaining limitations, unresolved concerns, follow-up actions, reconsideration requirements, and final production-authorization status. Unless Fernando records a stricter evidence-supported decision, the expected outcome is:
+
+- **Decision:** no adoption at this time
+- **Status:** browser telemetry deferred
+- **Production authorization:** none
+- **Real-user collection authorization:** none
+- **Permitted future work:** separately approved bounded continuation PoC
+- **Possible successor:** `continue-browser-telemetry-poc`
+
+The final outcome remains incomplete until Fernando supplies an explicit written decision record with every required field.
+
 ## Risks / Trade-offs
 
 - **[Risk] Research code is copied into the storefront later without gates.** → Keep it under a clearly named research path, exclude it from runtime dependency manifests/builds, add an explicit non-production banner, and require a separate OpenSpec implementation change.
 - **[Risk] A future team interprets freshness as browser authenticity.** → Preserve the trust-property table and challenge limitations in every review; do not use “attestation” for this mechanism.
 - **[Risk] Sanitization removes evidence needed for debugging.** → Retain approved aggregate timing/status/detector data and generation metadata; rerun locally for raw debugging rather than commit high-entropy values.
-- **[Risk] Sanitized evidence remains linkable.** → Remove `visitorId`, raw components, host paths, and unnecessary full UA strings; privacy-review the final artifact before commit.
+- **[Risk] Sanitized evidence remains linkable.** → Remove `visitorId`, raw components, host paths, and unnecessary full UA strings; the project owner must verify minimization for repository evidence, and qualified privacy/legal review is mandatory before any real-user collection.
 - **[Risk] Package monitoring returns after an upstream upgrade.** → Pin versions, enforce deterministic egress tests and CSP/network deny rules, and treat any version change as a new evidence run.
 - **[Risk] Deferral misses easy automation detections.** → Continue server-observed behavior work; revisit only if measured incremental lift exceeds the customer/privacy/maintenance cost.
 - **[Trade-off] A small internal sensor reduces package surface but transfers detector maintenance to the team.** → Require named ownership and decommission criteria before choosing that final outcome.
@@ -318,7 +410,7 @@ There is no runtime deployment or data migration.
 1. Apply only the research/documentation tasks in `tasks.md`.
 2. Verify that the repository diff contains no storefront, Go service, Kong, API, deployment, or production dependency change.
 3. Run the permanent PoC and sanitization in an isolated environment.
-4. Obtain the named cross-functional reviews and record one allowed final outcome.
+4. Obtain the written project-owner self-reviews, privacy restriction, dependency/license acceptance, product decision, and final owner outcome defined above.
 5. Run strict OpenSpec validation and archive the research change when its documentation tasks are complete.
 
 Rollback consists of reverting the repository-owned research artifacts. No production rollback, customer migration, or data cleanup should be necessary because this change authorizes no collection.
@@ -336,6 +428,6 @@ These gaps block production reconsideration and must not be reframed as implemen
 - No labeled storefront dataset comparing behavior-only decisions with behavior-plus-browser-signal decisions.
 - No measured false-positive or false-negative rate for the target customer and attacker populations.
 - No proof that the incremental value exceeds equivalent investment in Redis correlation and outcome feedback.
-- Technical dependency evidence now exists: dependency inventory, preserved license notices, a CycloneDX SBOM, and point-in-time npm audit results. Organizational dependency/license or open-source governance approval remains pending, as do security architecture, privacy/legal, frontend/platform, and product approval.
+- Technical dependency evidence now exists: dependency inventory, preserved license notices, a CycloneDX SBOM, and point-in-time npm audit results. Project-owner security and technical self-reviews, privacy restriction, dependency/license acceptance, product decision, and final owner outcome remain pending. Qualified external privacy/legal review remains mandatory before any future real-user collection but is not represented as a current approval task for this research-only change.
 
 Until these gaps are resolved, the formal decision remains **defer browser telemetry**.

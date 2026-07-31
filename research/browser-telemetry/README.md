@@ -1,12 +1,12 @@
 # Browser Telemetry Research
 
-Status: **research-only; pending external review**
+Status: **research-only; six project-owner governance records pending**
 
 Provisional decision: **DEFER BROWSER TELEMETRY**
 
 Production authorization: none.
 
-This directory materializes the completed FingerprintJS/BotD research, its sanitized local PoC evidence, a reproducible first-party harness, supply-chain evidence, and the packet needed for real human review. It is not imported by any storefront or service and does not modify production behavior.
+This directory materializes the completed FingerprintJS/BotD research, its sanitized local PoC evidence, a reproducible first-party harness, supply-chain evidence, and the packet for documented project-owner governance. It is not imported by any storefront or service and does not modify production behavior.
 
 The governing OpenSpec change is `openspec/changes/investigate-browser-telemetry-signals/`. Review `proposal.md`, `design.md`, and `tasks.md` before using this material.
 
@@ -26,7 +26,7 @@ The evidence does not show material detection improvement against the relevant d
 - No permanent credential belongs in browser JavaScript.
 - Redis-backed cross-store behavior and server-side commercial outcomes remain the primary anti-scraping detector.
 
-Any future bounded research would require a separate reviewed OpenSpec change, such as `continue-browser-telemetry-poc`, and must be small, first-party, privacy-reviewed, independently versioned, asynchronous/fail-open, and justified by labeled incremental value. A production implementation change may be considered only after that continuation demonstrates measurable incremental value and receives every required review; production adoption is not planned or authorized by this change. This research must not be folded into `bootstrap-risk-service` and authorizes no customer-facing enforcement.
+Any future bounded research would require a separate reviewed OpenSpec change, such as `continue-browser-telemetry-poc`, and must be small, first-party, independently versioned, asynchronous/fail-open, and justified by labeled incremental value. Qualified privacy/legal review is mandatory before any continuation involving real-user collection. A production implementation change may be considered only after that continuation demonstrates measurable incremental value and satisfies every applicable gate; production adoption is not planned or authorized by this change. This research must not be folded into `bootstrap-risk-service` and authorizes no customer-facing enforcement.
 
 ## What is in this directory
 
@@ -40,7 +40,7 @@ Any future bounded research would require a separate reviewed OpenSpec change, s
 - `evidence/upstream-licenses/`: preserved license notices for every locked package entry.
 - `source-evidence.md`: claim-to-source matrix.
 - `DEPENDENCIES.md`: dependency, license, SBOM, audit, and update posture.
-- `reviews/README.md`: pending external-review decisions, checklists, and reviewer record template.
+- `reviews/README.md`: six pending project-owner governance records, assurance boundaries, and unsigned record templates.
 
 ## Reproducibility
 
@@ -181,7 +181,7 @@ It still cannot establish that browser measurements are truthful. An attacker ca
 
 ## Privacy and legal posture
 
-Fingerprint-like outputs and network activity may be personal information, personal data, online identifiers, or unique identifiers. Access to browser APIs may implicate ePrivacy terminal-equipment rules even without writing a traditional cookie. Any future bounded research requires jurisdiction-specific privacy/legal review of necessity, proportionality, purpose, lawful basis or exemption, transparency, consent where applicable, DPIA/LIA screening, retention, deletion/DSR, residency, tenant isolation, and cross-restaurant correlation.
+Fingerprint-like outputs and network activity may be personal information, personal data, online identifiers, or unique identifiers. Access to browser APIs may implicate ePrivacy terminal-equipment rules even without writing a traditional cookie. **No production or real-user browser telemetry is authorized. A qualified privacy/legal review is mandatory before any future continuation involving real-user collection.** Such future review would need to address necessity, proportionality, purpose, lawful basis or exemption, transparency, consent where applicable, DPIA/LIA screening, retention, deletion/DSR, residency, tenant isolation, and cross-restaurant correlation.
 
 Prefer coarsened, short-lived, derived features and decision outcomes over raw component values or long-lived high-entropy identifiers. Advertising, unrelated analytics, or profile enrichment reuse is prohibited by this research decision.
 
@@ -198,13 +198,13 @@ Future reconsideration gates—not tasks required to close this documentation ch
 - Private mode, Brave, Firefox protections, blockers, corporate policy, accessibility tools, plugin/PDF settings, and representative extensions.
 - Selenium, Puppeteer, stealth tools, undetected ChromeDriver, patched CDP, profile rotation, fabricated/replayed payloads, and distributed low-and-slow attackers.
 - Longitudinal stability across browser/OS updates, settings changes, and WebView lifecycle changes.
-- Privacy-approved labeled shadow traffic comparing behavior-only and behavior-plus-browser-signal decisions, including false positives, false negatives, conversion, and incremental lift.
+- Labeled shadow traffic, permitted only after qualified privacy/legal review, comparing behavior-only and behavior-plus-browser-signal decisions, including false positives, false negatives, conversion, and incremental lift.
 - Evidence that any lift exceeds equivalent investment in Redis correlation and commercial-outcome feedback.
 
-No production or customer-data experiment is authorized by this repository material.
+No production or real-user experiment, shadow collection, pilot, analytics use, enforcement use, or other real-user browser telemetry is authorized by this repository material.
 
 ## Review state
 
-Security architecture, privacy/legal, frontend, platform, product, and dependency/license governance reviews remain pending. Their tasks must stay unchecked until real reviewer records exist. The final reviewed outcome also remains pending; the allowed outcomes are `no adoption`, `bounded continuation PoC`, or `small internal sensor`.
+Exactly six project-owner governance records remain pending: security architecture self-review, privacy restriction, technical self-review, product decision, dependency and license acceptance, and final project-owner outcome. Their tasks must stay unchecked until Fernando Homem da Costa (`nandohdc`), acting as project owner and maintainer, supplies explicit written records. These are self-reviews or owner decisions, not independent assurance, legal advice, certification, or organizational approval.
 
-Until actual reviewers record an outcome, the provisional decision remains **DEFER BROWSER TELEMETRY**.
+Until Fernando records the owner outcomes, the provisional decision remains **DEFER BROWSER TELEMETRY**, production authorization remains **none**, and real-user collection authorization remains **none**.
