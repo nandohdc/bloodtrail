@@ -1,0 +1,62 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: nandohdc/gh-pipelines/.github/workflows/ci-node.yml@v1
+    with:
+      node-version: "26"                     # matches package.json engines >=26.5.0
+      working-directory: "research/browser-telemetry"
+      package-manager: "npm"
+      lint-script: "lint"
+      test-script: "test"
+      coverage-min: 0                        # gate deferred (see follow-up)
+      run-audit: true
+      audit-level: "high"
+      runner-label: ${{ vars.RUNNER_LABEL }}
+
+  sonar:
+    needs: ci
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install dirmngr (required by SonarScanner GPG verification)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq dirmngr
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: SonarQube scan
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: research/browser-telemetry
+
+      - name: SonarQube quality gate
+        uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b
+        with:
+          scanMetadataReportFile: research/browser-telemetry/.scannerwork/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
