@@ -38,6 +38,12 @@
     "compatibility": "exact-contract-projection",
     "driftCommand": "npm run check:generated"
   },
+  "verificationLifecycle": {
+    "modes": ["active", "governed", "archived"],
+    "defaultSelection": "deterministic-auto",
+    "metadata": "verification-lifecycle.json",
+    "compatibilityImpact": "repository-verification-only; no runtime SDK API or contract 1.0.0 change"
+  },
   "semverClassification": {
     "patch": [
       "bug fix preserving contract 1.0.0 interpretation",

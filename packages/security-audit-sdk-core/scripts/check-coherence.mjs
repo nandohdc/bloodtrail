@@ -6,12 +6,25 @@ import {
   readJson,
   repositoryRoot,
 } from "./verification-helpers.mjs";
+import {
+  boundedFailure,
+  extractRequirementBody,
+  extractRequirementBlocks,
+  lifecycleMetadata,
+  parseTaskChecklist,
+  resolveVerificationLifecycle,
+} from "./lifecycle-policy.mjs";
 
-const changeRoot = resolve(repositoryRoot, "openspec/changes/implement-security-audit-sdk-core");
+const lifecycle = await resolveVerificationLifecycle();
+const changeRoot = lifecycle.currentChangeRoot;
+const originalArchiveRoot = lifecycle.originalArchive;
+const original = lifecycleMetadata.originalSdkChange;
+const remediation = lifecycleMetadata.remediationChange;
 const expected = Object.freeze({
   contractVersion: "1.0.0",
   normativeTarget: "8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993",
   proposalBaseline: "94dc6e3bcc74beecd1fca2832948b139167fdd3b",
+  remediationBaseline: "b4206f92fc92c7355efaa80d9f878353cf794452",
   packageName: "@bloodtrail/security-audit-sdk-core",
   packageVersion: "0.1.0",
   nodeEngines: ">=24 <25 || >=26 <27",
@@ -31,7 +44,7 @@ const expected = Object.freeze({
 
 const failures = [];
 function rule(id, file, condition, message) {
-  if (!condition) failures.push({ id, file, message });
+  if (!condition) failures.push(boundedFailure(id, file, message));
 }
 function same(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
@@ -45,7 +58,7 @@ const requiredTextFiles = [
   ["design", resolve(changeRoot, "design.md")],
   ["spec", resolve(changeRoot, "specs/security-audit-sdk-core/spec.md")],
   ["tasks", resolve(changeRoot, "tasks.md")],
-  ["review-packet", resolve(changeRoot, "technical-review-packet.md")],
+
   ["README", resolve(packageRoot, "README.md")],
   ["API", resolve(packageRoot, "API.md")],
   ["SECURITY", resolve(packageRoot, "SECURITY.md")],
@@ -54,6 +67,12 @@ const requiredTextFiles = [
   ["example-scenarios", resolve(packageRoot, "examples/scenarios.ts")],
   ["example-runner", resolve(packageRoot, "examples/run.ts")],
 ];
+if (lifecycle.change === remediation.name) {
+  requiredTextFiles.push(["authorization", resolve(changeRoot, "implementation-authorization.md")]);
+}
+if (lifecycle.mode === "governed" || lifecycle.mode === "archived" || lifecycle.change === original.name) {
+  requiredTextFiles.push(["review-packet", resolve(changeRoot, "technical-review-packet.md")]);
+}
 const texts = new Map();
 for (const [id, path] of requiredTextFiles) {
   try {
@@ -66,6 +85,26 @@ const pkg = await readJson(resolve(packageRoot, "package.json"));
 const lock = await readJson(resolve(packageRoot, "package-lock.json"));
 const compatibility = await readJson(resolve(packageRoot, "compatibility.json"));
 const provenance = await readJson(resolve(packageRoot, "contract-provenance.json"));
+const originalTasksText = await safeRead(resolve(originalArchiveRoot, "tasks.md"), "archived-original-tasks");
+const originalPacket = await safeRead(resolve(originalArchiveRoot, "technical-review-packet.md"), "archived-original-review-packet");
+const originalDelta = await safeRead(resolve(originalArchiveRoot, "specs/security-audit-sdk-core/spec.md"), "archived-original-capability-delta");
+const canonicalCapability = await safeRead(resolve(repositoryRoot, original.capability), "canonical-sdk-capability");
+const originalTasks = parseTaskChecklist(originalTasksText);
+
+rule("original-active-absent", `openspec/changes/${original.name}`, !await pathExists(resolve(repositoryRoot, "openspec/changes", original.name)), "archived original SDK change is incorrectly present as active");
+rule("original-archive-task-count", `${original.archive}/tasks.md`, originalTasks.length === original.taskCount, `archived original SDK task count differs from ${original.taskCount}`);
+rule("original-archive-tasks-complete", `${original.archive}/tasks.md`, originalTasks.every((task) => task.done), "archived original SDK tasks are not 106/106 complete");
+rule("original-capability-match", original.capability, extractRequirementBody(originalDelta) !== "" && extractRequirementBody(canonicalCapability) === extractRequirementBody(originalDelta), "canonical SDK capability does not match the approved archived delta");
+for (const [id, commit] of [
+  ["technical", original.technicalCommit],
+  ["governance", original.governanceCommit],
+  ["synchronization", original.synchronizationCommit],
+  ["merge", original.mergeCommit],
+]) {
+  rule(`original-${id}-binding`, `${original.archive}/technical-review-packet.md`, originalPacket.includes(commit), `archived original SDK ${id} commit binding is absent`);
+}
+rule("original-publication-unauthorized", `${original.archive}/technical-review-packet.md`, /Package publication\/release approved \| `NO — NOT AUTHORIZED`/.test(originalPacket), "archived original SDK package-publication restriction is absent");
+rule("original-production-unauthorized", `${original.archive}/technical-review-packet.md`, /Production deployment approved \| `NO — NOT AUTHORIZED`/.test(originalPacket), "archived original SDK production restriction is absent");
 
 rule("package-name", "package.json", pkg.name === expected.packageName, "package name differs from the SDK identity");
 rule("package-version", "package.json", pkg.version === expected.packageVersion, "package version differs from the compatibility baseline");
@@ -90,6 +129,7 @@ for (const key of ["runtimeDependencyCount", "namedEventApiCount", "catalogEvent
 rule("compat-delivery", "compatibility.json", same(compatibility.deliveryClasses, expected.deliveryClasses), "delivery-class inventory differs from the canonical registry");
 rule("compat-extensions", "compatibility.json", same(compatibility.extensionNamespaces, expected.extensionNamespaces), "extension namespace inventory differs from the canonical registry");
 rule("compat-exports", "compatibility.json", same(compatibility.packageExports, expected.packageExports), "compatibility public subpaths differ from package.json");
+rule("compat-verification-lifecycle", "compatibility.json", same(compatibility.verificationLifecycle?.modes, ["active", "governed", "archived"]) && compatibility.verificationLifecycle?.metadata === "verification-lifecycle.json", "verification lifecycle compatibility metadata is absent or stale");
 
 rule("provenance-version", "contract-provenance.json", provenance.contractVersion === expected.contractVersion, "contract provenance version differs from 1.0.0");
 rule("provenance-target", "contract-provenance.json", provenance.normativeTechnicalTarget === expected.normativeTarget, "contract provenance target differs from the approved commit");
@@ -144,7 +184,7 @@ const allAdrs = adrTexts.join("\n");
 rule("adr-runtime", "adr", includesAll(allAdrs, [expected.packageName, "Node.js majors 24 and 26", expected.typescriptRange, "runtime dependencies remain zero"]), "ADR runtime/package policy is incomplete");
 rule("adr-contract", "adr", includesAll(allAdrs, [expected.normativeTarget, "contract `1.0.0`"]), "ADR contract version/target binding is incomplete");
 rule("adr-validator-format", "adr/003-runtime-schema-validation.md", allAdrs.includes("standalone CommonJS output") && !allAdrs.includes("standalone ESM output"), "validator module-format decision is stale or contradictory");
-rule("adr-baseline", "adr/010-canonical-verification-and-scope.md", allAdrs.includes(expected.proposalBaseline) && !/94dc4fcfb267777817c0f1894b02d542670f5c79/.test(allAdrs), "ADR changed-path baseline is stale or contradictory");
+rule("adr-baseline", "adr/010-canonical-verification-and-scope.md", allAdrs.includes(expected.remediationBaseline) && !/94dc4fcfb267777817c0f1894b02d542670f5c79/.test(allAdrs), "ADR changed-path baseline is stale or contradictory");
 
 const docs = ["README", "API", "SECURITY", "MIGRATION"].map((id) => texts.get(id) ?? "").join("\n");
 rule("docs-package", "consumer-docs", docs.includes(expected.packageName) && docs.includes(expected.packageVersion), "consumer documentation lacks package identity/version");
@@ -159,24 +199,61 @@ rule("docs-production", "consumer-docs", includesAll(docs, ["does not authorize 
 rule("docs-no-durability", "consumer-docs", /(?:no|not|does not)[^.\n]{0,80}durab(?:le|ility)|durab(?:le|ility)[^.\n]{0,80}(?:no|not|does not)/i.test(docs), "sink acceptance/durability limitation is incomplete");
 
 const openSpec = ["proposal", "design", "spec", "tasks"].map((id) => texts.get(id) ?? "").join("\n");
-rule("openspec-contract", "active-change", openSpec.includes(expected.contractVersion), "active change does not remain bound to contract 1.0.0");
-rule("openspec-event-count", "active-change", openSpec.includes("all 24") || openSpec.includes("24 version"), "active change lacks 24-event catalog scope");
-rule("openspec-production", "active-change", includesAll(openSpec, ["browser telemetry", "production", "transport"]), "active change lacks explicit production/transport/browser boundaries");
+rule("openspec-contract", relative(repositoryRoot, changeRoot), openSpec.includes(expected.contractVersion), "governed change does not remain bound to contract 1.0.0");
+rule("openspec-production", relative(repositoryRoot, changeRoot), includesAll(openSpec, ["browser telemetry", "production", "transport"]), "governed change lacks explicit production/transport/browser boundaries");
 
 const tasks = texts.get("tasks") ?? "";
-const taskLines = [...tasks.matchAll(/^- \[([ x])\] (\d+\.\d+)\s/mg)];
-const checkedTasks = taskLines.filter((match) => match[1] === "x").length;
-rule("task-count", "tasks.md", taskLines.length === expected.taskCount, `task checklist count differs from ${expected.taskCount}`);
-for (const id of ["14.1", "14.2", "14.3", "14.4", "14.5", "14.6", "14.7"]) {
-  const match = taskLines.find((entry) => entry[2] === id);
-  rule(`governance-task-${id}`, "tasks.md", match?.[1] === " ", `governance task ${id} must remain unchecked before exact-commit owner action`);
+const taskEntries = parseTaskChecklist(tasks);
+const checkedTasks = taskEntries.filter((task) => task.done).length;
+const expectedTaskCount = lifecycle.change === original.name ? original.taskCount : remediation.taskCount;
+rule("task-count", "tasks.md", taskEntries.length === expectedTaskCount, `task checklist count differs from ${expectedTaskCount}`);
+
+if (lifecycle.change === remediation.name) {
+  const traceability = await safeRead(resolve(changeRoot, "adversarial-review-traceability.md"), "remediation-traceability");
+  const authorizationText = texts.get("authorization") ?? "";
+  const remediationEvidence = `${openSpec}\n${traceability}\n${authorizationText}`;
+  rule("remediation-proposal-baseline", "active-remediation", remediationEvidence.includes(remediation.proposalBaseline), "authoritative remediation proposal baseline is absent");
+  rule("remediation-traceability-commit", "active-remediation", authorizationText.includes(remediation.traceabilityCommit), "issue-traceability commit is absent from implementation authorization");
+  for (let finding = 1; finding <= 12; finding += 1) {
+    rule(`remediation-finding-F-${String(finding).padStart(2, "0")}`, "active-remediation", remediationEvidence.includes(`F-${String(finding).padStart(2, "0")}`), `finding F-${String(finding).padStart(2, "0")} is not represented`);
+  }
+  for (let issue = 20; issue <= 30; issue += 1) {
+    rule(`remediation-issue-${issue}`, "active-remediation", remediationEvidence.includes(`#${issue}`) || remediationEvidence.includes(`/issues/${issue}`), `GitHub issue #${issue} is not linked`);
+  }
+  rule("remediation-implementation-authorization", "implementation-authorization.md", includesAll(authorizationText, [
+    "Authorize implementation",
+    remediation.proposalBaseline,
+    remediation.traceabilityCommit,
+    "version `1.0.0`",
+    "package publication or production deployment",
+    "final owner approval",
+  ]), "bounded project-owner implementation authorization is incomplete");
+
+  const nonF04Tasks = taskEntries.filter((task) => !remediation.f04Tasks.includes(task.id));
+  if (lifecycle.mode === "active") {
+    rule("active-non-f04-pending", "tasks.md", nonF04Tasks.every((task) => !task.done), "active F-04 pass completed a task outside issue #24");
+    const finalOwnerTask = taskEntries.find((task) => task.id === remediation.finalOwnerTask);
+    rule("active-final-owner-pending", "tasks.md", finalOwnerTask?.done === false, "final remediation owner approval must remain pending in active mode");
+  } else if (lifecycle.mode === "governed") {
+    const packet = texts.get("review-packet") ?? "";
+    const technicalCommit = packet.match(/Final technical commit:\s*`([0-9a-f]{40})`/)?.[1];
+    rule("governed-technical-binding", "technical-review-packet.md", Boolean(technicalCommit), "governed mode requires a full final technical commit binding");
+    rule("governed-owner-decision", "technical-review-packet.md", /Project-owner.+decision.+APPROVED/is.test(packet), "governed mode requires an explicit project-owner decision");
+    rule("governed-production-restriction", "technical-review-packet.md", includesAll(packet, ["Package publication/release approved | `NO — NOT AUTHORIZED`", "Production deployment approved | `NO — NOT AUTHORIZED`"]), "governed production/publication restrictions are absent");
+    for (const id of remediation.mergeArchiveTasks) {
+      rule(`governed-task-${id}-pending`, "tasks.md", taskEntries.find((task) => task.id === id)?.done === false, `governed mode requires ${id} to remain pending`);
+    }
+  } else {
+    const packet = texts.get("review-packet") ?? "";
+    rule("archived-remediation-tasks-complete", "tasks.md", taskEntries.every((task) => task.done), "archived remediation tasks are not complete");
+    rule("archived-remediation-bindings", "technical-review-packet.md", /[0-9a-f]{40}/.test(packet) && /governance/i.test(packet) && /merge/i.test(packet), "archived remediation technical/governance/merge bindings are absent");
+    rule("archived-remediation-restrictions", "technical-review-packet.md", includesAll(packet, ["Package publication/release approved | `NO — NOT AUTHORIZED`", "Production deployment approved | `NO — NOT AUTHORIZED`"]), "archived remediation production/publication restrictions are absent");
+    const remediationRequirements = extractRequirementBlocks(texts.get("spec") ?? "");
+    rule("archived-remediation-capability", remediation.capability, remediationRequirements.length > 0 && remediationRequirements.every((requirement) => canonicalCapability.includes(requirement)), "canonical capability does not contain every approved archived remediation requirement and scenario block");
+  }
+} else {
+  rule("archived-original-current-tasks", "tasks.md", taskEntries.every((task) => task.done), "explicit original archived mode requires complete governed tasks");
 }
-const packet = texts.get("review-packet") ?? "";
-rule("review-proposal", "technical-review-packet.md", packet.includes(expected.proposalBaseline), "review packet proposal commit differs from the real baseline");
-rule("review-target", "technical-review-packet.md", packet.includes(expected.normativeTarget), "review packet contract target differs from the approved commit");
-rule("review-task-state", "technical-review-packet.md", packet.includes(`${checkedTasks}/${expected.taskCount} complete; ${expected.taskCount - checkedTasks}/${expected.taskCount} remain`), "review packet current task state differs from tasks.md");
-rule("review-pending", "technical-review-packet.md", includesAll(packet, ["Final technical commit: `PENDING", "Reviewed commit: `PENDING", "Project-owner SDK decision: `PENDING", "Production deployment approved | `NO — NOT AUTHORIZED`"]), "exact-commit review or owner/production status is not explicitly pending/unauthorized");
-rule("review-generated-files", "technical-review-packet.md", includesAll(packet, ["schema-validator.generated.cjs", "schema-validator.generated.d.cts"]), "review packet generated-artifact inventory is stale");
 
 const scenarios = texts.get("example-scenarios") ?? "";
 const scenarioExports = [...scenarios.matchAll(/^export async function ([A-Za-z0-9_]+)\(/mg)].map((match) => match[1]);
@@ -201,7 +278,7 @@ const dangerousAffirmations = [
   ["browser-implemented", /\b(?:implements?|includes?) browser telemetry\b/i],
   ["durable-delivery", /\b(?:guarantees?|provides?) durable delivery\b/i],
 ];
-const statusSurfaces = [docs, packet, openSpec, allAdrs].join("\n");
+const statusSurfaces = [docs, texts.get("review-packet") ?? "", openSpec, allAdrs].join("\n");
 for (const [id, pattern] of dangerousAffirmations) {
   rule(`forbidden-claim-${id}`, "cross-artifact-prose", !pattern.test(statusSurfaces), `contradictory ${id} claim detected`);
 }
@@ -212,7 +289,7 @@ if (failures.length > 0) {
   for (const failure of failures) process.stderr.write(`[${failure.id}] ${failure.file}: ${failure.message}\n`);
   process.exitCode = 1;
 } else {
-  process.stdout.write(`cross-artifact coherence passed: contract ${expected.contractVersion}, ${expected.catalogEventCount} catalog events/${expected.namedEventApiCount} named APIs, ${expected.runtimeDependencyCount} runtime dependencies, ${checkedTasks}/${expected.taskCount} tasks complete, governance pending\n`);
+  process.stdout.write(`cross-artifact coherence passed in ${lifecycle.mode} mode for ${lifecycle.change}: contract ${expected.contractVersion}, ${expected.catalogEventCount} catalog events/${expected.namedEventApiCount} named APIs, ${expected.runtimeDependencyCount} runtime dependencies, ${checkedTasks}/${expectedTaskCount} current-change tasks complete\n`);
 }
 
 async function safeRead(path, id) {
@@ -221,6 +298,15 @@ async function safeRead(path, id) {
   } catch {
     rule("required-file", relative(repositoryRoot, path), false, `${id} is missing or unreadable`);
     return "";
+  }
+}
+
+async function pathExists(path) {
+  try {
+    await readdir(path);
+    return true;
+  } catch {
+    return false;
   }
 }
 

@@ -256,7 +256,9 @@ All identifiers, addresses, host names, and times in those examples are syntheti
 
 ## Supported-runtime verification
 
-The canonical repository command is `npm run verify` on one declared runtime. Independent exact-runtime evidence uses the same clean package matrix on Node `24.2.0` and `26.5.0`:
+The canonical repository command is `npm run verify` on one declared runtime. It auto-selects the current OpenSpec lifecycle. Explicit repository gates may run `npm run verify -- --mode active`, `npm run verify -- --mode governed`, or `npm run verify -- --mode archived`; the completed original SDK archive is selected with `npm run verify -- --mode archived --change implement-security-audit-sdk-core`. Archived mode validates the canonical capability and repository rather than invoking strict validation for a deleted active change.
+
+Independent exact-runtime evidence uses the same clean package matrix on Node `24.2.0` and `26.5.0`:
 
 ```sh
 repo="$(git rev-parse --show-toplevel)"
@@ -271,4 +273,4 @@ for version in 24.2.0 26.5.0; do
 done
 ```
 
-This runtime procedure does not replace strict OpenSpec, exact changed-path, package-audit, or Git-index checks in `npm run verify`.
+This runtime procedure does not replace lifecycle-appropriate strict OpenSpec, changed-path ownership, package-audit, mutation, or Git-index checks in `npm run verify`. The lifecycle repair changes repository verification only; it does not change the SDK runtime API or Security Audit Event Contract `1.0.0` compatibility.

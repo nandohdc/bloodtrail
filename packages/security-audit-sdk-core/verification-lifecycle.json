@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "version": "1.0.0",
+    "normativeTechnicalTarget": "8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993",
+    "protectedPrefixes": [
+      "contracts/security-audit/",
+      "openspec/specs/security-audit-event-contract/",
+      "openspec/changes/archive/2026-07-31-define-security-audit-event-contract/"
+    ]
+  },
+  "originalSdkChange": {
+    "name": "implement-security-audit-sdk-core",
+    "archive": "openspec/changes/archive/2026-07-31-implement-security-audit-sdk-core",
+    "capability": "openspec/specs/security-audit-sdk-core/spec.md",
+    "taskCount": 106,
+    "technicalCommit": "21c5c98503205257be87cb977b131b4a81ac430a",
+    "governanceCommit": "1f35896d6a51e759806ad5da0f0c56e17c7e065a",
+    "synchronizationCommit": "3734a295a0a32effeaf6b03d04d14542db12576e",
+    "mergeCommit": "86bf25d459d909d4fbdd151fb23c3c159ba1f365"
+  },
+  "remediationChange": {
+    "name": "remediate-security-audit-sdk-adversarial-review",
+    "active": "openspec/changes/remediate-security-audit-sdk-adversarial-review",
+    "archivePattern": "^openspec/changes/archive/\\d{4}-\\d{2}-\\d{2}-remediate-security-audit-sdk-adversarial-review$",
+    "capability": "openspec/specs/security-audit-sdk-core/spec.md",
+    "proposalBaseline": "b4206f92fc92c7355efaa80d9f878353cf794452",
+    "traceabilityCommit": "71cabfe50e18af9f242ec9cd8b4aee33632e5792",
+    "taskCount": 91,
+    "f04Tasks": ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8"],
+    "finalOwnerTask": "12.5",
+    "mergeArchiveTasks": ["12.8", "12.9", "12.10"]
+  },
+  "ownership": {
+    "packagePrefix": "packages/security-audit-sdk-core/",
+    "sdkSourcePrefixes": [
+      "packages/security-audit-sdk-core/src/",
+      "packages/security-audit-sdk-core/lib/"
+    ],
+    "canonicalSdkCapabilityPrefix": "openspec/specs/security-audit-sdk-core/"
+  },
+  "localIgnoredFiles": {
+    "policy": "Git-standard ignored files are excluded with git ls-files --others --exclude-standard. Non-ignored untracked SDK source and OpenSpec evidence remain visible; unrelated local instruction files outside governed roots are classified but are not SDK implementation scope."
+  }
+}

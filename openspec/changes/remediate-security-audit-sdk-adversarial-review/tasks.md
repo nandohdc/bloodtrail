@@ -2,14 +2,14 @@
 
 GitHub issue: [#24](https://github.com/nandohdc/bloodtrail/issues/24)
 
-- [ ] 1.1 Implement explicit active and archived verification modes with lifecycle metadata and no hard-coded deleted active-change path. [F-04]
-- [ ] 1.2 Update coherence rules to validate the active remediation change in active mode and canonical capability plus immutable dated evidence in archived mode. [F-04]
-- [ ] 1.3 Replace original-proposal-history scope evaluation with remediation-baseline and package-local comparisons while preserving contract, package, capability, provenance, and governance drift detection. [F-04]
-- [ ] 1.4 Add unit tests for lifecycle resolution, active task state, archived governed task state, and bounded rule diagnostics. [F-04]
-- [ ] 1.5 Add disposable differential mutation tests for missing active evidence, corrupted archive evidence, SDK drift, contract drift, task-state contradiction, and unrelated-history non-regression. [F-04]
-- [ ] 1.6 Make the canonical verification entry point reproducible from a clean current-main checkout without stale build or deleted-path dependencies. [F-04]
-- [ ] 1.7 Update verification documentation, ADR/coherence references, and compatibility notes without editing the archived prior SDK change. [F-04]
-- [ ] 1.8 Record clean active-mode and archived-mode command evidence for exact Node.js 24 and 26 verification. [F-04]
+- [x] 1.1 Implement explicit active and archived verification modes with lifecycle metadata and no hard-coded deleted active-change path. [F-04]
+- [x] 1.2 Update coherence rules to validate the active remediation change in active mode and canonical capability plus immutable dated evidence in archived mode. [F-04]
+- [x] 1.3 Replace original-proposal-history scope evaluation with remediation-baseline and package-local comparisons while preserving contract, package, capability, provenance, and governance drift detection. [F-04]
+- [x] 1.4 Add unit tests for lifecycle resolution, active task state, archived governed task state, and bounded rule diagnostics. [F-04]
+- [x] 1.5 Add disposable differential mutation tests for missing active evidence, corrupted archive evidence, SDK drift, contract drift, task-state contradiction, and unrelated-history non-regression. [F-04]
+- [x] 1.6 Make the canonical verification entry point reproducible from a clean current-main checkout without stale build or deleted-path dependencies. [F-04]
+- [x] 1.7 Update verification documentation, ADR/coherence references, and compatibility notes without editing the archived prior SDK change. [F-04]
+- [x] 1.8 Record clean active-mode and archived-mode command evidence for exact Node.js 24 and 26 verification. [F-04]
 
 ## 2. Reject forged operation commit evidence [F-01]
 
