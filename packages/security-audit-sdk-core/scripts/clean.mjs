@@ -1,4 +1,11 @@
-import { rm } from "node:fs/promises";
-for (const path of [new URL("../dist", import.meta.url), new URL("../dist-tests", import.meta.url)]) {
-  await rm(path, { recursive: true, force: true });
+import { readdir, rm } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+for (const path of ["dist", "dist-tests", "dist-examples", ".test-dist", ".verification-output"]) {
+  await rm(resolve(packageRoot, path), { recursive: true, force: true });
+}
+for (const entry of await readdir(packageRoot)) {
+  if (entry.endsWith(".tgz")) await rm(resolve(packageRoot, entry), { force: true });
 }

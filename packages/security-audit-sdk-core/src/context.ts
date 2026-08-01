@@ -263,8 +263,10 @@ export function claimedTenant(claimed_tenant_id: string): ClaimedTenantContext {
   return brand({ claimed_tenant_id }, "claimed_tenant");
 }
 
-export function authoritativeResource(input: ContextValue<"resource">): ResourceAuthorityContext {
-  return brand(input, "resource_authority");
+export function authoritativeResource<const T extends ContextValue<"resource">>(
+  input: T,
+): ResourceAuthorityContext & Readonly<T> {
+  return brand(input, "resource_authority") as ResourceAuthorityContext & Readonly<T>;
 }
 
 export function authenticationEvidence(input: ContextValue<"authentication">): AuthenticationEvidenceContext {

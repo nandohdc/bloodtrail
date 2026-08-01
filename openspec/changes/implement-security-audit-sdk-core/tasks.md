@@ -111,30 +111,30 @@
 
 ## 11. Complete verification and compatibility evidence
 
-- [ ] 11.1 Add one reproducible complete verification command covering generation, strict compilation, type tests, runtime tests, fixtures, package exports, compatibility, dependency/audit, OpenSpec, whitespace, and exact scope.
+- [x] 11.1 Add one reproducible complete verification command covering generation, strict compilation, type tests, runtime tests, fixtures, package exports, compatibility, dependency/audit, OpenSpec, whitespace, and exact scope.
 - [x] 11.2 Run and record all 24 approved positive fixtures through the standards-compliant schema engine and SDK semantic boundary.
 - [x] 11.3 Run every approved negative fixture and assert its exact bounded safe code, path limit, and absence of secret markers in serialized diagnostics.
 - [x] 11.4 Add package API and generated-type compatibility fixtures for patch/minor/major changes, error-code additions/removals, Node/TypeScript support, and unsupported contract versions.
 - [x] 11.5 Add Node 24 and 26 execution evidence and strict TypeScript compile-time evidence without claiming untested runtime/compiler compatibility.
 - [x] 11.6 Add dependency license, lockfile integrity, vulnerability, runtime dependency, package content, and no-production-implementation evidence.
-- [ ] 11.7 Add exact changed-path and import/dependency scans proving no framework middleware, exporter/transport, collector, broker/queue/outbox, storage, SIEM, analytics/detection, browser telemetry, production instrumentation, cryptographic chain, or diagnostic logging was implemented.
+- [x] 11.7 Add exact changed-path and import/dependency scans proving no framework middleware, exporter/transport, collector, broker/queue/outbox, storage, SIEM, analytics/detection, browser telemetry, production instrumentation, cryptographic chain, or diagnostic logging was implemented.
 - [x] 11.8 Verify the canonical contract capability, archived change, Contract Commit A technical artifacts, and approved fixtures were not modified except through a separately approved genuine contract correction.
-- [ ] 11.9 Run a terminology and cross-artifact semantic-coherence sweep across proposal, design, spec, ADRs, package API, generated code, validator, tests, and documentation; resolve contradictions rather than relying on structural validation.
+- [x] 11.9 Run a terminology and cross-artifact semantic-coherence sweep across proposal, design, spec, ADRs, package API, generated code, validator, tests, and documentation; resolve contradictions rather than relying on structural validation.
 
 ## 12. Documentation and migration policy
 
-- [ ] 12.1 Document installation, supported Node/TypeScript versions, ESM imports, immutable initialization, authority-provider responsibilities, context propagation, named builders, operation model, validation, errors, sinks, lifecycle, and deterministic testing.
-- [ ] 12.2 Document client-claim, tenant/resource, credential/secret, authorization/outcome, commit, causality/retry, transformation, extension, and producer-truth security boundaries with misuse examples.
-- [ ] 12.3 Document SDK/package SemVer relative to contract version 1.0.0, generated API changes, error-code evolution, Node/TypeScript support changes, unsupported versions, and distinct SDK-versus-schema migration.
-- [ ] 12.4 Document that SDK validation is not producer truthfulness, ingestion acceptance, delivery, durability, legal compliance, non-repudiation, production authorization, or permission to process real-user data.
-- [ ] 12.5 Document follow-on change boundaries for framework adapters, production transport/exporters, reliable delivery/outbox, application instrumentation, storage/SIEM, analytics/detection, cryptographic chaining, and real-user privacy/legal approval.
+- [x] 12.1 Document installation, supported Node/TypeScript versions, ESM imports, immutable initialization, authority-provider responsibilities, context propagation, named builders, operation model, validation, errors, sinks, lifecycle, and deterministic testing.
+- [x] 12.2 Document client-claim, tenant/resource, credential/secret, authorization/outcome, commit, causality/retry, transformation, extension, and producer-truth security boundaries with misuse examples.
+- [x] 12.3 Document SDK/package SemVer relative to contract version 1.0.0, generated API changes, error-code evolution, Node/TypeScript support changes, unsupported versions, and distinct SDK-versus-schema migration.
+- [x] 12.4 Document that SDK validation is not producer truthfulness, ingestion acceptance, delivery, durability, legal compliance, non-repudiation, production authorization, or permission to process real-user data.
+- [x] 12.5 Document follow-on change boundaries for framework adapters, production transport/exporters, reliable delivery/outbox, application instrumentation, storage/SIEM, analytics/detection, cryptographic chaining, and real-user privacy/legal approval.
 
 ## 13. Read-only technical verification
 
-- [ ] 13.1 Perform a read-only verification of package architecture, generated types, public API, authority/context model, builders, operation state, validation, privacy, extensions, errors, sinks, lifecycle, compatibility, documentation, and production-scope exclusions before staging.
-- [ ] 13.2 Run the complete verification command, strict OpenSpec validation, Git whitespace/final-newline checks, generated-artifact drift, npm audit, package content checks, and exact changed-path review with an empty index.
-- [ ] 13.3 Review every checked technical task against repository evidence and report unsupported completion, contract conformance, production authorization, commit readiness, merge readiness, and archive readiness separately.
-- [ ] 13.4 Confirm technical commit readiness only if no blocking finding exists; keep owner review, final decision, production deployment, collection, and archive states explicitly pending.
+- [x] 13.1 Perform a read-only verification of package architecture, generated types, public API, authority/context model, builders, operation state, validation, privacy, extensions, errors, sinks, lifecycle, compatibility, documentation, and production-scope exclusions before staging.
+- [x] 13.2 Run the complete verification command, strict OpenSpec validation, Git whitespace/final-newline checks, generated-artifact drift, npm audit, package content checks, and exact changed-path review with an empty index.
+- [x] 13.3 Review every checked technical task against repository evidence and report unsupported completion, contract conformance, production authorization, commit readiness, merge readiness, and archive readiness separately.
+- [x] 13.4 Confirm technical commit readiness only if no blocking finding exists; keep owner review, final decision, production deployment, collection, and archive states explicitly pending.
 
 ## 14. Exact-commit SDK review and authorization boundary
 

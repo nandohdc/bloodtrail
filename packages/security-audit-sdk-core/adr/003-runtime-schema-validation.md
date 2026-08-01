@@ -5,7 +5,7 @@
 
 ## Decision
 
-Use pinned AJV 8 with its Draft 2020-12 entry point, strict mode, all-errors mode, and pinned `ajv-formats` during generation. AJV standalone ESM output is generated into the package and tested on every supported Node runtime, keeping the release package free of runtime dependencies. The SDK maps AJV diagnostics into bounded safe codes and paths and never includes rejected values.
+Use pinned AJV 8 with its Draft 2020-12 entry point, strict mode, all-errors mode, and pinned `ajv-formats` during generation. AJV standalone CommonJS output is generated behind an internal `.cjs` boundary, imported by the public ESM package, and tested on every supported Node runtime, keeping the release package free of runtime dependencies. The SDK maps AJV diagnostics into bounded safe codes and paths and never includes rejected values.
 
 If standalone output cannot preserve strict conformance, deterministic packaging, or supported-runtime behavior, correctness takes precedence and a separately documented pinned runtime AJV dependency may replace it after this ADR is amended and reviewed.
 

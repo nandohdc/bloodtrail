@@ -1,51 +1,58 @@
 import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
+import {
+  CONTRACT_VERSION,
+  SecurityAuditSdkError,
+  createSecurityAuditSdk,
+} from "../dist/index.js";
+import { packageRoot } from "./verification-helpers.mjs";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const policy = JSON.parse(await readFile(resolve(root, "compatibility.json"), "utf8"));
+const compatibility = JSON.parse(await readFile(resolve(packageRoot, "compatibility.json"), "utf8"));
+const packageJson = JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8"));
+const packageLock = JSON.parse(await readFile(resolve(packageRoot, "package-lock.json"), "utf8"));
+const provenance = JSON.parse(await readFile(resolve(packageRoot, "contract-provenance.json"), "utf8"));
+
 const major = Number(process.versions.node.split(".")[0]);
-if (!policy.node.supportedMajors.includes(major)) throw new Error(`unsupported Node major ${major}`);
-if (policy.contractVersion !== "1.0.0") throw new Error("compatibility policy contract drift");
-for (const key of ["patch", "minor", "major"]) {
-  if (!Array.isArray(policy.semverClassification?.[key]) || policy.semverClassification[key].length === 0) {
-    throw new Error(`missing SDK semver compatibility fixture: ${key}`);
-  }
-}
+assert(compatibility.node.supportedMajors.join(",") === "24,26", "supported Node majors must be exactly 24 and 26");
+assert(compatibility.node.supportedMajors.includes(major), `unsupported Node.js major ${major}`);
+assert(packageJson.engines.node === ">=24 <25 || >=26 <27", "package engines must exclude unverified odd/future majors");
+assert(packageJson.engines.node === compatibility.node.engines, "package and manifest Node policy differ");
+assert(packageJson.type === "module", "public package must remain ESM");
+assert(packageJson.version === compatibility.package.version, "package and manifest versions differ");
+assert(packageJson.name === compatibility.package.name, "package and manifest names differ");
+assert(compatibility.typescript.supported === ">=5.9.2 <6", "TypeScript support policy drift");
+assert(packageJson.devDependencies.typescript === compatibility.typescript.ciVersion, "TypeScript compiler pin drift");
+assert(packageLock.packages["node_modules/typescript"].version === compatibility.typescript.ciVersion, "locked TypeScript version drift");
+assert(compatibility.contractVersion === CONTRACT_VERSION, "runtime and manifest contract versions differ");
+assert(compatibility.supportedContractVersions.join(",") === CONTRACT_VERSION, "supported contract range must be exact");
+assert(compatibility.contractVersionRange.minimum === CONTRACT_VERSION, "contract minimum drift");
+assert(compatibility.contractVersionRange.maximum === CONTRACT_VERSION, "contract maximum drift");
+assert(compatibility.normativeTechnicalTarget === provenance.normativeTechnicalTarget, "manifest/provenance target drift");
+assert(compatibility.packageExports.join(",") === ".,./testing", "compatibility package exports drift");
+assert(Object.keys(packageJson.exports).join(",") === ".,./testing", "package export map drift");
+assert(packageJson.exports["."].require === undefined, "CommonJS root package export is unsupported");
+assert(packageJson.exports["./testing"].require === undefined, "CommonJS testing package export is unsupported");
 
-const sdk = await import(resolve(root, "dist/index.js"));
-if (sdk.CONTRACT_VERSION !== policy.contractVersion) throw new Error("runtime contract version drift");
-if (sdk.EVENT_METHODS.length !== 24) throw new Error("named API catalog coverage drift");
-for (const method of sdk.EVENT_METHODS) {
-  if (typeof sdk.createSecurityAuditSdk({
-    contractVersion: "1.0.0",
-    producer: { name: "compat-producer", version: "1.0.0" },
-    service: { name: "compat-service" },
-    environment: { name: "compat" },
-    sink: { async emit() { return { status: "accepted" }; } },
-  })[method.method] !== "function") {
-    throw new Error(`missing named API method: ${method.method}`);
-  }
-}
-for (const code of ["UNSUPPORTED_SCHEMA_VERSION", "AUTHORITY_ESCALATION", "PREMATURE_SUCCESS", "BAD_CAUSALITY"]) {
-  if (!sdk.CONTRACT_ERROR_CODES.includes(code)) throw new Error(`missing contract error code fixture: ${code}`);
-}
-for (const code of ["SDK_UNSUPPORTED_CONTRACT_VERSION", "SDK_INVALID_OPERATION_TRANSITION", "SDK_SINK_FAILURE"]) {
-  if (!sdk.SDK_ERROR_CODES.includes(code)) throw new Error(`missing SDK error code fixture: ${code}`);
-}
-for (const version of policy.unsupportedContractVersions ?? []) {
+const sink = Object.freeze({ emit: async () => Object.freeze({ status: "accepted" }) });
+for (const contractVersion of compatibility.unsupportedContractVersions) {
   let rejected = false;
   try {
-    sdk.createSecurityAuditSdk({
-      contractVersion: version,
-      producer: { name: "compat-producer", version: "1.0.0" },
-      service: { name: "compat-service" },
-      environment: { name: "compat" },
-      sink: { async emit() { return { status: "accepted" }; } },
+    createSecurityAuditSdk({
+      contractVersion,
+      producer: { name: "compatibility-check", version: "1.0.0" },
+      service: { name: "compatibility-check" },
+      environment: { name: "test" },
+      sink,
     });
   } catch (error) {
-    rejected = JSON.stringify(error).includes("SDK_UNSUPPORTED_CONTRACT_VERSION");
+    rejected = error instanceof SecurityAuditSdkError
+      && error.code === "SDK_UNSUPPORTED_CONTRACT_VERSION";
   }
-  if (!rejected) throw new Error(`unsupported contract version was not rejected: ${version}`);
+  assert(rejected, `unsupported contract version ${contractVersion} did not fail safely`);
 }
-console.log(`Node ${process.versions.node} is within the declared Node 24/26 policy and SDK compatibility fixtures passed`);
+
+process.stdout.write(`compatibility passed on Node ${process.versions.node}; contract ${CONTRACT_VERSION}; TypeScript ${compatibility.typescript.ciVersion}; exports ., ./testing\n`);
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}

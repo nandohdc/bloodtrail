@@ -32,22 +32,21 @@ Planning artifacts do not authorize apply, package publication, production use, 
 The package is isolated under `packages/security-audit-sdk-core/` and contains:
 
 - `src/index.ts`: supported public exports only;
-- `src/sdk.ts`: initialization, lifecycle, named event API composition, and emission orchestration;
-- `src/context.ts`: `AsyncLocalStorage` scope, explicit context merging, and trusted/claimed context distinctions;
-- `src/builders/`: authority-specific and event-specific construction;
-- `src/operations/`: transaction-aware operation state machine;
+- `src/sdk.ts`: initialization, lifecycle, 24 named event APIs, canonical emission/redelivery, and sink orchestration;
+- `src/config.ts`, `src/context.ts`, `src/events.ts`, and `src/operations.ts`: immutable configuration, `AsyncLocalStorage`, authority-specific construction, event assembly, and transaction-aware state;
 - `src/validation/`: generated schema validator adapter, semantic validator, registry/catalog checks, prohibited-data scan, and safe error mapping;
-- `src/sinks/`: sink contract plus in-memory and capturing test sinks;
+- `src/sink.ts` and `src/testing.ts`: transport-neutral sink contract plus in-memory and capturing test sinks;
 - `src/generated/`: generated types, discriminants, constants, catalog metadata, field-policy metadata, and standalone schema validator; never hand-edited;
-- `scripts/`: deterministic generation and drift checks;
+- `scripts/`: deterministic generation, drift, compatibility, package, scope, coherence, and canonical verification checks;
 - `tests/`: runtime, compile-time, fixture, package, compatibility, and scope tests;
-- package metadata, strict TypeScript configurations, lockfile, and package documentation.
+- `examples/`: synthetic public-API examples compiled and executed by verification;
+- package metadata, strict TypeScript configurations, lockfile, ADRs, compatibility/provenance manifests, and package documentation.
 
-The initial package is ESM-only with an explicit exports map. Build output contains JavaScript, declaration files, source maps if approved, generated contract metadata, and no internal subpath exports. The package uses Node's built-in test runner where practical and a compile-only TypeScript fixture suite for expected success/failure cases.
+The package is ESM-only with an explicit exports map. Build output contains JavaScript, declaration files, source maps, generated contract metadata, and no internal subpath exports. The package uses Node's built-in test runner and a compile-only TypeScript fixture suite for expected success/failure cases.
 
 ### Runtime policy
 
-Initial policy is Node.js `>=24` with CI coverage on Node 24 LTS and Node 26. The package uses only APIs supported by that baseline, including stable `AsyncLocalStorage`, Web Crypto or `node:crypto`, and ESM. A required runtime-policy ADR must verify the release and maintenance status at implementation time, pin exact CI versions, and define dropping a supported Node major as a package breaking change. TypeScript compiler and module-resolution versions are pinned in the lockfile and tested under strict settings; changing the minimum supported TypeScript version follows package compatibility policy.
+The supported runtime policy is exactly Node.js majors 24 and 26, pinned in verification at `24.2.0` and `26.5.0`; Node 25 and unlisted future majors are unsupported. The package uses only APIs supported by that matrix, including stable `AsyncLocalStorage`, `node:crypto`, and ESM. ADR-SDK-001 defines dropping either supported major as a breaking package change. TypeScript support is `>=5.9.2 <6`, with compiler `5.9.2` pinned in the lockfile and tested under strict settings; raising the minimum supported TypeScript version follows breaking package compatibility policy.
 
 Alternative considered: target only the implementation host's Node 26. Rejected because it would unnecessarily narrow reusable SDK consumers and conflate the development environment with support policy.
 
@@ -93,7 +92,7 @@ await audit.authorizationDenied({ actor, tenant, resource, authorization, reques
 await audit.sensitiveResourceModified({ actor, tenant, resource, operation, outcome });
 ```
 
-Each named method fixes schema/event/catalog identity and minimum delivery class, merges eligible scoped context, constructs a candidate, runs every validation layer, deep-freezes a canonical output snapshot, and invokes the sink once. A lower-level API may accept only a generated discriminated union, never a string-indexed arbitrary event.
+Each named method fixes schema/event/catalog identity and minimum delivery class, merges eligible scoped context, constructs a candidate, runs every validation layer, deep-freezes a canonical output snapshot, and invokes the sink once. The lower-level `emit` API accepts only the generated complete `SecurityAuditEvent` shape and reruns runtime validation; it is not a string-indexed arbitrary-event escape hatch. `redeliver` accepts the same immutable validated occurrence and preserves its event identity.
 
 ## Context Model
 
@@ -116,11 +115,11 @@ Each named method fixes schema/event/catalog identity and minimum delivery class
 
 The package cannot cryptographically prove application truth. Instead it makes authority entry explicit:
 
-- configured server-side providers return `AuthoritativeActorContext`, `AuthoritativeTenantContext`, `AuthoritativeResourceContext`, `AuthenticationEvidence`, or `AuthorizationEvidence` after application-owned resolution;
-- request/client parsers return `ClaimedContext` only;
-- observed transport adapters, when later implemented, return observed provenance rather than authenticated identity;
-- runtime validation verifies provenance/value combinations and cross-context consistency;
-- documentation states that configured providers are trust boundaries and must not merely relabel request input.
+- application-owned server authority logic resolves facts, then calls explicit constructors for `AuthoritativeActorContext`, `TenantAuthorityContext`, `ResourceAuthorityContext`, authentication evidence, or authorization evidence;
+- request/client parsers preserve values through `claimedActor`, `claimedTenant`, client-reported source, or bounded request/correlation fields only;
+- any later observed transport adapter would return observed provenance rather than authenticated identity;
+- runtime-private brand registration plus semantic validation rejects plain objects and TypeScript-only casts while checking provenance/value combinations and cross-context consistency;
+- documentation states that application authorities are trust boundaries and must not merely relabel request input.
 
 Opaque TypeScript branding prevents accidental interchange in typed code. Runtime objects also carry canonical trust/provenance fields, so JavaScript and casted values remain semantically validated. Branding is compile-time misuse resistance, not proof of truthful producer behavior.
 
@@ -151,7 +150,7 @@ committed -> compensated
 
 Invalid transitions fail safely. The operation owns stable operation ID and optional transaction/correlation identity. A trusted application transaction boundary explicitly records the outcome through methods such as `markCommitted`, `markNotCommitted`, `markPartiallyCommitted`, or `markCompensated`. The API does not introspect databases or claim atomicity.
 
-`emitSuccess()` checks that the event's catalog/lifecycle rule permits success and that required committed state is present. It rejects before sink invocation otherwise. `emitFailure()` and other outcome methods preserve authorization evidence separately. Each immutable occurrence gets a new event ID; retry/redelivery APIs retain or link IDs according to contract semantics.
+A named API combines the operation snapshot with catalog/lifecycle rules. It rejects a successful transactional occurrence unless committed state is present, before sink invocation. Failure and other outcomes preserve authorization evidence separately, so `allow` can coexist with `failure`/`not_committed`. Each immutable re-execution gets a new event ID and explicit retry/original/causation links; pure `redeliver` preserves the same validated event and ID.
 
 Alternative considered: let callers pass `commitState: "committed"` directly to every event call. Rejected because it makes premature success trivial and loses transition evidence. Alternative considered: implement an outbox inside the operation. Rejected as prohibited delivery infrastructure.
 
