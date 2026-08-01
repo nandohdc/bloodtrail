@@ -1,0 +1,64 @@
+{
+  "manifestVersion": 1,
+  "package": {
+    "name": "@bloodtrail/security-audit-sdk-core",
+    "version": "0.1.0",
+    "status": "isolated-candidate-not-published"
+  },
+  "node": {
+    "supportedMajors": [24, 26],
+    "ciVersions": ["24.2.0", "26.5.0"],
+    "engines": ">=24 <25 || >=26 <27"
+  },
+  "typescript": {
+    "supported": ">=5.9.2 <6",
+    "ciVersion": "5.9.2"
+  },
+  "modulePolicy": "esm-public-cjs-standalone-validator",
+  "runtimeDependencyCount": 0,
+  "namedEventApiCount": 24,
+  "catalogEventCount": 24,
+  "deliveryClasses": [
+    "best_effort",
+    "security_significant",
+    "transaction_critical",
+    "policy_critical"
+  ],
+  "extensionNamespaces": ["bloodtrail.audit.enrichment.v1"],
+  "packageExports": [".", "./testing"],
+  "contractVersion": "1.0.0",
+  "supportedContractVersions": ["1.0.0"],
+  "contractVersionRange": {
+    "minimum": "1.0.0",
+    "maximum": "1.0.0"
+  },
+  "normativeTechnicalTarget": "8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993",
+  "generatedTypes": {
+    "source": "contracts/security-audit/source/contract.source.json",
+    "compatibility": "exact-contract-projection",
+    "driftCommand": "npm run check:generated"
+  },
+  "semverClassification": {
+    "patch": [
+      "bug fix preserving contract 1.0.0 interpretation",
+      "safe diagnostic bound tightening"
+    ],
+    "minor": [
+      "additive optional public API",
+      "new SDK error code without changing existing meaning"
+    ],
+    "major": [
+      "public API removal",
+      "generated type incompatibility",
+      "Node or TypeScript baseline removal",
+      "error code removal or meaning change"
+    ]
+  },
+  "errorCodePolicy": {
+    "additive": "minor",
+    "removalOrMeaningChange": "major"
+  },
+  "deprecationPolicy": "Document deprecation in a minor release; removal requires a major release unless an immediate security correction is explicitly governed.",
+  "migrationDocument": "MIGRATION.md",
+  "unsupportedContractVersions": ["0.9.0", "2.0.0"]
+}
