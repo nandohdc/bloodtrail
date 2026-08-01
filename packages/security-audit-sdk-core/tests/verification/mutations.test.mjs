@@ -29,6 +29,7 @@ test.after(() => {
 
 test("unmodified active control passes", () => {
   const root = caseRepository("control-pass");
+  setCheckedTasks(root, groupTaskIds(taskGroups[0]));
   succeeds(root, "scripts/check-changed-paths.mjs", ["--mode", "active"]);
   const result = succeeds(root, "scripts/check-coherence.mjs", ["--mode", "active"]);
   assert.match(result.stdout, /8\/91 tasks complete, completed groups: F-04, next group: F-01/);
@@ -115,7 +116,7 @@ test("active mode rejects an incorrect task total", () => {
   const root = caseRepository("incorrect-task-total");
   const taskPath = resolve(root, activeChange, "tasks.md");
   const text = readFileSync(taskPath, "utf8");
-  writeFileSync(taskPath, text.replace(/^- \[ \] 2\.1 .+\n/m, ""));
+  writeFileSync(taskPath, text.replace(/^- \[[ x]\] 2\.1 .+\n/m, ""));
   fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-task-total");
 });
 
