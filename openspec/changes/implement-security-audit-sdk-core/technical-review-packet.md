@@ -3,11 +3,15 @@
 ## Packet state
 
 - Purpose: prepare exact-commit technical review of the isolated framework-independent SDK core.
-- Packet preparation state: complete for verified pre-commit technical closure; the final technical commit does not exist yet.
-- Final technical commit: `PENDING — insert only after the Pass 3 technical commit exists`.
-- Reviewed commit: `PENDING — no exact commit has been submitted or reviewed`.
-- Reviewer identity and feedback: `PENDING`.
-- Project-owner SDK decision: `PENDING — not requested and not inferred`.
+- Packet preparation state: bound to the verified, pushed final technical commit.
+- Final technical commit: `21c5c98503205257be87cb977b131b4a81ac430a`.
+- Remote branch verification: `origin/hermes/implement-security-audit-sdk-core` resolved to `21c5c98503205257be87cb977b131b4a81ac430a` before governance edits.
+- Pull-request verification: PR #6 head resolved to `21c5c98503205257be87cb977b131b4a81ac430a` before governance edits.
+- Reviewed commit: `21c5c98503205257be87cb977b131b4a81ac430a`.
+- Reviewer/project owner: Fernando Homem da Costa (`nandohdc`).
+- Project-owner SDK decision: `APPROVED AS IMPLEMENTATION BASIS — no technical changes required`.
+- Package publication authorization: `NONE`.
+- Production authorization: `NONE`.
 - Merge decision: `PENDING`.
 - Archive decision: `PENDING`.
 
@@ -20,19 +24,20 @@ A technical result, AI review, task assignment, branch push, pull request, or in
 | Proposal commit | `94dc6e3bcc74beecd1fca2832948b139167fdd3b` |
 | Pass 1 implementation | `2703b6a65bd2b83bef1d3b90c6083f2f8a38e4e3` |
 | Pass 2 hardening | `529de906255d65a4d43b9e7a6976b8c9bf46f5d4` |
-| Pass 3 final technical commit | `PENDING — no placeholder hash may be treated as a target` |
+| Pass 3 final technical commit | `21c5c98503205257be87cb977b131b4a81ac430a` |
 | Normative contract target | `8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993` |
 | Contract version | `1.0.0` only |
 | Package | `@bloodtrail/security-audit-sdk-core` `0.1.0`, private/unpublished candidate |
 
-The proposal baseline for exact changed-path and contract checks is the proposal commit. Pass 1 and Pass 2 are frozen and must not be amended, squashed, or rewritten.
+The proposal baseline for exact changed-path and contract checks is the proposal commit. Pass 1 and Pass 2 are frozen and must not be amended, squashed, or rewritten. The final technical commit is the normative SDK implementation review target; the later governance commit stores this packet and the owner decision but is not a replacement technical target.
 
 ## Task status at technical closure
 
 - Total checklist entries: 106.
-- Current evidence-supported task state after final Pass 3 verification: 99/106 complete; 7/106 remain.
+- Current evidence-supported task state after exact-commit governance reconciliation: 105/106 complete; 1/106 remains.
 - Evidence-supported technical entries after successful Pass 3 reconciliation: 99.
-- Governance, owner-decision, merge, and archive entries that remain unchecked: 7 (`14.1` through `14.7`).
+- Exact-commit and owner-governance entries completed: 6 (`14.1` through `14.6`).
+- Merge and archive lifecycle entry that remains unchecked: 1 (`14.7`).
 - Unsupported completed entries permitted: 0.
 
 Task status is derived from `tasks.md`; this packet does not override the checklist. If final validation fails, affected entries must not be checked.
@@ -71,7 +76,7 @@ Pass 2 was independently reported on exact Node `24.2.0` and `26.5.0`, with all 
 
 ### Pass 3 final execution evidence
 
-Current state: `TECHNICAL VERIFICATION PASSED; FINAL TECHNICAL COMMIT PENDING`.
+Current state: `TECHNICAL VERIFICATION PASSED; FINAL TECHNICAL COMMIT 21c5c98503205257be87cb977b131b4a81ac430a REVIEWED AND APPROVED AS THE IMPLEMENTATION BASIS`.
 
 The clean canonical `npm run verify` execution passed on Node `26.5.0` / npm `11.17.0`. It removed disposable output and `node_modules`, installed the exact lockfile with `npm ci`, rejected pre-existing generated drift, regenerated and rechecked, type-checked, built fresh output, compiled and ran tests/examples, and completed every repository gate in the canonical order.
 
@@ -166,21 +171,101 @@ The review target is only an isolated package candidate. The following remain ex
 
 Sink success is not durable delivery. Contract/schema validity, transport integrity, or cryptographic integrity does not prove producer truthfulness.
 
-## Exact-commit decision record — leave pending
+## Exact-commit project-owner decision
 
 | Decision field | Value |
 | --- | --- |
-| Exact reviewed SDK commit | `PENDING` |
-| Reviewer/project owner | `PENDING` |
-| Review date | `PENDING` |
-| Technical implementation accepted as isolated candidate | `PENDING` |
+| Exact reviewed SDK commit | `21c5c98503205257be87cb977b131b4a81ac430a` |
+| Reviewer/project owner | Fernando Homem da Costa (`nandohdc`) |
+| Review date | July 31, 2026 |
+| SDK core approved as contract 1.0.0 implementation basis | `YES — no technical changes required` |
 | Contract change approved | `NOT APPLICABLE / NOT REQUESTED` |
-| Package release approved | `PENDING` |
+| Package publication/release approved | `NO — NOT AUTHORIZED` |
 | Production deployment approved | `NO — NOT AUTHORIZED` |
 | Production collection approved | `NO — NOT AUTHORIZED` |
 | Real-user processing approved | `NO — NOT AUTHORIZED` |
+| Framework integration approved | `NO — NOT AUTHORIZED` |
+| Delivery infrastructure approved | `NO — NOT AUTHORIZED` |
 | Merge approved | `PENDING` |
 | Archive approved | `PENDING` |
-| Review feedback/evidence reference | `PENDING` |
+| Assurance | Project-owner/implementer governance; not independent assurance |
 
-Do not replace any pending decision based on technical verification alone. After the final technical commit exists, update this packet in a separate governance step, bind review to that exact commit, and obtain an explicit project-owner decision before merge or archive.
+### Project-owner SDK-core decision
+
+Decision: Approve `@bloodtrail/security-audit-sdk-core` as the implementation basis for Bloodtrail Security Audit Event Contract version 1.0.0. No technical changes are required.
+
+Reviewed technical commit: `21c5c98503205257be87cb977b131b4a81ac430a`
+
+Authoritative contract commit: `8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993`
+
+I approve the SDK-core implementation in the reviewed technical commit as a framework-independent implementation basis for constructing and validating events conforming to Bloodtrail Security Audit Event Contract version 1.0.0.
+
+No blocking contract-conformance defect, unsupported compatibility claim, prohibited production integration, or required technical correction was identified.
+
+The SDK preserves these boundaries:
+
+- Client claims cannot become authenticated or server-authoritative facts.
+- Tenant and resource ownership require authoritative construction and validation.
+- Authorization allow is not proof of business-operation success.
+- Transactional success cannot be emitted before trusted commit evidence.
+- Retries, re-execution, and redelivery remain distinct.
+- Secrets and prohibited data are rejected before sink invocation.
+- Extensions cannot override canonical authority.
+- Test sinks are not production delivery mechanisms.
+- Sink acceptance does not prove durable delivery.
+- The canonical contract remains governed separately from the SDK.
+
+This approval does not authorize:
+
+- package publication;
+- production deployment;
+- production event collection;
+- real-user data processing;
+- application or framework instrumentation;
+- Express, Fastify, NestJS, or other middleware;
+- OpenTelemetry or OTLP export;
+- production transports or collectors;
+- brokers, queues, or transactional outboxes;
+- storage or SIEM integration;
+- analytics or detection rules;
+- browser telemetry;
+- production retention or data-residency policy;
+- cryptographic audit-log chaining.
+
+Any later production integration requires a separate reviewed OpenSpec change.
+
+This review was performed by the project owner and implementer. It documents project governance but does not constitute independent security, privacy, legal, or technical assurance.
+
+Project owner: Fernando Homem da Costa
+
+GitHub handle: `nandohdc`
+
+Date: July 31, 2026
+
+### Findings resolution and exact-commit reconfirmation
+
+- Technical changes requested: none.
+- No SDK implementation file changed after reviewed technical commit `21c5c98503205257be87cb977b131b4a81ac430a` and before this decision was recorded.
+- No review finding requires a technical correction.
+- The packet references the exact pushed local, remote-branch, and PR-head technical commit.
+- The exact approved technical target remains `21c5c98503205257be87cb977b131b4a81ac430a`.
+- The governance commit that stores this record does not replace or expand the normative technical review target.
+
+The project owner explicitly reconfirms approval of exact technical commit `21c5c98503205257be87cb977b131b4a81ac430a` with no technical changes required.
+
+### Final authorization boundary
+
+The SDK core is approved only as the implementation basis for contract version 1.0.0. Package publication, production deployment, production collection, real-user processing, framework integration, and delivery infrastructure remain unauthorized. Merge and archive remain pending task `14.7` and are not authorized or performed by this record.
+
+### Lifecycle-status classification
+
+The final lifecycle sweep classifies remaining status language as follows:
+
+- `proposal.md` says implementation and governance tasks remain pending until apply; this is the proposal-time planning boundary and is historical after apply.
+- checked task `13.4` records the earlier technical-gate requirement to keep owner review pending before the final technical commit; it is historical task evidence, not current status.
+- `adr/010-canonical-verification-and-scope.md` and `scripts/check-coherence.mjs` are immutable artifacts of reviewed technical commit `21c5c98503205257be87cb977b131b4a81ac430a`; their pre-governance pending checks describe the technical-closure gate and are not the current governance source of truth.
+- the canonical-results statement that governance was pending records the state of the earlier canonical technical run and remains historical evidence.
+- current `PENDING` values for merge and archive are valid unresolved lifecycle gates under task `14.7`.
+- production, release, framework, delivery-infrastructure, and real-user-data statuses are not pending approvals; they are explicitly unauthorized.
+
+This packet and `tasks.md` are the current governance-status surfaces. No historical technical artifact was changed after the exact reviewed commit merely to rewrite its pre-governance snapshot.

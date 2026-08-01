@@ -138,10 +138,10 @@
 
 ## 14. Exact-commit SDK review and authorization boundary
 
-- [ ] 14.1 Commit and push the verified SDK implementation separately from proposal and governance records, capture the exact implementation commit, and verify the remote/PR head before requesting review.
-- [ ] 14.2 Prepare an SDK-core review packet naming the exact implementation commit, Contract Commit A and version 1.0.0 binding, public/generated APIs, validation/context/operation behavior, dependencies, tests, unresolved decisions, scope, and assurance limitations without pre-populating a decision.
-- [ ] 14.3 Obtain and record explicit project-owner feedback on the exact SDK implementation commit; do not treat AI verification, checked tasks, PR state, assignment, or informal messages as approval.
-- [ ] 14.4 Resolve review findings, rerun complete read-only verification, and obtain explicit exact-commit reconfirmation after any public API, generated type, validation, authority/privacy, sink, dependency, test, or authorization-boundary change.
-- [ ] 14.5 Obtain the project owner's explicit final SDK-core decision and state whether reusable package implementation/publication is authorized; preserve the self-review assurance limitation.
-- [ ] 14.6 State explicitly that SDK-core approval does not authorize production deployment, production event collection, real-user data processing, framework instrumentation, collectors/transports, queue/outbox infrastructure, storage, SIEM, analytics, or production delivery policy.
+- [x] 14.1 Commit and push the verified SDK implementation separately from proposal and governance records, capture the exact implementation commit, and verify the remote/PR head before requesting review.
+- [x] 14.2 Prepare an SDK-core review packet naming the exact implementation commit, Contract Commit A and version 1.0.0 binding, public/generated APIs, validation/context/operation behavior, dependencies, tests, unresolved decisions, scope, and assurance limitations without pre-populating a decision.
+- [x] 14.3 Obtain and record explicit project-owner feedback on the exact SDK implementation commit; do not treat AI verification, checked tasks, PR state, assignment, or informal messages as approval.
+- [x] 14.4 Resolve review findings, rerun complete read-only verification, and obtain explicit exact-commit reconfirmation after any public API, generated type, validation, authority/privacy, sink, dependency, test, or authorization-boundary change.
+- [x] 14.5 Obtain the project owner's explicit final SDK-core decision and state whether reusable package implementation/publication is authorized; preserve the self-review assurance limitation.
+- [x] 14.6 State explicitly that SDK-core approval does not authorize production deployment, production event collection, real-user data processing, framework instrumentation, collectors/transports, queue/outbox infrastructure, storage, SIEM, analytics, or production delivery policy.
 - [ ] 14.7 Complete the final lifecycle-status sweep, reach 100% tasks only with supported records, verify live PR head/checks/mergeability, merge, and archive in a separate commit according to the governed workflow.
