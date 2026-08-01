@@ -12,8 +12,10 @@
 - Project-owner SDK decision: `APPROVED AS IMPLEMENTATION BASIS — no technical changes required`.
 - Package publication authorization: `NONE`.
 - Production authorization: `NONE`.
-- Merge decision: `PENDING`.
-- Archive decision: `PENDING`.
+- Final synchronization head: `3734a295a0a32effeaf6b03d04d14542db12576e`.
+- Pull request: #6, merged with merge commit `86bf25d459d909d4fbdd151fb23c3c159ba1f365` at `2026-08-01T02:07:43Z`.
+- Merge decision: `COMPLETED — merge commit; no squash or rebase`.
+- Archive decision: `COMPLETED BY THE SEPARATE CANONICAL ARCHIVE COMMIT ON MAIN`.
 
 A technical result, AI review, task assignment, branch push, pull request, or informal message is not project-owner or organizational approval.
 
@@ -25,19 +27,22 @@ A technical result, AI review, task assignment, branch push, pull request, or in
 | Pass 1 implementation | `2703b6a65bd2b83bef1d3b90c6083f2f8a38e4e3` |
 | Pass 2 hardening | `529de906255d65a4d43b9e7a6976b8c9bf46f5d4` |
 | Pass 3 final technical commit | `21c5c98503205257be87cb977b131b4a81ac430a` |
+| Governance decision commit | `1f35896d6a51e759806ad5da0f0c56e17c7e065a` |
+| Final branch synchronization merge | `3734a295a0a32effeaf6b03d04d14542db12576e` |
+| PR #6 merge commit | `86bf25d459d909d4fbdd151fb23c3c159ba1f365` |
 | Normative contract target | `8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993` |
 | Contract version | `1.0.0` only |
 | Package | `@bloodtrail/security-audit-sdk-core` `0.1.0`, private/unpublished candidate |
 
 The proposal baseline for exact changed-path and contract checks is the proposal commit. Pass 1 and Pass 2 are frozen and must not be amended, squashed, or rewritten. The final technical commit is the normative SDK implementation review target; the later governance commit stores this packet and the owner decision but is not a replacement technical target.
 
-## Task status at technical closure
+## Task status at lifecycle closure
 
 - Total checklist entries: 106.
-- Current evidence-supported task state after exact-commit governance reconciliation: 105/106 complete; 1/106 remains.
+- Current evidence-supported task state after merge and archive reconciliation: 106/106 complete; 0/106 remain.
 - Evidence-supported technical entries after successful Pass 3 reconciliation: 99.
 - Exact-commit and owner-governance entries completed: 6 (`14.1` through `14.6`).
-- Merge and archive lifecycle entry that remains unchecked: 1 (`14.7`).
+- Merge and archive lifecycle entry completed: 1 (`14.7`).
 - Unsupported completed entries permitted: 0.
 
 Task status is derived from `tasks.md`; this packet does not override the checklist. If final validation fails, affected entries must not be checked.
@@ -186,8 +191,8 @@ Sink success is not durable delivery. Contract/schema validity, transport integr
 | Real-user processing approved | `NO — NOT AUTHORIZED` |
 | Framework integration approved | `NO — NOT AUTHORIZED` |
 | Delivery infrastructure approved | `NO — NOT AUTHORIZED` |
-| Merge approved | `PENDING` |
-| Archive approved | `PENDING` |
+| Merge lifecycle | `COMPLETED — PR #6 at 86bf25d459d909d4fbdd151fb23c3c159ba1f365` |
+| Archive lifecycle | `COMPLETED — separate canonical archive commit on main` |
 | Assurance | Project-owner/implementer governance; not independent assurance |
 
 ### Project-owner SDK-core decision
@@ -255,7 +260,22 @@ The project owner explicitly reconfirms approval of exact technical commit `21c5
 
 ### Final authorization boundary
 
-The SDK core is approved only as the implementation basis for contract version 1.0.0. Package publication, production deployment, production collection, real-user processing, framework integration, and delivery infrastructure remain unauthorized. Merge and archive remain pending task `14.7` and are not authorized or performed by this record.
+The SDK core is approved only as the implementation basis for contract version 1.0.0. Package publication, production deployment, production collection, real-user processing, framework integration, and delivery infrastructure remain unauthorized. PR #6 was merged and the OpenSpec change was archived under task `14.7`; neither lifecycle action expands the SDK authorization boundary.
+
+### Merge and archive lifecycle record
+
+- Final synchronized feature head: `3734a295a0a32effeaf6b03d04d14542db12576e`.
+- Synchronization method: merge commit from `origin/main`; no rebase, squash, amendment, or governed-commit rewrite.
+- Reviewed SDK comparison: no differences under `packages/security-audit-sdk-core/` from normative technical commit `21c5c98503205257be87cb977b131b4a81ac430a`.
+- Governance comparison: no differences under the active change from governance commit `1f35896d6a51e759806ad5da0f0c56e17c7e065a` before lifecycle-record edits.
+- Live pull request: #6, head `3734a295a0a32effeaf6b03d04d14542db12576e`, checks successful, mechanically mergeable and clean immediately before merge.
+- Merge method: GitHub merge commit; no squash or rebase merge.
+- Exact merge commit: `86bf25d459d909d4fbdd151fb23c3c159ba1f365`.
+- Merge time: `2026-08-01T02:07:43Z`.
+- Main synchronization: local `main` fast-forwarded to the merge commit and matched `origin/main` before archive edits.
+- Contract protection: the approved contract capability, canonical contract artifacts, and archived contract governance remained unchanged.
+- Authorization after merge: package publication `NONE`; production deployment, collection, real-user processing, framework integration, and delivery infrastructure `NONE`.
+- Archive transaction: the active change is moved by the canonical OpenSpec archive workflow into `openspec/changes/archive/2026-07-31-implement-security-audit-sdk-core/`; the separate archive commit on `main` stores this completed lifecycle record and the canonical SDK capability.
 
 ### Lifecycle-status classification
 
@@ -265,7 +285,7 @@ The final lifecycle sweep classifies remaining status language as follows:
 - checked task `13.4` records the earlier technical-gate requirement to keep owner review pending before the final technical commit; it is historical task evidence, not current status.
 - `adr/010-canonical-verification-and-scope.md` and `scripts/check-coherence.mjs` are immutable artifacts of reviewed technical commit `21c5c98503205257be87cb977b131b4a81ac430a`; their pre-governance pending checks describe the technical-closure gate and are not the current governance source of truth.
 - the canonical-results statement that governance was pending records the state of the earlier canonical technical run and remains historical evidence.
-- current `PENDING` values for merge and archive are valid unresolved lifecycle gates under task `14.7`.
+- earlier `PENDING` values for merge and archive are historical pre-merge states superseded by the exact lifecycle record above.
 - production, release, framework, delivery-infrastructure, and real-user-data statuses are not pending approvals; they are explicitly unauthorized.
 
-This packet and `tasks.md` are the current governance-status surfaces. No historical technical artifact was changed after the exact reviewed commit merely to rewrite its pre-governance snapshot.
+This archived packet and archived `tasks.md` are the final governance-status surfaces. No historical technical artifact was changed after the exact reviewed commit merely to rewrite its pre-governance snapshot.
