@@ -1,6 +1,6 @@
 ## 1. Restore lifecycle-aware canonical verification [F-04]
 
-GitHub issue: pending
+GitHub issue: [#24](https://github.com/nandohdc/bloodtrail/issues/24)
 
 - [ ] 1.1 Implement explicit active and archived verification modes with lifecycle metadata and no hard-coded deleted active-change path. [F-04]
 - [ ] 1.2 Update coherence rules to validate the active remediation change in active mode and canonical capability plus immutable dated evidence in archived mode. [F-04]
@@ -13,7 +13,7 @@ GitHub issue: pending
 
 ## 2. Reject forged operation commit evidence [F-01]
 
-GitHub issue: pending
+GitHub issue: [#21](https://github.com/nandohdc/bloodtrail/issues/21)
 
 - [ ] 2.1 Remove plain `GeneratedOperationContext` as accepted trusted operation input from named SDK methods while retaining it for canonical representation and observational snapshots. [F-01]
 - [ ] 2.2 Implement SDK-instance-bound, non-copyable private operation evidence for identity, transaction state, and allowed event binding. [F-01]
@@ -26,7 +26,7 @@ GitHub issue: pending
 
 ## 3. Make terminal-operation deduplication concurrency-safe [F-02]
 
-GitHub issue: pending
+GitHub issue: [#22](https://github.com/nandohdc/bloodtrail/issues/22)
 
 - [ ] 3.1 Implement the per-operation `idle`/`reserved`/`completed` terminal state machine and reserve synchronously before sink handoff. [F-02]
 - [ ] 3.2 Finalize reservations only on accepted sink results and release them on rejected, unknown, thrown, or rejected-promise outcomes without automatic retry. [F-02]
@@ -38,7 +38,7 @@ GitHub issue: pending
 
 ## 4. Preserve caller-owned sinks and providers [F-03]
 
-GitHub issue: pending
+GitHub issue: [#23](https://github.com/nandohdc/bloodtrail/issues/23)
 
 - [ ] 4.1 Refactor configuration normalization so caller-provided sink, clock, identifier, and related providers are validated and referenced without clone, freeze, decoration, replacement, or mutation. [F-03]
 - [ ] 4.2 Preserve immutable cloned SDK-owned scalar and plain-data configuration separately from provider references. [F-03]
@@ -49,7 +49,7 @@ GitHub issue: pending
 
 ## 5. Normalize hostile constructor and serialization failures [F-05, F-12]
 
-GitHub issue: pending
+GitHub issue: [#25](https://github.com/nandohdc/bloodtrail/issues/25)
 
 - [ ] 5.1 Add trust-boundary helpers that normalize property-access, cloning, getter, proxy, and non-cloneable failures into bounded public SDK diagnostics. [F-05]
 - [ ] 5.2 Apply safe normalization consistently across every public authority and configuration constructor rather than only the reported path. [F-05]
@@ -62,7 +62,7 @@ GitHub issue: pending
 
 ## 6. Enforce forbidden scope and public API completeness [F-06, F-09]
 
-GitHub issue: pending
+GitHub issue: [#26](https://github.com/nandohdc/bloodtrail/issues/26)
 
 - [ ] 6.1 Correct forbidden source-name matching for root-level, nested, path-segment, and dot/underscore/hyphen delimiter boundaries without substring false positives. [F-06]
 - [ ] 6.2 Add scope unit fixtures for root-level `transport`, `browser`, `collector`, `exporter`, and `siem` names plus nested and allowed near-match names. [F-06]
@@ -75,7 +75,7 @@ GitHub issue: pending
 
 ## 7. Prevent shutdown timeout from retaining process exit [F-07]
 
-GitHub issue: pending
+GitHub issue: [#27](https://github.com/nandohdc/bloodtrail/issues/27)
 
 - [ ] 7.1 Refactor shutdown timeout ownership so the timer is unreferenced where supported and cleared after either race outcome. [F-07]
 - [ ] 7.2 Preserve bounded timeout behavior and at-most-once sink flush/shutdown semantics when work genuinely stalls. [F-07]
@@ -86,7 +86,7 @@ GitHub issue: pending
 
 ## 8. Bound operation and event identity retention [F-08]
 
-GitHub issue: pending
+GitHub issue: [#28](https://github.com/nandohdc/bloodtrail/issues/28)
 
 - [ ] 8.1 Replace terminal operation `Set` retention with weakly keyed state attached to live SDK-issued operation handles. [F-08]
 - [ ] 8.2 Implement validated immutable identity-retention configuration with a default 24-hour horizon and maximum 100,000 live event IDs and operation IDs per store. [F-08]
@@ -99,7 +99,7 @@ GitHub issue: pending
 
 ## 9. Validate privacy transformation paths during initialization [F-10]
 
-GitHub issue: pending
+GitHub issue: [#29](https://github.com/nandohdc/bloodtrail/issues/29)
 
 - [ ] 9.1 Derive the intersection of policy-eligible and SDK-transformable paths during configuration normalization. [F-10]
 - [ ] 9.2 Reject unsupported transformation paths during SDK construction with bounded safe configuration diagnostics. [F-10]
@@ -110,7 +110,7 @@ GitHub issue: pending
 
 ## 10. Enforce redelivery identity semantics [F-11]
 
-GitHub issue: pending
+GitHub issue: [#30](https://github.com/nandohdc/bloodtrail/issues/30)
 
 - [ ] 10.1 Track SDK-issued immutable validated event objects through private weak branding bound to the issuing SDK instance. [F-11]
 - [ ] 10.2 Restrict `redeliver()` to the identical same-instance issued event object and preserve its event ID and canonical content without rebuild or automatic retry. [F-11]
@@ -122,7 +122,7 @@ GitHub issue: pending
 
 ## 11. Cross-cutting remediation verification and documentation [F-01 through F-12]
 
-Tracking issue: pending
+Tracking issue: [#20](https://github.com/nandohdc/bloodtrail/issues/20)
 
 - [ ] 11.1 Build the SDK from a clean dependency installation and run strict source typecheck, runtime unit tests, compile-time tests, examples, package-content tests, dependency checks, export checks, compatibility checks, scope checks, and generated drift checks. [F-01 through F-12]
 - [ ] 11.2 Run all concurrency and child-process lifecycle regressions with non-zero test discovery and retain bounded command evidence. [F-02, F-07]
@@ -136,7 +136,7 @@ Tracking issue: pending
 
 ## 12. Renewed review, owner decision, merge, and archive [F-01 through F-12]
 
-Tracking issue: pending
+Tracking issue: [#20](https://github.com/nandohdc/bloodtrail/issues/20)
 
 - [ ] 12.1 Reconcile every finding row with implementation commit, passing evidence, task IDs, GitHub issue closure, and final disposition. [F-01 through F-12]
 - [ ] 12.2 Prove F-01, F-02, F-03, and F-04 have executable passing blocker evidence and have not been closed or downgraded by prose alone. [F-01, F-02, F-03, F-04]
