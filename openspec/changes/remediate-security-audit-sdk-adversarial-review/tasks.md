@@ -15,14 +15,14 @@ GitHub issue: [#24](https://github.com/nandohdc/bloodtrail/issues/24)
 
 GitHub issue: [#21](https://github.com/nandohdc/bloodtrail/issues/21)
 
-- [ ] 2.1 Remove plain `GeneratedOperationContext` as accepted trusted operation input from named SDK methods while retaining it for canonical representation and observational snapshots. [F-01]
-- [ ] 2.2 Implement SDK-instance-bound, non-copyable private operation evidence for identity, transaction state, and allowed event binding. [F-01]
-- [ ] 2.3 Route commit and terminal state transitions exclusively through sanctioned operation-handle methods and reject foreign handles. [F-01]
-- [ ] 2.4 Add runtime tests for forged committed objects, copied snapshots, modified snapshots, removed `bound_event`, mismatched events, foreign handles, and caller-selected identifiers. [F-01]
-- [ ] 2.5 Add tests proving premature and rejected operation evidence never invokes the sink. [F-01]
-- [ ] 2.6 Add strict compile-time tests that named transactional methods require the trusted operation-handle API and reject structural snapshots. [F-01]
-- [ ] 2.7 Assess breaking API and package-version impact and document migration from structural operation inputs. [F-01]
-- [ ] 2.8 Verify all transaction-critical catalog events use the same evidence path rather than fixing only one named method. [F-01]
+- [x] 2.1 Remove plain `GeneratedOperationContext` as accepted trusted operation input from named SDK methods while retaining it for canonical representation and observational snapshots. [F-01]
+- [x] 2.2 Implement SDK-instance-bound, non-copyable private operation evidence for identity, transaction state, and allowed event binding. [F-01]
+- [x] 2.3 Route commit and terminal state transitions exclusively through sanctioned operation-handle methods and reject foreign handles. [F-01]
+- [x] 2.4 Add runtime tests for forged committed objects, copied snapshots, modified snapshots, removed `bound_event`, mismatched events, foreign handles, and caller-selected identifiers. [F-01]
+- [x] 2.5 Add tests proving premature and rejected operation evidence never invokes the sink. [F-01]
+- [x] 2.6 Add strict compile-time tests that named transactional methods require the trusted operation-handle API and reject structural snapshots. [F-01]
+- [x] 2.7 Assess breaking API and package-version impact and document migration from structural operation inputs. [F-01]
+- [x] 2.8 Verify all transaction-critical catalog events use the same evidence path rather than fixing only one named method. [F-01]
 
 ## 3. Make terminal-operation deduplication concurrency-safe [F-02]
 

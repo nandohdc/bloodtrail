@@ -18,15 +18,14 @@ import {
   EVENT_METHODS,
   FIELD_POLICY,
 } from "./generated/contract.generated.js";
-import type { AuditOperationHandle, AuditOperationSnapshot } from "./operations.js";
-import { commitStateForOperationState } from "./operations.js";
+import type { AuditOperationSnapshot } from "./operations.js";
 import type { AuditResult } from "./errors.js";
 import { failure } from "./errors.js";
 import { clonePlain, deepFreeze, omitUndefined } from "./internal.js";
 import { validateNoProhibitedData, validateSecurityAuditEvent } from "./validation/index.js";
 
 type AnyNamedInput = NamedAuditEventInputMap[EventMethodName] & {
-  readonly operation?: GeneratedOperationContext | AuditOperationHandle;
+  readonly operation?: GeneratedOperationContext;
   readonly claimedTenant?: { readonly claimed_tenant_id?: string };
 };
 
@@ -60,7 +59,7 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
     return { ok: true, value: { event: deepFreeze(clonePlain(validated.value)) as Readonly<EventForName<EventName>>, redelivery: true } };
   }
 
-  const operation = resolveOperation(input.operation);
+  const operation = input.operation;
   if (operation?.bound_event && operation.bound_event !== method) {
     return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/operation/bound_event");
   }
@@ -165,11 +164,6 @@ function pickFrameInput(input: AnyNamedInput): AuditContextFrame {
   }) as unknown as AuditContextFrame;
 }
 
-function resolveOperation(input: GeneratedOperationContext | AuditOperationHandle | undefined): GeneratedOperationContext | undefined {
-  if (input === undefined) return undefined;
-  if (typeof (input as AuditOperationHandle).snapshot === "function") return (input as AuditOperationHandle).snapshot();
-  return input as GeneratedOperationContext;
-}
 
 function buildTenant(frame: AuditContextFrame): SecurityAuditEvent["tenant"] | undefined {
   if (!frame.tenant) return undefined;

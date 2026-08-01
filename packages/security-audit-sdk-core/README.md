@@ -102,13 +102,14 @@ The SDK starts in `ready`. `shutdown()` establishes a no-new-emissions boundary,
 ## Event, operation, privacy, and sink APIs
 
 - Use the 24 named methods listed in [API.md](./API.md). They derive canonical identity and delivery class; callers cannot override them.
-- Use `beginOperation()` for transaction-aware work. Report `markCommitted`, `markNotCommitted`, `markPartiallyCommitted`, `markCompensated`, or `markCancelled` only from the application's trusted transaction boundary. Successful transactional emission before commit is rejected without invoking the sink.
+- Use `beginOperation()` for transaction-aware work. Named methods trust only the exact operation handle issued by the same SDK instance; plain objects, snapshots, copies, object spreads, serialized values, and foreign-instance handles are rejected before sink invocation. Report `markCommitted`, `markNotCommitted`, `markPartiallyCommitted`, `markCompensated`, or `markCancelled` only from the application's trusted transaction boundary. Successful transactional emission before commit is rejected without invoking the sink.
 - Authorization evidence and business outcome are independent. `allow` does not prove later business success.
 - Pure redelivery uses `redeliver()` with the same immutable validated event and event ID. Re-execution uses a named method with a positive retry relationship and receives a new event ID.
 - Required asynchronous completion carries both causation and original-event identity.
 - Transformation hooks are synchronous, initialization-only, field-scoped, bounded, and followed by prohibited-data and canonical validation. Key material is never an output field.
 - Extensions are limited to generated registered namespaces. They cannot shadow canonical fields or upgrade trust.
 - `AuditEventSink.emit()` receives one validated frozen event and returns only sink-boundary `accepted`, `rejected`, or `unknown` state. The core implements no retry, queue, storage, collector, or delivery guarantee.
+- Generic `emit()` and `redeliver()` remain trusted-producer boundaries for complete canonical events. Operation-handle provenance protects sanctioned named construction; it cannot prove that compromised trusted application code supplied a truthful complete event to a generic API.
 - Canonical delivery classes are `best_effort`, `security_significant`, `transaction_critical`, and `policy_critical`; named APIs derive the applicable minimum and callers cannot override it.
 - `createCapturingAuditSink` and `createInMemoryAuditSink` are test utilities only. They perform no network or filesystem I/O and provide no durability.
 

@@ -62,8 +62,10 @@ const authorization: SecurityAuditEvent["authorization"] = {
   enforcement_point: "pep",
 };
 const correlation: Partial<SecurityAuditEvent["correlation"]> = { correlation_id: "corr", operation_id: "op" };
-const operation = { operation_id: "op", transaction_id: "txn", state: "committed", commit_state: "committed" } as const;
-const authenticationSucceededInput: AuthenticationSucceededEventInput = {
+const issuedOperation = sdk.beginOperation();
+if (!issuedOperation.ok) throw new Error(issuedOperation.error.code);
+const operation = issuedOperation.value;
+const authenticationSucceededInput: Omit<AuthenticationSucceededEventInput, "operation"> = {
   actor,
   authenticated_principal: { type: "human_user", id: "principal" },
   authentication,
@@ -98,6 +100,12 @@ sdk.sensitiveResourceDeleted({ actor, tenant, resource: { ...resource, deletion_
 sdk.sensitiveDataExported({ actor, tenant, resource: { ...resource, export: { record_count: 1, destination_class: "internal" } }, authorization });
 sdk.securityConfigurationChanged({ actor, tenant, resource: { ...resource, change_categories: ["policy"] }, authorization });
 sdk.tenantContextViolationDetected({ actor, tenant, claimedTenant: { claimed_tenant_id: "tenant_claim" }, resource, authorization: { ...authorization, decision: "deny" }, source });
+
+const forgedOperation = { operation_id: "op", transaction_id: "txn", state: "committed", commit_state: "committed" } as const;
+// @ts-expect-error named methods reject structural operation commit claims
+sdk.sensitiveResourceCreated({ actor, tenant, resource, authorization, operation: forgedOperation });
+// @ts-expect-error observational snapshots are not trusted named-method evidence
+sdk.sensitiveResourceCreated({ actor, tenant, resource, authorization, operation: operation.snapshot() });
 
 // @ts-expect-error event-specific outcome for authentication success is fixed to success
 const badAuthenticationOutcome: AuthenticationSucceededEventInput = { ...authenticationSucceededInput, event: { outcome: "failure" } };

@@ -44,6 +44,13 @@
     "metadata": "verification-lifecycle.json",
     "compatibilityImpact": "repository-verification-only; no runtime SDK API or contract 1.0.0 change"
   },
+  "operationEvidence": {
+    "namedMethodInput": "same-instance-sdk-issued-handle-only",
+    "snapshotPolicy": "observational-not-trusted-input",
+    "crossInstancePolicy": "rejected",
+    "genericEventBoundary": "trusted-producer-behavior-unchanged",
+    "compatibilityImpact": "breaking source-level security tightening; major if previously published; retained at private unpublished initial-development candidate 0.1.0"
+  },
   "semverClassification": {
     "patch": [
       "bug fix preserving contract 1.0.0 interpretation",
@@ -55,6 +62,7 @@
     ],
     "major": [
       "public API removal",
+      "named operation input restricted from structural context to SDK-issued handle",
       "generated type incompatibility",
       "Node or TypeScript baseline removal",
       "error code removal or meaning change"

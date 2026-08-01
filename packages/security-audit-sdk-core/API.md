@@ -164,7 +164,13 @@ const result = await audit.sensitiveResourceModified({
 
 An operation starts in `started` and is transactional by default. Valid terminal transitions are `markCommitted`, `markNotCommitted`, `markPartiallyCommitted`, or `markCancelled`; a committed operation may later `markCompensated`. Repeating the same transition is idempotent; incompatible transitions fail with `SDK_INVALID_OPERATION_TRANSITION`.
 
-The handle does not inspect a database, open a transaction, create an outbox, or make audit emission atomic with business state. Transactional success before `markCommitted()` fails with `PREMATURE_SUCCESS` and the sink is not called. A bound operation cannot complete through a different named method.
+Named methods accept only the exact opaque handle returned by `beginOperation()` from that same SDK instance. Runtime authority is stored in an instance-private weak identity map; operation, transaction, correlation, state, and event-binding values are resolved from that private record. Plain structural objects, fake `snapshot()` methods, snapshots, object spreads, manual copies, `structuredClone`, JSON round trips, and handles issued by another SDK instance fail with bounded `SDK_INVALID_OPERATION_TRANSITION` diagnostics at `/operation` and never invoke the sink. Hostile caller-selected identifiers in rejected values are not included in diagnostics or event correlation.
+
+`snapshot()` returns an immutable observational value for inspection only. It is a `GeneratedOperationContext` representation, not completion evidence, and copying or modifying it cannot preserve or create authority. Event binding is immutable private evidence: deleting or replacing `bound_event` in copied data cannot unbind or rebind the operation. TypeScript named-method signatures require `AuditOperationHandle`; generated structural operation contexts remain available for canonical event representation but are not named-method inputs.
+
+The handle does not inspect a database, open a transaction, create an outbox, or make audit emission atomic with business state. Transactional success before `markCommitted()` fails with `PREMATURE_SUCCESS` and the sink is not called. A bound operation cannot complete through a different named method. Only sanctioned handle transitions can establish committed or other terminal operation state.
+
+This provenance rule is specific to named construction. Generic `emit()` and `redeliver()` continue to validate complete canonical events at the trusted-producer boundary; the SDK cannot determine whether compromised trusted application logic intentionally constructed a false but canonical complete event.
 
 ## Causality, asynchronous completion, retry, and redelivery
 

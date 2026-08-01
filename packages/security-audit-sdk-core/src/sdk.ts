@@ -5,10 +5,10 @@ import { currentAuditContext, runWithAuditContext } from "./context.js";
 import { buildNamedAuditEvent } from "./events.js";
 import { failure } from "./errors.js";
 import type { AuditResult } from "./errors.js";
-import type { EventMethodName, GeneratedOperationContext, NamedAuditEventInputMap, SecurityAuditEvent } from "./generated/contract.generated.js";
+import type { EventMethodName, NamedAuditEventInputMap, SecurityAuditEvent } from "./generated/contract.generated.js";
 import { EVENT_METHODS } from "./generated/contract.generated.js";
-import type { AuditOperationHandle, AuditOperationInput } from "./operations.js";
-import { createAuditOperation } from "./operations.js";
+import type { AuditOperationAuthority, AuditOperationHandle, AuditOperationInput } from "./operations.js";
+import { createAuditOperationAuthority } from "./operations.js";
 import type { AuditDeliveryResult } from "./sink.js";
 import { validateSecurityAuditEvent } from "./validation/index.js";
 import { clonePlain, deepFreeze } from "./internal.js";
@@ -17,8 +17,8 @@ export type SecurityAuditSdkState = "ready" | "shutting_down" | "shut_down";
 
 type WithOperationHandle<T> =
   T extends { readonly operation: infer O }
-    ? Omit<T, "operation"> & { readonly operation: O | AuditOperationHandle }
-    : T & { readonly operation?: GeneratedOperationContext | AuditOperationHandle };
+    ? Omit<T, "operation"> & { readonly operation: AuditOperationHandle }
+    : Omit<T, "operation"> & { readonly operation?: AuditOperationHandle };
 
 export type NamedSecurityAuditApi = {
   readonly [M in EventMethodName]: (input: WithOperationHandle<NamedAuditEventInputMap[M]>) => Promise<AuditResult<AuditDeliveryResult>>;
@@ -41,9 +41,13 @@ class SecurityAuditSdkImpl {
   readonly #generatedEventIds = new Set<string>();
   readonly #completedOperations = new Set<string>();
   readonly #issuedOperationIds = new Set<string>();
+  readonly #operationAuthority: AuditOperationAuthority;
   #shutdownPromise: Promise<AuditResult<void>> | undefined;
 
-  constructor(config: NormalizedSdkConfiguration) { this.#config = config; }
+  constructor(config: NormalizedSdkConfiguration) {
+    this.#config = config;
+    this.#operationAuthority = createAuditOperationAuthority(config.identifiers);
+  }
   get state(): SecurityAuditSdkState { return this.#state; }
 
   async emit(event: SecurityAuditEvent): Promise<AuditResult<AuditDeliveryResult>> {
@@ -59,7 +63,7 @@ class SecurityAuditSdkImpl {
     if (input.boundEvent !== undefined && !EVENT_METHODS.some((entry) => entry.method === input.boundEvent)) {
       return failure("UNKNOWN_CATALOG_VALUE", "validation", "/operation/bound_event");
     }
-    const operation = createAuditOperation(this.#config.identifiers, input);
+    const operation = this.#operationAuthority.issue(input);
     const valid = validateGeneratedIdentifier(operation.operationId, "/operation/operation_id")
       ?? validateGeneratedIdentifier(operation.transactionId, "/operation/transaction_id")
       ?? validateGeneratedIdentifier(operation.correlationId, "/operation/correlation_id");
@@ -176,7 +180,14 @@ class SecurityAuditSdkImpl {
     input: WithOperationHandle<NamedAuditEventInputMap[M]>,
   ): Promise<AuditResult<AuditDeliveryResult>> {
     if (this.#state !== "ready") return failure(this.#state === "shut_down" ? "SDK_SHUT_DOWN" : "SDK_SHUTTING_DOWN", "lifecycle");
-    const built = buildNamedAuditEvent(this.#config, method, input as never, currentAuditContext());
+    const operation = this.#operationAuthority.resolve((input as { readonly operation?: unknown }).operation);
+    if (!operation.ok) return operation;
+    const built = buildNamedAuditEvent(
+      this.#config,
+      method,
+      { ...input, operation: operation.value } as never,
+      currentAuditContext(),
+    );
     if (!built.ok) return built;
     if (built.value.redelivery) return this.#emitValidatedEvent(built.value.event);
     if (this.#generatedEventIds.has(built.value.event.event.id)) {

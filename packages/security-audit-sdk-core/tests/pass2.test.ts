@@ -45,6 +45,7 @@ import {
   type AuditIdentifierProvider,
   type AuditResult,
   type EventMethodName,
+  type SecurityAuditSdk,
   type SecurityAuditEvent,
 } from "../dist/index.js";
 import { createCapturingAuditSink, createInMemoryAuditSink } from "../dist/testing.js";
@@ -89,7 +90,7 @@ test("named APIs cover all 24 catalog events using authoritative construction", 
   for (const fixture of await positives()) {
     const method = methodForEvent(fixture.event.name);
     const call = sdk[method] as (input: unknown) => Promise<AuditResult<AuditDeliveryResult>>;
-    const result = await call.call(sdk, toNamedInput(fixture));
+    const result = await call.call(sdk, toTrustedNamedInput(sdk, fixture));
     assert.equal(result.ok, true, `${method}: ${result.ok ? "" : JSON.stringify((result as { error: unknown }).error)}`);
   }
   assert.equal(sink.events.length, 24);
@@ -285,7 +286,7 @@ test("tenant scenario: platform scope is accepted where cataloged", async () => 
   const sdk = createSdk(sink, deterministicProviders(2_720));
   const [changed] = (await positives()).filter((event) => event.event.name === "bloodtrail.audit.security.configuration.changed");
   assert.ok(changed);
-  const result = await sdk.securityConfigurationChanged(toNamedInput(changed) as never);
+  const result = await sdk.securityConfigurationChanged(toTrustedNamedInput(sdk, changed) as never);
   assert.equal(result.ok, true);
 });
 
@@ -294,7 +295,7 @@ test("tenant scenario: authorized cross-tenant access is accepted", async () => 
   const sdk = createSdk(sink, deterministicProviders(2_730));
   const [revoked] = (await positives()).filter((event) => event.event.name === "bloodtrail.audit.session.revoked");
   assert.ok(revoked);
-  const result = await sdk.sessionRevoked(toNamedInput(revoked) as never);
+  const result = await sdk.sessionRevoked(toTrustedNamedInput(sdk, revoked) as never);
   assert.equal(result.ok, true);
 });
 
@@ -306,7 +307,7 @@ test("tenant scenario: cross-tenant scope without authorization evidence is reje
   const [ended] = (await positives()).filter((event) => event.event.name === "bloodtrail.audit.administration.impersonation.ended");
   assert.ok(ended);
   assert.equal(ended.tenant.scope, "cross_tenant");
-  const input = toNamedInput(ended) as Record<string, unknown>;
+  const input = toTrustedNamedInput(sdk, ended);
   delete input.authorization;
   const result = await sdk.impersonationEnded(input as never);
   assert.equal(result.ok, false);
@@ -318,7 +319,7 @@ test("tenant scenario: claimed tenant conflicting with authoritative scope is re
   const sdk = createSdk(sink, deterministicProviders(2_750));
   const [enrolled] = (await positives()).filter((event) => event.event.name === "bloodtrail.audit.authentication.mfa.enrolled");
   assert.ok(enrolled);
-  const input = toNamedInput(enrolled) as Record<string, unknown>;
+  const input = toTrustedNamedInput(sdk, enrolled);
   input.claimedTenant = claimedTenant("a-completely-different-tenant");
   const result = await sdk.mfaEnrolled(input as never);
   assert.equal(result.ok, false);
@@ -345,7 +346,7 @@ test("resource ownership must match authoritative tenant context, not a caller c
   const sdk = createSdk(sink, deterministicProviders(2_800));
   const [created] = (await positives()).filter((event) => event.event.name === "bloodtrail.audit.data.sensitive_resource.created");
   assert.ok(created);
-  const input = toNamedInput(created) as Record<string, unknown>;
+  const input = toTrustedNamedInput(sdk, created);
   input.resource = authoritativeResource({ ...created.resource, owning_tenant_id: "a-tenant-that-does-not-own-this" });
   const result = await sdk.sensitiveResourceCreated(input as never);
   assert.equal(result.ok, false);
@@ -357,7 +358,7 @@ test("resource ownership matching authoritative tenant context is accepted", asy
   const sdk = createSdk(sink, deterministicProviders(2_810));
   const [created] = (await positives()).filter((event) => event.event.name === "bloodtrail.audit.data.sensitive_resource.created");
   assert.ok(created);
-  const result = await sdk.sensitiveResourceCreated(toNamedInput(created) as never);
+  const result = await sdk.sensitiveResourceCreated(toTrustedNamedInput(sdk, created) as never);
   assert.equal(result.ok, true);
 });
 
@@ -614,6 +615,116 @@ test("a caller cannot bypass the operation model by directly declaring commit_st
   const result = await sdk.sensitiveResourceCreated(input as never);
   assert.equal(result.ok, false);
   if (!result.ok) assert.equal(result.error.code, "PREMATURE_SUCCESS");
+});
+
+test("named methods reject forged, copied, modified, cloned, and foreign operation evidence without sink invocation or identifier disclosure", async () => {
+  const sink = createCapturingAuditSink();
+  const sdk = createSdk(sink, deterministicProviders(4_050));
+  const foreignSdk = createSdk(createCapturingAuditSink(), deterministicProviders(4_060));
+  const created = toNamedInput(requiredFixture(await positives(), "bloodtrail.audit.data.sensitive_resource.created"));
+  delete created.operation;
+  const hostileOperationId = "SECRET_ATTACKER_OPERATION";
+  const hostileTransactionId = "SECRET_ATTACKER_TRANSACTION";
+  const forged = {
+    operation_id: hostileOperationId,
+    transaction_id: hostileTransactionId,
+    correlation_id: "SECRET_ATTACKER_CORRELATION",
+    state: "committed",
+    commit_state: "committed",
+    transactional: true,
+  };
+
+  const issued = sdk.beginOperation({
+    operationId: "legitimate_operation",
+    transactionId: "legitimate_transaction",
+    correlationId: "legitimate_correlation",
+    boundEvent: "sensitiveResourceCreated",
+  });
+  assert.ok(issued.ok);
+  assert.equal(issued.value.markCommitted().ok, true);
+  const snapshot = issued.value.snapshot();
+  const withoutBinding = { ...snapshot } as Record<string, unknown>;
+  delete withoutBinding.bound_event;
+  const foreign = foreignSdk.beginOperation({ boundEvent: "sensitiveResourceCreated" });
+  assert.ok(foreign.ok);
+  assert.equal(foreign.value.markCommitted().ok, true);
+
+  for (const operation of [
+    forged,
+    { ...forged },
+    { ...forged, snapshot: () => forged },
+    snapshot,
+    { ...snapshot },
+    JSON.parse(JSON.stringify(snapshot)) as unknown,
+    structuredClone(snapshot),
+    withoutBinding,
+    { ...snapshot, bound_event: "sensitiveResourceDeleted" },
+    foreign.value,
+  ]) {
+    const result = await (sdk.sensitiveResourceCreated as (input: unknown) => Promise<AuditResult<AuditDeliveryResult>>)({
+      ...created,
+      operation,
+      event: { outcome: "success", commit_state: "committed" },
+    });
+    assert.deepEqual(result, {
+      ok: false,
+      error: { code: "SDK_INVALID_OPERATION_TRANSITION", category: "lifecycle", path: "/operation" },
+    });
+    const diagnostic = JSON.stringify(result);
+    assert.equal(diagnostic.includes(hostileOperationId), false);
+    assert.equal(diagnostic.includes(hostileTransactionId), false);
+  }
+  assert.equal(sink.events.length, 0);
+});
+
+test("same-instance private operation evidence controls commit state, event binding, and identifiers", async () => {
+  const sink = createCapturingAuditSink();
+  const sdk = createSdk(sink, deterministicProviders(4_070));
+  const fixtures = await positives();
+  const created = toNamedInput(requiredFixture(fixtures, "bloodtrail.audit.data.sensitive_resource.created"));
+  const deleted = toNamedInput(requiredFixture(fixtures, "bloodtrail.audit.data.sensitive_resource.deleted"));
+  delete created.operation;
+  delete deleted.operation;
+
+  const pending = sdk.beginOperation({
+    operationId: "trusted_operation",
+    transactionId: "trusted_transaction",
+    correlationId: "trusted_correlation",
+    boundEvent: "sensitiveResourceCreated",
+  });
+  assert.ok(pending.ok);
+  const premature = await sdk.sensitiveResourceCreated({ ...created, operation: pending.value, event: { outcome: "success" } } as never);
+  assert.deepEqual(premature, { ok: false, error: { code: "PREMATURE_SUCCESS", category: "validation", path: "/operation/state" } });
+  assert.equal(sink.events.length, 0);
+
+  assert.equal(pending.value.markCommitted().ok, true);
+  const mismatch = await sdk.sensitiveResourceDeleted({ ...deleted, operation: pending.value } as never);
+  assert.deepEqual(mismatch, { ok: false, error: { code: "SDK_OPERATION_EVENT_MISMATCH", category: "lifecycle", path: "/operation/bound_event" } });
+  assert.equal(sink.events.length, 0);
+
+  const accepted = await sdk.sensitiveResourceCreated({ ...created, operation: pending.value } as never);
+  assert.equal(accepted.ok, true);
+  assert.equal(sink.events.length, 1);
+  assert.equal(sink.events[0]?.correlation.operation_id, "trusted_operation");
+  assert.equal(sink.events[0]?.correlation.transaction_id, "trusted_transaction");
+  assert.equal(sink.events[0]?.correlation.correlation_id, "trusted_correlation");
+
+  const nonTransactional = sdk.beginOperation({ transactional: false });
+  assert.ok(nonTransactional.ok);
+  const authentication = toNamedInput(requiredFixture(fixtures, "bloodtrail.audit.authentication.succeeded"));
+  const nonTransactionalResult = await sdk.authenticationSucceeded({ ...authentication, operation: nonTransactional.value } as never);
+  assert.equal(nonTransactionalResult.ok, true);
+  assert.equal(sink.events.at(-1)?.event.commit_state, "not_applicable");
+});
+
+test("trusted generic emit remains a separate complete-canonical-event boundary", async () => {
+  const sink = createCapturingAuditSink();
+  const sdk = createSdk(sink, deterministicProviders(4_080));
+  const canonical = requiredFixture(await positives(), "bloodtrail.audit.data.sensitive_resource.created");
+  const result = await sdk.emit(canonical);
+  assert.equal(result.ok, true);
+  assert.equal(sink.events.length, 1);
+  assert.equal(sink.events[0]?.event.id, canonical.event.id);
 });
 
 test("duplicate success for the same operation and event is rejected while fan-out to different events is allowed", async () => {
@@ -1146,6 +1257,31 @@ function toNamedInput(event: SecurityAuditEvent): Record<string, unknown> {
   for (const [key, value] of Object.entries(input)) {
     if (value === undefined) delete input[key];
   }
+  return input;
+}
+
+function toTrustedNamedInput(sdk: SecurityAuditSdk, event: SecurityAuditEvent): Record<string, unknown> {
+  const input = toNamedInput(event);
+  delete input.operation;
+  if (!event.correlation.transaction_id) return input;
+  const operation = sdk.beginOperation({
+    operationId: event.correlation.operation_id,
+    transactionId: event.correlation.transaction_id,
+    correlationId: event.correlation.correlation_id,
+    boundEvent: methodForEvent(event.event.name),
+    transactional: event.event.commit_state !== "not_applicable",
+  });
+  assert.ok(operation.ok);
+  switch (event.event.commit_state) {
+    case "committed": assert.equal(operation.value.markCommitted().ok, true); break;
+    case "not_committed": assert.equal(operation.value.markNotCommitted().ok, true); break;
+    case "partially_committed": assert.equal(operation.value.markPartiallyCommitted().ok, true); break;
+    case "compensated":
+      assert.equal(operation.value.markCommitted().ok, true);
+      assert.equal(operation.value.markCompensated().ok, true);
+      break;
+  }
+  input.operation = operation.value;
   return input;
 }
 

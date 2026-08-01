@@ -94,6 +94,12 @@ Deprecation requires:
 
 There are no deprecated public APIs in candidate `0.1.0`.
 
+## Operation-evidence security correction
+
+Named-method operation inputs no longer accept `GeneratedOperationContext` structural values. Consumers must retain the exact `AuditOperationHandle` returned by `beginOperation()`, apply terminal state through its sanctioned methods, and pass that same handle to a named method on the same SDK instance. `snapshot()` output is observational and cannot be passed back as trusted evidence. Plain objects, object spreads, manual copies, `structuredClone`, JSON round trips, fake handles, and cross-instance handles are rejected before sink invocation.
+
+This is a source-level breaking API tightening because previously accepted TypeScript literals and generated input values containing structural `operation` data no longer type-check. If applied to a published stable package, it requires a major version. The package remains private and unpublished in initial-development candidate `0.1.0`, so this governed correction does not create a release or change the package version in this pass; any future release decision must account for the breaking migration explicitly. Contract `1.0.0`, canonical event representation, generic `emit()`/`redeliver()` trusted-producer behavior, and existing error-code registry remain unchanged. Invalid or foreign evidence uses the existing `SDK_INVALID_OPERATION_TRANSITION` lifecycle code at `/operation`; premature same-instance success remains `PREMATURE_SUCCESS`, and binding mismatch remains `SDK_OPERATION_EVENT_MISMATCH`.
+
 ## Contract-version upgrades
 
 A contract semantic change requires the `security-audit-event-contract` governance lifecycle before SDK work. After a new contract version is approved, SDK adaptation must use a separate reviewed change that:
