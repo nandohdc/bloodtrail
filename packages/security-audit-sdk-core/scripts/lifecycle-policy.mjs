@@ -100,6 +100,85 @@ export function parseTaskChecklist(text) {
   }));
 }
 
+export function evaluateActiveTaskProgress(taskEntries, options = {}) {
+  const groups = options.groups ?? lifecycleMetadata.remediationChange.taskGroups;
+  const expectedTaskCount = options.expectedTaskCount ?? lifecycleMetadata.remediationChange.taskCount;
+  const failures = [];
+  const taskById = new Map();
+  for (const task of taskEntries) {
+    if (taskById.has(task.id)) failures.push(boundedFailure("active-task-inventory", "tasks.md", `duplicate task ${task.id}`));
+    taskById.set(task.id, task);
+  }
+  if (taskEntries.length !== expectedTaskCount) {
+    failures.push(boundedFailure("active-task-total", "tasks.md", `expected ${expectedTaskCount} tasks, found ${taskEntries.length}`));
+  }
+
+  const mappedIds = new Set();
+  const resolvedGroups = groups.map((group) => {
+    const expectedIds = expandTaskRange(group.taskRange);
+    const tasks = expectedIds.map((id) => taskById.get(id)).filter(Boolean);
+    if (tasks.length !== expectedIds.length) {
+      failures.push(boundedFailure("active-task-inventory", "verification-lifecycle.json", `invalid task range for ${group.id}`));
+    }
+    for (const id of expectedIds) {
+      if (mappedIds.has(id)) failures.push(boundedFailure("active-task-inventory", "verification-lifecycle.json", `task ${id} is mapped more than once`));
+      mappedIds.add(id);
+    }
+    return {
+      ...group,
+      tasks,
+      completed: tasks.length > 0 && tasks.every((task) => task.done),
+      started: tasks.some((task) => task.done),
+    };
+  });
+
+  for (const task of taskEntries.filter((entry) => entry.done && !mappedIds.has(entry.id))) {
+    failures.push(boundedFailure("active-task-unmapped", "tasks.md", `checked task ${task.id} is not mapped to a lifecycle group`));
+  }
+  if (mappedIds.size !== expectedTaskCount || taskEntries.some((task) => !mappedIds.has(task.id))) {
+    failures.push(boundedFailure("active-task-inventory", "verification-lifecycle.json", `task-group inventory maps ${mappedIds.size}/${expectedTaskCount} tasks`));
+  }
+
+  let earliestIncomplete = resolvedGroups.findIndex((group) => !group.completed);
+  if (earliestIncomplete === -1) earliestIncomplete = resolvedGroups.length;
+  for (let index = earliestIncomplete + 1; index < resolvedGroups.length; index += 1) {
+    const group = resolvedGroups[index];
+    if (!group.started) continue;
+    const prior = resolvedGroups[earliestIncomplete];
+    const id = group.phase === "technical-review"
+      ? "active-technical-review-premature"
+      : group.phase === "owner-governance"
+        ? "active-owner-decision-premature"
+        : group.phase === "merge-archive"
+          ? "active-merge-archive-pending"
+          : "active-task-order";
+    failures.push(boundedFailure(id, "tasks.md", `${group.id} started before ${prior?.id ?? "the preceding group"} completed`));
+  }
+
+  const ownerGroup = resolvedGroups.find((group) => group.phase === "owner-governance");
+  if (ownerGroup?.started && (!options.exactTechnicalCommit || !options.technicalReviewPacket)) {
+    failures.push(boundedFailure("active-owner-evidence", "technical-review-packet.md", "owner-decision tasks require an exact technical commit and review packet"));
+  }
+  const mergeGroup = resolvedGroups.find((group) => group.phase === "merge-archive");
+  if (mergeGroup?.started) {
+    failures.push(boundedFailure("active-merge-archive-pending", "tasks.md", "merge and archive tasks must remain pending in active mode"));
+  }
+
+  return Object.freeze({
+    failures: Object.freeze(failures),
+    completedGroups: Object.freeze(resolvedGroups.filter((group) => group.completed).map((group) => group.id)),
+    nextGroup: resolvedGroups.find((group) => !group.completed)?.id ?? null,
+    checkedTasks: taskEntries.filter((task) => task.done).length,
+  });
+}
+
+function expandTaskRange(range) {
+  const [startSection, startItem] = range.start.split(".").map(Number);
+  const [endSection, endItem] = range.end.split(".").map(Number);
+  if (!Number.isInteger(startSection) || startSection !== endSection || !Number.isInteger(startItem) || !Number.isInteger(endItem) || endItem < startItem) return [];
+  return Array.from({ length: endItem - startItem + 1 }, (_, index) => `${startSection}.${startItem + index}`);
+}
+
 export function extractRequirementBody(text) {
   const firstRequirement = text.indexOf("### Requirement:");
   return firstRequirement === -1 ? "" : text.slice(firstRequirement).trim();

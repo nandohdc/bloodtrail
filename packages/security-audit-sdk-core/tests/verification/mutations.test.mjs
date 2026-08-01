@@ -5,6 +5,7 @@ import { basename, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { packageRoot, repositoryRoot } from "../../scripts/verification-helpers.mjs";
+import { lifecycleMetadata } from "../../scripts/lifecycle-policy.mjs";
 import {
   DISPOSABLE_GIT_IDENTITY,
   disposableGitEnvironment,
@@ -16,6 +17,8 @@ const controlRoot = resolve(suiteRoot, "control");
 const activeChange = "openspec/changes/remediate-security-audit-sdk-adversarial-review";
 const originalArchive = "openspec/changes/archive/2026-07-31-implement-security-audit-sdk-core";
 const canonicalCapability = "openspec/specs/security-audit-sdk-core/spec.md";
+const remediation = lifecycleMetadata.remediationChange;
+const taskGroups = remediation.taskGroups;
 const governedLocalConfigBefore = governedLocalConfig();
 
 prepareControl();
@@ -27,7 +30,103 @@ test.after(() => {
 test("unmodified active control passes", () => {
   const root = caseRepository("control-pass");
   succeeds(root, "scripts/check-changed-paths.mjs", ["--mode", "active"]);
-  succeeds(root, "scripts/check-coherence.mjs", ["--mode", "active"]);
+  const result = succeeds(root, "scripts/check-coherence.mjs", ["--mode", "active"]);
+  assert.match(result.stdout, /8\/91 tasks complete, completed groups: F-04, next group: F-01/);
+});
+
+test("active mode accepts partial F-01 after complete F-04", () => {
+  const root = caseRepository("f01-partial");
+  setCheckedTasks(root, [...groupTaskIds(taskGroups[0]), ...groupTaskIds(taskGroups[1]).slice(0, 3)]);
+  const result = succeeds(root, "scripts/check-coherence.mjs", ["--mode", "active"]);
+  assert.match(result.stdout, /11\/91 tasks complete, completed groups: F-04, next group: F-01/);
+});
+
+test("active mode accepts complete F-04 and F-01 at 16/91", () => {
+  const root = caseRepository("f01-complete");
+  setCheckedTasks(root, [...groupTaskIds(taskGroups[0]), ...groupTaskIds(taskGroups[1])]);
+  const result = succeeds(root, "scripts/check-coherence.mjs", ["--mode", "active"]);
+  assert.match(result.stdout, /16\/91 tasks complete, completed groups: F-04, F-01, next group: F-02/);
+});
+
+test("active mode rejects F-01 before F-04 completes", () => {
+  const root = caseRepository("f01-before-f04");
+  setCheckedTasks(root, [groupTaskIds(taskGroups[1])[0]]);
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-task-order");
+});
+
+test("active mode rejects F-02 before F-01 starts or completes", () => {
+  const root = caseRepository("f02-before-f01");
+  setCheckedTasks(root, [...groupTaskIds(taskGroups[0]), groupTaskIds(taskGroups[2])[0]]);
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-task-order");
+});
+
+test("active mode rejects F-02 while F-01 is partial", () => {
+  const root = caseRepository("f02-during-f01");
+  setCheckedTasks(root, [...groupTaskIds(taskGroups[0]), groupTaskIds(taskGroups[1])[0], groupTaskIds(taskGroups[2])[0]]);
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-task-order");
+});
+
+test("every later implementation group rejects progress past a partial predecessor", () => {
+  const implementationGroups = taskGroups.filter((group) => group.phase === "implementation");
+  for (let index = 2; index < implementationGroups.length; index += 1) {
+    const root = caseRepository(`order-${implementationGroups[index].id.replaceAll("/", "-")}`);
+    const completedPrefix = implementationGroups.slice(0, index - 1).flatMap(groupTaskIds);
+    setCheckedTasks(root, [
+      ...completedPrefix,
+      groupTaskIds(implementationGroups[index - 1])[0],
+      groupTaskIds(implementationGroups[index])[0],
+    ]);
+    fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-task-order");
+  }
+});
+
+test("active mode rejects a checked unknown task with a consistent total", () => {
+  const root = caseRepository("unknown-checked-task");
+  setCheckedTasks(root, groupTaskIds(taskGroups[0]));
+  replace(root, `${activeChange}/tasks.md`, "- [ ] 2.1 ", "- [x] 99.1 ");
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-task-unmapped");
+});
+
+test("active mode rejects premature technical review", () => {
+  const root = caseRepository("premature-technical-review");
+  setCheckedTasks(root, [...groupTaskIds(taskGroups[0]), groupTaskIds(taskGroups.find((group) => group.phase === "technical-review"))[0]]);
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-technical-review-premature");
+});
+
+test("active mode rejects owner decision without exact-commit review evidence", () => {
+  const root = caseRepository("premature-owner-decision");
+  const ownerIndex = taskGroups.findIndex((group) => group.phase === "owner-governance");
+  setCheckedTasks(root, [
+    ...taskGroups.slice(0, ownerIndex).flatMap(groupTaskIds),
+    groupTaskIds(taskGroups[ownerIndex])[0],
+  ]);
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-owner-evidence");
+});
+
+test("active mode rejects premature merge and archive tasks", () => {
+  for (const [name, id] of [["merge", "12.8"], ["archive", "12.10"]]) {
+    const root = caseRepository(`premature-${name}`);
+    setCheckedTasks(root, [...groupTaskIds(taskGroups[0]), id]);
+    fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-merge-archive-pending");
+  }
+});
+
+test("active mode rejects an incorrect task total", () => {
+  const root = caseRepository("incorrect-task-total");
+  const taskPath = resolve(root, activeChange, "tasks.md");
+  const text = readFileSync(taskPath, "utf8");
+  writeFileSync(taskPath, text.replace(/^- \[ \] 2\.1 .+\n/m, ""));
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-task-total");
+});
+
+test("governed mode still rejects the current pre-governance state", () => {
+  const root = caseRepository("governed-pre-governance");
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "governed"], "technical-review-packet");
+});
+
+test("explicit archived original SDK mode remains valid", () => {
+  const root = caseRepository("original-archived-control");
+  succeeds(root, "scripts/check-coherence.mjs", ["--mode", "archived", "--change", "implement-security-audit-sdk-core"]);
 });
 
 test("missing canonical SDK capability is rejected", () => {
@@ -222,6 +321,19 @@ function replace(root, path, oldText, newText, replaceAll = false) {
 function append(root, path, content) {
   const absolute = resolve(root, path);
   writeFileSync(absolute, readFileSync(absolute, "utf8") + content);
+}
+
+function groupTaskIds(group) {
+  const [section, start] = group.taskRange.start.split(".").map(Number);
+  const [, end] = group.taskRange.end.split(".").map(Number);
+  return Array.from({ length: end - start + 1 }, (_, index) => `${section}.${start + index}`);
+}
+
+function setCheckedTasks(root, checkedIds) {
+  const checked = new Set(checkedIds);
+  const path = resolve(root, activeChange, "tasks.md");
+  const text = readFileSync(path, "utf8");
+  writeFileSync(path, text.replace(/^- \[[ x]\] (\d+\.\d+) /mg, (line, id) => `- [${checked.has(id) ? "x" : " "}] ${id} `));
 }
 
 function write(root, path, content) {

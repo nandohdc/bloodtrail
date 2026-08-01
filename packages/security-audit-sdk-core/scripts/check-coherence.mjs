@@ -8,6 +8,7 @@ import {
 } from "./verification-helpers.mjs";
 import {
   boundedFailure,
+  evaluateActiveTaskProgress,
   extractRequirementBody,
   extractRequirementBlocks,
   lifecycleMetadata,
@@ -206,6 +207,7 @@ const tasks = texts.get("tasks") ?? "";
 const taskEntries = parseTaskChecklist(tasks);
 const checkedTasks = taskEntries.filter((task) => task.done).length;
 const expectedTaskCount = lifecycle.change === original.name ? original.taskCount : remediation.taskCount;
+let activeProgress;
 rule("task-count", "tasks.md", taskEntries.length === expectedTaskCount, `task checklist count differs from ${expectedTaskCount}`);
 
 if (lifecycle.change === remediation.name) {
@@ -229,19 +231,28 @@ if (lifecycle.change === remediation.name) {
     "final owner approval",
   ]), "bounded project-owner implementation authorization is incomplete");
 
-  const nonF04Tasks = taskEntries.filter((task) => !remediation.f04Tasks.includes(task.id));
   if (lifecycle.mode === "active") {
-    rule("active-non-f04-pending", "tasks.md", nonF04Tasks.every((task) => !task.done), "active F-04 pass completed a task outside issue #24");
-    const finalOwnerTask = taskEntries.find((task) => task.id === remediation.finalOwnerTask);
-    rule("active-final-owner-pending", "tasks.md", finalOwnerTask?.done === false, "final remediation owner approval must remain pending in active mode");
+    const reviewPacket = await readOptional(resolve(changeRoot, "technical-review-packet.md"));
+    activeProgress = evaluateActiveTaskProgress(taskEntries, {
+      exactTechnicalCommit: /Final technical commit:\s*`[0-9a-f]{40}`/.test(reviewPacket),
+      technicalReviewPacket: reviewPacket.length > 0,
+    });
+    failures.push(...activeProgress.failures);
   } else if (lifecycle.mode === "governed") {
     const packet = texts.get("review-packet") ?? "";
     const technicalCommit = packet.match(/Final technical commit:\s*`([0-9a-f]{40})`/)?.[1];
+    for (const group of remediation.taskGroups.filter((entry) => ["implementation", "regression"].includes(entry.phase))) {
+      const groupTasks = tasksInRange(taskEntries, group.taskRange);
+      rule(`governed-group-${group.id}-complete`, "tasks.md", groupTasks.length > 0 && groupTasks.every((task) => task.done), `governed mode requires complete ${group.id} tasks`);
+    }
     rule("governed-technical-binding", "technical-review-packet.md", Boolean(technicalCommit), "governed mode requires a full final technical commit binding");
     rule("governed-owner-decision", "technical-review-packet.md", /Project-owner.+decision.+APPROVED/is.test(packet), "governed mode requires an explicit project-owner decision");
     rule("governed-production-restriction", "technical-review-packet.md", includesAll(packet, ["Package publication/release approved | `NO — NOT AUTHORIZED`", "Production deployment approved | `NO — NOT AUTHORIZED`"]), "governed production/publication restrictions are absent");
-    for (const id of remediation.mergeArchiveTasks) {
-      rule(`governed-task-${id}-pending`, "tasks.md", taskEntries.find((task) => task.id === id)?.done === false, `governed mode requires ${id} to remain pending`);
+    const mergeArchiveGroup = remediation.taskGroups.find((group) => group.phase === "merge-archive");
+    const mergeArchiveStart = taskEntries.findIndex((task) => task.id === mergeArchiveGroup.taskRange.start);
+    const mergeArchiveEnd = taskEntries.findIndex((task) => task.id === mergeArchiveGroup.taskRange.end);
+    for (const task of taskEntries.slice(mergeArchiveStart, mergeArchiveEnd + 1)) {
+      rule(`governed-task-${task.id}-pending`, "tasks.md", task.done === false, `governed mode requires ${task.id} to remain pending`);
     }
   } else {
     const packet = texts.get("review-packet") ?? "";
@@ -288,6 +299,8 @@ if (failures.length > 0) {
   process.stderr.write(`cross-artifact coherence failed (${failures.length} rule${failures.length === 1 ? "" : "s"}):\n`);
   for (const failure of failures) process.stderr.write(`[${failure.id}] ${failure.file}: ${failure.message}\n`);
   process.exitCode = 1;
+} else if (lifecycle.mode === "active" && lifecycle.change === remediation.name) {
+  process.stdout.write(`active remediation coherence passed: contract ${expected.contractVersion}, ${expected.catalogEventCount} catalog events, ${expected.namedEventApiCount} named APIs, ${expected.runtimeDependencyCount} runtime dependencies, ${checkedTasks}/${expectedTaskCount} tasks complete, completed groups: ${activeProgress.completedGroups.join(", ") || "none"}, next group: ${activeProgress.nextGroup ?? "none"}, governance pending\n`);
 } else {
   process.stdout.write(`cross-artifact coherence passed in ${lifecycle.mode} mode for ${lifecycle.change}: contract ${expected.contractVersion}, ${expected.catalogEventCount} catalog events/${expected.namedEventApiCount} named APIs, ${expected.runtimeDependencyCount} runtime dependencies, ${checkedTasks}/${expectedTaskCount} current-change tasks complete\n`);
 }
@@ -299,6 +312,20 @@ async function safeRead(path, id) {
     rule("required-file", relative(repositoryRoot, path), false, `${id} is missing or unreadable`);
     return "";
   }
+}
+
+async function readOptional(path) {
+  try {
+    return await readFile(path, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+function tasksInRange(taskEntries, range) {
+  const start = taskEntries.findIndex((task) => task.id === range.start);
+  const end = taskEntries.findIndex((task) => task.id === range.end);
+  return start === -1 || end < start ? [] : taskEntries.slice(start, end + 1);
 }
 
 async function pathExists(path) {
