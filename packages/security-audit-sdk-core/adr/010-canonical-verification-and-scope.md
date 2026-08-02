@@ -20,7 +20,11 @@ Separate npm scripts are useful during development but can accidentally reuse st
 8. A separate source/import/dependency scope check rejects production integrations inside an otherwise allowed package path.
 9. `npm pack --dry-run --json` is parsed against a strict package allowlist. Source, tests, scripts, ADRs, governance, contract sources, caches, local paths, and machine-specific evidence are excluded.
 10. Differential mutation tests run only in disposable clones and prove both acceptance and rejection cases without editing governed files.
-11. Verification requires an empty Git index and never stages or commits.
+11. Scope token matching treats `/`, `.`, `_`, and `-` as lexical boundaries on both sides. Exact root and nested forbidden names fail with repository-relative diagnostics; boundary-free benign substrings remain allowed.
+12. `SecurityAuditSdkImpl implements SecurityAuditSdk`, and the factory returns the frozen instance without a public-interface assertion. Source typecheck therefore rejects deleted or renamed required members independently of runtime tests.
+13. Compatibility verification constructs an SDK and checks every nonzero generated descriptor against the concrete callable surface, including duplicate event/method names, one-to-one catalog correspondence, normal receiver invocation, lifecycle/context/operation methods, and frozen-instance policy. It does not infer completeness only from the expected count.
+14. Mutations separately prove F-06 path failures, missing/renamed compile-time members, missing/duplicate generated descriptors, and non-callable concrete methods. Fixture clones use isolated Git identity and are removed after execution.
+15. Verification requires an empty Git index and never stages or commits.
 
 ## Consequences
 

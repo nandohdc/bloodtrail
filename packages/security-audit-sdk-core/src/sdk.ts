@@ -37,7 +37,7 @@ export type SecurityAuditSdk = NamedSecurityAuditApi & {
   shutdown(): Promise<AuditResult<void>>;
 };
 
-class SecurityAuditSdkImpl {
+class SecurityAuditSdkImpl implements SecurityAuditSdk {
   #state: SecurityAuditSdkState = "ready";
   readonly #config: NormalizedSdkConfiguration;
   readonly #inFlight = new Set<Promise<unknown>>();
@@ -303,7 +303,7 @@ class SecurityAuditSdkImpl {
 }
 
 export function createSecurityAuditSdk(configuration: SecurityAuditSdkConfiguration): SecurityAuditSdk {
-  return Object.freeze(new SecurityAuditSdkImpl(normalizeConfiguration(configuration))) as SecurityAuditSdk;
+  return Object.freeze(new SecurityAuditSdkImpl(normalizeConfiguration(configuration)));
 }
 
 function successDedupeKey(event: SecurityAuditEvent): string | undefined {

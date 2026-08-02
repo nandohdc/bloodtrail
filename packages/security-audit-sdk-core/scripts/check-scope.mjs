@@ -6,7 +6,7 @@ const sourceRoot = resolve(packageRoot, "src");
 const packageJson = await readJson(resolve(packageRoot, "package.json"));
 const files = await walk(sourceRoot);
 const violations = [];
-const forbiddenFileName = /(?:^|[._-])(adapter|instrument(?:ation)?|transport|exporter|collector|queue|outbox|storage|siem|analytics|detection|browser|telemetry|framework|express|nestjs|fastify|nextjs|cryptographic-chain)(?:[._-]|$)/i;
+const forbiddenFileName = /(?:^|[./_-])(adapter|instrument(?:ation)?|transport|exporter|collector|queue|outbox|storage|siem|analytics|detection|browser|telemetry|framework|express|nestjs|fastify|nextjs|cryptographic-chain)(?:[./_-]|$)/i;
 const forbiddenSource = [
   /\b(?:fetch|WebSocket|XMLHttpRequest)\s*\(/,
   /\b(?:http|https|net|tls|dgram|fs|fs\/promises|worker_threads|child_process)\b/,

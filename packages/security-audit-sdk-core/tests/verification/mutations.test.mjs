@@ -186,6 +186,103 @@ test("unauthorized transport source is rejected", () => {
   fails(root, "scripts/check-changed-paths.mjs", ["--mode", "active"], "forbidden production integration");
 });
 
+test("scope matcher rejects forbidden tokens at every filesystem and punctuation boundary", () => {
+  const paths = [
+    "src/transport.ts",
+    "src/browser.ts",
+    "src/telemetry.ts",
+    "src/collector.ts",
+    "src/exporter.ts",
+    "src/siem.ts",
+    "src/analytics.ts",
+    "src/internal/transport.ts",
+    "src/transport/client.ts",
+    "src/internal/browser/client.ts",
+    "src/my-transport.ts",
+    "src/a.telemetry.ts",
+    "src/my_collector.ts",
+  ];
+  for (const [index, path] of paths.entries()) {
+    const root = caseRepository(`scope-boundary-${index}`);
+    write(root, `packages/security-audit-sdk-core/${path}`, "export {};\n");
+    const result = script(root, "scripts/check-scope.mjs", []);
+    assert.notEqual(result.status, 0, `${path} unexpectedly passed the production-scope filename guard`);
+    const output = `${result.stdout}\n${result.stderr}`;
+    assert.match(output, new RegExp(`${escapeRegex(path)}: forbidden production integration filename`));
+    const diagnostic = output.match(/Error: production-scope violations:\n([\s\S]*?)\n\s+at /)?.[1];
+    assert.ok(diagnostic, "scope failure did not expose a stable violation diagnostic");
+    assert.doesNotMatch(diagnostic, new RegExp(escapeRegex(root)), "scope violation diagnostic leaked an absolute fixture path");
+  }
+});
+
+test("scope matcher permits boundary-free benign substrings", () => {
+  const root = caseRepository("scope-benign-substrings");
+  for (const path of [
+    "src/transportation.ts",
+    "src/browserify.ts",
+    "src/collection.ts",
+    "src/analytical.ts",
+    "src/exportable.ts",
+  ]) write(root, `packages/security-audit-sdk-core/${path}`, "export {};\n");
+  succeeds(root, "scripts/check-scope.mjs", []);
+});
+
+test("scope matcher retains source-content and runtime-dependency controls", () => {
+  const contentRoot = caseRepository("scope-forbidden-content");
+  write(contentRoot, "packages/security-audit-sdk-core/src/network-probe.ts", "fetch('https://example.invalid');\n");
+  fails(contentRoot, "scripts/check-scope.mjs", [], "fetch");
+
+  const dependencyRoot = caseRepository("scope-runtime-dependency");
+  replace(dependencyRoot, "packages/security-audit-sdk-core/package.json", '"dependencies": {}', '"dependencies": { "left-pad": "1.0.0" }');
+  fails(dependencyRoot, "scripts/check-scope.mjs", [], "dependencies must remain empty");
+});
+
+test("concrete SDK uses compiler-enforced interface conformance without a factory assertion", () => {
+  const source = readFileSync(resolve(packageRoot, "src/sdk.ts"), "utf8");
+  assert.match(source, /class SecurityAuditSdkImpl implements SecurityAuditSdk/);
+  assert.doesNotMatch(source, /as SecurityAuditSdk/);
+  assert.match(source, /return Object\.freeze\(new SecurityAuditSdkImpl\(/);
+});
+
+test("deleting or renaming a required named method fails source typecheck", () => {
+  const method = `  tenantContextViolationDetected(input: WithOperationHandle<NamedAuditEventInputMap["tenantContextViolationDetected"]>): Promise<AuditResult<AuditDeliveryResult>> {\n    return this.#emitNamed("tenantContextViolationDetected", input);\n  }\n\n`;
+  const deletedRoot = caseRepository("sdk-method-deleted");
+  replace(deletedRoot, "packages/security-audit-sdk-core/src/sdk.ts", method, "");
+  typecheckFails(deletedRoot, "tenantContextViolationDetected");
+
+  const renamedRoot = caseRepository("sdk-method-renamed");
+  replace(
+    renamedRoot,
+    "packages/security-audit-sdk-core/src/sdk.ts",
+    "  tenantContextViolationDetected(input:",
+    "  renamedTenantContextViolationDetected(input:",
+  );
+  typecheckFails(renamedRoot, "tenantContextViolationDetected");
+});
+
+test("generated-surface verification rejects a descriptor naming a missing method", () => {
+  const root = caseRepository("generated-method-missing");
+  replace(root, "packages/security-audit-sdk-core/dist/generated/contract.generated.js", '"method": "accountRegistrationAttempted"', '"method": "missingGeneratedMethod"');
+  fails(root, "scripts/check-compatibility.mjs", [], "generated SDK method missingGeneratedMethod is missing or non-callable");
+});
+
+test("generated-surface verification rejects a duplicate generated method name", () => {
+  const root = caseRepository("generated-method-duplicate");
+  replace(root, "packages/security-audit-sdk-core/dist/generated/contract.generated.js", '"method": "accountRegistrationCompleted"', '"method": "accountRegistrationAttempted"');
+  fails(root, "scripts/check-compatibility.mjs", [], "duplicate generated event method: accountRegistrationAttempted");
+});
+
+test("generated-surface verification rejects a non-callable concrete method", () => {
+  const root = caseRepository("concrete-method-non-callable");
+  replace(
+    root,
+    "packages/security-audit-sdk-core/dist/sdk.js",
+    "    return Object.freeze(new SecurityAuditSdkImpl(normalizeConfiguration(configuration)));",
+    "    const instance = new SecurityAuditSdkImpl(normalizeConfiguration(configuration));\n    Object.defineProperty(instance, \"accountRegistrationAttempted\", { value: undefined });\n    return Object.freeze(instance);",
+  );
+  fails(root, "scripts/check-compatibility.mjs", [], "generated SDK method accountRegistrationAttempted is missing or non-callable");
+});
+
 test("missing generated public named API is rejected", () => {
   const root = caseRepository("named-api-missing");
   const path = "packages/security-audit-sdk-core/dist/generated/contract.generated.js";
@@ -310,6 +407,15 @@ function command(cwd, executable, args) {
   const result = spawnSync(executable, args, { cwd, encoding: "utf8" });
   assert.equal(result.status, 0, `${executable} ${args.join(" ")} failed:\n${result.stdout}\n${result.stderr}`);
   return result;
+}
+
+function typecheckFails(root, expected) {
+  const packagePath = resolve(root, "packages/security-audit-sdk-core");
+  const compiler = resolve(packageRoot, "node_modules/typescript/bin/tsc");
+  const result = spawnSync(process.execPath, [compiler, "-p", "tsconfig.json", "--noEmit"], { cwd: packagePath, encoding: "utf8" });
+  assert.notEqual(result.status, 0, "source typecheck unexpectedly passed an incomplete concrete SDK mutation");
+  assert.match(`${result.stdout}\n${result.stderr}`, /incorrectly implements (?:type|interface) 'SecurityAuditSdk'/);
+  assert.match(`${result.stdout}\n${result.stderr}`, new RegExp(escapeRegex(expected)));
 }
 
 function replace(root, path, oldText, newText, replaceAll = false) {

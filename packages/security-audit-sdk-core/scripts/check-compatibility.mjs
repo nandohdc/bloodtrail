@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
   CONTRACT_VERSION,
+  EVENT_CATALOG,
+  EVENT_METHODS,
   SecurityAuditSdkError,
   createSecurityAuditSdk,
 } from "../dist/index.js";
@@ -34,6 +36,14 @@ assert(packageJson.exports["."].require === undefined, "CommonJS root package ex
 assert(packageJson.exports["./testing"].require === undefined, "CommonJS testing package export is unsupported");
 
 const sink = Object.freeze({ emit: async () => Object.freeze({ status: "accepted" }) });
+const sdk = createSecurityAuditSdk({
+  contractVersion: "1.0.0",
+  producer: { name: "compatibility-check", version: "1.0.0" },
+  service: { name: "compatibility-check" },
+  environment: { name: "test" },
+  sink,
+});
+await verifyGeneratedSurface(sdk);
 for (const contractVersion of compatibility.unsupportedContractVersions) {
   let rejected = false;
   try {
@@ -51,8 +61,37 @@ for (const contractVersion of compatibility.unsupportedContractVersions) {
   assert(rejected, `unsupported contract version ${contractVersion} did not fail safely`);
 }
 
-process.stdout.write(`compatibility passed on Node ${process.versions.node}; contract ${CONTRACT_VERSION}; TypeScript ${compatibility.typescript.ciVersion}; exports ., ./testing\n`);
+process.stdout.write(`compatibility passed on Node ${process.versions.node}; contract ${CONTRACT_VERSION}; TypeScript ${compatibility.typescript.ciVersion}; exports ., ./testing; generated surface ${EVENT_METHODS.length} callable methods\n`);
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+async function verifyGeneratedSurface(instance) {
+  assert(EVENT_METHODS.length > 0, "generated event-method discovery returned zero descriptors");
+  const catalogNames = new Set(EVENT_CATALOG.map((entry) => entry.name));
+  const eventNames = new Set();
+  const methodNames = new Set();
+  for (const descriptor of EVENT_METHODS) {
+    assert(!eventNames.has(descriptor.name), `duplicate generated event name: ${descriptor.name}`);
+    assert(!methodNames.has(descriptor.method), `duplicate generated event method: ${descriptor.method}`);
+    eventNames.add(descriptor.name);
+    methodNames.add(descriptor.method);
+    assert(catalogNames.has(descriptor.name), `generated event method ${descriptor.method} references unknown event ${descriptor.name}`);
+    const method = instance[descriptor.method];
+    assert(typeof method === "function", `generated SDK method ${descriptor.method} is missing or non-callable`);
+    let result;
+    try {
+      result = await Reflect.apply(method, instance, [{}]);
+    } catch {
+      throw new Error(`generated SDK method ${descriptor.method} is not callable with the SDK instance receiver`);
+    }
+    assert(result && typeof result === "object" && typeof result.ok === "boolean", `generated SDK method ${descriptor.method} returned an invalid result`);
+  }
+  assert(eventNames.size === catalogNames.size, "generated event names and catalog names are not one-to-one");
+  for (const name of catalogNames) assert(eventNames.has(name), `catalog event ${name} has no generated SDK method`);
+  for (const method of ["emit", "redeliver", "beginOperation", "runWithContext", "flush", "shutdown"]) {
+    assert(typeof instance[method] === "function", `required SDK method ${method} is missing or non-callable`);
+  }
+  assert(Object.isFrozen(instance), "constructed SDK instance must remain frozen");
 }

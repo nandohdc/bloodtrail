@@ -64,14 +64,14 @@ GitHub issue: [#25](https://github.com/nandohdc/bloodtrail/issues/25)
 
 GitHub issue: [#26](https://github.com/nandohdc/bloodtrail/issues/26)
 
-- [ ] 6.1 Correct forbidden source-name matching for root-level, nested, path-segment, and dot/underscore/hyphen delimiter boundaries without substring false positives. [F-06]
-- [ ] 6.2 Add scope unit fixtures for root-level `transport`, `browser`, `collector`, `exporter`, and `siem` names plus nested and allowed near-match names. [F-06]
-- [ ] 6.3 Remove unchecked implementation casts that hide named-API structural incompleteness and make the concrete SDK satisfy the full public generated interface. [F-09]
-- [ ] 6.4 Add runtime verification that constructs the SDK and proves all 24 generated `EVENT_METHODS` entries resolve to callable methods. [F-09]
-- [ ] 6.5 Add compile-time tests for concrete implementation completeness and public API compatibility. [F-09]
-- [ ] 6.6 Add differential mutation tests that introduce each forbidden filename class and require the scope gate to fail. [F-06]
-- [ ] 6.7 Add differential mutation tests that delete any one named method while generated metadata remains unchanged and require compilation or verification failure. [F-09]
-- [ ] 6.8 Update guardrail documentation and canonical coherence evidence for the strengthened controls. [F-06, F-09]
+- [x] 6.1 Correct forbidden source-name matching for root-level, nested, path-segment, and dot/underscore/hyphen delimiter boundaries without substring false positives. [F-06]
+- [x] 6.2 Add scope unit fixtures for root-level `transport`, `browser`, `collector`, `exporter`, and `siem` names plus nested and allowed near-match names. [F-06]
+- [x] 6.3 Remove unchecked implementation casts that hide named-API structural incompleteness and make the concrete SDK satisfy the full public generated interface. [F-09]
+- [x] 6.4 Add runtime verification that constructs the SDK and proves all 24 generated `EVENT_METHODS` entries resolve to callable methods. [F-09]
+- [x] 6.5 Add compile-time tests for concrete implementation completeness and public API compatibility. [F-09]
+- [x] 6.6 Add differential mutation tests that introduce each forbidden filename class and require the scope gate to fail. [F-06]
+- [x] 6.7 Add differential mutation tests that delete any one named method while generated metadata remains unchanged and require compilation or verification failure. [F-09]
+- [x] 6.8 Update guardrail documentation and canonical coherence evidence for the strengthened controls. [F-06, F-09]
 
 ## 7. Prevent shutdown timeout from retaining process exit [F-07]
 
