@@ -61,10 +61,23 @@
     "retentionPolicy": "unchanged-pending-F-08",
     "compatibilityImpact": "patch-level security and correctness fix for defective concurrent behavior; no public type, error-code, contract 1.0.0, generic emit, or redelivery semantic change"
   },
+  "configurationOwnership": {
+    "normalizedEnvelope": "sdk-owned-shallow-frozen",
+    "ownedValueData": "field-specific-copy-and-freeze",
+    "callerOwnedCollaborators": "exact-reference-retained",
+    "collaboratorIdentity": "explicitly-guaranteed-preserved",
+    "providerReceiver": "original-object-receiver-preserved",
+    "providerInvocationCorrection": "transformation-hooks-are-no-longer-structurally-copied-with-receiver-loss",
+    "topLevelConfigurationCopying": "unchanged-for-primitive-and-plain-value-options",
+    "objectIsFrozenChange": "caller-owned-collaborators-are-not-newly-frozen",
+    "recursiveExternalFreezing": false,
+    "compatibilityImpact": "patch-level correctness and ownership fix; caller-owned collaborators are no longer frozen as an SDK construction side effect; no public type, error-code, contract 1.0.0, generic emit, or redelivery semantic change"
+  },
   "semverClassification": {
     "patch": [
       "bug fix preserving contract 1.0.0 interpretation",
-      "safe diagnostic bound tightening"
+      "safe diagnostic bound tightening",
+      "caller-owned collaborator freeze and receiver correction"
     ],
     "minor": [
       "additive optional public API",

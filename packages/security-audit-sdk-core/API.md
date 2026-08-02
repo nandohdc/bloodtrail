@@ -43,13 +43,21 @@ Optional configuration:
 - `identifiers`: one fixed `AuditIdentifierProvider`; defaults to collision-resistant UUID generation.
 - `shutdownTimeoutMs`: bounded `0..60000` wait; default `5000`.
 
-Configuration is cloned and frozen. Caller mutation after initialization does not change SDK behavior. The SDK factory returns one ready instance; it does not expose reinitialization.
+Normalization is field-aware rather than one recursive clone/freeze operation:
+
+- The SDK creates and shallow-freezes the normalized top-level envelope. It copies and freezes supported plain-value records, scalar options, authoritative base context, the transformations array, and each transformation registration path.
+- `sink`, `clock`, `identifiers`, and each transformation hook object are caller-owned dependency-injected capabilities. The SDK retains the exact object identity and does not clone, freeze, bind, proxy, recursively traverse, redefine, or otherwise mutate the collaborator or its nested state.
+- Provider and hook methods are invoked through the retained object, preserving class prototypes, native private fields, method identity, and expected `this` receiver behavior.
+- Replacing properties on the caller's original top-level configuration after initialization cannot replace the normalized references or copied options. A collaborator remains a live external capability and may maintain mutable queues, maps, sets, counters, or other state.
+- Callers own collaborator lifecycle and concurrency safety. Freezing a collaborator before passing it is the caller's decision and works only when that collaborator's own implementation supports frozen instances.
+
+Configuration immutability therefore protects SDK-owned configuration without transferring ownership of external capabilities. The SDK factory returns one ready instance; it does not expose reinitialization.
 
 ## Clock and identifier providers
 
 `AuditClock.now()` must return a valid `Date`. `AuditIdentifierProvider` supplies `eventId`, `operationId`, `correlationId`, `causationId`, `requestId`, `messageId`, and `transactionId`. Event IDs must be lowercase RFC 4122 UUIDs accepted by contract validation. Other generated identifiers must be non-empty, bounded printable values. Reuse of an event or operation ID where uniqueness is required fails safely.
 
-Inject deterministic providers only at initialization and normally only in tests. An injected provider changes repeatability, not causality or uniqueness requirements.
+Inject deterministic providers only at initialization and normally only in tests. An injected provider changes repeatability, not causality or uniqueness requirements. Stateful class providers are supported; their methods retain the original receiver, and the caller remains responsible for coordinating their mutable state across concurrent SDK calls.
 
 ## Authority-specific context construction
 

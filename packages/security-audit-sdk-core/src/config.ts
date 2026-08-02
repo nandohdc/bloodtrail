@@ -6,7 +6,6 @@ import type { AuditClock, AuditIdentifierProvider } from "./providers.js";
 import { systemAuditClock, systemAuditIdentifiers } from "./providers.js";
 import type { AuditEventSink } from "./sink.js";
 import { SecurityAuditSdkError } from "./errors.js";
-import { deepFreeze } from "./internal.js";
 
 export type AuditFieldPolicyPath = (typeof FIELD_POLICY)[number]["path"];
 
@@ -41,6 +40,11 @@ export interface SecurityAuditSdkConfiguration {
   readonly shutdownTimeoutMs?: number;
 }
 
+export interface NormalizedAuditFieldTransformation {
+  readonly path: AuditFieldPolicyPath | string;
+  readonly hook: AuditFieldTransformationHook;
+}
+
 export interface NormalizedSdkConfiguration {
   readonly contractVersion: typeof CONTRACT_VERSION;
   readonly producer: SecurityAuditEvent["producer"];
@@ -48,7 +52,7 @@ export interface NormalizedSdkConfiguration {
   readonly environment: SecurityAuditEvent["environment"];
   readonly deployment?: SecurityAuditEvent["deployment"];
   readonly authoritativeContext: AuditContextFrame;
-  readonly transformations: readonly AuditFieldTransformationHook[];
+  readonly transformations: readonly NormalizedAuditFieldTransformation[];
   readonly sink: AuditEventSink;
   readonly clock: AuditClock;
   readonly identifiers: AuditIdentifierProvider;
@@ -83,7 +87,7 @@ export function normalizeConfiguration(input: SecurityAuditSdkConfiguration): No
     identifiers: input.identifiers ?? systemAuditIdentifiers,
     shutdownTimeoutMs: timeout,
   };
-  return deepFreeze(input.deployment === undefined ? base : { ...base, deployment: cloneRecord(input.deployment) });
+  return Object.freeze(input.deployment === undefined ? base : { ...base, deployment: cloneRecord(input.deployment) });
 }
 
 function requireRecord(value: unknown, path: string): asserts value is Readonly<Record<string, string>> {
@@ -108,17 +112,21 @@ function requireIdentifierProvider(value: AuditIdentifierProvider): void {
   }
 }
 
-function normalizeTransformations(input: readonly AuditFieldTransformationHook[] | undefined): readonly AuditFieldTransformationHook[] {
+function normalizeTransformations(input: readonly AuditFieldTransformationHook[] | undefined): readonly NormalizedAuditFieldTransformation[] {
   if (input === undefined) return Object.freeze([]);
   if (!Array.isArray(input) || input.length > 32) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/transformations");
   const seen = new Set<string>();
   const hooks = input.map((hook, index) => {
-    if (!hook || typeof hook !== "object" || typeof hook.path !== "string" || typeof hook.transform !== "function") {
+    if (!hook || typeof hook !== "object") {
       throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}`);
     }
-    if (seen.has(hook.path)) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}/path`);
-    seen.add(hook.path);
-    return Object.freeze({ path: hook.path, transform: hook.transform });
+    const path = hook.path;
+    if (typeof path !== "string" || typeof hook.transform !== "function") {
+      throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}`);
+    }
+    if (seen.has(path)) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}/path`);
+    seen.add(path);
+    return Object.freeze({ path, hook });
   });
   return Object.freeze(hooks);
 }

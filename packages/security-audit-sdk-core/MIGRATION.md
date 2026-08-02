@@ -100,6 +100,14 @@ Named-method operation inputs no longer accept `GeneratedOperationContext` struc
 
 This is a source-level breaking API tightening because previously accepted TypeScript literals and generated input values containing structural `operation` data no longer type-check. If applied to a published stable package, it requires a major version. The package remains private and unpublished in initial-development candidate `0.1.0`, so this governed correction does not create a release or change the package version in this pass; any future release decision must account for the breaking migration explicitly. Contract `1.0.0`, canonical event representation, generic `emit()`/`redeliver()` trusted-producer behavior, and existing error-code registry remain unchanged. Invalid or foreign evidence uses the existing `SDK_INVALID_OPERATION_TRANSITION` lifecycle code at `/operation`; premature same-instance success remains `PREMATURE_SUCCESS`, and binding mismatch remains `SDK_OPERATION_EVENT_MISMATCH`.
 
+## Configuration-ownership correctness fix
+
+Configuration normalization now shallow-freezes the SDK-created normalized envelope and field-specifically copies/freezes SDK-owned plain values. Injected sinks, clocks, identifier providers, and transformation hooks are retained as the exact caller-owned objects. Their methods are invoked with the original receiver, and the SDK does not structurally clone or recursively freeze them or their nested mutable state.
+
+The observable change is that an ordinary collaborator and its caller-owned arrays, maps, sets, queues, and counters no longer become frozen as a side effect of SDK construction. Code must not rely on the SDK to freeze an injected dependency; callers that require freezing remain responsible for doing so before injection and for ensuring their class supports it. Replacing a top-level configuration property after construction still does not replace the SDK's selected collaborator reference, and mutation of copied primitive/plain-value options still does not change normalized behavior. Transformation registration paths are copied at construction while each hook object retains its identity and class/private-field semantics.
+
+This is a source-compatible patch-level correctness and ownership fix: no public export, declaration, error code, provider interface, canonical event interpretation, or contract version changes. The prior caller-object mutation contradicted the documented immutable-configuration boundary and could turn a valid mutable sink into delivery failure. The package remains private and unpublished at candidate `0.1.0`; this correction does not authorize release or production use.
+
 ## Contract-version upgrades
 
 A contract semantic change requires the `security-audit-event-contract` governance lifecycle before SDK work. After a new contract version is approved, SDK adaptation must use a separate reviewed change that:

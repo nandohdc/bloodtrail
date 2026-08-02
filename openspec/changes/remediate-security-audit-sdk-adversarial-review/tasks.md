@@ -40,12 +40,12 @@ GitHub issue: [#22](https://github.com/nandohdc/bloodtrail/issues/22)
 
 GitHub issue: [#23](https://github.com/nandohdc/bloodtrail/issues/23)
 
-- [ ] 4.1 Refactor configuration normalization so caller-provided sink, clock, identifier, and related providers are validated and referenced without clone, freeze, decoration, replacement, or mutation. [F-03]
-- [ ] 4.2 Preserve immutable cloned SDK-owned scalar and plain-data configuration separately from provider references. [F-03]
-- [ ] 4.3 Add unit tests for class-based providers, enumerable nested mutable state, receiver-sensitive methods, identity preservation, and unchanged caller objects. [F-03]
-- [ ] 4.4 Add a regression sink with a mutable queue and prove construction plus delivery leaves the queue operational and unfrozen. [F-03]
-- [ ] 4.5 Verify post-initialization mutation of original plain-data configuration cannot replace SDK behavior while legitimate provider state changes still work. [F-03]
-- [ ] 4.6 Document provider ownership and configuration immutability boundaries and assess compatibility. [F-03]
+- [x] 4.1 Refactor configuration normalization so caller-provided sink, clock, identifier, and related providers are validated and referenced without clone, freeze, decoration, replacement, or mutation. [F-03]
+- [x] 4.2 Preserve immutable cloned SDK-owned scalar and plain-data configuration separately from provider references. [F-03]
+- [x] 4.3 Add unit tests for class-based providers, enumerable nested mutable state, receiver-sensitive methods, identity preservation, and unchanged caller objects. [F-03]
+- [x] 4.4 Add a regression sink with a mutable queue and prove construction plus delivery leaves the queue operational and unfrozen. [F-03]
+- [x] 4.5 Verify post-initialization mutation of original plain-data configuration cannot replace SDK behavior while legitimate provider state changes still work. [F-03]
+- [x] 4.6 Document provider ownership and configuration immutability boundaries and assess compatibility. [F-03]
 
 ## 5. Normalize hostile constructor and serialization failures [F-05, F-12]
 

@@ -77,9 +77,9 @@ const audit = createSecurityAuditSdk({
 });
 ```
 
-Initialization validates, clones, normalizes, and freezes the configuration snapshot. Mutating the caller's original objects does not replace producer, service, environment, deployment, base context, clock, identifiers, transformations, sink, or shutdown policy. Configuration and hooks cannot be replaced after construction. Unsupported contract versions fail before the SDK becomes ready.
+Initialization validates configuration and creates an SDK-owned shallow-frozen normalized envelope. Primitive and plain-value options such as producer, service, environment, deployment, base context, timeout, and transformation registration paths are copied into protected SDK-owned records. Replacing or mutating those source values after construction does not change the normalized snapshot. Unsupported contract versions fail before the SDK becomes ready.
 
-Default clock and identifier providers use supported Node.js APIs. Tests may inject one fixed `AuditClock` and one `AuditIdentifierProvider` at initialization. Provider output is still format-checked and event identifiers must remain unique within an SDK instance.
+Injected sinks, clocks, identifier providers, and transformation hooks remain caller-owned capabilities. The SDK retains their exact object references, invokes methods with their original receiver, and does not clone or recursively freeze the objects or their arrays, maps, sets, counters, private fields, or other state. Configuration immutability does not transfer ownership: callers may maintain collaborator state, remain responsible for safe concurrent behavior, and decide whether to freeze a collaborator before injection. Default clock and identifier providers use supported Node.js APIs. Provider output is still format-checked and event identifiers must remain unique within an SDK instance.
 
 ## Responsibility and trust boundaries
 
@@ -107,9 +107,9 @@ The SDK starts in `ready`. `shutdown()` establishes a no-new-emissions boundary,
 - Authorization evidence and business outcome are independent. `allow` does not prove later business success.
 - Pure redelivery uses `redeliver()` with the same immutable validated event and event ID. Re-execution uses a named method with a positive retry relationship and receives a new event ID.
 - Required asynchronous completion carries both causation and original-event identity.
-- Transformation hooks are synchronous, initialization-only, field-scoped, bounded, and followed by prohibited-data and canonical validation. Key material is never an output field.
+- Transformation registrations are synchronous, initialization-only, field-scoped, bounded, and followed by prohibited-data and canonical validation. Each copied registration path points to the original caller-owned hook object; key material is never an output field.
 - Extensions are limited to generated registered namespaces. They cannot shadow canonical fields or upgrade trust.
-- `AuditEventSink.emit()` receives one validated frozen event and returns only sink-boundary `accepted`, `rejected`, or `unknown` state. The core implements no retry, queue, storage, collector, or delivery guarantee.
+- `AuditEventSink.emit()` receives one validated frozen event and returns only sink-boundary `accepted`, `rejected`, or `unknown` state. The event is SDK-owned immutable data; the sink and any sink-owned queue or counters remain caller-owned and mutable. The core implements no retry, queue, storage, collector, or delivery guarantee.
 - Generic `emit()` and `redeliver()` remain trusted-producer boundaries for complete canonical events. Operation-handle provenance protects sanctioned named construction; it cannot prove that compromised trusted application code supplied a truthful complete event to a generic API.
 - Canonical delivery classes are `best_effort`, `security_significant`, `transaction_critical`, and `policy_critical`; named APIs derive the applicable minimum and callers cannot override it.
 - `createCapturingAuditSink` and `createInMemoryAuditSink` are test utilities only. They perform no network or filesystem I/O and provide no durability.

@@ -61,7 +61,13 @@ Pure redelivery retains one immutable event ID. A retry or re-execution is a new
 
 ## Transformations
 
-Transformation hooks receive only one policy-approved string, purpose, and optional effective tenant. They are synchronous and immutable after initialization. They must not log, export, retain, or return raw input elsewhere. Hook output is scanned and validated again. The optional `key_id` is non-secret version metadata; key material stays outside the SDK. Do not use plain hashes of guessable identifiers as pseudonymization.
+Transformation hooks receive only one policy-approved string, purpose, and optional effective tenant. Registration and the copied field path are immutable after initialization, but the hook object remains a caller-owned capability and may maintain its own state. The SDK invokes the original hook with its original receiver; it does not clone or recursively freeze the hook. Hooks are synchronous and must not log, export, retain, or return raw input elsewhere. Hook output is scanned and validated again. The optional `key_id` is non-secret version metadata; key material stays outside the SDK. Do not use plain hashes of guessable identifiers as pseudonymization.
+
+## Caller-owned collaborator boundary
+
+The SDK owns its normalized configuration envelope and validated event values. Injected sinks, clocks, identifier providers, transformation hooks, and optional sink lifecycle methods remain caller-owned dependency-injected capabilities. The SDK does not recursively freeze, structurally copy, proxy, bind, rewrite, or inspect unrelated nested state on these objects. Exact identity, prototype, descriptors, private fields, and receiver semantics are preserved.
+
+Configuration immutability is not an ownership transfer or a security boundary against malicious trusted application code. Callers may use mutable arrays, maps, sets, queues, and counters inside collaborators and must make that state safe for the concurrency they permit. Callers also decide whether to freeze or make a collaborator non-extensible before injection; the SDK neither requires nor adds those constraints. Do not infer delivery durability merely because a caller-owned sink accepted an immutable SDK event.
 
 ## Extensions
 

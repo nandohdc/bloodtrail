@@ -41,9 +41,36 @@ Alternative: reserve a string key in a global `Set`. Rejected because it duplica
 
 ### 3. Caller-owned providers are referenced, not recursively frozen
 
-Normalization validates sink, clock, identifier provider, and any related provider interfaces, then stores private references without freezing, cloning, decorating, or mutating those objects or their nested state. SDK-owned scalar and plain-data configuration is cloned and deeply frozen. The internal normalized configuration container is immutable, but provider identity and caller ownership are preserved.
+The reproduced root cause is ownership-blind recursion: `normalizeConfiguration()` creates one record containing both copied values and external collaborators, then `deepFreeze()` walks `Object.values()` across the entire graph. Class sinks, clocks, and identifier providers therefore become frozen together with enumerable queues and state records. Transformation hooks currently escape that traversal only because they are structurally replaced with `{ path, transform }`; that replacement changes the method receiver and breaks class/private-field semantics.
 
-Alternative: shallow-freeze provider wrappers. Rejected because even shallow freezing is an observable mutation of caller-owned instances. Internal immutable closures may capture provider methods only if invocation preserves documented `this` behavior and does not alter the provider.
+#### Architectural forces and ownership rules
+
+- The SDK needs a stable normalized snapshot of primitive and value configuration, but configuration immutability is not ownership transfer.
+- Sink delivery, clock reads, identifier generation, transformation execution, and optional sink lifecycle methods are dependency-injected capabilities with caller-owned lifecycle and state.
+- Collaborator identity, prototypes, property descriptors, own-key order, native private fields, and receiver-sensitive methods must remain intact. Normalization must not traverse collaborator internals merely to enforce SDK invariants.
+- The package must retain zero runtime dependencies, preserve contract `1.0.0`, and avoid broad hostile-getter/proxy/clone normalization reserved for F-05/F-12.
+
+Configuration fields are classified as follows:
+
+| Ownership category | Fields and examples | Normalization and mutability rule |
+| --- | --- | --- |
+| SDK-owned value data | `contractVersion`, copied `producer`/`service`/`environment`/`deployment` records, normalized authoritative context, `shutdownTimeoutMs`, copied transformation registration paths, and the normalized outer envelope | Validate, copy where value semantics are supported, freeze each SDK-created record, and shallow-freeze the SDK-created envelope. Later caller mutation of source records or the top-level configuration cannot replace these values. |
+| Caller-owned collaborators | `sink` including optional lifecycle methods, `clock`, `identifiers`, and each transformation hook object | Validate the required callable surface, retain the exact object reference, and never clone, freeze, decorate, rewrite, bind, proxy, or recursively inspect its nested state. Invoke methods through the retained object so `this`, prototypes, private fields, and mutable state keep caller-defined semantics. |
+| Caller-provided plain value data | Producer/service/environment/deployment records, authoritative-context plain slots, the transformations array as registration input | Make a field-specific copy into SDK-owned value records. Copy the transformations array and each primitive `path`, but retain the corresponding hook capability by reference. Do not apply one recursive operation to all fields. |
+
+The normalized transformation entry is an SDK-owned value descriptor containing the copied path plus the retained hook reference. It is not a behavioral wrapper: invocation still targets the original hook object. The outer normalized record is shallow-frozen, and only SDK-owned nested value records are recursively protected. Caller-owned maps, sets, arrays, queues, counters, symbols, accessors, and other state remain live and caller-controlled. Callers are responsible for collaborator concurrency safety and for any freezing they perform before injection.
+
+#### Design-pattern assessment
+
+- **Ownership Boundary — selected.** Field-aware normalization explicitly separates SDK-created immutable values from external capabilities; this directly addresses the defect.
+- **Dependency Injection — selected.** Sink, clock, identifier provider, and transformation hooks remain supplied dependencies with external state and lifecycle ownership.
+- **Capability Object — selected.** The SDK receives only the behavioral authority it invokes and does not claim structural ownership of the provider object graph.
+- **Shallow Immutable Configuration — selected.** `Object.freeze()` protects the SDK-created normalized envelope without traversing references; separately created value records are copied and frozen according to their value semantics.
+- **Defensive Copy — selected only for plain value data.** It is appropriate for bounded primitive/string records and registration paths. It is rejected for stateful collaborators because structural copies lose prototypes and private fields, can change method identity/receiver behavior, and disconnect mutable state.
+- **Facade or Adapter — rejected for this pass.** No repository evidence requires a behavioral wrapper. A direct ownership-aware normalizer is smaller and preserves identity. The internal transformation descriptor carries copied metadata only and does not impersonate the hook.
+- **Proxy — rejected.** Proxy enforcement would change identity and debugging behavior, add trap/error surfaces relevant to later findings, and impose unnecessary runtime complexity and overhead.
+
+Testing SHALL combine direct normalized-record assertions with public behavioral tests: before/after frozen-state checks; accepted named delivery through mutable class sinks; sequential queue/map/counter mutation; class/private-field clock, identifier, and hook receivers; identity/prototype/descriptor/key preservation; benign accessor non-traversal; pre-frozen and non-extensible supported collaborators; top-level/plain-value mutation isolation; generic emission, redelivery, F-01 evidence rejection, and F-02 concurrent reservation regression. The over-engineering risk is introducing wrappers, proxies, generalized graph classification, or new public provider abstractions when one field-aware shallow envelope and explicit owned descriptors are sufficient.
 
 ### 4. Verification is lifecycle-aware and anchored to relevant state
 
