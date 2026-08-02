@@ -69,6 +69,12 @@ The SDK owns its normalized configuration envelope and validated event values. I
 
 Configuration immutability is not an ownership transfer or a security boundary against malicious trusted application code. Callers may use mutable arrays, maps, sets, queues, and counters inside collaborators and must make that state safe for the concurrency they permit. Callers also decide whether to freeze or make a collaborator non-extensible before injection; the SDK neither requires nor adds those constraints. Do not infer delivery durability merely because a caller-owned sink accepted an immutable SDK event.
 
+## Caller-value normalization boundary
+
+Event and authority value data must be behavior-free canonical values: finite numbers, strings, booleans, null, dense arrays, and plain records. Convert `BigInt`, dates, maps, sets, typed buffers, errors, URLs, and other domain/host values explicitly before submission. Do not rely on `toJSON()`, getters, accessors, proxies, custom prototypes, function/symbol properties, sparse arrays, or arbitrary structured-clone support.
+
+The SDK rejects accessors without invoking them and translates reachable getter, Proxy, clone, and serialization failures into bounded SDK-owned diagnostics. It does not expose rejected values, hostile property names, thrown messages, runtime exception classes, stacks, identifiers, event payloads, or sink internals. `SDK_INVALID_INPUT` covers unsupported or unsafe event input, `FIELD_SERIALIZATION_FAILED` covers canonical serialization failure such as `BigInt` or cycles, and `FIELD_LIMIT_EXCEEDED` applies only after a supported value serializes successfully and exceeds a measured limit. A failed normalization never invokes the sink or consumes terminal completion state. This is an input boundary, not a claim that arbitrary hostile JavaScript objects can be made safe.
+
 ## Extensions
 
 Only generated registered namespaces and fields are accepted. The version `1.0.0` enrichment namespace has `downstream_enrichment` provenance and is non-authoritative. Extensions cannot introduce alternate event names, actors, tenants, resource ownership, authorization, outcomes, schema versions, delivery classes, or arbitrary payloads.

@@ -238,6 +238,12 @@ type AuditResult<T> =
 
 `SafeAuditError` contains a stable code, category, optional bounded path, and only already-safe event identity metadata. It never serializes rejected raw values, full events, payloads, arbitrary sink/hook causes, or stacks. Invalid initialization throws `SecurityAuditSdkError`; `toJSON()` remains bounded and safe.
 
+Caller value data uses a JSON-shaped canonical subset: finite numbers, strings, booleans, null, dense arrays, and plain records composed from those values. Optional object members with value `undefined` are omitted. Functions, symbols, accessors, sparse arrays, custom prototypes, `Date`, `RegExp`, `Map`, `Set`, typed arrays, `ArrayBuffer`, `Error`, `URL`, and other host objects are unsupported; callers must explicitly convert domain values before submission. The SDK never invokes `toJSON()` to convert an unsupported value.
+
+`SDK_INVALID_INPUT` reports unsupported value types or unsafe access/clone/normalization at event, context, authority, operation, and generic validation boundaries. Configuration construction preserves its throwing compatibility and uses bounded `SDK_INVALID_CONFIGURATION`. `FIELD_SERIALIZATION_FAILED` reports values such as nested `BigInt` or cycles that cannot produce the canonical serialized representation. `FIELD_LIMIT_EXCEEDED` is reserved for a supported, successfully serialized value whose UTF-8 bytes, array length, depth, or configured field limit is objectively exceeded.
+
+Getter, Proxy, and clone failures never expose their original name, message, stack, cause, value, or runtime-specific `DOMException`/`DataCloneError` detail. Accessors are rejected without invocation. Input failure occurs before sink handoff and before terminal completion reservation; correcting the value and retrying is allowed by the existing operation policy. This boundary does not claim that arbitrary hostile JavaScript objects can be made safe.
+
 Contract codes are exported as `CONTRACT_ERROR_CODES`; SDK lifecycle/package codes are exported as `SDK_ERROR_CODES`. Additions, meaning changes, and removals follow [MIGRATION.md](./MIGRATION.md).
 
 ## Testing utilities and compilable examples

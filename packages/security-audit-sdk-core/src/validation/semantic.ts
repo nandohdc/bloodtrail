@@ -1,7 +1,7 @@
 import { CONTRACT_SCHEMA_NAME, CONTRACT_VERSION, EVENT_CATALOG, EXTENSION_NAMESPACES } from "../generated/contract.generated.js";
 import type { EventDefinition, EventSemantic, SecurityAuditEvent } from "../generated/contract.generated.js";
 import type { AuditResult } from "../errors.js";
-import { failure } from "../errors.js";
+import { failure, normalizeCanonicalInput } from "../errors.js";
 
 const byName = new Map(EVENT_CATALOG.map((entry) => [entry.name, entry]));
 const extensionsByNamespace = new Map(EXTENSION_NAMESPACES.map((entry) => [entry.namespace, entry]));
@@ -292,8 +292,9 @@ function validateExtensions(event: SecurityAuditEvent): AuditResult<void> {
   for (const [namespace, value] of Object.entries(event.extensions)) {
     const registration = extensionsByNamespace.get(namespace as "bloodtrail.audit.enrichment.v1");
     if (!registration) return failure("UNKNOWN_EXTENSION", "validation", `/extensions/${namespace}`);
-    const serializedBytes = Buffer.byteLength(JSON.stringify(value) ?? "", "utf8");
-    if (serializedBytes > registration.max_bytes) {
+    const normalized = normalizeCanonicalInput(value, `/extensions/${namespace}`);
+    if (!normalized.ok) return normalized;
+    if (normalized.value.bytes > registration.max_bytes) {
       return failure("FIELD_LIMIT_EXCEEDED", "validation", `/extensions/${namespace}`);
     }
   }

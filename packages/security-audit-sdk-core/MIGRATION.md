@@ -83,6 +83,10 @@ Generated-code drift is a verification failure, not a migration mechanism. If ca
 - Removing a code, changing its category, or assigning its existing spelling to a different condition is breaking.
 - Canonical contract error codes follow contract governance; the SDK cannot redefine them through package versioning.
 
+The F-05/F-12 correction adds `SDK_INVALID_INPUT` and `FIELD_SERIALIZATION_FAILED` to the SDK registry without changing Security Audit Event Contract `1.0.0`. Callers with exhaustive error handling must add both cases. `BigInt`, cycles, and serialization failures previously misreported as `FIELD_LIMIT_EXCEEDED` now report `FIELD_SERIALIZATION_FAILED`; unsupported or unsafe function, symbol, accessor, Proxy, clone, host-object, or custom-prototype input reports `SDK_INVALID_INPUT`. Genuine measured size violations remain `FIELD_LIMIT_EXCEEDED`.
+
+This is source-compatible and patch-level for exception safety, but the additive public codes are behaviorally observable and would ordinarily require a minor release under this package's error-code policy. The package remains private and unpublished at candidate version `0.1.0`, so this pass keeps the version unchanged. Constructors that already documented stable SDK-owned throws continue to throw `SecurityAuditSdkError`; result-returning APIs continue to return `AuditResult` and no public contract type changes.
+
 ## Deprecation
 
 Deprecation requires:

@@ -5,7 +5,7 @@ import { createAuditContextFrame } from "./context.js";
 import type { AuditClock, AuditIdentifierProvider } from "./providers.js";
 import { systemAuditClock, systemAuditIdentifiers } from "./providers.js";
 import type { AuditEventSink } from "./sink.js";
-import { SecurityAuditSdkError } from "./errors.js";
+import { normalizeCanonicalInputOrThrow, SecurityAuditSdkError } from "./errors.js";
 
 export type AuditFieldPolicyPath = (typeof FIELD_POLICY)[number]["path"];
 
@@ -60,6 +60,16 @@ export interface NormalizedSdkConfiguration {
 }
 
 export function normalizeConfiguration(input: SecurityAuditSdkConfiguration): NormalizedSdkConfiguration {
+  try {
+    return normalizeConfigurationUnsafe(input);
+  } catch (error) {
+    if (error instanceof SecurityAuditSdkError && error.category === "configuration") throw error;
+    const path = error instanceof SecurityAuditSdkError ? error.path : undefined;
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", path ?? "/configuration");
+  }
+}
+
+function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): NormalizedSdkConfiguration {
   if (input.contractVersion !== CONTRACT_VERSION) throw new SecurityAuditSdkError("SDK_UNSUPPORTED_CONTRACT_VERSION", "configuration", "/contractVersion");
   requireRecord(input.producer, "/producer");
   requireString(input.producer.name, "/producer/name");
@@ -102,7 +112,7 @@ function requireString(value: unknown, path: string): asserts value is string {
 }
 
 function cloneRecord<T extends object>(value: T): Readonly<T> {
-  return Object.freeze({ ...value });
+  return normalizeCanonicalInputOrThrow(value, "/configuration");
 }
 
 function requireIdentifierProvider(value: AuditIdentifierProvider): void {

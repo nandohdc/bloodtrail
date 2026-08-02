@@ -3,7 +3,7 @@ import { normalizeConfiguration } from "./config.js";
 import type { AuditContextFrameInput } from "./context.js";
 import { currentAuditContext, runWithAuditContext } from "./context.js";
 import { buildNamedAuditEvent } from "./events.js";
-import { failure } from "./errors.js";
+import { failure, normalizeCanonicalInput } from "./errors.js";
 import type { AuditResult } from "./errors.js";
 import type { EventDefinition, EventMethodName, GeneratedOperationContext, NamedAuditEventInputMap, SecurityAuditEvent } from "./generated/contract.generated.js";
 import { EVENT_CATALOG, EVENT_METHODS } from "./generated/contract.generated.js";
@@ -63,10 +63,13 @@ class SecurityAuditSdkImpl {
 
   beginOperation(input: AuditOperationInput = {}): AuditResult<AuditOperationHandle> {
     if (this.#state !== "ready") return failure(this.#state === "shut_down" ? "SDK_SHUT_DOWN" : "SDK_SHUTTING_DOWN", "lifecycle");
-    if (input.boundEvent !== undefined && !EVENT_METHODS.some((entry) => entry.method === input.boundEvent)) {
+    const normalized = normalizeCanonicalInput(input, "/operation");
+    if (!normalized.ok) return normalized;
+    const normalizedInput = normalized.value.value;
+    if (normalizedInput.boundEvent !== undefined && !EVENT_METHODS.some((entry) => entry.method === normalizedInput.boundEvent)) {
       return failure("UNKNOWN_CATALOG_VALUE", "validation", "/operation/bound_event");
     }
-    const operation = this.#operationAuthority.issue(input);
+    const operation = this.#operationAuthority.issue(normalizedInput);
     const valid = validateGeneratedIdentifier(operation.operationId, "/operation/operation_id")
       ?? validateGeneratedIdentifier(operation.transactionId, "/operation/transaction_id")
       ?? validateGeneratedIdentifier(operation.correlationId, "/operation/correlation_id");
@@ -183,19 +186,35 @@ class SecurityAuditSdkImpl {
     input: WithOperationHandle<NamedAuditEventInputMap[M]>,
   ): Promise<AuditResult<AuditDeliveryResult>> {
     if (this.#state !== "ready") return failure(this.#state === "shut_down" ? "SDK_SHUT_DOWN" : "SDK_SHUTTING_DOWN", "lifecycle");
-    const operation = this.#operationAuthority.resolve((input as { readonly operation?: unknown }).operation);
+    let suppliedOperation: unknown;
+    try {
+      suppliedOperation = (input as { readonly operation?: unknown }).operation;
+    } catch {
+      return failure("SDK_INVALID_INPUT", "validation", "/operation");
+    }
+    const operation = this.#operationAuthority.resolve(suppliedOperation);
     if (!operation.ok) return operation;
     const activeContext = currentAuditContext();
-    const candidateKey = terminalSuccessAttemptKey(method, operation.value, input, activeContext, this.#config.authoritativeContext);
+    let candidateKey: string | undefined;
+    try {
+      candidateKey = terminalSuccessAttemptKey(method, operation.value, input, activeContext, this.#config.authoritativeContext);
+    } catch {
+      return failure("SDK_INVALID_INPUT", "validation", "/");
+    }
     if (candidateKey && this.#operationCompletions.has(candidateKey)) {
       return failure("SDK_DUPLICATE_SUCCESS", "lifecycle", "/operation/state");
     }
-    const built = buildNamedAuditEvent(
-      this.#config,
-      method,
-      { ...input, operation: operation.value } as never,
-      activeContext,
-    );
+    let built;
+    try {
+      built = buildNamedAuditEvent(
+        this.#config,
+        method,
+        { ...input, operation: operation.value } as never,
+        activeContext,
+      );
+    } catch {
+      return failure("SDK_INVALID_INPUT", "validation", "/");
+    }
     if (!built.ok) return built;
     if (built.value.redelivery) return this.#emitValidatedEvent(built.value.event);
     if (this.#generatedEventIds.has(built.value.event.event.id)) {

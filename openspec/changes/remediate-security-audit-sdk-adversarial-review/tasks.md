@@ -51,14 +51,14 @@ GitHub issue: [#23](https://github.com/nandohdc/bloodtrail/issues/23)
 
 GitHub issue: [#25](https://github.com/nandohdc/bloodtrail/issues/25)
 
-- [ ] 5.1 Add trust-boundary helpers that normalize property-access, cloning, getter, proxy, and non-cloneable failures into bounded public SDK diagnostics. [F-05]
-- [ ] 5.2 Apply safe normalization consistently across every public authority and configuration constructor rather than only the reported path. [F-05]
-- [ ] 5.3 Add `SDK_INVALID_INPUT` or the approved documented equivalent without retaining raw names, messages, stacks, causes, or rejected values. [F-05]
-- [ ] 5.4 Separate serialization failure from successful byte measurement and return `FIELD_SERIALIZATION_FAILED` or the approved documented equivalent for `BigInt` and similar values. [F-12]
-- [ ] 5.5 Add unit tests for function, symbol, hostile getter, proxy, cyclic/non-cloneable input, `BigInt`, and distinctive secret-marker non-disclosure. [F-05, F-12]
-- [ ] 5.6 Add tests proving genuine serializable size violations remain `FIELD_LIMIT_EXCEEDED`. [F-12]
-- [ ] 5.7 Add compile-time/public error-registry tests and update API, security, compatibility, and migration documentation for added or reclassified codes. [F-05, F-12]
-- [ ] 5.8 Assess package-version impact for public error additions and reclassification. [F-05, F-12]
+- [x] 5.1 Add trust-boundary helpers that normalize property-access, cloning, getter, proxy, and non-cloneable failures into bounded public SDK diagnostics. [F-05]
+- [x] 5.2 Apply safe normalization consistently across every public authority and configuration constructor rather than only the reported path. [F-05]
+- [x] 5.3 Add `SDK_INVALID_INPUT` or the approved documented equivalent without retaining raw names, messages, stacks, causes, or rejected values. [F-05]
+- [x] 5.4 Separate serialization failure from successful byte measurement and return `FIELD_SERIALIZATION_FAILED` or the approved documented equivalent for `BigInt` and similar values. [F-12]
+- [x] 5.5 Add unit tests for function, symbol, hostile getter, proxy, cyclic/non-cloneable input, `BigInt`, and distinctive secret-marker non-disclosure. [F-05, F-12]
+- [x] 5.6 Add tests proving genuine serializable size violations remain `FIELD_LIMIT_EXCEEDED`. [F-12]
+- [x] 5.7 Add compile-time/public error-registry tests and update API, security, compatibility, and migration documentation for added or reclassified codes. [F-05, F-12]
+- [x] 5.8 Assess package-version impact for public error additions and reclassification. [F-05, F-12]
 
 ## 6. Enforce forbidden scope and public API completeness [F-06, F-09]
 
