@@ -5,15 +5,18 @@ import { currentAuditContext, runWithAuditContext } from "./context.js";
 import { buildNamedAuditEvent } from "./events.js";
 import { failure } from "./errors.js";
 import type { AuditResult } from "./errors.js";
-import type { EventMethodName, NamedAuditEventInputMap, SecurityAuditEvent } from "./generated/contract.generated.js";
-import { EVENT_METHODS } from "./generated/contract.generated.js";
-import type { AuditOperationAuthority, AuditOperationHandle, AuditOperationInput } from "./operations.js";
+import type { EventDefinition, EventMethodName, GeneratedOperationContext, NamedAuditEventInputMap, SecurityAuditEvent } from "./generated/contract.generated.js";
+import { EVENT_CATALOG, EVENT_METHODS } from "./generated/contract.generated.js";
+import type { AuditOperationAuthority, AuditOperationHandle, AuditOperationInput, AuditOperationSnapshot } from "./operations.js";
 import { createAuditOperationAuthority } from "./operations.js";
 import type { AuditDeliveryResult } from "./sink.js";
 import { validateSecurityAuditEvent } from "./validation/index.js";
 import { clonePlain, deepFreeze } from "./internal.js";
 
 export type SecurityAuditSdkState = "ready" | "shutting_down" | "shut_down";
+
+type CompletionState = "reserved" | "completed";
+type RetryContext = { readonly correlation?: { readonly retry_attempt?: number } };
 
 type WithOperationHandle<T> =
   T extends { readonly operation: infer O }
@@ -39,7 +42,7 @@ class SecurityAuditSdkImpl {
   readonly #config: NormalizedSdkConfiguration;
   readonly #inFlight = new Set<Promise<unknown>>();
   readonly #generatedEventIds = new Set<string>();
-  readonly #completedOperations = new Set<string>();
+  readonly #operationCompletions = new Map<string, CompletionState>();
   readonly #issuedOperationIds = new Set<string>();
   readonly #operationAuthority: AuditOperationAuthority;
   #shutdownPromise: Promise<AuditResult<void>> | undefined;
@@ -182,11 +185,16 @@ class SecurityAuditSdkImpl {
     if (this.#state !== "ready") return failure(this.#state === "shut_down" ? "SDK_SHUT_DOWN" : "SDK_SHUTTING_DOWN", "lifecycle");
     const operation = this.#operationAuthority.resolve((input as { readonly operation?: unknown }).operation);
     if (!operation.ok) return operation;
+    const activeContext = currentAuditContext();
+    const candidateKey = terminalSuccessAttemptKey(method, operation.value, input, activeContext, this.#config.authoritativeContext);
+    if (candidateKey && this.#operationCompletions.has(candidateKey)) {
+      return failure("SDK_DUPLICATE_SUCCESS", "lifecycle", "/operation/state");
+    }
     const built = buildNamedAuditEvent(
       this.#config,
       method,
       { ...input, operation: operation.value } as never,
-      currentAuditContext(),
+      activeContext,
     );
     if (!built.ok) return built;
     if (built.value.redelivery) return this.#emitValidatedEvent(built.value.event);
@@ -194,13 +202,20 @@ class SecurityAuditSdkImpl {
       return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id");
     }
     const dedupeKey = successDedupeKey(built.value.event);
-    if (dedupeKey && this.#completedOperations.has(dedupeKey)) {
+    if (dedupeKey && this.#operationCompletions.has(dedupeKey)) {
       return failure("SDK_DUPLICATE_SUCCESS", "lifecycle", "/operation/state");
     }
     this.#generatedEventIds.add(built.value.event.event.id);
-    const result = await this.#emitValidatedEvent(built.value.event);
-    if (result.ok && dedupeKey) this.#completedOperations.add(dedupeKey);
-    return result;
+    if (dedupeKey) this.#operationCompletions.set(dedupeKey, "reserved");
+    try {
+      const result = await this.#emitValidatedEvent(built.value.event);
+      if (result.ok && dedupeKey) this.#operationCompletions.set(dedupeKey, "completed");
+      return result;
+    } finally {
+      if (dedupeKey && this.#operationCompletions.get(dedupeKey) === "reserved") {
+        this.#operationCompletions.delete(dedupeKey);
+      }
+    }
   }
 
   async #emitValidatedEvent(event: SecurityAuditEvent): Promise<AuditResult<AuditDeliveryResult>> {
@@ -208,7 +223,15 @@ class SecurityAuditSdkImpl {
     const validated = validateSecurityAuditEvent(event);
     if (!validated.ok) return validated;
     const frozen = deepFreeze(clonePlain(validated.value));
-    const pending = this.#config.sink.emit(frozen);
+    let pending: Promise<AuditDeliveryResult>;
+    try {
+      pending = this.#config.sink.emit(frozen);
+    } catch {
+      return failure("SDK_SINK_FAILURE", "sink", "/sink", {
+        eventName: validated.value.event.name,
+        eventId: validated.value.event.id,
+      });
+    }
     this.#inFlight.add(pending);
     try {
       const result = await pending;
@@ -270,6 +293,47 @@ function successDedupeKey(event: SecurityAuditEvent): string | undefined {
   const operationId = event.correlation.operation_id;
   if (!operationId) return undefined;
   return `${operationId}:${event.event.name}`;
+}
+
+const eventDefinitionByMethod = new Map<EventMethodName, EventDefinition>(EVENT_METHODS.flatMap((entry) => {
+  const definition = EVENT_CATALOG.find((candidate) => candidate.name === entry.name);
+  return definition ? [[entry.method, definition]] : [];
+}));
+
+function terminalSuccessAttemptKey(
+  method: EventMethodName,
+  operation: AuditOperationSnapshot | undefined,
+  input: unknown,
+  activeContext: RetryContext | undefined,
+  authoritativeContext: RetryContext,
+): string | undefined {
+  if (!operation) return undefined;
+  const candidate = input as {
+    readonly redelivery?: { readonly event?: unknown };
+    readonly event?: { readonly lifecycle_phase?: string; readonly outcome?: string };
+    readonly correlation?: { readonly retry_attempt?: number };
+  };
+  if (candidate.redelivery?.event) return undefined;
+  const retryAttempt = candidate.correlation?.retry_attempt
+    ?? activeContext?.correlation?.retry_attempt
+    ?? authoritativeContext.correlation?.retry_attempt;
+  if (retryAttempt) return undefined;
+  const definition = eventDefinitionByMethod.get(method);
+  if (!definition) return undefined;
+  const phases = definition.phase as readonly SecurityAuditEvent["event"]["lifecycle_phase"][];
+  const lifecycle = candidate.event?.lifecycle_phase ?? (phases.includes("completed") ? "completed" : phases[0]);
+  if (lifecycle !== "completed") return undefined;
+  const outcome = candidate.event?.outcome ?? defaultOperationOutcome(definition, operation);
+  if (outcome !== "success") return undefined;
+  return `${operation.operation_id}:${definition.name}`;
+}
+
+function defaultOperationOutcome(definition: EventDefinition, operation: GeneratedOperationContext): SecurityAuditEvent["event"]["outcome"] | undefined {
+  const outcomes = definition.outcomes as readonly SecurityAuditEvent["event"]["outcome"][];
+  if (operation.state === "cancelled") return outcomes.includes("cancelled") ? "cancelled" : (outcomes.includes("failure") ? "failure" : outcomes[0]);
+  if (operation.state === "not_committed") return outcomes.includes("failure") ? "failure" : outcomes[0];
+  if (operation.state === "partially_committed" || operation.state === "compensated") return outcomes.includes("partial") ? "partial" : outcomes[0];
+  return outcomes[0];
 }
 
 const trustedIdentifierPattern = /^[\x21-\x7e]+$/;

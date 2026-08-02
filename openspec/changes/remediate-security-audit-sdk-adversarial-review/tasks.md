@@ -28,13 +28,13 @@ GitHub issue: [#21](https://github.com/nandohdc/bloodtrail/issues/21)
 
 GitHub issue: [#22](https://github.com/nandohdc/bloodtrail/issues/22)
 
-- [ ] 3.1 Implement the per-operation `idle`/`reserved`/`completed` terminal state machine and reserve synchronously before sink handoff. [F-02]
-- [ ] 3.2 Finalize reservations only on accepted sink results and release them on rejected, unknown, thrown, or rejected-promise outcomes without automatic retry. [F-02]
-- [ ] 3.3 Add deterministic concurrent tests with controllable sink promises proving at most one sink invocation and one potentially accepted result. [F-02]
-- [ ] 3.4 Add sequential duplicate, concurrent duplicate, sink-failure release, explicit retry, and shutdown-interleaving regression tests. [F-02]
-- [ ] 3.5 Verify duplicate results are bounded, stable, secret-free, and contain no event payload. [F-02]
-- [ ] 3.6 Coordinate the reservation key and lifecycle exclusively with SDK-issued operation evidence from F-01. [F-01, F-02]
-- [ ] 3.7 Document deterministic failure/retry semantics and compatibility impact without claiming core retry or delivery durability. [F-02]
+- [x] 3.1 Implement the per-operation `idle`/`reserved`/`completed` terminal state machine and reserve synchronously before sink handoff. [F-02]
+- [x] 3.2 Finalize reservations only on accepted sink results and release them on rejected, unknown, thrown, or rejected-promise outcomes without automatic retry. [F-02]
+- [x] 3.3 Add deterministic concurrent tests with controllable sink promises proving at most one sink invocation and one potentially accepted result. [F-02]
+- [x] 3.4 Add sequential duplicate, concurrent duplicate, sink-failure release, explicit retry, and shutdown-interleaving regression tests. [F-02]
+- [x] 3.5 Verify duplicate results are bounded, stable, secret-free, and contain no event payload. [F-02]
+- [x] 3.6 Coordinate the reservation key and lifecycle exclusively with SDK-issued operation evidence from F-01. [F-01, F-02]
+- [x] 3.7 Document deterministic failure/retry semantics and compatibility impact without claiming core retry or delivery durability. [F-02]
 
 ## 4. Preserve caller-owned sinks and providers [F-03]
 

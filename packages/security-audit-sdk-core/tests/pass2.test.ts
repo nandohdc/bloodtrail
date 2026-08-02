@@ -748,6 +748,257 @@ test("duplicate success for the same operation and event is rejected while fan-o
   assert.equal(fanOut.ok, true);
 });
 
+test("concurrent terminal success reserves once before validation and sink handoff", async () => {
+  let releaseSink: (() => void) | undefined;
+  let sinkInvocations = 0;
+  let transformationCalls = 0;
+  const events: SecurityAuditEvent[] = [];
+  const sinkEntered = Promise.withResolvers<void>();
+  const sinkRelease = new Promise<void>((resolve) => { releaseSink = resolve; });
+  const sink: AuditEventSink = {
+    async emit(event) {
+      sinkInvocations += 1;
+      events.push(event);
+      sinkEntered.resolve();
+      await sinkRelease;
+      return { status: "accepted" };
+    },
+  };
+  const sdk = createSecurityAuditSdk({
+    contractVersion: "1.0.0",
+    producer: { name: "sdk-test-producer", version: "1.0.0" },
+    service: { name: "sdk-test-service", version: "1.0.0" },
+    environment: { name: "test" },
+    sink,
+    clock: fixedClock(),
+    identifiers: deterministicProviders(4_150),
+    transformations: [{
+      path: "request.route",
+      transform({ value }) {
+        transformationCalls += 1;
+        return value;
+      },
+    }],
+    shutdownTimeoutMs: 100,
+  });
+  const created = toNamedInput(requiredFixture(await positives(), "bloodtrail.audit.data.sensitive_resource.created"));
+  assert.equal(typeof (created.request as { route?: unknown } | undefined)?.route, "string");
+  const operation = sdk.beginOperation({
+    operationId: "op_f02_reproduction",
+    transactionId: "txn_f02_reproduction",
+    correlationId: "corr_f02_reproduction",
+    boundEvent: "sensitiveResourceCreated",
+  });
+  assert.ok(operation.ok);
+  assert.equal(operation.value.markCommitted().ok, true);
+  const input = { ...created, operation: operation.value } as never;
+
+  const calls = [
+    sdk.sensitiveResourceCreated(input),
+    sdk.sensitiveResourceCreated(input),
+  ] as const;
+  await sinkEntered.promise;
+  assert.equal(sinkInvocations, 1);
+  assert.equal(transformationCalls, 1);
+  releaseSink?.();
+  const results = await Promise.all(calls);
+
+  assert.equal(results.filter((result) => result.ok).length, 1);
+  const duplicate = results.find((result) => !result.ok);
+  assert.deepEqual(duplicate, {
+    ok: false,
+    error: { code: "SDK_DUPLICATE_SUCCESS", category: "lifecycle", path: "/operation/state" },
+  });
+  const diagnostic = JSON.stringify(duplicate);
+  assert.equal(diagnostic.includes("op_f02_reproduction"), false);
+  assert.equal(diagnostic.includes("txn_f02_reproduction"), false);
+  assert.equal(diagnostic.includes(events[0]?.event.id ?? "missing-event"), false);
+  assert.equal(sinkInvocations, 1);
+  assert.equal(events[0]?.correlation.operation_id, "op_f02_reproduction");
+  assert.equal(events[0]?.correlation.transaction_id, "txn_f02_reproduction");
+});
+
+test("non-accepted and rejected-promise sink outcomes release a concurrent reservation for explicit retry", async (context) => {
+  const cases = [
+    { name: "rejected", result: { status: "rejected", code: "synthetic_rejection" } as const, expectedCode: "SDK_SINK_REJECTED" },
+    { name: "unknown", result: { status: "unknown", code: "synthetic_unknown" } as const, expectedCode: "SDK_SINK_FAILURE" },
+    { name: "rejected promise", result: new Error("SINK_REJECTION_SECRET"), expectedCode: "SDK_SINK_FAILURE" },
+  ];
+
+  for (const [index, scenario] of cases.entries()) {
+    await context.test(scenario.name, async () => {
+      const firstEntered = Promise.withResolvers<void>();
+      const firstRelease = Promise.withResolvers<void>();
+      let sinkInvocations = 0;
+      const sink: AuditEventSink = {
+        async emit() {
+          sinkInvocations += 1;
+          if (sinkInvocations === 1) {
+            firstEntered.resolve();
+            await firstRelease.promise;
+            if (scenario.result instanceof Error) throw scenario.result;
+            return scenario.result;
+          }
+          return { status: "accepted" };
+        },
+      };
+      const sdk = createSdkWithSink(sink, deterministicProviders(4_200 + (index * 20)), 100);
+      const created = toNamedInput(requiredFixture(await positives(), "bloodtrail.audit.data.sensitive_resource.created"));
+      const operation = sdk.beginOperation({ boundEvent: "sensitiveResourceCreated" });
+      assert.ok(operation.ok);
+      assert.equal(operation.value.markCommitted().ok, true);
+      const input = { ...created, operation: operation.value } as never;
+
+      const first = sdk.sensitiveResourceCreated(input);
+      await firstEntered.promise;
+      const concurrent = await sdk.sensitiveResourceCreated(input);
+      assert.deepEqual(concurrent, {
+        ok: false,
+        error: { code: "SDK_DUPLICATE_SUCCESS", category: "lifecycle", path: "/operation/state" },
+      });
+      assert.equal(sinkInvocations, 1);
+      firstRelease.resolve();
+      const failed = await first;
+      assert.equal(failed.ok, false);
+      if (!failed.ok) assert.equal(failed.error.code, scenario.expectedCode);
+      assert.equal(JSON.stringify(failed).includes("SINK_REJECTION_SECRET"), false);
+
+      const retry = await sdk.sensitiveResourceCreated(input);
+      assert.equal(retry.ok, true);
+      assert.equal(sinkInvocations, 2);
+    });
+  }
+});
+
+test("a synchronous sink throw releases the reservation and returns the existing safe sink failure", async () => {
+  let sinkInvocations = 0;
+  const sink: AuditEventSink = {
+    emit() {
+      sinkInvocations += 1;
+      if (sinkInvocations === 1) throw new Error("SYNCHRONOUS_SINK_SECRET");
+      return Promise.resolve({ status: "accepted" });
+    },
+  };
+  const sdk = createSdkWithSink(sink, deterministicProviders(4_280), 100);
+  const created = toNamedInput(requiredFixture(await positives(), "bloodtrail.audit.data.sensitive_resource.created"));
+  const operation = sdk.beginOperation({ boundEvent: "sensitiveResourceCreated" });
+  assert.ok(operation.ok);
+  assert.equal(operation.value.markCommitted().ok, true);
+  const input = { ...created, operation: operation.value } as never;
+
+  const failed = await sdk.sensitiveResourceCreated(input);
+  assert.equal(failed.ok, false);
+  if (!failed.ok) assert.equal(failed.error.code, "SDK_SINK_FAILURE");
+  assert.equal(JSON.stringify(failed).includes("SYNCHRONOUS_SINK_SECRET"), false);
+  assert.equal((await sdk.sensitiveResourceCreated(input)).ok, true);
+  assert.equal(sinkInvocations, 2);
+});
+
+test("different operations and different SDK instances reserve independently", async () => {
+  const bothEntered = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  let sinkInvocations = 0;
+  const sink: AuditEventSink = {
+    async emit() {
+      sinkInvocations += 1;
+      if (sinkInvocations === 2) bothEntered.resolve();
+      await release.promise;
+      return { status: "accepted" };
+    },
+  };
+  const sdk = createSdkWithSink(sink, deterministicProviders(4_300), 100);
+  const created = toNamedInput(requiredFixture(await positives(), "bloodtrail.audit.data.sensitive_resource.created"));
+  const operations = [
+    sdk.beginOperation({ operationId: "independent_a", boundEvent: "sensitiveResourceCreated" }),
+    sdk.beginOperation({ operationId: "independent_b", boundEvent: "sensitiveResourceCreated" }),
+  ];
+  assert.ok(operations[0]?.ok && operations[1]?.ok);
+  assert.equal(operations[0].value.markCommitted().ok, true);
+  assert.equal(operations[1].value.markCommitted().ok, true);
+  const calls = [
+    sdk.sensitiveResourceCreated({ ...created, operation: operations[0].value } as never),
+    sdk.sensitiveResourceCreated({ ...created, operation: operations[1].value } as never),
+  ];
+  await bothEntered.promise;
+  assert.equal(sinkInvocations, 2);
+  release.resolve();
+  assert.deepEqual((await Promise.all(calls)).map((result) => result.ok), [true, true]);
+
+  const firstSdk = createSdk(createCapturingAuditSink(), deterministicProviders(4_340));
+  const secondSdk = createSdk(createCapturingAuditSink(), deterministicProviders(4_360));
+  const firstOperation = firstSdk.beginOperation({ operationId: "same_instance_local_id", boundEvent: "sensitiveResourceCreated" });
+  const secondOperation = secondSdk.beginOperation({ operationId: "same_instance_local_id", boundEvent: "sensitiveResourceCreated" });
+  assert.ok(firstOperation.ok && secondOperation.ok);
+  assert.equal(firstOperation.value.markCommitted().ok, true);
+  assert.equal(secondOperation.value.markCommitted().ok, true);
+  assert.equal((await firstSdk.sensitiveResourceCreated({ ...created, operation: firstOperation.value } as never)).ok, true);
+  assert.equal((await secondSdk.sensitiveResourceCreated({ ...created, operation: secondOperation.value } as never)).ok, true);
+});
+
+test("same-operation sink reentrancy is rejected without a second sink call or deadlock", async () => {
+  let sdk: SecurityAuditSdk;
+  let input: Record<string, unknown>;
+  let sinkInvocations = 0;
+  let reentrantResult: AuditResult<AuditDeliveryResult> | undefined;
+  const sink: AuditEventSink = {
+    async emit() {
+      sinkInvocations += 1;
+      reentrantResult = await sdk.sensitiveResourceCreated(input as never);
+      return { status: "accepted" };
+    },
+  };
+  sdk = createSdkWithSink(sink, deterministicProviders(4_380), 100);
+  const created = toNamedInput(requiredFixture(await positives(), "bloodtrail.audit.data.sensitive_resource.created"));
+  const operation = sdk.beginOperation({ boundEvent: "sensitiveResourceCreated" });
+  assert.ok(operation.ok);
+  assert.equal(operation.value.markCommitted().ok, true);
+  input = { ...created, operation: operation.value };
+
+  assert.equal((await sdk.sensitiveResourceCreated(input as never)).ok, true);
+  assert.deepEqual(reentrantResult, {
+    ok: false,
+    error: { code: "SDK_DUPLICATE_SUCCESS", category: "lifecycle", path: "/operation/state" },
+  });
+  assert.equal(sinkInvocations, 1);
+});
+
+test("flush and shutdown overlap preserve the terminal reservation until the accepting sink settles", async () => {
+  const entered = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  let sinkInvocations = 0;
+  const sink: AuditEventSink = {
+    async emit() {
+      sinkInvocations += 1;
+      entered.resolve();
+      await release.promise;
+      return { status: "accepted" };
+    },
+    async flush() {},
+    async shutdown() {},
+  };
+  const sdk = createSdkWithSink(sink, deterministicProviders(4_400), 100);
+  const created = toNamedInput(requiredFixture(await positives(), "bloodtrail.audit.data.sensitive_resource.created"));
+  const operation = sdk.beginOperation({ boundEvent: "sensitiveResourceCreated" });
+  assert.ok(operation.ok);
+  assert.equal(operation.value.markCommitted().ok, true);
+  const input = { ...created, operation: operation.value } as never;
+
+  const first = sdk.sensitiveResourceCreated(input);
+  await entered.promise;
+  assert.equal((await sdk.flush()).ok, true);
+  const duplicate = await sdk.sensitiveResourceCreated(input);
+  assert.equal(duplicate.ok, false);
+  if (!duplicate.ok) assert.equal(duplicate.error.code, "SDK_DUPLICATE_SUCCESS");
+  const shutdown = sdk.shutdown();
+  release.resolve();
+  assert.equal((await first).ok, true);
+  assert.equal((await shutdown).ok, true);
+  assert.equal(sinkInvocations, 1);
+  const afterShutdown = await sdk.sensitiveResourceCreated(input);
+  assert.equal(afterShutdown.ok, false);
+  if (!afterShutdown.ok) assert.equal(afterShutdown.error.code, "SDK_SHUT_DOWN");
+});
+
 test("an operation bound to one named event cannot be completed through another", async () => {
   const sink = createCapturingAuditSink();
   const sdk = createSdk(sink, deterministicProviders(4_200));

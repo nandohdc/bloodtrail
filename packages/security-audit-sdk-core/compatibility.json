@@ -51,6 +51,16 @@
     "genericEventBoundary": "trusted-producer-behavior-unchanged",
     "compatibilityImpact": "breaking source-level security tightening; major if previously published; retained at private unpublished initial-development candidate 0.1.0"
   },
+  "terminalCompletionConcurrency": {
+    "scope": "same-sdk-instance-sdk-issued-operation-and-catalog-event",
+    "concurrentDuplicateCode": "SDK_DUPLICATE_SUCCESS",
+    "acceptedState": "completed",
+    "nonAcceptedState": "released-for-explicit-retry",
+    "automaticRetry": false,
+    "durableDeliveryClaim": false,
+    "retentionPolicy": "unchanged-pending-F-08",
+    "compatibilityImpact": "patch-level security and correctness fix for defective concurrent behavior; no public type, error-code, contract 1.0.0, generic emit, or redelivery semantic change"
+  },
   "semverClassification": {
     "patch": [
       "bug fix preserving contract 1.0.0 interpretation",

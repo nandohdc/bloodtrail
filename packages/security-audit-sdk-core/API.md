@@ -170,6 +170,8 @@ Named methods accept only the exact opaque handle returned by `beginOperation()`
 
 The handle does not inspect a database, open a transaction, create an outbox, or make audit emission atomic with business state. Transactional success before `markCommitted()` fails with `PREMATURE_SUCCESS` and the sink is not called. A bound operation cannot complete through a different named method. Only sanctioned handle transitions can establish committed or other terminal operation state.
 
+Terminal-success deduplication is atomic within one SDK instance for the SDK-issued operation ID plus cataloged event name. Absence is `idle`; a call synchronously acquires `reserved` before sink handoff, and sink acceptance promotes it to `completed`. A concurrent or later terminal-success call observing either state returns the existing bounded `SDK_DUPLICATE_SUCCESS` result without running transformation/validation hooks or invoking the sink. Rejected, unknown, synchronously thrown, and rejected-promise sink outcomes release `reserved`, so a later non-concurrent caller may explicitly retry; a caller rejected while the first attempt is in flight must retry after that attempt settles. The core performs no automatic retry, and sink acceptance is not durable delivery. Retention and the final SDK-local deduplication horizon remain subject to the separately governed F-08 remediation; this correction adds no expiry or eviction policy.
+
 This provenance rule is specific to named construction. Generic `emit()` and `redeliver()` continue to validate complete canonical events at the trusted-producer boundary; the SDK cannot determine whether compromised trusted application logic intentionally constructed a false but canonical complete event.
 
 ## Causality, asynchronous completion, retry, and redelivery
@@ -210,7 +212,7 @@ export interface AuditEventSink {
 }
 ```
 
-A sink receives one fully validated frozen event per SDK handoff. `accepted` means only accepted at that sink boundary. `rejected` and `unknown` become bounded safe SDK failures. Thrown or rejected causes are untrusted and are not serialized.
+A sink receives one fully validated frozen event per SDK handoff. `accepted` means only accepted at that sink boundary. `rejected` and `unknown` become bounded safe SDK failures. Synchronously thrown and rejected-promise causes are untrusted, become `SDK_SINK_FAILURE`, and are not serialized.
 
 `audit.flush()` invokes optional sink flush while ready or shutting down. `audit.shutdown()` prevents new emission, waits for tracked in-flight calls up to the configured bound, calls optional flush then shutdown at most once, and moves to `shut_down`. It does not establish durable handoff.
 
