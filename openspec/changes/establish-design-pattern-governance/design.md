@@ -1,411 +1,311 @@
 ## Context
 
-See `proposal.md` for motivation and scope. Bloodtrail currently uses the OpenSpec `spec-driven` schema and repository-managed Hermes skills under `.hermes/skills/`. The implementation workflow in `.hermes/skills/openspec-apply-change/SKILL.md` reads proposal, design, specs, and tasks before applying a change, but it does not require a design-pattern assessment or final implementation-correspondence review.
+The reviewed proposal commit `a17eb79a2dd0172bb888278a39ad898280a2f59a` failed architectural review. This proposal-only correction replaces ambiguous activation, provenance, ordering, applicability, and self-enforcement assumptions with a Git-realizable model. No apply authorization exists and no implementation artifact is created here.
 
-The repository has no root package manifest or general-purpose root script convention. Runtime and verification scripts are currently scoped to their owning package or contract. Because this policy governs OpenSpec changes repository-wide and must not be coupled to the Security Audit SDK, its dependency-free tooling will live under `openspec/`, while human architectural guidance will live under a new `docs/architecture/` directory.
-
-Strict OpenSpec validation establishes artifact structure, not architectural judgment or cross-artifact coherence. The design therefore separates:
-
-- human architectural reasoning;
-- deterministic schema and reference checks;
-- behavioral implementation evidence;
-- exact-commit technical review;
-- project-owner approval and lifecycle authorization.
-
-The active `remediate-security-audit-sdk-adversarial-review` change, canonical SDK/event-contract capabilities, SDK source, contract artifacts, and archived OpenSpec evidence are protected inputs, not implementation targets for this change.
+The policy must be reproducible from a complete clone, independent of actor and wall clock, and unable to treat absent evidence as non-applicability. OpenSpec strict validation remains a structural gate; it is not owner authorization, architectural approval, branch-protection evidence, archive validation, or proof that a candidate checker did not weaken itself.
 
 ## Goals / Non-Goals
 
-**Goals:**
+Goals:
 
-- Make pattern evaluation mandatory and named-pattern adoption optional.
-- Give authors one stable assessment structure and a bounded trivial-correction path.
-- Tie selected patterns to observable forces, documented invariants, implementation tasks, behavioral tests, and final correspondence evidence.
-- Reject ceremonial abstractions and incoherent governance evidence deterministically where objective checks are possible.
-- Integrate the sequence into the repository-managed Hermes apply workflow that implementation agents actually read.
-- Preserve exact-commit and human-approval boundaries.
+- Make activation and bootstrap realizable through exact Git parentage and artifact identities.
+- Cover every governed implementation path for every actor and delivery mechanism.
+- Require an assessment commit before the earliest governed implementation commit.
+- Compare candidate approaches without forcing a named pattern.
+- Bind selected catalog patterns to versioned invariant IDs and behavioral evidence.
+- Fail closed for missing, corrupt, incomplete, incompatible, or self-weakened governance evidence.
+- Preserve technical review across closed governance-record-only commits while invalidating it for any later normative change.
+- Define deterministic grandfathering, emergency classification, schema compatibility, Hermes execution, required-CI evidence, and archive validation.
 
-**Non-Goals:**
+Non-goals:
 
-- Build a classifier that decides which pattern is objectively correct.
-- Parse arbitrary source languages to infer every abstraction or architectural intent.
-- Refactor existing production, SDK, contract, or research code to demonstrate catalog entries.
-- Introduce a root package, framework, runtime dependency, or publishable governance package.
-- Rewrite historical OpenSpec archives or their review bindings.
-- Treat metadata validation, AI review, or a pattern name as substantive approval.
+- Implement any checker, schema, catalog, policy file, fixture, CI job, branch protection, Hermes integration, canonical capability, activation record, or archive.
+- Authorize apply, merge, deployment, publication, or production use.
+- Modify SDK, remediation, contract, canonical, research, production, or archived evidence paths.
+- Make a deterministic checker select an architecture or replace technical and owner judgment.
+
+## Controlled Vocabulary
+
+The initial policy has 30 unique controlled values across 31 family memberships in 10 families; `governance_record_only` is intentionally shared by the path-class and review-path-kind families. IDs are immutable within a major schema version and cannot be silently reused.
+
+| Family | Values |
+| --- | --- |
+| assessment level | `full`, `abbreviated` |
+| decision | `direct_implementation`, `named_pattern` |
+| checker phase | `assessment`, `implementation`, `final`, `bootstrap`, `activation` |
+| grandfathering class | `mainline_present`, `external_in_flight` |
+| path class | `governed_implementation`, `governance_core`, `documentation_only`, `governance_record_only`, `unclassified` |
+| review path kind | `normative`, `governance_record_only` |
+| security declaration | `true`, `false` |
+| lifecycle state | `proposal`, `apply_authorized`, `technical_reviewed`, `owner_governed`, `merged`, `active`, `archived`, `abandoned` |
+| merge strategy | `merge_commit`, `fast_forward` |
+| emergency disposition | `conservative_full_assessment` |
+
+Defined terms:
+
+- **Full-assessment change:** a change matching any full trigger: public API, integration, lifecycle/state, concurrency, persistence, security-sensitive behavior, governance-core path, or canonical capability requirement addition/modification/removal.
+- **Abbreviated-eligible change:** a change satisfying the closed abbreviated criteria and proving that no full trigger applies.
+- **Material capability modification:** a change that adds, modifies, or removes a normative capability requirement, or modifies a governed implementation path owned by that capability and matches a full trigger.
+- **Applicable baseline:** the proposal baseline used to classify and compare a change. For post-activation work it must be the activation-record commit or a descendant; grandfathered work uses the recorded baseline and bounded scope.
+- **Normative path:** governed implementation, tests proving invariants, assessment/design artifacts, schemas, checker, policy configuration, catalog, invariant definitions, compatibility claims, workflow, or CI enforcement.
+- **Governance-record-only path:** a closed allowlist for the technical correspondence packet, owner decision, status record, merge-readiness record, and archive-readiness record.
 
 ## Design Pattern Assessment
 
 ### Governance metadata
 
-The bootstrap assessment for this governance change uses the same shape proposed for future applicable changes. The apply phase will formalize the schema and checker; this proposal-stage block is reviewable evidence, not a claim that the unimplemented checker has passed.
+This block is proposal review evidence for the future schema, not checker output.
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": "1.1",
   "assessment_level": "full",
   "decision": "direct_implementation",
   "security_sensitive": true,
-  "force_ids": [
-    "force-versioned-policy",
-    "force-deterministic-evidence",
-    "force-human-judgment-boundary",
-    "force-exact-commit-governance",
-    "force-cross-workflow-coherence",
-    "force-deterministic-activation"
-  ],
-  "constraint_ids": [
-    "constraint-no-root-package",
-    "constraint-no-production-refactor",
-    "constraint-no-history-rewrite",
-    "constraint-no-automatic-pattern-selection",
-    "constraint-no-temporal-classification"
-  ],
-  "variation_point_ids": [
-    "variation-assessment-phase",
-    "variation-repository-language"
-  ],
-  "candidate_ids": [
-    "candidate-direct-functions",
-    "candidate-specification",
-    "candidate-strategy",
-    "candidate-state",
-    "candidate-adapter",
-    "candidate-builder-factory",
-    "candidate-repository"
+  "candidate_approach_ids": [
+    "approach-direct-functions",
+    "approach-composed-specifications"
   ],
   "selected_pattern_ids": [],
-  "invariant_ids": [
-    "invariant-deterministic-relations",
-    "invariant-no-pattern-selection",
-    "invariant-phase-order",
-    "invariant-history-preservation",
-    "invariant-approval-separation",
-    "invariant-grandfathering-boundary"
+  "implementation_invariant_ids": [
+    "implementation-deterministic-relations",
+    "implementation-exact-history-binding",
+    "implementation-actor-neutral-perimeter",
+    "implementation-fail-closed-evidence",
+    "implementation-approval-separation"
   ],
-  "introduced_abstraction_ids": [
-    "abstraction-assessment-metadata-contract",
-    "abstraction-correspondence-record"
+  "rejected_alternative_ids": [
+    "approach-composed-specifications"
   ],
   "verification_task_ids": [
-    "5.4",
-    "6.2",
-    "6.3",
-    "7.1",
-    "7.2",
-    "9.1",
-    "9.2"
+    "8.1",
+    "8.2",
+    "8.3",
+    "8.4",
+    "8.5",
+    "8.6"
   ],
-  "re_evaluation_trigger_ids": [
-    "trigger-pluggable-rule-packs",
-    "trigger-second-metadata-format",
-    "trigger-phase-lifecycle-complexity",
-    "trigger-language-specific-analysis"
-  ],
-  "correspondence_review_task_id": "10.2"
+  "correspondence_review_task_id": "9.2"
 }
 ```
 
 ### Problem
 
-The repository needs durable, testable architectural-decision governance without requiring a named design pattern for simple code and without asking a deterministic script to make subjective architecture choices.
+Create deterministic repository governance that verifies evidence and ordering without turning pattern names into an implementation quota or allowing its candidate version to waive its own controls.
 
 ### Architectural forces
 
-- **`force-versioned-policy`:** Agent prompts and model context vary, while repository policy must remain reviewable and versioned.
-- **`force-deterministic-evidence`:** CI must reject objectively incomplete or internally inconsistent assessments without subjective model scoring.
-- **`force-human-judgment-boundary`:** Pattern applicability and adequacy remain architectural judgments that require substantive review.
-- **`force-exact-commit-governance`:** Final correspondence and owner decisions must bind the exact implementation reviewed without self-reference.
-- **`force-cross-workflow-coherence`:** Capability text, templates, Hermes instructions, metadata, tasks, fixtures, and checker behavior must express the same contract.
-- **`force-deterministic-activation`:** Adoption must distinguish pre-activation evidence from later changes reproducibly across clones without relying on directory names or machine-local time.
+- Repository policy must be actor-neutral and versioned.
+- Git history and blob identity provide deterministic ordering and provenance.
+- Subjective architecture selection remains technical-review work.
+- Missing or incomplete evidence must never broaden permission.
+- Governance must be able to evolve without letting a candidate checker be its sole judge.
+- Activation and grandfathering must remain reproducible without clocks.
 
 ### Constraints
 
-- **`constraint-no-root-package`:** The repository has no root Node package and this change must not introduce one merely for the checker.
-- **`constraint-no-production-refactor`:** Existing runtime and SDK implementation are out of scope.
-- **`constraint-no-history-rewrite`:** Archived OpenSpec evidence and exact-commit bindings are immutable inputs.
-- **`constraint-no-automatic-pattern-selection`:** Deterministic verification may validate evidence relationships but cannot select or rank architecture.
-- **`constraint-no-temporal-classification`:** Wall-clock time, file modification time, Git author date alone, local environment variables, and unprovenanced manual exemptions cannot determine applicability.
+- No root package is introduced solely for governance.
+- No production, SDK, contract, active-remediation, research, canonical, or archive artifact is modified by this proposal correction.
+- Squash, rebase, and history rewriting cannot preserve reviewed commit identity for governed activation.
+- Activation records cannot contain their own commit hash.
+- Hermes frontmatter syntax must be inspected during apply rather than guessed now.
 
-### Candidate patterns
+### Candidate approaches
 
-- **`candidate-direct-functions`:** Dependency-free Node.js modules with explicit validation functions and typed-by-schema JSON relationships.
-- **`candidate-specification`:** A Specification object model composing independent governance predicates.
-- **`candidate-strategy`:** Strategies for assessment, implementation, and final verification phases.
-- **`candidate-state`:** A state machine governing assessment-to-implementation-to-final progression.
-- **`candidate-adapter`:** An adapter abstraction around OpenSpec Markdown and embedded JSON metadata.
-- **`candidate-builder-factory`:** Builders or factories for assessment and correspondence records.
-- **`candidate-repository`:** A repository abstraction for loading governance evidence.
+- **`approach-direct-functions`:** dependency-free, phase-aware Node.js validation functions over closed schemas and Git objects.
+- **`approach-composed-specifications`:** composable Specification objects representing policy predicates.
 
 ### Selected approach
 
-Select `direct_implementation`. Use small pure validation functions over a versioned JSON metadata contract, explicit phase arguments, direct filesystem reads, and deterministic diagnostics. This provides the required correctness and testability without creating a class hierarchy or pluggable abstraction whose variation does not yet exist.
-
-The two introduced governance concepts are data contracts, not class-pattern demonstrations:
-
-- **`abstraction-assessment-metadata-contract`:** structured references embedded in the required human assessment;
-- **`abstraction-correspondence-record`:** a separate final record binding implementation evidence to the previously approved assessment and exact reviewed commit.
+Select `direct_implementation`. The policy has one repository-owned rule system and no independently variable rule-provider boundary. Small validation functions and explicit data relations provide simpler auditability and bootstrap behavior.
 
 ### Rejected alternatives
 
-- **Specification:** rejected for initial implementation because one fixed rule set and ordinary predicate composition do not require a named object-pattern API. Re-evaluate if independently owned or pluggable rule packs appear.
-- **Strategy:** rejected because the three fixed checker phases share one validation pipeline with phase-gated requirements; they are not interchangeable algorithms selected by clients.
-- **State:** rejected because the checker validates snapshots and does not own a long-lived mutable lifecycle. OpenSpec task state and governance records remain authoritative.
-- **Adapter:** rejected because one repository-owned Markdown-plus-JSON representation exists; a translation boundary would be ceremonial. Re-evaluate if a second metadata format is supported.
-- **Builder/Factory:** rejected because JSON records are template-driven and schema-validated, with no staged object construction or runtime construction invariants.
-- **Repository:** rejected because the checker reads repository files and Git objects directly and has no domain persistence boundary.
+- **`approach-composed-specifications`:** rejected because there is no independently owned or runtime-selected family of predicates. It would add participant and lifecycle concepts without improving the forces of deterministic evidence, baseline trust, or exact Git binding.
 
 ### Simplicity check
 
-The selected design adds two evidence shapes, one dependency-free checker, fixtures/tests, three documentation templates/catalog artifacts, one scoped workflow update, and CI wiring. It avoids a framework, package manager edge, plugin mechanism, class hierarchy, pattern-selection engine, or source-language semantic analyzer. Each concept maps directly to a required force. Anything more would be speculative at initial adoption.
+The design uses one canonical checker interface with trusted-baseline and candidate executions, closed records, Git object checks, and stable diagnostics. It does not create a pattern-selection engine, plugin system, rule marketplace, runtime service, or agent-specific authority.
 
 ### Security and correctness implications
 
-- Treat assessment metadata and correspondence records as untrusted repository input: parse bounded files, reject duplicate markers/keys where applicable, reject path traversal, resolve only repository-relative normalized paths, and emit bounded diagnostics that do not print arbitrary file contents.
-- Fail closed for applicable changes when metadata is malformed, required relations are absent, a security-sensitive decision lacks misuse evidence, a changed implementation path is unmapped, or correspondence does not bind a full commit hash.
-- Do not fail closed on subjective disagreement about the selected pattern; that remains a technical-review finding rather than a checker verdict.
-- Keep exact-commit technical review distinct from the later commit that stores its record. Project-owner approval remains a separate decision and is not inferred from checker success.
-- Read-only validation must leave the Git index and governed files unchanged.
+Governance inputs are untrusted repository data. Paths must be normalized and bounded, diagnostics bounded, object identity verified, complete ancestry required, and missing policy or activation evidence rejected. A positive security declaration overrides benign path classification. A negative declaration requires dimension-by-dimension justification.
 
 ### Pattern invariants
 
-- **`invariant-deterministic-relations`:** identical repository bytes and arguments produce identical pass/fail results and diagnostics; all IDs resolve exactly once.
-- **`invariant-no-pattern-selection`:** the checker never recommends, ranks, or rejects a structurally coherent approach because of its pattern choice.
-- **`invariant-phase-order`:** implementation evidence cannot satisfy a missing prior assessment, and final evidence must bind the exact implementation commit reviewed.
-- **`invariant-history-preservation`:** adoption does not alter archived OpenSpec evidence or the current adversarial-remediation change.
-- **`invariant-approval-separation`:** technical verification never marks or implies project-owner approval, merge authorization, production authorization, or archive readiness.
-- **`invariant-grandfathering-boundary`:** only active changes backed by the committed activation baseline retain pre-activation status; rename, move, recreation, optional-metadata omission, and false-triviality claims cannot confer or remove that status.
+Because direct implementation is selected, these are implementation-specific invariants and do not claim catalog-pattern conformance:
+
+- **`implementation-deterministic-relations`:** identical committed bytes, history, and arguments yield identical classification and diagnostics.
+- **`implementation-exact-history-binding`:** activation, assessment order, reviews, and grandfathering bind exact commits, trees, blobs, parents, and ancestry.
+- **`implementation-actor-neutral-perimeter`:** the same changed paths and evidence receive the same result regardless of author or tool.
+- **`implementation-fail-closed-evidence`:** absent, malformed, incompatible, unavailable, or weakened evidence never yields success or non-applicability.
+- **`implementation-approval-separation`:** technical checks and AI review cannot create apply authorization or owner governance.
 
 ### Verification strategy
 
-- Validate the metadata JSON schema and every ID/reference relation.
-- Exercise valid direct-implementation and named-pattern fixtures.
-- Exercise invalid fixtures for missing sections, missing forces, missing invariants, reasonless alternatives, invalid abbreviated classification, security-sensitive evidence gaps, unmapped abstractions, divergence, stale correspondence, and fake keyword-only compliance.
-- Use disposable-copy mutation tests that delete or contradict each required relation and prove the checker fails for the intended reason.
-- Run strict change and repository OpenSpec validation, task-format checks, direct whitespace/final-newline checks, protected-history object comparisons, and exact changed-path review independently from the new checker.
-- During final apply verification, compare the implementation tree and behavioral tests with this assessment and record correspondence against the exact technical commit.
+Use positive controls plus one-relation mutations. Run complete-history controls, shallow-history negatives, policy corruption cases, path-evasion cases, ordering mutations, pattern-invariant mutations, review-staleness cases, schema compatibility rows, baseline/candidate checker weakening cases, Hermes permission regeneration tests, emergency records, Ambient Context behavior, and explicit archive checks.
 
 ### Re-evaluation triggers
 
-- **`trigger-pluggable-rule-packs`:** independently owned or selectable rule sets may justify Specification or Strategy.
-- **`trigger-second-metadata-format`:** another accepted representation may justify Adapter.
-- **`trigger-phase-lifecycle-complexity`:** persisted, mutable, or transition-rich verification state may justify State.
-- **`trigger-language-specific-analysis`:** multiple source-language analyzers may justify an analyzer interface or Strategy, but only after concrete implementations exist.
+Re-evaluate a named Specification or Strategy design if independently owned rule packs, a second governance representation, or multiple interchangeable checker implementations become real requirements.
 
 ## Decisions
 
-### 1. Keep human reasoning and machine evidence in one assessment without duplicating prose
+### D1 — Realizable activation history
 
-Every applicable `design.md` contains one level-two `Design Pattern Assessment` heading and these level-three headings in order: `Problem`, `Architectural forces`, `Constraints`, `Candidate patterns`, `Selected approach`, `Rejected alternatives`, `Simplicity check`, `Security and correctness implications`, `Pattern invariants`, `Verification strategy`, and `Re-evaluation triggers`.
+The protected mainline reference is configured explicitly, normally as `refs/heads/main`; branch naming is not proof of protection. Activation requires stored evidence that the governance CI job is a required status check for that reference.
 
-A single fenced JSON block under `### Governance metadata` provides machine-readable IDs and links. The checker parses JSON with Node.js built-ins and resolves IDs against explicitly marked human entries. It does not attempt natural-language scoring. The assessment template will state that prose is authoritative for architectural reasoning and metadata is authoritative only for deterministic identity and traceability.
+The exact sequence is:
 
-Alternatives rejected:
+1. **Reviewed technical commit T:** checker, policy configuration, schemas, 24-entry catalog, actor-neutral documentation, workflow integrations, tests, and fixtures.
+2. **Technical correspondence commit R:** a later governance-record-only commit binding T.
+3. **Owner-governance commit G:** a later governance-record-only commit binding T and R and recording publication/deployment restrictions and activation authorization.
+4. **Protected-mainline merge commit M:** introduces T/R/G using a merge commit or fast-forward and preserves their identities. Squash, rebase, and history rewriting are prohibited.
+5. **Activation-record commit A:** a dedicated commit immediately after M whose only parent is M. It contains only the activation record and specifically allowlisted activation evidence. Activation begins at A.
 
-- A separate assessment sidecar duplicates decision state and creates drift.
-- YAML requires either a new parser dependency or a fragile custom parser.
-- Heading-only checks are easy to satisfy ceremonially and cannot prove task/test relationships.
+A binds the protected reference, M, M's tree, T, R, G, checker/configuration/schema/catalog/actor-neutral-policy blobs, required-check identity, supported schema versions, and grandfathered entries. It does not bind its own hash. A baseline before A is classified by grandfathering; A or descendants use normal enforcement.
 
-### 2. Use two assessment levels with non-bypassable triggers
+Bootstrap is one-time validation before normal enforcement. It requires exact approved T/R/G/M, exact artifact blobs, required-check evidence, and no unrelated A changes. It ends permanently at A. Unknown or shallow activation history fails with a stable diagnostic.
 
-`full` is mandatory for any abstraction, lifecycle/state, concurrency, integration, persistence/transaction, public API, or security-sensitive change. `abbreviated` is limited to a bounded trivial correction and still records a direct decision, simplicity rationale, focused verification, and re-evaluation trigger when relevant.
+### D2 — Actor-neutral governance perimeter
 
-The checker validates the declared level against deterministic evidence available in the change and changed-path manifest. It rejects `abbreviated` when metadata declares an abstraction or security sensitivity, tasks/specs declare a trigger, or final changed-path evidence crosses configured trigger classes. Human review remains responsible for detecting an omitted trigger that cannot be inferred mechanically.
+Any post-activation change touching a governed implementation path must associate the modified capability with an applicable OpenSpec change and governance evidence. Range-level inspection prevents splitting a material change across commits. Classification examines tests, build files, scripts, and configuration for implementation behavior and rejects documentation-only, internal-only, and performance-only mislabels when behavior triggers contradict them.
 
-Alternatives rejected:
+The authoritative surfaces are the canonical capability, policy configuration, baseline checker, candidate checker where applicable, and required CI check. `CONTRIBUTING.md`, governance documentation, and a pull-request template communicate the same policy. Hermes is a convenience and early-feedback mechanism only.
 
-- Requiring a full assessment for typo-level corrections creates ceremony and incentivizes low-quality boilerplate.
-- Allowing authors to mark anything “trivial” without cross-checks creates a bypass.
+### D3 — Grandfathering and rollout
 
-### 3. Define a repository-level metadata contract under OpenSpec ownership
+Preferred rollout: merge the active SDK remediation first, activate governance second. No claim is made that the remediation exists in the reviewed `origin/main` proposal tree.
 
-Apply will add:
+`mainline_present` records change ID, proposal path/blob hash, proposal baseline commit, and membership in M's tree. `external_in_flight` records change ID, remote branch reference, exact branch head, proposal baseline, proposal blob, `.openspec.yaml` metadata hash, owner rationale, and bounded paths/scope. The classes are alternatives, not an impossible conjunction.
 
-- `openspec/schemas/design-pattern-assessment.schema.json` for assessment metadata;
-- `openspec/schemas/design-pattern-correspondence.schema.json` for final-review metadata;
-- `openspec/design-pattern-governance.json` for policy version, activation evidence, provenance-backed active-change baselines, path classifications, required catalog IDs, and protected-history roots.
+Grandfathering does not cover new public API, integration, persistence, lifecycle, concurrency, security boundary, governed capability, or out-of-record path. Opt-in is exact-commit evidence. It may be withdrawn before the first governed implementation commit only by explicit owner-governance evidence; afterward it is irrevocable.
 
-The configuration will use repository-relative POSIX paths, explicit schema versions, closed object shapes, bounded arrays/strings, unique IDs, and controlled decision/phase values. At activation it will record the activation parent tree and exact proposal commit/tree/blob evidence for every grandfathered active change, including `remediate-security-audit-sdk-adversarial-review` when its proposal baseline predates activation. The unique activation commit is the first protected-mainline commit that atomically introduces both the canonical capability and this baseline record; its hash is derived from Git history rather than self-referenced inside its own contents. It will not contain subjective pattern scores.
+### D4 — Assessment ancestry
 
-The exact metadata vocabulary is:
+The assessment commit contains a valid approved assessment, has no governed implementation-path diff from the proposal baseline, precedes and is an ancestor of the earliest commit after the proposal baseline that changes a governed implementation path, and is an ancestor of T. Assessment and implementation in one commit fails. Amending or adding assessment after implementation does not repair normal ordering.
 
-- assessment levels: `full`, `abbreviated`;
-- decisions: `direct_implementation`, `named_pattern`;
-- checker phases: `assessment`, `implementation`, `final`;
-- identifier collections: forces, constraints, variation points, candidates, selected patterns, rejected alternatives, invariants, introduced abstractions, verification tasks, and re-evaluation triggers.
+A retrospective exception is available only for grandfathered or emergency work whose order cannot be reconstructed. It is explicitly human-owned and records owner identity, reason, commits, paths, residual risk, and reduced assurance. The checker never infers it. Missing ancestry and shallow clones fail closed.
 
-A `named_pattern` decision requires at least one selected pattern, force, and invariant relation. A `direct_implementation` decision requires an empty selected-pattern set plus explicit rejected or inapplicable abstraction reasoning. Both require verification and simplicity evidence.
+### D5 — Catalog invariant binding
 
-### 4. Implement one dependency-free, phase-aware checker
+Every catalog entry has immutable versioned invariant IDs. A named-pattern assessment records pattern ID, catalog version, required, conditional, and non-applicable invariant IDs, force-based reasons, implementation task IDs, and verification evidence IDs. Every mandatory invariant must be accounted for. Non-applicability is permitted only for catalog-declared conditional invariants, a force-based reason, and explicit correspondence-review acknowledgement.
 
-The checker will be `openspec/scripts/check-design-pattern-governance.mjs`. Supporting modules may be added under `openspec/scripts/lib/` only when they remove repeated parsing or validation logic; no plugin or class framework is authorized.
+Direct implementation uses implementation-specific invariant IDs and keeps selected-pattern IDs empty. It does not claim catalog conformance.
 
-CLI modes:
+The 24 entries are:
 
-- `--change <name> --phase assessment`: validate assessment structure, applicability, force/candidate/decision relations, alternatives, invariants, and task-plan references before code work.
-- `--change <name> --phase implementation --base <commit>`: add changed-path mapping, abstraction/test references, and security misuse evidence while implementation is in progress.
-- `--change <name> --phase final --review-target <commit>`: require the separate correspondence record, exact commit binding, complete invariant evidence, no unexplained divergence, and no unassessed abstraction.
-- `--all-applicable --base <commit>`: CI entry point for Phase 1 and later Phase 2 scope, deriving the canonical activation commit and applying provenance, ancestry, proposal-fingerprint, anti-bypass, and path rules from repository configuration.
+1. Adapter
+2. Strategy
+3. State
+4. Command
+5. Factory
+6. Builder
+7. Facade
+8. Decorator
+9. Specification
+10. Repository
+11. Unit of Work
+12. Domain Service
+13. Immutable Value Object
+14. Capability
+15. Explicit Trust Boundary
+16. Fail Closed
+17. Authority Provenance
+18. Idempotency Key
+19. Atomic Reservation
+20. Transactional Outbox
+21. Circuit Breaker
+22. Bulkhead
+23. Bounded Retry
+24. Ambient Context / Context Propagation
 
-Diagnostics use stable codes and repository-relative paths, are sorted, and remain bounded. Read-only mode is the only mode. The process exits nonzero for objective contract failures and zero for a structurally coherent assessment regardless of which pattern was selected.
+Ambient Context belongs to Runtime / Execution Context. Required invariants cover immutable frames, explicit run-scope ownership, no global authority fallback, concurrent isolation, no cross-request leakage, no retention after scope exit, no authority inferred solely from ambient presence, and explicit missing-context behavior. Security guidance covers hidden authority and confused-deputy risk. Tests cover concurrent runs, nested scopes, cleanup, and rejected-promise/exception leakage. Misuse distinguishes it from service locator, global mutable state, and implicit ambient authorization, and cross-links Capability, Explicit Trust Boundary, and immutable values.
 
-The checker validates:
+### D6 — Fail closed and self-governance
 
-- exactly one assessment section and one metadata block;
-- candidate patterns or an explicit direct decision;
-- force and constraint evidence;
-- selected-pattern-to-force/invariant relations;
-- rejected-alternative reasons;
-- task references for implementation, invariant tests, security misuse/bypass tests, abstraction behavior, deterministic checks, and final correspondence;
-- final correspondence mapping from assessment IDs to exact changed paths and test evidence;
-- full 40-hex review target and Git object identity;
-- phase-appropriate state without treating future final evidence as required during assessment.
+After activation, absent, empty, truncated, invalid, unsupported, incompatible, or hash-mismatched policy/activation evidence fails with a stable distinct diagnostic. Missing classifications or protected roots also fail. Missing policy never means zero applicable changes or successful skip.
 
-The checker does not validate prose quality, select a pattern, or claim that source code semantically implements a pattern. Exact-commit technical review owns those judgments.
+Governance-core includes checker, policy, activation record, schemas, catalog, invariant registry, actor-neutral documentation, Hermes integration, CI workflow, and path classifications. Every governance-core change requires a full assessment, security-sensitive analysis, explicit reviewer acknowledgement, baseline-checker validation, and candidate-checker validation. The trusted checker from the merge-base/protected-mainline baseline and the candidate checker both run; neither pass substitutes for the other.
 
-### 5. Store final implementation correspondence separately
+### D7 — Candidate approaches
 
-Applicable changes will add `design-pattern-correspondence.md` during the final technical phase, not at proposal time. It contains human review plus a fenced JSON record identifying:
+A full assessment evaluates direct implementation and at least one materially plausible alternative matching observed forces. The alternative may be composition, an existing abstraction, a language-native mechanism, a named catalog pattern, or another simpler design. A direct decision keeps selected-pattern IDs empty and rejects at least one alternative with a force-based reason. A named-pattern decision evaluates and rejects direct implementation and binds catalog invariants. “Best practice” and irrelevant pattern lists do not satisfy comparison.
 
-- assessment schema version and digest;
-- exact implementation commit reviewed;
-- selected approach and patterns;
-- implementation participants and changed-path mapping;
-- introduced abstractions;
-- invariant-to-test evidence;
-- security misuse/bypass evidence;
-- divergences and their disposition;
-- unresolved architectural risks and over-engineering concerns;
-- reviewer identity, review type, assurance limitation, and date.
+### D8 — Applicability and security
 
-The record binds the preceding technical commit. The later commit that stores the record does not claim to review itself. A subsequent normative implementation or assessment change invalidates the correspondence until reconfirmed. Project-owner approval is stored and governed separately; a technical correspondence record does not imply it.
+The controlled terms `Full-assessment change`, `Abbreviated-eligible change`, and `Material capability modification` are the only applicability vocabulary; deprecated ambiguous materiality labels are invalid in normative evidence.
 
-Alternative rejected: appending final evidence directly to the approved assessment would mix decision-time and review-time state and make exact-commit binding harder to reason about.
+Security trigger dimensions are trust boundary, authority provenance, authentication/authorization, audit integrity, confidentiality, mutation ownership, fail posture, error disclosure, concurrency, lifecycle, retention, retry/redelivery, cryptography, privacy transformation, and external security integration. `security_sensitive: false` requires justification for applicable dimensions. Positive declaration always wins. Path classes are minimum trigger floors, not ceilings.
 
-### 6. Build a practical catalog, not a pattern textbook
+### D9 — Review freshness and merge identity
 
-Apply will create:
+R binds T from a governance-record-only path without invalidating itself. Governance-only G after R remains valid. Any post-review normative change invalidates correspondence, including tests, assessment, checker, schema, catalog, compatibility, workflow, and CI. Archive relocation preserves correspondence only when every governed blob is byte-identical. Governed merge permits only merge commit or fast-forward; no alternate-strategy escape hatch exists.
 
-- `docs/architecture/design-pattern-catalog.md`;
-- `docs/architecture/design-pattern-assessment-template.md`;
-- `docs/architecture/adr-design-pattern-template.md`.
+### D10 — Schema compatibility and ID lifecycle
 
-The catalog groups 23 initial entries:
+The initial current schema version is `1.1`, and the initial explicit supported set is `1.0` and `1.1`. New changes use `1.1`. Version `1.0` remains accepted only for a pre-existing active change under its explicit final-review migration rule. Compatible minor additions may add optional evidence without weakening existing meaning. Breaking or evidence-weakening changes require a new major version. Any version outside the explicit supported set, including an unknown newer minor or major, fails with a distinct unknown-newer or unsupported-older diagnostic as applicable.
 
-1. **Core design:** Adapter, Strategy, State, Command, Factory, Builder, Facade, Decorator, Specification.
-2. **Domain and persistence:** Repository, Unit of Work, Domain Service, Immutable Value Object.
-3. **Security and authority:** Capability, Explicit Trust Boundary, Fail Closed, Authority Provenance.
-4. **Concurrency and resilience:** Idempotency Key, Atomic Reservation, Transactional Outbox, Circuit Breaker, Bulkhead, Bounded Retry.
+Pattern and invariant IDs cannot be reused. Deprecation preserves meaning; rename uses explicit alias/migration mapping; removal requires replacement/deactivation procedure and migration for every governed reference. Schema, checker, policy, and catalog changes run baseline plus candidate checkers.
 
-Each entry contains intent, use when, avoid when, required invariants, practical TypeScript/Node.js shape, security implications, concurrency implications, minimum verification, common misuse, and related patterns. Examples remain small and non-production. The catalog explicitly says it is non-exhaustive and that concrete forces control selection.
+### D11 — Executable Hermes integration
 
-The ADR template is used when a decision crosses capability boundaries, changes a durable public or trust boundary, creates a major compatibility commitment, or cannot be fully explained within the change design. It does not force an ADR for every assessment.
+During apply, inspect actual generated skill frontmatter and repository-supported allowed-tools syntax. Authorize only the minimum expansion needed to run `node openspec/scripts/check-design-pattern-governance.mjs`. Do not assume `Bash(openspec:)` permits Node. Tests assert the governed sequence and command permission; `openspec update` regeneration must fail CI if either disappears. Hermes remains non-authoritative.
 
-### 7. Integrate only the repository-managed Hermes implementation workflow
+### D12 — Exact-change emergency classification
 
-Apply will update `.hermes/skills/openspec-apply-change/SKILL.md` because this is the checked-in workflow that implementation agents read. It will require this sequence after loading OpenSpec context files and before the implementation loop:
+An emergency record is bound to exact change ID, proposal baseline, affected paths, conservative path class, reason, incident/operational reference, mandatory follow-up issue/task, and exact owner-governance commit. It applies only to that change and ends when merged or abandoned. It cannot downgrade public API, security, concurrency, persistence, or integration triggers and never exempts assessment. Missing fields fail; a valid record emits a distinct warning and proceeds with full assessment. No wall-clock expiry or time-based override is used.
 
-1. Read `openspec/specs/software-design-pattern-governance/spec.md` when canonical; during this change's bootstrap review, read the active delta spec explicitly.
-2. Inspect the requested change and relevant repository architecture.
-3. Complete or verify the required Design Pattern Assessment.
-4. Select a named pattern or `direct_implementation`.
-5. Run the checker in `assessment` phase.
-6. Implement only the validated design.
-7. Add behavioral tests for selected invariants and misuse/bypass tests where required.
-8. Pause and update the assessment before introducing an unassessed abstraction or material divergence.
-9. Run final exact-scope correspondence review.
-10. Report pattern decisions, evidence, residual risks, and over-engineering concerns.
+### D13 — Lifecycle and archive separation
 
-No user-home, profile-specific, ignored, or unrelated local instruction file is modified. The workflow will preserve existing OpenSpec status, context, task, and pause guardrails rather than replacing them.
+Activation boundary and lifecycle states are separate requirements. Proposal validation is not apply authorization. AI review, assignment, and informal messages are not owner approval. Technical review, owner governance, merge, activation, canonical materialization, and archive readiness remain distinct.
 
-### 8. Prove enforcement with valid, invalid, and mutation fixtures
+`openspec validate --all --strict` is not assumed to validate archived changes. Archive tasks explicitly verify task completeness, T/R/G bindings, owner decision, canonical capability materialization, publication/deployment restrictions, exact archive contents, and byte identity. Archive occurs only after active enforcement is verified and according to the governed lifecycle.
 
-Fixtures will live under `openspec/fixtures/design-pattern-governance/` and use minimal self-contained OpenSpec change trees. At minimum:
+## Proposal Structural Counts
 
-- valid direct simple bug fix;
-- valid Strategy with multiple algorithms;
-- valid State lifecycle;
-- valid Adapter vendor boundary;
-- valid Capability authority token;
-- valid Atomic Reservation concurrency case;
-- invalid one-implementation Strategy;
-- invalid simple Builder;
-- invalid persistence-free Repository;
-- invalid security-sensitive decision without misuse tests;
-- invalid implementation divergence;
-- invalid unassessed abstraction;
-- valid final invariant correspondence;
-- valid re-evaluation after a second algorithm.
-- valid grandfathered active change whose proposal fingerprint is recorded before activation;
-- valid explicit opt-in by a grandfathered active change;
-- valid material post-activation change to a pre-existing canonical capability;
-- valid immutable archived historical change;
-- invalid renamed or recreated post-activation change attempting to claim grandfathering;
-- invalid abbreviated claims for public-API and concurrency changes;
-- clean-clone controls proving repository-evidence classification and wall-clock independence.
+This corrected proposal contains exactly 24 normative requirements, 127 scenarios, 100 unchecked tasks, 24 planned catalog entries, and 30 unique controlled values across 31 family memberships in 10 families. These counts are calculated from the corrected artifacts and are verification assertions, not implementation progress.
 
-Tests will live at `openspec/tests/design-pattern-governance.test.mjs` and use Node's built-in test runner. Mutation tests operate on disposable copies and remove, duplicate, contradict, or stale-bind one evidence relation at a time. Each mutation must fail for the expected stable diagnostic, while controls pass before and after mutation. Tests must prove zero discovered tests is a failure condition in the canonical wrapper.
+## Compatibility Matrix
 
-### 9. Add a dedicated CI gate without coupling governance to SDK validation
-
-Apply will add a separate CI job or step in `.github/workflows/ci.yml` using a supported Node runtime and direct `node` commands. It will not add governance scripts to `packages/security-audit-sdk-core/package.json`, because repository-wide policy must not depend on or mutate SDK verification ownership.
-
-The CI gate will run:
-
-- Node built-in tests for checker, fixtures, and mutations;
-- the checker over applicable changed OpenSpec changes using the pull-request merge base;
-- strict OpenSpec change and repository validation;
-- task-format and direct whitespace/final-newline checks for governed files.
-
-Protected-history and exact-scope assertions remain explicit acceptance checks. The implementation must determine whether the installed OpenSpec CLI is available in CI and pin or document setup without silently assuming a global developer tool.
-
-### 10. Adopt in phases and preserve protected history
-
-Phase 1 activates for every non-trivial change absent from the provenance-backed active-change set recorded at activation. The activation commit is identified as the first protected-mainline commit that introduces both the canonical capability and the baseline record; the record binds its parent tree and exact proposal commit/tree/blob evidence. A clean clone can therefore reproduce classification without wall-clock time, file modification time, Git author date alone, environment variables, or an unprovenanced exemption list.
-
-An active change recorded in that baseline retains its grandfathered status across directory rename or movement by proposal content identity and Git lineage. Its approved planning artifacts are not retroactively rejected or rewritten. It may opt in explicitly; absent opt-in, later design decisions should follow the policy where practical, but existing artifacts become mandatory only through a recorded migration decision. `remediate-security-audit-sdk-adversarial-review` is handled by this rule and must be recorded as grandfathered if its proposal baseline predates activation.
-
-A change absent from the activation baseline is post-activation even if it is created on an old branch, renamed, moved, recreated under another identifier, or omits optional metadata. A materially new OpenSpec change extending a pre-existing canonical capability must comply. Claims of triviality fail when evidence introduces a public API, integration, lifecycle/state, concurrency, persistence/transaction, or security-sensitive boundary. Phase 3 remains explicit opt-in assessment of existing architecture. Archived changes are immutable inputs and never receive retroactive artifacts.
-
-Apply verification records Git object IDs for protected active and archived paths before changes and proves they are unchanged afterward. The only permitted paths are the active governance change, the eventual canonical capability at archive time, the three architecture documents, OpenSpec governance schemas/config/scripts/tests/fixtures, the repository-managed apply skill, and explicit CI wiring. SDK, contract, research, production, current adversarial-remediation, and historical archive paths are denied.
-
-Rollback before merge removes the new governance artifacts and restores the workflow/CI edits. After merge but before archive, rollback reverts the governance commits without rewriting history. After archival, changes to the capability require a new OpenSpec change; the archive remains immutable.
-
-### 11. Keep technical and human governance gates separate
-
-The apply plan uses separate stages and commits for implementation/materialization, exact-commit technical correspondence, explicit project-owner decision, merge, and archive. Every record identifies its reviewed commit and assurance limits. Project-owner self-review is valid project governance but not independent assurance, certification, legal advice, privacy approval, or organizational approval.
-
-No implementation task is checked during proposal creation. Completing and validating the four proposal artifacts means only that the apply plan is available for owner consideration.
-
-## Risks / Trade-offs
-
-- **[Embedded JSON can drift from prose]** → Validate every referenced ID against marked prose and require exact-commit substantive review; metadata is traceability, not truth.
-- **[Authors can omit a trigger the checker cannot infer]** → Combine configured changed-path checks with required reviewer correspondence and report the checker’s assurance limit.
-- **[Path classification can become stale]** → Version configuration, add fixtures for new source roots, and make changed implementation paths fail closed when unclassified.
-- **[The checker becomes a pattern-selection oracle]** → Test two different structurally valid decisions for the same stated forces and require both to pass objective validation.
-- **[Governance becomes ceremonial]** → Require force/invariant/task/test relations, mutation tests, and final exact-commit mapping rather than heading presence.
-- **[Trivial path becomes a bypass]** → Reject abbreviated assessments when deterministic triggers or introduced abstractions are present; require human review for semantic omissions.
-- **[Workflow update conflicts with generated OpenSpec skill changes]** → Patch the existing repository-managed skill minimally and preserve upstream generated metadata and core behavior; document the local governance extension.
-- **[CI lacks OpenSpec CLI]** → Determine and pin the setup during apply; do not report repository strict validation as automated until the real CI command executes.
-- **[Final review record self-references]** → Bind the record to the preceding implementation commit and store it in a later governance commit.
-- **[Policy displaces domain controls]** → State and test that domain-specific requirements control all conflicts.
-- **[Activation classification depends on names or clocks]** → Derive the canonical activation commit from protected history, bind grandfathered proposals by committed object evidence and content lineage, and test rename/recreation, old-branch, clean-clone, and perturbed-clock cases.
+| Case | Result |
+| --- | --- |
+| current schema version | accepted when all evidence passes |
+| supported older version | accepted only under recorded support and final-review migration rule |
+| unsupported older version | fail closed with unsupported-old diagnostic |
+| unknown newer version | fail closed with unknown-new diagnostic |
+| compatible minor optional addition | baseline and candidate pass without weakening mandatory evidence |
+| breaking major change | explicit migration and owner governance required |
+| deprecated pattern ID | accepted only under deprecation policy; no reuse |
+| renamed invariant | explicit alias/migration mapping required |
+| removed invariant | rejected without replacement/deactivation and evidence migration |
+| candidate makes mandatory evidence optional | rejected by baseline checker |
+| mainline-present active change | bounded grandfathering from M tree evidence |
+| external in-flight change | bounded grandfathering from branch and proposal evidence |
+| scope expansion | normal full governance for expanded scope |
 
 ## Migration Plan
 
-1. Materialize the assessment/ADR templates and 23-entry catalog.
-2. Materialize versioned metadata schemas and repository governance configuration, including the activation parent tree and provenance-backed proposal fingerprints for every grandfathered active change.
-3. Implement the dependency-free checker and stable diagnostic contract.
-4. Add valid/invalid fixtures, disposable mutation tests, and direct documentation checks.
-5. Patch the repository-managed Hermes apply skill with the governed sequence.
-6. Add and execute the dedicated CI gate without changing SDK validation ownership.
-7. Run compatibility checks proving current canonical specs, the active adversarial-remediation change, and all archived evidence are unchanged and still strictly valid; prove the remediation is grandfathered when its proposal baseline predates activation.
-8. Run full strict, semantic, task-format, whitespace/final-newline, protected-history, exact-path, fixture, mutation, and correspondence verification.
-9. Freeze the technical implementation commit and obtain exact-commit technical review.
-10. Obtain an explicit project-owner decision in a separate record/commit. No AI output supplies this decision.
-11. Merge only after all required checks and decisions are complete.
-12. Archive in a separate commit so the canonical capability is created at `openspec/specs/software-design-pattern-governance/spec.md`; verify the archived packet and canonical spec byte semantics.
+1. Record exact proposal apply authorization; no later task starts before it.
+2. Finalize vocabulary, activation lifecycle, perimeter, path classes, schema compatibility, and rollout records.
+3. Create schemas, catalog, invariant registry, actor-neutral documentation, and assessment/correspondence templates.
+4. Implement the trusted-compatible checker behavior, then baseline-plus-candidate compatibility controls.
+5. Add fixtures, mutations, Hermes executable integration, and CI.
+6. Configure and verify the governance CI job as a required check for the protected mainline reference.
+7. Run full technical verification and create T.
+8. Create R, then G, with closed governance-record-only scope.
+9. Merge using an identity-preserving strategy to create or identify M.
+10. Bootstrap and commit A as M's direct child; verify active enforcement.
+11. Materialize the canonical capability and archive only through the governed lifecycle with explicit archive validation.
+
+## Risks / Trade-offs
+
+- Complete-history requirements may require CI checkout changes; accepting shallow uncertainty would weaken deterministic ancestry and is prohibited.
+- Dual checker execution increases governance-core CI cost; it is necessary to prevent self-approval.
+- Exact branch-protection evidence may require a platform API or signed repository record; activation remains incomplete until the chosen evidence is independently verifiable.
+- Conservative unclassified-path treatment may block urgent work; the exact-change emergency classification enables progress without downgrading assessment.
+- Twenty-four catalog entries increase documentation maintenance; immutable IDs, schema compatibility, and baseline/candidate checks contain drift.
 
 ## Open Questions
 
-None. Path placement, metadata format, applicability rules, workflow target, test strategy, adoption boundaries, and governance sequencing are resolved in this design. Material changes to those decisions require an OpenSpec artifact update and revalidation before apply.
+None. Apply-time discovery is limited to repository-supported Hermes frontmatter syntax, concrete required-check evidence mechanics, and environment-specific commands; those tasks may not weaken the normative outcomes above.

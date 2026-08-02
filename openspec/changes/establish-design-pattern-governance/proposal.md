@@ -1,113 +1,101 @@
 ## Why
 
-Ad hoc model judgment and one-time prompting cannot reliably preserve repository-wide architectural discipline across agents, sessions, and implementation changes. Bloodtrail needs a canonical, reviewable OpenSpec capability plus deterministic evidence checks so implementation agents evaluate design patterns against concrete forces without treating a named pattern as a mandatory outcome or a substitute for correctness.
+Bloodtrail needs repository-wide, actor-neutral design-pattern governance that is deterministic, reviewable, and enforceable from committed Git evidence. The reviewed proposal at `a17eb79a2dd0172bb888278a39ad898280a2f59a` did not make activation, enforcement scope, provenance, ordering, invariant binding, schema evolution, or fail-closed behavior sufficiently realizable. This correction resolves architectural-review findings G-01 through G-17 before any apply authorization or implementation.
 
-OpenSpec is preferable to prompt-only guidance because it makes the policy versioned, change-controlled, testable, and available to every governed implementation workflow. The policy must counter both under-analysis and pattern cargo culting: a direct implementation is the preferred decision when an abstraction would add more concepts than it removes or when future variation is merely speculative.
+The policy must require substantive assessment without forcing catalog patterns. A full assessment compares direct implementation with at least one materially plausible alternative, then binds any selected catalog pattern to versioned catalog invariants. The policy must apply equally to humans, agents, pull requests, direct commits, and scripts.
 
 ## What Changes
 
-- Add the repository-wide `software-design-pattern-governance` capability requiring an applicability assessment before non-trivial implementation.
-- Require each assessment to record the problem, architectural forces, constraints, expected variation points, candidate and rejected patterns, selected pattern or explicit no-pattern decision, simplicity analysis, security/correctness implications, invariants, verification strategy, and re-evaluation triggers.
-- Define a bounded abbreviated assessment for trivial corrections while making the full assessment mandatory for implementation, abstraction, lifecycle/state, concurrency, integration, persistence, public-API, and security-sensitive changes.
-- Establish evidence rules that tie any selected pattern to observable forces and explicitly reject “best practice,” speculative extensibility, popularity, or a pattern name alone as sufficient justification.
-- Establish anti-pattern checks for speculative abstraction, unnecessary factories, service locators, global mutable state, inheritance-only reuse, god objects, misleading or fragmented interfaces, persistence-free repositories, one-strategy Strategy abstractions, obscuring wrapper chains, and pattern terminology without invariants.
-- Require security-sensitive assessments to cover trust, authority, mutation, failure posture, concurrency, misuse, and bypass resistance.
-- Require final implementation-correspondence review and agent reporting so selected invariants, unassessed abstractions, divergence, residual risks, and over-engineering concerns are visible.
-- Add a practical, non-exhaustive TypeScript/Node.js pattern catalog and reusable assessment and ADR templates under `docs/architecture/` during apply.
-- Integrate the capability into the repository-managed Hermes apply workflow at `.hermes/skills/openspec-apply-change/SKILL.md`; no unrelated local-only instruction file is in scope.
-- Add a deterministic repository-level checker, valid/invalid fixtures, and mutation tests during apply. The checker will validate structured evidence and cross-references, not choose a pattern or claim that architectural judgment can be reduced to keywords.
-- Adopt the policy at a deterministic committed activation boundary: new non-trivial changes not present in the provenance-backed activation baseline must comply; baseline-listed active changes remain valid unless they opt in or record an explicit migration decision; materially new changes to existing capabilities must comply; and archived evidence remains immutable.
+- Define a realizable identity-preserving activation history: reviewed technical commit, later governance records, protected-mainline merge commit, and a dedicated child activation-record commit.
+- Require verified evidence that the governance CI job is a required check for a configured protected mainline reference; activation fails closed when that evidence or history is unavailable.
+- Close the governance perimeter for every governed implementation path, including implementation hidden in tests, build files, scripts, or configuration and work split across commits.
+- Define separate `mainline_present` and `external_in_flight` grandfathering classes, bounded scope expansion rules, and exact-commit opt-in and withdrawal behavior.
+- Make assessment-before-implementation verifiable through an `assessment_commit` and the earliest governed implementation commit.
+- Require full assessments to compare direct implementation with at least one materially plausible candidate approach without requiring a named pattern.
+- Bind selected catalog patterns to versioned invariant IDs and test evidence; direct implementations record implementation-specific invariants without claiming catalog conformance.
+- Define full-assessment, abbreviated-eligible, and material-capability-modification vocabulary and comprehensive security-sensitive trigger dimensions.
+- Define normative paths, governance-record-only paths, stale-review invalidation, identity-preserving merge behavior, schema compatibility, and baseline-plus-candidate checking for governance-core changes.
+- Define deterministic fail-closed behavior for absent, corrupt, truncated, incompatible, or weakened governance evidence.
+- Plan actor-neutral documentation in `CONTRIBUTING.md`, governance documentation, and a pull-request template; Hermes remains an early-feedback convenience rather than an authority.
+- Plan executable Hermes allowed-tools verification using the actual generated frontmatter syntax discovered during apply.
+- Define an exact-change, path-bounded emergency classification record with conservative classification and no clock-based expiry.
+- Expand the planned catalog to 24 entries by adding Ambient Context / Context Propagation and its authority, concurrency, lifecycle, and cleanup invariants.
+- Separate deterministic activation from governance lifecycle-state separation.
+- Replace indeterminate modal wording and correct task-plan authorization and proposal-baseline checks.
+- Require explicit archive-evidence validation rather than assuming repository-wide strict validation covers archived changes.
 
 ## Scope
 
-This governance change covers:
+This proposal governs the future apply plan for:
 
-- OpenSpec requirements and scenarios for design-pattern applicability, selection, invariants, correspondence, reporting, and re-evaluation;
-- repository documentation for practical TypeScript/Node.js pattern decisions;
-- repository-managed Hermes implementation workflow integration;
-- deterministic structural and coherence verification, fixtures, and mutation coverage;
-- compatibility and adoption guidance for active, future, and archived OpenSpec material;
-- exact-commit technical review, explicit project-owner approval, merge, and archive gates.
+- the canonical `software-design-pattern-governance` capability;
+- versioned assessment and correspondence schemas;
+- a 24-entry catalog and invariant registry;
+- actor-neutral policy documentation;
+- baseline and candidate checker behavior;
+- fixtures, mutation tests, Hermes convenience integration, and the required CI job;
+- exact-commit review, governance, activation, enforcement, and archive evidence.
 
-## Non-Goals
+Only proposal artifacts under `openspec/changes/establish-design-pattern-governance/` are changed by this corrective commit.
 
-This change does not authorize or perform:
+## Non-Goals and Authorization Boundary
 
-- production deployment or production instrumentation;
-- package publication;
-- framework, vendor, persistence, transport, queue, or other production integration;
-- broad refactoring of existing production, contract, research, or SDK code merely to demonstrate patterns;
-- retroactive rewriting of archived OpenSpec changes, review evidence, or exact-commit bindings;
-- replacing domain-specific security, privacy, lifecycle, concurrency, compatibility, or correctness requirements with generic pattern guidance;
-- automatic selection of Strategy, Factory, State, or any other named pattern;
-- a claim that the pattern catalog is exhaustive or that pattern terminology proves implementation quality.
+This corrective commit does not authorize apply and does not implement the governance capability. It does not create or modify:
 
-Creation and validation of these proposal artifacts is planning only. It does not authorize apply work, repository workflow edits, checker implementation, documentation materialization, production use, merge, or archive. Apply requires a separately recorded explicit project-owner authorization.
+- checker code, schemas, policy configuration, catalog documents, invariant registry, fixtures, tests, or CI workflows;
+- Hermes skills or generated Hermes configuration;
+- branch protection or required-check configuration;
+- activation, correspondence, owner-decision, merge-readiness, or archive records;
+- canonical capabilities or archived changes;
+- SDK code, the active SDK-remediation change, canonical contracts, research artifacts, production code, or publication/deployment behavior.
 
-## Affected Workflows
+Every task remains unchecked. Task 1.1 is the explicit project-owner apply-authorization gate for every later task through final archive. Proposal validation, AI review, pull-request assignment, authorship, and informal messages are not authorization or owner approval.
 
-- Authors of non-trivial OpenSpec implementation changes must complete the governed assessment before implementation begins.
-- Hermes and other repository-managed implementation agents must read the canonical capability, inspect repository architecture, complete and validate the assessment, implement the approved approach, test selected invariants, compare final implementation to the decision, and report residual risks.
-- Technical reviewers must verify assessment evidence and implementation correspondence against an exact commit; AI analysis is technical evidence, not human or organizational approval.
-- The project owner retains the explicit approval gate for applying, merging, and archiving this governance capability.
+## Compatibility and Rollout
 
-## Compatibility Considerations
+The preferred rollout is to finish and merge `remediate-security-audit-sdk-adversarial-review` before activating design-pattern governance. If activation occurs first, that change must be represented by a complete `external_in_flight` grandfathering record bound to its remote branch and exact proposal evidence. The proposal does not assert that this change exists in the reviewed `origin/main` proposal-baseline tree.
 
-- No existing public API, runtime behavior, event-contract meaning, SDK implementation, package dependency, or production path changes at proposal time.
-- Phase 1 applies to new non-trivial OpenSpec changes absent from the committed activation baseline; classification uses Git object identity, ancestry, and proposal fingerprints rather than wall-clock time, file times, author dates, or local configuration.
-- An active change with a provenance-backed proposal baseline predating activation remains valid and is not forced to rewrite approved planning evidence. It may opt in explicitly; otherwise new design decisions should follow the policy where practical without retroactively invalidating existing artifacts unless an explicit migration decision is recorded.
-- Phase 2 applies to every materially new OpenSpec change that modifies an existing capability after activation, even when that canonical capability predates activation, so unchanged capabilities do not incur retroactive work.
-- Renaming, moving, recreating, omitting optional metadata, or falsely claiming triviality cannot convert a post-activation change into a grandfathered one. Public-API, integration, lifecycle, concurrency, persistence, and security-sensitive work always triggers the full assessment path.
-- Archived changes remain immutable and never acquire retroactive assessment artifacts.
-- Trivial corrections may use an abbreviated assessment with an explicit applicability reason; changes that introduce an abstraction or affect lifecycle, state, concurrency, integration, persistence, public APIs, or security-sensitive behavior cannot use the trivial path.
-- Existing repository-managed workflows will require a coordinated versioned update during apply. Local-only or unrelated agent instruction files remain untouched.
+Grandfathering preserves only recorded scope. New public API, integration, persistence, lifecycle, concurrency, security boundary, governed capability, or paths outside the record require normal full governance. Explicit opt-in is bound to an exact commit, may be withdrawn only before the first governed implementation commit through explicit project-owner governance evidence, and is irrevocable afterward.
 
-## Migration and Adoption Strategy
-
-1. **Phase 1 — New changes:** enforce the capability for new non-trivial code-changing OpenSpec changes and provide templates, catalog guidance, checker fixtures, and workflow instructions.
-2. **Phase 2 — Material modifications:** require an assessment when an existing capability is materially modified, including explicit evaluation of inherited and newly introduced abstractions.
-3. **Phase 3 — Optional architecture review:** allow important existing architecture to be assessed opportunistically without forcing refactoring, renaming, or historical evidence changes.
-
-Adoption must be fail-safe for governed code changes while remaining proportionate for trivial corrections. The activation commit will atomically introduce the canonical capability and a committed activation-baseline record containing its parent tree plus provenance-bearing identifiers and proposal object fingerprints for qualifying active changes. The checker derives the unique activation commit from repository history and classifies changes from that record, Git ancestry, and content identity; results must be reproducible from a clean clone and independent of wall-clock time. Migration evidence must demonstrate that current archived changes validate unchanged and that the active `remediate-security-audit-sdk-adversarial-review` change is not modified and is grandfathered when its recorded proposal baseline predates activation.
+Governed activation requires a configured protected mainline reference, normally `refs/heads/main`, and verified evidence that the governance CI job is a required status check for that reference. A branch name alone is not proof of protection. Missing or unverifiable required-check enforcement blocks activation.
 
 ## Enforcement Strategy
 
-- Human-readable assessment sections explain architectural judgment and trade-offs.
-- Versioned machine-readable metadata identifies applicability, decision type, force IDs, selected-pattern IDs, invariant IDs, security sensitivity, abstraction IDs, verification-task IDs, and re-evaluation triggers.
-- The deterministic checker validates schema, required relationships, task references, security-sensitive misuse coverage, and final correspondence evidence.
-- Valid, invalid, and mutation fixtures prove missing, contradictory, bypassed, or stale evidence is rejected.
-- The checker does not score prose, infer whether a particular pattern is objectively correct, or accept pattern-name keyword matching as architectural evidence.
-- Strict OpenSpec validation, semantic checks, task-format checks, Git whitespace/final-newline checks, protected-history checks, and exact changed-path review remain independent gates.
+- The canonical capability, policy configuration, trusted baseline checker, candidate checker, and required CI check are authoritative.
+- Actor-neutral checked-in documentation explains the perimeter to every contributor and tool.
+- Complete Git ancestry is required for activation, assessment ordering, review binding, merge identity, and grandfathering; shallow or missing history fails closed.
+- A full assessment evaluates direct implementation and at least one materially plausible alternative. Rejected alternatives require force-based reasons.
+- Selected catalog patterns bind catalog version, required and conditional invariant IDs, implementation tasks, and verification evidence.
+- Governance-core changes run both the trusted baseline checker and candidate checker; a candidate checker cannot be the sole judge of its own weakening.
+- Stable diagnostics distinguish absent policy, malformed policy, unsupported versions, missing activation history, perimeter violations, ancestry failures, invariant failures, and invalid emergency records.
+- Hermes executes the canonical checker only when its repository-supported generated frontmatter actually permits the command; CI tests both sequence and permission preservation.
 
 ## Risks
 
-- **Pattern cargo culting:** Agents may introduce ceremonial abstractions to satisfy governance. Mitigation: direct implementation is explicitly valid and preferred unless a concrete force and testable invariant justify a pattern.
-- **Speculative abstraction:** Forecast-only variation may be mistaken for an architectural force. Mitigation: speculative extensibility is insufficient evidence, and simplicity plus re-evaluation triggers defer abstraction until observable conditions arise.
-- **Checklist compliance without judgment:** Metadata may be filled mechanically. Mitigation: structured fields establish traceability while human-readable reasoning and exact-commit review assess substance; the checker never claims semantic approval.
-- **Keyword-driven enforcement:** A checker could reward pattern names rather than coherence. Mitigation: validate typed relationships and fixture behavior, not pattern-name frequency or subjective selection.
-- **Governance burden for small fixes:** Full assessments could slow trivial corrections. Mitigation: permit a bounded abbreviated path that becomes invalid when risk or abstraction triggers are present.
-- **Generic policy displacing domain requirements:** Pattern guidance could obscure Bloodtrail-specific security or lifecycle rules. Mitigation: domain requirements remain controlling and may only be strengthened, not replaced, by pattern analysis.
-- **Workflow drift:** Templates, capability text, Hermes instructions, checker behavior, and CI could diverge. Mitigation: deterministic correspondence fixtures, mutation tests, and a final cross-artifact review.
-- **Activation ambiguity or bypass:** Directory names, branch timing, or local clocks could inconsistently classify a change. Mitigation: bind activation to the canonical-capability commit and a committed provenance-bearing baseline, compare proposal object identity and lineage, and reject rename, recreation, optional-metadata omission, and false-triviality bypasses.
+- **Bootstrap circularity:** resolved by a one-time bootstrap that validates exact pre-existing approved objects and creates a dedicated activation record whose parent is exactly the protected-mainline merge commit; the record does not bind its own commit hash.
+- **Perimeter evasion:** resolved by capability/path association, commit-range inspection, behavior triggers, actor neutrality, and fail-closed unclassified paths.
+- **Grandfathering overreach:** resolved by two provenance classes, exact scope, and normal full governance for any recorded-scope expansion matching a full trigger.
+- **Retrospective evidence laundering:** resolved by Git ancestry checks and explicit human-owned retrospective exceptions that state their reduced assurance.
+- **Pattern cargo culting:** resolved by candidate approaches rather than mandatory pattern enumeration and by direct implementation as a first-class option.
+- **Self-weakening governance:** resolved by baseline-plus-candidate checking and mandatory reviewer acknowledgement.
+- **Clock-dependent emergency behavior:** avoided by exact-change, path-bounded records that terminate only when the change is merged or abandoned.
 
 ## Success Criteria
 
-- Every applicable new non-trivial implementation records an evidence-based assessment before implementation.
-- Every assessment selects a justified named pattern or explicitly records a valid direct/no-pattern decision.
-- Selected patterns identify observable forces and testable invariants; material rejected alternatives include reasons.
-- Security-sensitive assessments include trust, authority, failure, concurrency, misuse, and bypass analysis.
-- New abstractions cannot pass governance without evaluation and behavioral verification.
-- Final review detects material divergence between the approved assessment and the implementation.
-- Repository-managed Hermes reports the decision, reasons, rejected alternatives, implementation correspondence, invariant tests, introduced abstractions, residual risks, and over-engineering concerns.
-- Valid fixtures pass; invalid and mutated evidence fails deterministically without a checker selecting the architecture.
-- Existing SDK and production implementation paths and archived OpenSpec evidence remain unchanged.
-- A clean clone deterministically reproduces activation and grandfathering classifications, including the pre-activation status of `remediate-security-audit-sdk-adversarial-review`, without consulting wall-clock time or mutable local state.
+- G-01 through G-17 each map to corrected normative requirements, scenarios, design decisions, tasks, and validation evidence.
+- Activation can be produced by the planned Git sequence and rejects squash, rebase, missing ancestry, altered artifacts, and absent required-check evidence.
+- Governed implementation cannot evade association with an applicable OpenSpec change.
+- Assessment ordering, catalog invariants, review freshness, schema compatibility, security classification, and self-governance fail closed.
+- The planned catalog contains exactly 24 entries including Ambient Context / Context Propagation.
+- Actor-neutral policy and required CI remain authoritative; Hermes is convenience-only and executable when integrated.
+- Explicit archive checks validate immutable archive evidence and lifecycle records.
+- All proposal tasks are unchecked and implementation remains unauthorized.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `software-design-pattern-governance`: Defines evidence-based design-pattern applicability assessment, valid direct-implementation decisions, invariant and anti-pattern controls, security-sensitive analysis, implementation correspondence, re-evaluation, deterministic evidence checking, and implementation-agent reporting.
+- `software-design-pattern-governance`: Defines actor-neutral design-pattern assessment, deterministic activation and provenance, governance perimeter, candidate-approach comparison, catalog-invariant binding, security classification, exact-commit ordering and review, schema compatibility, fail-closed enforcement, deterministic emergency classification, and lifecycle/archive evidence.
 
 ### Modified Capabilities
 
@@ -115,4 +103,4 @@ None.
 
 ## Impact
 
-The apply phase is expected to add the eventual canonical specification at `openspec/specs/software-design-pattern-governance/spec.md`; documentation under `docs/architecture/`; a dependency-free deterministic Node.js checker and fixtures under a repository-level governance tooling path selected in design; and a scoped update to `.hermes/skills/openspec-apply-change/SKILL.md` plus CI wiring if approved. Existing runtime packages, SDK source, contract artifacts, research code, archived OpenSpec evidence, and the active adversarial-remediation change are protected from modification.
+If later authorized, apply may materialize only the artifacts and integrations explicitly planned by this change and must use the separated technical, correspondence, owner-governance, merge, activation, canonicalization, and archive lifecycle. This corrective proposal itself has no implementation, runtime, production, publication, branch-protection, merge, or archive effect.

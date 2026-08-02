@@ -1,321 +1,585 @@
 ## Purpose
 
-Govern repository-wide software design-pattern decisions so non-trivial implementations use explicit, evidence-based architectural judgment while preferring direct code when no named pattern provides a concrete benefit.
+Govern repository-wide software design-pattern decisions through actor-neutral, exact-history, fail-closed evidence while permitting direct implementation when no named catalog pattern is justified.
 
 ## ADDED Requirements
 
-### Requirement: Pattern-governance applicability is classified before implementation
-Before implementation work begins, every OpenSpec change that modifies implementation code SHALL classify its design-pattern assessment as `full` or `abbreviated`. A `full` assessment SHALL be required when the change introduces an abstraction; changes lifecycle or state management; changes concurrency; introduces an external integration boundary; introduces persistence or a transactional boundary; modifies a public API; or changes security-sensitive behavior. An `abbreviated` assessment SHALL be permitted only for a trivial correction with one bounded behavior, no new abstraction, and none of the full-assessment triggers.
+### Requirement: R1 — Applicability uses a closed vocabulary
+A `Full-assessment change` SHALL be any change that modifies public API, integration, lifecycle/state, concurrency, persistence, security-sensitive behavior, a governance-core path, or a canonical capability requirement. An `Abbreviated-eligible change` SHALL satisfy the closed abbreviated criteria and prove that no full trigger applies. A `Material capability modification` SHALL add, modify, or remove a normative capability requirement, or modify a capability-owned governed implementation path while matching a full trigger. Undefined terms such as non-trivial, materially new, and materially modifies SHALL NOT determine enforcement.
 
-#### Scenario: Non-trivial implementation is gated
-- **WHEN** an implementation change meets one or more full-assessment triggers and has no validated full assessment
-- **THEN** the governed workflow SHALL reject implementation start
+#### Scenario: Full trigger requires full assessment
+- **WHEN** a change matches any defined full-assessment trigger
+- **THEN** governance verification SHALL require a full assessment
 
-#### Scenario: Trivial correction uses abbreviated assessment
-- **WHEN** a correction changes one bounded implementation behavior, introduces no abstraction, and meets no full-assessment trigger
-- **THEN** the governed workflow SHALL accept an abbreviated assessment that records the problem, direct-implementation decision, simplicity reason, and focused verification
+#### Scenario: Closed abbreviated criteria are satisfied
+- **WHEN** one bounded correction proves that no full trigger applies and introduces no abstraction
+- **THEN** governance verification MAY accept an abbreviated assessment with focused evidence
 
-#### Scenario: Abbreviated assessment hides an abstraction
-- **WHEN** a change classified as `abbreviated` introduces a new abstraction or meets another full-assessment trigger
-- **THEN** deterministic verification SHALL reject the classification and require a full assessment
+#### Scenario: Undefined materiality label is used
+- **WHEN** applicability relies on an undefined materiality label instead of the controlled vocabulary
+- **THEN** governance verification SHALL reject the classification
 
-#### Scenario: Assessment is completed before implementation
-- **WHEN** implementation evidence predates completion of the required pattern assessment
-- **THEN** final governance verification SHALL reject the sequencing as non-conformant
+#### Scenario: Canonical requirement changes
+- **WHEN** a change adds, modifies, or removes a normative canonical capability requirement
+- **THEN** the change SHALL be classified as a Full-assessment change and Material capability modification
 
-### Requirement: Full assessments record the decision basis
-A full Design Pattern Assessment SHALL identify the problem, architectural forces, constraints, expected variation points, candidate patterns, rejected patterns, selected named pattern or `direct_implementation` decision, simplicity assessment, testing implications, security and correctness implications, pattern invariants, verification strategy, and re-evaluation triggers.
+### Requirement: R2 — Full assessments compare candidate approaches
+A full assessment SHALL evaluate direct implementation and at least one materially plausible alternative matching the identified architectural forces. Every rejected alternative SHALL have a force-based reason. The alternative MAY be composition, an existing repository abstraction, a language-native mechanism, a named catalog pattern, or a simpler competing design. Exhaustive catalog enumeration and a named pattern SHALL NOT be required.
 
-#### Scenario: Complete assessment is accepted
-- **WHEN** a full assessment contains every required element and its machine-readable references resolve to the corresponding human-readable evidence
-- **THEN** assessment-phase verification SHALL accept its structure for substantive review
+#### Scenario: Direct implementation has plausible alternative analysis
+- **WHEN** a full assessment selects direct implementation and evaluates a plausible force-matching alternative
+- **THEN** assessment verification SHALL accept the candidate-approach relation when every rejection is force-based
 
-#### Scenario: Required decision basis is missing
-- **WHEN** a full assessment omits any required element or contains an unresolved machine-readable reference
-- **THEN** assessment-phase verification SHALL reject it with a bounded diagnostic identifying the missing element or reference
+#### Scenario: Direct implementation has no alternative
+- **WHEN** a full assessment selects direct implementation without evaluating a materially plausible alternative
+- **THEN** assessment verification SHALL reject the assessment
 
-#### Scenario: Pattern name replaces analysis
-- **WHEN** an assessment records a pattern name but does not record the problem forces, invariants, and verification implications associated with the selection
-- **THEN** assessment-phase verification SHALL reject the assessment
+#### Scenario: Named pattern omits direct implementation
+- **WHEN** a full assessment selects a named pattern without evaluating direct implementation
+- **THEN** assessment verification SHALL reject the assessment
 
-### Requirement: Direct implementation is a valid and preferred decision
-The implementation agent SHALL prefer `direct_implementation` when no named pattern produces a concrete improvement in correctness, maintainability, security, testability, lifecycle clarity, concurrency safety, or integration isolation. The absence of a named pattern SHALL NOT be treated as a design failure.
+#### Scenario: Best practice is the only rejection reason
+- **WHEN** an alternative is rejected only by a best-practice assertion
+- **THEN** assessment verification SHALL reject the reason as non-force-based
 
-#### Scenario: Simple bug fix selects no pattern
-- **WHEN** a bug fix changes one stable behavior and no meaningful variation, lifecycle, integration, persistence, security, or concurrency force exists
-- **THEN** the assessment SHALL select `direct_implementation` and explain why an additional abstraction would be less simple
+#### Scenario: Irrelevant patterns are enumerated
+- **WHEN** an assessment lists irrelevant catalog patterns as boilerplate instead of one plausible alternative
+- **THEN** assessment verification SHALL reject the candidate analysis
 
-#### Scenario: Single implementation rejects unnecessary Strategy
-- **WHEN** there is one realistic stable algorithm and no observable interchangeability requirement
-- **THEN** the assessment SHALL reject Strategy rather than create a ceremonial strategy contract
+### Requirement: R3 — Direct implementation is first-class
+For `direct_implementation`, `selected_pattern_ids` SHALL be empty, at least one rejected alternative SHALL be recorded, and each rejection SHALL reference architectural forces. Direct implementation SHALL record implementation-specific invariants without claiming catalog-pattern conformance.
 
-#### Scenario: Simple construction rejects unnecessary Builder
-- **WHEN** object construction has no staged process, optional combination complexity, or invariant-bearing assembly
-- **THEN** the assessment SHALL reject Builder or Factory in favor of direct construction
+#### Scenario: Valid direct implementation
+- **WHEN** a direct decision has no selected pattern IDs, has a force-based rejected alternative, and records implementation-specific invariants
+- **THEN** governance verification SHALL accept the decision structure
 
-#### Scenario: Persistence-free code rejects Repository
-- **WHEN** the affected behavior has no persistence boundary
-- **THEN** the assessment SHALL reject Repository and SHALL NOT introduce persistence terminology or interfaces
+#### Scenario: Direct decision claims catalog conformance
+- **WHEN** a direct decision claims conformance to selected catalog-pattern invariants
+- **THEN** governance verification SHALL reject the contradictory decision
 
-#### Scenario: Speculative extensibility is the only benefit
-- **WHEN** a candidate pattern is justified only by a possible future variation
-- **THEN** the assessment SHALL choose the simpler current approach and record the observable event that would trigger re-evaluation
+#### Scenario: Direct decision carries selected pattern IDs
+- **WHEN** a direct decision contains one or more selected pattern IDs
+- **THEN** schema and relational verification SHALL reject it
 
-### Requirement: Pattern selection is tied to observable architectural forces
-Every selected named pattern SHALL reference one or more observable architectural forces and SHALL explain the concrete problem each force creates. “Best practice,” “may be needed later,” “more extensible,” popularity, and the pattern name itself SHALL NOT constitute sufficient selection evidence.
+### Requirement: R4 — Named-pattern selection is force-based
+A named pattern SHALL be selected only when observable forces justify it, direct implementation is evaluated and rejected, and the selection records concrete correctness, ownership, lifecycle, concurrency, persistence, security, or boundary benefits. Popularity, speculative extensibility, pattern names, and best-practice claims SHALL NOT suffice.
 
-#### Scenario: Multiple algorithms select Strategy
-- **WHEN** two or more realistic algorithms must be interchangeable through one stable client contract
-- **THEN** a Strategy selection SHALL identify algorithm variation, stable contract behavior, and interchangeability tests
+#### Scenario: Strategy has observable variation
+- **WHEN** multiple realistic algorithms must be interchangeable behind one stable contract
+- **THEN** a Strategy assessment SHALL record the variation force and interchangeability evidence
 
-#### Scenario: Lifecycle transitions select State
-- **WHEN** behavior depends on explicit lifecycle states and invalid transitions must be prevented
-- **THEN** a State selection SHALL identify transition ownership, allowed transitions, invalid-transition behavior, and lifecycle tests
+#### Scenario: State has lifecycle forces
+- **WHEN** behavior depends on explicit states and invalid transitions must be prevented
+- **THEN** a State assessment SHALL record transition ownership and invalid-transition behavior
 
-#### Scenario: External vendor boundary selects Adapter
-- **WHEN** an external vendor interface must be translated without leaking vendor semantics into the internal model
-- **THEN** an Adapter selection SHALL identify both semantic boundaries, translation ownership, failure mapping, and isolation tests
+#### Scenario: Pattern name substitutes for forces
+- **WHEN** a named pattern is justified only by its name, popularity, or speculative future use
+- **THEN** assessment verification SHALL reject the selection
 
-#### Scenario: Vague best-practice justification is rejected
-- **WHEN** the only stated selection evidence is that a pattern is common, extensible, or a best practice
-- **THEN** substantive assessment SHALL reject the selection pending a concrete force
+### Requirement: R5 — Selected patterns bind versioned catalog invariants
+Every catalog pattern entry SHALL define versioned invariant IDs. A named-pattern assessment SHALL record pattern ID, catalog version, applicable required invariant IDs, conditional invariant IDs, non-applicable conditional IDs with force-based reasons, implementation task IDs, and verification evidence IDs. The checker SHALL load the referenced catalog version and account for every mandatory invariant. A mandatory invariant MAY be non-applicable only when catalog-declared conditional, force-justified, and explicitly acknowledged by final correspondence review.
 
-### Requirement: Material alternatives and simplicity are evaluated
-A full assessment SHALL identify material alternatives and explain why each rejected alternative does not satisfy the observed forces as effectively or simply as the selected approach. The alternatives SHALL normally include applicable choices among direct implementation, composition, an existing repository abstraction, a language-native mechanism, the proposed pattern, and a simpler competing pattern.
+#### Scenario: State omits transition invariants
+- **WHEN** State is selected without all required transition invariant IDs and evidence
+- **THEN** governance verification SHALL reject the assessment
 
-#### Scenario: Existing abstraction is considered
-- **WHEN** the repository already contains an abstraction that could address the same force
-- **THEN** the assessment SHALL evaluate reuse or extension of that abstraction before introducing a new one
+#### Scenario: Capability lacks unforgeable authority
+- **WHEN** Capability is selected without its unforgeable-runtime-authority invariant and evidence
+- **THEN** governance verification SHALL reject the assessment
 
-#### Scenario: Rejected alternative lacks a reason
-- **WHEN** a material alternative is listed without a force-based rejection reason
-- **THEN** assessment-phase verification SHALL reject the alternative record as incomplete
+#### Scenario: Atomic Reservation occurs after await
+- **WHEN** Atomic Reservation evidence permits reservation only after an await boundary
+- **THEN** governance verification SHALL reject the invariant correspondence
 
-#### Scenario: Simpler language mechanism is sufficient
-- **WHEN** a TypeScript or Node.js language-native mechanism satisfies the forces and invariants without an additional pattern structure
-- **THEN** the assessment SHALL prefer that mechanism or explain the concrete deficiency that justifies the larger structure
+#### Scenario: Adapter lacks boundary isolation
+- **WHEN** Adapter is selected without required boundary-isolation invariants
+- **THEN** governance verification SHALL reject the assessment
 
-### Requirement: Repository guidance defines practical pattern evidence
-The governed repository SHALL provide a required Design Pattern Assessment template, an ADR template for pattern decisions that warrant an ADR, and a practical non-exhaustive TypeScript/Node.js pattern catalog. The assessment template SHALL contain Problem, Architectural forces, Constraints, Candidate patterns, Selected approach, Rejected alternatives, Simplicity check, Security and correctness implications, Pattern invariants, Verification strategy, and Re-evaluation triggers. Every catalog entry SHALL contain intent, use-when guidance, avoid-when guidance, required invariants, TypeScript/Node.js considerations, security implications, concurrency implications, minimum verification, common misuse, and related patterns.
+#### Scenario: Repository lacks persistence semantics
+- **WHEN** Repository is selected without persistence ownership and semantics invariants
+- **THEN** governance verification SHALL reject the assessment
 
-#### Scenario: Initial catalog coverage is complete
-- **WHEN** the catalog is validated for initial adoption
-- **THEN** it SHALL contain exactly one governed entry for Adapter, Strategy, State, Command, Factory, Builder, Facade, Decorator, Specification, Repository, Unit of Work, Domain Service, Immutable Value Object, Capability, Explicit Trust Boundary, Fail Closed, Authority Provenance, Idempotency Key, Atomic Reservation, Transactional Outbox, Circuit Breaker, Bulkhead, and Bounded Retry
+#### Scenario: Unrelated invariant token is referenced
+- **WHEN** a selected pattern references only an unrelated invariant token
+- **THEN** catalog relation verification SHALL reject the assessment
 
-#### Scenario: Catalog entry omits required guidance
-- **WHEN** an initial catalog entry omits one or more required fields
-- **THEN** deterministic documentation verification SHALL reject the catalog
+#### Scenario: Unknown invariant ID is referenced
+- **WHEN** evidence references an invariant ID absent from the selected catalog version
+- **THEN** governance verification SHALL reject it with an unknown-invariant diagnostic
+
+#### Scenario: Wrong catalog version supplies invariant
+- **WHEN** an invariant exists only in a catalog version other than the recorded version
+- **THEN** governance verification SHALL reject the version mismatch
+
+#### Scenario: Required invariant lacks test evidence
+- **WHEN** a required invariant has no implementation task or verification evidence ID
+- **THEN** implementation verification SHALL reject the change
+
+### Requirement: R6 — Repository guidance provides 24 catalog entries
+The initial non-exhaustive catalog SHALL contain exactly 24 entries: Adapter, Strategy, State, Command, Factory, Builder, Facade, Decorator, Specification, Repository, Unit of Work, Domain Service, Immutable Value Object, Capability, Explicit Trust Boundary, Fail Closed, Authority Provenance, Idempotency Key, Atomic Reservation, Transactional Outbox, Circuit Breaker, Bulkhead, Bounded Retry, and Ambient Context / Context Propagation. Every entry SHALL define versioned invariant IDs, intent, use/avoid guidance, TypeScript/Node.js shape, security and concurrency implications, minimum verification, misuse, and related patterns.
+
+#### Scenario: Initial catalog is complete
+- **WHEN** initial catalog documentation is validated
+- **THEN** exactly 24 unique governed entries with every required field SHALL exist
 
 #### Scenario: Catalog is treated as exhaustive
-- **WHEN** repository guidance claims that only cataloged patterns may be considered
-- **THEN** governance verification SHALL reject the claim because observed forces may justify another documented pattern
+- **WHEN** guidance claims only catalog entries may be considered
+- **THEN** documentation verification SHALL reject the claim
 
-### Requirement: Selected patterns have documented and verified invariants
-When a named pattern is selected, the assessment and implementation SHALL document participant responsibilities, state ownership, trust and mutation boundaries, lifecycle behavior, concurrency behavior where applicable, failure semantics, and pattern-specific invariants. Behavioral tests SHALL prove the intended invariants and prevent bypass of the abstraction where bypass is possible.
+#### Scenario: Catalog entry omits invariant IDs
+- **WHEN** a catalog entry has prose invariants but no versioned invariant IDs
+- **THEN** catalog verification SHALL reject the entry
 
-#### Scenario: Capability protects authority provenance
-- **WHEN** Capability is selected for an authority token
-- **THEN** verification SHALL prove that authority is issued and owned by the trusted component and cannot be reconstructed from copied or structurally similar caller data
+### Requirement: R7 — Ambient Context has authority and isolation invariants
+Ambient Context / Context Propagation SHALL be categorized under Runtime / Execution Context. Its required invariants SHALL include immutable context frame, explicit run-scope ownership, no implicit global authority fallback, isolation across concurrent execution contexts, no cross-request leakage, no retention after scope exit, authority not inferred solely from ambient presence, and explicit behavior when no context exists. Its guidance SHALL cover hidden authority, confused-deputy risk, nested scopes, exception and rejected-promise cleanup, and distinguish it from service locator, global mutable state, and implicit ambient authorization. It SHALL cross-link Capability, Explicit Trust Boundary, and immutable value guidance.
 
-#### Scenario: Atomic Reservation protects completion rights
-- **WHEN** Atomic Reservation is selected for concurrent completion
-- **THEN** verification SHALL prove that concurrent callers cannot both acquire the same completion right and SHALL cover reservation release or retention for each failure outcome
+#### Scenario: Concurrent Ambient Context runs are isolated
+- **WHEN** two concurrent run scopes carry distinct context frames
+- **THEN** verification SHALL prove neither scope observes the other frame
 
-#### Scenario: Command makes retry and side effects explicit
-- **WHEN** Command is selected for an operation with identity, retries, audit behavior, or side effects
-- **THEN** verification SHALL prove the documented execution identity, retry semantics, side-effect boundary, and failure behavior
+#### Scenario: Nested Ambient Context scope exits
+- **WHEN** a nested scope completes normally
+- **THEN** verification SHALL restore the outer immutable frame and retain no nested frame
 
-#### Scenario: Selected invariant has no behavioral test
-- **WHEN** a selected pattern invariant has no referenced behavioral verification
-- **THEN** implementation-phase verification SHALL reject the change
+#### Scenario: Ambient Context promise rejects
+- **WHEN** a scoped operation rejects or throws
+- **THEN** verification SHALL prove cleanup and no later cross-request leakage
 
-#### Scenario: Abstraction bypass is possible but untested
-- **WHEN** callers can attempt to bypass a security, lifecycle, persistence, or concurrency abstraction
-- **THEN** verification SHALL require a negative bypass test in addition to the positive behavior test
+#### Scenario: Ambient presence is treated as authority
+- **WHEN** authorization is granted solely because ambient context exists
+- **THEN** security verification SHALL reject the hidden-authority design
 
-### Requirement: Assessments evaluate over-engineering and known anti-patterns
-Every full assessment SHALL evaluate whether the proposed implementation introduces speculative abstraction, unnecessary factories, a service locator, global mutable state, excessive inheritance, a god object, misleading or excessively fragmented interfaces, Repository without persistence, Strategy without a genuine variation point, wrapper layers that obscure control flow, or pattern terminology without the pattern invariants.
+#### Scenario: Missing context behavior is implicit
+- **WHEN** Ambient Context has no explicit behavior for an absent context
+- **THEN** catalog and invariant verification SHALL reject the entry or assessment
 
-#### Scenario: Service locator is proposed
-- **WHEN** dependencies would be resolved through ambient lookup rather than explicit ownership or injection
-- **THEN** the assessment SHALL identify the service-locator risk and reject it unless a concrete constraint and mitigation are documented
+### Requirement: R8 — Security sensitivity uses behavioral dimensions
+Security-sensitive triggers SHALL include trust boundary, authority provenance, authentication or authorization, audit integrity, data confidentiality, mutation ownership, fail-open/fail-closed behavior, error disclosure, concurrency, lifecycle behavior, resource retention, retry/redelivery, cryptography, privacy transformation, and external security integration. `security_sensitive: false` SHALL include justification addressing applicable dimensions. A positive declaration SHALL override a benign path class. Path classes SHALL be minimum trigger floors, not maximum ceilings.
 
-#### Scenario: Wrapper chain obscures control flow
-- **WHEN** proposed Decorator or Facade layers make mutation, authority, lifecycle, or failure ownership unclear
-- **THEN** the assessment SHALL reject or simplify the wrapper structure before implementation
+#### Scenario: False has no justification
+- **WHEN** evidence declares security sensitivity false without dimension-based justification
+- **THEN** assessment verification SHALL reject the declaration
 
-#### Scenario: Pattern terminology lacks behavior
-- **WHEN** documentation labels code with a pattern but the implementation lacks the pattern's stated invariants
-- **THEN** final correspondence verification SHALL reject the claim
+#### Scenario: Authority change contradicts false
+- **WHEN** a change affects authority provenance while declaring security sensitivity false
+- **THEN** governance verification SHALL require security-sensitive analysis
 
-### Requirement: Security-sensitive changes receive misuse-oriented analysis
-A security-sensitive assessment SHALL identify trust boundaries, authority ownership and provenance, mutation boundaries, failure modes, fail-open or fail-closed behavior, concurrency implications, misuse cases, and bypass tests. Generic pattern guidance SHALL NOT weaken domain-specific security or privacy requirements.
+#### Scenario: Concurrency change contradicts false
+- **WHEN** a change introduces concurrency while declaring security sensitivity false
+- **THEN** governance verification SHALL require security-sensitive analysis
 
-#### Scenario: Security-sensitive change lacks misuse tests
-- **WHEN** a security-sensitive pattern selection has positive tests but no misuse or bypass test references
-- **THEN** deterministic verification SHALL reject the assessment or implementation evidence
+#### Scenario: Positive declaration on benign path
+- **WHEN** evidence declares security sensitivity true on a benign-classified path
+- **THEN** the positive declaration SHALL require security-sensitive analysis
 
-#### Scenario: Fail posture is unspecified
-- **WHEN** a security-sensitive boundary can fail and the assessment does not define fail-open, fail-closed, or a bounded domain-specific outcome
-- **THEN** assessment-phase verification SHALL reject the decision as incomplete
+#### Scenario: Resource retention changes
+- **WHEN** a change modifies resource retention or cleanup ownership
+- **THEN** security classification SHALL evaluate retention risk and fail posture
 
-#### Scenario: Pattern guidance conflicts with a domain requirement
-- **WHEN** generic pattern guidance conflicts with a canonical security, privacy, lifecycle, concurrency, or correctness requirement
-- **THEN** the domain-specific requirement SHALL control and the conflict SHALL be reported
+#### Scenario: Lifecycle behavior changes
+- **WHEN** a change modifies lifecycle ownership or transitions
+- **THEN** security classification SHALL evaluate lifecycle misuse and bypass risk
 
-### Requirement: Governance evidence is deterministic and relational
-Applicable changes SHALL include versioned machine-readable assessment metadata that identifies assessment level, decision type, force IDs, candidate and rejected alternative IDs, selected pattern IDs, invariant IDs, security sensitivity, introduced abstraction IDs, verification task IDs, and re-evaluation trigger IDs. A deterministic checker SHALL validate schema and referential coherence without choosing a pattern, scoring prose, or treating pattern keywords as evidence.
+### Requirement: R9 — Governance schemas are compatible and IDs are stable
+The policy SHALL record current schema version, supported range, major/minor compatibility rules, unknown-newer and unsupported-older behavior, active-change migrations, grandfathering rules, ID deprecation, prohibition on ID reuse, alias/migration maps, and deactivation/replacement procedures. New changes SHALL use the current version. Supported older active changes MAY remain until final review only under explicit migration rules. Unknown or unsupported versions SHALL fail closed with distinct diagnostics.
 
-#### Scenario: Candidate or direct decision is recorded
-- **WHEN** assessment-phase verification runs
-- **THEN** the checker SHALL require at least one candidate pattern or an explicit `direct_implementation` decision, together with architectural-force references
+#### Scenario: Supported old schema is used
+- **WHEN** a pre-existing active change uses an explicitly supported older schema
+- **THEN** governance verification SHALL apply the recorded compatibility and final-review migration rule
 
-#### Scenario: Selected pattern lacks force or invariant references
-- **WHEN** metadata selects a named pattern without resolving at least one force ID and one invariant ID
-- **THEN** the checker SHALL reject the assessment with a bounded relational error
+#### Scenario: Unsupported old schema is used
+- **WHEN** evidence uses an older version outside the supported range
+- **THEN** governance verification SHALL fail with the unsupported-old-version diagnostic
 
-#### Scenario: Rejected alternatives lack reasons
-- **WHEN** metadata references a rejected alternative without a corresponding human-readable reason
-- **THEN** the checker SHALL reject the assessment
+#### Scenario: Unknown new schema is used
+- **WHEN** evidence uses a newer version unknown to the trusted checker
+- **THEN** governance verification SHALL fail with the unknown-new-version diagnostic
 
-#### Scenario: Keyword substitution attempts to satisfy governance
-- **WHEN** pattern names appear in prose but required metadata relationships or evidence sections are absent
-- **THEN** the checker SHALL reject the change rather than infer compliance from keywords
+#### Scenario: Compatible minor field is added
+- **WHEN** a minor version adds optional evidence without weakening existing meaning
+- **THEN** baseline and candidate compatibility verification MAY accept it
 
-#### Scenario: Checker is asked to choose a pattern
-- **WHEN** two structurally valid assessments select different approaches for explicitly stated forces
-- **THEN** the checker SHALL validate each assessment's required evidence without declaring either architecture objectively correct
+#### Scenario: Breaking major change is proposed
+- **WHEN** a schema change removes or weakens mandatory evidence
+- **THEN** governance verification SHALL require a new major version, migration, and governance-core review
 
-### Requirement: Implementation tasks preserve assessment and verification traceability
-For an applicable code-changing change, tasks SHALL include implementation work corresponding to the selected approach, behavioral verification for every selected invariant, misuse or bypass verification for security-sensitive behavior, verification for each introduced abstraction, deterministic governance checks, and a final implementation-correspondence review.
+#### Scenario: Deprecated pattern ID remains referenced
+- **WHEN** governed evidence references a deprecated pattern ID
+- **THEN** verification SHALL preserve its meaning and apply the recorded deprecation or migration rule
 
-#### Scenario: Invariant test task is missing
-- **WHEN** a selected invariant has no referenced implementation or verification task
-- **THEN** task-format or governance verification SHALL reject the task plan
+#### Scenario: Invariant is renamed with mapping
+- **WHEN** an invariant ID is renamed through an explicit alias and migration mapping
+- **THEN** compatibility verification SHALL resolve it without reusing the old ID for new meaning
 
-#### Scenario: New abstraction lacks behavioral verification
-- **WHEN** an implementation introduces a new abstraction not linked to a behavioral test task
-- **THEN** implementation-phase verification SHALL reject the change
+#### Scenario: Invariant is removed without migration
+- **WHEN** a referenced invariant is removed without replacement or deactivation migration
+- **THEN** baseline and candidate verification SHALL reject the catalog change
 
-#### Scenario: Final correspondence task is missing
-- **WHEN** an applicable task plan has no final review comparing implementation to the approved assessment
-- **THEN** task-format or governance verification SHALL reject the task plan
+### Requirement: R10 — Assessment ordering is proven by Git ancestry
+An `assessment_commit` SHALL contain a valid approved assessment, contain no governed implementation-path change relative to the proposal baseline, precede and be an ancestor of the earliest commit after that baseline that modifies a governed implementation path, and be an ancestor of the final reviewed technical commit. Complete Git history SHALL be required. A retrospective exception SHALL never be inferred and SHALL be available only for grandfathered or emergency work with owner identity, reason, affected commits, paths, residual risk, and reduced-assurance confirmation.
 
-### Requirement: Final review verifies implementation correspondence
-Final technical verification SHALL compare the exact implementation under review with the approved assessment and SHALL identify a selected pattern not implemented, material structural divergence, a new unassessed abstraction, a removed invariant, or documentation that claims behavior the implementation does not exhibit.
+#### Scenario: Valid assessment precedes implementation
+- **WHEN** the assessment commit precedes and is an ancestor of the earliest governed implementation commit and final technical commit
+- **THEN** ordering verification SHALL accept the ancestry
 
-#### Scenario: Implementation diverges from approved pattern
-- **WHEN** the implementation materially changes participant responsibilities, ownership, boundaries, lifecycle, concurrency, or failure behavior from the approved assessment
-- **THEN** final verification SHALL fail until the assessment is updated and revalidated or the implementation is restored
+#### Scenario: Assessment follows implementation
+- **WHEN** the assessment commit is after the earliest governed implementation commit
+- **THEN** ordering verification SHALL reject the sequence
 
-#### Scenario: Unassessed new abstraction is introduced
-- **WHEN** final review discovers an abstraction that is not identified in the approved assessment metadata
-- **THEN** final verification SHALL reject the change and require assessment before acceptance
+#### Scenario: Assessment and implementation share a commit
+- **WHEN** one commit first introduces both assessment and governed implementation changes
+- **THEN** ordering verification SHALL reject the sequence
 
-#### Scenario: Final review confirms selected invariants
-- **WHEN** the exact reviewed implementation corresponds to the approved participants and boundaries and every invariant has passing behavioral evidence
-- **THEN** the final correspondence record SHALL identify the reviewed commit, implementation mapping, and invariant-test evidence
+#### Scenario: Assessment is unrelated
+- **WHEN** the claimed assessment commit is not an ancestor of the earliest implementation or final technical commit
+- **THEN** ordering verification SHALL reject the claim
 
-#### Scenario: Documented pattern behavior is absent
-- **WHEN** documentation claims a pattern but exact-commit review finds that its required behavior is absent
-- **THEN** final verification SHALL reject the pattern claim and implementation correspondence
+#### Scenario: Assessment is amended after implementation
+- **WHEN** assessment evidence is rewritten only after implementation begins
+- **THEN** normal ordering verification SHALL reject it rather than backdate approval
 
-### Requirement: Pattern decisions define re-evaluation triggers
-Every full assessment SHALL define observable events that require the decision to be reconsidered. Applicable triggers SHALL include a second algorithm implementation, materially increased branching complexity, explicit lifecycle state, concurrency, a new external integration, persistence, transactional boundaries, repeated invariant-bearing construction, or tests that require excessive mocking or internal access.
+#### Scenario: First implementation ancestry is missing
+- **WHEN** complete ancestry to identify the earliest governed implementation commit is unavailable
+- **THEN** governance verification SHALL fail closed with a history-unavailable diagnostic
 
-#### Scenario: Future variation appears
-- **WHEN** a second realistic algorithm implementation appears after a direct or single-strategy decision
-- **THEN** the next material change SHALL re-evaluate Strategy against the now-observable variation force
+#### Scenario: Human retrospective exception is explicit
+- **WHEN** eligible grandfathered or emergency work records every retrospective-exception field
+- **THEN** verification MAY proceed while reporting that retrospective assessment is not equivalent assurance
 
-#### Scenario: Persistence is introduced
-- **WHEN** persistence or a transactional boundary is added to previously persistence-free behavior
-- **THEN** the next assessment SHALL reconsider Repository, Unit of Work, or a simpler persistence boundary without presuming either pattern is required
+### Requirement: R11 — The governance perimeter is actor-neutral and capability-bound
+After activation, any change touching a governed implementation path SHALL be associated with an applicable OpenSpec change for the modified capability and design-pattern governance evidence. The policy SHALL inspect the material commit range and behavior in tests, build files, scripts, and configuration. It SHALL apply equally to humans, Hermes, Claude Code, other agents, direct commits, pull requests, and scripts.
 
-#### Scenario: Test friction exposes a boundary problem
-- **WHEN** verification begins requiring materially excessive mocking or internal access
-- **THEN** the pattern decision SHALL be re-evaluated for an observable ownership or isolation boundary
+#### Scenario: Code changes without OpenSpec
+- **WHEN** a governed implementation path changes without an applicable OpenSpec change
+- **THEN** perimeter verification SHALL reject the change
 
-### Requirement: Repository-managed Hermes apply workflow enforces the sequence
-The repository-managed Hermes apply workflow SHALL read the canonical design-pattern-governance capability, inspect the requested change and repository architecture, complete the required assessment, select a named pattern or `direct_implementation`, validate the assessment before implementation, implement the approved approach, add invariant tests, run final implementation-correspondence review, and report the decision and residual risks. Hermes SHALL NOT introduce a new abstraction without evaluating it and SHALL NOT treat a pattern name as proof of correctness.
+#### Scenario: OpenSpec change is unrelated
+- **WHEN** an OpenSpec change exists but does not own or describe the modified capability
+- **THEN** perimeter verification SHALL reject the association
 
-#### Scenario: Hermes begins implementation without capability context
-- **WHEN** Hermes is asked to apply an applicable OpenSpec change without reading the canonical governance capability and the change assessment
-- **THEN** the repository-managed workflow SHALL block implementation until both inputs are read and validated
+#### Scenario: Documentation-only claim changes implementation
+- **WHEN** a change claims documentation-only scope while modifying governed implementation
+- **THEN** perimeter verification SHALL reject the classification
 
-#### Scenario: Hermes introduces an unassessed abstraction
-- **WHEN** implementation work would introduce a new abstraction not present in the validated assessment
-- **THEN** Hermes SHALL pause implementation and update or request update of the assessment before continuing
+#### Scenario: Implementation is hidden in supporting paths
+- **WHEN** tests, build files, scripts, or configuration introduce material implementation behavior
+- **THEN** perimeter verification SHALL classify and govern that behavior
 
-#### Scenario: Hermes completes the governed sequence
-- **WHEN** implementation and invariant tests are complete
-- **THEN** Hermes SHALL perform exact-scope correspondence review before reporting technical completion
+#### Scenario: Material work is split across commits
+- **WHEN** one material change is divided across commits to evade classification
+- **THEN** range-level perimeter verification SHALL evaluate and reject the evasion
 
-### Requirement: Implementation reports expose pattern decisions and risks
-Every non-trivial implementation report SHALL state the selected named pattern or `direct_implementation`, architectural forces, reasons, rejected alternatives, abstractions introduced, implementation correspondence, tests proving pattern invariants, unresolved architectural risks, and potential over-engineering concerns.
+#### Scenario: Public API is called internal
+- **WHEN** a public API change is labeled internal-only
+- **THEN** behavioral trigger evidence SHALL override the label and require full assessment
 
-#### Scenario: No-pattern implementation is reported
-- **WHEN** the selected approach is `direct_implementation`
-- **THEN** the report SHALL state the no-pattern decision, simplicity reasons, rejected abstractions, focused tests, and re-evaluation triggers
+#### Scenario: Concurrency is called performance-only
+- **WHEN** concurrency is introduced under a performance-only label
+- **THEN** behavioral trigger evidence SHALL require full and security-sensitive assessment
 
-#### Scenario: Patterned implementation is reported
-- **WHEN** one or more named patterns are selected
-- **THEN** the report SHALL map each pattern to its forces, implementation participants, invariant tests, rejected alternatives, and residual risks
+#### Scenario: Human direct commit is governed
+- **WHEN** a human direct commit changes the same governed path as an agent change
+- **THEN** the same perimeter and evidence requirements SHALL apply
 
-#### Scenario: Required risk disclosure is omitted
-- **WHEN** a non-trivial implementation report omits unresolved architectural risks or potential over-engineering concerns
-- **THEN** final reporting verification SHALL treat the report as incomplete
+### Requirement: R12 — Actor-neutral policy and required CI are authoritative
+The canonical capability, policy configuration, trusted baseline checker, candidate checker where applicable, and required governance CI check SHALL be authoritative. Checked-in `CONTRIBUTING.md`, governance documentation, and a pull-request template SHALL describe the perimeter. AGENTS.md, CLAUDE.md, and Hermes skills SHALL NOT be sole policy sources. Activation SHALL be prohibited until required-check enforcement is verified for the configured protected mainline reference and stored as activation evidence.
 
-### Requirement: Adoption has a deterministic, non-bypassable activation boundary
-Governance activation SHALL be identified only from committed repository evidence: the unique protected-mainline commit that first introduces both the canonical `software-design-pattern-governance` capability and its activation-baseline record. That record SHALL bind the activation parent tree and provenance-bearing proposal commit, tree, and blob fingerprints for qualifying active changes. A non-trivial change absent from that baseline SHALL comply, including a materially new OpenSpec change that modifies a capability predating activation. An active change present in the baseline SHALL remain valid without rewriting approved planning evidence, MAY opt in explicitly, and SHALL require retroactive conformance only through an explicit recorded migration decision; new design decisions in a grandfathered change SHOULD follow the policy where practical. Archived changes SHALL remain immutable and SHALL NOT acquire retroactive assessment artifacts. Classification SHALL use Git object identity, ancestry, and content lineage rather than wall-clock time, file modification time, Git author date alone, local environment variables, directory name, optional metadata, or an exemption list without repository provenance. Technical verification, exact-commit review, project-owner approval, implementation authorization, merge readiness, and archive readiness SHALL remain distinct states.
+#### Scenario: Actor-neutral documentation is absent
+- **WHEN** the actor-neutral perimeter document or pull-request guidance is removed
+- **THEN** governance-core verification SHALL reject the change
 
-#### Scenario: New non-trivial change after activation is required to comply
-- **WHEN** a non-trivial OpenSpec change is absent from the provenance-backed active-change set recorded at activation
-- **THEN** governance verification SHALL require the applicable design-pattern assessment before implementation
+#### Scenario: Hermes guidance conflicts with canonical policy
+- **WHEN** Hermes instructions conflict with the canonical capability or checker
+- **THEN** canonical policy and required CI SHALL control and the conflict SHALL fail verification
 
-#### Scenario: Existing active change before activation remains valid
-- **WHEN** an active change has a proposal commit, tree, and blob fingerprint recorded in the activation baseline
-- **THEN** governance verification SHALL preserve its approved pre-activation planning evidence without requiring rewrite or rejecting the change
+#### Scenario: Required branch check is missing
+- **WHEN** governance CI is not verified as a required check for the configured protected reference
+- **THEN** activation SHALL remain incomplete
 
-#### Scenario: Existing active change explicitly opts in
-- **WHEN** a grandfathered active change records an explicit opt-in decision with repository provenance
-- **THEN** governance verification SHALL apply the design-pattern assessment policy according to that recorded opt-in scope
+#### Scenario: Branch name is treated as protection evidence
+- **WHEN** protection is inferred solely from a branch named main
+- **THEN** activation verification SHALL reject the evidence
 
-#### Scenario: Existing canonical capability receives a new material change after activation
-- **WHEN** a materially new post-activation OpenSpec change modifies a canonical capability that existed before activation
-- **THEN** governance verification SHALL require the new change to comply without requiring unrelated historical refactoring
+### Requirement: R13 — Missing or weakened governance evidence fails closed
+After activation, absent, empty, truncated, invalid JSON, missing schema version, unsupported schema, activation hash mismatch, missing activation commit, missing protected-mainline evidence, missing governed path classifications, missing protected-history roots, and checker/configuration incompatibility SHALL fail closed with stable distinct diagnostics. Missing policy SHALL never mean no applicable changes, skip governance, or success.
 
-#### Scenario: Archived historical change is not rewritten
-- **WHEN** governance activates while archived OpenSpec evidence already exists
-- **THEN** protected-history verification SHALL preserve its Git objects and SHALL NOT require new assessment artifacts in the archive
+#### Scenario: Policy file is removed
+- **WHEN** the policy file is absent
+- **THEN** verification SHALL fail with the policy-absent diagnostic
 
-#### Scenario: Renaming a post-activation change does not bypass enforcement
-- **WHEN** a post-activation change is renamed, moved, or recreated under another identifier
-- **THEN** governance verification SHALL classify it from provenance and content lineage and SHALL continue to require compliance
+#### Scenario: Policy file is empty
+- **WHEN** the policy file has zero meaningful content
+- **THEN** verification SHALL fail with the policy-empty diagnostic
 
-#### Scenario: False trivial-change claim involving a public API is rejected
-- **WHEN** a change claims abbreviated treatment while introducing or modifying a public API
-- **THEN** governance verification SHALL reject the claim and require a full assessment
+#### Scenario: Policy file is truncated
+- **WHEN** the policy file ends before a complete valid record
+- **THEN** verification SHALL fail with the policy-truncated or invalid-JSON diagnostic
 
-#### Scenario: False trivial-change claim involving concurrency is rejected
-- **WHEN** a change claims abbreviated treatment while introducing or modifying concurrency behavior
-- **THEN** governance verification SHALL reject the claim and require a full assessment
+#### Scenario: Policy JSON is invalid
+- **WHEN** the policy file contains syntactically invalid JSON
+- **THEN** verification SHALL fail with the invalid-JSON diagnostic
 
-#### Scenario: Activation can be reproduced from a clean clone
-- **WHEN** verification runs from a clean clone containing the protected history and activation-baseline record
-- **THEN** it SHALL derive the same activation commit, grandfathered proposal set, and applicability decisions from repository evidence
+#### Scenario: Schema version is absent
+- **WHEN** policy evidence lacks its schema-version field
+- **THEN** verification SHALL fail with the schema-version-absent diagnostic
 
-#### Scenario: Activation behavior does not depend on wall-clock time
-- **WHEN** wall-clock time, file modification times, Git author dates, or local environment variables differ while committed repository evidence is identical
-- **THEN** activation and grandfathering classifications SHALL remain identical
+#### Scenario: Activation hash mismatches
+- **WHEN** recorded activation evidence does not match committed objects
+- **THEN** verification SHALL fail with the activation-hash-mismatch diagnostic
 
-#### Scenario: Current SDK remediation follows grandfathering policy
-- **WHEN** the proposal baseline for `remediate-security-audit-sdk-adversarial-review` predates activation and its provenance is recorded in the activation baseline
-- **THEN** governance verification SHALL treat it as grandfathered without modifying or retroactively rejecting its approved artifacts
+#### Scenario: Activation commit is missing
+- **WHEN** normal enforcement cannot locate the bound activation-record commit in protected history
+- **THEN** verification SHALL fail with the activation-commit-absent diagnostic
 
-#### Scenario: Proposal validation is mistaken for apply authorization
-- **WHEN** proposal artifacts and strict validation are complete but no explicit project-owner apply authorization is recorded
-- **THEN** implementation SHALL remain unauthorized and all apply tasks SHALL remain incomplete
+#### Scenario: Protected mainline evidence is missing
+- **WHEN** policy or activation evidence lacks the configured protected reference, merge commit, merge tree, or required-check proof
+- **THEN** verification SHALL fail with the protected-mainline-evidence-absent diagnostic
+
+#### Scenario: Governed classifications are missing
+- **WHEN** policy evidence lacks governed path classifications
+- **THEN** verification SHALL fail with the path-classification-absent diagnostic
+
+#### Scenario: Protected root is removed
+- **WHEN** a required protected-history root is removed
+- **THEN** baseline verification SHALL reject the weakening
+
+#### Scenario: Checker and configuration are incompatible
+- **WHEN** checker compatibility does not include the policy schema version
+- **THEN** verification SHALL fail with the checker-policy-incompatible diagnostic
+
+### Requirement: R14 — Governance-core changes run trusted and candidate checks
+Governance-core artifacts SHALL include checker, policy configuration, activation record, schemas, catalog, invariant registry, actor-neutral policy documentation, Hermes integration, CI governance workflow, and governed path classifications. Each governance-core change SHALL require full assessment, security-sensitive analysis, explicit reviewer acknowledgement, trusted baseline-checker validation from the merge-base/protected-mainline baseline, and candidate-checker validation. A candidate checker SHALL NOT be its sole judge.
+
+#### Scenario: Checker is changed to succeed unconditionally
+- **WHEN** the candidate checker is changed to return success for invalid evidence
+- **THEN** the trusted baseline checker SHALL reject the weakening
+
+#### Scenario: Path classification is silently widened
+- **WHEN** candidate policy broadens an exempt or benign path class without acknowledgement
+- **THEN** baseline verification SHALL reject the change
+
+#### Scenario: Schema makes invariants optional
+- **WHEN** a candidate schema makes previously mandatory invariant evidence optional
+- **THEN** baseline verification SHALL reject the weakening
+
+#### Scenario: Governance CI job is removed
+- **WHEN** the governance CI job is deleted or disabled
+- **THEN** baseline verification and activation evidence checks SHALL fail
+
+#### Scenario: Governance-core change passes both checkers
+- **WHEN** an acknowledged governance-core change satisfies trusted baseline and candidate future-format checks
+- **THEN** technical review MAY consider it without either checker implying owner approval
+
+### Requirement: R15 — Correspondence binds a frozen technical commit
+The technical correspondence record commit R SHALL bind the preceding technical commit T without invalidating itself. Normative paths SHALL include implementation, invariant tests, assessment/design artifacts, schemas, checker, policy, catalog, invariant definitions, compatibility claims, workflow, and CI. Governance-record-only paths SHALL use a closed allowlist for correspondence, owner decision, status, merge-readiness, and archive-readiness records. Any post-review normative change SHALL invalidate correspondence. Governance-record-only commits SHALL NOT invalidate it.
+
+#### Scenario: Governance-only commit follows correspondence
+- **WHEN** a closed governance-record-only commit follows R without changing normative blobs
+- **THEN** correspondence binding to T SHALL remain valid
+
+#### Scenario: Normative commit follows correspondence
+- **WHEN** any normative path changes after R
+- **THEN** correspondence SHALL become stale and require review of a new T
+
+#### Scenario: Test evidence changes after review
+- **WHEN** a test proving an invariant changes after R
+- **THEN** correspondence SHALL become stale
+
+#### Scenario: Assessment changes after review
+- **WHEN** assessment or design evidence changes after R
+- **THEN** correspondence SHALL become stale
+
+#### Scenario: Checker changes after review
+- **WHEN** checker, schema, policy, catalog, workflow, or CI changes after R
+- **THEN** correspondence SHALL become stale
+
+#### Scenario: Archive relocation is byte-identical
+- **WHEN** archive relocation preserves every governed blob byte-for-byte
+- **THEN** correspondence MAY remain valid while the archive commit records the relocation
+
+### Requirement: R16 — Governed merge preserves reviewed identities
+The governed history SHALL use T, R binding T, G following R, M introducing T/R/G on the protected mainline, and A directly following M. M SHALL use a merge commit or fast-forward preserving identities. Squash merge, rebase merge, amendment, force-push, and other history rewriting SHALL be prohibited.
+
+#### Scenario: Merge commit preserves identities
+- **WHEN** M introduces T, R, and G with their exact identities through a merge commit
+- **THEN** merge identity verification SHALL accept the strategy
+
+#### Scenario: Fast-forward preserves identities
+- **WHEN** the protected mainline fast-forwards through T, R, and G without rewriting them
+- **THEN** merge identity verification SHALL accept the strategy
+
+#### Scenario: Squash merge is attempted
+- **WHEN** T, R, and G would be replaced by a squash commit
+- **THEN** governed merge verification SHALL reject activation
+
+#### Scenario: Rebase merge is attempted
+- **WHEN** T, R, or G would receive a rewritten identity through rebase merge
+- **THEN** governed merge verification SHALL reject activation
+
+### Requirement: R17 — Activation uses a dedicated direct-child record
+The protected mainline reference SHALL be configured explicitly. The activation-record commit A SHALL be a dedicated commit whose sole parent is exactly M and whose tree changes only the activation record and specifically allowlisted evidence. A SHALL bind the protected reference, M and its tree, T, R, G, checker blob, policy blob, schema blobs, catalog blob, actor-neutral policy-document blob, required-CI identity and enforcement evidence, supported schema versions, and grandfathered entries. A SHALL NOT reference its own hash. Activation SHALL begin at A.
+
+#### Scenario: Valid technical governance merge activation sequence
+- **WHEN** exact T then R then G are identity-preserved by M and A is M's dedicated direct child with all bound evidence
+- **THEN** activation verification SHALL identify A as the activation boundary
+
+#### Scenario: Activation record precedes mainline merge
+- **WHEN** an activation record is committed before M
+- **THEN** activation verification SHALL reject the sequence
+
+#### Scenario: Activation parent mismatches merge
+- **WHEN** A's parent is not exactly M
+- **THEN** activation verification SHALL fail with the activation-parent diagnostic
+
+#### Scenario: Activation contains implementation changes
+- **WHEN** A includes unrelated implementation or non-allowlisted changes
+- **THEN** bootstrap verification SHALL reject A
+
+#### Scenario: Reviewed technical commit is missing
+- **WHEN** A cannot prove exact T in the identity-preserved history
+- **THEN** activation verification SHALL fail closed
+
+#### Scenario: Checker blob is altered
+- **WHEN** A's bound checker blob differs from T
+- **THEN** activation verification SHALL fail with the checker-blob-mismatch diagnostic
+
+#### Scenario: Policy blob is altered
+- **WHEN** A's bound policy configuration blob differs from T
+- **THEN** activation verification SHALL fail with the policy-blob-mismatch diagnostic
+
+#### Scenario: Activation history is shallow
+- **WHEN** the clone lacks history required to prove T/R/G/M/A ancestry
+- **THEN** activation verification SHALL fail with the activation-history-unavailable diagnostic
+
+### Requirement: R18 — Bootstrap is exact and one-time
+Before normal enforcement exists, one-time bootstrap SHALL permit only creation of A after proving exact approved T, exact R, exact G, exact M parent, exact artifact blobs, required-check evidence, and no unrelated A changes. Bootstrap SHALL end permanently after A and SHALL NOT be re-entered.
+
+#### Scenario: Exact bootstrap succeeds
+- **WHEN** every approved identity and blob matches and A changes only allowlisted activation evidence
+- **THEN** bootstrap MAY create A and terminate permanently
+
+#### Scenario: Bootstrap lacks required CI evidence
+- **WHEN** required-check enforcement evidence is absent or unverifiable
+- **THEN** bootstrap SHALL fail and activation SHALL remain incomplete
+
+#### Scenario: Bootstrap is attempted after activation
+- **WHEN** A already exists in protected history and bootstrap mode is requested again
+- **THEN** verification SHALL reject bootstrap re-entry
+
+### Requirement: R19 — Grandfathering has two provenance classes
+A `mainline_present` entry SHALL identify change ID, proposal path, proposal blob hash, proposal baseline commit, and M-tree membership. An `external_in_flight` entry SHALL identify change ID, remote branch reference, exact branch head, proposal baseline commit, proposal blob hash, OpenSpec metadata hash, owner rationale, and bounded continuing scope. A change SHALL use the class matching its actual provenance and SHALL NOT be required both to exist in M and only on an external branch.
+
+#### Scenario: Mainline-present change is recorded
+- **WHEN** an active change exists in M's tree with matching proposal evidence
+- **THEN** a complete mainline-present entry MAY grandfather its recorded scope
+
+#### Scenario: External branch is recorded
+- **WHEN** an active change is absent from M but has complete owner-recorded remote-branch evidence
+- **THEN** a complete external-in-flight entry MAY grandfather its recorded scope
+
+#### Scenario: Preferred SDK rollout completes first
+- **WHEN** the active SDK remediation merges before governance activation
+- **THEN** activation SHALL classify it from actual M-tree state without asserting false proposal-baseline provenance
+
+#### Scenario: Governance activates before SDK remediation
+- **WHEN** governance activates while the SDK remediation remains only on its remote branch
+- **THEN** it SHALL require a complete external-in-flight entry to continue under grandfathering
+
+#### Scenario: Grandfathered scope expands
+- **WHEN** a grandfathered change adds public API, integration, persistence, lifecycle, concurrency, security boundary, governed capability, or paths outside its record
+- **THEN** the expanded scope SHALL require normal full governance
+
+### Requirement: R20 — Opt-in and withdrawal are exact and bounded
+A grandfathered change MAY opt in through evidence bound to an exact commit. Opt-in SHALL become irrevocable at the first governed implementation commit. Withdrawal before that commit SHALL require explicit project-owner governance evidence. Silent withdrawal SHALL be invalid.
+
+#### Scenario: Opt-in is recorded before implementation
+- **WHEN** exact-commit owner evidence opts a grandfathered change into governance before governed implementation
+- **THEN** governance SHALL apply from the recorded opt-in scope
+
+#### Scenario: Withdrawal occurs before implementation
+- **WHEN** explicit owner-governance evidence withdraws opt-in before any governed implementation commit
+- **THEN** verification MAY restore the recorded grandfathered scope
+
+#### Scenario: Withdrawal occurs after implementation
+- **WHEN** withdrawal is attempted after the first governed implementation commit
+- **THEN** governance verification SHALL reject it as irrevocable
+
+#### Scenario: Withdrawal is silent
+- **WHEN** opt-in metadata disappears without explicit owner-governance evidence
+- **THEN** governance verification SHALL reject the silent withdrawal
+
+### Requirement: R21 — Emergency classification is exact-change and path-bounded
+For an otherwise unclassified path, an emergency classification record SHALL bind exact change ID, exact proposal baseline, exact affected paths, a conservative path class, reason, incident or operational reference, mandatory follow-up task or issue, and exact owner-governance commit. It SHALL apply only to that change, end when merged or abandoned, emit a distinct warning, and require full assessment. It SHALL NOT use wall-clock expiry or downgrade public API, security, concurrency, persistence, or integration triggers.
+
+#### Scenario: Complete emergency record proceeds conservatively
+- **WHEN** every exact-change emergency field is valid for an otherwise unclassified path
+- **THEN** the checker SHALL warn distinctly and proceed under conservative full assessment
+
+#### Scenario: Emergency record lacks a field
+- **WHEN** any required emergency classification field is absent
+- **THEN** governance verification SHALL fail the record
+
+#### Scenario: Emergency attempts trigger downgrade
+- **WHEN** an emergency record attempts to downgrade public API, security, concurrency, persistence, or integration
+- **THEN** governance verification SHALL reject the downgrade
+
+#### Scenario: Emergency record is reused
+- **WHEN** another change attempts to reuse an emergency record
+- **THEN** exact-change binding verification SHALL reject it
+
+#### Scenario: Emergency change ends
+- **WHEN** the exact governed change is merged or abandoned
+- **THEN** the emergency classification SHALL cease without consulting wall-clock time
+
+### Requirement: R22 — Hermes integration is executable but non-authoritative
+During apply, the actual generated Hermes skill frontmatter and repository-supported allowed-tools syntax SHALL be inspected. The minimum valid permission expansion SHALL permit `node openspec/scripts/check-design-pattern-governance.mjs`; no assumption that `Bash(openspec:)` permits Node SHALL be accepted. Workflow tests SHALL assert both governed sequence and command permission, and regeneration through `openspec update` SHALL fail CI if either is removed. Hermes SHALL remain convenience-only.
+
+#### Scenario: Generated allowed-tools permits checker
+- **WHEN** the repository-managed Hermes skill is materialized
+- **THEN** a workflow test SHALL prove the governed sequence exists and the exact checker command is permitted
+
+#### Scenario: Existing Bash scope is assumed sufficient
+- **WHEN** apply assumes `Bash(openspec:)` permits the Node checker without testing actual syntax
+- **THEN** Hermes integration verification SHALL fail
+
+#### Scenario: Skill regeneration removes governance
+- **WHEN** `openspec update` removes the sequence or checker permission
+- **THEN** CI SHALL fail the workflow drift test
+
+#### Scenario: Non-Hermes actor changes code
+- **WHEN** a human or other agent bypasses Hermes convenience checks
+- **THEN** canonical CI and perimeter enforcement SHALL still govern the change
+
+### Requirement: R23 — Governance lifecycle states remain distinct
+Proposal validation, apply authorization, technical verification, correspondence review, project-owner decision, merge readiness, activation, production/publication authorization, canonical materialization, and archive readiness SHALL remain distinct states. AI review, PR assignment, authorship, and informal messages SHALL NOT create owner approval or apply authorization.
+
+#### Scenario: Proposal validation is mistaken for authorization
+- **WHEN** proposal artifacts validate but no explicit project-owner apply authorization exists
+- **THEN** implementation SHALL remain unauthorized and every apply task SHALL remain unchecked
 
 #### Scenario: AI review is presented as owner approval
-- **WHEN** an AI assessment, PR assignment, or informal message exists without an explicit project-owner decision bound to the reviewed commit
-- **THEN** governance status SHALL remain unapproved for merge and archive
+- **WHEN** AI review, PR assignment, or an informal message exists without an exact-commit owner decision
+- **THEN** owner-governance, merge, activation, and archive states SHALL remain incomplete
+
+#### Scenario: Technical checks pass without production approval
+- **WHEN** all technical checks pass but publication or deployment authorization is absent
+- **THEN** production and publication SHALL remain prohibited
+
+### Requirement: R24 — Archive evidence is validated explicitly
+Archive validation SHALL NOT assume that `openspec validate --all --strict` validates archived changes. The governed archive step SHALL explicitly verify task completeness, T/R/G bindings, owner decision, canonical capability materialization, production/publication restrictions, immutable archive contents, exact changed paths, and byte identity of governed evidence. Archive SHALL occur only after active enforcement is verified.
+
+#### Scenario: Repository-wide strict validation passes alone
+- **WHEN** `openspec validate --all --strict` passes without explicit archive-evidence checks
+- **THEN** archive readiness SHALL remain incomplete
+
+#### Scenario: Explicit archive validation passes
+- **WHEN** every archive evidence check, binding, restriction, materialization, path, and byte-identity assertion passes
+- **THEN** archive readiness MAY be reported after the governed archive commit
+
+#### Scenario: Archived governed blob changes
+- **WHEN** archive relocation changes any governed blob bytes
+- **THEN** archive verification SHALL reject the archive and invalidate correspondence
+
+#### Scenario: Canonical capability is missing
+- **WHEN** archive does not materialize the approved canonical capability
+- **THEN** archive verification SHALL fail
