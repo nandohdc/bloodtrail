@@ -97,7 +97,7 @@ Authority constructors are trusted-boundary APIs, not identity providers. The ap
 
 Use `audit.runWithContext(frame, callback)` or `runWithAuditContext(frame, callback)` to establish an immutable `AsyncLocalStorage` frame. Nested scopes merge only explicit fields and restore their parent. Promise and timer continuations created inside a scope inherit it under the supported Node runtimes; detached work created outside the scope must receive explicit context. Missing required context fails safely rather than fabricating identity, tenancy, requests, or traces.
 
-The SDK starts in `ready`. `shutdown()` establishes a no-new-emissions boundary, waits up to the configured bound for in-flight sink calls, then invokes optional sink `flush` and `shutdown` at most once. Concurrent shutdown callers share the in-progress result. Calls after shutdown return `SDK_SHUT_DOWN`. `flush()` and sink acceptance do not mean durable handoff.
+The SDK starts in `ready`. `shutdown()` establishes a no-new-emissions boundary, waits up to the configured bound for in-flight sink calls, then invokes optional sink `flush` and `shutdown` at most once. Concurrent shutdown callers share the in-progress result. Calls after shutdown return `SDK_SHUT_DOWN`. The SDK owns the one-shot timeout handle for that shutdown lifecycle: Node.js `unref()` prevents it from retaining an otherwise idle process, and deterministic cleanup cancels it when either race branch settles. The configured timeout still bounds unresolved in-flight work while other referenced activity keeps the process alive. `flush()`, shutdown completion, and sink acceptance do not mean durable handoff.
 
 ## Event, operation, privacy, and sink APIs
 

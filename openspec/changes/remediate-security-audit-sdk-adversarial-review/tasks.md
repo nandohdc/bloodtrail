@@ -77,12 +77,12 @@ GitHub issue: [#26](https://github.com/nandohdc/bloodtrail/issues/26)
 
 GitHub issue: [#27](https://github.com/nandohdc/bloodtrail/issues/27)
 
-- [ ] 7.1 Refactor shutdown timeout ownership so the timer is unreferenced where supported and cleared after either race outcome. [F-07]
-- [ ] 7.2 Preserve bounded timeout behavior and at-most-once sink flush/shutdown semantics when work genuinely stalls. [F-07]
-- [ ] 7.3 Add unit tests with controllable timers for clean settlement, timeout settlement, near-boundary races, and cleanup. [F-07]
-- [ ] 7.4 Add a bounded child-process regression proving clean shutdown does not wait for the configured timeout before process exit. [F-07]
-- [ ] 7.5 Verify timing tests have explicit generous bounds and deterministic synchronization rather than flaky sleeps. [F-07]
-- [ ] 7.6 Update lifecycle/API documentation and compatibility assessment. [F-07]
+- [x] 7.1 Refactor shutdown timeout ownership so the timer is unreferenced where supported and cleared after either race outcome. [F-07]
+- [x] 7.2 Preserve bounded timeout behavior and at-most-once sink flush/shutdown semantics when work genuinely stalls. [F-07]
+- [x] 7.3 Add unit tests with controllable timers for clean settlement, timeout settlement, near-boundary races, and cleanup. [F-07]
+- [x] 7.4 Add a bounded child-process regression proving clean shutdown does not wait for the configured timeout before process exit. [F-07]
+- [x] 7.5 Verify timing tests have explicit generous bounds and deterministic synchronization rather than flaky sleeps. [F-07]
+- [x] 7.6 Update lifecycle/API documentation and compatibility assessment. [F-07]
 
 ## 8. Bound operation and event identity retention [F-08]
 

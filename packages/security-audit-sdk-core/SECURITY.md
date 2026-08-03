@@ -69,6 +69,8 @@ The SDK owns its normalized configuration envelope and validated event values. I
 
 Configuration immutability is not an ownership transfer or a security boundary against malicious trusted application code. Callers may use mutable arrays, maps, sets, queues, and counters inside collaborators and must make that state safe for the concurrency they permit. Callers also decide whether to freeze or make a collaborator non-extensible before injection; the SDK neither requires nor adds those constraints. Do not infer delivery durability merely because a caller-owned sink accepted an immutable SDK event.
 
+The SDK owns each shutdown timeout only for the corresponding in-progress shutdown race. The Node.js handle is unreferenced so a clean completed shutdown does not retain an idle process, and it is cancelled deterministically after either race outcome or normalized sink-lifecycle failure. While other referenced work keeps the process active, the configured timeout still bounds waiting for unresolved sink emission. This lifecycle cleanup is not a durability, delivery, or container-shutdown guarantee, and it installs no process signal handlers.
+
 ## Caller-value normalization boundary
 
 Event and authority value data must be behavior-free canonical values: finite numbers, strings, booleans, null, dense arrays, and plain records. Convert `BigInt`, dates, maps, sets, typed buffers, errors, URLs, and other domain/host values explicitly before submission. Do not rely on `toJSON()`, getters, accessors, proxies, custom prototypes, function/symbol properties, sparse arrays, or arbitrary structured-clone support.

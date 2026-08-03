@@ -222,7 +222,7 @@ export interface AuditEventSink {
 
 A sink receives one fully validated frozen event per SDK handoff. `accepted` means only accepted at that sink boundary. `rejected` and `unknown` become bounded safe SDK failures. Synchronously thrown and rejected-promise causes are untrusted, become `SDK_SINK_FAILURE`, and are not serialized.
 
-`audit.flush()` invokes optional sink flush while ready or shutting down. `audit.shutdown()` prevents new emission, waits for tracked in-flight calls up to the configured bound, calls optional flush then shutdown at most once, and moves to `shut_down`. It does not establish durable handoff.
+`audit.flush()` invokes optional sink flush while ready or shutting down. `audit.shutdown()` prevents new emission, waits for tracked in-flight calls up to the configured bound, calls optional flush then shutdown at most once, and moves to `shut_down`. Its one-shot Node.js timeout handle is lifecycle-owned, unreferenced, and cancelled after either shutdown-race outcome, so a completed clean shutdown does not keep an otherwise idle process alive. When some other referenced activity keeps the process active, the configured timeout remains logically effective and unresolved in-flight work returns `SDK_SHUTDOWN_TIMEOUT`. Shutdown does not establish durable handoff, and sink `accepted` semantics are unchanged.
 
 No production sink is included. `createCapturingAuditSink` and `createInMemoryAuditSink` from `./testing` are deterministic test utilities with no network or filesystem behavior. The in-memory sink's capacity is bounded and eviction is not delivery.
 

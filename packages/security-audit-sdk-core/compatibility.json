@@ -61,6 +61,21 @@
     "retentionPolicy": "unchanged-pending-F-08",
     "compatibilityImpact": "patch-level security and correctness fix for defective concurrent behavior; no public type, error-code, contract 1.0.0, generic emit, or redelivery semantic change"
   },
+  "shutdownTimerOwnership": {
+    "owner": "single-in-progress-shutdown-lifecycle",
+    "nodeHandleReferencePolicy": "unref",
+    "cleanup": "idempotent-clear-in-structured-finally-after-either-race-outcome",
+    "logicalTimeoutWhileProcessActive": "preserved",
+    "idleProcessRetention": false,
+    "signalHandlersInstalled": false,
+    "intervalsInstalled": false,
+    "publicApiImpact": "none",
+    "configurationImpact": "none-existing-shutdownTimeoutMs-and-milliseconds-preserved",
+    "contractImpact": "none-contract-1.0.0-unchanged",
+    "sinkContractImpact": "none",
+    "platformTyping": "Node.js 24.2.0 and 26.5.0 Timeout handles provide unref()",
+    "compatibilityImpact": "patch-level observable process-lifecycle correction; private unpublished candidate remains 0.1.0"
+  },
   "configurationOwnership": {
     "normalizedEnvelope": "sdk-owned-shallow-frozen",
     "ownedValueData": "field-specific-copy-and-freeze",
@@ -92,7 +107,8 @@
     "patch": [
       "bug fix preserving contract 1.0.0 interpretation",
       "safe diagnostic bound tightening",
-      "caller-owned collaborator freeze and receiver correction"
+      "caller-owned collaborator freeze and receiver correction",
+      "shutdown timeout process-retention and lifecycle ownership correction"
     ],
     "minor": [
       "additive optional public API",

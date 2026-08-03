@@ -284,22 +284,49 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
   async #performShutdown(): Promise<AuditResult<void>> {
     if (this.#state === "shut_down") return failure("SDK_SHUT_DOWN", "lifecycle");
     this.#state = "shutting_down";
-    const settled = Promise.allSettled([...this.#inFlight]).then(() => true);
-    const timedOut = new Promise<false>((resolve) => setTimeout(() => resolve(false), this.#config.shutdownTimeoutMs));
-    if (!(await Promise.race([settled, timedOut]))) {
-      this.#state = "shut_down";
-      return failure("SDK_SHUTDOWN_TIMEOUT", "lifecycle");
-    }
+    const timeout = createShutdownTimeout(this.#config.shutdownTimeoutMs);
     try {
-      await this.#config.sink.flush?.();
-      await this.#config.sink.shutdown?.();
-      this.#state = "shut_down";
-      return { ok: true, value: undefined };
-    } catch {
-      this.#state = "shut_down";
-      return failure("SDK_SINK_FAILURE", "sink");
+      const settled = Promise.allSettled([...this.#inFlight]).then(() => true);
+      if (!(await Promise.race([settled, timeout.promise]))) {
+        this.#state = "shut_down";
+        return failure("SDK_SHUTDOWN_TIMEOUT", "lifecycle");
+      }
+      try {
+        await this.#config.sink.flush?.();
+        await this.#config.sink.shutdown?.();
+        this.#state = "shut_down";
+        return { ok: true, value: undefined };
+      } catch {
+        this.#state = "shut_down";
+        return failure("SDK_SINK_FAILURE", "sink");
+      }
+    } finally {
+      timeout.cancel();
     }
   }
+}
+
+type ShutdownTimeout = {
+  readonly promise: Promise<false>;
+  cancel(): void;
+};
+
+function createShutdownTimeout(timeoutMs: number): ShutdownTimeout {
+  let cancelled = false;
+  let resolveTimeout: (value: false) => void = () => {};
+  const promise = new Promise<false>((resolve) => {
+    resolveTimeout = resolve;
+  });
+  const timer = setTimeout(() => resolveTimeout(false), timeoutMs);
+  timer.unref();
+  return {
+    promise,
+    cancel() {
+      if (cancelled) return;
+      cancelled = true;
+      clearTimeout(timer);
+    },
+  };
 }
 
 export function createSecurityAuditSdk(configuration: SecurityAuditSdkConfiguration): SecurityAuditSdk {
