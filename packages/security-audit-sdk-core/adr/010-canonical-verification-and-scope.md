@@ -26,6 +26,24 @@ Separate npm scripts are useful during development but can accidentally reuse st
 14. Mutations separately prove F-06 path failures, missing/renamed compile-time members, missing/duplicate generated descriptors, and non-callable concrete methods. Fixture clones use isolated Git identity and are removed after execution.
 15. Verification requires an empty Git index and never stages or commits.
 
+16. When a remediation group introduces a new file under an SDK source prefix (`packages/security-audit-sdk-core/src/` or `lib/`), the untracked-new-SDK-source invariant in rule 6 conflicts with the empty-index invariant in rule 15. An exact, change-bound allowlist in the governed lifecycle metadata resolves this deadlock without weakening either invariant.
+
+17. The field `ownership.reviewedNewSdkSourcePaths` (array of exact repository-relative strings) declares reviewed new SDK source paths for the active remediation. An untracked path under an SDK source prefix may pass changed-path enforcement only when:
+
+    a. The path is an exact string match in the array.
+    b. The declaration resides in checked-in `verification-lifecycle.json`.
+    c. The path is under a configured `sdkSourcePrefixes` entry.
+    d. The path is part of the visible candidate.
+    e. The active change ID matches the lifecycle context.
+
+    The declaration must not support globs, regex, prefix-only matches, directories, absolute paths, path traversal (`..`), backslash aliases, or environment-variable expansion.
+
+18. Metadata validation rejects non-array declarations, empty strings, non-string entries, `..`, absolute paths, backslashes, directory-suffix paths, glob characters, duplicate entries, and paths outside configured SDK source prefixes. Validation fails closed: malformed, ambiguous, or nonmatching declarations reject the untracked SDK source.
+
+19. After the new SDK source file is committed, it is treated as an ordinary tracked source file. The declaration may remain as historical change evidence but must not grant authorization to a different path, bypass production-scope checks, bypass package-content checks, or bypass runtime-dependency restrictions.
+
+20. Differential mutation tests prove that removing the declaration, weakening it to a directory prefix, switching to prefix-based authorization, removing the untracked check entirely, relying on task state alone, or weakening the empty-index rule each produce the expected failure.
+
 ## Consequences
 
 - Running the canonical command is intentionally destructive to local disposable package state and may need network access for `npm ci`/audit.
@@ -33,3 +51,4 @@ Separate npm scripts are useful during development but can accidentally reuse st
 - Active, governed, and archived verification remain usable without weakening the contract, scope, exact-commit, production, or publication boundaries.
 - This verification-only correction has no SDK runtime API or contract `1.0.0` compatibility impact.
 - Passing does not record owner review, release approval, merge approval, archive approval, or production authorization.
+- Remediation groups that introduce new SDK source files require an exact reviewed-path declaration in lifecycle metadata. The declaration is auditable, deterministic, and fail-closed. It does not authorize undeclared files, does not accept task-state bypasses, and does not weaken the empty-index requirement.

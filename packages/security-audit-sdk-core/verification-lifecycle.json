@@ -50,7 +50,10 @@
       "packages/security-audit-sdk-core/src/",
       "packages/security-audit-sdk-core/lib/"
     ],
-    "canonicalSdkCapabilityPrefix": "openspec/specs/security-audit-sdk-core/"
+    "canonicalSdkCapabilityPrefix": "openspec/specs/security-audit-sdk-core/",
+    "reviewedNewSdkSourcePaths": [
+      "packages/security-audit-sdk-core/src/bounded-fifo.ts"
+    ]
   },
   "localIgnoredFiles": {
     "policy": "Git-standard ignored files are excluded with git ls-files --others --exclude-standard. Non-ignored untracked SDK source and OpenSpec evidence remain visible; unrelated local instruction files outside governed roots are classified but are not SDK implementation scope."

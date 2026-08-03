@@ -20,6 +20,8 @@ assert(typeof base === "string" && /^[0-9a-f]{40}$/.test(base), "remediation pro
 git(["rev-parse", "--verify", `${base}^{commit}`]);
 git(["merge-base", "--is-ancestor", base, "HEAD"]);
 
+const reviewedNewPaths = validateReviewedNewSdkSourcePaths(metadata);
+
 const tracked = trackedChanges(base);
 const untracked = splitNull(git(["ls-files", "--others", "--exclude-standard", "-z"]));
 const records = [...tracked, ...untracked.map((path) => ({ status: "?", path }))];
@@ -48,6 +50,9 @@ for (const record of records) {
       continue;
     }
     if (record.status === "?" && metadata.ownership.sdkSourcePrefixes.some((prefix) => path.startsWith(prefix))) {
+      if (reviewedNewPaths.has(path)) {
+        continue;
+      }
       violations.push(`? ${path} (untracked SDK source is not an expected reviewed target)`);
       continue;
     }
@@ -87,6 +92,63 @@ const counts = [...classified.values()].reduce((result, value) => {
 process.stdout.write(
   `changed-path policy passed in ${lifecycle.mode} mode for ${lifecycle.change}: ${records.length} visible records; ${JSON.stringify(counts)}; ignored files excluded by standard Git semantics\n`,
 );
+
+function validateReviewedNewSdkSourcePaths(metadata) {
+  const ownership = metadata.ownership;
+  const paths = ownership.reviewedNewSdkSourcePaths;
+
+  if (paths === undefined) return new Set();
+
+  if (!Array.isArray(paths)) {
+    throw new Error("ownership.reviewedNewSdkSourcePaths must be an array");
+  }
+
+  const seen = new Set();
+  const validated = new Set();
+
+  for (const rawPath of paths) {
+    if (typeof rawPath !== "string" || rawPath.length === 0) {
+      throw new Error(`reviewedNewSdkSourcePaths entry must be a non-empty string, got: ${JSON.stringify(rawPath)}`);
+    }
+
+    if (rawPath.includes("\\0")) {
+      throw new Error(`reviewedNewSdkSourcePaths entry contains null byte: ${JSON.stringify(rawPath)}`);
+    }
+
+    if (rawPath.includes("..")) {
+      throw new Error(`reviewedNewSdkSourcePaths entry must not contain path traversal: ${rawPath}`);
+    }
+
+    if (rawPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(rawPath)) {
+      throw new Error(`reviewedNewSdkSourcePaths entry must be a repository-relative path, not absolute: ${rawPath}`);
+    }
+
+    if (rawPath.includes("\\")) {
+      throw new Error(`reviewedNewSdkSourcePaths entry must use forward slashes: ${rawPath}`);
+    }
+
+    if (rawPath.endsWith("/")) {
+      throw new Error(`reviewedNewSdkSourcePaths entry must be a file path, not a directory: ${rawPath}`);
+    }
+
+    if (/[*?[{]/.test(rawPath)) {
+      throw new Error(`reviewedNewSdkSourcePaths entry must not contain glob characters: ${rawPath}`);
+    }
+
+    if (!ownership.sdkSourcePrefixes.some((prefix) => rawPath.startsWith(prefix))) {
+      throw new Error(`reviewedNewSdkSourcePaths entry is outside configured SDK source prefixes: ${rawPath}`);
+    }
+
+    if (seen.has(rawPath)) {
+      throw new Error(`reviewedNewSdkSourcePaths contains duplicate path: ${rawPath}`);
+    }
+
+    seen.add(rawPath);
+    validated.add(rawPath);
+  }
+
+  return validated;
+}
 
 function trackedChanges(commit) {
   const fields = splitNull(git([
