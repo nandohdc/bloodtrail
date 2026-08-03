@@ -26,6 +26,13 @@ export interface AuditFieldTransformationHook {
   transform(input: AuditTransformationInput): AuditTransformationOutput | string | undefined;
 }
 
+export interface AuditRetentionConfiguration {
+  /** Collision detection covers the most recent N generated event IDs for this SDK instance. */
+  readonly recentGeneratedEventIds?: number;
+  /** Collision detection covers the most recent N issued operation IDs; operation authority does not expire. */
+  readonly recentIssuedOperationIds?: number;
+}
+
 export interface SecurityAuditSdkConfiguration {
   readonly contractVersion: typeof CONTRACT_VERSION;
   readonly producer: SecurityAuditEvent["producer"];
@@ -38,7 +45,16 @@ export interface SecurityAuditSdkConfiguration {
   readonly clock?: AuditClock;
   readonly identifiers?: AuditIdentifierProvider;
   readonly shutdownTimeoutMs?: number;
+  readonly retention?: AuditRetentionConfiguration;
 }
+
+export interface NormalizedAuditRetentionConfiguration {
+  readonly recentGeneratedEventIds: number;
+  readonly recentIssuedOperationIds: number;
+}
+
+export const DEFAULT_RETENTION_CAPACITY = 4096;
+export const MAX_RETENTION_CAPACITY = 100_000;
 
 export interface NormalizedAuditFieldTransformation {
   readonly path: AuditFieldPolicyPath | string;
@@ -57,6 +73,7 @@ export interface NormalizedSdkConfiguration {
   readonly clock: AuditClock;
   readonly identifiers: AuditIdentifierProvider;
   readonly shutdownTimeoutMs: number;
+  readonly retention: NormalizedAuditRetentionConfiguration;
 }
 
 export function normalizeConfiguration(input: SecurityAuditSdkConfiguration): NormalizedSdkConfiguration {
@@ -85,6 +102,7 @@ function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): Nor
   const transformations = normalizeTransformations(input.transformations);
   const timeout = input.shutdownTimeoutMs ?? 5000;
   if (!Number.isSafeInteger(timeout) || timeout < 0 || timeout > 60_000) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/shutdownTimeoutMs");
+  const retention = normalizeRetentionConfiguration(input);
   const base = {
     contractVersion: CONTRACT_VERSION,
     producer: cloneRecord(input.producer),
@@ -96,8 +114,54 @@ function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): Nor
     clock: input.clock ?? systemAuditClock,
     identifiers: input.identifiers ?? systemAuditIdentifiers,
     shutdownTimeoutMs: timeout,
+    retention,
   };
   return Object.freeze(input.deployment === undefined ? base : { ...base, deployment: cloneRecord(input.deployment) });
+}
+
+function normalizeRetentionConfiguration(input: SecurityAuditSdkConfiguration): NormalizedAuditRetentionConfiguration {
+  const descriptor = Object.getOwnPropertyDescriptor(input, "retention");
+  if (descriptor?.get || descriptor?.set) {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
+  }
+  const value = descriptor?.value;
+  if (value === undefined) {
+    return Object.freeze({
+      recentGeneratedEventIds: DEFAULT_RETENTION_CAPACITY,
+      recentIssuedOperationIds: DEFAULT_RETENTION_CAPACITY,
+    });
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
+  }
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
+  }
+  const allowed = new Set(["recentGeneratedEventIds", "recentIssuedOperationIds"]);
+  for (const key of Reflect.ownKeys(value)) {
+    if (typeof key !== "string" || !allowed.has(key)) {
+      throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
+    }
+    const item = Object.getOwnPropertyDescriptor(value, key);
+    if (!item || item.get || item.set) {
+      throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/retention/${key}`);
+    }
+  }
+  return Object.freeze({
+    recentGeneratedEventIds: retentionCapacity(value, "recentGeneratedEventIds"),
+    recentIssuedOperationIds: retentionCapacity(value, "recentIssuedOperationIds"),
+  });
+}
+
+function retentionCapacity(value: object, key: keyof AuditRetentionConfiguration): number {
+  const descriptor = Object.getOwnPropertyDescriptor(value, key);
+  if (descriptor === undefined || descriptor.value === undefined) return DEFAULT_RETENTION_CAPACITY;
+  const capacity = descriptor.value;
+  if (!Number.isSafeInteger(capacity) || capacity <= 0 || capacity > MAX_RETENTION_CAPACITY) {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/retention/${key}`);
+  }
+  return capacity as number;
 }
 
 function requireRecord(value: unknown, path: string): asserts value is Readonly<Record<string, string>> {

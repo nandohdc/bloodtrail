@@ -16,7 +16,10 @@ const sdk = createSecurityAuditSdk({
   service: { name: "service", version: "1.0.0" },
   environment: { name: "test" },
   sink,
+  retention: { recentGeneratedEventIds: 4096, recentIssuedOperationIds: 4096 },
 });
+// @ts-expect-error retention capacities are numeric, not strings
+createSecurityAuditSdk({ contractVersion: "1.0.0", producer: { name: "p", version: "1.0.0" }, service: { name: "s" }, environment: { name: "e" }, sink, retention: { recentGeneratedEventIds: "4096" } });
 const known: EventName = "bloodtrail.audit.authentication.succeeded";
 void known;
 // @ts-expect-error unsupported contract versions must not type-check

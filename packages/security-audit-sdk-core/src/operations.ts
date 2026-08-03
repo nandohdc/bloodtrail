@@ -1,4 +1,4 @@
-import type { EventMethodName, GeneratedOperationContext } from "./generated/contract.generated.js";
+import type { EventMethodName, EventName, GeneratedOperationContext } from "./generated/contract.generated.js";
 import type { AuditIdentifierProvider } from "./providers.js";
 import type { AuditResult } from "./errors.js";
 import { failure } from "./errors.js";
@@ -45,9 +45,15 @@ export interface AuditOperationHandle {
   markCancelled(): AuditResult<AuditOperationSnapshot>;
 }
 
+type AuditOperationCompletionState = "reserved" | "completed";
+
 export interface AuditOperationAuthority {
   issue(input?: AuditOperationInput): AuditOperationHandle;
   resolve(input: unknown): AuditResult<AuditOperationSnapshot | undefined>;
+  completionState(input: unknown, eventName: EventName): AuditResult<AuditOperationCompletionState | undefined>;
+  reserveCompletion(input: unknown, eventName: EventName): AuditResult<boolean>;
+  completeCompletion(input: unknown, eventName: EventName): AuditResult<void>;
+  releaseCompletion(input: unknown, eventName: EventName): AuditResult<void>;
 }
 
 interface AuditOperationEvidence {
@@ -57,6 +63,7 @@ interface AuditOperationEvidence {
   readonly boundEvent: EventMethodName | undefined;
   readonly transactional: boolean;
   state: AuditOperationState;
+  readonly completions: Map<EventName, AuditOperationCompletionState>;
 }
 
 export function createAuditOperationAuthority(identifiers: AuditIdentifierProvider): AuditOperationAuthority {
@@ -111,6 +118,16 @@ export function createAuditOperationAuthority(identifiers: AuditIdentifierProvid
     }
   }
 
+  const resolveEvidence = (input: unknown): AuditResult<AuditOperationEvidence | undefined> => {
+    if (input === undefined) return { ok: true, value: undefined };
+    if ((typeof input !== "object" && typeof input !== "function") || input === null) {
+      return failure("SDK_INVALID_OPERATION_TRANSITION", "lifecycle", "/operation");
+    }
+    const evidence = evidenceByHandle.get(input);
+    if (!evidence) return failure("SDK_INVALID_OPERATION_TRANSITION", "lifecycle", "/operation");
+    return { ok: true, value: evidence };
+  };
+
   return {
     issue(input: AuditOperationInput = {}): AuditOperationHandle {
       const evidence: AuditOperationEvidence = {
@@ -120,6 +137,7 @@ export function createAuditOperationAuthority(identifiers: AuditIdentifierProvid
         boundEvent: input.boundEvent,
         transactional: input.transactional ?? true,
         state: "started",
+        completions: new Map<EventName, AuditOperationCompletionState>(),
       };
       const handle = Object.freeze(new AuditOperationHandleImpl());
       evidenceByHandle.set(handle, evidence);
@@ -127,13 +145,44 @@ export function createAuditOperationAuthority(identifiers: AuditIdentifierProvid
     },
 
     resolve(input: unknown): AuditResult<AuditOperationSnapshot | undefined> {
-      if (input === undefined) return { ok: true, value: undefined };
-      if ((typeof input !== "object" && typeof input !== "function") || input === null) {
-        return failure("SDK_INVALID_OPERATION_TRANSITION", "lifecycle", "/operation");
+      const resolved = resolveEvidence(input);
+      if (!resolved.ok) return resolved;
+      if (resolved.value === undefined) return { ok: true, value: undefined };
+      return { ok: true, value: snapshot(resolved.value) };
+    },
+
+    completionState(input: unknown, eventName: EventName): AuditResult<AuditOperationCompletionState | undefined> {
+      const resolved = resolveEvidence(input);
+      if (!resolved.ok) return resolved;
+      if (resolved.value === undefined) return { ok: true, value: undefined };
+      return { ok: true, value: resolved.value.completions.get(eventName) };
+    },
+
+    reserveCompletion(input: unknown, eventName: EventName): AuditResult<boolean> {
+      const resolved = resolveEvidence(input);
+      if (!resolved.ok) return resolved;
+      if (resolved.value === undefined) return { ok: true, value: false };
+      if (resolved.value.completions.has(eventName)) return { ok: true, value: false };
+      resolved.value.completions.set(eventName, "reserved");
+      return { ok: true, value: true };
+    },
+
+    completeCompletion(input: unknown, eventName: EventName): AuditResult<void> {
+      const resolved = resolveEvidence(input);
+      if (!resolved.ok) return resolved;
+      if (resolved.value?.completions.get(eventName) === "reserved") {
+        resolved.value.completions.set(eventName, "completed");
       }
-      const evidence = evidenceByHandle.get(input);
-      if (!evidence) return failure("SDK_INVALID_OPERATION_TRANSITION", "lifecycle", "/operation");
-      return { ok: true, value: snapshot(evidence) };
+      return { ok: true, value: undefined };
+    },
+
+    releaseCompletion(input: unknown, eventName: EventName): AuditResult<void> {
+      const resolved = resolveEvidence(input);
+      if (!resolved.ok) return resolved;
+      if (resolved.value?.completions.get(eventName) === "reserved") {
+        resolved.value.completions.delete(eventName);
+      }
+      return { ok: true, value: undefined };
     },
   };
 }

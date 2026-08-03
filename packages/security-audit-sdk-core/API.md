@@ -21,6 +21,10 @@ const configuration: SecurityAuditSdkConfiguration = {
   clock,
   identifiers,
   shutdownTimeoutMs: 5_000,
+  retention: {
+    recentGeneratedEventIds: 4_096,
+    recentIssuedOperationIds: 4_096,
+  },
 };
 
 const audit = createSecurityAuditSdk(configuration);
@@ -42,6 +46,7 @@ Optional configuration:
 - `clock`: one fixed `AuditClock`; defaults to the system clock.
 - `identifiers`: one fixed `AuditIdentifierProvider`; defaults to collision-resistant UUID generation.
 - `shutdownTimeoutMs`: bounded `0..60000` wait; default `5000`.
+- `retention`: optional collision-history capacities. `recentGeneratedEventIds` and `recentIssuedOperationIds` each default to `4096`; each must be a finite positive safe integer no greater than the hard maximum `100000`.
 
 Normalization is field-aware rather than one recursive clone/freeze operation:
 
@@ -55,7 +60,7 @@ Configuration immutability therefore protects SDK-owned configuration without tr
 
 ## Clock and identifier providers
 
-`AuditClock.now()` must return a valid `Date`. `AuditIdentifierProvider` supplies `eventId`, `operationId`, `correlationId`, `causationId`, `requestId`, `messageId`, and `transactionId`. Event IDs must be lowercase RFC 4122 UUIDs accepted by contract validation. Other generated identifiers must be non-empty, bounded printable values. Reuse of an event or operation ID where uniqueness is required fails safely.
+`AuditClock.now()` must return a valid `Date`. `AuditIdentifierProvider` supplies `eventId`, `operationId`, `correlationId`, `causationId`, `requestId`, `messageId`, and `transactionId`. Event IDs must be lowercase RFC 4122 UUIDs accepted by contract validation. Other generated identifiers must be non-empty, bounded printable values. Reuse of an event ID among the most recent `retention.recentGeneratedEventIds` values, or an operation ID among the most recent `retention.recentIssuedOperationIds` values, fails safely. Both histories are insertion-order FIFO: checks do not refresh age, and a distinct insertion at capacity evicts the oldest value. After eviction, reuse is outside this SDK instance's collision knowledge and may proceed if every other check passes; the windows do not claim lifetime-global uniqueness.
 
 Inject deterministic providers only at initialization and normally only in tests. An injected provider changes repeatability, not causality or uniqueness requirements. Stateful class providers are supported; their methods retain the original receiver, and the caller remains responsible for coordinating their mutable state across concurrent SDK calls.
 
@@ -178,7 +183,9 @@ Named methods accept only the exact opaque handle returned by `beginOperation()`
 
 The handle does not inspect a database, open a transaction, create an outbox, or make audit emission atomic with business state. Transactional success before `markCommitted()` fails with `PREMATURE_SUCCESS` and the sink is not called. A bound operation cannot complete through a different named method. Only sanctioned handle transitions can establish committed or other terminal operation state.
 
-Terminal-success deduplication is atomic within one SDK instance for the SDK-issued operation ID plus cataloged event name. Absence is `idle`; a call synchronously acquires `reserved` before sink handoff, and sink acceptance promotes it to `completed`. A concurrent or later terminal-success call observing either state returns the existing bounded `SDK_DUPLICATE_SUCCESS` result without running transformation/validation hooks or invoking the sink. Rejected, unknown, synchronously thrown, and rejected-promise sink outcomes release `reserved`, so a later non-concurrent caller may explicitly retry; a caller rejected while the first attempt is in flight must retry after that attempt settles. The core performs no automatic retry, and sink acceptance is not durable delivery. Retention and the final SDK-local deduplication horizon remain subject to the separately governed F-08 remediation; this correction adds no expiry or eviction policy.
+Terminal-success deduplication is atomic within one SDK instance for the exact SDK-issued operation handle plus cataloged event name. Absence is `idle`; a call synchronously acquires `reserved` before sink handoff, and sink acceptance promotes it to `completed`. Both states live in the handle's module-private weak authority record. A concurrent or later terminal-success call observing either state returns bounded `SDK_DUPLICATE_SUCCESS` without running transformation/validation hooks or invoking the sink. Rejected, unknown, synchronously thrown, and rejected-promise sink outcomes release `reserved`, so a later non-concurrent caller may explicitly retry. A retained legitimate handle keeps authority, binding, commit state, and completed duplicate protection for its lifetime even after unrelated traffic exceeds both configured FIFO capacities. Dropping the caller's last handle reference permits its weak record to be collected. The core performs no automatic retry, and sink acceptance is not durable delivery.
+
+The two primitive FIFO windows are collision-detection horizons only. They never authorize an operation, restore a copied handle, bypass event binding, or evict an active reservation. Active in-flight sink work and caller-retained handles consume lifecycle-owned resources; configured windows consume bounded memory. The SDK is not a durable global or cross-process deduplication database.
 
 This provenance rule is specific to named construction. Generic `emit()` and `redeliver()` continue to validate complete canonical events at the trusted-producer boundary; the SDK cannot determine whether compromised trusted application logic intentionally constructed a false but canonical complete event.
 

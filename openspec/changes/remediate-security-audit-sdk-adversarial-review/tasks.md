@@ -88,14 +88,14 @@ GitHub issue: [#27](https://github.com/nandohdc/bloodtrail/issues/27)
 
 GitHub issue: [#28](https://github.com/nandohdc/bloodtrail/issues/28)
 
-- [ ] 8.1 Replace terminal operation `Set` retention with weakly keyed state attached to live SDK-issued operation handles. [F-08]
-- [ ] 8.2 Implement validated immutable identity-retention configuration with a default 24-hour horizon and maximum 100,000 live event IDs and operation IDs per store. [F-08]
-- [ ] 8.3 Implement deterministic expiry before lookup/insertion and fail closed at live capacity without evicting entries still inside the horizon. [F-08]
-- [ ] 8.4 Add `SDK_IDENTITY_CAPACITY_EXCEEDED` or the approved documented equivalent as a bounded safe result. [F-08]
-- [ ] 8.5 Add sustained-generation tests proving live stores remain bounded and capacity does not silently weaken in-horizon duplicate protection. [F-08]
-- [ ] 8.6 Add deterministic-clock tests for duplicates inside the horizon, expiry outside the horizon, capacity exhaustion, and boundary timestamps. [F-08]
-- [ ] 8.7 Add tests or supported instrumentation proving abandoned operation handles are not strongly retained by terminal deduplication state. [F-08]
-- [ ] 8.8 Document the horizon, outside-horizon behavior, sizing, operational tradeoffs, migration, and package-version impact. [F-08]
+- [x] 8.1 Replace strong terminal-operation completion retention with weakly keyed state attached to live SDK-issued operation handles. [F-08]
+- [x] 8.2 Add validated immutable nested retention configuration with separate 4,096-entry defaults and 100,000-entry hard maxima for recent generated event IDs and recent issued operation IDs. [F-08]
+- [x] 8.3 Implement deterministic insertion-order FIFO collision windows whose reads and duplicate insertions do not refresh age and whose oldest historical value is evicted at capacity. [F-08]
+- [x] 8.4 Preserve exact-handle authority, event binding, private commit state, active reservation atomicity, and accepted terminal duplicate protection for the legitimate handle lifetime independent of collision-window churn. [F-08]
+- [x] 8.5 Add sustained-generation and testing-only structural-size tests proving primitive histories remain at or below capacity and post-eviction behavior matches the documented horizon. [F-08]
+- [x] 8.6 Add deterministic tests for duplicates inside each retained FIFO window, oldest-first eviction, no read refresh, duplicate insertion, invalid configuration, defaults, hard maxima, and rejection above maxima. [F-08]
+- [x] 8.7 Add structural and isolated weak-ownership evidence proving discarded operation handles are not stored in a strong SDK collection and active reservations are never evicted. [F-08]
+- [x] 8.8 Document each retention/deduplication horizon, weak ownership, FIFO behavior, post-eviction behavior, sizing, active-work limitations, migration, and package-version impact. [F-08]
 
 ## 9. Validate privacy transformation paths during initialization [F-10]
 

@@ -1,5 +1,7 @@
 export type { AuditClock, AuditIdentifierProvider } from "./providers.js";
 export type { AuditDeliveryResult, AuditEventSink } from "./sink.js";
+export type { SdkRetentionStateForTesting } from "./sdk.js";
+export { inspectSdkRetentionForTesting } from "./sdk.js";
 import type { SecurityAuditEvent } from "./generated/contract.generated.js";
 import type { AuditDeliveryResult, AuditEventSink } from "./sink.js";
 import { cloneAndFreeze } from "./internal.js";
