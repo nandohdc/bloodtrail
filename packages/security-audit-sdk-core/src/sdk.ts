@@ -11,7 +11,7 @@ import type { AuditOperationAuthority, AuditOperationHandle, AuditOperationInput
 import { createAuditOperationAuthority } from "./operations.js";
 import type { AuditDeliveryResult } from "./sink.js";
 import { validateSecurityAuditEvent } from "./validation/index.js";
-import { clonePlain, deepFreeze } from "./internal.js";
+import type { DeliveryIntent } from "./internal.js";
 import { BoundedFifoSet } from "./bounded-fifo.js";
 
 export type SecurityAuditSdkState = "ready" | "shutting_down" | "shut_down";
@@ -71,11 +71,11 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
   get state(): SecurityAuditSdkState { return this.#state; }
 
   async emit(event: SecurityAuditEvent): Promise<AuditResult<AuditDeliveryResult>> {
-    return this.#emitValidatedEvent(event);
+    return this.#deliverValidatedEvent(event, { kind: "generic_emit" });
   }
 
   async redeliver(event: SecurityAuditEvent): Promise<AuditResult<AuditDeliveryResult>> {
-    return this.#emitValidatedEvent(event);
+    return this.#deliverValidatedEvent(event, { kind: "pure_redelivery" });
   }
 
   beginOperation(input: AuditOperationInput = {}): AuditResult<AuditOperationHandle> {
@@ -237,7 +237,9 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
       return failure("SDK_INVALID_INPUT", "validation", "/");
     }
     if (!built.ok) return built;
-    if (built.value.redelivery) return this.#emitValidatedEvent(built.value.event);
+    if (built.value.deliveryIntent.kind === "named_redelivery") {
+      return this.#deliverValidatedEvent(built.value.event, built.value.deliveryIntent);
+    }
     if (this.#generatedEventIds.has(built.value.event.event.id)) {
       return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id");
     }
@@ -249,7 +251,7 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
     }
     this.#generatedEventIds.add(built.value.event.event.id);
     try {
-      const result = await this.#emitValidatedEvent(built.value.event);
+      const result = await this.#deliverValidatedEvent(built.value.event, built.value.deliveryIntent);
       if (result.ok && completionEvent && suppliedOperation !== undefined) {
         this.#operationAuthority.completeCompletion(suppliedOperation, completionEvent);
       }
@@ -261,18 +263,27 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
     }
   }
 
-  async #emitValidatedEvent(event: SecurityAuditEvent): Promise<AuditResult<AuditDeliveryResult>> {
+  async #deliverValidatedEvent(
+    event: SecurityAuditEvent,
+    intent: DeliveryIntent,
+  ): Promise<AuditResult<AuditDeliveryResult>> {
     if (this.#state !== "ready") return failure(this.#state === "shut_down" ? "SDK_SHUT_DOWN" : "SDK_SHUTTING_DOWN", "lifecycle");
     const validated = validateSecurityAuditEvent(event);
     if (!validated.ok) return validated;
-    const frozen = deepFreeze(clonePlain(validated.value));
+    return this.#handoffValidatedEvent(validated.value, intent);
+  }
+
+  async #handoffValidatedEvent(
+    event: Readonly<SecurityAuditEvent>,
+    intent: DeliveryIntent,
+  ): Promise<AuditResult<AuditDeliveryResult>> {
+    assertDeliveryIntent(intent);
     let pending: Promise<AuditDeliveryResult>;
     try {
-      pending = this.#config.sink.emit(frozen);
+      pending = this.#config.sink.emit(event);
     } catch {
       return failure("SDK_SINK_FAILURE", "sink", "/sink", {
-        eventName: validated.value.event.name,
-        eventId: validated.value.event.id,
+        eventName: event.event.name,
       });
     }
     this.#inFlight.add(pending);
@@ -280,13 +291,11 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
       const result = await pending;
       if (result.status === "accepted") return { ok: true, value: result };
       return failure(result.status === "rejected" ? "SDK_SINK_REJECTED" : "SDK_SINK_FAILURE", "sink", "/sink", {
-        eventName: validated.value.event.name,
-        eventId: validated.value.event.id,
+        eventName: event.event.name,
       });
     } catch {
       return failure("SDK_SINK_FAILURE", "sink", "/sink", {
-        eventName: validated.value.event.name,
-        eventId: validated.value.event.id,
+        eventName: event.event.name,
       });
     } finally {
       this.#inFlight.delete(pending);
@@ -328,6 +337,18 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
       timeout.cancel();
     }
   }
+}
+
+function assertDeliveryIntent(intent: DeliveryIntent): void {
+  switch (intent.kind) {
+    case "generic_emit":
+    case "pure_redelivery":
+    case "named_execution":
+    case "named_redelivery":
+      return;
+  }
+  const exhaustive: never = intent;
+  throw new TypeError(`unsupported delivery intent: ${String(exhaustive)}`);
 }
 
 type ShutdownTimeout = {

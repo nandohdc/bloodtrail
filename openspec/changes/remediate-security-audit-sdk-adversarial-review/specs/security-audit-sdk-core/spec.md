@@ -227,28 +227,135 @@ SDK initialization SHALL accept transformation hooks only for field-policy paths
 - **WHEN** transformation configuration is incompatible
 - **THEN** no SDK instance is returned and callers do not encounter `SDK_HOOK_FAILURE` on every later event
 
-### Requirement: Redelivery, retry, and re-execution are observably distinct
-Pure SDK-core redelivery SHALL accept only the identical immutable validated event object previously issued by the same SDK instance, SHALL preserve event ID and canonical content, and SHALL perform no rebuild or automatic retry. Structurally equal clones, modified values, caller-created events, and events from another SDK instance SHALL return a bounded invalid-redelivery result. Retry or re-execution SHALL use a named event method, receive a new event ID, and carry the contract-required original-event and retry relationships. The canonical redelivery requirement SHALL NOT be silently weakened. [F-11]
+### Requirement: Public complete-event APIs carry explicit delivery intent
+The SDK SHALL distinguish public generic emission from public pure redelivery with closed internal delivery intents. `emit(event)` SHALL select `generic_emit`; `redeliver(event)` SHALL select `pure_redelivery`; ordinary named construction SHALL select `named_execution`; and a named method receiving `redelivery.event` SHALL select `named_redelivery`. The intent mechanism SHALL remain internal and SHALL NOT alter a public signature or root export. [F-11]
 
-#### Scenario: Pure redelivery preserves identity
-- **WHEN** `redeliver()` receives the identical immutable validated event previously issued by that SDK instance
-- **THEN** the sink receives the same event ID and canonical content without reconstruction or automatic retry
+#### Scenario: Generic emission and pure redelivery remain distinct
+- **WHEN** a trusted caller submits the same complete canonical event once through `emit(event)` and once through `redeliver(event)`
+- **THEN** both calls validate and hand off the complete event while selecting `generic_emit` and `pure_redelivery` respectively
 
-#### Scenario: Re-execution receives new identity
-- **WHEN** business logic performs a new attempt through a named method with required retry relationships
-- **THEN** the SDK assigns a new event ID and retains the applicable original-event, operation, correlation, and causation links
+#### Scenario: Named paths select their declared intents
+- **WHEN** a caller invokes an ordinary named method and then invokes that method with `redelivery.event`
+- **THEN** the SDK selects `named_execution` for the constructed occurrence and `named_redelivery` for the supplied complete event
 
-#### Scenario: Retry cannot be confused with redelivery
-- **WHEN** caller code supplies a structurally equal clone or reconstructed prior event to `redeliver()`
-- **THEN** the SDK returns a bounded invalid-redelivery result rather than treating re-execution as pure redelivery
+### Requirement: Pure redelivery revalidates a complete canonical event
+`redeliver(event)` SHALL accept a complete canonical `SecurityAuditEvent` from a trusted caller without requiring same-object, same-process, or same-instance provenance. Each explicit call SHALL rerun bounded input normalization, prohibited-data checks, canonical schema validation, and semantic validation before sink handoff. Invalid input SHALL return the applicable existing validation or privacy code and SHALL NOT invoke the sink. [F-11]
 
-#### Scenario: Modified redelivery input is rejected
-- **WHEN** any canonical field of a previously issued event is changed before a redelivery attempt
-- **THEN** redelivery is rejected and the sink receives no event
+#### Scenario: A complete clone or foreign-instance event is valid input
+- **WHEN** `redeliver()` receives a structurally complete canonical event, including a clone or an event created by another SDK instance
+- **THEN** the SDK validates it and invokes the sink once if every canonical check passes
 
-#### Scenario: Foreign-instance event is rejected
-- **WHEN** an event issued by one SDK instance is passed to another instance's `redeliver()`
-- **THEN** the receiving SDK returns a bounded invalid-redelivery result
+#### Scenario: Invalid complete-event input is rejected for its concrete defect
+- **WHEN** the submitted value is unsafe, structurally invalid, prohibited, or semantically invalid
+- **THEN** the SDK returns the applicable existing code such as `SDK_INVALID_INPUT`, `FIELD_SERIALIZATION_FAILED`, `SDK_SCHEMA_VALIDATION_FAILED`, `PROHIBITED_DATA`, or a canonical semantic code and invokes no sink
+
+### Requirement: Pure redelivery preserves event identity and canonical time
+A valid pure redelivery SHALL preserve `event.id`, `event.timestamp`, and `event.observed_at` exactly. It SHALL NOT reconstruct occurrence or observation time and SHALL NOT assign a new event identity. [F-11]
+
+#### Scenario: Identity and timestamps remain unchanged
+- **WHEN** a valid complete event is explicitly redelivered
+- **THEN** the sink receives the same event ID, occurrence timestamp, and observation timestamp as the submitted canonical event
+
+### Requirement: Pure redelivery preserves all canonical metadata
+A valid pure redelivery SHALL preserve event name, category, action, lifecycle, outcome, commit state, delivery class, schema name/version, producer and environment context, correlation and causation, retry metadata, operation and transaction metadata, and every other canonical field. Validation MAY create an SDK-owned normalized immutable value for the sink, but the SDK SHALL NOT mutate or freeze the caller's object. [F-11]
+
+#### Scenario: Complete canonical content is preserved without caller mutation
+- **WHEN** a caller submits a mutable complete canonical event to `redeliver()`
+- **THEN** the sink receives canonically equal content and the caller's object remains byte-equivalent, mutable, and unfrozen
+
+### Requirement: Redelivery invokes no construction dependencies or transformations
+Public and named redelivery SHALL NOT invoke identifier providers, the clock, context reconstruction, or configured privacy transformation hooks. Ordinary named execution SHALL retain its valid configured transformation behavior. [F-10, F-11]
+
+#### Scenario: Redelivery preparation counters remain unchanged
+- **WHEN** valid public and named redelivery calls execute with counting identifier, clock, and transformation collaborators
+- **THEN** only the sink count changes and every identifier, clock, and hook count remains unchanged
+
+#### Scenario: Named execution retains transformation behavior
+- **WHEN** the same SDK performs a valid ordinary named execution with an accepted F-10 transformation
+- **THEN** the transformation runs under the existing policy and the constructed event receives a new identity and canonical time
+
+### Requirement: Redelivery does not mutate generated history or terminal completion
+Public and named redelivery SHALL NOT insert an event ID into F-08 generated-ID history and SHALL NOT reserve, complete, release, or otherwise alter F-02 terminal-completion state. A named redelivery SHALL return from the redelivery branch before named-execution identifier insertion and terminal reservation. [F-01, F-02, F-08, F-11]
+
+#### Scenario: Retention state is unchanged
+- **WHEN** a caller redelivers valid complete events before and after bounded FIFO history churn
+- **THEN** generated-event and issued-operation history sizes and contents change only through ordinary generation or operation issuance, not through redelivery
+
+#### Scenario: Redelivery neither consumes nor releases completion authority
+- **WHEN** a valid named redelivery is performed with an exact authorized operation handle before or after accepted terminal execution
+- **THEN** the redelivery may invoke the sink but leaves the handle's reservation/completion state unchanged
+
+### Requirement: Named redelivery validates fixed catalog and schema metadata
+A named method receiving `redelivery.event` SHALL validate the complete canonical event and enforce the method's fixed event name, category, action, delivery class, and the canonical schema name/version. Catalog metadata mismatch SHALL use `UNKNOWN_CATALOG_VALUE`; schema identity/version mismatch SHALL use `UNSUPPORTED_SCHEMA_VERSION`; no mismatched event SHALL reach the sink. [F-11]
+
+#### Scenario: Wrong named-method metadata is rejected
+- **WHEN** `authenticationSucceeded({ redelivery: { event } })` receives an event with a different fixed event name, category, action, or delivery class
+- **THEN** the SDK returns `UNKNOWN_CATALOG_VALUE` at the applicable canonical path and invokes no sink
+
+#### Scenario: Wrong schema identity is rejected
+- **WHEN** a named redelivery event carries a noncanonical schema name or version
+- **THEN** the SDK returns `UNSUPPORTED_SCHEMA_VERSION` and invokes no sink
+
+### Requirement: Named redelivery preserves exact operation and correlation binding
+When a named redelivery supplies an operation handle, the SDK SHALL retain F-01 exact same-instance SDK-issued handle authority, enforce immutable method/event binding, and require the event's operation, transaction, and correlation identifiers to equal the private operation snapshot. A mismatch SHALL return `SDK_OPERATION_EVENT_MISMATCH` at the applicable operation or correlation path and SHALL NOT invoke the sink. [F-01, F-11]
+
+#### Scenario: Matching authorized binding is accepted
+- **WHEN** a valid complete event's operation, transaction, and correlation identifiers match an exact SDK-issued handle bound to the invoked method
+- **THEN** named redelivery validates and invokes the sink without rebuilding the event
+
+#### Scenario: Method or identifier binding mismatch is rejected
+- **WHEN** the handle is bound to another method or the event's operation, transaction, or correlation identifier differs from the private snapshot
+- **THEN** the SDK returns `SDK_OPERATION_EVENT_MISMATCH` at the deterministic mismatch path and invokes no sink
+
+### Requirement: Repeated explicit redelivery remains caller-controlled
+The SDK SHALL invoke the sink exactly once for every valid explicit public or named redelivery call. It SHALL NOT retain an event-provenance ledger, suppress a repeated call as a duplicate, or perform an additional automatic call. [F-08, F-11]
+
+#### Scenario: Repeated calls each hand off once
+- **WHEN** a trusted caller explicitly redelivers the same complete canonical event five times
+- **THEN** the sink is invoked exactly five times with preserved identity and no redelivery-owned state growth
+
+### Requirement: Retry and re-execution create a new occurrence identity
+A retry or re-execution through a named method SHALL remain `named_execution`, SHALL generate a new event ID distinct from the original event, and SHALL retain exact operation authority plus applicable F-02 terminal reservation/completion behavior. Valid configured transformations SHALL run for the newly constructed occurrence. [F-01, F-02, F-10, F-11]
+
+#### Scenario: Named re-execution receives new identity
+- **WHEN** business logic invokes a named method with a valid positive retry relationship to an earlier event
+- **THEN** the SDK creates a new event ID, retains the exact authorized operation relationship, runs valid configured transformations, and applies ordinary terminal reservation semantics
+
+### Requirement: Retry causality and attempt limits remain enforced
+A positive retry attempt SHALL retain the required `original_event_id` and causation relationship, SHALL reject self-reference, and SHALL not exceed the canonical retry-attempt maximum. Missing or self-referential causality SHALL return `BAD_CAUSALITY`; an attempt above the governed maximum SHALL return `FIELD_LIMIT_EXCEEDED`. [F-11]
+
+#### Scenario: Valid retry relationships are retained
+- **WHEN** a named re-execution supplies retry attempt one, the original event ID, and valid causation
+- **THEN** the new event preserves those relationship fields while using a distinct event ID
+
+#### Scenario: Invalid retry relationships fail safely
+- **WHEN** a positive retry omits original identity, points causation or original identity at its newly generated event ID, or exceeds the maximum attempt
+- **THEN** the SDK returns `BAD_CAUSALITY` or `FIELD_LIMIT_EXCEEDED` at the deterministic correlation path and invokes no sink
+
+### Requirement: Every delivery intent retains lifecycle and bounded sink behavior
+All four delivery intents SHALL use the existing ready, shutting-down, and shut-down lifecycle and the same bounded sink-result mapping. Sink `rejected` SHALL return `SDK_SINK_REJECTED`; sink `unknown`, synchronous throw, and rejected promise SHALL return `SDK_SINK_FAILURE`; calls crossing the shutdown boundary SHALL return `SDK_SHUTTING_DOWN` or `SDK_SHUT_DOWN` as applicable. Diagnostics SHALL remain bounded and SHALL NOT serialize raw causes, complete events, event IDs, operation/transaction/correlation identifiers, or stacks. [F-02, F-07, F-11]
+
+#### Scenario: Sink outcomes classify identically across intents
+- **WHEN** each of the four intents encounters rejected, unknown, synchronously thrown, or rejected-promise sink behavior
+- **THEN** each returns the existing deterministic sink code and bounded safe diagnostic with exactly one sink invocation
+
+#### Scenario: In-flight redelivery participates in shutdown
+- **WHEN** shutdown begins while a redelivery sink promise is unresolved
+- **THEN** shutdown tracks the in-flight call under the existing timeout policy and new calls fail with the applicable lifecycle code
+
+### Requirement: Complete-event redelivery makes no provenance or durability guarantee
+The SDK SHALL NOT claim proof of prior durable delivery, broker provenance, same-process origin, same-instance generation, exactly-once delivery, at-least-once delivery, durable deduplication, or durable sink acceptance. An accepted sink result SHALL retain only its existing sink-boundary meaning. [F-11]
+
+#### Scenario: Valid redelivery does not prove prior delivery
+- **WHEN** a trusted caller submits a complete canonical event that the current SDK instance did not generate
+- **THEN** successful validation and sink acceptance make no claim about that event's origin, prior handoff, durability, or delivery count
+
+### Requirement: F-11 introduces no contract or production-scope expansion
+F-11 SHALL preserve Security Audit Event Contract `1.0.0`, package version `0.1.0`, public signatures, root exports, zero runtime dependencies, existing F-08 capacities, and existing F-10 transformation policy. It SHALL add no transport, exporter, collector, broker, queue, persistence, durable ledger, production integration, publication authorization, or production-use authorization. [F-08, F-10, F-11]
+
+#### Scenario: Package and scope surfaces remain unchanged
+- **WHEN** F-11 verification inspects contract identity, package metadata, exports, dependencies, retained-state capacities, transformation behavior, package contents, and production-scope guards
+- **THEN** only the documented internal intent, named-redelivery validation/binding, focused tests, and documentation corrections are present
 
 ### Requirement: Remediation compatibility is explicit and contract-preserving
 The remediation SHALL preserve canonical Security Audit Event Contract version `1.0.0` shapes and meanings. Breaking SDK input restrictions, added error codes, corrected error classification, bounded-state configuration, and redelivery behavior SHALL receive package-version and migration assessment. Unsupported contract changes SHALL NOT be introduced through SDK remediation; a genuine canonical defect requires a separate governed event-contract change. [F-01, F-05, F-08, F-11, F-12]

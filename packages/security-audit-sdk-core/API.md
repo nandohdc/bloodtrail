@@ -152,7 +152,7 @@ Each method derives event name, category, action, lifecycle constraints, and min
 | `securityConfigurationChanged` | `bloodtrail.audit.security.configuration.changed` |
 | `tenantContextViolationDetected` | `bloodtrail.audit.tenant.context_violation.detected` |
 
-Every method returns `Promise<AuditResult<AuditDeliveryResult>>`. The public `emit(event)` validates a complete canonical `SecurityAuditEvent`; it is not an arbitrary-object escape hatch and should not replace named construction. `redeliver(event)` accepts an already validated canonical record and preserves its immutable identity for a modeled pure redelivery.
+Every method returns `Promise<AuditResult<AuditDeliveryResult>>`. The public `emit(event)` validates a complete canonical `SecurityAuditEvent`; it is not an arbitrary-object escape hatch and should not replace named construction. `redeliver(event)` accepts a complete canonical event from a trusted caller, revalidates it on every explicit call, and preserves canonical identity and metadata. Neither API proves how the caller obtained the event.
 
 ## Transaction-aware operations
 
@@ -191,11 +191,61 @@ This provenance rule is specific to named construction. Generic `emit()` and `re
 
 ## Causality, asynchronous completion, retry, and redelivery
 
-- Correlation, operation, transaction, request, message, trace, span, causation, event, and original-event identifiers remain distinct.
-- Completion events whose contract semantics require an original attempt must carry both `correlation.causation_id` and `correlation.original_event_id`.
-- Re-execution calls the named API again with `retry: { retry_attempt, original_event_id, causation_id }`; the SDK creates a new event ID.
-- Pure redelivery calls `redeliver(validatedEvent)`; it preserves the same event ID and bytes and implements no queue or retry policy.
-- Self-causation and a positive retry without original-event identity fail safely.
+Correlation, operation, transaction, request, message, trace, span, causation, event, and original-event identifiers remain distinct. Completion events whose contract semantics require an original attempt carry both `correlation.causation_id` and `correlation.original_event_id`.
+
+The implementation records four internal delivery intents without exporting them or changing public signatures:
+
+| Call shape | Internal intent | Identity behavior |
+| --- | --- | --- |
+| `emit(completeEvent)` | `generic_emit` | validates and emits the complete trusted-producer record as supplied |
+| `redeliver(completeEvent)` | `pure_redelivery` | revalidates and preserves the complete record's identity and canonical metadata |
+| ordinary named method, including `retry` | `named_execution` | constructs a new occurrence and generates a new event ID |
+| named method with `redelivery.event` | `named_redelivery` | revalidates the complete record, enforces named metadata/binding, and preserves identity |
+
+### Pure redelivery
+
+`redeliver(event)` accepts a complete canonical `SecurityAuditEvent` from a trusted caller. Each valid explicit call:
+
+- reruns bounded normalization, prohibited-data, schema, and semantic validation before sink handoff;
+- preserves event ID, occurrence and observation timestamps, event name, delivery class, schema identity/version, correlation and causation, retry fields, operation/transaction fields, and every other canonical field;
+- does not mutate or freeze the caller's object; the sink receives the SDK-owned normalized immutable value;
+- does not invoke the clock, identifier provider, context construction, or privacy transformation hooks;
+- does not insert generated-ID history or reserve, complete, or release terminal operation state;
+- invokes the sink exactly once, so five valid explicit calls produce five sink handoffs rather than automatic suppression or additional retries.
+
+A complete structural clone and a complete event created by another SDK instance are valid inputs if they pass every canonical check. Pure redelivery does not require a same-instance event brand or proof that the exact JavaScript object was previously issued by this SDK.
+
+### Named redelivery
+
+A named method receiving `redelivery.event` no longer uses the previous unchecked early return. It revalidates the complete canonical event and enforces the method's fixed event name, category, action, delivery class, and schema identity/version. If an operation handle is supplied, the exact handle must retain its ordinary same-instance F-01 authority and method/event binding; the event's operation, transaction, and correlation identifiers must match the private operation snapshot. Named redelivery does not run transformations, generate identity or time, insert generated history, or consume/release terminal-completion state.
+
+### Retry and re-execution
+
+Re-execution calls the named API again with `retry: { retry_attempt, original_event_id, causation_id }`. It remains ordinary named execution: the SDK creates a new event ID, uses canonical time construction, runs valid configured transformations, retains exact operation authority, and applies terminal reservation/completion behavior. Positive attempts require original-event identity and valid causality, reject self-reference, and cannot exceed the canonical maximum of `1000`. Redelivering a retry event later preserves its already-recorded retry metadata; it does not create another occurrence.
+
+### Existing redelivery-related errors
+
+F-11 adds no error code. Failures retain the concrete existing classification:
+
+| Condition | Code |
+| --- | --- |
+| unsupported or unsafe canonical input | `SDK_INVALID_INPUT` or `FIELD_SERIALIZATION_FAILED` |
+| structural canonical failure | `SDK_SCHEMA_VALIDATION_FAILED` or the applicable existing contract code |
+| event name/category/action/delivery mismatch | `UNKNOWN_CATALOG_VALUE` |
+| schema name/version mismatch | `UNSUPPORTED_SCHEMA_VERSION` |
+| operation method/event or operation/transaction/correlation mismatch | `SDK_OPERATION_EVENT_MISMATCH` |
+| semantic or causality violation | `SDK_SEMANTIC_VALIDATION_FAILED`, `BAD_CAUSALITY`, or the applicable existing contract code |
+| sink rejection | `SDK_SINK_REJECTED` |
+| sink `unknown`, synchronous throw, or rejected promise | `SDK_SINK_FAILURE` |
+| call while shutting down or after shutdown | `SDK_SHUTTING_DOWN` or `SDK_SHUT_DOWN` |
+
+There is no `SDK_INVALID_REDELIVERY`: the SDK does not claim unverifiable event provenance.
+
+### Delivery and provenance limitations
+
+The core performs no automatic retry and supplies no queue, persistence, broker, transport, collector, or durable event ledger. It cannot prove prior durable delivery, broker provenance, same-process origin, same-instance generation, exactly-once delivery, at-least-once delivery, durable deduplication, or durable sink acceptance. Repeated calls are explicit caller actions, and `{ status: "accepted" }` remains acceptance only at the configured sink boundary.
+
+F-11 changes no public signature, root export, contract `1.0.0`, package version `0.1.0`, or runtime dependency. Complete-event acceptance remains source-compatible; fixed metadata and operation/transaction/correlation enforcement for named redelivery is a behavioral security/lifecycle tightening in a private unpublished candidate. It authorizes neither publication nor production use.
 
 ## Privacy transformations
 

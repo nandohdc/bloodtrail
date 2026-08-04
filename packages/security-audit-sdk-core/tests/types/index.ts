@@ -30,6 +30,15 @@ void unknownName;
 
 const acceptedTenant: SecurityAuditEvent["tenant"] = { scope: "tenant" };
 void acceptedTenant;
+declare const completeRedeliveryEvent: SecurityAuditEvent;
+const redeliveryInput: Parameters<typeof sdk.redeliver>[0] = completeRedeliveryEvent;
+const redeliveryArity: Parameters<typeof sdk.redeliver>["length"] = 1;
+void redeliveryArity;
+void sdk.redeliver(redeliveryInput);
+// @ts-expect-error redelivery requires a complete canonical event
+void sdk.redeliver({});
+// @ts-expect-error redelivery has no retry, reconstruction, or transport options argument
+void sdk.redeliver(redeliveryInput, { retry: true });
 // @ts-expect-error generated controlled tenant scopes reject unknown values
 const badTenant: SecurityAuditEvent["tenant"] = { scope: "caller_claimed" };
 void badTenant;

@@ -20,17 +20,18 @@ import {
 import type { AuditOperationSnapshot } from "./operations.js";
 import type { AuditResult } from "./errors.js";
 import { failure } from "./errors.js";
+import type { DeliveryIntent } from "./internal.js";
 import { clonePlain, deepFreeze, fieldPolicyForPath, isTransformableFieldPath, omitUndefined } from "./internal.js";
 import { validateNoProhibitedData, validateSecurityAuditEvent } from "./validation/index.js";
 
-type AnyNamedInput = NamedAuditEventInputMap[EventMethodName] & {
-  readonly operation?: GeneratedOperationContext;
+type AnyNamedInput = Omit<NamedAuditEventInputMap[EventMethodName], "operation"> & {
+  readonly operation?: AuditOperationSnapshot;
   readonly claimedTenant?: { readonly claimed_tenant_id?: string };
 };
 
 export interface BuiltNamedAuditEvent<N extends EventName = EventName> {
   readonly event: Readonly<EventForName<N>>;
-  readonly redelivery: boolean;
+  readonly deliveryIntent: Extract<DeliveryIntent, { readonly kind: "named_execution" | "named_redelivery" }>;
 }
 
 const definitionsByName = new Map<EventName, EventDefinition>(EVENT_CATALOG.map((entry) => [entry.name, entry]));
@@ -49,18 +50,27 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
   const definition = definitionsByName.get(methodDefinition.name as EventName);
   if (!definition) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
 
+  const operation = input.operation;
+  if (operation?.bound_event && operation.bound_event !== method) {
+    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/operation/bound_event");
+  }
+
   const redelivery = input.redelivery?.event;
   if (redelivery) {
     const validated = validateSecurityAuditEvent(redelivery);
     if (!validated.ok) return validated;
     if (validated.value.event.name !== definition.name) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
-    return { ok: true, value: { event: deepFreeze(clonePlain(validated.value)) as Readonly<EventForName<EventName>>, redelivery: true } };
+    const binding = validateNamedRedeliveryBinding(validated.value, operation);
+    if (!binding.ok) return binding;
+    return {
+      ok: true,
+      value: {
+        event: validated.value as Readonly<EventForName<EventName>>,
+        deliveryIntent: { kind: "named_redelivery" },
+      },
+    };
   }
 
-  const operation = input.operation;
-  if (operation?.bound_event && operation.bound_event !== method) {
-    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/operation/bound_event");
-  }
   const normalizedInput = { ...input, operation } as AnyNamedInput;
   const initialScan = validateNoProhibitedData(normalizedInput);
   if (!initialScan.ok) return initialScan;
@@ -134,7 +144,30 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
   if (!transformed.ok) return transformed;
   const validated = validateSecurityAuditEvent(transformed.value);
   if (!validated.ok) return validated;
-  return { ok: true, value: { event: deepFreeze(clonePlain(validated.value)) as Readonly<EventForName<EventName>>, redelivery: false } };
+  return {
+    ok: true,
+    value: {
+      event: deepFreeze(clonePlain(validated.value)) as Readonly<EventForName<EventName>>,
+      deliveryIntent: { kind: "named_execution" },
+    },
+  };
+}
+
+function validateNamedRedeliveryBinding(
+  event: SecurityAuditEvent,
+  operation: AuditOperationSnapshot | undefined,
+): AuditResult<void> {
+  if (!operation) return { ok: true, value: undefined };
+  if (event.correlation.operation_id !== operation.operation_id) {
+    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/correlation/operation_id");
+  }
+  if (event.correlation.correlation_id !== operation.correlation_id) {
+    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/correlation/correlation_id");
+  }
+  if (event.correlation.transaction_id !== operation.transaction_id) {
+    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/correlation/transaction_id");
+  }
+  return { ok: true, value: undefined };
 }
 
 function pickFrameInput(input: AnyNamedInput): AuditContextFrame {

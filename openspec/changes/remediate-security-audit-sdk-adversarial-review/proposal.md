@@ -46,7 +46,7 @@ This change covers the SDK-core implementation, tests, generated API completenes
 
 ## Risks
 
-- Operation-evidence and redelivery changes may be API-breaking for callers that relied on permissive structural inputs.
+- The operation-evidence restriction is source-level breaking for callers that relied on permissive structural operation inputs. F-11 keeps the public `emit(event)` and `redeliver(event)` signatures unchanged while tightening named-redelivery validation and binding behavior.
 - Bounded identity retention introduces a documented horizon after which duplicate handling must remain deterministic but cannot imply lifetime-global protection.
 - Atomic reservations can suppress valid retry if release rules are wrong; sink outcomes therefore need explicit state transitions and concurrency tests.
 - Lifecycle-aware verification can become permissive if active, archived, and package-local scope are not separately mutation-tested.

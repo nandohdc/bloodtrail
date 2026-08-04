@@ -178,17 +178,58 @@ The resulting guarantees are precise: generated event-ID reuse is detected among
 
 Alternative: discover incompatibility during each event. Rejected because one invalid configuration can cause a total per-event outage after successful initialization. Alternative: broaden runtime transformability so `event.*` hooks mutate event fields. Rejected because event identity, outcome, and delivery class are canonical authority data and the canonical requirements do not prove those fields mutable. Alternative: narrow the public path type to the transformable literal set. Rejected because the generated policy projection types paths broadly today and source compatibility is preserved while runtime validation enforces the intersection.
 
-### 10. Redelivery is an SDK-issued immutable-event operation
+### 10. Delivery intent makes complete-event redelivery explicit without inventing provenance
 
-`redeliver()` accepts only the identical immutable validated event object previously produced by the same SDK instance and tracked in private weak branding state. It preserves the event ID and canonical content and invokes only the sink boundary; it does not rebuild, retry automatically, or claim downstream delivery. A structurally equal clone, caller-constructed event, mutated object, or event from another SDK instance returns a bounded `SDK_INVALID_REDELIVERY` result.
+**Baseline equivalence and defect.** At the F-11 entry baseline `9349ecdcd5e6e030abb7b81544f30ef6d1508c72`, public `emit(event)` and `redeliver(event)` both accepted a complete canonical `SecurityAuditEvent`, ran the same canonical validation pipeline, and handed the validated value to the sink. Their observable preparation behavior was equivalent even though the contract distinguishes a generic trusted-producer emission from pure redelivery. The named-method `redelivery.event` path had a different defect: it returned the supplied event before canonical validation, catalog compatibility, operation binding, transformation policy, and terminal-completion policy were made explicit. F-11 corrects that unchecked early return without changing the public complete-event model.
 
-A retry/re-execution uses a named method, receives a new event ID, and supplies the contract-required positive retry/original-event relationships. This narrows the SDK API to behavior it can prove while preserving the canonical requirement that pure redelivery retains identity. Cross-process transport redelivery remains outside this core because the package has no persistence or delivery infrastructure.
+**Explicit delivery-intent model.** The implementation carries a closed internal discriminant rather than ambiguous boolean flags:
 
-Alternative: hash arbitrary caller events. Rejected because equality to a prior SDK-issued immutable occurrence cannot be established without trusted retained provenance. Alternative: remove the distinction from the canonical capability. Rejected as a silent weakening.
+- `generic_emit` is selected only by public `emit(event)`;
+- `pure_redelivery` is selected only by public `redeliver(event)`;
+- `named_execution` is selected by ordinary named construction, including retry/re-execution;
+- `named_redelivery` is selected when a named method receives `redelivery.event`.
+
+The discriminant is private implementation state, is not a root export, and does not change any public signature. Generic emit and pure redelivery may share complete-event validation and sink handoff while retaining distinct declared intent.
+
+**Complete-canonical-event semantics.** `redeliver(event)` accepts a complete canonical `SecurityAuditEvent` from a trusted caller and revalidates it on every explicit call. It preserves `event.id`, `event.timestamp`, `event.observed_at`, event name/category/action/delivery class, schema name/version, all correlation and causation fields, retry metadata, operation/transaction identifiers, and every other canonical field. Validation creates the SDK-owned normalized immutable value used for sink handoff; the caller's object is neither mutated nor frozen. Pure redelivery does not call the clock, request an identifier, invoke privacy transformation hooks, rebuild context, insert the event ID into generated-ID history, reserve or complete terminal operation state, or perform an automatic retry. Every valid explicit call invokes the sink once, including repeated calls and complete events produced by another SDK instance.
+
+This model does not claim that the exact JavaScript object was previously issued by this SDK, and it does not require a same-instance event brand. The canonical contract requires stable record identity on redelivery; it does not define JavaScript object provenance. A trusted caller can submit a false but canonical complete event to either generic complete-event API, so a brand would not establish durable delivery or producer truth.
+
+**Named redelivery and binding correction.** A named method receiving `redelivery.event` selects `named_redelivery`, validates the complete canonical event, and then verifies the named method's fixed catalog metadata. The event name, category, action, delivery class, and schema identity/version remain canonical. When an operation handle is supplied, F-01 authority resolution still requires the exact same-instance SDK-issued handle; immutable method/event binding is checked first, and the event's operation, transaction, and correlation identifiers must equal the private operation snapshot. Mismatch uses the existing `SDK_OPERATION_EVENT_MISMATCH` code. Named redelivery retains prohibited-data, schema, semantic, and causality validation, but it bypasses construction and transformations and returns before generated-ID insertion or F-02 terminal reservation/completion. A redelivery therefore neither consumes nor releases business-execution completion authority.
+
+**Retry and re-execution.** Retry/re-execution remains ordinary `named_execution`, not redelivery. It requests a fresh event identifier, uses the clock when canonical construction requires time, executes every valid configured F-10 transformation, and retains the exact F-01 operation authority and F-02 terminal reservation/completion semantics. Positive retry attempts preserve required `original_event_id` and causation, reject self-reference, and obey the contract maximum. A new occurrence gets a new event ID even when it relates to the same operation.
+
+**Interaction with prior remediations.** F-01 same-instance branding remains solely an operation-handle authority rule; it is not generalized to complete events. F-02 reserves terminal completion only for named execution and continues to release on every non-accepted sink outcome. F-08's two bounded FIFO collision histories remain unchanged and receive no redelivery insertion; no event-provenance or delivered-event ledger is introduced. F-10 transformations continue to run for named execution and never run for public or named redelivery. These boundaries avoid retained-state expansion and preserve the already-governed authority, lifecycle, and privacy policies.
+
+**Sink, lifecycle, and diagnostics.** All four intents use the existing ready/shutting-down/shut-down lifecycle and one bounded sink handoff. `accepted` remains sink-boundary acceptance only. `rejected` maps to `SDK_SINK_REJECTED`; `unknown`, synchronous throw, and rejected promise map to `SDK_SINK_FAILURE`. Diagnostics contain only the existing bounded code, category, path, and safe event name; event IDs, operation/transaction/correlation IDs, raw sink causes, stacks, and event payloads remain absent. No intent adds automatic retry.
+
+The existing taxonomy is retained:
+
+| Condition | Existing result |
+| --- | --- |
+| Unsafe or unsupported complete input | `SDK_INVALID_INPUT` or `FIELD_SERIALIZATION_FAILED` |
+| Structural canonical failure | `SDK_SCHEMA_VALIDATION_FAILED` or the applicable existing contract validation code |
+| Event name/category/action/delivery mismatch | `UNKNOWN_CATALOG_VALUE` |
+| Schema identity/version mismatch | `UNSUPPORTED_SCHEMA_VERSION` |
+| Operation method/event or identifier binding mismatch | `SDK_OPERATION_EVENT_MISMATCH` |
+| Semantic or causality violation | `SDK_SEMANTIC_VALIDATION_FAILED`, `BAD_CAUSALITY`, or the applicable existing contract code |
+| Sink rejection | `SDK_SINK_REJECTED` |
+| Sink unknown/throw/rejected promise | `SDK_SINK_FAILURE` |
+| Shutdown boundary | `SDK_SHUTTING_DOWN` or `SDK_SHUT_DOWN` |
+
+No `SDK_INVALID_REDELIVERY` code is added. Invalid redelivery input is invalid for the concrete existing reason rather than for an unverifiable provenance claim.
+
+**Durability and provenance limitations.** The SDK cannot prove prior durable delivery, broker provenance, same-process origin, same-instance generation, exactly-once delivery, at-least-once delivery, durable deduplication, or durable sink acceptance. Repeated explicit invocation is caller behavior, not a delivery guarantee. No queue, persistence, broker, transport, collector, or ledger is added.
+
+**Compatibility.** F-11 leaves public signatures, root exports, contract `1.0.0`, package candidate version `0.1.0`, and runtime dependency count unchanged. Public complete-event acceptance remains source-compatible. Revalidating named redelivery and enforcing fixed metadata plus operation/transaction/correlation binding is a behavioral security and lifecycle correction. It would require explicit release notes for a published package, but this package is private and unpublished and no release is authorized.
+
+**Rejected alternatives.** A same-instance weak event brand is rejected because it would narrow the established complete-event API, reject valid cross-process or reconstructed canonical records, retain unverifiable provenance semantics, and still prove no durable handoff. A delivered-event ledger or content hash is rejected because it adds retained state without establishing trusted origin or durable delivery. Adding `SDK_INVALID_REDELIVERY` is rejected because existing validation and lifecycle codes identify the actual defect and an additive public code would create unnecessary compatibility surface. Collapsing redelivery and generic emit into one undeclared intent is rejected because it loses the testable semantic distinction even when their handoff pipelines are shared.
+
+**Mutation strategy.** F-11 differential controls must kill: collapse of pure redelivery into generic intent; identifier generation during redelivery; reuse of original identity during re-execution; transformation invocation during redelivery; removal of named fixed-metadata validation; passage of named redelivery through terminal completion; and restoration of the unchecked named-redelivery early return. Every mutant must compile before the focused suite detects it so a textual mismatch cannot masquerade as behavioral evidence.
 
 ### 11. Compatibility is explicit
 
-Rejecting plain operation contexts and arbitrary `redeliver()` values is a deliberate breaking API/runtime correction and requires the package-version impact to be assessed before implementation merge. New configuration fields receive backward-compatible defaults. New safe error codes are additive, while F-12 reclassifies a previously incorrect error; migration documentation lists exhaustive-match and test updates. Contract `1.0.0` event shapes and semantics remain unchanged.
+Rejecting plain operation contexts is a deliberate source-level breaking correction and requires package-version impact assessment before implementation merge. F-11 keeps complete canonical `emit(event)` and `redeliver(event)` inputs, public signatures, root exports, and the existing error registry unchanged; its named-redelivery binding correction is behaviorally observable and requires release-note treatment if publication is ever authorized. New configuration fields receive backward-compatible defaults. F-05/F-12 safe error additions and reclassification remain documented separately. Contract `1.0.0` event shapes and semantics remain unchanged.
 
 ### 12. Renewed governance binds the final technical commit
 
@@ -198,21 +239,21 @@ Production deployment, package publication, framework integration, and delivery 
 
 ## Risks / Trade-offs
 
-- **Breaking operation/redelivery inputs** → document migration, compile-time failures, runtime safe failures, and package-version impact before merge.
+- **Breaking operation inputs and tightened named-redelivery binding** → document the operation source break separately from F-11's unchanged complete-event signatures, and record existing bounded diagnostics plus package-version impact before merge.
 - **Collision-window eviction under sustained throughput** → document deterministic FIFO horizons, size capacities for local detection needs, and never use collision history as operation authority or live-handle completion state.
 - **Weakly keyed terminal state becomes unreachable after handle loss** → this is intentional; only the live unforgeable handle can authorize or retry terminal success.
 - **Provider methods depend on mutable `this` state** → preserve object identity and invocation receiver in regression tests.
 - **Timer tests become flaky** → combine controllable timers/unit tests with bounded child-process exit tests.
 - **Lifecycle modes drift apart** → share invariant checks and require mutation coverage for both modes.
-- **New error codes disrupt exhaustive consumers** → record compatibility classification and migration guidance.
-- **Same-instance redelivery is narrower than some callers expect** → state that cross-process redelivery belongs to separately governed delivery infrastructure, not this core.
+- **New error codes disrupt exhaustive consumers** → record compatibility classification and migration guidance; F-11 adds none.
+- **Complete-event redelivery cannot prove origin or prior delivery** → state the provenance and durability limits explicitly rather than adding a same-instance event brand or retained ledger.
 
 ## Migration Plan
 
 1. Restore lifecycle-aware verification first so subsequent remediation has a reproducible gate.
 2. Land operation evidence and atomic terminal reservation together enough to keep transaction tests coherent, then address provider ownership.
 3. Apply error/serialization and verification guardrail groups, followed by shutdown and bounded-state work.
-4. Apply transformation and redelivery changes, update public API/error/compatibility/migration documentation, and run full adversarial regression.
+4. Apply transformation and redelivery corrections, reconcile complete-event and named-binding semantics, document the existing error taxonomy and compatibility classification, then run the separately authorized full adversarial regression.
 5. Verify from clean checkouts on exact supported Node.js 24 and 26 runtimes; preserve the canonical contract and archived prior change byte-for-byte.
 6. Bind the final technical commit to renewed technical review and an explicit project-owner decision.
 7. Merge without rewriting governed history, then archive the OpenSpec change in a separate lifecycle commit.

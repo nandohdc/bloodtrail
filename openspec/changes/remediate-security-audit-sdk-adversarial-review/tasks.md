@@ -112,13 +112,13 @@ GitHub issue: [#29](https://github.com/nandohdc/bloodtrail/issues/29)
 
 GitHub issue: [#30](https://github.com/nandohdc/bloodtrail/issues/30)
 
-- [ ] 10.1 Track SDK-issued immutable validated event objects through private weak branding bound to the issuing SDK instance. [F-11]
-- [ ] 10.2 Restrict `redeliver()` to the identical same-instance issued event object and preserve its event ID and canonical content without rebuild or automatic retry. [F-11]
-- [ ] 10.3 Return `SDK_INVALID_REDELIVERY` or the approved documented equivalent for clones, modified values, caller-created events, and foreign-instance events. [F-11]
-- [ ] 10.4 Add runtime tests distinguishing pure redelivery, sink-failure retry policy, named-method re-execution, positive retry relationship, and new event identity. [F-11]
-- [ ] 10.5 Add compile-time tests for the public redelivery API and tests proving invalid redelivery never invokes the sink. [F-11]
-- [ ] 10.6 Update API, canonical-requirement interpretation, compatibility, and migration documentation without silently weakening redelivery identity. [F-11]
-- [ ] 10.7 Assess breaking API and package-version impact and preserve the no-delivery-infrastructure boundary. [F-11]
+- [x] 10.1 Preserve the four explicit internal delivery intents (`generic_emit`, `pure_redelivery`, `named_execution`, and `named_redelivery`) without changing public signatures or root exports. [F-11]
+- [x] 10.2 Require `redeliver(event)` to revalidate a complete canonical event, preserve identity, timestamps, and all canonical metadata, avoid caller mutation plus clock/identifier/hook/history/completion side effects, and invoke the sink once per valid explicit call. [F-08, F-10, F-11]
+- [x] 10.3 Correct the named `redelivery.event` early return by enforcing complete canonical validation, fixed catalog/schema metadata, exact operation-handle method/event authority, and operation/transaction/correlation binding with the existing documented error taxonomy. [F-01, F-11]
+- [x] 10.4 Prove named retry/re-execution remains ordinary named execution with a new event identity, required original-event and causation links, self-reference and attempt-limit rejection, transformations, and F-01/F-02 authority plus terminal reservation semantics. [F-01, F-02, F-10, F-11]
+- [x] 10.5 Add focused runtime, compile-time, lifecycle, sink-diagnostic, and differential mutation evidence for complete-event redelivery, repeated calls, invalid canonical input, named binding, new retry identity, and all four delivery intents without adding non-F-11 tests. [F-11]
+- [x] 10.6 Reconcile API, security, canonical-requirement interpretation, ADR, compatibility, and migration documentation with the complete-canonical-event model and explicitly disclaim same-instance event provenance, automatic retry, persistence, and durable delivery guarantees. [F-11]
+- [x] 10.7 Classify F-11 as unchanged public signatures/exports, contract `1.0.0`, package version, and runtime dependencies with tightened named-redelivery behavior in a private unpublished candidate; add no event brand, retained ledger, error code, delivery infrastructure, publication, or production authorization. [F-08, F-11]
 
 ## 11. Cross-cutting remediation verification and documentation [F-01 through F-12]
 

@@ -1,5 +1,12 @@
 import { FIELD_POLICY } from "./generated/contract.generated.js";
 
+/** Internal command policy: complete-event emission and named construction share a sink boundary but not lifecycle intent. */
+export type DeliveryIntent =
+  | { readonly kind: "generic_emit" }
+  | { readonly kind: "pure_redelivery" }
+  | { readonly kind: "named_execution" }
+  | { readonly kind: "named_redelivery" };
+
 export function deepFreeze<T>(value: T): Readonly<T> {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     Object.freeze(value);
