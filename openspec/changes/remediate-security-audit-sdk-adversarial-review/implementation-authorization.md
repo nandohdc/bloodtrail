@@ -34,3 +34,27 @@ The approved SDK-core implementation remains historical governance evidence, but
 Implementation must stop before final owner approval, merge, production authorization, or archival.
 
 This project-owner authorization is project governance; it is not independent assurance.
+
+---
+
+## Project-owner governance decision (renewed review)
+
+- **Decision:** APPROVED_FOR_MERGE
+- **Project owner:** Fernando Homem da Costa
+- **GitHub handle:** `nandohdc`
+- **Date:** August 4, 2026
+- **Reviewed technical commit:** `278c6721ea4eb2214062a33e289d54605bf9333b`
+- **Reviewed technical-review evidence commit:** `d05ef82d17a167b0aa49732c66820caf1871054f`
+- **Contract:** Bloodtrail Security Audit Event Contract version `1.0.0`
+
+The project owner has independently reviewed the renewed technical-review packet and the fixture-isolation correction at `278c6721ea4eb2214062a33e289d54605bf9333b`. The owner accepts the technical review result as project governance and authorizes progression to the governed merge phase.
+
+The complete remediation addresses adversarial-review findings F-01 through F-12. All verification evidence — runtime 112/112, lifecycle 95/95, documentation examples 15/15, explicit governance fixtures 7/7, exact-runtime matrix 8/8 (pre- and post-reconciliation) — passes on Node 24.2.0 and Node 26.5.0 with zero runtime dependencies, contract 1.0.0, and no production integration. Supported checked tasks: 85/91.
+
+## Continued restrictions
+
+- **Production deployment:** NOT AUTHORIZED
+- **Package publication:** NOT AUTHORIZED
+- **Production collection, real-user data, framework instrumentation, transports, collectors, brokers, queues, storage, SIEM, analytics, browser telemetry:** NOT AUTHORIZED
+
+This project-owner decision is project governance; it is not independent assurance.

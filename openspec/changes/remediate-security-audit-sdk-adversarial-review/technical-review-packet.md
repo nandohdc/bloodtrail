@@ -138,10 +138,12 @@ Reviewed technical parent: `9fc0d3ea63c8c54ba31c1d7e97367ff0052fdb89`
 Reviewed technical tree: `7d9fd109f9e97f3ee0100c98cf802e9c919740c2`
 Previous technical-review evidence commit: `0f2cd27277966a8a2eb15bbe34e6c6884de3abe1`
 Previous reviewed technical commit: `e19cdec516e71d0b4f98f8a8250d10c8cfa97b72`
-Project-owner decision: PENDING
+Project-owner decision: APPROVED_FOR_MERGE
+Owner-reviewed technical commit: `278c6721ea4eb2214062a33e289d54605bf9333b`
+Owner-reviewed technical-review evidence commit: `d05ef82d17a167b0aa49732c66820caf1871054f`
 Production deployment authorization: NOT AUTHORIZED
 Package publication authorization: NOT AUTHORIZED
-Merge authorization: PENDING
+Merge authorization: APPROVED
 Archive authorization: PENDING
 
 Production deployment approved | `NO — NOT AUTHORIZED`
