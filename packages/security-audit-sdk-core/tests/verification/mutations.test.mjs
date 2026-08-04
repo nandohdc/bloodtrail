@@ -108,6 +108,13 @@ test("active mode rejects owner decision without exact-commit review evidence", 
     ...taskGroups.slice(0, ownerIndex).flatMap(groupTaskIds),
     groupTaskIds(taskGroups[ownerIndex])[0],
   ]);
+  // Explicitly remove the Final technical commit binding so the test does not
+  // depend on the active packet's formatting or binding state.
+  const packetPath = `${activeChange}/technical-review-packet.md`;
+  const packetText = readFileSync(resolve(root, packetPath), "utf8");
+  const bindingLine = packetText.match(/^.*Final technical commit:.*$/m)?.[0];
+  assert.ok(bindingLine, "control fixture must contain a Final technical commit line to remove");
+  replace(root, packetPath, bindingLine, "Final technical commit: binding intentionally removed for negative control");
   fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-owner-evidence");
 });
 
