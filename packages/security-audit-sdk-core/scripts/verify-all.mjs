@@ -1,7 +1,11 @@
 import { readdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { assert, packageRoot, readJson, repositoryRoot, runChecked } from "./verification-helpers.mjs";
+import { lifecycleMetadata, resolveVerificationLifecycle } from "./lifecycle-policy.mjs";
 
+const lifecycle = await resolveVerificationLifecycle();
+process.env.SDK_VERIFICATION_MODE = lifecycle.mode;
+process.env.SDK_VERIFICATION_CHANGE = lifecycle.change;
 const pkg = await readJson(resolve(packageRoot, "package.json"));
 const compatibility = await readJson(resolve(packageRoot, "compatibility.json"));
 const currentMajor = Number(process.versions.node.split(".")[0]);
@@ -18,7 +22,7 @@ for (const [command, args] of [
 }
 runChecked("git", ["rev-parse", "--show-toplevel"], { cwd: repositoryRoot, capture: true });
 
-process.stdout.write(`SDK-core canonical verification on Node ${process.versions.node}\n`);
+process.stdout.write(`SDK-core canonical verification on Node ${process.versions.node} in ${lifecycle.mode} mode for ${lifecycle.change}\n`);
 process.stdout.write("Install policy: remove node_modules, then npm ci --ignore-scripts --no-audit --no-fund from package-lock.json\n");
 
 await step("clean disposable output", async () => {
@@ -48,11 +52,20 @@ await step("npm audit at low threshold", () => command("npm", ["audit", "--audit
 await step("npm package dry-run and file allowlist", () => npm("test:package"));
 await step("exact changed-path enforcement", () => npm("test:changed-paths"));
 await step("cross-artifact coherence sweep", () => npm("test:coherence"));
-await step("strict active-change OpenSpec validation", () => command(
-  "openspec",
-  ["validate", "implement-security-audit-sdk-core", "--strict"],
-  repositoryRoot,
-));
+await step("verification lifecycle unit and differential mutation tests", () => npm("test:verification"));
+if (lifecycle.mode === "active" || lifecycle.mode === "governed") {
+  await step("strict active-change OpenSpec validation", () => command(
+    "openspec",
+    ["validate", lifecycle.change, "--strict"],
+    repositoryRoot,
+  ));
+} else {
+  await step("strict archived canonical-capability OpenSpec validation", () => command(
+    "openspec",
+    ["validate", lifecycleMetadata.originalSdkChange.capability.split("/").at(-2), "--strict"],
+    repositoryRoot,
+  ));
+}
 await step("strict repository OpenSpec validation", () => command("openspec", ["validate", "--all", "--strict"], repositoryRoot));
 await step("Git whitespace, final-newline, and empty-index checks", () => npm("test:git"));
 

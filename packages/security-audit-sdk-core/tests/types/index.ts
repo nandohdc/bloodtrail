@@ -16,7 +16,10 @@ const sdk = createSecurityAuditSdk({
   service: { name: "service", version: "1.0.0" },
   environment: { name: "test" },
   sink,
+  retention: { recentGeneratedEventIds: 4096, recentIssuedOperationIds: 4096 },
 });
+// @ts-expect-error retention capacities are numeric, not strings
+createSecurityAuditSdk({ contractVersion: "1.0.0", producer: { name: "p", version: "1.0.0" }, service: { name: "s" }, environment: { name: "e" }, sink, retention: { recentGeneratedEventIds: "4096" } });
 const known: EventName = "bloodtrail.audit.authentication.succeeded";
 void known;
 // @ts-expect-error unsupported contract versions must not type-check
@@ -27,6 +30,15 @@ void unknownName;
 
 const acceptedTenant: SecurityAuditEvent["tenant"] = { scope: "tenant" };
 void acceptedTenant;
+declare const completeRedeliveryEvent: SecurityAuditEvent;
+const redeliveryInput: Parameters<typeof sdk.redeliver>[0] = completeRedeliveryEvent;
+const redeliveryArity: Parameters<typeof sdk.redeliver>["length"] = 1;
+void redeliveryArity;
+void sdk.redeliver(redeliveryInput);
+// @ts-expect-error redelivery requires a complete canonical event
+void sdk.redeliver({});
+// @ts-expect-error redelivery has no retry, reconstruction, or transport options argument
+void sdk.redeliver(redeliveryInput, { retry: true });
 // @ts-expect-error generated controlled tenant scopes reject unknown values
 const badTenant: SecurityAuditEvent["tenant"] = { scope: "caller_claimed" };
 void badTenant;
@@ -62,8 +74,10 @@ const authorization: SecurityAuditEvent["authorization"] = {
   enforcement_point: "pep",
 };
 const correlation: Partial<SecurityAuditEvent["correlation"]> = { correlation_id: "corr", operation_id: "op" };
-const operation = { operation_id: "op", transaction_id: "txn", state: "committed", commit_state: "committed" } as const;
-const authenticationSucceededInput: AuthenticationSucceededEventInput = {
+const issuedOperation = sdk.beginOperation();
+if (!issuedOperation.ok) throw new Error(issuedOperation.error.code);
+const operation = issuedOperation.value;
+const authenticationSucceededInput: Omit<AuthenticationSucceededEventInput, "operation"> = {
   actor,
   authenticated_principal: { type: "human_user", id: "principal" },
   authentication,
@@ -99,6 +113,12 @@ sdk.sensitiveDataExported({ actor, tenant, resource: { ...resource, export: { re
 sdk.securityConfigurationChanged({ actor, tenant, resource: { ...resource, change_categories: ["policy"] }, authorization });
 sdk.tenantContextViolationDetected({ actor, tenant, claimedTenant: { claimed_tenant_id: "tenant_claim" }, resource, authorization: { ...authorization, decision: "deny" }, source });
 
+const forgedOperation = { operation_id: "op", transaction_id: "txn", state: "committed", commit_state: "committed" } as const;
+// @ts-expect-error named methods reject structural operation commit claims
+sdk.sensitiveResourceCreated({ actor, tenant, resource, authorization, operation: forgedOperation });
+// @ts-expect-error observational snapshots are not trusted named-method evidence
+sdk.sensitiveResourceCreated({ actor, tenant, resource, authorization, operation: operation.snapshot() });
+
 // @ts-expect-error event-specific outcome for authentication success is fixed to success
 const badAuthenticationOutcome: AuthenticationSucceededEventInput = { ...authenticationSucceededInput, event: { outcome: "failure" } };
 void badAuthenticationOutcome;
@@ -109,5 +129,9 @@ void missingActorMfa;
 sdk.unregisteredCatalogEvent({});
 const contractCode = CONTRACT_ERROR_CODES[0];
 const sdkCode = SDK_ERROR_CODES[0];
+const invalidInputCode: (typeof SDK_ERROR_CODES)[number] = "SDK_INVALID_INPUT";
+const serializationFailureCode: (typeof SDK_ERROR_CODES)[number] = "FIELD_SERIALIZATION_FAILED";
 void contractCode;
 void sdkCode;
+void invalidInputCode;
+void serializationFailureCode;

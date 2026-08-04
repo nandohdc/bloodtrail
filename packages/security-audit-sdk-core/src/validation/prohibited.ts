@@ -1,6 +1,6 @@
 import { PROHIBITED_DATA_KEYS } from "../generated/contract.generated.js";
 import type { AuditResult } from "../errors.js";
-import { failure } from "../errors.js";
+import { failure, normalizeCanonicalInput } from "../errors.js";
 import { isPlainObject } from "../internal.js";
 
 const MAX_DEPTH = 8;
@@ -11,8 +11,13 @@ const prohibitedKeyNeedles = PROHIBITED_DATA_KEYS.map((key) => key.toLowerCase()
 const secretValuePattern = /\b(SECRET|TOKEN_SHOULD_NOT_APPEAR|SYNTHETIC_PROHIBITED_TOKEN|BEGIN PRIVATE KEY|PRIVATE KEY|Bearer\s+[A-Za-z0-9._-]{16,}|sk-[A-Za-z0-9]{16,})\b/i;
 
 export function validateNoProhibitedData(value: unknown): AuditResult<void> {
-  const estimated = estimateJsonBytes(value);
-  if (estimated > MAX_EVENT_BYTES) return failure("FIELD_LIMIT_EXCEEDED", "validation", "/");
+  const normalized = normalizeCanonicalInput(value, "/");
+  if (!normalized.ok) return normalized;
+  return validateNormalizedNoProhibitedData(normalized.value.value, normalized.value.bytes);
+}
+
+export function validateNormalizedNoProhibitedData(value: unknown, serializedBytes?: number): AuditResult<void> {
+  if (serializedBytes !== undefined && serializedBytes > MAX_EVENT_BYTES) return failure("FIELD_LIMIT_EXCEEDED", "validation", "/");
   const seen = new WeakSet<object>();
   const result = scan(value, "", 0, seen);
   return result.ok ? { ok: true, value: undefined } : result;
@@ -28,11 +33,13 @@ function scan(value: unknown, path: string, depth: number, seen: WeakSet<object>
     }
     case "number":
     case "boolean":
+      return { ok: true, value: undefined };
     case "undefined":
+      return { ok: true, value: undefined };
     case "bigint":
     case "symbol":
     case "function":
-      return { ok: true, value: undefined };
+      return failure(typeof value === "bigint" ? "FIELD_SERIALIZATION_FAILED" : "SDK_INVALID_INPUT", "validation", path || "/");
     case "object":
       break;
   }
@@ -60,14 +67,6 @@ function scan(value: unknown, path: string, depth: number, seen: WeakSet<object>
 function isProhibitedKey(key: string): boolean {
   const normalized = key.toLowerCase().replace(/[-\s]+/g, "_");
   return prohibitedKeyNeedles.some((needle) => normalized === needle || normalized.includes(`_${needle}`) || normalized.includes(`${needle}_`));
-}
-
-function estimateJsonBytes(value: unknown): number {
-  try {
-    return byteLength(JSON.stringify(value) ?? "");
-  } catch {
-    return MAX_EVENT_BYTES + 1;
-  }
 }
 
 function byteLength(value: string): number {

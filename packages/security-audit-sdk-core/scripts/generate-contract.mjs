@@ -133,6 +133,8 @@ function emitConstants(source, fieldPolicy) {
   }));
   const sdkErrorCodes = [
     "SDK_INVALID_CONFIGURATION",
+    "SDK_INVALID_INPUT",
+    "FIELD_SERIALIZATION_FAILED",
     "SDK_UNSUPPORTED_CONTRACT_VERSION",
     "SDK_MISSING_AUTHORITATIVE_CONTEXT",
     "SDK_MISSING_EVENT_FIELD",

@@ -38,10 +38,112 @@
     "compatibility": "exact-contract-projection",
     "driftCommand": "npm run check:generated"
   },
+  "verificationLifecycle": {
+    "modes": ["active", "governed", "archived"],
+    "defaultSelection": "deterministic-auto",
+    "metadata": "verification-lifecycle.json",
+    "compatibilityImpact": "repository-verification-only; no runtime SDK API or contract 1.0.0 change"
+  },
+  "operationEvidence": {
+    "namedMethodInput": "same-instance-sdk-issued-handle-only",
+    "snapshotPolicy": "observational-not-trusted-input",
+    "crossInstancePolicy": "rejected",
+    "genericEventBoundary": "trusted-producer-behavior-unchanged",
+    "compatibilityImpact": "breaking source-level security tightening; major if previously published; retained at private unpublished initial-development candidate 0.1.0"
+  },
+  "redeliverySemantics": {
+    "publicEmitIntent": "generic_emit",
+    "publicRedeliveryIntent": "pure_redelivery",
+    "namedExecutionIntent": "named_execution",
+    "namedRedeliveryIntent": "named_redelivery",
+    "publicInput": "complete-canonical-SecurityAuditEvent-from-trusted-caller-revalidated-per-call",
+    "sameInstanceEventBrandRequired": false,
+    "eventProvenanceLedgerRetained": false,
+    "identityAndCanonicalMetadata": "preserved",
+    "callerObjectMutationOrFreeze": false,
+    "clockIdentifierTransformationInvocation": false,
+    "generatedHistoryOrTerminalCompletionMutation": false,
+    "repeatedExplicitCalls": "one-sink-handoff-per-valid-call",
+    "namedFixedMetadata": "validated",
+    "namedOperationTransactionCorrelationBinding": "enforced-with-existing-SDK_OPERATION_EVENT_MISMATCH",
+    "retryReexecution": "new-event-identity-with-required-causality-and-existing-operation-terminal-authority",
+    "automaticRetry": false,
+    "durableProvenanceOrDeliveryClaim": false,
+    "newErrorCode": false,
+    "publicApiImpact": "none-signatures-and-root-exports-unchanged",
+    "contractImpact": "none-contract-1.0.0-unchanged",
+    "runtimeDependencyImpact": "none-zero-runtime-dependencies",
+    "compatibilityImpact": "source-compatible complete-event behavior with tightened named-redelivery validation and binding; behavioral security and lifecycle correction in private unpublished candidate 0.1.0"
+  },
+  "terminalCompletionConcurrency": {
+    "scope": "same-sdk-instance-sdk-issued-operation-and-catalog-event",
+    "concurrentDuplicateCode": "SDK_DUPLICATE_SUCCESS",
+    "acceptedState": "completed",
+    "nonAcceptedState": "released-for-explicit-retry",
+    "automaticRetry": false,
+    "durableDeliveryClaim": false,
+    "retentionPolicy": "unchanged-pending-F-08",
+    "compatibilityImpact": "patch-level security and correctness fix for defective concurrent behavior; no public type, error-code, contract 1.0.0, generic emit, or redelivery semantic change"
+  },
+  "shutdownTimerOwnership": {
+    "owner": "single-in-progress-shutdown-lifecycle",
+    "nodeHandleReferencePolicy": "unref",
+    "cleanup": "idempotent-clear-in-structured-finally-after-either-race-outcome",
+    "logicalTimeoutWhileProcessActive": "preserved",
+    "idleProcessRetention": false,
+    "signalHandlersInstalled": false,
+    "intervalsInstalled": false,
+    "publicApiImpact": "none",
+    "configurationImpact": "none-existing-shutdownTimeoutMs-and-milliseconds-preserved",
+    "contractImpact": "none-contract-1.0.0-unchanged",
+    "sinkContractImpact": "none",
+    "platformTyping": "Node.js 24.2.0 and 26.5.0 Timeout handles provide unref()",
+    "compatibilityImpact": "patch-level observable process-lifecycle correction; private unpublished candidate remains 0.1.0"
+  },
+  "configurationOwnership": {
+    "normalizedEnvelope": "sdk-owned-shallow-frozen",
+    "ownedValueData": "field-specific-copy-and-freeze",
+    "callerOwnedCollaborators": "exact-reference-retained",
+    "collaboratorIdentity": "explicitly-guaranteed-preserved",
+    "providerReceiver": "original-object-receiver-preserved",
+    "providerInvocationCorrection": "transformation-hooks-are-no-longer-structurally-copied-with-receiver-loss",
+    "topLevelConfigurationCopying": "unchanged-for-primitive-and-plain-value-options",
+    "objectIsFrozenChange": "caller-owned-collaborators-are-not-newly-frozen",
+    "recursiveExternalFreezing": false,
+    "compatibilityImpact": "patch-level correctness and ownership fix; caller-owned collaborators are no longer frozen as an SDK construction side effect; no public type, error-code, contract 1.0.0, generic emit, or redelivery semantic change"
+  },
+  "transformationPathValidation": {
+    "validationPoint": "configuration-normalization-during-construction",
+    "policySource": "shared-internal-predicate-over-generated-field-policy",
+    "acceptanceRule": "field-policy-membership-and-transform-eligible-class-and-not-immutable-path",
+    "rejectionCode": "SDK_INVALID_CONFIGURATION",
+    "runtimeDefense": "retained-unchanged-bounded-SDK_HOOK_FAILURE",
+    "hookInvocationDuringConstruction": false,
+    "hookPathType": "unchanged-AuditFieldPolicyPath-or-string",
+    "contractImpact": "none-contract-1.0.0-unchanged",
+    "compatibilityImpact": "patch-level correctness and reliability correction; previously accepted but unusable hook configuration now fails at construction; no public type, error-code, contract 1.0.0, generic emit, or redelivery semantic change"
+  },
+  "inputNormalization": {
+    "supportedValues": "finite-number-string-boolean-null-dense-array-plain-record",
+    "undefinedObjectMember": "omitted-by-canonical-serialization",
+    "unsupportedOrUnsafeCode": "SDK_INVALID_INPUT",
+    "configurationBoundaryCode": "SDK_INVALID_CONFIGURATION",
+    "serializationFailureCode": "FIELD_SERIALIZATION_FAILED",
+    "fieldLimitCode": "FIELD_LIMIT_EXCEEDED-only-after-successful-serialization",
+    "accessorPolicy": "reject-without-invocation",
+    "toJsonPolicy": "not-invoked-as-conversion-hook",
+    "sinkAfterFailure": "not-invoked",
+    "publicThrowPolicy": "existing-construction-throws-remain-SecurityAuditSdkError",
+    "publicResultPolicy": "event-and-operation-input-failures-remain-AuditResult",
+    "contractImpact": "none-contract-1.0.0-unchanged",
+    "versionImpact": "source-compatible patch-level exception safety with additive behaviorally observable SDK codes; minor under published additive-code policy; retained at private unpublished candidate 0.1.0"
+  },
   "semverClassification": {
     "patch": [
       "bug fix preserving contract 1.0.0 interpretation",
-      "safe diagnostic bound tightening"
+      "safe diagnostic bound tightening",
+      "caller-owned collaborator freeze and receiver correction",
+      "shutdown timeout process-retention and lifecycle ownership correction"
     ],
     "minor": [
       "additive optional public API",
@@ -49,6 +151,7 @@
     ],
     "major": [
       "public API removal",
+      "named operation input restricted from structural context to SDK-issued handle",
       "generated type incompatibility",
       "Node or TypeScript baseline removal",
       "error code removal or meaning change"
