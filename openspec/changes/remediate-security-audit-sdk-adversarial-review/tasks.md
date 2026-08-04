@@ -124,15 +124,15 @@ GitHub issue: [#30](https://github.com/nandohdc/bloodtrail/issues/30)
 
 Tracking issue: [#20](https://github.com/nandohdc/bloodtrail/issues/20)
 
-- [ ] 11.1 Build the SDK from a clean dependency installation and run strict source typecheck, runtime unit tests, compile-time tests, examples, package-content tests, dependency checks, export checks, compatibility checks, scope checks, and generated drift checks. [F-01 through F-12]
-- [ ] 11.2 Run all concurrency and child-process lifecycle regressions with non-zero test discovery and retain bounded command evidence. [F-02, F-07]
-- [ ] 11.3 Run all differential mutation tests and prove each intended mutation fails for the expected rule while the unmodified control passes. [F-04, F-06, F-09]
-- [ ] 11.4 Run the complete clean-state adversarial regression suite on the exact supported Node.js 24 runtime. [F-01 through F-12]
-- [ ] 11.5 Run the complete clean-state adversarial regression suite on the exact supported Node.js 26 runtime. [F-01 through F-12]
-- [ ] 11.6 Confirm approved contract `1.0.0` fixtures and canonical meaning are unchanged and `security-audit-event-contract` has no diff. [F-01 through F-12]
-- [ ] 11.7 Update README, API, SECURITY, MIGRATION, compatibility metadata, ADRs, and canonical verification documentation coherently for all remediated behavior. [F-01 through F-12]
-- [ ] 11.8 Complete package semantic-version, public API, error-code, configuration, and migration compatibility assessment. [F-01, F-05, F-08, F-09, F-10, F-11, F-12]
-- [ ] 11.9 Confirm no runtime dependency, production transport, framework, collector, queue, storage, SIEM, analytics, browser telemetry, or publication/deployment authorization was introduced. [F-01 through F-12]
+- [x] 11.1 Build the SDK from a clean dependency installation and run strict source typecheck, runtime unit tests, compile-time tests, examples, package-content tests, dependency checks, export checks, compatibility checks, scope checks, and generated drift checks. [F-01 through F-12]
+- [x] 11.2 Run all concurrency and child-process lifecycle regressions with non-zero test discovery and retain bounded command evidence. [F-02, F-07]
+- [x] 11.3 Run all differential mutation tests and prove each intended mutation fails for the expected rule while the unmodified control passes. [F-04, F-06, F-09]
+- [x] 11.4 Run the complete clean-state adversarial regression suite on the exact supported Node.js 24 runtime. [F-01 through F-12]
+- [x] 11.5 Run the complete clean-state adversarial regression suite on the exact supported Node.js 26 runtime. [F-01 through F-12]
+- [x] 11.6 Confirm approved contract `1.0.0` fixtures and canonical meaning are unchanged and `security-audit-event-contract` has no diff. [F-01 through F-12]
+- [x] 11.7 Update README, API, SECURITY, MIGRATION, compatibility metadata, ADRs, and canonical verification documentation coherently for all remediated behavior. [F-01 through F-12]
+- [x] 11.8 Complete package semantic-version, public API, error-code, configuration, and migration compatibility assessment. [F-01, F-05, F-08, F-09, F-10, F-11, F-12]
+- [x] 11.9 Confirm no runtime dependency, production transport, framework, collector, queue, storage, SIEM, analytics, browser telemetry, or publication/deployment authorization was introduced. [F-01 through F-12]
 
 ## 12. Renewed review, owner decision, merge, and archive [F-01 through F-12]
 
