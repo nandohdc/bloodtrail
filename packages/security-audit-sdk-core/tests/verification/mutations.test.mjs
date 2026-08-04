@@ -19,6 +19,13 @@ const originalArchive = "openspec/changes/archive/2026-07-31-implement-security-
 const canonicalCapability = "openspec/specs/security-audit-sdk-core/spec.md";
 const remediation = lifecycleMetadata.remediationChange;
 const taskGroups = remediation.taskGroups;
+const fixtureTechnicalCommit = "1111111111111111111111111111111111111111";
+const fixtureEvidenceCommit = "2222222222222222222222222222222222222222";
+const fixtureOwnerBinding = [
+  "Project-owner decision: APPROVED_FOR_MERGE",
+  "Owner-reviewed technical commit: `" + fixtureTechnicalCommit + "`",
+  "Owner-reviewed technical-review evidence commit: `" + fixtureEvidenceCommit + "`",
+].join("\n");
 const governedLocalConfigBefore = governedLocalConfig();
 
 prepareControl();
@@ -120,9 +127,82 @@ test("active mode rejects an incorrect task total", () => {
   fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "active-task-total");
 });
 
-test("governed mode still rejects the current pre-governance state", () => {
-  const root = caseRepository("governed-pre-governance");
-  fails(root, "scripts/check-coherence.mjs", ["--mode", "governed"], "technical-review-packet");
+test("governed mode rejects an explicit valid pre-owner fixture", () => {
+  const root = caseRepository("governed-explicit-pre-owner");
+  const checkedIds = governedTaskIdsThrough("technical-review");
+  assert.equal(checkedIds.length, 85, "pre-owner fixture must complete exactly through technical review");
+  setCheckedTasks(root, checkedIds);
+  setGovernanceFixture(root, { ownerApproved: false });
+  const result = fails(root, "scripts/check-coherence.mjs", ["--mode", "governed"], "governed-owner-decision");
+  assert.doesNotMatch(
+    `${result.stdout}\n${result.stderr}`,
+    /\[(?:governed-technical-binding|governed-production-restriction|governed-group-[^\]]+|governed-task-[^\]]+)\]/,
+    "valid pre-owner fixture failed a technical, restriction, merge, or archive guard",
+  );
+});
+
+test("governed mode accepts an explicit valid post-owner fixture", () => {
+  const root = caseRepository("governed-explicit-post-owner");
+  const checkedIds = governedTaskIdsThrough("owner-governance");
+  assert.equal(checkedIds.length, 88, "post-owner fixture must complete exactly through owner governance");
+  setCheckedTasks(root, checkedIds);
+  setGovernanceFixture(root, { ownerApproved: true });
+  const result = succeeds(root, "scripts/check-coherence.mjs", ["--mode", "governed"]);
+  assert.match(result.stdout, /88\/91 current-change tasks complete/);
+});
+
+test("governed mode rejects a post-owner fixture with the exact owner binding removed", () => {
+  const root = caseRepository("governed-owner-binding-removed");
+  setCheckedTasks(root, governedTaskIdsThrough("owner-governance"));
+  setGovernanceFixture(root, { ownerApproved: true });
+  replace(
+    root,
+    `${activeChange}/technical-review-packet.md`,
+    fixtureOwnerBinding,
+    "Project-owner decision: PENDING\nOwner/evidence binding: REMOVED",
+  );
+  const result = fails(root, "scripts/check-coherence.mjs", ["--mode", "governed"], "governed-owner-decision");
+  assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /\[governed-technical-binding\]/);
+});
+
+test("governed mode rejects production authorization introduced into the valid post-owner fixture", () => {
+  const root = caseRepository("governed-production-authorization");
+  setCheckedTasks(root, governedTaskIdsThrough("owner-governance"));
+  setGovernanceFixture(root, { ownerApproved: true });
+  replace(
+    root,
+    `${activeChange}/technical-review-packet.md`,
+    "Production deployment approved | `NO — NOT AUTHORIZED`",
+    "Production deployment approved | `YES — AUTHORIZED`",
+  );
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "governed"], "governed-production-restriction");
+});
+
+test("governed mode rejects publication authorization introduced into the valid post-owner fixture", () => {
+  const root = caseRepository("governed-publication-authorization");
+  setCheckedTasks(root, governedTaskIdsThrough("owner-governance"));
+  setGovernanceFixture(root, { ownerApproved: true });
+  replace(
+    root,
+    `${activeChange}/technical-review-packet.md`,
+    "Package publication/release approved | `NO — NOT AUTHORIZED`",
+    "Package publication/release approved | `YES — AUTHORIZED`",
+  );
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "governed"], "governed-production-restriction");
+});
+
+test("governed mode rejects a premature merge claim in the valid post-owner fixture", () => {
+  const root = caseRepository("governed-premature-merge");
+  setCheckedTasks(root, [...governedTaskIdsThrough("owner-governance"), "12.8"]);
+  setGovernanceFixture(root, { ownerApproved: true });
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "governed"], "governed-task-12.8-pending");
+});
+
+test("governed mode rejects a premature archive claim in the valid post-owner fixture", () => {
+  const root = caseRepository("governed-premature-archive");
+  setCheckedTasks(root, [...governedTaskIdsThrough("owner-governance"), "12.9"]);
+  setGovernanceFixture(root, { ownerApproved: true });
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "governed"], "governed-task-12.9-pending");
 });
 
 test("explicit archived original SDK mode remains valid", () => {
@@ -349,6 +429,31 @@ test("an ignored local CLAUDE.md is excluded by standard Git semantics", () => {
   assert.doesNotMatch(result.stdout, /local-instruction-unrelated/);
 });
 
+function governedTaskIdsThrough(phase) {
+  const index = taskGroups.findIndex((group) => group.phase === phase);
+  assert.notEqual(index, -1, `unknown governed fixture phase ${phase}`);
+  return taskGroups.slice(0, index + 1).flatMap(groupTaskIds);
+}
+
+function setGovernanceFixture(root, { ownerApproved }) {
+  const packet = [
+    "# Synthetic governed lifecycle fixture",
+    "",
+    "This controlled packet exists only inside a disposable verifier mutation repository.",
+    "Final technical commit: `" + fixtureTechnicalCommit + "`",
+    "Reviewed technical commit: `" + fixtureTechnicalCommit + "`",
+    "Technical-review evidence commit: `" + fixtureEvidenceCommit + "`",
+    "Technical review status: PASS",
+    "Package publication/release approved | `NO — NOT AUTHORIZED`",
+    "Production deployment approved | `NO — NOT AUTHORIZED`",
+    ownerApproved ? fixtureOwnerBinding : "Project-owner decision: PENDING",
+    "Merge lifecycle: PENDING",
+    "Archive lifecycle: PENDING",
+    "",
+  ].join("\n");
+  write(root, `${activeChange}/technical-review-packet.md`, packet);
+}
+
 function prepareControl() {
   git(repositoryRoot, ["clone", "--quiet", "--no-hardlinks", repositoryRoot, controlRoot]);
   cpSync(packageRoot, resolve(controlRoot, "packages/security-audit-sdk-core"), {
@@ -395,6 +500,7 @@ function fails(root, scriptPath, args, expected, extraEnv = {}) {
   const result = script(root, scriptPath, args, extraEnv);
   assert.notEqual(result.status, 0, `${scriptPath} unexpectedly passed mutation ${expected}`);
   assert.match(`${result.stdout}\n${result.stderr}`, new RegExp(escapeRegex(expected), "i"));
+  return result;
 }
 
 function git(root, args) {
