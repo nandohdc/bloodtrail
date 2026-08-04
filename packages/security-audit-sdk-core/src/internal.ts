@@ -1,3 +1,5 @@
+import { FIELD_POLICY } from "./generated/contract.generated.js";
+
 export function deepFreeze<T>(value: T): Readonly<T> {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     Object.freeze(value);
@@ -33,4 +35,32 @@ export function isPlainObject(value: unknown): value is Record<string, unknown> 
 
 export function hasOwn<T extends object, K extends PropertyKey>(value: T, key: K): value is T & Record<K, unknown> {
   return Object.hasOwn(value, key);
+}
+
+type FieldPolicyEntry = (typeof FIELD_POLICY)[number];
+const fieldPolicyByPath: ReadonlyMap<string, FieldPolicyEntry> = new Map(
+  FIELD_POLICY.map((entry) => [entry.path, entry]),
+);
+
+/** Internal field-policy lookup; the single index shared by construction and runtime decisions. */
+export function fieldPolicyForPath(path: string): FieldPolicyEntry | undefined {
+  return fieldPolicyByPath.get(path);
+}
+
+/**
+ * The single hook-path transformability decision shared by configuration normalization and
+ * runtime enforcement. Field-policy permission is necessary but not sufficient: immutable
+ * authority, identity, schema, tenant-scope, decision, delivery-class, and trust-level paths
+ * remain untransformable even when the field policy conditionally allows them.
+ */
+export function isTransformableFieldPath(path: string): boolean {
+  const policy = fieldPolicyForPath(path);
+  if (!policy) return false;
+  if (policy.policy !== "transform_required" && policy.policy !== "conditionally_allowed") return false;
+  return !path.startsWith("event.")
+    && !path.startsWith("schema.")
+    && path !== "tenant.scope"
+    && path !== "authorization.decision"
+    && path !== "event.delivery_class"
+    && !path.endsWith("provenance.trust_level");
 }

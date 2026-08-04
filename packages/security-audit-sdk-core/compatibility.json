@@ -88,6 +88,17 @@
     "recursiveExternalFreezing": false,
     "compatibilityImpact": "patch-level correctness and ownership fix; caller-owned collaborators are no longer frozen as an SDK construction side effect; no public type, error-code, contract 1.0.0, generic emit, or redelivery semantic change"
   },
+  "transformationPathValidation": {
+    "validationPoint": "configuration-normalization-during-construction",
+    "policySource": "shared-internal-predicate-over-generated-field-policy",
+    "acceptanceRule": "field-policy-membership-and-transform-eligible-class-and-not-immutable-path",
+    "rejectionCode": "SDK_INVALID_CONFIGURATION",
+    "runtimeDefense": "retained-unchanged-bounded-SDK_HOOK_FAILURE",
+    "hookInvocationDuringConstruction": false,
+    "hookPathType": "unchanged-AuditFieldPolicyPath-or-string",
+    "contractImpact": "none-contract-1.0.0-unchanged",
+    "compatibilityImpact": "patch-level correctness and reliability correction; previously accepted but unusable hook configuration now fails at construction; no public type, error-code, contract 1.0.0, generic emit, or redelivery semantic change"
+  },
   "inputNormalization": {
     "supportedValues": "finite-number-string-boolean-null-dense-array-plain-record",
     "undefinedObjectMember": "omitted-by-canonical-serialization",

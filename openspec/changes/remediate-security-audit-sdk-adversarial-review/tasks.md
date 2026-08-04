@@ -101,12 +101,12 @@ GitHub issue: [#28](https://github.com/nandohdc/bloodtrail/issues/28)
 
 GitHub issue: [#29](https://github.com/nandohdc/bloodtrail/issues/29)
 
-- [ ] 9.1 Derive the intersection of policy-eligible and SDK-transformable paths during configuration normalization. [F-10]
-- [ ] 9.2 Reject unsupported transformation paths during SDK construction with bounded safe configuration diagnostics. [F-10]
-- [ ] 9.3 Add unit tests for every supported path class and representative policy-eligible but runtime-unsupported paths. [F-10]
-- [ ] 9.4 Add regression tests proving invalid configuration returns no SDK instance and cannot cause a later all-event `SDK_HOOK_FAILURE` outage. [F-10]
-- [ ] 9.5 Preserve valid hook, prohibited-data, key-version metadata, and post-hook validation behavior. [F-10]
-- [ ] 9.6 Update configuration/API documentation and compatibility assessment. [F-10]
+- [x] 9.1 Derive the intersection of policy-eligible and SDK-transformable paths during configuration normalization. [F-10]
+- [x] 9.2 Reject unsupported transformation paths during SDK construction with bounded safe configuration diagnostics. [F-10]
+- [x] 9.3 Add unit tests for every supported path class and representative policy-eligible but runtime-unsupported paths. [F-10]
+- [x] 9.4 Add regression tests proving invalid configuration returns no SDK instance and cannot cause a later all-event `SDK_HOOK_FAILURE` outage. [F-10]
+- [x] 9.5 Preserve valid hook, prohibited-data, key-version metadata, and post-hook validation behavior. [F-10]
+- [x] 9.6 Update configuration/API documentation and compatibility assessment. [F-10]
 
 ## 10. Enforce redelivery identity semantics [F-11]
 

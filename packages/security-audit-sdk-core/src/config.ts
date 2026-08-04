@@ -6,6 +6,7 @@ import type { AuditClock, AuditIdentifierProvider } from "./providers.js";
 import { systemAuditClock, systemAuditIdentifiers } from "./providers.js";
 import type { AuditEventSink } from "./sink.js";
 import { normalizeCanonicalInputOrThrow, SecurityAuditSdkError } from "./errors.js";
+import { isTransformableFieldPath } from "./internal.js";
 
 export type AuditFieldPolicyPath = (typeof FIELD_POLICY)[number]["path"];
 
@@ -197,6 +198,9 @@ function normalizeTransformations(input: readonly AuditFieldTransformationHook[]
     const path = hook.path;
     if (typeof path !== "string" || typeof hook.transform !== "function") {
       throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}`);
+    }
+    if (!isTransformableFieldPath(path)) {
+      throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}/path`);
     }
     if (seen.has(path)) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}/path`);
     seen.add(path);

@@ -16,12 +16,11 @@ import {
   CONTRACT_VERSION,
   EVENT_CATALOG,
   EVENT_METHODS,
-  FIELD_POLICY,
 } from "./generated/contract.generated.js";
 import type { AuditOperationSnapshot } from "./operations.js";
 import type { AuditResult } from "./errors.js";
 import { failure } from "./errors.js";
-import { clonePlain, deepFreeze, omitUndefined } from "./internal.js";
+import { clonePlain, deepFreeze, fieldPolicyForPath, isTransformableFieldPath, omitUndefined } from "./internal.js";
 import { validateNoProhibitedData, validateSecurityAuditEvent } from "./validation/index.js";
 
 type AnyNamedInput = NamedAuditEventInputMap[EventMethodName] & {
@@ -36,7 +35,6 @@ export interface BuiltNamedAuditEvent<N extends EventName = EventName> {
 
 const definitionsByName = new Map<EventName, EventDefinition>(EVENT_CATALOG.map((entry) => [entry.name, entry]));
 const methodsByName = new Map<string, (typeof EVENT_METHODS)[number]>(EVENT_METHODS.map((entry) => [entry.method, entry]));
-const fieldPolicyByPath = new Map(FIELD_POLICY.map((entry) => [entry.path, entry]));
 const eventIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const terminalCommitStates = new Set(["committed", "not_committed", "partially_committed", "compensated"]);
 
@@ -256,9 +254,9 @@ function applyTransformations(
   const candidate = clonePlain(event);
   for (const transformation of config.transformations) {
     const { hook, path } = transformation;
-    const policy = fieldPolicyByPath.get(path as (typeof FIELD_POLICY)[number]["path"]);
+    const policy = fieldPolicyForPath(path);
     if (!policy) return failure("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${path}`);
-    if (!isTransformablePath(path)) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
+    if (!isTransformableFieldPath(path)) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
     const current = readPath(candidate, path);
     if (current === undefined) continue;
     if (typeof current !== "string") return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
@@ -291,18 +289,6 @@ function applyTransformations(
     }
   }
   return { ok: true, value: candidate };
-}
-
-function isTransformablePath(path: string): boolean {
-  const policy = fieldPolicyByPath.get(path as (typeof FIELD_POLICY)[number]["path"]);
-  if (!policy) return false;
-  if (policy.policy !== "transform_required" && policy.policy !== "conditionally_allowed") return false;
-  return !path.startsWith("event.")
-    && !path.startsWith("schema.")
-    && path !== "tenant.scope"
-    && path !== "authorization.decision"
-    && path !== "event.delivery_class"
-    && !path.endsWith("provenance.trust_level");
 }
 
 function readPath(value: SecurityAuditEvent, path: string): unknown {

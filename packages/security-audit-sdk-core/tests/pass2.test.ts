@@ -6,6 +6,7 @@ import { test } from "node:test";
 import {
   EVENT_CATALOG,
   EVENT_METHODS,
+  SecurityAuditSdkError,
   administratorActor,
   anonymousActor,
   apiCredentialActor,
@@ -1194,33 +1195,49 @@ test("privacy transformations, registered extensions, provider checks, and sink 
   assert.equal((await sdk.authenticationFailed(input as never)).ok, true);
   assert.equal(transformedSink.events.at(-1)?.actor.id, "pseudonym_raw_actor");
 
-  const unsafeHookSdk = createSecurityAuditSdk({
-    contractVersion: "1.0.0",
-    producer: { name: "sdk-test-producer", version: "1.0.0" },
-    service: { name: "sdk-test-service", version: "1.0.0" },
-    environment: { name: "test" },
-    sink: createCapturingAuditSink(),
-    clock: fixedClock(),
-    identifiers: deterministicProviders(950),
-    transformations: [{ path: "event.name", transform: () => "bloodtrail.audit.authentication.failed" }],
-  });
-  const unsafe = await unsafeHookSdk.authenticationFailed(toNamedInput(authFailed) as never);
-  assert.equal(unsafe.ok, false);
-  if (!unsafe.ok) assert.equal(unsafe.error.code, "SDK_HOOK_FAILURE");
+  // F-10: intrinsically untransformable paths now fail at construction instead of failing every event.
+  assert.throws(
+    () => createSecurityAuditSdk({
+      contractVersion: "1.0.0",
+      producer: { name: "sdk-test-producer", version: "1.0.0" },
+      service: { name: "sdk-test-service", version: "1.0.0" },
+      environment: { name: "test" },
+      sink: createCapturingAuditSink(),
+      clock: fixedClock(),
+      identifiers: deterministicProviders(950),
+      transformations: [{ path: "event.name", transform: () => "bloodtrail.audit.authentication.failed" }],
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof SecurityAuditSdkError);
+      const sdkError = error as SecurityAuditSdkError;
+      assert.equal(sdkError.code, "SDK_INVALID_CONFIGURATION");
+      assert.equal(sdkError.category, "configuration");
+      assert.equal(sdkError.path, "/transformations/0/path");
+      return true;
+    },
+  );
 
-  const nonEligibleHookSdk = createSecurityAuditSdk({
-    contractVersion: "1.0.0",
-    producer: { name: "sdk-test-producer", version: "1.0.0" },
-    service: { name: "sdk-test-service", version: "1.0.0" },
-    environment: { name: "test" },
-    sink: createCapturingAuditSink(),
-    clock: fixedClock(),
-    identifiers: deterministicProviders(960),
-    transformations: [{ path: "actor.type", transform: () => "administrator" }],
-  });
-  const nonEligible = await nonEligibleHookSdk.authenticationFailed(toNamedInput(authFailed) as never);
-  assert.equal(nonEligible.ok, false);
-  if (!nonEligible.ok) assert.equal(nonEligible.error.code, "SDK_HOOK_FAILURE");
+  // F-10: policy-listed but runtime-ineligible paths also fail at construction.
+  assert.throws(
+    () => createSecurityAuditSdk({
+      contractVersion: "1.0.0",
+      producer: { name: "sdk-test-producer", version: "1.0.0" },
+      service: { name: "sdk-test-service", version: "1.0.0" },
+      environment: { name: "test" },
+      sink: createCapturingAuditSink(),
+      clock: fixedClock(),
+      identifiers: deterministicProviders(960),
+      transformations: [{ path: "actor.type", transform: () => "administrator" }],
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof SecurityAuditSdkError);
+      const sdkError = error as SecurityAuditSdkError;
+      assert.equal(sdkError.code, "SDK_INVALID_CONFIGURATION");
+      assert.equal(sdkError.category, "configuration");
+      assert.equal(sdkError.path, "/transformations/0/path");
+      return true;
+    },
+  );
 
   const promiseHookSdk = createSecurityAuditSdk({
     contractVersion: "1.0.0",

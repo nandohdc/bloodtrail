@@ -112,6 +112,14 @@ The observable change is that an ordinary collaborator and its caller-owned arra
 
 This is a source-compatible patch-level correctness and ownership fix: no public export, declaration, error code, provider interface, canonical event interpretation, or contract version changes. The prior caller-object mutation contradicted the documented immutable-configuration boundary and could turn a valid mutable sink into delivery failure. The package remains private and unpublished at candidate `0.1.0`; this correction does not authorize release or production use.
 
+## Transformation-path construction validation
+
+Transformation-hook paths are now validated once during SDK construction against the same internal transformability predicate the runtime pipeline enforces. A registration is accepted only when its path appears in the canonical field policy with a transform-eligible policy (`transform_required` or `conditionally_allowed`) and does not target immutable event, schema, tenant-scope, authorization-decision, delivery-class, or trust-level fields. Field-policy permission alone is not sufficient.
+
+The observable change is that a hook configuration for an intrinsically unsupported path — for example `event.outcome_reason.code` or `event.outcome_reason.message`, which the field policy marks conditionally allowed but the runtime never transforms — previously constructed successfully and then failed every event with `SDK_HOOK_FAILURE`, and now fails once at construction with the existing bounded `SDK_INVALID_CONFIGURATION` at `/transformations/<index>/path`. Consumers must remove or correct such registrations; no valid transformable path is affected, hook invocation timing is unchanged for accepted registrations, and hooks are never invoked during construction.
+
+This is a patch-level correctness and reliability correction: no public export, declaration, error code, hook-path type, canonical event interpretation, or contract version changes, and runtime path enforcement remains as defense in depth. The package remains private and unpublished at candidate `0.1.0`; this correction does not authorize release or production use.
+
 ## Contract-version upgrades
 
 A contract semantic change requires the `security-audit-event-contract` governance lifecycle before SDK work. After a new contract version is approved, SDK adaptation must use a separate reviewed change that:
