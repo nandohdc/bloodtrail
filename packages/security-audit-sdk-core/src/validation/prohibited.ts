@@ -23,45 +23,61 @@ export function validateNormalizedNoProhibitedData(value: unknown, serializedByt
   return result.ok ? { ok: true, value: undefined } : result;
 }
 
+function accepted(): AuditResult<void> {
+  return { ok: true, value: undefined };
+}
+
 function scan(value: unknown, path: string, depth: number, seen: WeakSet<object>): AuditResult<void> {
   if (depth > MAX_DEPTH) return failure("FIELD_LIMIT_EXCEEDED", "validation", path || "/");
+  const scalar = scanScalar(value, path);
+  if (scalar) return scalar;
+  if (value === null) return accepted();
+  const object = value as object;
+  if (seen.has(object)) return failure("PROHIBITED_DATA", "privacy", path || "/");
+  seen.add(object);
+  if (Array.isArray(value)) return scanArray(value, path, depth, seen);
+  if (!isPlainObject(value)) return failure("PROHIBITED_DATA", "privacy", path || "/");
+  return scanObject(value, path, depth, seen);
+}
+
+// Returns undefined when the value is an object and the caller should continue.
+function scanScalar(value: unknown, path: string): AuditResult<void> | undefined {
   switch (typeof value) {
     case "string": {
       if (byteLength(value) > MAX_STRING_BYTES) return failure("FIELD_LIMIT_EXCEEDED", "validation", path || "/");
       if (secretValuePattern.test(value)) return failure("PROHIBITED_DATA", "privacy", path || "/");
-      return { ok: true, value: undefined };
+      return accepted();
     }
     case "number":
     case "boolean":
-      return { ok: true, value: undefined };
     case "undefined":
-      return { ok: true, value: undefined };
+      return accepted();
     case "bigint":
     case "symbol":
     case "function":
       return failure(typeof value === "bigint" ? "FIELD_SERIALIZATION_FAILED" : "SDK_INVALID_INPUT", "validation", path || "/");
-    case "object":
-      break;
+    default:
+      return undefined;
   }
-  if (value === null) return { ok: true, value: undefined };
-  if (seen.has(value)) return failure("PROHIBITED_DATA", "privacy", path || "/");
-  seen.add(value);
-  if (Array.isArray(value)) {
-    if (value.length > MAX_ARRAY_ITEMS) return failure("FIELD_LIMIT_EXCEEDED", "validation", path || "/");
-    for (let index = 0; index < value.length; index += 1) {
-      const child = scan(value[index], `${path}/${index}`, depth + 1, seen);
-      if (!child.ok) return child;
-    }
-    return { ok: true, value: undefined };
+}
+
+function scanArray(value: readonly unknown[], path: string, depth: number, seen: WeakSet<object>): AuditResult<void> {
+  if (value.length > MAX_ARRAY_ITEMS) return failure("FIELD_LIMIT_EXCEEDED", "validation", path || "/");
+  for (let index = 0; index < value.length; index += 1) {
+    const child = scan(value[index], `${path}/${index}`, depth + 1, seen);
+    if (!child.ok) return child;
   }
-  if (!isPlainObject(value)) return failure("PROHIBITED_DATA", "privacy", path || "/");
+  return accepted();
+}
+
+function scanObject(value: object, path: string, depth: number, seen: WeakSet<object>): AuditResult<void> {
   for (const [key, item] of Object.entries(value)) {
     const childPath = `${path}/${escapePath(key)}`;
     if (isProhibitedKey(key)) return failure("PROHIBITED_DATA", "privacy", childPath);
     const child = scan(item, childPath, depth + 1, seen);
     if (!child.ok) return child;
   }
-  return { ok: true, value: undefined };
+  return accepted();
 }
 
 function isProhibitedKey(key: string): boolean {

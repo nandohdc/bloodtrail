@@ -1,6 +1,7 @@
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { byCodePoint } from '../lib/sort.mjs'
 
 const roots = ['lib', 'poc', 'scripts', 'tests']
 const files = []
@@ -12,7 +13,7 @@ for (const root of roots) {
     }
   }
 }
-files.sort()
+files.sort(byCodePoint)
 
 for (const file of files) {
   const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' })

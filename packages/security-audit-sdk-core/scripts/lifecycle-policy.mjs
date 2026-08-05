@@ -2,9 +2,15 @@ import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { packageRoot, readJson, repositoryRoot } from "./verification-helpers.mjs";
+import { byCodePoint, packageRoot, readJson, repositoryRoot } from "./verification-helpers.mjs";
 
 export const supportedModes = Object.freeze(["active", "governed", "archived"]);
+
+const PREMATURE_FAILURE_ID_BY_PHASE = Object.freeze({
+  "technical-review": "active-technical-review-premature",
+  "owner-governance": "active-owner-decision-premature",
+  "merge-archive": "active-merge-archive-pending",
+});
 export const lifecycleMetadata = Object.freeze(
   await readJson(resolve(packageRoot, "verification-lifecycle.json")),
 );
@@ -86,14 +92,12 @@ export async function resolveVerificationLifecycle(options = {}) {
     originalActive,
     remediationActive,
     remediationArchives,
-    currentChangeRoot: parsed.change === original.name
-      ? originalArchive
-      : mode === "archived" ? remediationArchives[0] : remediationActive,
+    currentChangeRoot: currentChangeRootFor(parsed, original, mode, originalArchive, remediationArchives, remediationActive),
   });
 }
 
 export function parseTaskChecklist(text) {
-  return [...text.matchAll(/^- \[([ x])\] (\d+\.\d+)\s+(.+)$/mg)].map((match) => ({
+  return [...text.matchAll(/^- \[([ x])\] (\d+\.\d+)\s+(\S.*)$/mg)].map((match) => ({
     id: match[2],
     done: match[1] === "x",
     description: match[3],
@@ -145,13 +149,7 @@ export function evaluateActiveTaskProgress(taskEntries, options = {}) {
     const group = resolvedGroups[index];
     if (!group.started) continue;
     const prior = resolvedGroups[earliestIncomplete];
-    const id = group.phase === "technical-review"
-      ? "active-technical-review-premature"
-      : group.phase === "owner-governance"
-        ? "active-owner-decision-premature"
-        : group.phase === "merge-archive"
-          ? "active-merge-archive-pending"
-          : "active-task-order";
+    const id = PREMATURE_FAILURE_ID_BY_PHASE[group.phase] ?? "active-task-order";
     failures.push(boundedFailure(id, "tasks.md", `${group.id} started before ${prior?.id ?? "the preceding group"} completed`));
   }
 
@@ -185,8 +183,10 @@ export function extractRequirementBody(text) {
 }
 
 export function extractRequirementBlocks(text) {
-  const matches = [...text.matchAll(/^### Requirement:.+$(?:\n(?!### Requirement:)[\s\S]*?)*(?=^### Requirement:|\s*$)/mg)];
-  return matches.map((match) => match[0].trim()).filter(Boolean);
+  const starts = [...text.matchAll(/^### Requirement:.+$/mg)].map((match) => match.index);
+  return starts
+    .map((start, index) => text.slice(start, starts[index + 1] ?? text.length).trim())
+    .filter(Boolean);
 }
 
 export function boundedFailure(id, file, message) {
@@ -205,7 +205,7 @@ async function matchingArchives(root, pattern) {
     .filter((entry) => entry.isDirectory())
     .map((entry) => `openspec/changes/archive/${entry.name}`)
     .filter((path) => pattern.test(path))
-    .sort()
+    .sort(byCodePoint)
     .map((path) => resolve(root, path));
 }
 
@@ -221,4 +221,10 @@ const invokedDirectly = process.argv[1] && resolve(process.argv[1]) === fileURLT
 if (invokedDirectly) {
   const lifecycle = await resolveVerificationLifecycle();
   process.stdout.write(`verification lifecycle resolved: ${lifecycle.mode} (${lifecycle.change})\n`);
+}
+
+function currentChangeRootFor(parsed, original, mode, originalArchive, remediationArchives, remediationActive) {
+  if (parsed.change === original.name) return originalArchive;
+  if (mode === "archived") return remediationArchives[0];
+  return remediationActive;
 }

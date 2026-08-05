@@ -1,9 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { GeneratedOperationContext, SecurityAuditEvent } from "./generated/contract.generated.js";
 import { deepFreeze, omitUndefined } from "./internal.js";
-import type { AuditResult } from "./errors.js";
-import { failure } from "./errors.js";
-import { normalizeCanonicalInputOrThrow, SecurityAuditSdkError } from "./errors.js";
+import { failure, normalizeCanonicalInputOrThrow, SecurityAuditSdkError, type AuditResult } from "./errors.js";
 
 type ContextValue<K extends keyof SecurityAuditEvent> = NonNullable<SecurityAuditEvent[K]>;
 

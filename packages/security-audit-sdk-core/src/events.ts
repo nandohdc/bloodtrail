@@ -45,15 +45,13 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
   input: AnyNamedInput,
   activeContext: AuditContextFrame | undefined,
 ): AuditResult<BuiltNamedAuditEvent> {
-  const methodDefinition = methodsByName.get(method);
-  if (!methodDefinition) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
-  const definition = definitionsByName.get(methodDefinition.name as EventName);
-  if (!definition) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
+  const resolved = resolveEventDefinition(method);
+  if (!resolved.ok) return resolved;
+  const definition = resolved.value;
 
   const operation = input.operation;
-  if (operation?.bound_event && operation.bound_event !== method) {
-    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/operation/bound_event");
-  }
+  const boundEventMismatch = rejectBoundEventMismatch(operation, method);
+  if (boundEventMismatch) return boundEventMismatch;
 
   const redelivery = input.redelivery?.event;
   if (redelivery) {
@@ -75,30 +73,23 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
   const initialScan = validateNoProhibitedData(normalizedInput);
   if (!initialScan.ok) return initialScan;
 
-  const configAndActive = mergeAuditContextFrames(config.authoritativeContext, activeContext);
-  if (!configAndActive.ok) return configAndActive;
-  const frameResult = mergeAuditContextFrames(configAndActive.value, pickFrameInput(normalizedInput));
+  const frameResult = resolveContextFrame(config, activeContext, normalizedInput);
   if (!frameResult.ok) return frameResult;
   const frame = frameResult.value;
 
-  const lifecycle = normalizedInput.event?.lifecycle_phase ?? defaultLifecycle(definition);
-  const outcome = normalizedInput.event?.outcome ?? defaultOutcome(definition, operation);
-  const commitResult = resolveCommitState(definition, outcome, normalizedInput.event?.commit_state, operation);
-  if (!commitResult.ok) return commitResult;
-  const commit = commitResult.value;
+  const classification = resolveEventClassification(definition, normalizedInput, operation);
+  if (!classification.ok) return classification;
+  const { lifecycle, outcome, commit } = classification.value;
 
-  const eventId = config.identifiers.eventId();
-  if (!eventIdPattern.test(eventId)) return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id");
-  const timestampResult = normalizedInput.event?.timestamp === undefined ? nowIso(config) : { ok: true as const, value: normalizedInput.event.timestamp };
-  if (!timestampResult.ok) return timestampResult;
-  const observedAtResult = normalizedInput.event?.observed_at === undefined ? nowIso(config) : { ok: true as const, value: normalizedInput.event.observed_at };
-  if (!observedAtResult.ok) return observedAtResult;
+  const identity = resolveEventIdentity(config, normalizedInput);
+  if (!identity.ok) return identity;
   const correlation = buildCorrelation(config, frame, normalizedInput, operation);
   if (!correlation.ok) return correlation;
 
+  const envelopeDefaults = resolveEnvelopeDefaults(config, frame, definition);
   const candidate: SecurityAuditEvent = omitUndefined({
     event: {
-      id: eventId,
+      id: identity.value.eventId,
       name: definition.name,
       category: definition.category,
       action: definition.action,
@@ -106,22 +97,22 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
       outcome,
       outcome_reason: normalizedInput.event?.outcome_reason,
       commit_state: commit,
-      timestamp: timestampResult.value,
-      observed_at: observedAtResult.value,
+      timestamp: identity.value.timestamp,
+      observed_at: identity.value.observedAt,
       delivery_class: definition.delivery,
     },
     schema: { name: CONTRACT_SCHEMA_NAME, version: CONTRACT_VERSION },
     producer: config.producer,
-    environment: frame.environment ?? config.environment,
-    service: frame.service ?? config.service,
-    deployment: frame.deployment ?? config.deployment,
+    environment: envelopeDefaults.environment,
+    service: envelopeDefaults.service,
+    deployment: envelopeDefaults.deployment,
     tenant: buildTenant(frame),
     actor: frame.actor,
     subject: frame.subject,
     authenticated_principal: frame.authenticated_principal,
     delegation: frame.delegation,
     credential: frame.credential,
-    initiator: frame.initiator ?? defaultInitiator(config),
+    initiator: envelopeDefaults.initiator,
     session: frame.session,
     authentication: frame.authentication,
     authorization: frame.authorization,
@@ -131,26 +122,12 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
     request: frame.request,
     correlation: correlation.value,
     risk: frame.risk,
-    data: {
-      classification: frame.data?.classification ?? frame.resource?.data_classification ?? "internal",
-      retention_class: frame.data?.retention_class ?? definition.retention,
-      field_policy_version: frame.data?.field_policy_version ?? CONTRACT_VERSION,
-    },
+    data: envelopeDefaults.data,
     integrity: frame.integrity,
     extensions: frame.extensions,
   }) as SecurityAuditEvent;
 
-  const transformed = applyTransformations(config, candidate, definition);
-  if (!transformed.ok) return transformed;
-  const validated = validateSecurityAuditEvent(transformed.value);
-  if (!validated.ok) return validated;
-  return {
-    ok: true,
-    value: {
-      event: deepFreeze(clonePlain(validated.value)) as Readonly<EventForName<EventName>>,
-      deliveryIntent: { kind: "named_execution" },
-    },
-  };
+  return finalizeNamedEvent(config, candidate, definition);
 }
 
 function validateNamedRedeliveryBinding(
@@ -286,42 +263,63 @@ function applyTransformations(
   if (config.transformations.length === 0) return { ok: true, value: event };
   const candidate = clonePlain(event);
   for (const transformation of config.transformations) {
-    const { hook, path } = transformation;
-    const policy = fieldPolicyForPath(path);
-    if (!policy) return failure("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${path}`);
-    if (!isTransformableFieldPath(path)) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
-    const current = readPath(candidate, path);
-    if (current === undefined) continue;
-    if (typeof current !== "string") return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
-    const preScan = validateNoProhibitedData({ value: current });
-    if (!preScan.ok) return preScan;
-    let output: AuditTransformationOutput | string | undefined;
-    try {
-      output = hook.transform(omitUndefined({
-        path,
-        value: current,
-        tenantId: candidate.tenant.effective_tenant_id,
-        purpose: definition.semantic,
-      }) as Parameters<typeof hook.transform>[0]);
-    } catch {
-      return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
-    }
-    if (output !== null && typeof output === "object" && typeof (output as { then?: unknown }).then === "function") {
-      return failure("SDK_UNSUPPORTED_HOOK_RESULT", "privacy", `/${path.replace(/\./g, "/")}`);
-    }
-    if (output === undefined) continue;
-    const next = typeof output === "string" ? output : output.value;
-    if (typeof next !== "string" || next.length === 0 || next.length > 512) {
-      return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
-    }
-    const postScan = validateNoProhibitedData({ value: next });
-    if (!postScan.ok) return postScan;
-    writePath(candidate, path, next);
-    if (typeof output !== "string" && output.key_id !== undefined) {
-      if (typeof output.key_id !== "string" || output.key_id.length > 80) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}/key_id`);
-    }
+    const rejection = applyOneTransformation(candidate, transformation, definition);
+    if (rejection) return rejection;
   }
   return { ok: true, value: candidate };
+}
+
+// Mutates candidate in place. Returns a failure to propagate, or undefined when
+// the transformation applied or was skipped.
+function applyOneTransformation(
+  candidate: SecurityAuditEvent,
+  transformation: NormalizedSdkConfiguration["transformations"][number],
+  definition: EventDefinition,
+): AuditResult<SecurityAuditEvent> | undefined {
+  const { hook, path } = transformation;
+  const pointer = `/${path.replaceAll(".", "/")}`;
+  const policy = fieldPolicyForPath(path);
+  if (!policy) return failure("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${path}`);
+  if (!isTransformableFieldPath(path)) return failure("SDK_HOOK_FAILURE", "privacy", pointer);
+  const current = readPath(candidate, path);
+  if (current === undefined) return undefined;
+  if (typeof current !== "string") return failure("SDK_HOOK_FAILURE", "privacy", pointer);
+  const preScan = validateNoProhibitedData({ value: current });
+  if (!preScan.ok) return preScan;
+  let output: AuditTransformationOutput | string | undefined;
+  try {
+    output = hook.transform(omitUndefined({
+      path,
+      value: current,
+      tenantId: candidate.tenant.effective_tenant_id,
+      purpose: definition.semantic,
+    }) as Parameters<typeof hook.transform>[0]);
+  } catch {
+    return failure("SDK_HOOK_FAILURE", "privacy", pointer);
+  }
+  if (output !== null && typeof output === "object" && typeof (output as { then?: unknown }).then === "function") {
+    return failure("SDK_UNSUPPORTED_HOOK_RESULT", "privacy", pointer);
+  }
+  if (output === undefined) return undefined;
+  const next = typeof output === "string" ? output : output.value;
+  if (typeof next !== "string" || next.length === 0 || next.length > 512) {
+    return failure("SDK_HOOK_FAILURE", "privacy", pointer);
+  }
+  const postScan = validateNoProhibitedData({ value: next });
+  if (!postScan.ok) return postScan;
+  writePath(candidate, path, next);
+  return rejectInvalidKeyId(output, pointer);
+}
+
+function rejectInvalidKeyId(
+  output: AuditTransformationOutput | string,
+  pointer: string,
+): AuditResult<SecurityAuditEvent> | undefined {
+  if (typeof output === "string" || output.key_id === undefined) return undefined;
+  if (typeof output.key_id !== "string" || output.key_id.length > 80) {
+    return failure("SDK_HOOK_FAILURE", "privacy", `${pointer}/key_id`);
+  }
+  return undefined;
 }
 
 function readPath(value: SecurityAuditEvent, path: string): unknown {
@@ -394,4 +392,108 @@ function nowIso(config: NormalizedSdkConfiguration): AuditResult<string> {
     return failure("SDK_INVALID_CLOCK", "configuration", "/clock");
   }
   return { ok: true, value: value.toISOString() };
+}
+
+function resolveEventDefinition(method: EventMethodName): AuditResult<EventDefinition> {
+  const methodDefinition = methodsByName.get(method);
+  if (!methodDefinition) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
+  const definition = definitionsByName.get(methodDefinition.name as EventName);
+  if (!definition) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
+  return { ok: true, value: definition };
+}
+
+function resolveContextFrame(
+  config: NormalizedSdkConfiguration,
+  activeContext: AuditContextFrame | undefined,
+  normalizedInput: AnyNamedInput,
+): AuditResult<AuditContextFrame> {
+  const configAndActive = mergeAuditContextFrames(config.authoritativeContext, activeContext);
+  if (!configAndActive.ok) return configAndActive;
+  return mergeAuditContextFrames(configAndActive.value, pickFrameInput(normalizedInput));
+}
+
+function resolveTimestamps(
+  config: NormalizedSdkConfiguration,
+  normalizedInput: AnyNamedInput,
+): AuditResult<{ readonly timestamp: string; readonly observedAt: string }> {
+  const timestampResult = normalizedInput.event?.timestamp === undefined ? nowIso(config) : { ok: true as const, value: normalizedInput.event.timestamp };
+  if (!timestampResult.ok) return timestampResult;
+  const observedAtResult = normalizedInput.event?.observed_at === undefined ? nowIso(config) : { ok: true as const, value: normalizedInput.event.observed_at };
+  if (!observedAtResult.ok) return observedAtResult;
+  return { ok: true, value: { timestamp: timestampResult.value, observedAt: observedAtResult.value } };
+}
+
+function resolveEnvelopeDefaults(
+  config: NormalizedSdkConfiguration,
+  frame: AuditContextFrame,
+  definition: EventDefinition,
+) {
+  return {
+    environment: frame.environment ?? config.environment,
+    service: frame.service ?? config.service,
+    deployment: frame.deployment ?? config.deployment,
+    initiator: frame.initiator ?? defaultInitiator(config),
+    data: {
+      classification: frame.data?.classification ?? frame.resource?.data_classification ?? "internal",
+      retention_class: frame.data?.retention_class ?? definition.retention,
+      field_policy_version: frame.data?.field_policy_version ?? CONTRACT_VERSION,
+    },
+  };
+}
+
+// config and normalizedInput both stay in scope here: M-F11-C mutates the
+// eventId statement to reuse a retry identifier and must still compile.
+function resolveEventIdentity(
+  config: NormalizedSdkConfiguration,
+  normalizedInput: AnyNamedInput,
+): AuditResult<{ readonly eventId: string; readonly timestamp: string; readonly observedAt: string }> {
+  const eventId = config.identifiers.eventId();
+  if (!eventIdPattern.test(eventId)) return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id");
+  const timestamps = resolveTimestamps(config, normalizedInput);
+  if (!timestamps.ok) return timestamps;
+  return { ok: true, value: { eventId, timestamp: timestamps.value.timestamp, observedAt: timestamps.value.observedAt } };
+}
+
+function finalizeNamedEvent(
+  config: NormalizedSdkConfiguration,
+  candidate: SecurityAuditEvent,
+  definition: EventDefinition,
+): AuditResult<BuiltNamedAuditEvent> {
+  const transformed = applyTransformations(config, candidate, definition);
+  if (!transformed.ok) return transformed;
+  const validated = validateSecurityAuditEvent(transformed.value);
+  if (!validated.ok) return validated;
+  return {
+    ok: true,
+    value: {
+      event: deepFreeze(clonePlain(validated.value)) as Readonly<EventForName<EventName>>,
+      deliveryIntent: { kind: "named_execution" },
+    },
+  };
+}
+
+function rejectBoundEventMismatch(
+  operation: AuditOperationSnapshot | undefined,
+  method: EventMethodName,
+): AuditResult<BuiltNamedAuditEvent> | undefined {
+  if (operation?.bound_event && operation.bound_event !== method) {
+    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/operation/bound_event");
+  }
+  return undefined;
+}
+
+function resolveEventClassification(
+  definition: EventDefinition,
+  normalizedInput: AnyNamedInput,
+  operation: AuditOperationSnapshot | undefined,
+): AuditResult<{
+  readonly lifecycle: SecurityAuditEvent["event"]["lifecycle_phase"];
+  readonly outcome: SecurityAuditEvent["event"]["outcome"];
+  readonly commit: SecurityAuditEvent["event"]["commit_state"];
+}> {
+  const lifecycle = normalizedInput.event?.lifecycle_phase ?? defaultLifecycle(definition);
+  const outcome = normalizedInput.event?.outcome ?? defaultOutcome(definition, operation);
+  const commitResult = resolveCommitState(definition, outcome, normalizedInput.event?.commit_state, operation);
+  if (!commitResult.ok) return commitResult;
+  return { ok: true, value: { lifecycle, outcome, commit: commitResult.value } };
 }

@@ -6,7 +6,16 @@ const sourceRoot = resolve(packageRoot, "src");
 const packageJson = await readJson(resolve(packageRoot, "package.json"));
 const files = await walk(sourceRoot);
 const violations = [];
-const forbiddenFileName = /(?:^|[./_-])(adapter|instrument(?:ation)?|transport|exporter|collector|queue|outbox|storage|siem|analytics|detection|browser|telemetry|framework|express|nestjs|fastify|nextjs|cryptographic-chain)(?:[./_-]|$)/i;
+const FORBIDDEN_NAME_TERMS = [
+  "adapter", "instrument(?:ation)?", "transport", "exporter", "collector",
+  "queue", "outbox", "storage", "siem", "analytics", "detection", "browser",
+  "telemetry", "framework", "express", "nestjs", "fastify", "nextjs",
+  "cryptographic-chain",
+];
+const forbiddenFileName = new RegExp(
+  `(?:^|[./_-])(${FORBIDDEN_NAME_TERMS.join("|")})(?:[./_-]|$)`,
+  "i",
+);
 const forbiddenSource = [
   /\b(?:fetch|WebSocket|XMLHttpRequest)\s*\(/,
   /\b(?:http|https|net|tls|dgram|fs|fs\/promises|worker_threads|child_process)\b/,

@@ -2,6 +2,7 @@ import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import {
   assert,
+  byCodePoint,
   git,
   repositoryRoot,
   splitNull,
@@ -40,7 +41,19 @@ const untracked = splitNull(git(["ls-files", "--others", "--exclude-standard", "
 const records = [...tracked, ...untracked.map((path) => ({ status: "?", path }))];
 const violations = [];
 const classified = new Map();
-const forbiddenPackageImplementationPath = /^packages\/security-audit-sdk-core\/(?:src|lib)\/(?:.*\/)?(?:adapter|instrumentation?|transport|exporter|collector|broker|queue|outbox|storage|siem|analytics|detection|browser|telemetry|framework|middleware|opentelemetry|otlp|cryptographic-chain)(?:[._/-]|$)/i;
+// Terms are verbatim from the original single-literal pattern, including the
+// `instrumentation?` spelling (optional trailing "n"), which differs from
+// check-scope.mjs's `instrument(?:ation)?`. Preserved deliberately.
+const FORBIDDEN_IMPLEMENTATION_TERMS = [
+  "adapter", "instrumentation?", "transport", "exporter", "collector", "broker",
+  "queue", "outbox", "storage", "siem", "analytics", "detection", "browser",
+  "telemetry", "framework", "middleware", "opentelemetry", "otlp",
+  "cryptographic-chain",
+];
+const forbiddenPackageImplementationPath = new RegExp(
+  `^packages/security-audit-sdk-core/(?:src|lib)/(?:.*/)?(?:${FORBIDDEN_IMPLEMENTATION_TERMS.join("|")})(?:[._/-]|$)`,
+  "i",
+);
 
 for (const record of records) {
   const paths = [record.path, record.source].filter(Boolean);
@@ -93,7 +106,7 @@ if (reviewTarget) {
 }
 
 if (violations.length > 0) {
-  throw new Error(`lifecycle-aware changed-path enforcement failed:\n${[...new Set(violations)].sort().join("\n")}`);
+  throw new Error(`lifecycle-aware changed-path enforcement failed:\n${[...new Set(violations)].sort(byCodePoint).join("\n")}`);
 }
 
 const counts = [...classified.values()].reduce((result, value) => {
@@ -156,12 +169,9 @@ function validateArchiveMovement(resolvedLifecycle) {
       `${sourcePath} mode ${sourceEntry.mode} differs from ${destinationPath} mode ${destinationEntry.mode}`,
     );
     if (relativePath === "tasks.md") {
-      const sourceTasks = git(["show", `${source.revision}:${sourcePath}`]);
-      const destinationTasks = readFileSync(resolve(repositoryRoot, destinationPath), "utf8");
-      const reconciled = exactArchivedTaskReconciliation(sourceTasks, movementViolations);
       movementRule(
         "archive-movement-unauthorized-task-difference",
-        reconciled !== null && destinationTasks === reconciled,
+        archivedTasksMatchSource(source, sourcePath, destinationPath, movementViolations),
         `${destinationPath} differs from the source by more than exact 12.8-12.10 checkbox transitions`,
       );
     } else {
@@ -184,27 +194,10 @@ function validateArchiveMovement(resolvedLifecycle) {
     movementFailure("archive-movement-partial", `movement inventory is source=${sourceFiles.size}, archive=${archiveFiles.size}, active-remnants=${activeFiles.size}`);
   }
 
-  const movementChanges = source
-    ? source.movementCommit
-      ? trackedChangesBetween(source.revision, source.movementCommit)
-      : workingChangesAgainst(source.revision)
-    : [];
-  for (const record of movementChanges) {
-    if (record.status === "D"
-      && record.path.startsWith("openspec/changes/")
-      && !record.path.startsWith(`${remediation.active}/`)
-      && !record.path.startsWith("openspec/changes/archive/")) {
-      movementFailure("archive-movement-unrelated-change-deletion", `${record.path} belongs to another active change`);
-    }
-    if (["A", "?"].includes(record.status)
-      && record.path.startsWith("openspec/changes/archive/")
-      && !record.path.startsWith(`${exactArchive}/`)) {
-      movementFailure("archive-movement-unrelated-archive-addition", `${record.path} is outside ${exactArchive}`);
-    }
-  }
+  checkUnrelatedMovementChanges(source, exactArchive, movementViolations);
 
   if (movementViolations.length > 0) {
-    throw new Error(`archive movement validation failed:\n${[...new Set(movementViolations)].sort().join("\n")}`);
+    throw new Error(`archive movement validation failed:\n${[...new Set(movementViolations)].sort(byCodePoint).join("\n")}`);
   }
   return Object.freeze({ activeSources, archivePaths });
 
@@ -243,7 +236,7 @@ function resolveMovementSource(archiveRelative, movementViolations) {
 function exactArchivedTaskReconciliation(sourceText, movementViolations) {
   let expected = sourceText;
   for (const taskId of ["12.8", "12.9", "12.10"]) {
-    const pattern = new RegExp(`^- \\[([ x])\\] ${escapeRegex(taskId)} `, "gm");
+    const pattern = new RegExp(String.raw`^- \[([ x])\] ${escapeRegex(taskId)} `, "gm");
     const matches = [...expected.matchAll(pattern)];
     if (matches.length !== 1 || matches[0][1] !== " ") {
       movementViolations.push(`[archive-movement-unauthorized-task-difference] source task ${taskId} must occur exactly once and be unchecked before archive`);
@@ -290,7 +283,7 @@ function workingTreeInventory(rootRelative, movementViolations) {
         movementViolations.push(`[archive-movement-mode-mismatch] unsupported filesystem entry at ${path}`);
         continue;
       }
-      const mode = entry.isSymbolicLink() ? "120000" : (stat.mode & 0o111) === 0 ? "100644" : "100755";
+      const mode = gitFileMode(entry, stat);
       const oid = git(["hash-object", "--no-filters", "--", path]).trim();
       inventory.set(relativePath, Object.freeze({ mode, oid, path }));
     }
@@ -336,7 +329,7 @@ function archiveDirectories() {
     return readdirSync(root, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => `openspec/changes/archive/${entry.name}`)
-      .sort();
+      .sort(byCodePoint);
   } catch {
     return [];
   }
@@ -351,7 +344,7 @@ function normalizeRepositoryPath(path) {
 }
 
 function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 function validateReviewedNewSdkSourcePaths(metadata) {
@@ -361,45 +354,14 @@ function validateReviewedNewSdkSourcePaths(metadata) {
   if (paths === undefined) return new Set();
 
   if (!Array.isArray(paths)) {
-    throw new Error("ownership.reviewedNewSdkSourcePaths must be an array");
+    throw new TypeError("ownership.reviewedNewSdkSourcePaths must be an array");
   }
 
   const seen = new Set();
   const validated = new Set();
 
   for (const rawPath of paths) {
-    if (typeof rawPath !== "string" || rawPath.length === 0) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must be a non-empty string, got: ${JSON.stringify(rawPath)}`);
-    }
-
-    if (rawPath.includes("\\0")) {
-      throw new Error(`reviewedNewSdkSourcePaths entry contains null byte: ${JSON.stringify(rawPath)}`);
-    }
-
-    if (rawPath.includes("..")) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must not contain path traversal: ${rawPath}`);
-    }
-
-    if (rawPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(rawPath)) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must be a repository-relative path, not absolute: ${rawPath}`);
-    }
-
-    if (rawPath.includes("\\")) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must use forward slashes: ${rawPath}`);
-    }
-
-    if (rawPath.endsWith("/")) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must be a file path, not a directory: ${rawPath}`);
-    }
-
-    if (/[*?[{]/.test(rawPath)) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must not contain glob characters: ${rawPath}`);
-    }
-
-    if (!ownership.sdkSourcePrefixes.some((prefix) => rawPath.startsWith(prefix))) {
-      throw new Error(`reviewedNewSdkSourcePaths entry is outside configured SDK source prefixes: ${rawPath}`);
-    }
-
+    assertReviewedPathShape(rawPath, ownership);
     if (seen.has(rawPath)) {
       throw new Error(`reviewedNewSdkSourcePaths contains duplicate path: ${rawPath}`);
     }
@@ -439,4 +401,84 @@ function classify(path) {
   if (path.startsWith(originalArchivePrefix)) return "original-sdk-archive";
   if (path === "CLAUDE.md" || /(?:^|\/)CLAUDE\.md$/.test(path)) return "local-instruction-unrelated";
   return existsSync(resolve(repositoryRoot, path)) ? "unrelated-history-or-worktree" : "unrelated-deletion";
+}
+
+function collectMovementChanges(source) {
+  if (!source) return [];
+  if (source.movementCommit) return trackedChangesBetween(source.revision, source.movementCommit);
+  return workingChangesAgainst(source.revision);
+}
+
+function gitFileMode(entry, stat) {
+  if (entry.isSymbolicLink()) return "120000";
+  return (stat.mode & 0o111) === 0 ? "100644" : "100755";
+}
+
+function isUnrelatedActiveDeletion(record) {
+  return record.status === "D"
+    && record.path.startsWith("openspec/changes/")
+    && !record.path.startsWith(`${remediation.active}/`)
+    && !record.path.startsWith("openspec/changes/archive/");
+}
+
+function isUnrelatedArchiveAddition(record, exactArchive) {
+  return ["A", "?"].includes(record.status)
+    && record.path.startsWith("openspec/changes/archive/")
+    && !record.path.startsWith(`${exactArchive}/`);
+}
+
+function archivedTasksMatchSource(source, sourcePath, destinationPath, movementViolations) {
+  const sourceTasks = git(["show", `${source.revision}:${sourcePath}`]);
+  const destinationTasks = readFileSync(resolve(repositoryRoot, destinationPath), "utf8");
+  const reconciled = exactArchivedTaskReconciliation(sourceTasks, movementViolations);
+  return reconciled !== null && destinationTasks === reconciled;
+}
+
+function assertReviewedPathShape(rawPath, ownership) {
+  if (typeof rawPath !== "string" || rawPath.length === 0) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must be a non-empty string, got: ${JSON.stringify(rawPath)}`);
+  }
+
+  // "\0" is the NUL character. The previous spelling was String.raw`\0`, the
+  // two-character sequence backslash-zero, so an embedded NUL passed every
+  // guard and was accepted. A literal backslash-zero is still rejected below
+  // by the forward-slash rule.
+  if (rawPath.includes("\0")) {
+    throw new Error(`reviewedNewSdkSourcePaths entry contains null byte: ${JSON.stringify(rawPath)}`);
+  }
+
+  if (rawPath.includes("..")) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must not contain path traversal: ${rawPath}`);
+  }
+
+  if (rawPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(rawPath)) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must be a repository-relative path, not absolute: ${rawPath}`);
+  }
+
+  if (rawPath.includes("\\")) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must use forward slashes: ${rawPath}`);
+  }
+
+  if (rawPath.endsWith("/")) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must be a file path, not a directory: ${rawPath}`);
+  }
+
+  if (/[*?[{]/.test(rawPath)) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must not contain glob characters: ${rawPath}`);
+  }
+
+  if (!ownership.sdkSourcePrefixes.some((prefix) => rawPath.startsWith(prefix))) {
+    throw new Error(`reviewedNewSdkSourcePaths entry is outside configured SDK source prefixes: ${rawPath}`);
+  }
+}
+
+function checkUnrelatedMovementChanges(source, exactArchive, movementViolations) {
+  for (const record of collectMovementChanges(source)) {
+    if (isUnrelatedActiveDeletion(record)) {
+      movementViolations.push(`[archive-movement-unrelated-change-deletion] ${record.path} belongs to another active change`);
+    }
+    if (isUnrelatedArchiveAddition(record, exactArchive)) {
+      movementViolations.push(`[archive-movement-unrelated-archive-addition] ${record.path} is outside ${exactArchive}`);
+    }
+  }
 }

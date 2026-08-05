@@ -1,4 +1,5 @@
 import { writeFile } from 'node:fs/promises'
+import { byCodePoint } from './sort.mjs'
 
 const forbiddenExactKeys = new Set([
   'token',
@@ -104,7 +105,7 @@ export function assertSafeEvidence(evidence) {
 }
 
 function origins(urls = []) {
-  return [...new Set(urls.map((value) => new URL(value).origin))].sort()
+  return [...new Set(urls.map((value) => new URL(value).origin))].sort(byCodePoint)
 }
 
 function stats(value) {
@@ -133,7 +134,7 @@ export function sanitizeLegacyEvidence(raw, metadata) {
     fingerprintjs_confidence_score: summary.fp_confidence?.score,
     fingerprintjs_load: stats(summary.fp_load_ms),
     fingerprintjs_collect: stats(summary.fp_get_ms),
-    fingerprintjs_component_error_names: Object.keys(summary.fp_component_errors ?? {}).sort(),
+    fingerprintjs_component_error_names: Object.keys(summary.fp_component_errors ?? {}).sort(byCodePoint),
     fingerprintjs_slowest_components: (summary.fp_slowest_components ?? []).map((component) => ({
       name: component.component,
       duration_ms: component.duration_ms,
@@ -142,8 +143,8 @@ export function sanitizeLegacyEvidence(raw, metadata) {
     botd_result: summary.botd_result,
     botd_load: stats(summary.botd_load_ms),
     botd_detect: stats(summary.botd_detect_ms),
-    botd_positive_detector_names: Object.keys(summary.botd_positive_detectors ?? {}).sort(),
-    botd_component_error_names: Object.keys(summary.botd_component_errors ?? {}).sort(),
+    botd_positive_detector_names: Object.keys(summary.botd_positive_detectors ?? {}).sort(byCodePoint),
+    botd_component_error_names: Object.keys(summary.botd_component_errors ?? {}).sort(byCodePoint),
     observed_request_origins: origins(summary.observed_request_urls),
     approximate_heap_bytes_after_first_run: summary.js_heap_bytes_after_first_run ?? null,
   }))

@@ -36,10 +36,20 @@ export function splitNull(text) {
   return text.split("\0").filter(Boolean);
 }
 
+// Explicit code-unit ordering, identical to the default sort for strings.
+// Deliberately not localeCompare: these orderings feed generated artifacts and
+// verification output that must be byte-stable across machines, and locale
+// collation would make them depend on the runner's LANG/ICU data.
+export const byCodePoint = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+};
+
 export function changedPathsSince(base) {
   const tracked = splitNull(git(["diff", "--no-renames", "--name-only", "-z", "--diff-filter=ACDMRTUXB", base, "--"]));
   const untracked = splitNull(git(["ls-files", "--others", "--exclude-standard", "-z"]));
-  return [...new Set([...tracked, ...untracked])].sort();
+  return [...new Set([...tracked, ...untracked])].sort(byCodePoint);
 }
 
 export function assert(condition, message) {

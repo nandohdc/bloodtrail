@@ -3,7 +3,7 @@ import type { AuditResult } from "../errors.js";
 import { normalizeCanonicalInput } from "../errors.js";
 import { validateBaseSemantics } from "./semantic.js";
 import { validateSchemaStructure } from "./schema.js";
-import { validateNoProhibitedData, validateNormalizedNoProhibitedData } from "./prohibited.js";
+import { validateNormalizedNoProhibitedData } from "./prohibited.js";
 
 export function validateSecurityAuditEvent(value: unknown): AuditResult<SecurityAuditEvent> {
   const normalized = normalizeCanonicalInput(value, "/");
