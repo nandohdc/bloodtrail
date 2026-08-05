@@ -12,6 +12,8 @@ permissions:
   contents: read
 
 jobs:
+  # research/browser-telemetry — investigation package, not shipping code.
+  # Job id stays `ci` so the required checks `ci / lint|test|audit` keep their names.
   ci:
     uses: nandohdc/gh-pipelines/.github/workflows/ci-node.yml@v1
     with:
@@ -24,6 +26,60 @@ jobs:
       run-audit: true
       audit-level: "high"
       runner-label: ${{ vars.RUNNER_LABEL }}
+
+  # packages/security-audit-sdk-core — the shipping SDK.
+  # Cannot use ci-node.yml: that workflow checks out at the default shallow depth,
+  # and validate's changed-paths/git/verification gates need the proposal baseline
+  # commit to be an ancestor of HEAD. It also has no `lint` script to point at.
+  sdk:
+    name: sdk
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    defaults:
+      run:
+        working-directory: packages/security-audit-sdk-core
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0                     # required by test:changed-paths, test:git, test:verification
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"                 # engines: >=24 <25 || >=26 <27
+          cache: npm
+          cache-dependency-path: packages/security-audit-sdk-core/package-lock.json
+
+      - run: npm ci
+
+      # Before validate: validate runs `generate` first, which rewrites src/generated/
+      # and would mask drift in the committed output.
+      - name: Reject pre-existing generated drift
+        run: npm run check:generated
+
+      - run: npm run validate
+
+      - run: npm audit --audit-level=high
+
+  # contracts/security-audit — the canonical contract.
+  contract:
+    name: contract
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    defaults:
+      run:
+        working-directory: contracts/security-audit
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: npm
+          cache-dependency-path: contracts/security-audit/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run validate
+
+      - run: npm audit --audit-level=high
 
   sonar:
     needs: ci
