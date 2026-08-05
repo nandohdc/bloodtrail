@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { packageRoot, readJson, repositoryRoot } from "./verification-helpers.mjs";
+import { byCodePoint, packageRoot, readJson, repositoryRoot } from "./verification-helpers.mjs";
 
 export const supportedModes = Object.freeze(["active", "governed", "archived"]);
 export const lifecycleMetadata = Object.freeze(
@@ -205,7 +205,7 @@ async function matchingArchives(root, pattern) {
     .filter((entry) => entry.isDirectory())
     .map((entry) => `openspec/changes/archive/${entry.name}`)
     .filter((path) => pattern.test(path))
-    .sort()
+    .sort(byCodePoint)
     .map((path) => resolve(root, path));
 }
 

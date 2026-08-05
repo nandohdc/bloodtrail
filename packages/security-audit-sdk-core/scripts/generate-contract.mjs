@@ -5,6 +5,13 @@ import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import standaloneCode from "ajv/dist/standalone/index.js";
 
+// Explicit code-unit ordering, identical to the default sort for strings.
+// Deliberately not localeCompare: this ordering is baked into the generated
+// artifacts that check:generated compares byte-for-byte, so it must not depend
+// on the runner's locale. Defined locally to keep this generator free of
+// local module dependencies.
+const byCodePoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(packageRoot, "../..");
 const contractRoot = resolve(repositoryRoot, "contracts/security-audit");
@@ -166,7 +173,7 @@ function emitConstants(source, fieldPolicy) {
     `export const EVENT_METHODS = ${JSON.stringify(methods, null, 2)} as const;`,
     `export const EXTENSION_NAMESPACES = ${JSON.stringify(extensions, null, 2)} as const;`,
     `export const FIELD_POLICY = ${JSON.stringify(fieldPolicy, null, 2)} as const;`,
-    `export const PROHIBITED_DATA_KEYS = ${JSON.stringify([...source.prohibited_data].sort(), null, 2)} as const;`,
+    `export const PROHIBITED_DATA_KEYS = ${JSON.stringify([...source.prohibited_data].sort(byCodePoint), null, 2)} as const;`,
     `export const CONTRACT_ERROR_CODES = REGISTRIES.validation_error_codes;`,
     `export const SDK_ERROR_CODES = ${JSON.stringify(sdkErrorCodes, null, 2)} as const;`,
     `export type EventDefinition = (typeof EVENT_CATALOG)[number];`,
@@ -295,7 +302,7 @@ async function emitStandaloneValidator(schema) {
 function stable(value) {
   if (Array.isArray(value)) return value.map(stable);
   if (value && typeof value === "object") {
-    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])]));
+    return Object.fromEntries(Object.keys(value).sort(byCodePoint).map((key) => [key, stable(value[key])]));
   }
   return value;
 }

@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { basename, relative, resolve } from "node:path";
 import {
   assert,
+  byCodePoint,
   packageRoot,
   readJson,
   repositoryRoot,
@@ -185,7 +186,7 @@ const publicSource = await safeRead(resolve(packageRoot, "src/index.ts"), "publi
 rule("generated-public-exports", "src/index.ts", includesAll(publicSource, ["EVENT_CATALOG", "EVENT_METHODS", "EXTENSION_NAMESPACES", "CONTRACT_VERSION"]), "generated public metadata exports are incomplete");
 
 const adrRoot = resolve(packageRoot, "adr");
-const adrFiles = (await readdir(adrRoot)).filter((name) => /^\d{3}-.+\.md$/.test(name)).sort();
+const adrFiles = (await readdir(adrRoot)).filter((name) => /^\d{3}-.+\.md$/.test(name)).sort(byCodePoint);
 rule("adr-count", "adr", adrFiles.length === 10, "expected exactly ADR-SDK-001 through ADR-SDK-010");
 rule("adr-sequence", "adr", same(adrFiles.map((name) => name.slice(0, 3)), ["001", "002", "003", "004", "005", "006", "007", "008", "009", "010"]), "ADR identifiers are missing or duplicated");
 const adrTexts = [];

@@ -81,11 +81,60 @@ jobs:
 
       - run: npm audit --audit-level=high
 
+  # Line coverage for the two workspaces that have product code behind tests.
+  # Runs on Node 26 because both packages pin engines above the Node 22 the
+  # sonar job uses, and the SDK must be built before its tests can run.
+  coverage:
+    name: coverage
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: npm
+          cache-dependency-path: |
+            packages/security-audit-sdk-core/package-lock.json
+            research/browser-telemetry/package-lock.json
+
+      - run: npm ci
+        working-directory: packages/security-audit-sdk-core
+      - run: npm run test:coverage
+        working-directory: packages/security-audit-sdk-core
+
+      - run: npm ci
+        working-directory: research/browser-telemetry
+      - run: npm run test:coverage
+        working-directory: research/browser-telemetry
+
+      # Each report records paths relative to its own package, but the scan runs
+      # from the repository root, so Sonar cannot match them to indexed files.
+      - name: Rewrite lcov paths as repository-relative
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            for (const [file, prefix] of [
+              ["packages/security-audit-sdk-core/coverage/lcov.info", "packages/security-audit-sdk-core/"],
+              ["research/browser-telemetry/coverage/lcov.info", "research/browser-telemetry/"],
+            ]) {
+              fs.writeFileSync(file, fs.readFileSync(file, "utf8").replaceAll(/^SF:/gm, "SF:" + prefix));
+            }
+          '
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: |
+            packages/security-audit-sdk-core/coverage/lcov.info
+            research/browser-telemetry/coverage/lcov.info
+          if-no-files-found: error
+
   # Scans the whole repository, configured by the root sonar-project.properties.
   # Waits on sdk and contract as well as ci so a scan is not spent on code that
   # does not build.
   sonar:
-    needs: [ci, sdk, contract]
+    needs: [ci, sdk, contract, coverage]
     runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
     permissions:
       contents: read
@@ -103,6 +152,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: coverage
+          path: .
 
       # Type-aware TypeScript analysis needs the SDK's @types/node and compiler
       # resolvable from its tsconfig.

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 import { chromeLaunchOptions } from '../lib/browser.mjs'
 import { writeNewJson } from '../lib/evidence.mjs'
+import { byCodePoint } from '../lib/sort.mjs'
 import { startResearchServer } from '../lib/server.mjs'
 import { hasExactOrigin } from '../lib/url-origin.mjs'
 
@@ -33,7 +34,7 @@ function stats(values) {
 }
 
 function observedOrigins(urls) {
-  return [...new Set(urls.map((value) => new URL(value).origin))].sort()
+  return [...new Set(urls.map((value) => new URL(value).origin))].sort(byCodePoint)
 }
 
 function packageVersion(packageName) {
@@ -203,7 +204,7 @@ async function runScenario(browser, scenario, origin) {
     fingerprintjs_component_error_names: Object.entries(fpComponents)
       .filter(([, value]) => value.status === 'error')
       .map(([name]) => name)
-      .sort(),
+      .sort(byCodePoint),
     fingerprintjs_slowest_components: slowest,
     botd_result: samples[0].result.botd.result,
     botd_load: stats(samples.map((sample) => sample.result.botd.load_ms)),
@@ -211,11 +212,11 @@ async function runScenario(browser, scenario, origin) {
     botd_positive_detector_names: Object.entries(firstDetections)
       .filter(([, detection]) => detection.bot === true)
       .map(([name]) => name)
-      .sort(),
+      .sort(byCodePoint),
     botd_component_error_names: Object.entries(firstBotdComponents)
       .filter(([, component]) => component.state < 0)
       .map(([name]) => name)
-      .sort(),
+      .sort(byCodePoint),
     observed_request_origins: observedOrigins(allAttemptedUrls),
     approximate_heap_bytes_after_first_run: samples[0].result.approximate_heap_bytes,
   }

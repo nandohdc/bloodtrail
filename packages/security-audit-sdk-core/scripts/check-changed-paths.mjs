@@ -2,6 +2,7 @@ import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import {
   assert,
+  byCodePoint,
   git,
   repositoryRoot,
   splitNull,
@@ -93,7 +94,7 @@ if (reviewTarget) {
 }
 
 if (violations.length > 0) {
-  throw new Error(`lifecycle-aware changed-path enforcement failed:\n${[...new Set(violations)].sort().join("\n")}`);
+  throw new Error(`lifecycle-aware changed-path enforcement failed:\n${[...new Set(violations)].sort(byCodePoint).join("\n")}`);
 }
 
 const counts = [...classified.values()].reduce((result, value) => {
@@ -204,7 +205,7 @@ function validateArchiveMovement(resolvedLifecycle) {
   }
 
   if (movementViolations.length > 0) {
-    throw new Error(`archive movement validation failed:\n${[...new Set(movementViolations)].sort().join("\n")}`);
+    throw new Error(`archive movement validation failed:\n${[...new Set(movementViolations)].sort(byCodePoint).join("\n")}`);
   }
   return Object.freeze({ activeSources, archivePaths });
 
@@ -336,7 +337,7 @@ function archiveDirectories() {
     return readdirSync(root, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => `openspec/changes/archive/${entry.name}`)
-      .sort();
+      .sort(byCodePoint);
   } catch {
     return [];
   }
