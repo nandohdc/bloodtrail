@@ -1,15 +1,48 @@
-import { describe, it, after, beforeEach } from "node:test";
+import test, { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
-import { resolve } from "node:path";
-import { execSync } from "node:child_process";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { packageRoot, repositoryRoot } from "../../scripts/verification-helpers.mjs";
+import { disposableGitEnvironment, runDisposableGit } from "./disposable-git.mjs";
 
-const repositoryRoot = resolve(import.meta.dirname, "../..");
-const lifecyclePath = resolve(repositoryRoot, "verification-lifecycle.json");
-const checkerPath = resolve(repositoryRoot, "scripts/check-changed-paths.mjs");
+// This suite drives its negative cases by writing intentionally-invalid policy
+// metadata and mutated checker source. It must never do that in the live tree:
+// the other verification files snapshot the live package with cpSync, and
+// node --test runs test files in parallel processes.
+const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-vp-reviewed-paths-"));
+const caseRoot = resolve(suiteRoot, "control");
+const casePackage = resolve(caseRoot, "packages/security-audit-sdk-core");
+const lifecyclePath = resolve(casePackage, "verification-lifecycle.json");
+const checkerPath = resolve(casePackage, "scripts/check-changed-paths.mjs");
+const dummyPath = resolve(casePackage, "src/_vp_dummy.ts");
+
+prepareCase();
+test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
 
 const pristineLifecycle = readFileSync(lifecyclePath, "utf8");
 const pristineChecker = readFileSync(checkerPath, "utf8");
+
+function prepareCase() {
+  // Full history: the checker requires the proposal baseline to be an ancestor of HEAD.
+  git(repositoryRoot, ["clone", "--quiet", "--no-hardlinks", repositoryRoot, caseRoot]);
+  cpSync(packageRoot, casePackage, {
+    recursive: true,
+    force: true,
+    filter: (source) => !["node_modules", "dist", "dist-tests", "dist-examples", ".verification-output"].includes(basename(source)),
+  });
+  removeDummy();
+  git(caseRoot, ["add", "-A"]);
+  // --allow-empty: on a clean tree the overlay is byte-identical to HEAD.
+  git(caseRoot, ["commit", "--allow-empty", "-m", "test: isolated reviewed-paths control"]);
+}
+
+function git(root, args) {
+  const result = runDisposableGit(root, args);
+  assert.equal(result.status, 0, `git ${args.join(" ")} failed:\n${result.stdout}\n${result.stderr}`);
+  return result;
+}
 
 function restoreAll() {
   writeFileSync(lifecyclePath, pristineLifecycle, "utf8");
@@ -17,15 +50,16 @@ function restoreAll() {
 }
 
 function runChecker() {
-  try {
-    execSync("node scripts/check-changed-paths.mjs", {
-      cwd: repositoryRoot, encoding: "utf8", timeout: 30000,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    return { passed: true, output: "" };
-  } catch (err) {
-    return { passed: false, output: err.stderr || err.stdout || err.message || String(err) };
-  }
+  const result = spawnSync(process.execPath, ["scripts/check-changed-paths.mjs"], {
+    cwd: casePackage, encoding: "utf8", timeout: 30000,
+    env: {
+      ...disposableGitEnvironment(),
+      SDK_VERIFICATION_MODE: "auto",
+      SDK_VERIFICATION_CHANGE: "remediate-security-audit-sdk-adversarial-review",
+    },
+  });
+  if (result.status === 0) return { passed: true, output: "" };
+  return { passed: false, output: `${result.stdout}\n${result.stderr}` };
 }
 
 function setMetadataPaths(paths) {
@@ -35,7 +69,6 @@ function setMetadataPaths(paths) {
   writeFileSync(lifecyclePath, JSON.stringify(meta, null, 2) + "\n", "utf8");
 }
 
-const dummyPath = resolve(repositoryRoot, "src/_vp_dummy.ts");
 function ensureDummy() {
   if (!existsSync(dummyPath)) writeFileSync(dummyPath, "// VP dummy\n", "utf8");
 }
