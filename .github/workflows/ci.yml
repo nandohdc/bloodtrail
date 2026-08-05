@@ -81,8 +81,11 @@ jobs:
 
       - run: npm audit --audit-level=high
 
+  # Scans the whole repository, configured by the root sonar-project.properties.
+  # Waits on sdk and contract as well as ci so a scan is not spent on code that
+  # does not build.
   sonar:
-    needs: ci
+    needs: [ci, sdk, contract]
     runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
     permissions:
       contents: read
@@ -101,18 +104,24 @@ jobs:
         with:
           node-version: "22"
 
+      # Type-aware TypeScript analysis needs the SDK's @types/node and compiler
+      # resolvable from its tsconfig.
+      - name: Install SDK dependencies for type-aware analysis
+        working-directory: packages/security-audit-sdk-core
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - name: SonarQube scan
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
-          projectBaseDir: research/browser-telemetry
+          projectBaseDir: .
 
       - name: SonarQube quality gate
         uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b
         with:
-          scanMetadataReportFile: research/browser-telemetry/.scannerwork/report-task.txt
+          scanMetadataReportFile: .scannerwork/report-task.txt
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
