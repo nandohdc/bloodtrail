@@ -16,28 +16,26 @@ import {
   CONTRACT_VERSION,
   EVENT_CATALOG,
   EVENT_METHODS,
-  FIELD_POLICY,
 } from "./generated/contract.generated.js";
-import type { AuditOperationHandle, AuditOperationSnapshot } from "./operations.js";
-import { commitStateForOperationState } from "./operations.js";
+import type { AuditOperationSnapshot } from "./operations.js";
 import type { AuditResult } from "./errors.js";
 import { failure } from "./errors.js";
-import { clonePlain, deepFreeze, omitUndefined } from "./internal.js";
+import type { DeliveryIntent } from "./internal.js";
+import { clonePlain, deepFreeze, fieldPolicyForPath, isTransformableFieldPath, omitUndefined } from "./internal.js";
 import { validateNoProhibitedData, validateSecurityAuditEvent } from "./validation/index.js";
 
-type AnyNamedInput = NamedAuditEventInputMap[EventMethodName] & {
-  readonly operation?: GeneratedOperationContext | AuditOperationHandle;
+type AnyNamedInput = Omit<NamedAuditEventInputMap[EventMethodName], "operation"> & {
+  readonly operation?: AuditOperationSnapshot;
   readonly claimedTenant?: { readonly claimed_tenant_id?: string };
 };
 
 export interface BuiltNamedAuditEvent<N extends EventName = EventName> {
   readonly event: Readonly<EventForName<N>>;
-  readonly redelivery: boolean;
+  readonly deliveryIntent: Extract<DeliveryIntent, { readonly kind: "named_execution" | "named_redelivery" }>;
 }
 
 const definitionsByName = new Map<EventName, EventDefinition>(EVENT_CATALOG.map((entry) => [entry.name, entry]));
 const methodsByName = new Map<string, (typeof EVENT_METHODS)[number]>(EVENT_METHODS.map((entry) => [entry.method, entry]));
-const fieldPolicyByPath = new Map(FIELD_POLICY.map((entry) => [entry.path, entry]));
 const eventIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const terminalCommitStates = new Set(["committed", "not_committed", "partially_committed", "compensated"]);
 
@@ -52,18 +50,27 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
   const definition = definitionsByName.get(methodDefinition.name as EventName);
   if (!definition) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
 
+  const operation = input.operation;
+  if (operation?.bound_event && operation.bound_event !== method) {
+    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/operation/bound_event");
+  }
+
   const redelivery = input.redelivery?.event;
   if (redelivery) {
     const validated = validateSecurityAuditEvent(redelivery);
     if (!validated.ok) return validated;
     if (validated.value.event.name !== definition.name) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
-    return { ok: true, value: { event: deepFreeze(clonePlain(validated.value)) as Readonly<EventForName<EventName>>, redelivery: true } };
+    const binding = validateNamedRedeliveryBinding(validated.value, operation);
+    if (!binding.ok) return binding;
+    return {
+      ok: true,
+      value: {
+        event: validated.value as Readonly<EventForName<EventName>>,
+        deliveryIntent: { kind: "named_redelivery" },
+      },
+    };
   }
 
-  const operation = resolveOperation(input.operation);
-  if (operation?.bound_event && operation.bound_event !== method) {
-    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/operation/bound_event");
-  }
   const normalizedInput = { ...input, operation } as AnyNamedInput;
   const initialScan = validateNoProhibitedData(normalizedInput);
   if (!initialScan.ok) return initialScan;
@@ -137,7 +144,30 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
   if (!transformed.ok) return transformed;
   const validated = validateSecurityAuditEvent(transformed.value);
   if (!validated.ok) return validated;
-  return { ok: true, value: { event: deepFreeze(clonePlain(validated.value)) as Readonly<EventForName<EventName>>, redelivery: false } };
+  return {
+    ok: true,
+    value: {
+      event: deepFreeze(clonePlain(validated.value)) as Readonly<EventForName<EventName>>,
+      deliveryIntent: { kind: "named_execution" },
+    },
+  };
+}
+
+function validateNamedRedeliveryBinding(
+  event: SecurityAuditEvent,
+  operation: AuditOperationSnapshot | undefined,
+): AuditResult<void> {
+  if (!operation) return { ok: true, value: undefined };
+  if (event.correlation.operation_id !== operation.operation_id) {
+    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/correlation/operation_id");
+  }
+  if (event.correlation.correlation_id !== operation.correlation_id) {
+    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/correlation/correlation_id");
+  }
+  if (event.correlation.transaction_id !== operation.transaction_id) {
+    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/correlation/transaction_id");
+  }
+  return { ok: true, value: undefined };
 }
 
 function pickFrameInput(input: AnyNamedInput): AuditContextFrame {
@@ -165,11 +195,6 @@ function pickFrameInput(input: AnyNamedInput): AuditContextFrame {
   }) as unknown as AuditContextFrame;
 }
 
-function resolveOperation(input: GeneratedOperationContext | AuditOperationHandle | undefined): GeneratedOperationContext | undefined {
-  if (input === undefined) return undefined;
-  if (typeof (input as AuditOperationHandle).snapshot === "function") return (input as AuditOperationHandle).snapshot();
-  return input as GeneratedOperationContext;
-}
 
 function buildTenant(frame: AuditContextFrame): SecurityAuditEvent["tenant"] | undefined {
   if (!frame.tenant) return undefined;
@@ -260,54 +285,43 @@ function applyTransformations(
 ): AuditResult<SecurityAuditEvent> {
   if (config.transformations.length === 0) return { ok: true, value: event };
   const candidate = clonePlain(event);
-  for (const hook of config.transformations) {
-    const policy = fieldPolicyByPath.get(hook.path as (typeof FIELD_POLICY)[number]["path"]);
-    if (!policy) return failure("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${hook.path}`);
-    if (!isTransformablePath(hook.path)) return failure("SDK_HOOK_FAILURE", "privacy", `/${hook.path.replace(/\./g, "/")}`);
-    const current = readPath(candidate, hook.path);
+  for (const transformation of config.transformations) {
+    const { hook, path } = transformation;
+    const policy = fieldPolicyForPath(path);
+    if (!policy) return failure("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${path}`);
+    if (!isTransformableFieldPath(path)) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
+    const current = readPath(candidate, path);
     if (current === undefined) continue;
-    if (typeof current !== "string") return failure("SDK_HOOK_FAILURE", "privacy", `/${hook.path.replace(/\./g, "/")}`);
+    if (typeof current !== "string") return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
     const preScan = validateNoProhibitedData({ value: current });
     if (!preScan.ok) return preScan;
     let output: AuditTransformationOutput | string | undefined;
     try {
       output = hook.transform(omitUndefined({
-        path: hook.path,
+        path,
         value: current,
         tenantId: candidate.tenant.effective_tenant_id,
         purpose: definition.semantic,
       }) as Parameters<typeof hook.transform>[0]);
     } catch {
-      return failure("SDK_HOOK_FAILURE", "privacy", `/${hook.path.replace(/\./g, "/")}`);
+      return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
     }
     if (output !== null && typeof output === "object" && typeof (output as { then?: unknown }).then === "function") {
-      return failure("SDK_UNSUPPORTED_HOOK_RESULT", "privacy", `/${hook.path.replace(/\./g, "/")}`);
+      return failure("SDK_UNSUPPORTED_HOOK_RESULT", "privacy", `/${path.replace(/\./g, "/")}`);
     }
     if (output === undefined) continue;
     const next = typeof output === "string" ? output : output.value;
     if (typeof next !== "string" || next.length === 0 || next.length > 512) {
-      return failure("SDK_HOOK_FAILURE", "privacy", `/${hook.path.replace(/\./g, "/")}`);
+      return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
     }
     const postScan = validateNoProhibitedData({ value: next });
     if (!postScan.ok) return postScan;
-    writePath(candidate, hook.path, next);
+    writePath(candidate, path, next);
     if (typeof output !== "string" && output.key_id !== undefined) {
-      if (typeof output.key_id !== "string" || output.key_id.length > 80) return failure("SDK_HOOK_FAILURE", "privacy", `/${hook.path.replace(/\./g, "/")}/key_id`);
+      if (typeof output.key_id !== "string" || output.key_id.length > 80) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}/key_id`);
     }
   }
   return { ok: true, value: candidate };
-}
-
-function isTransformablePath(path: string): boolean {
-  const policy = fieldPolicyByPath.get(path as (typeof FIELD_POLICY)[number]["path"]);
-  if (!policy) return false;
-  if (policy.policy !== "transform_required" && policy.policy !== "conditionally_allowed") return false;
-  return !path.startsWith("event.")
-    && !path.startsWith("schema.")
-    && path !== "tenant.scope"
-    && path !== "authorization.decision"
-    && path !== "event.delivery_class"
-    && !path.endsWith("provenance.trust_level");
 }
 
 function readPath(value: SecurityAuditEvent, path: string): unknown {

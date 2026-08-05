@@ -4,14 +4,12 @@ import {
   assert,
   changedPathsSince,
   git,
-  packageRoot,
-  readJson,
   repositoryRoot,
 } from "./verification-helpers.mjs";
+import { lifecycleMetadata } from "./lifecycle-policy.mjs";
 
-const provenance = await readJson(resolve(packageRoot, "contract-provenance.json"));
-const base = provenance.proposalBaseline;
-assert(typeof base === "string", "missing proposal baseline for Git checks");
+const base = lifecycleMetadata.remediationChange.proposalBaseline;
+assert(typeof base === "string", "missing remediation proposal baseline for Git checks");
 
 git(["diff", "--check", base, "--"]);
 git(["diff", "--cached", "--check"]);

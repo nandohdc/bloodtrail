@@ -1,9 +1,9 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { GeneratedOperationContext, SecurityAuditEvent } from "./generated/contract.generated.js";
-import { clonePlain, deepFreeze, omitUndefined } from "./internal.js";
+import { deepFreeze, omitUndefined } from "./internal.js";
 import type { AuditResult } from "./errors.js";
 import { failure } from "./errors.js";
-import { SecurityAuditSdkError } from "./errors.js";
+import { normalizeCanonicalInputOrThrow, SecurityAuditSdkError } from "./errors.js";
 
 type ContextValue<K extends keyof SecurityAuditEvent> = NonNullable<SecurityAuditEvent[K]>;
 
@@ -127,14 +127,15 @@ interface AuthoritativeActorInput {
 }
 
 export function authoritativeActor(input: Omit<ContextValue<"actor">, "provenance"> & { readonly provenance?: ContextValue<"actor">["provenance"] }): AuthoritativeActorContext {
-  requireNonEmptyString(input.type, "/actor/type");
-  if (input.type !== "anonymous") requireNonEmptyString(input.id, "/actor/id");
+  const normalized = normalizeCanonicalInputOrThrow(input, "/actor");
+  requireNonEmptyString(normalized.type, "/actor/type");
+  if (normalized.type !== "anonymous") requireNonEmptyString(normalized.id, "/actor/id");
   return brand(
     {
-      ...input,
+      ...normalized,
       provenance: {
         trust_level: "authoritative_server",
-        source: input.provenance?.source ?? "configured-authority",
+        source: normalized.provenance?.source ?? "configured-authority",
       },
     },
     "authoritative_actor",
@@ -155,13 +156,14 @@ export function anonymousActor(source = "request_boundary"): ClaimedActorContext
 }
 
 export function claimedActor(input: Omit<ContextValue<"actor">, "provenance"> & { readonly provenance?: ContextValue<"actor">["provenance"] }): ClaimedActorContext {
-  requireNonEmptyString(input.type, "/actor/type");
+  const normalized = normalizeCanonicalInputOrThrow(input, "/actor");
+  requireNonEmptyString(normalized.type, "/actor/type");
   return brand(
     {
-      ...input,
+      ...normalized,
       provenance: {
         trust_level: "client_claim",
-        source: input.provenance?.source ?? "request_boundary",
+        source: normalized.provenance?.source ?? "request_boundary",
       },
     },
     "claimed_actor",
@@ -169,12 +171,13 @@ export function claimedActor(input: Omit<ContextValue<"actor">, "provenance"> & 
 }
 
 function authoritativeTypedActor(type: ContextValue<"actor">["type"], input: AuthoritativeActorInput): AuthoritativeActorContext {
+  const normalized = normalizeCanonicalInputOrThrow(input, "/actor");
   return authoritativeActor(omitUndefined({
     type,
-    id: input.id,
-    tenant_id: input.tenantId,
-    display_name: input.displayName,
-    provenance: input.source === undefined ? undefined : { trust_level: "authoritative_server", source: input.source },
+    id: normalized.id,
+    tenant_id: normalized.tenantId,
+    display_name: normalized.displayName,
+    provenance: normalized.source === undefined ? undefined : { trust_level: "authoritative_server", source: normalized.source },
   }) as Omit<ContextValue<"actor">, "provenance"> & { readonly provenance?: ContextValue<"actor">["provenance"] });
 }
 
@@ -215,7 +218,8 @@ export function delegatedActorContext(
   delegation: Omit<ContextValue<"delegation">, "mode">,
 ): DelegatedActorBundle {
   requireBranded(actor, ["authoritative_actor"], "/delegation/actor");
-  return { actor, delegation: delegationContext({ ...delegation, mode: "delegated" }) };
+  const normalized = normalizeCanonicalInputOrThrow(delegation, "/delegation");
+  return { actor, delegation: delegationContext({ ...normalized, mode: "delegated" }) };
 }
 
 export function impersonatingActorContext(
@@ -223,7 +227,8 @@ export function impersonatingActorContext(
   delegation: Omit<ContextValue<"delegation">, "mode">,
 ): DelegatedActorBundle {
   requireBranded(actor, ["authoritative_actor"], "/delegation/actor");
-  return { actor, delegation: delegationContext({ ...delegation, mode: "impersonation" }) };
+  const normalized = normalizeCanonicalInputOrThrow(delegation, "/delegation");
+  return { actor, delegation: delegationContext({ ...normalized, mode: "impersonation" }) };
 }
 
 export function authenticatedPrincipal(input: ContextValue<"authenticated_principal">): AuthenticatedPrincipalContext {
@@ -239,23 +244,26 @@ export function credentialReference(input: ContextValue<"credential">): Credenti
 }
 
 export function delegationContext(input: ContextValue<"delegation">): DelegationContext {
-  requireNonEmptyString(input.mode, "/delegation/mode");
-  requireNonEmptyString(input.principal_id, "/delegation/principal_id");
-  requireNonEmptyString(input.expires_at, "/delegation/expires_at");
-  return brand(input, "delegation");
+  const normalized = normalizeCanonicalInputOrThrow(input, "/delegation");
+  requireNonEmptyString(normalized.mode, "/delegation/mode");
+  requireNonEmptyString(normalized.principal_id, "/delegation/principal_id");
+  requireNonEmptyString(normalized.expires_at, "/delegation/expires_at");
+  return brand(normalized, "delegation");
 }
 
 export function impersonationContext(input: Omit<ContextValue<"delegation">, "mode">): DelegationContext {
-  return delegationContext({ ...input, mode: "impersonation" });
+  const normalized = normalizeCanonicalInputOrThrow(input, "/delegation");
+  return delegationContext({ ...normalized, mode: "impersonation" });
 }
 
 export function authoritativeTenant(input: Omit<ContextValue<"tenant">, "claimed_tenant_id">): TenantAuthorityContext {
-  requireNonEmptyString(input.scope, "/tenant/scope");
-  if (input.scope === "tenant" || input.scope === "cross_tenant") {
-    requireNonEmptyString(input.effective_tenant_id, "/tenant/effective_tenant_id");
-    requireNonEmptyString(input.resource_tenant_id, "/tenant/resource_tenant_id");
+  const normalized = normalizeCanonicalInputOrThrow(input, "/tenant");
+  requireNonEmptyString(normalized.scope, "/tenant/scope");
+  if (normalized.scope === "tenant" || normalized.scope === "cross_tenant") {
+    requireNonEmptyString(normalized.effective_tenant_id, "/tenant/effective_tenant_id");
+    requireNonEmptyString(normalized.resource_tenant_id, "/tenant/resource_tenant_id");
   }
-  return brand(input, "tenant_authority");
+  return brand(normalized, "tenant_authority");
 }
 
 export function claimedTenant(claimed_tenant_id: string): ClaimedTenantContext {
@@ -329,16 +337,28 @@ export function mergeAuditContextFrames(
   parent: AuditContextFrameInput | undefined,
   child: AuditContextFrameInput | undefined,
 ): AuditResult<AuditContextFrame> {
-  const merged = omitUndefined({
-    ...(parent ?? {}),
-    ...(child ?? {}),
-    request: parent?.request === undefined && child?.request === undefined ? undefined : { ...(parent?.request ?? {}), ...(child?.request ?? {}) },
-    correlation: parent?.correlation === undefined && child?.correlation === undefined ? undefined : { ...(parent?.correlation ?? {}), ...(child?.correlation ?? {}) },
-  }) as AuditContextFrameInput;
-  return normalizeFrame(merged);
+  try {
+    const merged = omitUndefined({
+      ...(parent ?? {}),
+      ...(child ?? {}),
+      request: parent?.request === undefined && child?.request === undefined ? undefined : { ...(parent?.request ?? {}), ...(child?.request ?? {}) },
+      correlation: parent?.correlation === undefined && child?.correlation === undefined ? undefined : { ...(parent?.correlation ?? {}), ...(child?.correlation ?? {}) },
+    }) as AuditContextFrameInput;
+    return normalizeFrame(merged);
+  } catch (error) {
+    return normalizedBoundaryFailure(error, "/context");
+  }
 }
 
 function normalizeFrame(input: AuditContextFrameInput): AuditResult<AuditContextFrame> {
+  try {
+    return normalizeFrameUnsafe(input);
+  } catch (error) {
+    return normalizedBoundaryFailure(error, "/context");
+  }
+}
+
+function normalizeFrameUnsafe(input: AuditContextFrameInput): AuditResult<AuditContextFrame> {
   for (const [field, kinds] of FRAME_BRAND_FIELDS) {
     const value = input[field];
     if (value === undefined) continue;
@@ -374,7 +394,7 @@ function normalizeFrame(input: AuditContextFrameInput): AuditResult<AuditContext
 }
 
 function brand<T extends object, Kind extends AuditBrandKind>(input: T, kind: Kind): Brand<T, Kind> {
-  const copy = deepFreeze(clonePlain(input)) as T;
+  const copy = normalizeCanonicalInputOrThrow(input, brandPath(kind)) as T;
   brandRegistry.set(copy, kind);
   return copy as Brand<T, Kind>;
 }
@@ -394,5 +414,34 @@ function requireNonEmptyString(value: unknown, path: string): asserts value is s
 }
 
 function cloneIfPresent<T>(value: T | undefined): T | undefined {
-  return value === undefined ? undefined : clonePlain(value);
+  return value === undefined ? undefined : normalizeCanonicalInputOrThrow(value, "/context") as T;
+}
+
+function brandPath(kind: AuditBrandKind): string {
+  switch (kind) {
+    case "authoritative_actor":
+    case "claimed_actor": return "/actor";
+    case "authenticated_principal": return "/authenticated_principal";
+    case "subject_authority": return "/subject";
+    case "credential_reference": return "/credential";
+    case "delegation": return "/delegation";
+    case "tenant_authority":
+    case "claimed_tenant": return "/tenant";
+    case "resource_authority": return "/resource";
+    case "authentication_evidence": return "/authentication";
+    case "authorization_evidence": return "/authorization";
+    case "session_evidence": return "/session";
+    case "service_workload": return "/initiator";
+    case "observed_source": return "/source";
+    case "destination_boundary": return "/destination";
+    case "data_policy": return "/data";
+    case "risk": return "/risk";
+    case "integrity": return "/integrity";
+    case "registered_extension": return "/extensions";
+  }
+}
+
+function normalizedBoundaryFailure(error: unknown, path: string): AuditResult<never> {
+  if (error instanceof SecurityAuditSdkError) return failure(error.code, error.category, error.path ?? path);
+  return failure("SDK_INVALID_INPUT", "validation", path);
 }

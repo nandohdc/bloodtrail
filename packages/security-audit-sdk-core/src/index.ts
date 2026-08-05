@@ -3,6 +3,7 @@ export type { NamedSecurityAuditApi, SecurityAuditSdk, SecurityAuditSdkState } f
 export type {
   AuditFieldPolicyPath,
   AuditFieldTransformationHook,
+  AuditRetentionConfiguration,
   AuditTransformationInput,
   AuditTransformationOutput,
   SecurityAuditSdkConfiguration,

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "version": "1.0.0",
+    "normativeTechnicalTarget": "8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993",
+    "protectedPrefixes": [
+      "contracts/security-audit/",
+      "openspec/specs/security-audit-event-contract/",
+      "openspec/changes/archive/2026-07-31-define-security-audit-event-contract/"
+    ]
+  },
+  "originalSdkChange": {
+    "name": "implement-security-audit-sdk-core",
+    "archive": "openspec/changes/archive/2026-07-31-implement-security-audit-sdk-core",
+    "capability": "openspec/specs/security-audit-sdk-core/spec.md",
+    "taskCount": 106,
+    "technicalCommit": "21c5c98503205257be87cb977b131b4a81ac430a",
+    "governanceCommit": "1f35896d6a51e759806ad5da0f0c56e17c7e065a",
+    "synchronizationCommit": "3734a295a0a32effeaf6b03d04d14542db12576e",
+    "mergeCommit": "86bf25d459d909d4fbdd151fb23c3c159ba1f365"
+  },
+  "remediationChange": {
+    "name": "remediate-security-audit-sdk-adversarial-review",
+    "active": "openspec/changes/remediate-security-audit-sdk-adversarial-review",
+    "archivePattern": "^openspec/changes/archive/\\d{4}-\\d{2}-\\d{2}-remediate-security-audit-sdk-adversarial-review$",
+    "capability": "openspec/specs/security-audit-sdk-core/spec.md",
+    "proposalBaseline": "b4206f92fc92c7355efaa80d9f878353cf794452",
+    "traceabilityCommit": "71cabfe50e18af9f242ec9cd8b4aee33632e5792",
+    "taskCount": 91,
+    "taskGroups": [
+      { "id": "F-04", "issue": 24, "phase": "implementation", "taskRange": { "start": "1.1", "end": "1.8" } },
+      { "id": "F-01", "issue": 21, "phase": "implementation", "taskRange": { "start": "2.1", "end": "2.8" } },
+      { "id": "F-02", "issue": 22, "phase": "implementation", "taskRange": { "start": "3.1", "end": "3.7" } },
+      { "id": "F-03", "issue": 23, "phase": "implementation", "taskRange": { "start": "4.1", "end": "4.6" } },
+      { "id": "F-05/F-12", "issue": 25, "phase": "implementation", "taskRange": { "start": "5.1", "end": "5.8" } },
+      { "id": "F-06/F-09", "issue": 26, "phase": "implementation", "taskRange": { "start": "6.1", "end": "6.8" } },
+      { "id": "F-07", "issue": 27, "phase": "implementation", "taskRange": { "start": "7.1", "end": "7.6" } },
+      { "id": "F-08", "issue": 28, "phase": "implementation", "taskRange": { "start": "8.1", "end": "8.8" } },
+      { "id": "F-10", "issue": 29, "phase": "implementation", "taskRange": { "start": "9.1", "end": "9.6" } },
+      { "id": "F-11", "issue": 30, "phase": "implementation", "taskRange": { "start": "10.1", "end": "10.7" } },
+      { "id": "full-regression", "phase": "regression", "taskRange": { "start": "11.1", "end": "11.9" } },
+      { "id": "exact-commit-review", "phase": "technical-review", "taskRange": { "start": "12.1", "end": "12.4" } },
+      { "id": "project-owner-governance", "phase": "owner-governance", "taskRange": { "start": "12.5", "end": "12.7" } },
+      { "id": "merge-archive", "phase": "merge-archive", "taskRange": { "start": "12.8", "end": "12.10" } }
+    ]
+  },
+  "ownership": {
+    "packagePrefix": "packages/security-audit-sdk-core/",
+    "sdkSourcePrefixes": [
+      "packages/security-audit-sdk-core/src/",
+      "packages/security-audit-sdk-core/lib/"
+    ],
+    "canonicalSdkCapabilityPrefix": "openspec/specs/security-audit-sdk-core/",
+    "reviewedNewSdkSourcePaths": [
+      "packages/security-audit-sdk-core/src/bounded-fifo.ts"
+    ]
+  },
+  "localIgnoredFiles": {
+    "policy": "Git-standard ignored files are excluded with git ls-files --others --exclude-standard. Non-ignored untracked SDK source and OpenSpec evidence remain visible; unrelated local instruction files outside governed roots are classified but are not SDK implementation scope."
+  }
+}
