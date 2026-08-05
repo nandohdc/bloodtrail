@@ -9,8 +9,6 @@ import {
 import {
   boundedFailure,
   evaluateActiveTaskProgress,
-  extractRequirementBody,
-  extractRequirementBlocks,
   lifecycleMetadata,
   parseTaskChecklist,
   resolveVerificationLifecycle,
@@ -91,11 +89,26 @@ const originalPacket = await safeRead(resolve(originalArchiveRoot, "technical-re
 const originalDelta = await safeRead(resolve(originalArchiveRoot, "specs/security-audit-sdk-core/spec.md"), "archived-original-capability-delta");
 const canonicalCapability = await safeRead(resolve(repositoryRoot, original.capability), "canonical-sdk-capability");
 const originalTasks = parseTaskChecklist(originalTasksText);
+const originalRequirements = parseRequirementSet(
+  originalDelta,
+  `${original.archive}/specs/security-audit-sdk-core/spec.md`,
+  "original-archive-capability",
+);
+const canonicalRequirements = parseRequirementSet(
+  canonicalCapability,
+  original.capability,
+  "canonical-capability",
+);
+failures.push(...originalRequirements.failures, ...canonicalRequirements.failures);
+compareRequirementSubset(originalRequirements, canonicalRequirements, {
+  idPrefix: "original-capability",
+  sourceLabel: "approved archived original SDK capability",
+  targetFile: original.capability,
+});
 
 rule("original-active-absent", `openspec/changes/${original.name}`, !await pathExists(resolve(repositoryRoot, "openspec/changes", original.name)), "archived original SDK change is incorrectly present as active");
 rule("original-archive-task-count", `${original.archive}/tasks.md`, originalTasks.length === original.taskCount, `archived original SDK task count differs from ${original.taskCount}`);
 rule("original-archive-tasks-complete", `${original.archive}/tasks.md`, originalTasks.every((task) => task.done), "archived original SDK tasks are not 106/106 complete");
-rule("original-capability-match", original.capability, extractRequirementBody(originalDelta) !== "" && extractRequirementBody(canonicalCapability) === extractRequirementBody(originalDelta), "canonical SDK capability does not match the approved archived delta");
 for (const [id, commit] of [
   ["technical", original.technicalCommit],
   ["governance", original.governanceCommit],
@@ -259,8 +272,17 @@ if (lifecycle.change === remediation.name) {
     rule("archived-remediation-tasks-complete", "tasks.md", taskEntries.every((task) => task.done), "archived remediation tasks are not complete");
     rule("archived-remediation-bindings", "technical-review-packet.md", /[0-9a-f]{40}/.test(packet) && /governance/i.test(packet) && /merge/i.test(packet), "archived remediation technical/governance/merge bindings are absent");
     rule("archived-remediation-restrictions", "technical-review-packet.md", includesAll(packet, ["Package publication/release approved | `NO — NOT AUTHORIZED`", "Production deployment approved | `NO — NOT AUTHORIZED`"]), "archived remediation production/publication restrictions are absent");
-    const remediationRequirements = extractRequirementBlocks(texts.get("spec") ?? "");
-    rule("archived-remediation-capability", remediation.capability, remediationRequirements.length > 0 && remediationRequirements.every((requirement) => canonicalCapability.includes(requirement)), "canonical capability does not contain every approved archived remediation requirement and scenario block");
+    const remediationRequirements = parseRequirementSet(
+      texts.get("spec") ?? "",
+      `${relative(repositoryRoot, changeRoot)}/specs/security-audit-sdk-core/spec.md`,
+      "remediation-archive-capability",
+    );
+    failures.push(...remediationRequirements.failures);
+    compareRequirementSubset(remediationRequirements, canonicalRequirements, {
+      idPrefix: "archived-remediation-capability",
+      sourceLabel: "approved archived remediation capability",
+      targetFile: remediation.capability,
+    });
   }
 } else {
   rule("archived-original-current-tasks", "tasks.md", taskEntries.every((task) => task.done), "explicit original archived mode requires complete governed tasks");
@@ -326,6 +348,164 @@ function tasksInRange(taskEntries, range) {
   const start = taskEntries.findIndex((task) => task.id === range.start);
   const end = taskEntries.findIndex((task) => task.id === range.end);
   return start === -1 || end < start ? [] : taskEntries.slice(start, end + 1);
+}
+
+function parseRequirementSet(text, file, idPrefix) {
+  const normalizedText = String(text).replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+  const lines = normalizedText.split("\n");
+  const records = [];
+  const parseFailures = [];
+  let requirement;
+  let scenario;
+  let fence;
+
+  function structureFailure(message) {
+    parseFailures.push(boundedFailure(`${idPrefix}-requirement-structure`, file, message));
+  }
+
+  function finishScenario() {
+    if (!scenario || !requirement) return;
+    const body = normalizeMarkdownLines(scenario.lines);
+    if (scenario.heading === "" || body === "") {
+      structureFailure(`requirement ${requirement.heading || "<empty>"} has an empty scenario heading or body`);
+    } else if (!/(?:^|\n)- \*\*WHEN\*\*/.test(body) || !/(?:^|\n)- \*\*THEN\*\*/.test(body)) {
+      structureFailure(`scenario ${scenario.heading} under ${requirement.heading || "<empty>"} lacks exact WHEN/THEN structure`);
+    }
+    requirement.scenarios.push(Object.freeze({ heading: scenario.heading, body }));
+    scenario = undefined;
+  }
+
+  function finishRequirement() {
+    if (!requirement) return;
+    finishScenario();
+    const body = normalizeMarkdownLines(requirement.lines);
+    if (requirement.heading === "" || body === "" || requirement.scenarios.length === 0) {
+      structureFailure(`requirement ${requirement.heading || "<empty>"} must have a heading, body, and at least one scenario`);
+    }
+    const scenarioHeadings = new Set();
+    for (const entry of requirement.scenarios) {
+      if (scenarioHeadings.has(entry.heading)) {
+        structureFailure(`requirement ${requirement.heading || "<empty>"} duplicates scenario ${entry.heading}`);
+      }
+      scenarioHeadings.add(entry.heading);
+    }
+    records.push(Object.freeze({
+      heading: requirement.heading,
+      body,
+      scenarios: Object.freeze(requirement.scenarios),
+    }));
+    requirement = undefined;
+  }
+
+  for (const line of lines) {
+    const fenceMarker = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fence) {
+      if (requirement) (scenario ? scenario.lines : requirement.lines).push(line);
+      if (fenceMarker && fenceMarker[1][0] === fence.character && fenceMarker[1].length >= fence.length) fence = undefined;
+      continue;
+    }
+    if (fenceMarker) {
+      if (requirement) (scenario ? scenario.lines : requirement.lines).push(line);
+      fence = { character: fenceMarker[1][0], length: fenceMarker[1].length };
+      continue;
+    }
+
+    const requirementMatch = line.match(/^### Requirement:\s*(.*?)\s*$/);
+    if (requirementMatch) {
+      finishRequirement();
+      requirement = {
+        heading: normalizeHeading(requirementMatch[1]),
+        lines: [],
+        scenarios: [],
+      };
+      continue;
+    }
+    if (/^###\s+Requirement\b/.test(line)) {
+      structureFailure(`malformed requirement heading: ${line.trim().slice(0, 120)}`);
+      continue;
+    }
+
+    const scenarioMatch = line.match(/^#### Scenario:\s*(.*?)\s*$/);
+    if (scenarioMatch) {
+      if (!requirement) {
+        structureFailure(`scenario appears outside a requirement: ${line.trim().slice(0, 120)}`);
+        continue;
+      }
+      finishScenario();
+      scenario = { heading: normalizeHeading(scenarioMatch[1]), lines: [] };
+      continue;
+    }
+    if (/^####\s+Scenario\b/.test(line)) {
+      structureFailure(`malformed scenario heading: ${line.trim().slice(0, 120)}`);
+      continue;
+    }
+
+    if (/^##\s+/.test(line) && requirement) {
+      finishRequirement();
+      continue;
+    }
+    if (requirement) (scenario ? scenario.lines : requirement.lines).push(line);
+  }
+  finishRequirement();
+  if (fence) structureFailure("unclosed fenced block prevents deterministic requirement parsing");
+
+  const occurrenceCounts = new Map();
+  for (const record of records) occurrenceCounts.set(record.heading, (occurrenceCounts.get(record.heading) ?? 0) + 1);
+  const countedRecords = records.map((record) => Object.freeze({
+    ...record,
+    occurrenceCount: occurrenceCounts.get(record.heading),
+  }));
+  const byHeading = new Map();
+  for (const record of countedRecords) {
+    const occurrences = byHeading.get(record.heading) ?? [];
+    occurrences.push(record);
+    byHeading.set(record.heading, occurrences);
+  }
+  if (countedRecords.length === 0) {
+    parseFailures.push(boundedFailure(`${idPrefix}-requirement-set`, file, "requirement set is empty or unparsable"));
+  }
+  for (const [heading, occurrences] of byHeading) {
+    if (occurrences.length !== 1) {
+      parseFailures.push(boundedFailure(`${idPrefix}-requirement-duplicate`, file, `requirement ${heading || "<empty>"} occurs ${occurrences.length} times`));
+    }
+  }
+  return Object.freeze({
+    records: Object.freeze(countedRecords),
+    byHeading,
+    failures: Object.freeze(parseFailures),
+  });
+}
+
+function compareRequirementSubset(source, target, options) {
+  if (source.records.length === 0 || target.records.length === 0) return;
+  for (const [heading, sourceOccurrences] of source.byHeading) {
+    if (sourceOccurrences.length !== 1) continue;
+    const targetOccurrences = target.byHeading.get(heading) ?? [];
+    if (targetOccurrences.length === 0) {
+      failures.push(boundedFailure(`${options.idPrefix}-requirement-missing`, options.targetFile, `${options.sourceLabel} requirement ${heading} is absent`));
+      continue;
+    }
+    if (targetOccurrences.length !== 1) {
+      failures.push(boundedFailure(`${options.idPrefix}-requirement-duplicate`, options.targetFile, `${options.sourceLabel} requirement ${heading} occurs ${targetOccurrences.length} times`));
+      continue;
+    }
+    const sourceRecord = sourceOccurrences[0];
+    const targetRecord = targetOccurrences[0];
+    if (sourceRecord.body !== targetRecord.body || !same(sourceRecord.scenarios, targetRecord.scenarios)) {
+      failures.push(boundedFailure(`${options.idPrefix}-requirement-modified`, options.targetFile, `${options.sourceLabel} requirement ${heading} has modified body or scenarios`));
+    }
+  }
+}
+
+function normalizeHeading(value) {
+  return String(value).trim().replace(/[ \t]+/g, " ");
+}
+
+function normalizeMarkdownLines(lines) {
+  return lines
+    .map((line) => line.trim().replace(/[ \t]+/g, " "))
+    .filter((line) => line !== "")
+    .join("\n");
 }
 
 async function pathExists(path) {
