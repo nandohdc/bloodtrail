@@ -399,7 +399,7 @@ function parseRequirementSet(text, file, idPrefix) {
   }
 
   for (const line of lines) {
-    const fenceMarker = line.match(/^\s*(`{3,}|~{3,})/);
+    const fenceMarker = /^\s*(`{3,}|~{3,})/.exec(line);
     if (fence) {
       if (requirement) (scenario ? scenario.lines : requirement.lines).push(line);
       if (fenceMarker && fenceMarker[1][0] === fence.character && fenceMarker[1].length >= fence.length) fence = undefined;
@@ -411,7 +411,7 @@ function parseRequirementSet(text, file, idPrefix) {
       continue;
     }
 
-    const requirementMatch = line.match(/^### Requirement:\s*(.*?)\s*$/);
+    const requirementMatch = /^### Requirement:\s*(.*?)\s*$/.exec(line);
     if (requirementMatch) {
       finishRequirement();
       requirement = {
@@ -426,7 +426,7 @@ function parseRequirementSet(text, file, idPrefix) {
       continue;
     }
 
-    const scenarioMatch = line.match(/^#### Scenario:\s*(.*?)\s*$/);
+    const scenarioMatch = /^#### Scenario:\s*(.*?)\s*$/.exec(line);
     if (scenarioMatch) {
       if (!requirement) {
         structureFailure(`scenario appears outside a requirement: ${line.trim().slice(0, 120)}`);

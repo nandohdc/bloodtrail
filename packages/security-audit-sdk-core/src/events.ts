@@ -289,10 +289,10 @@ function applyTransformations(
     const { hook, path } = transformation;
     const policy = fieldPolicyForPath(path);
     if (!policy) return failure("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${path}`);
-    if (!isTransformableFieldPath(path)) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
+    if (!isTransformableFieldPath(path)) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replaceAll(".", "/")}`);
     const current = readPath(candidate, path);
     if (current === undefined) continue;
-    if (typeof current !== "string") return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
+    if (typeof current !== "string") return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replaceAll(".", "/")}`);
     const preScan = validateNoProhibitedData({ value: current });
     if (!preScan.ok) return preScan;
     let output: AuditTransformationOutput | string | undefined;
@@ -304,21 +304,21 @@ function applyTransformations(
         purpose: definition.semantic,
       }) as Parameters<typeof hook.transform>[0]);
     } catch {
-      return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
+      return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replaceAll(".", "/")}`);
     }
     if (output !== null && typeof output === "object" && typeof (output as { then?: unknown }).then === "function") {
-      return failure("SDK_UNSUPPORTED_HOOK_RESULT", "privacy", `/${path.replace(/\./g, "/")}`);
+      return failure("SDK_UNSUPPORTED_HOOK_RESULT", "privacy", `/${path.replaceAll(".", "/")}`);
     }
     if (output === undefined) continue;
     const next = typeof output === "string" ? output : output.value;
     if (typeof next !== "string" || next.length === 0 || next.length > 512) {
-      return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}`);
+      return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replaceAll(".", "/")}`);
     }
     const postScan = validateNoProhibitedData({ value: next });
     if (!postScan.ok) return postScan;
     writePath(candidate, path, next);
     if (typeof output !== "string" && output.key_id !== undefined) {
-      if (typeof output.key_id !== "string" || output.key_id.length > 80) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replace(/\./g, "/")}/key_id`);
+      if (typeof output.key_id !== "string" || output.key_id.length > 80) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replaceAll(".", "/")}/key_id`);
     }
   }
   return { ok: true, value: candidate };

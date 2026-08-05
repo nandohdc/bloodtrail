@@ -10,7 +10,11 @@ import standaloneCode from "ajv/dist/standalone/index.js";
 // artifacts that check:generated compares byte-for-byte, so it must not depend
 // on the runner's locale. Defined locally to keep this generator free of
 // local module dependencies.
-const byCodePoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+const byCodePoint = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+};
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(packageRoot, "../..");

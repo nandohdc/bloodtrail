@@ -40,7 +40,11 @@ export function splitNull(text) {
 // Deliberately not localeCompare: these orderings feed generated artifacts and
 // verification output that must be byte-stable across machines, and locale
 // collation would make them depend on the runner's LANG/ICU data.
-export const byCodePoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+export const byCodePoint = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+};
 
 export function changedPathsSince(base) {
   const tracked = splitNull(git(["diff", "--no-renames", "--name-only", "-z", "--diff-filter=ACDMRTUXB", base, "--"]));

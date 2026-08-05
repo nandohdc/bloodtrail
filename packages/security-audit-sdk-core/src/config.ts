@@ -58,7 +58,9 @@ export const DEFAULT_RETENTION_CAPACITY = 4096;
 export const MAX_RETENTION_CAPACITY = 100_000;
 
 export interface NormalizedAuditFieldTransformation {
-  readonly path: AuditFieldPolicyPath | string;
+  // Widened to string: policy paths are validated at construction, and
+  // AuditFieldPolicyPath | string collapses to string anyway.
+  readonly path: string;
   readonly hook: AuditFieldTransformationHook;
 }
 
@@ -157,7 +159,7 @@ function normalizeRetentionConfiguration(input: SecurityAuditSdkConfiguration): 
 
 function retentionCapacity(value: object, key: keyof AuditRetentionConfiguration): number {
   const descriptor = Object.getOwnPropertyDescriptor(value, key);
-  if (descriptor === undefined || descriptor.value === undefined) return DEFAULT_RETENTION_CAPACITY;
+  if (descriptor?.value === undefined) return DEFAULT_RETENTION_CAPACITY;
   const capacity = descriptor.value;
   if (!Number.isSafeInteger(capacity) || capacity <= 0 || capacity > MAX_RETENTION_CAPACITY) {
     throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/retention/${key}`);

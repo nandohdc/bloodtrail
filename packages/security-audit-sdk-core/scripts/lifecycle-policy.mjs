@@ -5,6 +5,12 @@ import { fileURLToPath } from "node:url";
 import { byCodePoint, packageRoot, readJson, repositoryRoot } from "./verification-helpers.mjs";
 
 export const supportedModes = Object.freeze(["active", "governed", "archived"]);
+
+const PREMATURE_FAILURE_ID_BY_PHASE = Object.freeze({
+  "technical-review": "active-technical-review-premature",
+  "owner-governance": "active-owner-decision-premature",
+  "merge-archive": "active-merge-archive-pending",
+});
 export const lifecycleMetadata = Object.freeze(
   await readJson(resolve(packageRoot, "verification-lifecycle.json")),
 );
@@ -86,9 +92,7 @@ export async function resolveVerificationLifecycle(options = {}) {
     originalActive,
     remediationActive,
     remediationArchives,
-    currentChangeRoot: parsed.change === original.name
-      ? originalArchive
-      : mode === "archived" ? remediationArchives[0] : remediationActive,
+    currentChangeRoot: currentChangeRootFor(parsed, original, mode, originalArchive, remediationArchives, remediationActive),
   });
 }
 
@@ -145,13 +149,7 @@ export function evaluateActiveTaskProgress(taskEntries, options = {}) {
     const group = resolvedGroups[index];
     if (!group.started) continue;
     const prior = resolvedGroups[earliestIncomplete];
-    const id = group.phase === "technical-review"
-      ? "active-technical-review-premature"
-      : group.phase === "owner-governance"
-        ? "active-owner-decision-premature"
-        : group.phase === "merge-archive"
-          ? "active-merge-archive-pending"
-          : "active-task-order";
+    const id = PREMATURE_FAILURE_ID_BY_PHASE[group.phase] ?? "active-task-order";
     failures.push(boundedFailure(id, "tasks.md", `${group.id} started before ${prior?.id ?? "the preceding group"} completed`));
   }
 
@@ -221,4 +219,10 @@ const invokedDirectly = process.argv[1] && resolve(process.argv[1]) === fileURLT
 if (invokedDirectly) {
   const lifecycle = await resolveVerificationLifecycle();
   process.stdout.write(`verification lifecycle resolved: ${lifecycle.mode} (${lifecycle.change})\n`);
+}
+
+function currentChangeRootFor(parsed, original, mode, originalArchive, remediationArchives, remediationActive) {
+  if (parsed.change === original.name) return originalArchive;
+  if (mode === "archived") return remediationArchives[0];
+  return remediationActive;
 }

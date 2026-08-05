@@ -278,16 +278,13 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
     intent: DeliveryIntent,
   ): Promise<AuditResult<AuditDeliveryResult>> {
     assertDeliveryIntent(intent);
-    let pending: Promise<AuditDeliveryResult>;
+    // A synchronous throw from emit and a rejected promise both yield the same
+    // SDK_SINK_FAILURE, so one try covers both. pending stays undefined on a
+    // synchronous throw, so such an event never enters #inFlight.
+    let pending: Promise<AuditDeliveryResult> | undefined;
     try {
       pending = this.#config.sink.emit(event);
-    } catch {
-      return failure("SDK_SINK_FAILURE", "sink", "/sink", {
-        eventName: event.event.name,
-      });
-    }
-    this.#inFlight.add(pending);
-    try {
+      this.#inFlight.add(pending);
       const result = await pending;
       if (result.status === "accepted") return { ok: true, value: result };
       return failure(result.status === "rejected" ? "SDK_SINK_REJECTED" : "SDK_SINK_FAILURE", "sink", "/sink", {
@@ -298,7 +295,7 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
         eventName: event.event.name,
       });
     } finally {
-      this.#inFlight.delete(pending);
+      if (pending) this.#inFlight.delete(pending);
     }
   }
 
@@ -430,7 +427,10 @@ function terminalSuccessAttemptEvent(
 
 function defaultOperationOutcome(definition: EventDefinition, operation: GeneratedOperationContext): SecurityAuditEvent["event"]["outcome"] | undefined {
   const outcomes = definition.outcomes as readonly SecurityAuditEvent["event"]["outcome"][];
-  if (operation.state === "cancelled") return outcomes.includes("cancelled") ? "cancelled" : (outcomes.includes("failure") ? "failure" : outcomes[0]);
+  if (operation.state === "cancelled") {
+    if (outcomes.includes("cancelled")) return "cancelled";
+    return outcomes.includes("failure") ? "failure" : outcomes[0];
+  }
   if (operation.state === "not_committed") return outcomes.includes("failure") ? "failure" : outcomes[0];
   if (operation.state === "partially_committed" || operation.state === "compensated") return outcomes.includes("partial") ? "partial" : outcomes[0];
   return outcomes[0];

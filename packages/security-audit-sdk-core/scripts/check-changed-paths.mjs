@@ -185,11 +185,7 @@ function validateArchiveMovement(resolvedLifecycle) {
     movementFailure("archive-movement-partial", `movement inventory is source=${sourceFiles.size}, archive=${archiveFiles.size}, active-remnants=${activeFiles.size}`);
   }
 
-  const movementChanges = source
-    ? source.movementCommit
-      ? trackedChangesBetween(source.revision, source.movementCommit)
-      : workingChangesAgainst(source.revision)
-    : [];
+  const movementChanges = collectMovementChanges(source);
   for (const record of movementChanges) {
     if (record.status === "D"
       && record.path.startsWith("openspec/changes/")
@@ -244,7 +240,7 @@ function resolveMovementSource(archiveRelative, movementViolations) {
 function exactArchivedTaskReconciliation(sourceText, movementViolations) {
   let expected = sourceText;
   for (const taskId of ["12.8", "12.9", "12.10"]) {
-    const pattern = new RegExp(`^- \\[([ x])\\] ${escapeRegex(taskId)} `, "gm");
+    const pattern = new RegExp(String.raw`^- \[([ x])\] ${escapeRegex(taskId)} `, "gm");
     const matches = [...expected.matchAll(pattern)];
     if (matches.length !== 1 || matches[0][1] !== " ") {
       movementViolations.push(`[archive-movement-unauthorized-task-difference] source task ${taskId} must occur exactly once and be unchecked before archive`);
@@ -291,7 +287,7 @@ function workingTreeInventory(rootRelative, movementViolations) {
         movementViolations.push(`[archive-movement-mode-mismatch] unsupported filesystem entry at ${path}`);
         continue;
       }
-      const mode = entry.isSymbolicLink() ? "120000" : (stat.mode & 0o111) === 0 ? "100644" : "100755";
+      const mode = gitFileMode(entry, stat);
       const oid = git(["hash-object", "--no-filters", "--", path]).trim();
       inventory.set(relativePath, Object.freeze({ mode, oid, path }));
     }
@@ -352,7 +348,7 @@ function normalizeRepositoryPath(path) {
 }
 
 function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 function validateReviewedNewSdkSourcePaths(metadata) {
@@ -362,7 +358,7 @@ function validateReviewedNewSdkSourcePaths(metadata) {
   if (paths === undefined) return new Set();
 
   if (!Array.isArray(paths)) {
-    throw new Error("ownership.reviewedNewSdkSourcePaths must be an array");
+    throw new TypeError("ownership.reviewedNewSdkSourcePaths must be an array");
   }
 
   const seen = new Set();
@@ -373,7 +369,7 @@ function validateReviewedNewSdkSourcePaths(metadata) {
       throw new Error(`reviewedNewSdkSourcePaths entry must be a non-empty string, got: ${JSON.stringify(rawPath)}`);
     }
 
-    if (rawPath.includes("\\0")) {
+    if (rawPath.includes(String.raw`\0`)) {
       throw new Error(`reviewedNewSdkSourcePaths entry contains null byte: ${JSON.stringify(rawPath)}`);
     }
 
@@ -440,4 +436,15 @@ function classify(path) {
   if (path.startsWith(originalArchivePrefix)) return "original-sdk-archive";
   if (path === "CLAUDE.md" || /(?:^|\/)CLAUDE\.md$/.test(path)) return "local-instruction-unrelated";
   return existsSync(resolve(repositoryRoot, path)) ? "unrelated-history-or-worktree" : "unrelated-deletion";
+}
+
+function collectMovementChanges(source) {
+  if (!source) return [];
+  if (source.movementCommit) return trackedChangesBetween(source.revision, source.movementCommit);
+  return workingChangesAgainst(source.revision);
+}
+
+function gitFileMode(entry, stat) {
+  if (entry.isSymbolicLink()) return "120000";
+  return (stat.mode & 0o111) === 0 ? "100644" : "100755";
 }
