@@ -203,28 +203,14 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
     input: WithOperationHandle<NamedAuditEventInputMap[M]>,
   ): Promise<AuditResult<AuditDeliveryResult>> {
     if (this.#state !== "ready") return failure(this.#state === "shut_down" ? "SDK_SHUT_DOWN" : "SDK_SHUTTING_DOWN", "lifecycle");
-    let suppliedOperation: unknown;
-    try {
-      suppliedOperation = (input as { readonly operation?: unknown }).operation;
-    } catch {
-      return failure("SDK_INVALID_INPUT", "validation", "/operation");
-    }
+    const supplied = readSuppliedOperation(input);
+    if (!supplied.ok) return supplied;
+    const suppliedOperation = supplied.value;
     const operation = this.#operationAuthority.resolve(suppliedOperation);
     if (!operation.ok) return operation;
     const activeContext = currentAuditContext();
-    let candidateEvent: EventName | undefined;
-    try {
-      candidateEvent = terminalSuccessAttemptEvent(method, operation.value, input, activeContext, this.#config.authoritativeContext);
-    } catch {
-      return failure("SDK_INVALID_INPUT", "validation", "/");
-    }
-    if (candidateEvent && suppliedOperation !== undefined) {
-      const completion = this.#operationAuthority.completionState(suppliedOperation, candidateEvent);
-      if (!completion.ok) return completion;
-      if (completion.value !== undefined) {
-        return failure("SDK_DUPLICATE_SUCCESS", "lifecycle", "/operation/state");
-      }
-    }
+    const duplicateAttempt = this.#rejectDuplicateAttempt(method, operation.value, input, activeContext, suppliedOperation);
+    if (duplicateAttempt) return duplicateAttempt;
     let built;
     try {
       built = buildNamedAuditEvent(
@@ -244,20 +230,58 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
       return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id");
     }
     const completionEvent = terminalSuccessEvent(built.value.event);
-    if (completionEvent && suppliedOperation !== undefined) {
-      const reserved = this.#operationAuthority.reserveCompletion(suppliedOperation, completionEvent);
-      if (!reserved.ok) return reserved;
-      if (!reserved.value) return failure("SDK_DUPLICATE_SUCCESS", "lifecycle", "/operation/state");
-    }
+    const reservation = this.#reserveCompletion(completionEvent, suppliedOperation);
+    if (reservation) return reservation;
     this.#generatedEventIds.add(built.value.event.event.id);
+    return this.#deliverAndSettle(built.value.event, built.value.deliveryIntent, completionEvent, suppliedOperation);
+  }
+
+  #rejectDuplicateAttempt<M extends EventMethodName>(
+    method: M,
+    operationValue: AuditOperationSnapshot | undefined,
+    input: WithOperationHandle<NamedAuditEventInputMap[M]>,
+    activeContext: RetryContext | undefined,
+    suppliedOperation: unknown,
+  ): AuditResult<AuditDeliveryResult> | undefined {
+    let candidateEvent: EventName | undefined;
     try {
-      const result = await this.#deliverValidatedEvent(built.value.event, built.value.deliveryIntent);
-      if (result.ok && completionEvent && suppliedOperation !== undefined) {
+      candidateEvent = terminalSuccessAttemptEvent(method, operationValue, input, activeContext, this.#config.authoritativeContext);
+    } catch {
+      return failure("SDK_INVALID_INPUT", "validation", "/");
+    }
+    if (!candidateEvent || suppliedOperation === undefined) return undefined;
+    const completion = this.#operationAuthority.completionState(suppliedOperation, candidateEvent);
+    if (!completion.ok) return completion;
+    if (completion.value !== undefined) return failure("SDK_DUPLICATE_SUCCESS", "lifecycle", "/operation/state");
+    return undefined;
+  }
+
+  #reserveCompletion(
+    completionEvent: EventName | undefined,
+    suppliedOperation: unknown,
+  ): AuditResult<AuditDeliveryResult> | undefined {
+    if (!completionEvent || suppliedOperation === undefined) return undefined;
+    const reserved = this.#operationAuthority.reserveCompletion(suppliedOperation, completionEvent);
+    if (!reserved.ok) return reserved;
+    if (!reserved.value) return failure("SDK_DUPLICATE_SUCCESS", "lifecycle", "/operation/state");
+    return undefined;
+  }
+
+  async #deliverAndSettle(
+    event: SecurityAuditEvent,
+    intent: DeliveryIntent,
+    completionEvent: EventName | undefined,
+    suppliedOperation: unknown,
+  ): Promise<AuditResult<AuditDeliveryResult>> {
+    const settles = completionEvent !== undefined && suppliedOperation !== undefined;
+    try {
+      const result = await this.#deliverValidatedEvent(event, intent);
+      if (result.ok && settles) {
         this.#operationAuthority.completeCompletion(suppliedOperation, completionEvent);
       }
       return result;
     } finally {
-      if (completionEvent && suppliedOperation !== undefined) {
+      if (settles) {
         this.#operationAuthority.releaseCompletion(suppliedOperation, completionEvent);
       }
     }
@@ -443,4 +467,12 @@ function validateGeneratedIdentifier(value: string, path: string): AuditResult<n
     return failure("SDK_INVALID_IDENTIFIER", "validation", path);
   }
   return undefined;
+}
+
+function readSuppliedOperation(input: unknown): AuditResult<unknown> {
+  try {
+    return { ok: true, value: (input as { readonly operation?: unknown }).operation };
+  } catch {
+    return failure("SDK_INVALID_INPUT", "validation", "/operation");
+  }
 }

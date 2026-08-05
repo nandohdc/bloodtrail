@@ -10,7 +10,7 @@ const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-f10-mutations-"));
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
 
 const constructionGuard = "    if (!isTransformableFieldPath(path)) {\n      throw new SecurityAuditSdkError(\"SDK_INVALID_CONFIGURATION\", \"configuration\", `/transformations/${index}/path`);\n    }";
-const runtimeGuard = "    if (!isTransformableFieldPath(path)) return failure(\"SDK_HOOK_FAILURE\", \"privacy\", `/${path.replaceAll(\".\", \"/\")}`);";
+const runtimeGuard = "  if (!isTransformableFieldPath(path)) return failure(\"SDK_HOOK_FAILURE\", \"privacy\", pointer);";
 
 const mutations = [
   {
@@ -31,7 +31,7 @@ const mutations = [
     name: "M-F10-C drift runtime predicate",
     file: "src/events.ts",
     oldText: runtimeGuard,
-    newText: "    if (!fieldPolicyForPath(path)) return failure(\"SDK_HOOK_FAILURE\", \"privacy\", `/${path.replaceAll(\".\", \"/\")}`);",
+    newText: "  if (!fieldPolicyForPath(path)) return failure(\"SDK_HOOK_FAILURE\", \"privacy\", pointer);",
     pattern: "F-10 runtime defense",
   },
   {

@@ -45,10 +45,9 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
   input: AnyNamedInput,
   activeContext: AuditContextFrame | undefined,
 ): AuditResult<BuiltNamedAuditEvent> {
-  const methodDefinition = methodsByName.get(method);
-  if (!methodDefinition) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
-  const definition = definitionsByName.get(methodDefinition.name as EventName);
-  if (!definition) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
+  const resolved = resolveEventDefinition(method);
+  if (!resolved.ok) return resolved;
+  const definition = resolved.value;
 
   const operation = input.operation;
   if (operation?.bound_event && operation.bound_event !== method) {
@@ -75,9 +74,7 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
   const initialScan = validateNoProhibitedData(normalizedInput);
   if (!initialScan.ok) return initialScan;
 
-  const configAndActive = mergeAuditContextFrames(config.authoritativeContext, activeContext);
-  if (!configAndActive.ok) return configAndActive;
-  const frameResult = mergeAuditContextFrames(configAndActive.value, pickFrameInput(normalizedInput));
+  const frameResult = resolveContextFrame(config, activeContext, normalizedInput);
   if (!frameResult.ok) return frameResult;
   const frame = frameResult.value;
 
@@ -89,10 +86,8 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
 
   const eventId = config.identifiers.eventId();
   if (!eventIdPattern.test(eventId)) return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id");
-  const timestampResult = normalizedInput.event?.timestamp === undefined ? nowIso(config) : { ok: true as const, value: normalizedInput.event.timestamp };
-  if (!timestampResult.ok) return timestampResult;
-  const observedAtResult = normalizedInput.event?.observed_at === undefined ? nowIso(config) : { ok: true as const, value: normalizedInput.event.observed_at };
-  if (!observedAtResult.ok) return observedAtResult;
+  const timestamps = resolveTimestamps(config, normalizedInput);
+  if (!timestamps.ok) return timestamps;
   const correlation = buildCorrelation(config, frame, normalizedInput, operation);
   if (!correlation.ok) return correlation;
 
@@ -106,8 +101,8 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
       outcome,
       outcome_reason: normalizedInput.event?.outcome_reason,
       commit_state: commit,
-      timestamp: timestampResult.value,
-      observed_at: observedAtResult.value,
+      timestamp: timestamps.value.timestamp,
+      observed_at: timestamps.value.observedAt,
       delivery_class: definition.delivery,
     },
     schema: { name: CONTRACT_SCHEMA_NAME, version: CONTRACT_VERSION },
@@ -286,42 +281,55 @@ function applyTransformations(
   if (config.transformations.length === 0) return { ok: true, value: event };
   const candidate = clonePlain(event);
   for (const transformation of config.transformations) {
-    const { hook, path } = transformation;
-    const policy = fieldPolicyForPath(path);
-    if (!policy) return failure("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${path}`);
-    if (!isTransformableFieldPath(path)) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replaceAll(".", "/")}`);
-    const current = readPath(candidate, path);
-    if (current === undefined) continue;
-    if (typeof current !== "string") return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replaceAll(".", "/")}`);
-    const preScan = validateNoProhibitedData({ value: current });
-    if (!preScan.ok) return preScan;
-    let output: AuditTransformationOutput | string | undefined;
-    try {
-      output = hook.transform(omitUndefined({
-        path,
-        value: current,
-        tenantId: candidate.tenant.effective_tenant_id,
-        purpose: definition.semantic,
-      }) as Parameters<typeof hook.transform>[0]);
-    } catch {
-      return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replaceAll(".", "/")}`);
-    }
-    if (output !== null && typeof output === "object" && typeof (output as { then?: unknown }).then === "function") {
-      return failure("SDK_UNSUPPORTED_HOOK_RESULT", "privacy", `/${path.replaceAll(".", "/")}`);
-    }
-    if (output === undefined) continue;
-    const next = typeof output === "string" ? output : output.value;
-    if (typeof next !== "string" || next.length === 0 || next.length > 512) {
-      return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replaceAll(".", "/")}`);
-    }
-    const postScan = validateNoProhibitedData({ value: next });
-    if (!postScan.ok) return postScan;
-    writePath(candidate, path, next);
-    if (typeof output !== "string" && output.key_id !== undefined) {
-      if (typeof output.key_id !== "string" || output.key_id.length > 80) return failure("SDK_HOOK_FAILURE", "privacy", `/${path.replaceAll(".", "/")}/key_id`);
-    }
+    const rejection = applyOneTransformation(candidate, transformation, definition);
+    if (rejection) return rejection;
   }
   return { ok: true, value: candidate };
+}
+
+// Mutates candidate in place. Returns a failure to propagate, or undefined when
+// the transformation applied or was skipped.
+function applyOneTransformation(
+  candidate: SecurityAuditEvent,
+  transformation: NormalizedSdkConfiguration["transformations"][number],
+  definition: EventDefinition,
+): AuditResult<SecurityAuditEvent> | undefined {
+  const { hook, path } = transformation;
+  const pointer = `/${path.replaceAll(".", "/")}`;
+  const policy = fieldPolicyForPath(path);
+  if (!policy) return failure("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${path}`);
+  if (!isTransformableFieldPath(path)) return failure("SDK_HOOK_FAILURE", "privacy", pointer);
+  const current = readPath(candidate, path);
+  if (current === undefined) return undefined;
+  if (typeof current !== "string") return failure("SDK_HOOK_FAILURE", "privacy", pointer);
+  const preScan = validateNoProhibitedData({ value: current });
+  if (!preScan.ok) return preScan;
+  let output: AuditTransformationOutput | string | undefined;
+  try {
+    output = hook.transform(omitUndefined({
+      path,
+      value: current,
+      tenantId: candidate.tenant.effective_tenant_id,
+      purpose: definition.semantic,
+    }) as Parameters<typeof hook.transform>[0]);
+  } catch {
+    return failure("SDK_HOOK_FAILURE", "privacy", pointer);
+  }
+  if (output !== null && typeof output === "object" && typeof (output as { then?: unknown }).then === "function") {
+    return failure("SDK_UNSUPPORTED_HOOK_RESULT", "privacy", pointer);
+  }
+  if (output === undefined) return undefined;
+  const next = typeof output === "string" ? output : output.value;
+  if (typeof next !== "string" || next.length === 0 || next.length > 512) {
+    return failure("SDK_HOOK_FAILURE", "privacy", pointer);
+  }
+  const postScan = validateNoProhibitedData({ value: next });
+  if (!postScan.ok) return postScan;
+  writePath(candidate, path, next);
+  if (typeof output !== "string" && output.key_id !== undefined) {
+    if (typeof output.key_id !== "string" || output.key_id.length > 80) return failure("SDK_HOOK_FAILURE", "privacy", `${pointer}/key_id`);
+  }
+  return undefined;
 }
 
 function readPath(value: SecurityAuditEvent, path: string): unknown {
@@ -394,4 +402,33 @@ function nowIso(config: NormalizedSdkConfiguration): AuditResult<string> {
     return failure("SDK_INVALID_CLOCK", "configuration", "/clock");
   }
   return { ok: true, value: value.toISOString() };
+}
+
+function resolveEventDefinition(method: EventMethodName): AuditResult<EventDefinition> {
+  const methodDefinition = methodsByName.get(method);
+  if (!methodDefinition) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
+  const definition = definitionsByName.get(methodDefinition.name as EventName);
+  if (!definition) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
+  return { ok: true, value: definition };
+}
+
+function resolveContextFrame(
+  config: NormalizedSdkConfiguration,
+  activeContext: AuditContextFrame | undefined,
+  normalizedInput: AnyNamedInput,
+): AuditResult<AuditContextFrame> {
+  const configAndActive = mergeAuditContextFrames(config.authoritativeContext, activeContext);
+  if (!configAndActive.ok) return configAndActive;
+  return mergeAuditContextFrames(configAndActive.value, pickFrameInput(normalizedInput));
+}
+
+function resolveTimestamps(
+  config: NormalizedSdkConfiguration,
+  normalizedInput: AnyNamedInput,
+): AuditResult<{ readonly timestamp: string; readonly observedAt: string }> {
+  const timestampResult = normalizedInput.event?.timestamp === undefined ? nowIso(config) : { ok: true as const, value: normalizedInput.event.timestamp };
+  if (!timestampResult.ok) return timestampResult;
+  const observedAtResult = normalizedInput.event?.observed_at === undefined ? nowIso(config) : { ok: true as const, value: normalizedInput.event.observed_at };
+  if (!observedAtResult.ok) return observedAtResult;
+  return { ok: true, value: { timestamp: timestampResult.value, observedAt: observedAtResult.value } };
 }
