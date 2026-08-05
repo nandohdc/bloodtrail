@@ -352,104 +352,127 @@ function tasksInRange(taskEntries, range) {
 }
 
 function parseRequirementSet(text, file, idPrefix) {
+  const state = {
+    file,
+    idPrefix,
+    records: [],
+    parseFailures: [],
+    requirement: undefined,
+    scenario: undefined,
+    fence: undefined,
+  };
   const normalizedText = String(text).replaceAll("\r\n", "\n").replaceAll("\r", "\n");
-  const lines = normalizedText.split("\n");
-  const records = [];
-  const parseFailures = [];
-  let requirement;
-  let scenario;
-  let fence;
+  for (const line of normalizedText.split("\n")) consumeRequirementLine(state, line);
+  finishRequirement(state);
+  if (state.fence) structureFailure(state, "unclosed fenced block prevents deterministic requirement parsing");
+  return summarizeRequirementSet(state);
+}
 
-  function structureFailure(message) {
-    parseFailures.push(boundedFailure(`${idPrefix}-requirement-structure`, file, message));
+function structureFailure(state, message) {
+  state.parseFailures.push(boundedFailure(`${state.idPrefix}-requirement-structure`, state.file, message));
+}
+
+function appendRequirementLine(state, line) {
+  if (!state.requirement) return;
+  (state.scenario ? state.scenario.lines : state.requirement.lines).push(line);
+}
+
+function finishScenario(state) {
+  const { scenario, requirement } = state;
+  if (!scenario || !requirement) return;
+  const body = normalizeMarkdownLines(scenario.lines);
+  if (scenario.heading === "" || body === "") {
+    structureFailure(state, `requirement ${requirement.heading || "<empty>"} has an empty scenario heading or body`);
+  } else if (!/(?:^|\n)- \*\*WHEN\*\*/.test(body) || !/(?:^|\n)- \*\*THEN\*\*/.test(body)) {
+    structureFailure(state, `scenario ${scenario.heading} under ${requirement.heading || "<empty>"} lacks exact WHEN/THEN structure`);
   }
+  requirement.scenarios.push(Object.freeze({ heading: scenario.heading, body }));
+  state.scenario = undefined;
+}
 
-  function finishScenario() {
-    if (!scenario || !requirement) return;
-    const body = normalizeMarkdownLines(scenario.lines);
-    if (scenario.heading === "" || body === "") {
-      structureFailure(`requirement ${requirement.heading || "<empty>"} has an empty scenario heading or body`);
-    } else if (!/(?:^|\n)- \*\*WHEN\*\*/.test(body) || !/(?:^|\n)- \*\*THEN\*\*/.test(body)) {
-      structureFailure(`scenario ${scenario.heading} under ${requirement.heading || "<empty>"} lacks exact WHEN/THEN structure`);
-    }
-    requirement.scenarios.push(Object.freeze({ heading: scenario.heading, body }));
-    scenario = undefined;
+function finishRequirement(state) {
+  const { requirement } = state;
+  if (!requirement) return;
+  finishScenario(state);
+  const body = normalizeMarkdownLines(requirement.lines);
+  if (requirement.heading === "" || body === "" || requirement.scenarios.length === 0) {
+    structureFailure(state, `requirement ${requirement.heading || "<empty>"} must have a heading, body, and at least one scenario`);
   }
-
-  function finishRequirement() {
-    if (!requirement) return;
-    finishScenario();
-    const body = normalizeMarkdownLines(requirement.lines);
-    if (requirement.heading === "" || body === "" || requirement.scenarios.length === 0) {
-      structureFailure(`requirement ${requirement.heading || "<empty>"} must have a heading, body, and at least one scenario`);
+  const scenarioHeadings = new Set();
+  for (const entry of requirement.scenarios) {
+    if (scenarioHeadings.has(entry.heading)) {
+      structureFailure(state, `requirement ${requirement.heading || "<empty>"} duplicates scenario ${entry.heading}`);
     }
-    const scenarioHeadings = new Set();
-    for (const entry of requirement.scenarios) {
-      if (scenarioHeadings.has(entry.heading)) {
-        structureFailure(`requirement ${requirement.heading || "<empty>"} duplicates scenario ${entry.heading}`);
-      }
-      scenarioHeadings.add(entry.heading);
-    }
-    records.push(Object.freeze({
-      heading: requirement.heading,
-      body,
-      scenarios: Object.freeze(requirement.scenarios),
-    }));
-    requirement = undefined;
+    scenarioHeadings.add(entry.heading);
   }
+  state.records.push(Object.freeze({
+    heading: requirement.heading,
+    body,
+    scenarios: Object.freeze(requirement.scenarios),
+  }));
+  state.requirement = undefined;
+}
 
-  for (const line of lines) {
-    const fenceMarker = /^\s*(`{3,}|~{3,})/.exec(line);
-    if (fence) {
-      if (requirement) (scenario ? scenario.lines : requirement.lines).push(line);
-      if (fenceMarker && fenceMarker[1][0] === fence.character && fenceMarker[1].length >= fence.length) fence = undefined;
-      continue;
-    }
-    if (fenceMarker) {
-      if (requirement) (scenario ? scenario.lines : requirement.lines).push(line);
-      fence = { character: fenceMarker[1][0], length: fenceMarker[1].length };
-      continue;
-    }
-
-    const requirementMatch = /^### Requirement:(.*)$/.exec(line);
-    if (requirementMatch) {
-      finishRequirement();
-      requirement = {
-        heading: normalizeHeading(requirementMatch[1]),
-        lines: [],
-        scenarios: [],
-      };
-      continue;
-    }
-    if (/^###\s+Requirement\b/.test(line)) {
-      structureFailure(`malformed requirement heading: ${line.trim().slice(0, 120)}`);
-      continue;
-    }
-
-    const scenarioMatch = /^#### Scenario:(.*)$/.exec(line);
-    if (scenarioMatch) {
-      if (!requirement) {
-        structureFailure(`scenario appears outside a requirement: ${line.trim().slice(0, 120)}`);
-        continue;
-      }
-      finishScenario();
-      scenario = { heading: normalizeHeading(scenarioMatch[1]), lines: [] };
-      continue;
-    }
-    if (/^####\s+Scenario\b/.test(line)) {
-      structureFailure(`malformed scenario heading: ${line.trim().slice(0, 120)}`);
-      continue;
-    }
-
-    if (/^##\s+/.test(line) && requirement) {
-      finishRequirement();
-      continue;
-    }
-    if (requirement) (scenario ? scenario.lines : requirement.lines).push(line);
+function consumeRequirementLine(state, line) {
+  const fenceMarker = /^\s*(`{3,}|~{3,})/.exec(line);
+  if (consumeFence(state, line, fenceMarker)) return;
+  if (consumeRequirementHeading(state, line)) return;
+  if (consumeScenarioHeading(state, line)) return;
+  if (/^##\s+/.test(line) && state.requirement) {
+    finishRequirement(state);
+    return;
   }
-  finishRequirement();
-  if (fence) structureFailure("unclosed fenced block prevents deterministic requirement parsing");
+  appendRequirementLine(state, line);
+}
 
+function consumeFence(state, line, fenceMarker) {
+  if (state.fence) {
+    appendRequirementLine(state, line);
+    if (fenceMarker && fenceMarker[1][0] === state.fence.character && fenceMarker[1].length >= state.fence.length) {
+      state.fence = undefined;
+    }
+    return true;
+  }
+  if (!fenceMarker) return false;
+  appendRequirementLine(state, line);
+  state.fence = { character: fenceMarker[1][0], length: fenceMarker[1].length };
+  return true;
+}
+
+function consumeRequirementHeading(state, line) {
+  const requirementMatch = /^### Requirement:(.*)$/.exec(line);
+  if (requirementMatch) {
+    finishRequirement(state);
+    state.requirement = { heading: normalizeHeading(requirementMatch[1]), lines: [], scenarios: [] };
+    return true;
+  }
+  if (/^###\s+Requirement\b/.test(line)) {
+    structureFailure(state, `malformed requirement heading: ${line.trim().slice(0, 120)}`);
+    return true;
+  }
+  return false;
+}
+
+function consumeScenarioHeading(state, line) {
+  const scenarioMatch = /^#### Scenario:(.*)$/.exec(line);
+  if (scenarioMatch) {
+    if (!state.requirement) {
+      structureFailure(state, `scenario appears outside a requirement: ${line.trim().slice(0, 120)}`);
+      return true;
+    }
+    finishScenario(state);
+    state.scenario = { heading: normalizeHeading(scenarioMatch[1]), lines: [] };
+    return true;
+  }
+  if (/^####\s+Scenario\b/.test(line)) {
+    structureFailure(state, `malformed scenario heading: ${line.trim().slice(0, 120)}`);
+    return true;
+  }
+  return false;
+}
+
+function summarizeRequirementSet(state) {
+  const { records, parseFailures } = state;
   const occurrenceCounts = new Map();
   for (const record of records) occurrenceCounts.set(record.heading, (occurrenceCounts.get(record.heading) ?? 0) + 1);
   const countedRecords = records.map((record) => Object.freeze({
@@ -463,11 +486,11 @@ function parseRequirementSet(text, file, idPrefix) {
     byHeading.set(record.heading, occurrences);
   }
   if (countedRecords.length === 0) {
-    parseFailures.push(boundedFailure(`${idPrefix}-requirement-set`, file, "requirement set is empty or unparsable"));
+    parseFailures.push(boundedFailure(`${state.idPrefix}-requirement-set`, state.file, "requirement set is empty or unparsable"));
   }
   for (const [heading, occurrences] of byHeading) {
     if (occurrences.length !== 1) {
-      parseFailures.push(boundedFailure(`${idPrefix}-requirement-duplicate`, file, `requirement ${heading || "<empty>"} occurs ${occurrences.length} times`));
+      parseFailures.push(boundedFailure(`${state.idPrefix}-requirement-duplicate`, state.file, `requirement ${heading || "<empty>"} occurs ${occurrences.length} times`));
     }
   }
   return Object.freeze({

@@ -13,7 +13,7 @@ const FORBIDDEN_NAME_TERMS = [
   "cryptographic-chain",
 ];
 const forbiddenFileName = new RegExp(
-  String.raw`(?:^|[./_-])(${FORBIDDEN_NAME_TERMS.join("|")})(?:[./_-]|$)`,
+  `(?:^|[./_-])(${FORBIDDEN_NAME_TERMS.join("|")})(?:[./_-]|$)`,
   "i",
 );
 const forbiddenSource = [

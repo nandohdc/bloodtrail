@@ -51,7 +51,7 @@ const FORBIDDEN_IMPLEMENTATION_TERMS = [
   "cryptographic-chain",
 ];
 const forbiddenPackageImplementationPath = new RegExp(
-  String.raw`^packages/security-audit-sdk-core/(?:src|lib)/(?:.*/)?(?:${FORBIDDEN_IMPLEMENTATION_TERMS.join("|")})(?:[._/-]|$)`,
+  `^packages/security-audit-sdk-core/(?:src|lib)/(?:.*/)?(?:${FORBIDDEN_IMPLEMENTATION_TERMS.join("|")})(?:[._/-]|$)`,
   "i",
 );
 
@@ -169,12 +169,9 @@ function validateArchiveMovement(resolvedLifecycle) {
       `${sourcePath} mode ${sourceEntry.mode} differs from ${destinationPath} mode ${destinationEntry.mode}`,
     );
     if (relativePath === "tasks.md") {
-      const sourceTasks = git(["show", `${source.revision}:${sourcePath}`]);
-      const destinationTasks = readFileSync(resolve(repositoryRoot, destinationPath), "utf8");
-      const reconciled = exactArchivedTaskReconciliation(sourceTasks, movementViolations);
       movementRule(
         "archive-movement-unauthorized-task-difference",
-        reconciled !== null && destinationTasks === reconciled,
+        archivedTasksMatchSource(source, sourcePath, destinationPath, movementViolations),
         `${destinationPath} differs from the source by more than exact 12.8-12.10 checkbox transitions`,
       );
     } else {
@@ -197,17 +194,11 @@ function validateArchiveMovement(resolvedLifecycle) {
     movementFailure("archive-movement-partial", `movement inventory is source=${sourceFiles.size}, archive=${archiveFiles.size}, active-remnants=${activeFiles.size}`);
   }
 
-  const movementChanges = collectMovementChanges(source);
-  for (const record of movementChanges) {
-    if (record.status === "D"
-      && record.path.startsWith("openspec/changes/")
-      && !record.path.startsWith(`${remediation.active}/`)
-      && !record.path.startsWith("openspec/changes/archive/")) {
+  for (const record of collectMovementChanges(source)) {
+    if (isUnrelatedActiveDeletion(record)) {
       movementFailure("archive-movement-unrelated-change-deletion", `${record.path} belongs to another active change`);
     }
-    if (["A", "?"].includes(record.status)
-      && record.path.startsWith("openspec/changes/archive/")
-      && !record.path.startsWith(`${exactArchive}/`)) {
+    if (isUnrelatedArchiveAddition(record, exactArchive)) {
       movementFailure("archive-movement-unrelated-archive-addition", `${record.path} is outside ${exactArchive}`);
     }
   }
@@ -377,38 +368,7 @@ function validateReviewedNewSdkSourcePaths(metadata) {
   const validated = new Set();
 
   for (const rawPath of paths) {
-    if (typeof rawPath !== "string" || rawPath.length === 0) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must be a non-empty string, got: ${JSON.stringify(rawPath)}`);
-    }
-
-    if (rawPath.includes(String.raw`\0`)) {
-      throw new Error(`reviewedNewSdkSourcePaths entry contains null byte: ${JSON.stringify(rawPath)}`);
-    }
-
-    if (rawPath.includes("..")) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must not contain path traversal: ${rawPath}`);
-    }
-
-    if (rawPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(rawPath)) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must be a repository-relative path, not absolute: ${rawPath}`);
-    }
-
-    if (rawPath.includes("\\")) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must use forward slashes: ${rawPath}`);
-    }
-
-    if (rawPath.endsWith("/")) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must be a file path, not a directory: ${rawPath}`);
-    }
-
-    if (/[*?[{]/.test(rawPath)) {
-      throw new Error(`reviewedNewSdkSourcePaths entry must not contain glob characters: ${rawPath}`);
-    }
-
-    if (!ownership.sdkSourcePrefixes.some((prefix) => rawPath.startsWith(prefix))) {
-      throw new Error(`reviewedNewSdkSourcePaths entry is outside configured SDK source prefixes: ${rawPath}`);
-    }
-
+    assertReviewedPathShape(rawPath, ownership);
     if (seen.has(rawPath)) {
       throw new Error(`reviewedNewSdkSourcePaths contains duplicate path: ${rawPath}`);
     }
@@ -459,4 +419,58 @@ function collectMovementChanges(source) {
 function gitFileMode(entry, stat) {
   if (entry.isSymbolicLink()) return "120000";
   return (stat.mode & 0o111) === 0 ? "100644" : "100755";
+}
+
+function isUnrelatedActiveDeletion(record) {
+  return record.status === "D"
+    && record.path.startsWith("openspec/changes/")
+    && !record.path.startsWith(`${remediation.active}/`)
+    && !record.path.startsWith("openspec/changes/archive/");
+}
+
+function isUnrelatedArchiveAddition(record, exactArchive) {
+  return ["A", "?"].includes(record.status)
+    && record.path.startsWith("openspec/changes/archive/")
+    && !record.path.startsWith(`${exactArchive}/`);
+}
+
+function archivedTasksMatchSource(source, sourcePath, destinationPath, movementViolations) {
+  const sourceTasks = git(["show", `${source.revision}:${sourcePath}`]);
+  const destinationTasks = readFileSync(resolve(repositoryRoot, destinationPath), "utf8");
+  const reconciled = exactArchivedTaskReconciliation(sourceTasks, movementViolations);
+  return reconciled !== null && destinationTasks === reconciled;
+}
+
+function assertReviewedPathShape(rawPath, ownership) {
+  if (typeof rawPath !== "string" || rawPath.length === 0) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must be a non-empty string, got: ${JSON.stringify(rawPath)}`);
+  }
+
+  if (rawPath.includes(String.raw`\0`)) {
+    throw new Error(`reviewedNewSdkSourcePaths entry contains null byte: ${JSON.stringify(rawPath)}`);
+  }
+
+  if (rawPath.includes("..")) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must not contain path traversal: ${rawPath}`);
+  }
+
+  if (rawPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(rawPath)) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must be a repository-relative path, not absolute: ${rawPath}`);
+  }
+
+  if (rawPath.includes("\\")) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must use forward slashes: ${rawPath}`);
+  }
+
+  if (rawPath.endsWith("/")) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must be a file path, not a directory: ${rawPath}`);
+  }
+
+  if (/[*?[{]/.test(rawPath)) {
+    throw new Error(`reviewedNewSdkSourcePaths entry must not contain glob characters: ${rawPath}`);
+  }
+
+  if (!ownership.sdkSourcePrefixes.some((prefix) => rawPath.startsWith(prefix))) {
+    throw new Error(`reviewedNewSdkSourcePaths entry is outside configured SDK source prefixes: ${rawPath}`);
+  }
 }
