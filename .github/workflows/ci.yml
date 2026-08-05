@@ -1,7 +1,12 @@
 name: ci
 
+# A branch with an open PR used to fire both events, running the whole matrix
+# twice and hitting the Sonar server concurrently with itself. The PR run
+# reports the same required contexts against the same head SHA, so restricting
+# push to main costs no coverage — a branch just has no CI until its PR exists.
 on:
   push:
+    branches: [main]
   pull_request:
 
 concurrency:
@@ -167,7 +172,35 @@ jobs:
         working-directory: packages/security-audit-sdk-core
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      # The analyser jars and the provisioned JRE land here. Caching them keeps
+      # the download of the large javascript/typescript plugins off the critical
+      # path of every run — that download is what the self-hosted server drops.
+      - name: Cache SonarScanner plugins
+        uses: actions/cache@v6
+        with:
+          path: ~/.sonar/cache
+          key: sonar-plugins-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: sonar-plugins-${{ runner.os }}-
+
       - name: SonarQube scan
+        id: scan
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: .
+
+      # sonarqube-local intermittently resets plugin downloads mid-stream and
+      # returns Cloudflare 502s. One retry turns a server blip into a slow green
+      # run rather than a red required check; a real failure still fails twice.
+      - name: Wait before retrying the scan
+        if: steps.scan.outcome == 'failure'
+        run: sleep 30
+
+      - name: SonarQube scan (retry)
+        if: steps.scan.outcome == 'failure'
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -176,6 +209,7 @@ jobs:
           projectBaseDir: .
 
       - name: SonarQube quality gate
+        id: quality_gate
         uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b
         with:
           scanMetadataReportFile: .scannerwork/report-task.txt
@@ -186,16 +220,25 @@ jobs:
       # The gate action reports only pass/fail. Surface which conditions broke
       # so triage does not require opening the dashboard.
       - name: Explain quality gate failure
-        if: failure()
+        if: failure() && steps.quality_gate.outcome == 'failure'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
+          # GitHub runs this as `bash -e`, so errexit is already on and the
+          # fallbacks below could never fire — a missing report file aborted the
+          # step with exit 2 and buried the real error. Turn errexit back off.
+          set +e
           set -uo pipefail
+          report=.scannerwork/report-task.txt
+          if [ ! -f "${report}" ]; then
+            echo "no ${report}; the scan did not complete — see the scan step log"
+            exit 0
+          fi
           # Resolve via the analysis id recorded by the scan. Unlike projectKey
           # plus pullRequest, this works on editions without PR analysis.
-          task_url="$(sed -n 's/^ceTaskUrl=//p' .scannerwork/report-task.txt)"
+          task_url="$(sed -n 's/^ceTaskUrl=//p' "${report}")"
           if [ -z "${task_url}" ]; then
-            echo "no ceTaskUrl in .scannerwork/report-task.txt; see the dashboard"
+            echo "no ceTaskUrl in ${report}; see the dashboard"
             exit 0
           fi
           analysis_id="$(curl -sS -u "${SONAR_TOKEN}:" "${task_url}" | jq -r '.task.analysisId // empty')"
