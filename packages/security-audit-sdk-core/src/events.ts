@@ -50,9 +50,8 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
   const definition = resolved.value;
 
   const operation = input.operation;
-  if (operation?.bound_event && operation.bound_event !== method) {
-    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/operation/bound_event");
-  }
+  const boundEventMismatch = rejectBoundEventMismatch(operation, method);
+  if (boundEventMismatch) return boundEventMismatch;
 
   const redelivery = input.redelivery?.event;
   if (redelivery) {
@@ -78,23 +77,19 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
   if (!frameResult.ok) return frameResult;
   const frame = frameResult.value;
 
-  const lifecycle = normalizedInput.event?.lifecycle_phase ?? defaultLifecycle(definition);
-  const outcome = normalizedInput.event?.outcome ?? defaultOutcome(definition, operation);
-  const commitResult = resolveCommitState(definition, outcome, normalizedInput.event?.commit_state, operation);
-  if (!commitResult.ok) return commitResult;
-  const commit = commitResult.value;
+  const classification = resolveEventClassification(definition, normalizedInput, operation);
+  if (!classification.ok) return classification;
+  const { lifecycle, outcome, commit } = classification.value;
 
-  const eventId = config.identifiers.eventId();
-  if (!eventIdPattern.test(eventId)) return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id");
-  const timestamps = resolveTimestamps(config, normalizedInput);
-  if (!timestamps.ok) return timestamps;
+  const identity = resolveEventIdentity(config, normalizedInput);
+  if (!identity.ok) return identity;
   const correlation = buildCorrelation(config, frame, normalizedInput, operation);
   if (!correlation.ok) return correlation;
 
   const envelopeDefaults = resolveEnvelopeDefaults(config, frame, definition);
   const candidate: SecurityAuditEvent = omitUndefined({
     event: {
-      id: eventId,
+      id: identity.value.eventId,
       name: definition.name,
       category: definition.category,
       action: definition.action,
@@ -102,8 +97,8 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
       outcome,
       outcome_reason: normalizedInput.event?.outcome_reason,
       commit_state: commit,
-      timestamp: timestamps.value.timestamp,
-      observed_at: timestamps.value.observedAt,
+      timestamp: identity.value.timestamp,
+      observed_at: identity.value.observedAt,
       delivery_class: definition.delivery,
     },
     schema: { name: CONTRACT_SCHEMA_NAME, version: CONTRACT_VERSION },
@@ -132,17 +127,7 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
     extensions: frame.extensions,
   }) as SecurityAuditEvent;
 
-  const transformed = applyTransformations(config, candidate, definition);
-  if (!transformed.ok) return transformed;
-  const validated = validateSecurityAuditEvent(transformed.value);
-  if (!validated.ok) return validated;
-  return {
-    ok: true,
-    value: {
-      event: deepFreeze(clonePlain(validated.value)) as Readonly<EventForName<EventName>>,
-      deliveryIntent: { kind: "named_execution" },
-    },
-  };
+  return finalizeNamedEvent(config, candidate, definition);
 }
 
 function validateNamedRedeliveryBinding(
@@ -454,4 +439,61 @@ function resolveEnvelopeDefaults(
       field_policy_version: frame.data?.field_policy_version ?? CONTRACT_VERSION,
     },
   };
+}
+
+// config and normalizedInput both stay in scope here: M-F11-C mutates the
+// eventId statement to reuse a retry identifier and must still compile.
+function resolveEventIdentity(
+  config: NormalizedSdkConfiguration,
+  normalizedInput: AnyNamedInput,
+): AuditResult<{ readonly eventId: string; readonly timestamp: string; readonly observedAt: string }> {
+  const eventId = config.identifiers.eventId();
+  if (!eventIdPattern.test(eventId)) return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id");
+  const timestamps = resolveTimestamps(config, normalizedInput);
+  if (!timestamps.ok) return timestamps;
+  return { ok: true, value: { eventId, timestamp: timestamps.value.timestamp, observedAt: timestamps.value.observedAt } };
+}
+
+function finalizeNamedEvent(
+  config: NormalizedSdkConfiguration,
+  candidate: SecurityAuditEvent,
+  definition: EventDefinition,
+): AuditResult<BuiltNamedAuditEvent> {
+  const transformed = applyTransformations(config, candidate, definition);
+  if (!transformed.ok) return transformed;
+  const validated = validateSecurityAuditEvent(transformed.value);
+  if (!validated.ok) return validated;
+  return {
+    ok: true,
+    value: {
+      event: deepFreeze(clonePlain(validated.value)) as Readonly<EventForName<EventName>>,
+      deliveryIntent: { kind: "named_execution" },
+    },
+  };
+}
+
+function rejectBoundEventMismatch(
+  operation: AuditOperationSnapshot | undefined,
+  method: EventMethodName,
+): AuditResult<BuiltNamedAuditEvent> | undefined {
+  if (operation?.bound_event && operation.bound_event !== method) {
+    return failure("SDK_OPERATION_EVENT_MISMATCH", "lifecycle", "/operation/bound_event");
+  }
+  return undefined;
+}
+
+function resolveEventClassification(
+  definition: EventDefinition,
+  normalizedInput: AnyNamedInput,
+  operation: AuditOperationSnapshot | undefined,
+): AuditResult<{
+  readonly lifecycle: SecurityAuditEvent["event"]["lifecycle_phase"];
+  readonly outcome: SecurityAuditEvent["event"]["outcome"];
+  readonly commit: SecurityAuditEvent["event"]["commit_state"];
+}> {
+  const lifecycle = normalizedInput.event?.lifecycle_phase ?? defaultLifecycle(definition);
+  const outcome = normalizedInput.event?.outcome ?? defaultOutcome(definition, operation);
+  const commitResult = resolveCommitState(definition, outcome, normalizedInput.event?.commit_state, operation);
+  if (!commitResult.ok) return commitResult;
+  return { ok: true, value: { lifecycle, outcome, commit: commitResult.value } };
 }
