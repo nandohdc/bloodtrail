@@ -24,6 +24,26 @@ The prior project-owner decision recorded against `278c6721` does **not** carry 
 `c2b10575`. Tasks 12.1–12.7 were reset by the correction, and owner governance restarts
 from `PENDING`.
 
+### Superseded project-owner decision binding
+
+The **Project-owner governance decision (renewed review)** block in
+`implementation-authorization.md` records `APPROVED_FOR_MERGE` against reviewed technical
+commit `278c6721ea4eb2214062a33e289d54605bf9333b` and reviewed technical-review evidence
+commit `d05ef82d17a167b0aa49732c66820caf1871054f`, dated 2026-08-04.
+
+That binding is **SUPERSEDED and NON-OPERATIVE**. `278c6721` is no longer the technical
+target of this branch, the tree it approved (`7d9fd109f9e97f3ee0100c98cf802e9c919740c2`)
+is not the current branch tree, and tasks 12.1–12.7 were reset after it was written. It
+retains value only as historical evidence of a decision taken against a superseded commit.
+It confers no approval on `c2b10575085ead832d33c728e58288961509587c` and no merge, archive,
+production, or publication authorization of any kind.
+
+The single operative project-owner decision for `c2b10575` is the one recorded under
+**Project-owner decision (exact-commit)** and in the `## Decision` block below. Where the
+two records differ, this packet governs. `implementation-authorization.md` remains
+unmodified because it is outside the authorized reconciliation scope; it is superseded
+here rather than rewritten.
+
 ## Review scope
 
 ### Complete remediation range
@@ -296,7 +316,8 @@ All 10 finding dispositions from the prior reviews remain valid:
 
 - Transport-neutral scope only; no production sink; no durability guarantee; no exactly-once or at-least-once guarantee
 - No production authorization; no package-publication authorization
-- No project-owner decision (pending 12.5); no merge approval (pending 12.8); no archive approval (pending 12.9)
+- Project-owner decision recorded 2026-08-05 (12.5 complete); merge is authorized but has not been performed (12.8 pending); no archive approval (12.9 pending)
+- The project-owner decision is project governance recorded by the project owner; it is not independent assurance and does not convert any documented limitation into assurance
 - This review is project-owner self-review and does not constitute independent assurance
 - The reviewer relied on the frozen evidence manifest for the runtime matrix, runtime tests, verification tests, and governed-mode result rather than rerunning them
 
@@ -324,18 +345,140 @@ All 10 finding dispositions from the prior reviews remain valid:
 
 — Fernando Homem da Costa (@nandohdc), project owner and technical reviewer, 2026-08-05
 
+## Project-owner decision (exact-commit)
+
+### Decision identity
+
+- **Owner name:** Fernando Homem da Costa
+- **Owner handle:** `@nandohdc`
+- **Owner identity:** Fernando Homem da Costa (@nandohdc)
+- **Owner role:** Project owner
+- **Decision date:** 2026-08-05
+- **Owner-reviewed technical commit:** `c2b10575085ead832d33c728e58288961509587c`
+- **Owner-reviewed technical-review evidence commit:** `eefec5d5b239044c6403bcee87161a7c9eba1fdb`
+- **Owner-reviewed technical-review evidence tree:** `d6af0b6e31d8d32b582e723da9d8fab228fc0d2a`
+- **Owner decision:** APPROVED_FOR_MERGE
+- **Merge authorization:** APPROVED
+- **Archive authorization:** PENDING
+- **Production deployment authorization:** NOT AUTHORIZED
+- **Package publication authorization:** NOT AUTHORIZED
+
+This decision was personally adopted by the project owner for the exact commits named
+above. It was not inferred from the technical-review PASS result, from task state, from
+automated test results, from issue or pull-request state, or from AI analysis. No
+historical owner decision is reused. Governance findings raised at decision time: the
+superseded `278c6721` owner-decision binding described under **Superseded project-owner
+decision binding** above, which is recorded as non-operative and blocks nothing.
+
+### Owner statement (verbatim)
+
+> Owner: Fernando Homem da Costa (@nandohdc)
+>
+> Role: Project owner
+>
+> Decision date: 2026-08-05
+>
+> Final technical commit:
+> c2b10575085ead832d33c728e58288961509587c
+>
+> Technical-review evidence commit:
+> eefec5d5b239044c6403bcee87161a7c9eba1fdb
+>
+> Technical-review evidence tree:
+> d6af0b6e31d8d32b582e723da9d8fab228fc0d2a
+>
+> Owner decision:
+> APPROVED_FOR_MERGE
+>
+> Governance findings:
+> None.
+>
+> I acknowledge that the technical review was performed by the project owner and therefore does not constitute independent assurance.
+>
+> I acknowledge the documented non-blocking risks and limitations, including:
+>
+> * active-mode packet validation checks commit-field shape rather than exact value;
+> * the governed owner-decision regex is not sufficient positive proof;
+> * the unused substring helpers remain exported but currently have no callers;
+> * Node 26.6.0 parallel verification has a shared-fixture race;
+> * the reviewer relied on the frozen exact-runtime matrix rather than independently rerunning it.
+>
+> Merge authorization:
+> APPROVED
+>
+> Archive authorization:
+> PENDING
+>
+> Production deployment authorization:
+> NOT AUTHORIZED
+>
+> Package publication authorization:
+> NOT AUTHORIZED
+>
+> I personally make this owner decision for the exact commits and tree identified above. No historical owner decision is being reused.
+
+— Fernando Homem da Costa (@nandohdc), Project owner, 2026-08-05
+
+### Assurance limitation
+
+The project owner is also the technical reviewer. This decision is **project-owner
+self-review**. It is project governance only and does **not** constitute independent
+assurance, third-party review, formal certification, legal advice, or organizational
+approval. No claim of independent assurance is made anywhere in this packet.
+
+### Acknowledged risks and limitations
+
+The owner reviewed and accepted each of the following as non-blocking. None is downgraded,
+closed, or converted into assurance by this decision; each remains recorded in full in its
+own section above.
+
+| Item | Classification | Owner disposition |
+|---|---|---|
+| Active-mode packet validation checks the *shape* of the commit field, not its exact value | NON-BLOCKING RISK | Acknowledged and accepted. The prior defense-in-depth claim is not repeated. The task ledger remains the operative record. |
+| Governed owner-decision regex is not sufficient positive proof of approval | DOCUMENTED LIMITATION | Acknowledged and accepted. It is not relied on as owner proof. Owner evidence is validated by exact-equality field matching, not by that regex. |
+| Unused substring helpers remain exported with no callers | NON-BLOCKING RISK | Acknowledged and accepted. Unreachable, no gate effect, outside the reviewed range. |
+| Node 26.6.0 parallel verification has a shared-fixture race | NON-BLOCKING RISK / off-matrix | Acknowledged and accepted. Verification runs on the frozen matrix runtime and serially. The failure is loud and cannot produce a false pass. |
+| The reviewer relied on the frozen exact-runtime matrix rather than independently rerunning it | DOCUMENTED LIMITATION | Acknowledged and accepted, and repeated here so the decision does not rest on an unstated assumption. |
+| Mutation harness reports a low-level Git pathspec error when build output is absent | DOCUMENTED LIMITATION | Acknowledged and accepted. Environmental usability only. |
+
+### Authorized by this decision
+
+- Progression to the governed merge phase for `c2b10575085ead832d33c728e58288961509587c`.
+
+### Explicitly not authorized by this decision
+
+- **Archive:** PENDING. Tasks 12.8–12.10 remain unchecked and no archive is authorized.
+- **Production deployment:** NOT AUTHORIZED.
+- **Package publication or release:** NOT AUTHORIZED.
+- Framework integration, delivery infrastructure, transports, collectors, brokers, queues,
+  storage, SIEM, analytics, browser telemetry, and real-user data processing all remain
+  NOT AUTHORIZED.
+
+Merge authorization is an authorization, not an action: the merge itself (12.8) has not
+been performed.
+
 ## Decision
 
 Technical review status: PASS
 Reviewed technical commit: `c2b10575085ead832d33c728e58288961509587c`
 Reviewed technical parent: `27996739d79d4af1e145597d51610b5f3eefa138`
 Reviewed technical tree: `7cd5a959e81466b2602b5e433fd49750f6663e95`
+Technical-review evidence commit: `eefec5d5b239044c6403bcee87161a7c9eba1fdb`
+Technical-review evidence tree: `d6af0b6e31d8d32b582e723da9d8fab228fc0d2a`
 Previous technical-review evidence commit: `d05ef82d17a167b0aa49732c66820caf1871054f`
 Previous reviewed technical commit: `278c6721ea4eb2214062a33e289d54605bf9333b`
-Project-owner decision: PENDING
+Superseded project-owner decision: `278c6721ea4eb2214062a33e289d54605bf9333b` in implementation-authorization.md — NON-OPERATIVE
+Owner identity: Fernando Homem da Costa (@nandohdc)
+Owner role: Project owner
+Project-owner decision date: 2026-08-05
+Owner-reviewed technical commit: `c2b10575085ead832d33c728e58288961509587c`
+Owner-reviewed technical-review evidence commit: `eefec5d5b239044c6403bcee87161a7c9eba1fdb`
+Owner-reviewed technical-review evidence tree: `d6af0b6e31d8d32b582e723da9d8fab228fc0d2a`
+Project-owner decision: APPROVED_FOR_MERGE
+Owner self-review is independent assurance: NO
 Production deployment authorization: NOT AUTHORIZED
 Package publication authorization: NOT AUTHORIZED
-Merge authorization: PENDING
+Merge authorization: APPROVED
 Archive authorization: PENDING
 
 Production deployment approved | `NO — NOT AUTHORIZED`
