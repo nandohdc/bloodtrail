@@ -125,3 +125,26 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      # The gate action reports only pass/fail. Surface which conditions broke
+      # so triage does not require opening the dashboard.
+      - name: Explain quality gate failure
+        if: failure()
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          key="$(grep -E '^sonar\.projectKey=' sonar-project.properties | cut -d= -f2)"
+          url="${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=${key}"
+          if [ -n "${PR_NUMBER}" ]; then
+            url="${url}&pullRequest=${PR_NUMBER}"
+          fi
+          curl -sS -u "${SONAR_TOKEN}:" "${url}" > gate.json || {
+            echo "could not reach SonarQube for quality gate detail"
+            exit 0
+          }
+          jq -r '.projectStatus.conditions[]? | select(.status == "ERROR")
+                 | "FAILED  \(.metricKey): actual \(.actualValue), must be \(.comparator | ascii_downcase) \(.errorThreshold)"' gate.json \
+            || echo "could not parse quality gate response"
