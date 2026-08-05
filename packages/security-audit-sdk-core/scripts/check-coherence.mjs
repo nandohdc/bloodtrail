@@ -411,7 +411,7 @@ function parseRequirementSet(text, file, idPrefix) {
       continue;
     }
 
-    const requirementMatch = /^### Requirement:\s*(.*?)\s*$/.exec(line);
+    const requirementMatch = /^### Requirement:(.*)$/.exec(line);
     if (requirementMatch) {
       finishRequirement();
       requirement = {
@@ -426,7 +426,7 @@ function parseRequirementSet(text, file, idPrefix) {
       continue;
     }
 
-    const scenarioMatch = /^#### Scenario:\s*(.*?)\s*$/.exec(line);
+    const scenarioMatch = /^#### Scenario:(.*)$/.exec(line);
     if (scenarioMatch) {
       if (!requirement) {
         structureFailure(`scenario appears outside a requirement: ${line.trim().slice(0, 120)}`);

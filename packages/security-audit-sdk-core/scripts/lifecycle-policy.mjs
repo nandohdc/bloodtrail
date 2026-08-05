@@ -97,7 +97,7 @@ export async function resolveVerificationLifecycle(options = {}) {
 }
 
 export function parseTaskChecklist(text) {
-  return [...text.matchAll(/^- \[([ x])\] (\d+\.\d+)\s+(.+)$/mg)].map((match) => ({
+  return [...text.matchAll(/^- \[([ x])\] (\d+\.\d+)\s+(\S.*)$/mg)].map((match) => ({
     id: match[2],
     done: match[1] === "x",
     description: match[3],
@@ -183,8 +183,10 @@ export function extractRequirementBody(text) {
 }
 
 export function extractRequirementBlocks(text) {
-  const matches = [...text.matchAll(/^### Requirement:.+$(?:\n(?!### Requirement:)[\s\S]*?)*(?=^### Requirement:|\s*$)/mg)];
-  return matches.map((match) => match[0].trim()).filter(Boolean);
+  const starts = [...text.matchAll(/^### Requirement:.+$/mg)].map((match) => match.index);
+  return starts
+    .map((start, index) => text.slice(start, starts[index + 1] ?? text.length).trim())
+    .filter(Boolean);
 }
 
 export function boundedFailure(id, file, message) {

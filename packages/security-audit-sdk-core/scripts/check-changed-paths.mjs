@@ -41,7 +41,19 @@ const untracked = splitNull(git(["ls-files", "--others", "--exclude-standard", "
 const records = [...tracked, ...untracked.map((path) => ({ status: "?", path }))];
 const violations = [];
 const classified = new Map();
-const forbiddenPackageImplementationPath = /^packages\/security-audit-sdk-core\/(?:src|lib)\/(?:.*\/)?(?:adapter|instrumentation?|transport|exporter|collector|broker|queue|outbox|storage|siem|analytics|detection|browser|telemetry|framework|middleware|opentelemetry|otlp|cryptographic-chain)(?:[._/-]|$)/i;
+// Terms are verbatim from the original single-literal pattern, including the
+// `instrumentation?` spelling (optional trailing "n"), which differs from
+// check-scope.mjs's `instrument(?:ation)?`. Preserved deliberately.
+const FORBIDDEN_IMPLEMENTATION_TERMS = [
+  "adapter", "instrumentation?", "transport", "exporter", "collector", "broker",
+  "queue", "outbox", "storage", "siem", "analytics", "detection", "browser",
+  "telemetry", "framework", "middleware", "opentelemetry", "otlp",
+  "cryptographic-chain",
+];
+const forbiddenPackageImplementationPath = new RegExp(
+  String.raw`^packages/security-audit-sdk-core/(?:src|lib)/(?:.*/)?(?:${FORBIDDEN_IMPLEMENTATION_TERMS.join("|")})(?:[._/-]|$)`,
+  "i",
+);
 
 for (const record of records) {
   const paths = [record.path, record.source].filter(Boolean);
