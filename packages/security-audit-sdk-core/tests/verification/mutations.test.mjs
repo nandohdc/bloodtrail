@@ -1,7 +1,21 @@
 import assert from "node:assert/strict";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import {
+  chmodSync,
+  cpSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, resolve } from "node:path";
+import { basename, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { packageRoot, repositoryRoot } from "../../scripts/verification-helpers.mjs";
@@ -19,6 +33,19 @@ const originalArchive = "openspec/changes/archive/2026-07-31-implement-security-
 const canonicalCapability = "openspec/specs/security-audit-sdk-core/spec.md";
 const remediation = lifecycleMetadata.remediationChange;
 const taskGroups = remediation.taskGroups;
+const fixtureArchiveRoot = "openspec/changes/archive";
+const archiveCompletionTaskIds = ["12.8", "12.9", "12.10"];
+const requiredArchivedEvidencePaths = [
+  ".openspec.yaml",
+  "implementation-authorization.md",
+  "design.md",
+  "proposal.md",
+  "specs/security-audit-sdk-core/spec.md",
+  "tasks.md",
+  "technical-review-packet.md",
+  "adversarial-review-traceability.md",
+];
+let restoredArchiveEvidence;
 const fixtureTechnicalCommit = "1111111111111111111111111111111111111111";
 const fixtureEvidenceCommit = "2222222222222222222222222222222222222222";
 const fixtureOwnerBinding = [
@@ -31,7 +58,308 @@ const governedLocalConfigBefore = governedLocalConfig();
 prepareControl();
 test.after(() => {
   assert.equal(governedLocalConfig(), governedLocalConfigBefore, "governed repository local Git configuration changed");
-  rmSync(suiteRoot, { recursive: true, force: true });
+  if (restoredArchiveEvidence) {
+    assert.deepEqual(
+      treeIdentity(restoredArchiveEvidence.sourceArchive),
+      restoredArchiveEvidence.sourceIdentity,
+      "source archive bytes changed after archived fixture restoration controls",
+    );
+  }
+  removeDisposableDirectory(suiteRoot);
+});
+
+test("structured capability comparison accepts legitimate cumulative growth without mutating historical archive bytes", () => {
+  const { root } = archivedCaseRepository("capability-cumulative-growth");
+  const originalArchiveRoot = resolve(root, originalArchive);
+  const before = treeIdentity(originalArchiveRoot);
+  append(root, canonicalCapability, [
+    "\n### Requirement: Separately approved cumulative capability growth",
+    "A separately approved capability SHALL coexist without weakening historical preservation.",
+    "",
+    "#### Scenario: Cumulative capability remains valid",
+    "- **WHEN** an independently approved requirement is synchronized",
+    "- **THEN** historical and remediation requirements remain structurally equivalent",
+    "",
+  ].join("\n"));
+  succeeds(root, "scripts/check-coherence.mjs", ["--mode", "archived"]);
+  assert.deepEqual(treeIdentity(originalArchiveRoot), before, "historical archive bytes changed during cumulative comparison");
+});
+
+test("structured capability comparison rejects a missing original requirement", () => {
+  const { root } = archivedCaseRepository("capability-original-missing");
+  const heading = requirementBlocks(readFileSync(resolve(root, `${originalArchive}/specs/security-audit-sdk-core/spec.md`), "utf8"))[0].heading;
+  removeRequirement(root, canonicalCapability, heading);
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "archived"], "original-capability-requirement-missing");
+});
+
+test("structured capability comparison rejects a modified original requirement", () => {
+  const { root } = archivedCaseRepository("capability-original-modified");
+  const heading = requirementBlocks(readFileSync(resolve(root, `${originalArchive}/specs/security-audit-sdk-core/spec.md`), "utf8"))[0].heading;
+  modifyRequirementBody(root, canonicalCapability, heading);
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "archived"], "original-capability-requirement-modified");
+});
+
+test("structured capability comparison rejects a duplicated original requirement", () => {
+  const { root } = archivedCaseRepository("capability-original-duplicate");
+  const heading = requirementBlocks(readFileSync(resolve(root, `${originalArchive}/specs/security-audit-sdk-core/spec.md`), "utf8"))[0].heading;
+  append(root, canonicalCapability, `\n${requirementBlockAt(root, canonicalCapability, heading)}\n`);
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "archived"], "original-capability-requirement-duplicate");
+});
+
+test("structured capability comparison rejects a missing remediation requirement", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("capability-remediation-missing");
+  const heading = requirementBlocks(readFileSync(resolve(root, archiveRelativePath, "specs/security-audit-sdk-core/spec.md"), "utf8"))[0].heading;
+  removeRequirement(root, canonicalCapability, heading);
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "archived"], "archived-remediation-capability-requirement-missing");
+});
+
+test("structured capability comparison rejects a modified remediation requirement", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("capability-remediation-modified");
+  const heading = requirementBlocks(readFileSync(resolve(root, archiveRelativePath, "specs/security-audit-sdk-core/spec.md"), "utf8"))[0].heading;
+  modifyRequirementBody(root, canonicalCapability, heading);
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "archived"], "archived-remediation-capability-requirement-modified");
+});
+
+test("structured capability comparison rejects a duplicated remediation requirement", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("capability-remediation-duplicate");
+  const heading = requirementBlocks(readFileSync(resolve(root, archiveRelativePath, "specs/security-audit-sdk-core/spec.md"), "utf8"))[0].heading;
+  append(root, canonicalCapability, `\n${requirementBlockAt(root, canonicalCapability, heading)}\n`);
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "archived"], "archived-remediation-capability-requirement-duplicate");
+});
+
+test("raw substring evidence inside a fenced appendix cannot satisfy structured capability preservation", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("capability-raw-substring");
+  const heading = requirementBlocks(readFileSync(resolve(root, archiveRelativePath, "specs/security-audit-sdk-core/spec.md"), "utf8"))[0].heading;
+  const block = removeRequirement(root, canonicalCapability, heading);
+  append(root, canonicalCapability, `\n## Non-normative appendix\n\n\`\`\`\`markdown\n${block}\n\`\`\`\`\n`);
+  assert.ok(readFileSync(resolve(root, canonicalCapability), "utf8").includes(block), "raw substring control must retain the exact block bytes");
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "archived"], "archived-remediation-capability-requirement-missing");
+});
+
+test("malformed requirement structure is rejected with its structural diagnostic", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("capability-malformed");
+  const heading = requirementBlocks(readFileSync(resolve(root, archiveRelativePath, "specs/security-audit-sdk-core/spec.md"), "utf8"))[0].heading;
+  const path = resolve(root, canonicalCapability);
+  const text = readFileSync(path, "utf8");
+  const block = requirementBlockAt(root, canonicalCapability, heading);
+  const malformed = block.replace("#### Scenario:", "#### Scenario -");
+  assert.notEqual(malformed, block, "malformed structure control did not alter a scenario heading");
+  writeFileSync(path, text.replace(block, malformed));
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "archived"], "canonical-capability-requirement-structure");
+});
+
+test("empty canonical requirement sets are rejected", () => {
+  const { root } = archivedCaseRepository("capability-empty");
+  writeFileSync(resolve(root, canonicalCapability), "# security-audit-sdk-core Specification\n\n## Requirements\n");
+  fails(root, "scripts/check-coherence.mjs", ["--mode", "archived"], "canonical-capability-requirement-set");
+});
+
+test("exact complete active-to-archive movement passes", () => {
+  const { root } = archivedCaseRepository("archive-movement-complete");
+  succeeds(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"]);
+});
+
+test("archive movement rejects unmatched deletion and partial movement", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("archive-movement-unmatched-deletion");
+  rmSync(resolve(root, archiveRelativePath, "design.md"));
+  const result = fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-unmatched-deletion");
+  assert.match(`${result.stdout}\n${result.stderr}`, /archive-movement-partial/);
+});
+
+test("archive movement rejects unmatched additions", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("archive-movement-unmatched-addition");
+  write(root, `${archiveRelativePath}/unmatched.md`, "unmatched archive addition\n");
+  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-unmatched-addition");
+});
+
+test("archive movement rejects a wrong relative destination path", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("archive-movement-wrong-relative-path");
+  renameSync(resolve(root, archiveRelativePath, "design.md"), resolve(root, archiveRelativePath, "design-renamed.md"));
+  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-wrong-path");
+});
+
+test("archive movement rejects mode substitution", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("archive-movement-mode-substitution");
+  chmodSync(resolve(root, archiveRelativePath, "proposal.md"), 0o755);
+  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-mode-mismatch");
+});
+
+test("archive movement rejects byte substitution", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("archive-movement-byte-substitution");
+  append(root, `${archiveRelativePath}/proposal.md`, "\nsubstituted archive bytes\n");
+  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-byte-substitution");
+});
+
+test("archive movement permits only exact 12.8-12.10 task reconciliation", () => {
+  for (const [name, mutate] of [
+    ["earlier-checkbox", (root, path) => replace(root, path, "- [x] 12.7 ", "- [ ] 12.7 ")],
+    ["task-prose", (root, path) => append(root, path, "\nunauthorized archive task prose\n")],
+  ]) {
+    const { root, archiveRelativePath } = archivedCaseRepository(`archive-movement-task-${name}`);
+    const taskPath = `${archiveRelativePath}/tasks.md`;
+    mutate(root, taskPath);
+    fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-unauthorized-task-difference");
+  }
+});
+
+test("archive movement rejects active remnants as a partial movement", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("archive-movement-active-remnant");
+  mkdirSync(resolve(root, activeChange), { recursive: true });
+  cpSync(resolve(root, archiveRelativePath, "proposal.md"), resolve(root, activeChange, "proposal.md"));
+  const result = fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-retained-active-file");
+  assert.match(`${result.stdout}\n${result.stderr}`, /archive-movement-partial/);
+});
+
+test("archive movement rejects deletion from an unrelated active change", () => {
+  const { root } = archivedCaseRepository("archive-movement-unrelated-deletion");
+  rmSync(resolve(root, "openspec/changes/establish-design-pattern-governance/proposal.md"));
+  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-unrelated-change-deletion");
+});
+
+test("archive movement rejects an unrelated archive addition", () => {
+  const { root } = archivedCaseRepository("archive-movement-unrelated-archive");
+  write(root, `${fixtureArchiveRoot}/2099-01-02-unrelated-change/rogue.md`, "unrelated archive\n");
+  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-unrelated-archive-addition");
+});
+
+test("archive movement rejects multiple remediation archive destinations", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("archive-movement-multiple-destinations");
+  cpSync(resolve(root, archiveRelativePath), resolve(root, `${fixtureArchiveRoot}/2099-01-03-${remediation.name}`), { recursive: true });
+  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-multiple-destinations");
+});
+
+test("archive movement rejects a destination outside the exact archive pattern", () => {
+  const { root, archiveRelativePath } = archivedCaseRepository("archive-movement-wrong-archive-path");
+  renameSync(resolve(root, archiveRelativePath), resolve(root, `${fixtureArchiveRoot}/2099-01-02-wrong-${remediation.name}`));
+  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-wrong-archive-path");
+});
+
+test("archived fixture restoration accepts exactly one archive and preserves source bytes", () => {
+  const fixture = fixtureRestorationRepository("fixture-restore-one");
+  const sourceArchive = resolve(fixture.sourceRoot, fixtureArchiveRoot, `2099-01-02-${remediation.name}`);
+  const before = treeIdentity(sourceArchive);
+  restoreActiveFixtureFromArchive({
+    sourceRoot: fixture.sourceRoot,
+    controlRoot: fixture.destinationRoot,
+    changeId: remediation.name,
+    archivePattern: remediation.archivePattern,
+    activeRelativePath: remediation.active,
+  });
+  const tasks = readFileSync(resolve(fixture.destinationRoot, activeChange, "tasks.md"), "utf8");
+  for (const id of archiveCompletionTaskIds) assert.match(tasks, new RegExp(`^- \\[ \\] ${escapeRegex(id)} `, "m"));
+  for (const id of taskGroups.flatMap(groupTaskIds).filter((id) => !archiveCompletionTaskIds.includes(id))) {
+    assert.match(tasks, new RegExp(`^- \\[x\\] ${escapeRegex(id)} `, "m"));
+  }
+  assert.deepEqual(treeIdentity(sourceArchive), before, "source archive changed during exact restoration");
+  removeDisposableDirectory(fixture.destinationRoot);
+  removeDisposableDirectory(fixture.sourceRoot);
+  assert.equal(existsSync(fixture.destinationRoot), false, "restored control cleanup did not complete");
+});
+
+test("archived fixture restoration rejects zero archive matches", () => {
+  const fixture = fixtureRestorationRepository("fixture-restore-zero", []);
+  assert.throws(() => restoreActiveFixtureFromArchive({
+    sourceRoot: fixture.sourceRoot,
+    controlRoot: fixture.destinationRoot,
+    changeId: remediation.name,
+    archivePattern: remediation.archivePattern,
+    activeRelativePath: remediation.active,
+  }), /fixture-restore-archive-cardinality/);
+});
+
+test("archived fixture restoration rejects multiple archive matches", () => {
+  const fixture = fixtureRestorationRepository("fixture-restore-multiple", ["2099-01-02", "2099-01-03"]);
+  assert.throws(() => restoreActiveFixtureFromArchive({
+    sourceRoot: fixture.sourceRoot,
+    controlRoot: fixture.destinationRoot,
+    changeId: remediation.name,
+    archivePattern: remediation.archivePattern,
+    activeRelativePath: remediation.active,
+  }), /fixture-restore-archive-cardinality/);
+});
+
+test("archived fixture restoration rejects a wrong change ID", () => {
+  const fixture = fixtureRestorationRepository("fixture-restore-wrong-change");
+  assert.throws(() => restoreActiveFixtureFromArchive({
+    sourceRoot: fixture.sourceRoot,
+    controlRoot: fixture.destinationRoot,
+    changeId: "wrong-change-id",
+    archivePattern: remediation.archivePattern,
+    activeRelativePath: remediation.active,
+  }), /fixture-restore-wrong-change-id/);
+});
+
+test("archived fixture restoration rejects a wrong active relative path", () => {
+  const fixture = fixtureRestorationRepository("fixture-restore-wrong-relative");
+  assert.throws(() => restoreActiveFixtureFromArchive({
+    sourceRoot: fixture.sourceRoot,
+    controlRoot: fixture.destinationRoot,
+    changeId: remediation.name,
+    archivePattern: remediation.archivePattern,
+    activeRelativePath: `${remediation.active}-wrong`,
+  }), /fixture-restore-wrong-relative-path/);
+});
+
+test("archived fixture restoration rejects missing evidence", () => {
+  const fixture = fixtureRestorationRepository("fixture-restore-missing-evidence");
+  rmSync(resolve(fixture.sourceRoot, fixtureArchiveRoot, `2099-01-02-${remediation.name}`, "technical-review-packet.md"));
+  assert.throws(() => restoreActiveFixtureFromArchive({
+    sourceRoot: fixture.sourceRoot,
+    controlRoot: fixture.destinationRoot,
+    changeId: remediation.name,
+    archivePattern: remediation.archivePattern,
+    activeRelativePath: remediation.active,
+  }), /fixture-restore-missing-evidence/);
+});
+
+test("archived fixture restoration rejects a malformed task ledger", () => {
+  const fixture = fixtureRestorationRepository("fixture-restore-malformed-ledger");
+  const taskPath = resolve(fixture.sourceRoot, fixtureArchiveRoot, `2099-01-02-${remediation.name}`, "tasks.md");
+  writeFileSync(taskPath, readFileSync(taskPath, "utf8").replace(/^- \[x\] 2\.1 .+\n/m, ""));
+  assert.throws(() => restoreActiveFixtureFromArchive({
+    sourceRoot: fixture.sourceRoot,
+    controlRoot: fixture.destinationRoot,
+    changeId: remediation.name,
+    archivePattern: remediation.archivePattern,
+    activeRelativePath: remediation.active,
+  }), /fixture-restore-task-ledger/);
+});
+
+test("archived fixture restoration rejects an unexpected unchecked task", () => {
+  const fixture = fixtureRestorationRepository("fixture-restore-unexpected-task");
+  const archivePath = `${fixtureArchiveRoot}/2099-01-02-${remediation.name}/tasks.md`;
+  replace(fixture.sourceRoot, archivePath, "- [x] 12.7 ", "- [ ] 12.7 ");
+  assert.throws(() => restoreActiveFixtureFromArchive({
+    sourceRoot: fixture.sourceRoot,
+    controlRoot: fixture.destinationRoot,
+    changeId: remediation.name,
+    archivePattern: remediation.archivePattern,
+    activeRelativePath: remediation.active,
+  }), /fixture-restore-task-state/);
+});
+
+test("archived fixture restoration detects source-byte mutation", () => {
+  const fixture = fixtureRestorationRepository("fixture-restore-source-mutation");
+  assert.throws(() => restoreActiveFixtureFromArchive({
+    sourceRoot: fixture.sourceRoot,
+    controlRoot: fixture.destinationRoot,
+    changeId: remediation.name,
+    archivePattern: remediation.archivePattern,
+    activeRelativePath: remediation.active,
+    afterCopy: ({ sourceArchive }) => writeFileSync(resolve(sourceArchive, "proposal.md"), "mutated source bytes\n"),
+  }), /fixture-restore-source-mutation/);
+});
+
+test("archived fixture cleanup failures are explicit and successful cleanup is deterministic", () => {
+  const root = resolve(suiteRoot, "fixture-cleanup-control");
+  mkdirSync(root, { recursive: true });
+  assert.throws(
+    () => removeDisposableDirectory(root, () => { throw new Error("injected cleanup refusal"); }),
+    /fixture-cleanup-failure/,
+  );
+  assert.equal(existsSync(root), true, "injected cleanup failure unexpectedly removed its control");
+  removeDisposableDirectory(root);
+  assert.equal(existsSync(root), false, "deterministic cleanup did not remove its control");
 });
 
 test("unmodified active control passes", () => {
@@ -468,7 +796,18 @@ function prepareControl() {
     force: true,
     filter: (source) => !["node_modules", "dist-tests", "dist-examples", ".verification-output"].includes(basename(source)),
   });
-  cpSync(resolve(repositoryRoot, activeChange), resolve(controlRoot, activeChange), { recursive: true, force: true });
+  if (existsSync(resolve(repositoryRoot, activeChange))) {
+    cpSync(resolve(repositoryRoot, activeChange), resolve(controlRoot, activeChange), { recursive: true, force: true });
+  } else {
+    restoredArchiveEvidence = restoreActiveFixtureFromArchive({
+      sourceRoot: repositoryRoot,
+      controlRoot,
+      changeId: remediation.name,
+      archivePattern: remediation.archivePattern,
+      activeRelativePath: remediation.active,
+    });
+    restorePreArchiveControlState(controlRoot, restoredArchiveEvidence.archiveRelativePath);
+  }
   git(controlRoot, ["add", "-A"]);
   git(controlRoot, ["add", "-f", "packages/security-audit-sdk-core/dist"]);
   git(controlRoot, ["commit", "-m", "test: isolated verification control"]);
@@ -477,11 +816,273 @@ function prepareControl() {
   succeeds(controlRoot, "scripts/check-coherence.mjs", ["--mode", "active"]);
 }
 
+function restoreActiveFixtureFromArchive({
+  sourceRoot,
+  controlRoot: destinationRoot,
+  changeId,
+  archivePattern,
+  activeRelativePath,
+  afterCopy,
+}) {
+  if (changeId !== remediation.name) {
+    fixtureFailure("fixture-restore-wrong-change-id", `expected ${remediation.name}, got ${changeId}`);
+  }
+  const expectedActivePath = `openspec/changes/${changeId}`;
+  if (activeRelativePath !== expectedActivePath || activeRelativePath !== remediation.active) {
+    fixtureFailure("fixture-restore-wrong-relative-path", `expected ${expectedActivePath}, got ${activeRelativePath}`);
+  }
+
+  let policy;
+  try {
+    policy = new RegExp(archivePattern);
+  } catch (error) {
+    fixtureFailure("fixture-restore-wrong-archive-path", `invalid archive policy ${archivePattern}: ${error.message}`);
+  }
+  const archiveParent = resolve(sourceRoot, fixtureArchiveRoot);
+  const matches = existsSync(archiveParent)
+    ? readdirSync(archiveParent, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `${fixtureArchiveRoot}/${entry.name}`)
+      .filter((path) => policy.test(path))
+      .sort()
+    : [];
+  if (matches.length !== 1) {
+    fixtureFailure("fixture-restore-archive-cardinality", `expected exactly one dated archive for ${changeId}, found ${matches.length}: ${matches.join(", ") || "none"}`);
+  }
+
+  const archiveRelativePath = matches[0];
+  const archiveName = basename(archiveRelativePath);
+  if (!/^\d{4}-\d{2}-\d{2}-/.test(archiveName) || !archiveName.endsWith(`-${changeId}`) || !policy.test(archiveRelativePath)) {
+    fixtureFailure("fixture-restore-wrong-archive-path", `${archiveRelativePath} does not encode the exact policy date and change ID`);
+  }
+  const sourceArchive = resolve(sourceRoot, archiveRelativePath);
+  for (const requiredPath of requiredArchivedEvidencePaths) {
+    const absolute = resolve(sourceArchive, requiredPath);
+    if (!existsSync(absolute) || !lstatSync(absolute).isFile()) {
+      fixtureFailure("fixture-restore-missing-evidence", `${archiveRelativePath}/${requiredPath} is absent or not a regular file`);
+    }
+  }
+
+  const sourceIdentity = treeIdentity(sourceArchive);
+  const sourceTasks = readFileSync(resolve(sourceArchive, "tasks.md"), "utf8");
+  const restoredTasks = restoreArchivedTaskLedger(sourceTasks);
+  const destination = resolve(destinationRoot, activeRelativePath);
+  rmSync(destination, { recursive: true, force: true });
+  mkdirSync(resolve(destination, ".."), { recursive: true });
+  cpSync(sourceArchive, destination, { recursive: true, force: true, preserveTimestamps: true });
+  if (!sameIdentity(treeIdentity(destination), sourceIdentity)) {
+    fixtureFailure("fixture-restore-copy-identity", "archive copy differs before task reconciliation");
+  }
+  afterCopy?.({ sourceArchive, destination });
+  writeFileSync(resolve(destination, "tasks.md"), restoredTasks);
+
+  const restoredIdentity = treeIdentity(destination);
+  for (const sourceEntry of sourceIdentity) {
+    const restoredEntry = restoredIdentity.find((entry) => entry.path === sourceEntry.path);
+    if (!restoredEntry) fixtureFailure("fixture-restore-copy-identity", `restored active fixture is missing ${sourceEntry.path}`);
+    if (sourceEntry.path !== "tasks.md" && !sameIdentity([sourceEntry], [restoredEntry])) {
+      fixtureFailure("fixture-restore-copy-identity", `restoration modified ${sourceEntry.path}`);
+    }
+  }
+  if (readFileSync(resolve(destination, "tasks.md"), "utf8") !== restoredTasks) {
+    fixtureFailure("fixture-restore-task-ledger", "restored task ledger does not equal the exact three-checkbox reconciliation");
+  }
+  if (!sameIdentity(treeIdentity(sourceArchive), sourceIdentity)) {
+    fixtureFailure("fixture-restore-source-mutation", `${archiveRelativePath} changed while constructing the disposable control`);
+  }
+
+  return Object.freeze({
+    archiveRelativePath,
+    sourceArchive,
+    sourceIdentity: Object.freeze(sourceIdentity),
+  });
+}
+
+function restoreArchivedTaskLedger(text) {
+  const entries = [...text.matchAll(/^- \[([ x])\] (\d+\.\d+) (.+)$/gm)].map((match) => ({
+    done: match[1] === "x",
+    id: match[2],
+  }));
+  const expectedIds = taskGroups.flatMap(groupTaskIds);
+  const actualIds = entries.map((entry) => entry.id);
+  if (entries.length !== remediation.taskCount
+    || new Set(actualIds).size !== entries.length
+    || expectedIds.some((id) => !actualIds.includes(id))) {
+    fixtureFailure("fixture-restore-task-ledger", `archived task ledger must contain exactly ${remediation.taskCount} unique governed tasks`);
+  }
+  const unexpected = entries.find((entry) => !entry.done);
+  if (unexpected) {
+    fixtureFailure("fixture-restore-task-state", `archived task ${unexpected.id} is unexpectedly unchecked`);
+  }
+
+  let restored = text;
+  for (const id of archiveCompletionTaskIds) {
+    const pattern = new RegExp(`^- \\[x\\] ${escapeRegex(id)} `, "gm");
+    const matches = [...restored.matchAll(pattern)];
+    if (matches.length !== 1) {
+      fixtureFailure("fixture-restore-task-ledger", `archive completion task ${id} must occur exactly once and be checked`);
+    }
+    restored = restored.replace(pattern, `- [ ] ${id} `);
+  }
+  return restored;
+}
+
+function restorePreArchiveControlState(root, archiveRelativePath) {
+  const headActive = git(root, ["ls-tree", "-r", "--name-only", "HEAD", "--", activeChange]).stdout.trim();
+  if (headActive === "") {
+    const commits = git(root, ["log", "--format=%H", "--diff-filter=A", "--", `${archiveRelativePath}/`]).stdout
+      .split("\n")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    const candidates = [];
+    for (const commit of commits) {
+      const parent = git(root, ["show", "-s", "--format=%P", commit]).stdout.trim().split(" ")[0];
+      if (!parent) continue;
+      const activeFiles = git(root, ["ls-tree", "-r", "--name-only", parent, "--", activeChange]).stdout.trim();
+      if (activeFiles !== "") candidates.push({ commit, parent });
+    }
+    if (candidates.length !== 1) {
+      fixtureFailure("fixture-restore-missing-evidence", `unable to derive one pre-archive parent; found ${candidates.length}`);
+    }
+    const canonical = git(root, ["show", `${candidates[0].parent}:${canonicalCapability}`]).stdout;
+    writeFileSync(resolve(root, canonicalCapability), canonical);
+  }
+  rmSync(resolve(root, archiveRelativePath), { recursive: true, force: true });
+}
+
+function treeIdentity(root) {
+  const records = [];
+  function walk(directory) {
+    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+      const absolute = resolve(directory, entry.name);
+      if (entry.isDirectory()) {
+        walk(absolute);
+        continue;
+      }
+      const stat = lstatSync(absolute);
+      const bytes = readFileSync(absolute);
+      records.push(Object.freeze({
+        path: relative(root, absolute).replaceAll("\\", "/"),
+        mode: entry.isSymbolicLink() ? "120000" : (stat.mode & 0o111) === 0 ? "100644" : "100755",
+        size: bytes.length,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+      }));
+    }
+  }
+  walk(root);
+  return records;
+}
+
+function sameIdentity(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function removeDisposableDirectory(path, remove = rmSync) {
+  try {
+    remove(path, { recursive: true, force: true });
+  } catch (error) {
+    fixtureFailure("fixture-cleanup-failure", `${path} could not be removed: ${error.message}`);
+  }
+  if (existsSync(path)) fixtureFailure("fixture-cleanup-failure", `${path} still exists after cleanup`);
+}
+
+function fixtureFailure(id, message) {
+  throw new Error(`[${id}] ${message}`);
+}
+
 function caseRepository(name) {
   const root = resolve(suiteRoot, name);
   git(suiteRoot, ["clone", "--quiet", "--no-hardlinks", controlRoot, root]);
   symlinkSync(resolve(packageRoot, "node_modules"), resolve(root, "packages/security-audit-sdk-core/node_modules"), "dir");
   return root;
+}
+
+function archivedCaseRepository(name) {
+  const root = caseRepository(name);
+  const governedTasks = governedTaskIdsThrough("owner-governance");
+  assert.equal(governedTasks.length, 88, "archive movement source must be exactly 88/91 before merge and archive reconciliation");
+  setCheckedTasks(root, governedTasks);
+  git(root, ["add", `${activeChange}/tasks.md`]);
+  const staged = runDisposableGit(root, ["diff", "--cached", "--quiet"]);
+  assert.ok([0, 1].includes(staged.status), `unable to inspect staged archive-source task state: ${staged.stderr}`);
+  if (staged.status === 1) git(root, ["commit", "-m", "test: synthetic governed archive source"]);
+
+  const archiveRelativePath = `${fixtureArchiveRoot}/2099-01-02-${remediation.name}`;
+  const deltaPath = resolve(root, activeChange, "specs/security-audit-sdk-core/spec.md");
+  const delta = readFileSync(deltaPath, "utf8");
+  cpSync(resolve(root, activeChange), resolve(root, archiveRelativePath), { recursive: true, force: true, preserveTimestamps: true });
+  const archiveTasksPath = resolve(root, archiveRelativePath, "tasks.md");
+  let archiveTasks = readFileSync(archiveTasksPath, "utf8");
+  for (const id of archiveCompletionTaskIds) {
+    const pattern = new RegExp(`^- \\[ \\] ${escapeRegex(id)} `, "gm");
+    const matches = [...archiveTasks.matchAll(pattern)];
+    assert.equal(matches.length, 1, `archive source task ${id} must be exactly once and unchecked`);
+    archiveTasks = archiveTasks.replace(pattern, `- [x] ${id} `);
+  }
+  writeFileSync(archiveTasksPath, archiveTasks);
+  rmSync(resolve(root, activeChange), { recursive: true, force: true });
+  synchronizeCanonicalCapability(root, delta);
+  return Object.freeze({ root, archiveRelativePath });
+}
+
+function synchronizeCanonicalCapability(root, delta) {
+  const requirementStart = delta.indexOf("### Requirement:");
+  assert.notEqual(requirementStart, -1, "remediation delta contains no requirement blocks");
+  const requirements = delta.slice(requirementStart).trimEnd();
+  const path = resolve(root, canonicalCapability);
+  const canonical = readFileSync(path, "utf8").trimEnd();
+  writeFileSync(path, `${canonical}\n\n${requirements}\n`);
+}
+
+function requirementBlocks(text) {
+  const matches = [...text.matchAll(/^### Requirement:\s*(.+?)\s*$/gm)];
+  return matches.map((match, index) => ({
+    heading: match[1].trim().replace(/[ \t]+/g, " "),
+    block: text.slice(match.index, matches[index + 1]?.index ?? text.length).trimEnd(),
+  }));
+}
+
+function requirementBlockAt(root, sourcePath, heading) {
+  const text = readFileSync(resolve(root, sourcePath), "utf8");
+  const records = requirementBlocks(text).filter((record) => record.heading === heading);
+  assert.equal(records.length, 1, `expected one requirement ${heading} in ${sourcePath}, found ${records.length}`);
+  return records[0].block;
+}
+
+function removeRequirement(root, sourcePath, heading) {
+  const path = resolve(root, sourcePath);
+  const text = readFileSync(path, "utf8");
+  const block = requirementBlockAt(root, sourcePath, heading);
+  assert.equal(text.split(block).length - 1, 1, `requirement ${heading} must occur as one exact block`);
+  writeFileSync(path, text.replace(block, ""));
+  return block;
+}
+
+function modifyRequirementBody(root, sourcePath, heading) {
+  const path = resolve(root, sourcePath);
+  const text = readFileSync(path, "utf8");
+  const block = requirementBlockAt(root, sourcePath, heading);
+  const modified = block.replace(/\bSHALL\b/, "SHALL NOT");
+  assert.notEqual(modified, block, `requirement ${heading} has no SHALL token to modify`);
+  writeFileSync(path, text.replace(block, modified));
+}
+
+function fixtureRestorationRepository(name, dates = ["2099-01-02"]) {
+  const sourceRoot = resolve(suiteRoot, `${name}-fixture-source`);
+  const destinationRoot = resolve(suiteRoot, `${name}-fixture-control`);
+  mkdirSync(resolve(sourceRoot, fixtureArchiveRoot), { recursive: true });
+  mkdirSync(destinationRoot, { recursive: true });
+  const template = resolve(controlRoot, activeChange);
+  for (const date of dates) {
+    const archive = resolve(sourceRoot, fixtureArchiveRoot, `${date}-${remediation.name}`);
+    cpSync(template, archive, { recursive: true, force: true, preserveTimestamps: true });
+    const tasksPath = resolve(archive, "tasks.md");
+    const tasks = readFileSync(tasksPath, "utf8");
+    const completed = tasks.replace(/^- \[[ x]\] (\d+\.\d+) /gm, "- [x] $1 ");
+    assert.equal([...completed.matchAll(/^- \[x\] \d+\.\d+ /gm)].length, remediation.taskCount);
+    writeFileSync(tasksPath, completed);
+  }
+  return Object.freeze({ sourceRoot, destinationRoot });
 }
 
 function script(root, scriptPath, args, extraEnv = {}) {
