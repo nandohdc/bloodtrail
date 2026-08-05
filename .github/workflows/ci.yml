@@ -57,7 +57,10 @@ jobs:
 
       - run: npm run validate
 
-      - run: npm audit --audit-level=high
+      # DEPENDENCIES.md: "npm audit --audit-level=low must pass; findings are
+      # not waived by this record." The other jobs stay at high — neither of
+      # those packages documents a stricter policy.
+      - run: npm audit --audit-level=low
 
   # contracts/security-audit — the canonical contract.
   contract:
