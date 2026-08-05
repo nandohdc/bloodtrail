@@ -91,6 +91,7 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
   const correlation = buildCorrelation(config, frame, normalizedInput, operation);
   if (!correlation.ok) return correlation;
 
+  const envelopeDefaults = resolveEnvelopeDefaults(config, frame, definition);
   const candidate: SecurityAuditEvent = omitUndefined({
     event: {
       id: eventId,
@@ -107,16 +108,16 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
     },
     schema: { name: CONTRACT_SCHEMA_NAME, version: CONTRACT_VERSION },
     producer: config.producer,
-    environment: frame.environment ?? config.environment,
-    service: frame.service ?? config.service,
-    deployment: frame.deployment ?? config.deployment,
+    environment: envelopeDefaults.environment,
+    service: envelopeDefaults.service,
+    deployment: envelopeDefaults.deployment,
     tenant: buildTenant(frame),
     actor: frame.actor,
     subject: frame.subject,
     authenticated_principal: frame.authenticated_principal,
     delegation: frame.delegation,
     credential: frame.credential,
-    initiator: frame.initiator ?? defaultInitiator(config),
+    initiator: envelopeDefaults.initiator,
     session: frame.session,
     authentication: frame.authentication,
     authorization: frame.authorization,
@@ -126,11 +127,7 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
     request: frame.request,
     correlation: correlation.value,
     risk: frame.risk,
-    data: {
-      classification: frame.data?.classification ?? frame.resource?.data_classification ?? "internal",
-      retention_class: frame.data?.retention_class ?? definition.retention,
-      field_policy_version: frame.data?.field_policy_version ?? CONTRACT_VERSION,
-    },
+    data: envelopeDefaults.data,
     integrity: frame.integrity,
     extensions: frame.extensions,
   }) as SecurityAuditEvent;
@@ -326,8 +323,16 @@ function applyOneTransformation(
   const postScan = validateNoProhibitedData({ value: next });
   if (!postScan.ok) return postScan;
   writePath(candidate, path, next);
-  if (typeof output !== "string" && output.key_id !== undefined) {
-    if (typeof output.key_id !== "string" || output.key_id.length > 80) return failure("SDK_HOOK_FAILURE", "privacy", `${pointer}/key_id`);
+  return rejectInvalidKeyId(output, pointer);
+}
+
+function rejectInvalidKeyId(
+  output: AuditTransformationOutput | string,
+  pointer: string,
+): AuditResult<SecurityAuditEvent> | undefined {
+  if (typeof output === "string" || output.key_id === undefined) return undefined;
+  if (typeof output.key_id !== "string" || output.key_id.length > 80) {
+    return failure("SDK_HOOK_FAILURE", "privacy", `${pointer}/key_id`);
   }
   return undefined;
 }
@@ -431,4 +436,22 @@ function resolveTimestamps(
   const observedAtResult = normalizedInput.event?.observed_at === undefined ? nowIso(config) : { ok: true as const, value: normalizedInput.event.observed_at };
   if (!observedAtResult.ok) return observedAtResult;
   return { ok: true, value: { timestamp: timestampResult.value, observedAt: observedAtResult.value } };
+}
+
+function resolveEnvelopeDefaults(
+  config: NormalizedSdkConfiguration,
+  frame: AuditContextFrame,
+  definition: EventDefinition,
+) {
+  return {
+    environment: frame.environment ?? config.environment,
+    service: frame.service ?? config.service,
+    deployment: frame.deployment ?? config.deployment,
+    initiator: frame.initiator ?? defaultInitiator(config),
+    data: {
+      classification: frame.data?.classification ?? frame.resource?.data_classification ?? "internal",
+      retention_class: frame.data?.retention_class ?? definition.retention,
+      field_policy_version: frame.data?.field_policy_version ?? CONTRACT_VERSION,
+    },
+  };
 }

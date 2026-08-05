@@ -194,14 +194,7 @@ function validateArchiveMovement(resolvedLifecycle) {
     movementFailure("archive-movement-partial", `movement inventory is source=${sourceFiles.size}, archive=${archiveFiles.size}, active-remnants=${activeFiles.size}`);
   }
 
-  for (const record of collectMovementChanges(source)) {
-    if (isUnrelatedActiveDeletion(record)) {
-      movementFailure("archive-movement-unrelated-change-deletion", `${record.path} belongs to another active change`);
-    }
-    if (isUnrelatedArchiveAddition(record, exactArchive)) {
-      movementFailure("archive-movement-unrelated-archive-addition", `${record.path} is outside ${exactArchive}`);
-    }
-  }
+  checkUnrelatedMovementChanges(source, exactArchive, movementViolations);
 
   if (movementViolations.length > 0) {
     throw new Error(`archive movement validation failed:\n${[...new Set(movementViolations)].sort(byCodePoint).join("\n")}`);
@@ -446,7 +439,11 @@ function assertReviewedPathShape(rawPath, ownership) {
     throw new Error(`reviewedNewSdkSourcePaths entry must be a non-empty string, got: ${JSON.stringify(rawPath)}`);
   }
 
-  if (rawPath.includes(String.raw`\0`)) {
+  // "\0" is the NUL character. The previous spelling was String.raw`\0`, the
+  // two-character sequence backslash-zero, so an embedded NUL passed every
+  // guard and was accepted. A literal backslash-zero is still rejected below
+  // by the forward-slash rule.
+  if (rawPath.includes("\0")) {
     throw new Error(`reviewedNewSdkSourcePaths entry contains null byte: ${JSON.stringify(rawPath)}`);
   }
 
@@ -472,5 +469,16 @@ function assertReviewedPathShape(rawPath, ownership) {
 
   if (!ownership.sdkSourcePrefixes.some((prefix) => rawPath.startsWith(prefix))) {
     throw new Error(`reviewedNewSdkSourcePaths entry is outside configured SDK source prefixes: ${rawPath}`);
+  }
+}
+
+function checkUnrelatedMovementChanges(source, exactArchive, movementViolations) {
+  for (const record of collectMovementChanges(source)) {
+    if (isUnrelatedActiveDeletion(record)) {
+      movementViolations.push(`[archive-movement-unrelated-change-deletion] ${record.path} belongs to another active change`);
+    }
+    if (isUnrelatedArchiveAddition(record, exactArchive)) {
+      movementViolations.push(`[archive-movement-unrelated-archive-addition] ${record.path} is outside ${exactArchive}`);
+    }
   }
 }

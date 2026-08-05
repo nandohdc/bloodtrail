@@ -204,6 +204,22 @@ describe("VP — reviewed new SDK source paths", () => {
     assert.equal(result.passed, false);
     assert.match(result.output, /untracked SDK source is not an expected reviewed target/);
   });
+
+  it("VP-17 embedded NUL byte fails as a null byte", () => {
+    // \u0000 is the NUL character, which JSON round-trips, so the checker sees
+    // a real NUL. Before the fix this path passed every guard and was accepted.
+    setMetadataPaths(["packages/security-audit-sdk-core/src/a\u0000b.ts"]);
+    const result = runChecker();
+    assert.equal(result.passed, false);
+    assert.match(result.output, /contains null byte/);
+  });
+
+  it("VP-18 literal backslash-zero fails on the forward-slash rule", () => {
+    setMetadataPaths([String.raw`packages/security-audit-sdk-core/src/a\0b.ts`]);
+    const result = runChecker();
+    assert.equal(result.passed, false);
+    assert.match(result.output, /must use forward slashes/);
+  });
 });
 
 // ============================================================
