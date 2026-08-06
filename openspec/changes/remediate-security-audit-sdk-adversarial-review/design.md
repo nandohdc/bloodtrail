@@ -235,7 +235,7 @@ Rejecting plain operation contexts is a deliberate source-level breaking correct
 
 ### 12. Renewed governance binds the final technical commit
 
-The remediation remains unapproved until all executable evidence passes on exact Node.js 24 and 26, the final technical commit is identified, and the project owner records an explicit exact-commit decision. Historical approval remains preserved but cannot authorize reliance on the remediated basis. Any substantive commit after review requires reconfirmation. Project-owner self-review is project governance, not independent assurance.
+The remediation remains unapproved until all executable evidence passes on exact Node.js 24 and 26, the final technical commit is identified, and the project owner records an explicit exact-commit decision. Historical approval remains preserved but cannot authorize reliance on the remediated basis. Any substantive commit after review requires reconfirmation. Project-owner self-review is project governance, not independent third-party assurance. Bloodtrail is a single-maintainer repository, so third-party assurance is unavailable; renewed technical review is therefore performed independently of the implementing pass, and the owner decision must record explicitly that third-party assurance was not obtained. That residual risk is accepted only while production deployment and package publication remain unauthorized, and independent assurance is reinstated as a precondition before either is granted.
 
 Production deployment, package publication, framework integration, and delivery infrastructure remain unauthorized regardless of technical success. Merge and archive are separate lifecycle steps after renewed approval.
 
