@@ -1,0 +1,25 @@
+# Codecov configuration for Bloodtrail.
+# Start permissive — status checks are informational so they don't block PRs
+# while the team tunes thresholds.
+
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+comment:
+  layout: "diff, flags, files"
+  require_head: true
+  hide_project_coverage: false
+
+flags:
+  sdk:
+    paths:
+      - packages/security-audit-sdk-core/
+  research:
+    paths:
+      - research/browser-telemetry/

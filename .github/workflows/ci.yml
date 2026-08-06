@@ -95,6 +95,9 @@ jobs:
   coverage:
     name: coverage
     runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    permissions:
+      contents: read
+      id-token: write            # needed by codecov/codecov-action OIDC
     steps:
       - uses: actions/checkout@v7
 
@@ -137,6 +140,18 @@ jobs:
             packages/security-audit-sdk-core/coverage/lcov.info
             research/browser-telemetry/coverage/lcov.info
           if-no-files-found: error
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true
+          files: >-
+            packages/security-audit-sdk-core/coverage/lcov.info,
+            research/browser-telemetry/coverage/lcov.info
+          flags: >-
+            sdk,
+            research
+          fail_ci_if_error: false
 
   # Scans the whole repository, configured by the root sonar-project.properties.
   # Waits on sdk and contract as well as ci so a scan is not spent on code that
