@@ -13,7 +13,7 @@ The prior SDK-core approval remains historical evidence bound to its reviewed co
 - Normalize hostile cloning, getter, proxy, and serialization failures into bounded documented SDK errors that never echo rejected values.
 - Strengthen forbidden-path and public named-API completeness guardrails, including mutation tests proving every generated method is callable.
 - Correct shutdown timer cleanup and process-retention behavior.
-- Bound event identity, issued-operation identity, and terminal-deduplication state using explicit deterministic horizons.
+- Bound event identity, issued-operation identity, and terminal-deduplication state using explicit SDK-instance-local count-bounded FIFO horizons.
 - Validate transformation-path compatibility at SDK initialization rather than allowing a per-event outage.
 - Enforce the semantic distinction among pure redelivery, retry, and re-execution without silently weakening the canonical requirement.
 - Preserve contract version `1.0.0`; the canonical event contract is not changed by this remediation.
@@ -47,7 +47,7 @@ This change covers the SDK-core implementation, tests, generated API completenes
 ## Risks
 
 - The operation-evidence restriction is source-level breaking for callers that relied on permissive structural operation inputs. F-11 keeps the public `emit(event)` and `redeliver(event)` signatures unchanged while tightening named-redelivery validation and binding behavior.
-- Bounded identity retention introduces a documented horizon after which duplicate handling must remain deterministic but cannot imply lifetime-global protection.
+- Bounded identity retention introduces a documented local count horizon after which duplicate handling must remain deterministic but cannot imply time-based, durable, cross-process, restart-resistant, or lifetime-global protection.
 - Atomic reservations can suppress valid retry if release rules are wrong; sink outcomes therefore need explicit state transitions and concurrency tests.
 - Lifecycle-aware verification can become permissive if active, archived, and package-local scope are not separately mutation-tested.
 - New error codes or reclassification can affect consumers that exhaustively match current diagnostics.
