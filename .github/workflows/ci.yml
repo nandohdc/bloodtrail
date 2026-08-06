@@ -97,7 +97,6 @@ jobs:
     runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
     permissions:
       contents: read
-      id-token: write            # needed by codecov/codecov-action OIDC
     steps:
       - uses: actions/checkout@v7
 
@@ -141,30 +140,25 @@ jobs:
             research/browser-telemetry/coverage/lcov.info
           if-no-files-found: error
 
+      # files/flags must stay on one line with no space after the comma: the CLI
+      # splits on "," without trimming, and a folded scalar would fold the
+      # newline into a leading space that makes the second path unresolvable.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          use_oidc: true
-          files: >-
-            packages/security-audit-sdk-core/coverage/lcov.info,
-            research/browser-telemetry/coverage/lcov.info
-          flags: >-
-            sdk,
-            research
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: packages/security-audit-sdk-core/coverage/lcov.info,research/browser-telemetry/coverage/lcov.info
+          flags: sdk,research
           fail_ci_if_error: false
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v5
         with:
-          use_oidc: true
+          token: ${{ secrets.CODECOV_TOKEN }}
           report-type: test_results
-          files: >-
-            packages/security-audit-sdk-core/coverage/junit.xml,
-            research/browser-telemetry/coverage/junit.xml
-          flags: >-
-            sdk,
-            research
+          files: packages/security-audit-sdk-core/coverage/junit.xml,research/browser-telemetry/coverage/junit.xml
+          flags: sdk,research
           fail_ci_if_error: false
 
   # Scans the whole repository, configured by the root sonar-project.properties.
