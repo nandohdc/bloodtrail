@@ -121,8 +121,8 @@ required to merge:
 | `sonar` | repository-wide SonarQube scan and blocking quality gate |
 | `conventional-commits` | the PR title and **every** commit subject in the PR |
 
-`workflow-lint` (zizmor + actionlint) and `release-validation` also run, but are deliberately not
-required contexts — see [`RELEASING.md`](RELEASING.md) for why.
+`release-please` runs on pushes to `main` to maintain the Release PR. It is not a pull-request
+context and is not required to merge — see [`RELEASING.md`](RELEASING.md).
 
 ## Contributing and governance
 

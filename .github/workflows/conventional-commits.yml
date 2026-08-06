@@ -1,0 +1,34 @@
+name: conventional-commits
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  # Job id must stay `conventional-commits`: it is the required check name in
+  # branch protection, and renaming the job renames the context.
+  conventional-commits:
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"                 # engines: >=24 <25 || >=26 <27
+      - name: Check PR title and commit subjects
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node .github/scripts/check-conventional-commits.mjs \
+            --title "$PR_TITLE" \
+            --github-pr "$GITHUB_REPOSITORY" "$PR_NUMBER"

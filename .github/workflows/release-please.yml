@@ -1,0 +1,32 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+  # Recovery hatch: re-run Release Please without pushing a commit to main.
+  workflow_dispatch:
+
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        with:
+          # A PAT, not GITHUB_TOKEN: pushes and pull requests authored by
+          # GITHUB_TOKEN never trigger workflows, so the Release PR would receive
+          # zero runs and could never satisfy the required status checks.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # Labeling must stay ON. Release Please finds a *merged* Release PR by
+          # its `autorelease: pending` label; with `skip-labeling: true` it never
+          # tags, and each merge bumps the manifest without ever releasing.
