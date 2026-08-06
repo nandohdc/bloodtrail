@@ -190,27 +190,51 @@ The shutdown timeout SHALL NOT keep the Node.js process alive after clean shutdo
 - **THEN** flush and shutdown hooks are not duplicated and the timer is disposed after settlement
 
 ### Requirement: SDK identity and deduplication storage is bounded
-Generated event-ID and issued operation-ID reuse detection SHALL use documented time and count bounds. The default duplicate-protection horizon SHALL be 24 hours with at most 100,000 live entries per identity store. Entries SHALL NOT be evicted before the horizon merely to admit new identifiers; capacity reached inside the horizon SHALL fail closed with `SDK_IDENTITY_CAPACITY_EXCEEDED` or an equivalent documented bounded error. Terminal-operation state SHALL be weakly keyed to SDK-issued handles so it does not retain abandoned handles. Behavior inside and outside the horizon SHALL be deterministic and documented. [F-08]
+Generated event-ID and issued operation-ID reuse detection SHALL use documented SDK-instance-local count-bounded FIFO retention stores. Each applicable primitive identity history SHALL default to 4,096 retained identities and MAY be configured to another supported positive safe-integer capacity up to 100,000. A distinct insertion at capacity SHALL evict the oldest retained primitive identity and SHALL NOT grow the history beyond its configured bound. Duplicate or reuse detection SHALL apply while an identity remains retained; after FIFO eviction, that identity is outside the SDK instance's local duplicate-knowledge horizon and MAY be accepted again if every other validation, authority, lifecycle, and sink rule passes. The SDK SHALL NOT claim a guaranteed 24-hour retention period, durable replay prevention, distributed or cross-process deduplication, or restart-resistant identity history. Terminal-operation state SHALL be weakly keyed to SDK-issued handles so it does not retain abandoned handles, and redelivery SHALL NOT consume generated-identity history or corrupt unrelated operation state. [F-08]
 
-#### Scenario: Sustained generation remains bounded
-- **WHEN** sustained event and operation generation reaches configured identity capacity
-- **THEN** live internal identity entries do not exceed the bound and the SDK fails closed rather than growing without limit
+#### Scenario: Default bounded retention
+- **WHEN** a default SDK instance records generated event IDs and issued operation IDs
+- **THEN** each applicable primitive identity history is bounded by the documented 4,096-entry default capacity
 
-#### Scenario: Duplicate protection holds inside horizon
-- **WHEN** an event or operation identifier is reused within the configured horizon
-- **THEN** the SDK rejects the duplicate even when the store is near capacity
+#### Scenario: Configured bounded retention
+- **WHEN** a valid configured retention capacity is supplied for generated event IDs or issued operation IDs
+- **THEN** the corresponding identity history honors that capacity exactly and remains at or below it
 
-#### Scenario: Capacity does not force early eviction
-- **WHEN** all retained identifiers are still inside the horizon and capacity is exhausted
-- **THEN** insertion returns the bounded capacity error and no protected entry is silently evicted
+#### Scenario: Maximum configuration validation
+- **WHEN** a configured retention capacity is greater than 100,000
+- **THEN** SDK initialization fails with the existing bounded invalid-configuration error at the applicable retention path
 
-#### Scenario: Outside-horizon behavior is deterministic
-- **WHEN** an identifier is reused only after its retention horizon has expired
-- **THEN** the SDK treats it as outside SDK-local duplicate knowledge according to documented behavior and applies all remaining validation
+#### Scenario: FIFO eviction
+- **WHEN** a distinct identity is inserted while the applicable identity history is already at capacity
+- **THEN** the oldest retained identity is evicted before newer retained identities, and membership reads or duplicate insertions do not refresh age
+
+#### Scenario: Deduplication inside the retained horizon
+- **WHEN** a generated event ID, issued operation ID, or terminal operation completion is reused while it remains retained by its applicable SDK-local history or live handle state
+- **THEN** the SDK rejects the duplicate according to its existing event-ID, operation-ID, or terminal-completion rule
+
+#### Scenario: Behavior after eviction
+- **WHEN** a generated event ID or issued operation ID is reused only after FIFO eviction from the applicable primitive identity history
+- **THEN** the SDK treats that identity as outside SDK-local duplicate knowledge and applies all remaining validation, authority, lifecycle, and sink rules without claiming durable replay prevention
+
+#### Scenario: Independent identity histories
+- **WHEN** generated event-ID history, issued operation-ID history, and terminal-operation state are exercised under unrelated traffic
+- **THEN** each retained identity class remains isolated, operation authority is never granted by a primitive FIFO window, and active or completed live-handle terminal state is not evicted by primitive-history churn
+
+#### Scenario: Redelivery interaction
+- **WHEN** public or named redelivery processes a valid complete canonical event
+- **THEN** redelivery does not insert generated event IDs, consume issued operation-ID capacity, reserve terminal completion, release terminal completion, or corrupt unrelated generated-ID or operation state
+
+#### Scenario: Memory boundedness under sustained activity
+- **WHEN** sustained event and operation activity exceeds configured primitive retention capacities
+- **THEN** each primitive retention structure remains within its configured bound and no unbounded identity Set, Map, queue, timer, or durable replay ledger is introduced
 
 #### Scenario: Abandoned operations are not retained
 - **WHEN** caller code releases all references to SDK-issued operation handles
 - **THEN** terminal reservation and completion tracking does not keep those handles alive solely for SDK deduplication
+
+#### Scenario: Invalid retention capacity
+- **WHEN** retention configuration contains zero, negative, non-integer, non-finite, accessor-backed, unknown-key, non-plain-object, or otherwise unsupported capacity values
+- **THEN** SDK initialization fails deterministically with the existing bounded invalid-configuration error at `/retention` or the applicable nested retention path
 
 ### Requirement: Transformation-path compatibility is validated during initialization
 SDK initialization SHALL accept transformation hooks only for field-policy paths that the SDK can actually transform. A policy-eligible but unsupported path SHALL fail construction with a safe bounded configuration error before any event can be emitted. Valid supported paths SHALL preserve existing field policy, hook, prohibited-data, and post-hook validation behavior. [F-10]

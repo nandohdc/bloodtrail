@@ -1,4 +1,25 @@
-# Remediation Technical Review Packet (RENEWED)
+# Remediation Technical Review Packet (SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION)
+
+## Current post-correction governance status
+
+This packet preserves historical technical-review and owner-governance evidence, but every
+approval recorded before the 2026-08-06 F-08 specification correction is
+**SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION** and is not operative for the
+amended candidate.
+
+Technical review status: PENDING
+Project-owner decision: PENDING
+Merge authorization: PENDING
+Archive authorization: PENDING
+Production deployment authorization: NOT AUTHORIZED
+Package publication authorization: NOT AUTHORIZED
+
+Owner semantic decision: `ADOPT_COUNT_BOUNDED_FIFO_RETENTION`, Fernando Homem da Costa
+(`@nandohdc`), project owner, 2026-08-06. This semantic decision supersedes the prior
+24-hour, required-100,000-entry, fail-closed-capacity, and no-reuse-after-eviction F-08
+requirements. It authorizes the specification correction only; it is not renewed
+technical review, merge approval, archive approval, production authorization, or package
+publication authorization.
 
 ## Review identity
 
@@ -10,7 +31,7 @@
 - **Live remote verified:** Yes
 - **Review date:** 2026-08-05
 - **Technical reviewer:** Fernando Homem da Costa (@nandohdc), project owner and technical reviewer
-- **Review method:** Read-only Git commit-object verification, direct review of the correction implementation and evidence structure, and reliance on the frozen evidence manifest for the reported runtime matrix and governed-mode results. The reviewer did not independently rerun the matrix, runtime, or verification suites. This is owner self-review and is **not** independent assurance.
+- **Review method:** Historical read-only Git commit-object verification, direct review of the correction implementation and evidence structure, and reliance on the frozen evidence manifest for the reported runtime matrix and governed-mode results. The reviewer did not independently rerun the matrix, runtime, or verification suites. This is owner self-review and is **not** independent assurance. **SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION.**
 
 ## Previous technical-review history
 
@@ -38,11 +59,11 @@ retains value only as historical evidence of a decision taken against a supersed
 It confers no approval on `c2b10575085ead832d33c728e58288961509587c` and no merge, archive,
 production, or publication authorization of any kind.
 
-The single operative project-owner decision for `c2b10575` is the one recorded under
-**Project-owner decision (exact-commit)** and in the `## Decision` block below. Where the
-two records differ, this packet governs. `implementation-authorization.md` remains
-unmodified because it is outside the authorized reconciliation scope; it is superseded
-here rather than rewritten.
+No prior project-owner decision is operative for the amended F-08 specification candidate.
+The historical decision formerly recorded under **Project-owner decision (exact-commit)**
+and in the historical decision block below is superseded here. `implementation-authorization.md`
+remains unmodified because it is outside the authorized reconciliation scope; it is
+superseded here rather than rewritten.
 
 ## Review scope
 
@@ -81,11 +102,11 @@ Owner decision (12.5), production/publication governance (12.6), post-decision v
 
 ## Technical result
 
-### Renewed review: PASS
+### Historical renewed review: PASS - SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION
 
-The reviewer found no blocking defect in the four-file archive-verifier correction. The
-complete remediation range, all three correction ranges, and all 10 prior finding
-dispositions remain valid.
+The reviewer found no blocking defect in the four-file archive-verifier correction. That
+finding is historical evidence only. It does not approve or authorize the amended F-08
+specification candidate.
 
 ### Verification evidence (exact-target matrix at `c2b10575`)
 
@@ -345,7 +366,7 @@ All 10 finding dispositions from the prior reviews remain valid:
 
 — Fernando Homem da Costa (@nandohdc), project owner and technical reviewer, 2026-08-05
 
-## Project-owner decision (exact-commit)
+## Historical project-owner decision (SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION)
 
 ### Decision identity
 
@@ -365,10 +386,9 @@ All 10 finding dispositions from the prior reviews remain valid:
 
 This decision was personally adopted by the project owner for the exact commits named
 above. It was not inferred from the technical-review PASS result, from task state, from
-automated test results, from issue or pull-request state, or from AI analysis. No
-historical owner decision is reused. Governance findings raised at decision time: the
-superseded `278c6721` owner-decision binding described under **Superseded project-owner
-decision binding** above, which is recorded as non-operative and blocks nothing.
+automated test results, from issue or pull-request state, or from AI analysis. It is now
+**SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION** and confers no approval on
+the amended F-08 specification candidate.
 
 ### Owner statement (verbatim)
 
@@ -441,9 +461,10 @@ own section above.
 | The reviewer relied on the frozen exact-runtime matrix rather than independently rerunning it | DOCUMENTED LIMITATION | Acknowledged and accepted, and repeated here so the decision does not rest on an unstated assumption. |
 | Mutation harness reports a low-level Git pathspec error when build output is absent | DOCUMENTED LIMITATION | Acknowledged and accepted. Environmental usability only. |
 
-### Authorized by this decision
+### Previously authorized by this superseded decision
 
-- Progression to the governed merge phase for `c2b10575085ead832d33c728e58288961509587c`.
+- Historical progression to the governed merge phase for `c2b10575085ead832d33c728e58288961509587c`.
+- This authorization is no longer operative for the amended F-08 specification candidate.
 
 ### Explicitly not authorized by this decision
 
@@ -454,31 +475,33 @@ own section above.
   storage, SIEM, analytics, browser telemetry, and real-user data processing all remain
   NOT AUTHORIZED.
 
-Merge authorization is an authorization, not an action: the merge itself (12.8) has not
-been performed.
+The historical merge authorization above is not an action and is now superseded. The merge
+itself (12.8) has not been performed, and the amended F-08 specification candidate has no
+merge authorization.
 
-## Decision
+## Current decision
 
-Technical review status: PASS
-Reviewed technical commit: `c2b10575085ead832d33c728e58288961509587c`
-Reviewed technical parent: `27996739d79d4af1e145597d51610b5f3eefa138`
-Reviewed technical tree: `7cd5a959e81466b2602b5e433fd49750f6663e95`
-Technical-review evidence commit: `eefec5d5b239044c6403bcee87161a7c9eba1fdb`
-Technical-review evidence tree: `d6af0b6e31d8d32b582e723da9d8fab228fc0d2a`
-Previous technical-review evidence commit: `d05ef82d17a167b0aa49732c66820caf1871054f`
-Previous reviewed technical commit: `278c6721ea4eb2214062a33e289d54605bf9333b`
-Superseded project-owner decision: `278c6721ea4eb2214062a33e289d54605bf9333b` in implementation-authorization.md — NON-OPERATIVE
+Technical review status: PENDING
+Reviewed technical commit: PENDING
+Reviewed technical parent: PENDING
+Reviewed technical tree: PENDING
+Technical-review evidence commit: PENDING
+Technical-review evidence tree: PENDING
+Superseded historical technical-review evidence commit: `eefec5d5b239044c6403bcee87161a7c9eba1fdb`
+Superseded historical reviewed technical commit: `c2b10575085ead832d33c728e58288961509587c`
+Superseded project-owner decision: `c2b10575085ead832d33c728e58288961509587c` in this packet and `278c6721ea4eb2214062a33e289d54605bf9333b` in implementation-authorization.md - NON-OPERATIVE
 Owner identity: Fernando Homem da Costa (@nandohdc)
 Owner role: Project owner
-Project-owner decision date: 2026-08-05
-Owner-reviewed technical commit: `c2b10575085ead832d33c728e58288961509587c`
-Owner-reviewed technical-review evidence commit: `eefec5d5b239044c6403bcee87161a7c9eba1fdb`
-Owner-reviewed technical-review evidence tree: `d6af0b6e31d8d32b582e723da9d8fab228fc0d2a`
-Project-owner decision: APPROVED_FOR_MERGE
+Project-owner semantic decision date: 2026-08-06
+Owner semantic decision: ADOPT_COUNT_BOUNDED_FIFO_RETENTION
+Owner-reviewed technical commit: PENDING
+Owner-reviewed technical-review evidence commit: PENDING
+Owner-reviewed technical-review evidence tree: PENDING
+Project-owner decision: PENDING
 Owner self-review is independent assurance: NO
 Production deployment authorization: NOT AUTHORIZED
 Package publication authorization: NOT AUTHORIZED
-Merge authorization: APPROVED
+Merge authorization: PENDING
 Archive authorization: PENDING
 
 Production deployment approved | `NO — NOT AUTHORIZED`
