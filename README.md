@@ -10,6 +10,10 @@ and unlicensed for distribution.
 > event catalog, and validator are generated from `contracts/security-audit/source/contract.source.json`
 > and are never hand-edited.
 
+[![codecov](https://codecov.io/github/nandohdc/bloodtrail/badge.svg?token=69XU6630UD)](https://app.codecov.io/github/nandohdc/bloodtrail)
+[![codecov sdk](https://codecov.io/github/nandohdc/bloodtrail/badge.svg?token=69XU6630UD&flag=sdk)](https://app.codecov.io/github/nandohdc/bloodtrail/flags/sdk)
+[![codecov research](https://codecov.io/github/nandohdc/bloodtrail/badge.svg?token=69XU6630UD&flag=research)](https://app.codecov.io/github/nandohdc/bloodtrail/flags/research)
+
 ## Authorization boundary
 
 **Read this before proposing work.** The SDK is an **isolated technical candidate**. Its
