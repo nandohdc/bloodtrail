@@ -15,6 +15,7 @@ and unlicensed for distribution.
 [![codecov research](https://codecov.io/github/nandohdc/bloodtrail/badge.svg?token=69XU6630UD&flag=research)](https://app.codecov.io/github/nandohdc/bloodtrail/flags/research)
 
 
+[![DeepScan grade](https://deepscan.io/api/teams/30383/projects/32220/branches/1053344/badge/grade.svg?token=a1fa0980263b30233c0ddf1e9c3ed778290db2ee)](https://deepscan.io/dashboard#view=project&tid=30383&pid=32220&bid=1053344)
 ## Authorization boundary
 
 **Read this before proposing work.** The SDK is an **isolated technical candidate**. Its
