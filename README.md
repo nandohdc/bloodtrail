@@ -1,0 +1,135 @@
+# Bloodtrail
+
+A **contract-bound security audit event system**: one canonical event contract, plus a
+framework-independent TypeScript SDK core that constructs and validates events conforming to it.
+
+Personal open-source project by Fernando Homem da Costa (`nandohdc`). The repository is private
+and unlicensed for distribution.
+
+> The contract is the product. The SDK is a *projection* of the contract — its types, constants,
+> event catalog, and validator are generated from `contracts/security-audit/source/contract.source.json`
+> and are never hand-edited.
+
+## Authorization boundary
+
+**Read this before proposing work.** The SDK is an **isolated technical candidate**. Its
+existence does not authorize:
+
+- production deployment or production event collection;
+- processing real-user data;
+- application or framework instrumentation;
+- production transports, exporters, collectors, queues, outboxes, storage, or SIEM integration;
+- analytics, detection, browser telemetry, or cryptographic audit-log chaining.
+
+Only a transport-neutral sink interface and non-production test sinks exist. None of the above
+may be added as an incidental part of another change — each requires a separate OpenSpec change
+and explicit authorization. The boundary is mechanically enforced by
+`npm run test:scope --prefix packages/security-audit-sdk-core`, not merely documented.
+
+Cutting a `vX.Y.Z` tag does **not** lift this boundary, and the package is never published to a
+registry. See [`RELEASING.md`](RELEASING.md).
+
+## Canonical boundary
+
+**Bloodtrail is canonical.** Every other standard is subordinate and single-purpose:
+
+| Standard | Role |
+|---|---|
+| OCSF 1.8.0 | export-only |
+| OpenTelemetry 1.59.0 / Semantic Conventions 1.43.0 | transport-only |
+| CloudEvents 1.0.2 | optional envelope-only |
+
+No external standard may redefine a Bloodtrail event's identity, actor, tenancy, resource
+ownership, authorization decision, outcome, delivery class, or schema version.
+
+## Layout
+
+There is **no root `package.json`** — every workspace is standalone. Always run npm scripts with
+`--prefix` or from inside the package directory.
+
+| Path | What it is | Status |
+|---|---|---|
+| `contracts/security-audit/` | The canonical contract, version `1.0.0`. `source/contract.source.json` is the **single source of truth**; `catalog/`, `registries/`, `policies/`, `docs/`, `adr/` are **generated — never hand-edit**. | Frozen |
+| `packages/security-audit-sdk-core/` | [`@bloodtrail/security-audit-sdk-core`](packages/security-audit-sdk-core/README.md) — ESM TypeScript SDK core. Private, unpublished, unlicensed for distribution. | Isolated candidate |
+| `openspec/` | Spec-driven change management. `specs/` holds current capability specs; `changes/` holds in-flight proposals; `changes/archive/` holds completed ones. | Active |
+| `research/browser-telemetry/` | Isolated investigation. Research artifacts, **not** shipping code. | Investigation |
+
+## SDK core at a glance
+
+- 24 named event methods, derived from the canonical catalog — names, categories, actions,
+  lifecycle constraints, and minimum delivery classes all come from the contract.
+- Four delivery classes: `best_effort`, `security_significant`, `transaction_critical`,
+  `policy_critical`.
+- **Zero runtime dependencies.** ESM only, with a standalone CommonJS validator.
+- Node.js `24` or `26` only (`>=24 <25 || >=26 <27`); verification pins `24.2.0` and `26.5.0`.
+  TypeScript `>=5.9.2 <6`; verification uses exactly `5.9.2`.
+- Runtime-branded authority constructors, `AsyncLocalStorage` context scopes, transaction-aware
+  operation state, prohibited-data scanning, and a transport-neutral sink boundary.
+
+Consumer documentation: [API reference](packages/security-audit-sdk-core/API.md) ·
+[trust boundaries and misuse guidance](packages/security-audit-sdk-core/SECURITY.md) ·
+[compatibility policy](packages/security-audit-sdk-core/MIGRATION.md).
+
+## Validation gates
+
+```bash
+# SDK — full chain (16 gates: generate, check:generated, typecheck, build, runtime, types,
+# examples, exports, compatibility, contract-immutability, scope, dependencies, package,
+# changed-paths, coherence, verification, git)
+npm run validate --prefix packages/security-audit-sdk-core
+
+# SDK — build + cross-cutting matrix, no git/package/coherence gates.
+# This is the matrix-safe target: use it when running across Node majors.
+npm run test:matrix --prefix packages/security-audit-sdk-core
+
+# Contract — regenerate check + contract tests
+npm run validate --prefix contracts/security-audit
+```
+
+Targeted gates worth knowing (all `--prefix packages/security-audit-sdk-core`):
+
+| Script | Enforces |
+|---|---|
+| `check:generated` | `src/generated/` matches the contract; regenerate with `npm run generate` |
+| `test:contract-immutability` | the frozen contract was not mutated |
+| `test:compatibility` | `compatibility.json` still holds, including the pinned toolchain |
+| `test:scope` | no out-of-scope surface crept in (the authorization boundary above) |
+| `test:coherence` | package identity, version, and consumer docs agree |
+| `test:verification` | the mutation/evidence suite in `tests/verification/` |
+| `test:changed-paths` / `test:git` | staged scope and git state are clean |
+
+Generated code (`src/generated/contract.generated.ts`) is derived from the contract — change the
+contract source and regenerate, never edit the output.
+
+## CI
+
+`.github/workflows/ci.yml` runs on pushes to `main` and on every pull request. These contexts are
+required to merge:
+
+| Check | Covers |
+|---|---|
+| `ci / lint`, `ci / test`, `ci / audit` | `research/browser-telemetry`, via the reusable `nandohdc/gh-pipelines` Node workflow |
+| `sdk` | `packages/security-audit-sdk-core` — `check:generated` then the full `validate` chain, `npm audit --audit-level=low` |
+| `contract` | `contracts/security-audit` — `validate`, `npm audit --audit-level=high` |
+| `coverage` | line coverage for both code workspaces, uploaded for the Sonar scan |
+| `sonar` | repository-wide SonarQube scan and blocking quality gate |
+| `conventional-commits` | the PR title and **every** commit subject in the PR |
+
+`workflow-lint` (zizmor + actionlint) and `release-validation` also run, but are deliberately not
+required contexts — see [`RELEASING.md`](RELEASING.md) for why.
+
+## Contributing and governance
+
+Changes go through **OpenSpec**, not straight to code. Start at [`CONTRIBUTING.md`](CONTRIBUTING.md),
+which covers the workflow, the commit conventions, and the two branch-mechanics rules this
+repository has actually been bitten by.
+
+- [`CHANGELOG.md`](CHANGELOG.md) — maintained by Release Please from Conventional Commits.
+- [`RELEASING.md`](RELEASING.md) — the release runbook and what a Bloodtrail release is *not*.
+- [`SECURITY.md`](SECURITY.md) — how to report a vulnerability.
+- `.hermes.md` — the working agreement for agent-assisted sessions.
+
+## License
+
+None. This repository is private and the SDK package is `UNLICENSED`; no distribution,
+publication, or production use is authorized.
