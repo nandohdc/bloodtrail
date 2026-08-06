@@ -138,6 +138,16 @@ Tracking issue: [#20](https://github.com/nandohdc/bloodtrail/issues/20)
 
 Tracking issue: [#20](https://github.com/nandohdc/bloodtrail/issues/20)
 
+> **Out-of-order merge notice (2026-08-06).** The F-08 specification correction
+> `66bf3b721e604e715dbaae2a98888ddc1e6ff7fe` was merged into `main` via pull request #41 as
+> merge commit `2f5787bb6120aa72d2cbd063fd963c5e23435e88`, before tasks 12.4 and 12.5 were
+> completed. The merge used a true merge commit and rewrote no governed history, but 12.8
+> requires merging an *approved* remediation and no approval was recorded at merge time, so
+> 12.8 remains unchecked. Renewed technical review (12.4) and a renewed project-owner
+> exact-commit decision (12.5) remain required and must now be bound to the merged content.
+> No approval is inferred from the merge or from its passing checks. See the "Merge execution
+> record" section of `technical-review-packet.md`.
+
 - [ ] 12.1 Reconcile every finding row with implementation commit, passing evidence, task IDs, GitHub issue closure, and final disposition. [F-01 through F-12]
 - [ ] 12.2 Prove F-01, F-02, F-03, and F-04 have executable passing blocker evidence and have not been closed or downgraded by prose alone. [F-01, F-02, F-03, F-04]
 - [ ] 12.3 Identify the final technical commit and prepare a bounded technical review packet covering API, security behavior, validation, verification, compatibility, dependencies, tests, and assurance limitations. [F-01 through F-12]

@@ -9,10 +9,31 @@ amended candidate.
 
 Technical review status: PENDING
 Project-owner decision: PENDING
-Merge authorization: PENDING
+Merge authorization: NONE RECORDED — merge performed 2026-08-06 without a recorded prior authorization
 Archive authorization: PENDING
 Production deployment authorization: NOT AUTHORIZED
 Package publication authorization: NOT AUTHORIZED
+
+## Merge execution record
+
+Pull request [#41](https://github.com/nandohdc/bloodtrail/pull/41) was merged into `main` on
+2026-08-06 by Fernando Homem da Costa (`@nandohdc`) as merge commit
+`2f5787bb6120aa72d2cbd063fd963c5e23435e88`, bringing correction commit
+`66bf3b721e604e715dbaae2a98888ddc1e6ff7fe` (tree
+`b3297f6dc5e59582708464225a732829b2902b60`) onto `main`.
+
+Merge method: true merge commit with two parents. No squash, rebase, amendment, force-push,
+or governed-history rewrite was performed. All seven required checks passed on the merge
+commit (`ci / lint`, `ci / test`, `ci / audit`, `sdk`, `contract`, `coverage`, `sonar`).
+
+This merge was performed **before** renewed technical review (task 12.4) and **before** a
+renewed project-owner exact-commit decision (task 12.5) were recorded. It therefore does not
+constitute, imply, or substitute for either. No approval is inferred from the merge, from the
+passing checks, or from the merged state of `main`. Task 12.8 remains unchecked because it
+requires merging an *approved* remediation, and no approval was recorded at merge time.
+
+Renewed technical review and a renewed project-owner decision remain required, and must now
+be bound to the merged content rather than to a proposed branch.
 
 Owner semantic decision: `ADOPT_COUNT_BOUNDED_FIFO_RETENTION`, Fernando Homem da Costa
 (`@nandohdc`), project owner, 2026-08-06. This semantic decision supersedes the prior
@@ -501,7 +522,16 @@ Project-owner decision: PENDING
 Owner self-review is independent assurance: NO
 Production deployment authorization: NOT AUTHORIZED
 Package publication authorization: NOT AUTHORIZED
-Merge authorization: PENDING
+Merge authorization: NONE RECORDED — merge performed without a recorded prior authorization
+Merge performed: YES
+Merge commit: `2f5787bb6120aa72d2cbd063fd963c5e23435e88`
+Merged correction commit: `66bf3b721e604e715dbaae2a98888ddc1e6ff7fe`
+Merged tree: `b3297f6dc5e59582708464225a732829b2902b60`
+Merge date: 2026-08-06
+Merged by: Fernando Homem da Costa (@nandohdc)
+Merge method: merge commit, two parents, no squash/rebase/amend/force-push
+Merge preceded renewed technical review and renewed owner decision: YES
+Approval inferred from merge: NONE
 Archive authorization: PENDING
 
 Production deployment approved | `NO — NOT AUTHORIZED`
