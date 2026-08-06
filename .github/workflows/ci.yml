@@ -153,6 +153,20 @@ jobs:
             research
           fail_ci_if_error: false
 
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true
+          report-type: test_results
+          files: >-
+            packages/security-audit-sdk-core/coverage/junit.xml,
+            research/browser-telemetry/coverage/junit.xml
+          flags: >-
+            sdk,
+            research
+          fail_ci_if_error: false
+
   # Scans the whole repository, configured by the root sonar-project.properties.
   # Waits on sdk and contract as well as ci so a scan is not spent on code that
   # does not build.
