@@ -34,6 +34,16 @@ It deliberately does **not** touch any `package.json`:
 If you ever need the SDK package version to move, that is a governed change with its own owner
 decision — not a side effect of a release. It must update `compatibility.json` in the same commit.
 
+Two config values in `release-please-config.json` control where the series begins, and both matter:
+
+- `bootstrap-sha` — the changelog starts at `f368cb49…`, the commit before release management was
+  introduced. Without it Release Please walks the entire history and generates an entry for every
+  Conventional Commit ever made.
+- `initial-version` — pinned to `0.1.0`. Release Please treats a manifest value of `0.0.0` as *no
+  prior release* and would otherwise fall back to its default first version of `1.0.0`;
+  `bump-minor-pre-major` does not prevent that, because it only governs bumps *from* an existing
+  `0.x` version.
+
 ## Preconditions
 
 - [ ] CI is green on the release commit.
@@ -170,8 +180,9 @@ over manual tagging.
 
 1. **Update the version.** Edit `version.txt` and the `"."` entry in `.release-please-manifest.json`
    to the same `X.Y.Z`.
-2. **Update the changelog.** Move everything under `## [Unreleased]` into a new
-   `## [x.y.z] - YYYY-MM-DD` heading, and leave an empty `## [Unreleased]` for the next cycle.
+2. **Update the changelog.** Insert a new `## [x.y.z] - YYYY-MM-DD` heading directly below the
+   preamble, newest first, and list the changes under it. There is no `Unreleased` section to
+   drain — Release Please does not maintain one.
 3. **Verify.** Run the full gate chain before tagging:
    ```bash
    npm run validate --prefix packages/security-audit-sdk-core

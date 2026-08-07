@@ -12,4 +12,9 @@ A `vX.Y.Z` tag here versions the **repository as a milestone**. It is not a pack
 workspace stays private and unpublished, and the SDK package version is governed separately. See
 [`RELEASING.md`](RELEASING.md).
 
-## [Unreleased]
+Release Please inserts each released version directly below this preamble, newest first. There is
+no `Unreleased` section: unreleased work lives in the Conventional Commit history until a Release PR
+collects it.
+
+The changelog starts at `f368cb49416b2fc9bc25311871e42a7c01469a99`, the point at which release
+management was introduced (`bootstrap-sha`). Earlier history is in Git and in the OpenSpec archives.
