@@ -12,10 +12,32 @@ coverage:
         informational: true
 
 comment:
-  layout: "diff, flags, files"
+  layout: "diff, flags, components, files"
   require_head: true
   hide_project_coverage: false
 
+# Components are path-based virtual filters over the combined coverage upload.
+# Their IDs are stable; names are human-readable labels.
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        informational: true
+      - type: patch
+        target: auto
+        informational: true
+  individual_components:
+    - component_id: sdk_core
+      name: SDK Core
+      paths:
+        - packages/security-audit-sdk-core/**
+    - component_id: browser_telemetry_research
+      name: Browser Telemetry Research
+      paths:
+        - research/browser-telemetry/**
+
+# Keep flags for upload grouping, badges, and existing per-flag history.
 flags:
   sdk:
     paths:
