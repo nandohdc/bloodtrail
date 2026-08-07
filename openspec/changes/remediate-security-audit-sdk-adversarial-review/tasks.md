@@ -148,11 +148,27 @@ Tracking issue: [#20](https://github.com/nandohdc/bloodtrail/issues/20)
 > No approval is inferred from the merge or from its passing checks. See the "Merge execution
 > record" section of `technical-review-packet.md`.
 
+> **Governance amendment (2026-08-06).** Tasks 12.4 and 12.5 previously required renewed
+> independent technical review while simultaneously disqualifying project-owner self-review as
+> independent assurance. Bloodtrail is a single-maintainer repository, so the pair was
+> unsatisfiable as written: it could only stall the change indefinitely or be checked
+> dishonestly. 12.4 now defines independence as independence *from the implementing pass*
+> rather than as a second human reviewer, and requires the reviewer, exact reviewed commit, and
+> assurance limitations to be recorded. 12.5 now requires the owner decision to state explicitly
+> that independent third-party assurance was not obtained, and accepts that residual risk only
+> while production deployment and package publication remain unauthorized; the stronger
+> independent-assurance gate is reinstated as a precondition before either authorization is
+> granted. This amends task wording only — the task count remains 91, task IDs and phase
+> groupings are unchanged, and no box is checked. The canonical requirement *Adversarial
+> remediation verification and approval are exact-commit governed* is unchanged: its
+> "Owner decision binds exact commit" scenario already requires the record to identify assurance
+> limitations. See section 12 of `design.md`.
+
 - [ ] 12.1 Reconcile every finding row with implementation commit, passing evidence, task IDs, GitHub issue closure, and final disposition. [F-01 through F-12]
 - [ ] 12.2 Prove F-01, F-02, F-03, and F-04 have executable passing blocker evidence and have not been closed or downgraded by prose alone. [F-01, F-02, F-03, F-04]
 - [ ] 12.3 Identify the final technical commit and prepare a bounded technical review packet covering API, security behavior, validation, verification, compatibility, dependencies, tests, and assurance limitations. [F-01 through F-12]
-- [ ] 12.4 Obtain renewed technical review explicitly bound to the exact final technical commit; do not infer approval from AI review, issue state, PR assignment, or test success. [F-01 through F-12]
-- [ ] 12.5 Obtain and record the project owner's explicit exact-commit decision and conditions; project-owner self-review is governance but not independent assurance. [F-01 through F-12]
+- [ ] 12.4 Obtain renewed technical review explicitly bound to the exact final technical commit and performed independently of the implementing pass; record the reviewer, the exact reviewed commit, and the review's assurance limitations. Do not infer approval from AI review, issue state, PR assignment, or test success. [F-01 through F-12]
+- [ ] 12.5 Obtain and record the project owner's explicit exact-commit decision and conditions, including an explicit statement that independent third-party assurance was not obtained and that the residual risk is accepted only while production deployment and package publication remain unauthorized; reinstate independent technical assurance as a precondition before either authorization is granted. [F-01 through F-12]
 - [ ] 12.6 Confirm production deployment, package publication, framework integration, delivery infrastructure, and real-user processing remain unauthorized. [F-01 through F-12]
 - [ ] 12.7 Re-run strict repository OpenSpec validation, canonical verification, Git whitespace/index checks, exact changed-path checks, and lifecycle semantic sweep after decision records. [F-01 through F-12]
 - [ ] 12.8 Merge the approved remediation without rebase, squash, amendment, force-push, or rewriting governed history. [F-01 through F-12]

@@ -16,6 +16,14 @@ and unlicensed for distribution.
 
 
 [![DeepScan grade](https://deepscan.io/api/teams/30383/projects/32220/branches/1053344/badge/grade.svg?token=a1fa0980263b30233c0ddf1e9c3ed778290db2ee)](https://deepscan.io/dashboard#view=project&tid=30383&pid=32220&bid=1053344)
+
+
+[![CodeScene general](https://codescene.io/images/analyzed-by-codescene-badge.svg)](https://codescene.io/projects/83349)
+[![CodeScene Average Code Health](https://codescene.io/projects/83349/status-badges/average-code-health)](https://codescene.io/projects/83349)
+[![CodeScene Hotspot Code Health](https://codescene.io/projects/83349/status-badges/hotspot-code-health)](https://codescene.io/projects/83349)
+[![CodeScene Missed Goals](https://codescene.io/projects/83349/status-badges/missed-goals)](https://codescene.io/projects/83349)
+[![CodeScene System Mastery](https://codescene.io/projects/83349/status-badges/system-mastery)](https://codescene.io/projects/83349)
+
 ## Authorization boundary
 
 **Read this before proposing work.** The SDK is an **isolated technical candidate**. Its
@@ -121,8 +129,8 @@ required to merge:
 | `sonar` | repository-wide SonarQube scan and blocking quality gate |
 | `conventional-commits` | the PR title and **every** commit subject in the PR |
 
-`workflow-lint` (zizmor + actionlint) and `release-validation` also run, but are deliberately not
-required contexts — see [`RELEASING.md`](RELEASING.md) for why.
+`release-please` runs on pushes to `main` to maintain the Release PR. It is not a pull-request
+context and is not required to merge — see [`RELEASING.md`](RELEASING.md).
 
 ## Contributing and governance
 
