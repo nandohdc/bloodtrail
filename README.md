@@ -127,6 +127,7 @@ required to merge:
 | `contract` | `contracts/security-audit` — `validate`, `npm audit --audit-level=high` |
 | `coverage` | line coverage for both code workspaces, uploaded for the Sonar scan |
 | `sonar` | repository-wide SonarQube scan and blocking quality gate |
+| `codescene delta` | behavioral code health delta — `cs delta` against the PR target, advisory gate |
 | `conventional-commits` | the PR title and **every** commit subject in the PR |
 
 `release-please` runs on pushes to `main` to maintain the Release PR. It is not a pull-request

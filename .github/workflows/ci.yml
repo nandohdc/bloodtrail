@@ -280,3 +280,29 @@ jobs:
             echo "no failed conditions parsed; raw response:"
             cat gate.json
           fi
+
+  # CodeScene delta analysis — gates on newly introduced code health issues.
+  # Runs only on PRs: push-to-main coverage comes from the SaaS project analysis,
+  # not the CLI. Installs the cs binary fresh each run; the binary is tiny.
+  codescene-delta:
+    name: codescene delta
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install CodeScene CLI
+        run: |
+          curl -fsSL https://downloads.codescene.io/enterprise/cli/install-cs-tool.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Delta analysis
+        env:
+          CS_ACCESS_TOKEN: ${{ secrets.CODESCENE_TOKEN }}
+        run: |
+          cs delta "origin/${{ github.base_ref }}" --output-format json
