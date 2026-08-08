@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/nandohdc/bloodtrail/compare/v0.1.0...v0.2.0) (2026-08-08)
+
+
+### Added
+
+* **ci:** add CodeScene delta analysis gate and per-workspace quality profiles ([#49](https://github.com/nandohdc/bloodtrail/issues/49)) ([afadcd9](https://github.com/nandohdc/bloodtrail/commit/afadcd963dde4380eaf0629c3bc8d6e9a44a08fa))
+
 ## 0.1.0 (2026-08-07)
 
 
