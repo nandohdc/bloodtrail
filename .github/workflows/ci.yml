@@ -323,6 +323,29 @@ jobs:
         run: |
           echo "::warning::CodeScene CLI could not be installed; delta analysis was skipped"
 
+      # TEMPORARY (canary branch only): the gate never goes red even on code the
+      # SaaS check fails, so dump what cs actually sees before the real step runs.
+      - name: DEBUG cs delta
+        if: steps.install.outcome == 'success'
+        env:
+          CS_ACCESS_TOKEN: ${{ secrets.CODESCENE_TOKEN }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          echo "=== token present? ${CS_ACCESS_TOKEN:+yes}${CS_ACCESS_TOKEN:-NO} ==="
+          echo "=== cs version ==="; cs version
+          echo "=== cs delta --help ==="; cs delta --help || true
+          echo "=== refs ==="
+          git rev-parse HEAD "origin/${BASE_REF}"
+          git diff --name-only "origin/${BASE_REF}"...HEAD
+          echo "=== invocation as the gate runs it ==="
+          set +e
+          out="$(cs delta "origin/${BASE_REF}" --output-format json 2>dbg.err)"
+          st=$?
+          set -e
+          echo "exit=${st}"
+          echo "--- stdout ---"; printf '%s\n' "${out}"
+          echo "--- stderr ---"; cat dbg.err
+
       - name: Delta analysis
         if: steps.install.outcome == 'success'
         env:
