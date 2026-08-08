@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/nandohdc/bloodtrail/compare/v0.2.0...v0.2.1) (2026-08-08)
+
+
+### Fixed
+
+* **ci:** make the codescene delta gate actually fail on findings ([#52](https://github.com/nandohdc/bloodtrail/issues/52)) ([1f89b4c](https://github.com/nandohdc/bloodtrail/commit/1f89b4c61fbf31dfb9fe970645c8bb99f1ac6308))
+
 ## [0.2.0](https://github.com/nandohdc/bloodtrail/compare/v0.1.0...v0.2.0) (2026-08-08)
 
 
