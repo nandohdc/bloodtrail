@@ -1,3 +1,4 @@
+/** Membership set with a fixed capacity; the oldest entry is evicted on overflow. Re-adding a present value is a no-op and does not refresh its position, so eviction order stays first-insertion order. */
 export class BoundedFifoSet<T> {
   readonly #capacity: number;
   readonly #entries = new Set<T>();
