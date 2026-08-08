@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/nandohdc/bloodtrail/compare/v0.2.1...v0.2.2) (2026-08-08)
+
+
+### Documentation
+
+* **readme:** add SonarQube quality gate, reliability, and maintainability badges ([#54](https://github.com/nandohdc/bloodtrail/issues/54)) ([96ce805](https://github.com/nandohdc/bloodtrail/commit/96ce80578878beff19a6103494aaac1ab71930f8))
+
 ## [0.2.1](https://github.com/nandohdc/bloodtrail/compare/v0.2.0...v0.2.1) (2026-08-08)
 
 
