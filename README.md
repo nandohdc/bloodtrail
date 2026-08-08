@@ -24,6 +24,12 @@ and unlicensed for distribution.
 [![CodeScene Missed Goals](https://codescene.io/projects/83349/status-badges/missed-goals)](https://codescene.io/projects/83349)
 [![CodeScene System Mastery](https://codescene.io/projects/83349/status-badges/system-mastery)](https://codescene.io/projects/83349)
 
+
+[![Quality Gate Status](https://sonarqube-local.homemdacosta.com/api/project_badges/measure?project=nandohdc_bloodtrail_e3ef77af-1937-442c-b4f1-4fea5eeada74&metric=alert_status&token=sqb_59fb1df39deb9c5cc4d7b0af16b34216414b9db2)](https://sonarqube-local.homemdacosta.com/dashboard?id=nandohdc_bloodtrail_e3ef77af-1937-442c-b4f1-4fea5eeada74)
+[![Reliability Issues](https://sonarqube-local.homemdacosta.com/api/project_badges/measure?project=nandohdc_bloodtrail_e3ef77af-1937-442c-b4f1-4fea5eeada74&metric=software_quality_reliability_issues&token=sqb_59fb1df39deb9c5cc4d7b0af16b34216414b9db2)](https://sonarqube-local.homemdacosta.com/dashboard?id=nandohdc_bloodtrail_e3ef77af-1937-442c-b4f1-4fea5eeada74)
+[![Maintainability Issues](https://sonarqube-local.homemdacosta.com/api/project_badges/measure?project=nandohdc_bloodtrail_e3ef77af-1937-442c-b4f1-4fea5eeada74&metric=software_quality_maintainability_issues&token=sqb_59fb1df39deb9c5cc4d7b0af16b34216414b9db2)](https://sonarqube-local.homemdacosta.com/dashboard?id=nandohdc_bloodtrail_e3ef77af-1937-442c-b4f1-4fea5eeada74)
+
+
 ## Authorization boundary
 
 **Read this before proposing work.** The SDK is an **isolated technical candidate**. Its
