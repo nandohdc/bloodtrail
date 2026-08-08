@@ -1,0 +1,25 @@
+{
+  "usage": "Persist this file inside your repositories as .codescene/custom-quality-gates.json",
+  "rule_sets": [
+    {
+      "quality_gates": "clean_code_collective",
+      "quality_gates_doc": "Strict profile for the shipping SDK — advisory rules enforced.",
+      "matching_content_path": "packages/security-audit-sdk-core/**"
+    },
+    {
+      "quality_gates": "clean_code_collective",
+      "quality_gates_doc": "Strict profile for the canonical contract — generated output must be traceable.",
+      "matching_content_path": "contracts/security-audit/**"
+    },
+    {
+      "quality_gates": "bare_minimum",
+      "quality_gates_doc": "Minimum safety net for research code — critical rules only.",
+      "matching_content_path": "research/browser-telemetry/**"
+    },
+    {
+      "quality_gates": "bare_minimum",
+      "quality_gates_doc": "Catch-all default — critical rules only for config, scripts, docs.",
+      "matching_content_path": "*/**"
+    }
+  ]
+}

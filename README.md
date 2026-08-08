@@ -117,17 +117,19 @@ contract source and regenerate, never edit the output.
 
 ## CI
 
-`.github/workflows/ci.yml` runs on pushes to `main` and on every pull request. These contexts are
-required to merge:
+`.github/workflows/ci.yml` runs on pushes to `main` and on every pull request. The checks marked
+**required** are enforced by branch protection and must pass to merge; the rest report but do not
+block.
 
-| Check | Covers |
-|---|---|
-| `ci / lint`, `ci / test`, `ci / audit` | `research/browser-telemetry`, via the reusable `nandohdc/gh-pipelines` Node workflow |
-| `sdk` | `packages/security-audit-sdk-core` — `check:generated` then the full `validate` chain, `npm audit --audit-level=low` |
-| `contract` | `contracts/security-audit` — `validate`, `npm audit --audit-level=high` |
-| `coverage` | line coverage for both code workspaces, uploaded for the Sonar scan |
-| `sonar` | repository-wide SonarQube scan and blocking quality gate |
-| `conventional-commits` | the PR title and **every** commit subject in the PR |
+| Check | Required | Covers |
+|---|---|---|
+| `ci / lint`, `ci / test`, `ci / audit` | yes | `research/browser-telemetry`, via the reusable `nandohdc/gh-pipelines` Node workflow |
+| `sdk` | yes | `packages/security-audit-sdk-core` — `check:generated` then the full `validate` chain, `npm audit --audit-level=low` |
+| `contract` | yes | `contracts/security-audit` — `validate`, `npm audit --audit-level=high` |
+| `sonar` | yes | repository-wide SonarQube scan and blocking quality gate |
+| `conventional-commits` | yes | the PR title and **every** commit subject in the PR |
+| `coverage` | no | line coverage for both code workspaces, uploaded for the Sonar scan |
+| `codescene delta` | no | behavioral code health delta — `cs delta` against the PR target. Fails on newly introduced code health issues; a CodeScene outage or licence problem warns instead of failing |
 
 `release-please` runs on pushes to `main` to maintain the Release PR. It is not a pull-request
 context and is not required to merge — see [`RELEASING.md`](RELEASING.md).

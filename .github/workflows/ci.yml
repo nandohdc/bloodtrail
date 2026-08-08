@@ -280,3 +280,79 @@ jobs:
             echo "no failed conditions parsed; raw response:"
             cat gate.json
           fi
+
+  # CodeScene delta analysis — gates on newly introduced code health issues.
+  # Runs only on PRs: push-to-main coverage comes from the SaaS project analysis,
+  # not the CLI. Installs the cs binary fresh each run; the binary is tiny.
+  #
+  # Failure semantics are split deliberately. A CodeScene outage, an expired
+  # licence or a broken install must not redden an unrelated PR, but a genuine
+  # finding must. `continue-on-error` cannot express that: at job level it still
+  # reports the job as failed (the red check remains) while swallowing real
+  # findings, so it is applied to the install step alone and the analysis step
+  # decides its own exit code.
+  codescene-delta:
+    name: codescene delta
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0                     # cs delta resolves origin/<base> from the full remote refs
+
+      # `-y` is the installer's headless flag. Without it the script blocks on
+      # `read REPLY < /dev/tty` before appending to ~/.bashrc, and a runner has no
+      # controlling terminal — the read fails, the script's `set -e` aborts, and the
+      # binary it already installed goes unused. The .bashrc edit is irrelevant here
+      # anyway; $GITHUB_PATH is what puts cs on PATH for the steps that follow.
+      # Piping into `sh` means the flag has to travel through `sh -s --`.
+      - name: Install CodeScene CLI
+        id: install
+        continue-on-error: true
+        run: |
+          curl -fsSL https://downloads.codescene.io/enterprise/cli/install-cs-tool.sh | sh -s -- -y
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          # $GITHUB_PATH only affects later steps, so probe by absolute path. This
+          # turns a half-installed binary into a clean failure of *this* step.
+          "$HOME/.local/bin/cs" version
+
+      - name: Report unavailable CLI
+        if: steps.install.outcome == 'failure'
+        run: |
+          echo "::warning::CodeScene CLI could not be installed; delta analysis was skipped"
+
+      - name: Delta analysis
+        if: steps.install.outcome == 'success'
+        env:
+          CS_ACCESS_TOKEN: ${{ secrets.CODESCENE_TOKEN }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # CodeScene documents only that cs exits non-zero "if any code issues are
+          # detected", so the exit code alone cannot separate a finding from a broken
+          # token. Whether the run produced parseable JSON is the second signal:
+          # an analysis that completed always emits JSON, a failed one never does.
+          set +e
+          output="$(cs delta "origin/${BASE_REF}" --output-format json 2>delta.err)"
+          status=$?
+          set -e
+
+          if [ "${status}" -eq 0 ]; then
+            echo "No new code health issues." | tee -a "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+
+          if printf '%s' "${output}" | jq -e . >/dev/null 2>&1; then
+            {
+              echo "### CodeScene: new code health issues"
+              echo '```json'
+              printf '%s\n' "${output}"
+              echo '```'
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 1
+          fi
+
+          echo "::warning::cs delta did not complete; treating as advisory"
+          cat delta.err
+          exit 0
