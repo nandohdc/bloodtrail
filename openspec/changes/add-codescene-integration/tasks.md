@@ -25,6 +25,8 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Push this branch and open a PR to confirm `cs delta` reports results.
-- [ ] 4.2 Confirm the PR integration Check Run appears on the PR (requires CodeScene SaaS project setup — project 83349 already exists).
+- [x] 4.1 Confirmed on PR #49, run `31258105943`: the installer completes without prompting, `cs version 1.0.37` resolves, and `cs delta` exits 0 with "No new code health issues." No `::warning::` annotation was emitted, which is what distinguishes a real clean analysis from the advisory fallback path.
+  - `cs version` needs no `CS_ACCESS_TOKEN`, so the install probe is a valid liveness check on a step that has no secret.
+- [ ] 4.2 **Not satisfied.** No CodeScene Check Run appears on PR #49 — only the `codescene delta` CI job. The PR integration webhook still needs enabling in the CodeScene dashboard for project 83349; per design.md this is a manual, out-of-scope step. The CI gate does not depend on it.
 - [ ] 4.3 Badges already render correctly in the README.
+- [ ] 4.4 The gate's red path is still unexercised — no run has produced a finding, so the "non-zero exit + parseable JSON ⇒ fail" branch and the JSON summary block are unproven. CodeScene does not publish the delta JSON schema; the first real finding is what will confirm the predicate.
