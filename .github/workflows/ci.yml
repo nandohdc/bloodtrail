@@ -323,41 +323,22 @@ jobs:
         run: |
           echo "::warning::CodeScene CLI could not be installed; delta analysis was skipped"
 
-      # TEMPORARY (canary branch only): the gate never goes red even on code the
-      # SaaS check fails, so dump what cs actually sees before the real step runs.
-      - name: DEBUG cs delta
-        if: steps.install.outcome == 'success'
-        env:
-          CS_ACCESS_TOKEN: ${{ secrets.CODESCENE_TOKEN }}
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          echo "=== token present? ${CS_ACCESS_TOKEN:+yes}${CS_ACCESS_TOKEN:-NO} ==="
-          echo "=== cs version ==="; cs version
-          echo "=== cs delta --help ==="; cs delta --help || true
-          echo "=== refs ==="
-          git rev-parse HEAD "origin/${BASE_REF}"
-          git diff --name-only "origin/${BASE_REF}"...HEAD
-          echo "=== invocation as the gate runs it ==="
-          set +e
-          out="$(cs delta "origin/${BASE_REF}" --output-format json 2>dbg.err)"
-          st=$?
-          set -e
-          echo "exit=${st}"
-          echo "--- stdout ---"; printf '%s\n' "${out}"
-          echo "--- stderr ---"; cat dbg.err
-
       - name: Delta analysis
         if: steps.install.outcome == 'success'
         env:
           CS_ACCESS_TOKEN: ${{ secrets.CODESCENE_TOKEN }}
           BASE_REF: ${{ github.base_ref }}
         run: |
-          # CodeScene documents only that cs exits non-zero "if any code issues are
-          # detected", so the exit code alone cannot separate a finding from a broken
-          # token. Whether the run produced parseable JSON is the second signal:
-          # an analysis that completed always emits JSON, a failed one never does.
+          # `cs delta` exits 0 *unconditionally* unless --error-on-warnings is passed —
+          # see `cs delta --help`. Without the flag this step reports every PR as clean
+          # no matter what the analysis found, so the flag is what makes it a gate at all.
+          #
+          # With the flag, a non-zero exit still cannot separate a finding from an expired
+          # token or a broken licence. Whether the run produced parseable JSON is the
+          # second signal: an analysis that completed always emits JSON, a failed one never
+          # does.
           set +e
-          output="$(cs delta "origin/${BASE_REF}" --output-format json 2>delta.err)"
+          output="$(cs delta "origin/${BASE_REF}" --output-format json --error-on-warnings 2>delta.err)"
           status=$?
           set -e
 
