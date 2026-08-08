@@ -59,14 +59,34 @@ Add a new `codescene-delta` job to the existing `ci.yml` rather than a separate 
 
 ### Decision 4: `cs delta` invocation
 
-Use `cs delta "origin/${{ github.base_ref }}"` which compares the PR head against the merge target. The `--output-format json` flag gives machine-readable output; the CLI exits non-zero when it finds issues, which naturally fails the CI step.
+Use `cs delta "origin/${{ github.base_ref }}"` which compares the PR head against the merge target. The comparison ref is a positional argument (`cs delta [<options>] [<branch> [<branch>]]`), and `fetch-depth: 0` is what makes `origin/<base>` resolvable — checkout fetches `+refs/heads/*:refs/remotes/origin/*` only at full depth. The `--output-format json` flag gives machine-readable output.
 
-### Decision 5: README badges
+The installer must be invoked as `sh -s -- -y`. Its default path prompts for confirmation via `read REPLY < /dev/tty` before editing `~/.bashrc`; a runner has no controlling terminal, so the read fails and the script's `set -e` aborts it *after* the binary is already in place. `-y` is its headless flag. The `~/.bashrc` edit is irrelevant in CI regardless — `$GITHUB_PATH` is what exposes `cs` to later steps.
+
+### Decision 5: Split failure semantics
+
+A CodeScene outage, an expired licence, or a failed install must not redden an unrelated PR; a genuine finding must. `continue-on-error` cannot express that distinction:
+
+- At **job** level it still reports the job as `failure`, so the red check remains on the PR — it only stops the *workflow run* from going red. It also swallows real findings.
+- At **step** level on the analysis step it would suppress findings too.
+
+So `continue-on-error` is applied to the install step alone, and the analysis step chooses its own exit code. CodeScene documents only that `cs` exits non-zero "if any code issues are detected", which cannot by itself separate a finding from a broken token. The second signal is whether the run produced parseable JSON: a completed analysis always emits JSON on stdout, a failed one never does.
+
+| Exit code | Parseable JSON | Meaning | Job result |
+|---|---|---|---|
+| 0 | — | no new issues | green |
+| non-zero | yes | findings | **red** |
+| non-zero | no | tool, token, licence or network failure | green + `::warning::` |
+
+The raw output is always written to `$GITHUB_STEP_SUMMARY`. CodeScene does not publish the delta JSON schema, so the first green runs are what establish its actual shape; the predicate can be tightened later against observed output rather than an assumed structure.
+
+### Decision 6: README badges
 
 Add CodeScene's project-level code health and knowledge distribution badges. These are static image URLs generated in the CodeScene UI after project creation.
 
 ## Risks / Trade-offs
 
-- **[Risk] `cs delta` is a new binary dependency fetched at runtime** → Mitigation: the install script is from CodeScene's official downloads domain; CI jobs use `--output-format json` which suppresses interactive prompts.
+- **[Risk] The installer is interactive by default** → Mitigation: `sh -s -- -y`. `--output-format json` does *not* suppress the prompt — the prompt is in the install script, not the CLI, and assuming otherwise is what made the job fail on every run of PR #49.
+- **[Risk] `cs delta` is a new binary dependency fetched at runtime** → Partial mitigation: the install script is served from CodeScene's official downloads domain over HTTPS. **Unresolved**: the script is unpinned and fetches version `latest`, so the tool can change under the repository without a commit, and although CodeScene ships `cs.sha256` and `cs.sha256.asc` inside the archive its own installer verifies neither. This sits awkwardly beside the repository's posture elsewhere (Sonar actions pinned by commit SHA; `packages/security-audit-sdk-core/DEPENDENCIES.md` requires exact pinning). Deferred to a follow-up change that pins `CS_VERSION` and verifies the checksum.
 - **[Risk] Student account may have rate/analysis limits** → Mitigation: the `cs delta` CI job runs only on PRs, not every push; the SaaS project analysis runs on its own schedule.
 - **[Trade-off] The PR integration webhook and `cs delta` CI job report overlapping information** → Acceptable: they serve different purposes (review aid vs. gate).

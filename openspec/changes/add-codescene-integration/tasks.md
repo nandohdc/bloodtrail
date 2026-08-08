@@ -11,11 +11,11 @@
 
 - [x] 2.1 Add a `codescene-delta` job to `.github/workflows/ci.yml` that:
   - Runs on `pull_request` events only.
-  - Checks out with `fetch-depth: 0` (full history required for delta).
-  - Installs the `cs` CLI via the official install script.
+  - Checks out with `fetch-depth: 0` — required both for delta history and for `origin/<base>` to resolve at all.
+  - Installs the `cs` CLI via the official install script, passing the headless flag as `sh -s -- -y`. Without it the script blocks on `read REPLY < /dev/tty`, which has no terminal on a runner, and aborts after installing the binary.
+  - Probes the install with `"$HOME/.local/bin/cs" version` by absolute path, since `$GITHUB_PATH` only takes effect in later steps.
   - Runs `cs delta "origin/${{ github.base_ref }}" --output-format json` with `CS_ACCESS_TOKEN` from the `CODESCENE_TOKEN` secret.
-  - Fails the check on new code health issues (CLI exits non-zero).
-- [x] 2.2 Added `continue-on-error: true` to prevent flaky installs from blocking unrelated PRs while still surfacing the result.
+- [x] 2.2 Apply `continue-on-error: true` to the **install step only**, not the job. At job level it leaves the job's own conclusion as `failure` — the red check still appears on the PR, so it never delivered the advisory behaviour it was added for — and it additionally swallows genuine findings. See design.md Decision 5 for the exit-code/JSON matrix the analysis step uses instead.
 
 ## 3. Add README badges
 
