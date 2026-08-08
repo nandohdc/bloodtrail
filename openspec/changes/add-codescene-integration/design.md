@@ -70,7 +70,15 @@ A CodeScene outage, an expired licence, or a failed install must not redden an u
 - At **job** level it still reports the job as `failure`, so the red check remains on the PR — it only stops the *workflow run* from going red. It also swallows real findings.
 - At **step** level on the analysis step it would suppress findings too.
 
-So `continue-on-error` is applied to the install step alone, and the analysis step chooses its own exit code. CodeScene documents only that `cs` exits non-zero "if any code issues are detected", which cannot by itself separate a finding from a broken token. The second signal is whether the run produced parseable JSON: a completed analysis always emits JSON on stdout, a failed one never does.
+So `continue-on-error` is applied to the install step alone, and the analysis step chooses its own exit code.
+
+**Correction (verified on PR #51).** This decision was originally written on the premise that `cs` "exits non-zero if any code issues are detected". That is the opposite of what the CLI does. `cs delta --help` documents:
+
+> `--error-on-warnings` — Quit with non-zero exit code if there was any Code Health finding. (Note that the default behavior is exiting with code 0 unconditionally)
+
+Without that flag the job was a **no-op gate** from the day it was added: it ran the analysis, received the findings, and reported every PR clean. The diagnostic run on PR #51 recorded `exit=0` alongside a complete findings JSON for two files and three rules. The invocation now passes `--error-on-warnings`.
+
+The exit-code/JSON matrix below is correct *given the flag* — a non-zero exit still cannot by itself separate a finding from a broken token, and whether the run produced parseable JSON remains the second signal: a completed analysis always emits JSON on stdout, a failed one never does. This was confirmed rather than assumed: the findings JSON is still written to stdout when the flag makes the process exit non-zero.
 
 | Exit code | Parseable JSON | Meaning | Job result |
 |---|---|---|---|
@@ -78,7 +86,18 @@ So `continue-on-error` is applied to the install step alone, and the analysis st
 | non-zero | yes | findings | **red** |
 | non-zero | no | tool, token, licence or network failure | green + `::warning::` |
 
-The raw output is always written to `$GITHUB_STEP_SUMMARY`. CodeScene does not publish the delta JSON schema, so the first green runs are what establish its actual shape; the predicate can be tightened later against observed output rather than an assumed structure.
+The raw output is always written to `$GITHUB_STEP_SUMMARY`. CodeScene does not publish the delta JSON schema; the shape observed on PR #51 is a top-level array of files:
+
+```json
+[{ "name": "<path>", "old-score": null, "new-score": 8.72,
+   "findings": [{ "category": "Complex Method", "change-type": "introduced",
+                  "new-pp": 1.35, "threshold": 9,
+                  "change-details": [{ "description": "...", "value": 15,
+                                       "locations": [{ "start-line": 7, "end-line": 57,
+                                                       "function": "scoreSample" }] }] }] }]
+```
+
+`jq -e .` accepts this, so the predicate holds. It could now be tightened to require a non-empty array of objects carrying `findings`, which would additionally reject a well-formed-but-empty response.
 
 ### Decision 6: README badges
 

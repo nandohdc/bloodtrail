@@ -129,7 +129,10 @@ block.
 | `sonar` | yes | repository-wide SonarQube scan and blocking quality gate |
 | `conventional-commits` | yes | the PR title and **every** commit subject in the PR |
 | `coverage` | no | line coverage for both code workspaces, uploaded for the Sonar scan |
-| `codescene delta` | no | behavioral code health delta — `cs delta` against the PR target. Fails on newly introduced code health issues; a CodeScene outage or licence problem warns instead of failing |
+| `codescene delta` | yes | behavioral code health delta — `cs delta --error-on-warnings` against the PR target. Fails on newly introduced code health issues; a CodeScene outage or licence problem warns instead of failing |
+
+CodeScene additionally posts a `CodeScene Code Health Review (<base branch>)` Check Run from its own GitHub App, with line-level annotations and per-path quality profiles from
+[`.codescene/custom-quality-gates.json`](.codescene/custom-quality-gates.json). It is **not** required to merge — its context name varies by base branch, and a required check that fails to post would block merges with no override.
 
 `release-please` runs on pushes to `main` to maintain the Release PR. It is not a pull-request
 context and is not required to merge — see [`RELEASING.md`](RELEASING.md).
