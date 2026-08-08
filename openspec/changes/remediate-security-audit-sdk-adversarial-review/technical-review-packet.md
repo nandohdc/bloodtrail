@@ -1,11 +1,13 @@
-# Remediation Technical Review Packet (SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION)
+# Remediation Technical Review Packet
 
-## Current post-correction governance status
+Packet revision: **2026-08-08 reconciliation refresh (tasks 12.1–12.3)**
 
-This packet preserves historical technical-review and owner-governance evidence, but every
-approval recorded before the 2026-08-06 F-08 specification correction is
-**SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION** and is not operative for the
-amended candidate.
+## Current governance status
+
+This packet preserves all historical technical-review and owner-governance evidence. Every
+approval recorded before the 2026-08-06 F-08 specification correction remains
+**SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION** and is not operative. No approval
+recorded anywhere in this document applies to the current candidate.
 
 Technical review status: PENDING
 Project-owner decision: PENDING
@@ -13,6 +15,26 @@ Merge authorization: NONE RECORDED — merge performed 2026-08-06 without a reco
 Archive authorization: PENDING
 Production deployment authorization: NOT AUTHORIZED
 Package publication authorization: NOT AUTHORIZED
+
+This refresh was prepared by an AI assistant executing tasks 12.1, 12.2, and 12.3, and by
+re-running the verification suite. **It is not a technical review, not an independent review, and
+not an owner decision.** Task 12.4 (renewed review performed independently of the implementing
+pass) and task 12.5 (owner exact-commit decision) remain open and are unaffected by this document.
+
+### What this refresh changed
+
+- Rebound the packet from the superseded branch target `c2b10575…` to the current final SDK
+  technical commit, with a mechanical SDK-subtree equivalence proof.
+- Recorded operative finding dispositions (task 12.1) and blocker executable evidence
+  (task 12.2) in `adversarial-review-traceability.md`.
+- Disclosed post-review drift: SDK source and verification gates changed after the last
+  technical review (see **Post-review drift disclosure**).
+- Recorded a fresh verification run at the candidate, and its runtime limitations.
+- Corrected a stale residual-limitations entry that contradicted the operative record on two
+  points: it claimed 12.5 was complete, and it claimed the merge had not been performed.
+- Added a consolidated candidate technical summary covering API, security behavior, validation,
+  verification, compatibility, dependencies, tests, and assurance limitations, as task 12.3
+  requires.
 
 ## Merge execution record
 
@@ -45,14 +67,229 @@ publication authorization.
 ## Review identity
 
 - **Change:** `remediate-security-audit-sdk-adversarial-review`
-- **Branch:** `hermes/remediate-security-audit-sdk-adversarial-review-archive-correction-v2`
-- Final technical commit: `c2b10575085ead832d33c728e58288961509587c`
-- **Reviewed parent:** `27996739d79d4af1e145597d51610b5f3eefa138`
-- **Reviewed tree:** `7cd5a959e81466b2602b5e433fd49750f6663e95`
+- **Branch:** `main` (remediation content merged 2026-08-06; see **Merge execution record**)
+- Final technical commit: `689fc394e36642b814df6672b3b514ba95c27944`
+- **Final SDK technical commit subject:** `docs(sdk): document F-08 bounded identity-retention migration`
+- **SDK subtree object at that commit:** `428d20296d65b6795b7d116939ec036187792416`
+- **Review candidate (repository state):** the commit that introduces this packet revision.
+  Resolved out of band and supplied to the 12.4 reviewer, because a commit cannot record its
+  own hash. The candidate's SDK subtree is proven identical to the final SDK technical
+  commit's below, so the technical target is unambiguous either way.
+- **Technical reviewer:** PENDING (task 12.4)
+- **Review date:** PENDING
+- **Review method:** PENDING
+
+### Two-binding rationale
+
+The final SDK technical commit and the review candidate are recorded separately on purpose.
+`689fc394…` is the last commit that changed `packages/security-audit-sdk-core/`; it fixes the
+SDK bytes under review. The review candidate is the current repository state, which also carries
+the specifications, traceability, this packet, compatibility claims, and governance records that
+establish *why* `689fc394…` is still the applicable SDK tree. Reviewing only the SDK commit would
+leave that later evidence unreviewed.
+
+### SDK subtree equivalence proof
+
+| Property | Value |
+| --- | --- |
+| Final SDK technical commit | `689fc394e36642b814df6672b3b514ba95c27944` |
+| Repository HEAD at reconciliation | `51f1ad340df8514428a86670b8bfc17f7f9bce96` |
+| `packages/security-audit-sdk-core` tree at `689fc394…` | `428d20296d65b6795b7d116939ec036187792416` |
+| `packages/security-audit-sdk-core` tree at HEAD | `428d20296d65b6795b7d116939ec036187792416` |
+| **Subtree equivalence** | **PASS — identical tree object** |
+| Intervening commits | 12 |
+| Intervening commits modifying the SDK package | **0** |
+| Working tree state at reconciliation | clean; index empty |
+
+Reproduce with:
+
+```
+git ls-tree 689fc394e36642b814df6672b3b514ba95c27944 packages/security-audit-sdk-core
+git ls-tree HEAD packages/security-audit-sdk-core
+git rev-list --count 689fc394e36642b814df6672b3b514ba95c27944..HEAD -- packages/security-audit-sdk-core
+```
+
+The 12 intervening commits are release-automation, Codecov, CodeScene, Sonar-badge, and
+documentation changes outside the SDK package.
+
+## Superseded review identity (historical)
+
+- **Superseded branch:** `hermes/remediate-security-audit-sdk-adversarial-review-archive-correction-v2`
+- **Superseded reviewed technical commit:** `c2b10575085ead832d33c728e58288961509587c`
+- **Superseded reviewed parent:** `27996739d79d4af1e145597d51610b5f3eefa138`
+- **Superseded reviewed tree:** `7cd5a959e81466b2602b5e433fd49750f6663e95`
 - **Live remote verified:** Yes
 - **Review date:** 2026-08-05
 - **Technical reviewer:** Fernando Homem da Costa (@nandohdc), project owner and technical reviewer
 - **Review method:** Historical read-only Git commit-object verification, direct review of the correction implementation and evidence structure, and reliance on the frozen evidence manifest for the reported runtime matrix and governed-mode results. The reviewer did not independently rerun the matrix, runtime, or verification suites. This is owner self-review and is **not** independent assurance. **SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION.**
+
+## Post-review drift disclosure
+
+**This is the most material item in this refresh.** The SDK changed substantially *after* the
+last technical review at `c2b10575…`, and those changes have never been technically reviewed.
+
+`git diff --stat c2b10575…689fc394 -- packages/security-audit-sdk-core` reports
+**626 insertions, 325 deletions across 14 files**:
+
+| Path | Δ | Relevance |
+| --- | --- | --- |
+| `src/events.ts` | 258 | Event construction — F-01, F-05, F-11, F-12 surface |
+| `src/sdk.ts` | 106 | Emit/operation/terminal/shutdown core — F-01, F-02, F-07, F-08 |
+| `src/validation/prohibited.ts` | 50 | Prohibited-data enforcement |
+| `src/config.ts` | 6 | F-03, F-10 surface |
+| `src/context.ts` | 4 | Brand authority module |
+| `src/validation/index.ts` | 2 | Validation entry |
+| `scripts/check-coherence.mjs` | 198 | F-04 gate itself |
+| `scripts/check-changed-paths.mjs` | 166 | F-04 gate itself |
+| `scripts/lifecycle-policy.mjs` | 36 | F-04 lifecycle policy |
+| `scripts/generate-contract.mjs` | 15 | Generated-artifact determinism |
+| `scripts/verification-helpers.mjs` | 12 | Shared verification helpers |
+| `scripts/check-scope.mjs` | 11 | F-06 gate itself |
+| `tests/verification/vp-reviewed-paths.test.mjs` | 83 | Verification control |
+| `tests/verification/f10-mutations.test.mjs` | 4 | F-10 mutation control |
+
+Contributing commits: `bfa29b4`, `c7f091d`, `5aef88f`, `f8847d9`, `473311a`, `e9b270e`,
+`685957d`, `f0fbbd9`, `ddfb9e2`, `689fc394`.
+
+Every one of these was motivated by **static-analysis compliance (Sonar complexity, regex
+backtracking), CI/coverage plumbing, or documentation** — not by any remediation requirement.
+They nonetheless refactored the precise files that F-01, F-02, F-05, F-11 remediated and the
+precise gates that F-04 and F-06 restored.
+
+Mitigating evidence, offered without inference: the complete verification suite, including all
+adversarial and differential mutation controls, passes at the candidate. Per this change's own
+standard, passing tests are **not** approval and do not substitute for review.
+
+**Consequence for task 12.4:** the reviewer's scope is the candidate as a whole, and must
+explicitly include this post-review drift. It is not covered by any prior review.
+
+## Verification evidence at the candidate (2026-08-08)
+
+Prepared for task 12.7; **12.7 remains unchecked**, because its text requires re-running
+validation *after* the decision records of 12.4–12.6, which do not exist. This is pre-decision
+baseline evidence only.
+
+| Item | Result |
+| --- | --- |
+| `npm run check:generated` (pre-validate drift rejection) | PASS — generated artifacts current |
+| `npm run validate` (all 16 gates) | **PASS — exit 0** |
+| Gates executed | `generate`, `check:generated`, `typecheck`, `build`, `test:runtime`, `test:types`, `test:examples`, `test:exports`, `test:compatibility`, `test:contract-immutability`, `test:scope`, `test:dependencies`, `test:package`, `test:changed-paths`, `test:coherence`, `test:verification`, `test:git` |
+| Runtime tests | 112 / 112 pass, 0 fail |
+| Verification tests | 129 / 129 pass, 2 suites, 0 fail |
+| Git whitespace / final-newline / index | PASS — index empty |
+| Runtime used | **Node v26.7.0**, macOS arm64 |
+
+### Runtime limitation — this is not exact-matrix evidence
+
+`compatibility.json` declares `ciVersions: ["24.2.0", "26.5.0"]`, and this change requires clean
+verification on exact Node.js 24 and 26 runtimes. **Neither exact runtime is installed on the
+machine used for this run.** The run above was performed on Node v26.7.0, which is outside both
+declared cells. It is therefore *supporting* evidence, not matrix evidence, and does not satisfy
+the exact-runtime requirement.
+
+The matrix figures elsewhere in this packet (4/4 cells) remain the frozen historical manifest
+values recorded against the superseded commit `c2b10575…`. **No refreshed exact-matrix evidence
+exists for the current candidate.** Producing it requires installing Node 24.2.0 and 26.5.0.
+
+### Incidental observation — documented race did not reproduce
+
+The reconciliation note below records a deterministic parallel-execution failure of
+`tests/verification/*.test.mjs` on Node 26.6.0. On Node v26.7.0 that failure **did not
+reproduce**: the suite passed 129/129 under default parallel execution with no serial wrapper.
+This is a single observation on one off-matrix runtime and does not retire the documented
+limitation.
+
+## Candidate technical summary (task 12.3 coverage)
+
+Measured at the candidate on 2026-08-08. Facts only; no disposition is implied.
+
+### Public API surface
+
+| Item | Value |
+| --- | --- |
+| Package export paths | 2 — `.` and `./testing` (no CommonJS export on either) |
+| Root runtime exports | 48 |
+| `./testing` exports | 3 — `createCapturingAuditSink`, `createInMemoryAuditSink`, `inspectSdkRetentionForTesting` |
+| Named catalog event methods | 24, all proven callable at runtime and structurally complete at compile time (F-09) |
+| Public error codes | 24 |
+| Module system | ESM only; `sideEffects: false` |
+
+Public error codes: `FIELD_LIMIT_EXCEEDED`, `FIELD_SERIALIZATION_FAILED`,
+`PROHIBITED_BODY_ATTRIBUTES`, `PROHIBITED_DATA`, `SDK_DUPLICATE_SUCCESS`, `SDK_HOOK_FAILURE`,
+`SDK_INVALID_CLOCK`, `SDK_INVALID_CONFIGURATION`, `SDK_INVALID_IDENTIFIER`, `SDK_INVALID_INPUT`,
+`SDK_INVALID_OPERATION_TRANSITION`, `SDK_MISSING_AUTHORITATIVE_CONTEXT`,
+`SDK_MISSING_EVENT_FIELD`, `SDK_NOT_READY`, `SDK_OPERATION_EVENT_MISMATCH`,
+`SDK_SCHEMA_VALIDATION_FAILED`, `SDK_SEMANTIC_VALIDATION_FAILED`, `SDK_SHUTDOWN_TIMEOUT`,
+`SDK_SHUTTING_DOWN`, `SDK_SHUT_DOWN`, `SDK_SINK_FAILURE`, `SDK_SINK_REJECTED`,
+`SDK_UNSUPPORTED_CONTRACT_VERSION`, `SDK_UNSUPPORTED_HOOK_RESULT`.
+
+### Security behavior
+
+| Property | Mechanism | Finding |
+| --- | --- | --- |
+| Transactional terminal success requires unforgeable evidence | SDK-instance-private `WeakMap` operation evidence in `src/operations.ts`; foreign, forged, copied, and cloned handles rejected without sink invocation | F-01 |
+| At most one accepted terminal completion | Synchronous `idle`/`reserved`/`completed` reservation before asynchronous sink handoff; release on non-accepted outcomes; no automatic retry | F-02 |
+| Caller-owned collaborators stay caller-owned | Providers referenced without clone, freeze, decoration, or mutation; SDK-owned configuration frozen separately | F-03 |
+| Context authority is unforgeable by casts or plain objects | Module-private brand registry `WeakMap` in `src/context.ts`; only in-file constructors insert entries | pre-existing, retained |
+| Hostile input never echoed | Property-access, getter, proxy, cyclic, and non-cloneable failures normalized to bounded codes with no raw name, message, stack, cause, or value | F-05, F-12 |
+| Identity and dedup state is bounded | Count-bounded FIFO horizons, default capacity 4096, hard maximum 100 000; weak operation retention; no timers, intervals, signal handlers, or finalizers | F-08 |
+| Shutdown does not retain process exit | Unreferenced timer, idempotent clear in a structured `finally` after either race outcome | F-07 |
+
+### Validation and verification
+
+| Item | Value |
+| --- | --- |
+| Gates in `npm run validate` | 16 |
+| Runtime tests | 112 |
+| Verification / lifecycle tests | 129 (2 suites) |
+| Named differential mutation controls | 25 (`M-F07-A`–`D`, `M-F08-A`–`G`, `M-F10-A`–`G`, `M-F11-A`–`G`) |
+| Unnamed differential controls in `mutations.test.mjs` | 32 (10 structured-capability, 12 archive-movement, 10 fixture-restoration) |
+| Documentation examples executed | 15 |
+| Contract drift detection | `check:generated` — generated artifacts derived from `contracts/security-audit/source/contract.source.json` |
+
+### Compatibility
+
+| Item | Value |
+| --- | --- |
+| Contract version | 1.0.0, exact — `supportedContractVersions` must equal `CONTRACT_VERSION` |
+| Explicitly unsupported contract versions | `0.9.0`, `2.0.0` (rejection asserted) |
+| Node engines | `>=24 <25 \|\| >=26 <27` |
+| Declared CI runtimes | 24.2.0, 26.5.0 |
+| TypeScript supported | `>=5.9.2 <6`; compiler pinned at 5.9.2 in both manifest and lockfile |
+| Package version | 0.1.0 |
+| `private` | `true` — asserted by `test:package` |
+| `license` | `UNLICENSED` — asserted by `test:package` |
+| Semver policy | Recorded in `compatibility.json` `semverClassification` and `errorCodePolicy` |
+
+### Dependencies
+
+| Item | Value |
+| --- | --- |
+| Runtime dependencies | **0** — asserted by `test:dependencies` and `test:package` |
+| Development dependencies | 4 — `@types/node` 24.2.0, `ajv` 8.20.0, `ajv-formats` 3.0.1, `typescript` 5.9.2 |
+| `npm audit --audit-level=low` at candidate | **PASS — found 0 vulnerabilities** (2026-08-08) |
+
+### Assurance limitations
+
+Consolidated; each is stated in full in its own section.
+
+1. No renewed technical review exists (12.4 open). No owner decision exists (12.5 open).
+2. Post-review drift of 626/325 lines across 14 files, including `src/events.ts` and
+   `src/sdk.ts`, carries no review of any kind.
+3. No refreshed exact-runtime matrix evidence exists; the 2026-08-08 run used off-matrix
+   Node v26.7.0.
+4. Mutation-control coverage is asymmetric across findings (no named mutants for F-01, F-02,
+   F-03).
+5. The merge was performed before any renewed review or decision, and confers nothing.
+6. Active-mode packet validation binds the *shape* of the technical-commit field, not its value.
+7. The governed owner-decision regex is not a reliable positive test for approval.
+8. Unused substring helpers remain exported from `lifecycle-policy.mjs` with no callers.
+9. A shared-fixture race in parallel verification is documented on Node 26.6.0; it did not
+   reproduce on 26.7.0, which does not retire it.
+10. This packet revision was prepared by an AI assistant. It is not review, approval, or
+    assurance.
+11. Transport-neutral scope only. No production sink, durability, exactly-once, or
+    at-least-once guarantee exists.
 
 ## Previous technical-review history
 
@@ -337,9 +574,18 @@ owner approval on its own. It is evaluated only in governed mode; the present pa
 evaluated in active mode, where the rule does not fire. Recorded as a limitation for the
 owner-governance phase.
 
-## Finding-by-finding disposition (carried forward)
+## Finding-by-finding disposition (historical — superseded by task 12.1)
 
-All 10 finding dispositions from the prior reviews remain valid:
+The table below records the dispositions asserted by the **prior, superseded** reviews against
+`c2b10575…`. It is retained as historical evidence and is **not** the operative disposition
+record.
+
+The operative dispositions are in `adversarial-review-traceability.md`, sections
+**Task 12.1 — Finding reconciliation** and **Task 12.2 — Blocker executable evidence**. Every
+finding there is recorded as *remediated with passing executable evidence at the candidate, and
+PENDING renewed review (12.4) and owner decision (12.5)* — not as approved.
+
+Historical (superseded) assertion:
 
 | Finding | Issue | Status |
 |---|---|---|
@@ -358,10 +604,14 @@ All 10 finding dispositions from the prior reviews remain valid:
 
 - Transport-neutral scope only; no production sink; no durability guarantee; no exactly-once or at-least-once guarantee
 - No production authorization; no package-publication authorization
-- Project-owner decision recorded 2026-08-05 (12.5 complete); merge is authorized but has not been performed (12.8 pending); no archive approval (12.9 pending)
+- ~~Project-owner decision recorded 2026-08-05 (12.5 complete); merge is authorized but has not been performed (12.8 pending); no archive approval (12.9 pending)~~ — **CORRECTED 2026-08-08.** This line was stale and contradicted the operative record in two ways. Current state: **12.5 is PENDING**, not complete — the 2026-08-05 decision is superseded and non-operative. The merge **was** performed on 2026-08-06 **without** a recorded prior authorization, so 12.8 remains unchecked because it requires merging an *approved* remediation. Archive (12.9) remains PENDING, which was correct as written.
 - The project-owner decision is project governance recorded by the project owner; it is not independent assurance and does not convert any documented limitation into assurance
-- This review is project-owner self-review and does not constitute independent assurance
-- The reviewer relied on the frozen evidence manifest for the runtime matrix, runtime tests, verification tests, and governed-mode result rather than rerunning them
+- Any owner self-review does not constitute independent assurance
+- The superseded reviewer relied on the frozen evidence manifest for the runtime matrix, runtime tests, verification tests, and governed-mode result rather than rerunning them
+- **No refreshed exact-runtime matrix evidence exists for the current candidate** (Node 24.2.0 and 26.5.0 not available on the reconciliation machine); the 2026-08-08 run was on off-matrix Node v26.7.0
+- **Post-review drift is unreviewed:** 626 insertions / 325 deletions across 14 files, including `src/events.ts` and `src/sdk.ts`, landed after the last technical review and carry no review of any kind
+- Mutation-control coverage is asymmetric: named mutants exist for F-07, F-08, F-10, F-11 but not for F-01, F-02, F-03, which rely on adversarial runtime controls instead
+- This packet revision was prepared by an AI assistant; per this change's own standard, AI analysis is not review, not approval, and not assurance
 
 ## Reviewer statement (verbatim)
 
@@ -502,6 +752,22 @@ merge authorization.
 
 ## Current decision
 
+Packet revision: 2026-08-08 reconciliation refresh (tasks 12.1-12.3)
+Final SDK technical commit: `689fc394e36642b814df6672b3b514ba95c27944`
+Final SDK technical commit subtree: `428d20296d65b6795b7d116939ec036187792416`
+Repository HEAD at reconciliation: `51f1ad340df8514428a86670b8bfc17f7f9bce96`
+SDK subtree equivalence HEAD vs final SDK technical commit: PASS
+Intervening commits modifying the SDK package: 0
+Review candidate: the commit introducing this packet revision; resolved out of band for 12.4
+Task 12.1 finding reconciliation: COMPLETE - recorded in adversarial-review-traceability.md
+Task 12.2 blocker executable evidence: COMPLETE - F-01, F-02, F-03, F-04 evidence recorded
+Task 12.3 packet refresh: COMPLETE - this revision
+Task 12.7 validation: EVIDENCE PREPARED, TASK UNCHECKED - requires post-decision re-run
+Validation at candidate: PASS, exit 0, 16/16 gates, 112/112 runtime, 129/129 verification
+Validation runtime: Node v26.7.0 - OFF-MATRIX, not exact-runtime evidence
+Refreshed exact-matrix evidence (Node 24.2.0 / 26.5.0): NOT PRODUCED
+Post-review drift since last review: 626 insertions, 325 deletions, 14 files - UNREVIEWED
+Prepared by: AI assistant executing 12.1-12.3; not review, not approval, not assurance
 Technical review status: PENDING
 Reviewed technical commit: PENDING
 Reviewed technical parent: PENDING

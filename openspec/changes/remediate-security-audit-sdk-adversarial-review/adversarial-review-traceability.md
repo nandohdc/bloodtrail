@@ -54,6 +54,62 @@ The F-08 semantic decision `ADOPT_COUNT_BOUNDED_FIFO_RETENTION` supersedes the e
 
 No amended F-08 scenario is intentionally mapped to the superseded 24-hour or fail-closed capacity behavior. Those semantics require a separate future OpenSpec change with an external durable identity-retention provider.
 
+## Task 12.1 — Finding reconciliation (2026-08-08)
+
+The **Final disposition** column in the table above records state at the reviewed baseline
+`482bc9593e13f01b0e8dd278ad5ff52203997249` and is **superseded by this section**, which is the
+operative disposition record. The baseline table is retained unmodified as historical evidence.
+
+Reconciliation target: final SDK technical commit
+`689fc394e36642b814df6672b3b514ba95c27944` (see `technical-review-packet.md` for the
+review-candidate binding and the SDK subtree equivalence proof).
+
+| Finding | Implementation commit(s) | Primary implementation path(s) | Executable evidence at candidate | Issue | Disposition |
+| --- | --- | --- | --- | --- | --- |
+| F-01 | `0e0aec21ec840443f66487ea61b92c6bcffb623f` | `src/events.ts`, `src/operations.ts`, `src/sdk.ts` | 4 runtime controls + `test:types` (see 12.2) | [#21](https://github.com/nandohdc/bloodtrail/issues/21) CLOSED/COMPLETED | Remediated; executable evidence passing; **PENDING 12.4 review and 12.5 owner decision** |
+| F-02 | `e5137c6782fd5d936a5c173e8a4bc4e9b82d2393` | `src/sdk.ts` | 7 runtime controls incl. controllable-promise concurrency (see 12.2) | [#22](https://github.com/nandohdc/bloodtrail/issues/22) CLOSED/COMPLETED | Remediated; executable evidence passing; **PENDING 12.4 / 12.5** |
+| F-03 | `a20e812aeff2ecb9d73b1e78f476ab08ebadde14` | `src/config.ts`, `src/events.ts` | 4 runtime controls in `tests/f03-ownership.test.ts` (see 12.2) | [#23](https://github.com/nandohdc/bloodtrail/issues/23) CLOSED/COMPLETED | Remediated; executable evidence passing; **PENDING 12.4 / 12.5** |
+| F-04 | `ab54f8c56c19f7243f1407018ba2c3cd7eed4952` and follow-ups `e2f8a97`, `b5e9daa`, `8f7856e`, `9fc0d3e`, `278c672`, `c2b1057`, `f0fbbd9`, `685957d` | `scripts/check-coherence.mjs`, `scripts/check-changed-paths.mjs`, `scripts/lifecycle-policy.mjs`, `scripts/verify-all.mjs`, `verification-lifecycle.json` | `test:verification` 129/129 incl. 32 differential mutation controls (see 12.2) | [#24](https://github.com/nandohdc/bloodtrail/issues/24) CLOSED/COMPLETED | Remediated; executable evidence passing; **PENDING 12.4 / 12.5** |
+| F-05 | `fcad895f6d984ec3d9c55cc71dc95b8f98219131` | `src/errors.ts`, `src/context.ts`, `src/config.ts`, `src/sdk.ts`, `src/validation/index.ts`, `src/validation/prohibited.ts`, `src/validation/semantic.ts` | `tests/f05-f12-input-boundary.test.ts` (8 tests); runtime suite 112/112 | [#25](https://github.com/nandohdc/bloodtrail/issues/25) CLOSED/COMPLETED | Remediated; executable evidence passing; PENDING 12.4 / 12.5 |
+| F-06 | `e7bf0315c59d16e158128a443e3048a9d093a507` | `scripts/check-scope.mjs` | `test:scope`; forbidden-name differential mutations | [#26](https://github.com/nandohdc/bloodtrail/issues/26) CLOSED/COMPLETED | Remediated; executable evidence passing; PENDING 12.4 / 12.5 |
+| F-07 | `d9f07b88aa5f62e2b400dbf383971b5482ea7c52` | `src/sdk.ts` shutdown path | `tests/f07-shutdown-timer.test.ts`; mutation controls `M-F07-A`–`M-F07-D` | [#27](https://github.com/nandohdc/bloodtrail/issues/27) CLOSED/COMPLETED | Remediated; executable evidence passing; PENDING 12.4 / 12.5 |
+| F-08 | `0df66687f93cfd85963bd00706d5d014d7bc6adf`; docs `689fc394e36642b814df6672b3b514ba95c27944` | `src/bounded-fifo.ts`, `src/config.ts`, `src/operations.ts`, `src/sdk.ts`, `src/index.ts`, `src/testing.ts` | `tests/f08-retention.test.ts` (9 tests incl. soak plateau); mutation controls `M-F08-A`–`M-F08-G` | [#28](https://github.com/nandohdc/bloodtrail/issues/28) CLOSED/COMPLETED | Remediated under amended `ADOPT_COUNT_BOUNDED_FIFO_RETENTION` semantics; evidence passing; PENDING 12.4 / 12.5 |
+| F-09 | `e7bf0315c59d16e158128a443e3048a9d093a507` | `src/sdk.ts`, `scripts/check-compatibility.mjs` | `named APIs cover all 24 catalog events using authoritative construction` (`tests/pass2.test.ts:88`); deleted-method mutation control | [#26](https://github.com/nandohdc/bloodtrail/issues/26) CLOSED/COMPLETED | Remediated; executable evidence passing; PENDING 12.4 / 12.5 |
+| F-10 | `9349ecdcd5e6e030abb7b81544f30ef6d1508c72` | `src/config.ts`, `src/events.ts`, `src/internal.ts` | `tests/f10-hook-paths.test.ts` (14 tests); mutation controls `M-F10-A`–`M-F10-G` | [#29](https://github.com/nandohdc/bloodtrail/issues/29) CLOSED/COMPLETED | Remediated; executable evidence passing; PENDING 12.4 / 12.5 |
+| F-11 | `4bc39d7ec7168b08ae1ad0d2ba879dcbac810bae` | `src/events.ts`, `src/internal.ts`, `src/sdk.ts` | `tests/f11-delivery-intent.test.ts` (11 tests); mutation controls `M-F11-A`–`M-F11-G` | [#30](https://github.com/nandohdc/bloodtrail/issues/30) CLOSED/COMPLETED | Remediated; executable evidence passing; PENDING 12.4 / 12.5 **and explicit normative review** |
+| F-12 | `fcad895f6d984ec3d9c55cc71dc95b8f98219131` | `src/errors.ts` serialization/size split | `tests/f05-f12-input-boundary.test.ts` BigInt/size controls | [#25](https://github.com/nandohdc/bloodtrail/issues/25) CLOSED/COMPLETED | Remediated; executable evidence passing; PENDING 12.4 / 12.5 |
+
+**No row is dispositioned by issue closure.** All ten issues are `CLOSED`/`COMPLETED`, but closure is
+recorded above only as a fact, not as evidence. Each disposition rests on the executable evidence
+named in the row and re-run at the candidate (see the verification record in
+`technical-review-packet.md`). No new technical requirement was created to complete any row, and no
+row was downgraded.
+
+## Task 12.2 — Blocker executable evidence (F-01 – F-04)
+
+Each blocker below is established by executable controls that fail if the security property is
+removed. No blocker is closed by prose, by issue state, by pull-request state, or by AI review.
+
+| Finding | Security property | Positive / control evidence | Adversarial or mutation evidence | Result at candidate | Implementation |
+| --- | --- | --- | --- | --- | --- |
+| F-01 | Terminal transactional success requires unforgeable SDK-issued operation evidence; forged, copied, or foreign values never reach the sink | `same-instance private operation evidence controls commit state, event binding, and identifiers` (`tests/pass2.test.ts:681`) | `named methods reject forged, copied, modified, cloned, and foreign operation evidence without sink invocation or identifier disclosure` (`:621`); `a caller cannot bypass the operation model by directly declaring commit_state committed` (`:608`); `an operation bound to one named event cannot be completed through another` (`:1003`); compile-time rejection via `test:types` | PASS | `0e0aec2` — `src/operations.ts` private `WeakMap` evidence, `src/sdk.ts` |
+| F-02 | Terminal completion reserves synchronously before asynchronous sink handoff; at most one accepted result; non-accepted outcomes release for explicit retry | `duplicate success for the same operation and event is rejected while fan-out to different events is allowed` (`tests/pass2.test.ts:731`) | `concurrent terminal success reserves once before validation and sink handoff` (`:752`); `non-accepted and rejected-promise sink outcomes release a concurrent reservation for explicit retry` (`:822`); `a synchronous sink throw releases the reservation…` (`:874`); `different operations and different SDK instances reserve independently` (`:898`); `same-operation sink reentrancy is rejected without a second sink call or deadlock` (`:939`); `flush and shutdown overlap preserve the terminal reservation…` (`:966`) | PASS | `e5137c6` — `src/sdk.ts` `idle`/`reserved`/`completed` state machine |
+| F-03 | Caller-owned sink, clock, and identifier providers are referenced without clone, freeze, decoration, or mutation; SDK-owned configuration stays immutable | `F-03 field-aware normalization freezes only SDK-owned values and preserves collaborator shape and identity` (`tests/f03-ownership.test.ts:196`) | `F-03 mutable class collaborators preserve receivers and accept sequential named delivery` (`:304`); `F-03 a pre-frozen sink and non-extensible provider remain usable…` (`:393`); `F-03 generic emit and current redelivery behavior do not freeze the caller-owned sink` (`:429`) | PASS | `a20e812` — `src/config.ts`, `src/internal.ts` |
+| F-04 | Canonical verification is lifecycle-aware, reproducible from a clean checkout, and still rejects real package, contract, capability, and governance drift | `tests/verification/lifecycle-policy.test.mjs`; full `test:verification` 129/129 | `tests/verification/mutations.test.mjs` differential controls: 10 structured-capability, 12 archive-movement, 10 fixture-restoration; plus `f07/f08/f10/f11-mutations.test.mjs` and `vp-reviewed-paths.test.mjs` | PASS | `ab54f8c` and follow-ups — `scripts/check-coherence.mjs`, `scripts/check-changed-paths.mjs`, `scripts/lifecycle-policy.mjs` |
+
+### Recorded observation — asymmetry in mutation-control coverage
+
+Named mutation-control identifiers exist only for F-07 (`M-F07-A`–`D`), F-08 (`M-F08-A`–`G`),
+F-10 (`M-F10-A`–`G`), and F-11 (`M-F11-A`–`G`). F-01, F-02, and F-03 are covered by adversarial
+runtime controls — forged/copied/cloned/foreign evidence, controllable-promise concurrency
+interleavings, and mutable-collaborator identity checks — rather than by named differential
+mutants of the implementation. F-04, F-06, and F-09 are covered by the unnamed differential
+controls in `mutations.test.mjs`.
+
+This is recorded as a factual coverage asymmetry for the 12.4 reviewer, not as a defect and not
+as a downgrade. The blocker properties are executable and do fail when violated; what differs is
+whether a named mutant is registered for each.
+
 ## Evidence and Authorization Boundary
 
 Issue closure alone is not a final disposition. Each row requires the expected executable evidence, traceability to the final technical commit, and reconciliation during tasks 12.1-12.10. F-01 through F-04 cannot be closed or downgraded without executable evidence.
