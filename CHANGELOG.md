@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/nandohdc/bloodtrail/compare/v0.2.5...v0.2.6) (2026-08-10)
+
+
+### Documentation
+
+* **openspec:** archive Codecov components change ([#137](https://github.com/nandohdc/bloodtrail/issues/137)) ([3a10f0d](https://github.com/nandohdc/bloodtrail/commit/3a10f0d0316496f307152778d056746583f10a77))
+
 ## [0.2.5](https://github.com/nandohdc/bloodtrail/compare/v0.2.4...v0.2.5) (2026-08-10)
 
 
