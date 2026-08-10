@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/nandohdc/bloodtrail/compare/v0.2.4...v0.2.5) (2026-08-10)
+
+
+### Documentation
+
+* **openspec:** propose correcting the local-instruction verification premise ([#135](https://github.com/nandohdc/bloodtrail/issues/135)) ([9e356f3](https://github.com/nandohdc/bloodtrail/commit/9e356f3a81b1290d61b7fc69fd0e1b38d367a285))
+
 ## [0.2.4](https://github.com/nandohdc/bloodtrail/compare/v0.2.3...v0.2.4) (2026-08-10)
 
 
