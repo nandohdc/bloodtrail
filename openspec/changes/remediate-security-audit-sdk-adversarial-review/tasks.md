@@ -164,9 +164,9 @@ Tracking issue: [#20](https://github.com/nandohdc/bloodtrail/issues/20)
 > "Owner decision binds exact commit" scenario already requires the record to identify assurance
 > limitations. See section 12 of `design.md`.
 
-- [ ] 12.1 Reconcile every finding row with implementation commit, passing evidence, task IDs, GitHub issue closure, and final disposition. [F-01 through F-12]
-- [ ] 12.2 Prove F-01, F-02, F-03, and F-04 have executable passing blocker evidence and have not been closed or downgraded by prose alone. [F-01, F-02, F-03, F-04]
-- [ ] 12.3 Identify the final technical commit and prepare a bounded technical review packet covering API, security behavior, validation, verification, compatibility, dependencies, tests, and assurance limitations. [F-01 through F-12]
+- [x] 12.1 Reconcile every finding row with implementation commit, passing evidence, task IDs, GitHub issue closure, and final disposition. [F-01 through F-12]
+- [x] 12.2 Prove F-01, F-02, F-03, and F-04 have executable passing blocker evidence and have not been closed or downgraded by prose alone. [F-01, F-02, F-03, F-04]
+- [x] 12.3 Identify the final technical commit and prepare a bounded technical review packet covering API, security behavior, validation, verification, compatibility, dependencies, tests, and assurance limitations. [F-01 through F-12]
 - [ ] 12.4 Obtain renewed technical review explicitly bound to the exact final technical commit and performed independently of the implementing pass; record the reviewer, the exact reviewed commit, and the review's assurance limitations. Do not infer approval from AI review, issue state, PR assignment, or test success. [F-01 through F-12]
 - [ ] 12.5 Obtain and record the project owner's explicit exact-commit decision and conditions, including an explicit statement that independent third-party assurance was not obtained and that the residual risk is accepted only while production deployment and package publication remain unauthorized; reinstate independent technical assurance as a precondition before either authorization is granted. [F-01 through F-12]
 - [ ] 12.6 Confirm production deployment, package publication, framework integration, delivery infrastructure, and real-user processing remain unauthorized. [F-01 through F-12]
