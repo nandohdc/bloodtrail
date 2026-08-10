@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/nandohdc/bloodtrail/compare/v0.2.2...v0.2.3) (2026-08-10)
+
+
+### Documentation
+
+* **openspec:** reconcile remediation findings and refresh the review packet ([#56](https://github.com/nandohdc/bloodtrail/issues/56)) ([71dbd95](https://github.com/nandohdc/bloodtrail/commit/71dbd9535201501605e000afe14069a2a0be46ec))
+
 ## [0.2.2](https://github.com/nandohdc/bloodtrail/compare/v0.2.1...v0.2.2) (2026-08-08)
 
 
