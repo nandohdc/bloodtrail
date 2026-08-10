@@ -1,6 +1,8 @@
 # Remediation Technical Review Packet
 
-Packet revision: **2026-08-08 reconciliation refresh (tasks 12.1–12.3)**
+Packet revision: **2026-08-10 candidate-defect extension (task 12.4 input)**
+
+Prior revision: 2026-08-08 reconciliation refresh (tasks 12.1–12.3).
 
 ## Current governance status
 
@@ -11,7 +13,8 @@ recorded anywhere in this document applies to the current candidate.
 
 Technical review status: PENDING
 Project-owner decision: PENDING
-Merge authorization: NONE RECORDED — merge performed 2026-08-06 without a recorded prior authorization
+Merge authorization: NONE RECORDED — content merge performed 2026-08-06 (PR #41) and packet merge
+performed 2026-08-10 (PR #56), both without a recorded prior authorization
 Archive authorization: PENDING
 Production deployment authorization: NOT AUTHORIZED
 Package publication authorization: NOT AUTHORIZED
@@ -36,6 +39,24 @@ pass) and task 12.5 (owner exact-commit decision) remain open and are unaffected
   verification, compatibility, dependencies, tests, and assurance limitations, as task 12.3
   requires.
 
+### What the 2026-08-10 extension changed
+
+- Resolved the review candidate to exact commit `a7ac317725389d7df2b32d939bc0824feb49668e` and
+  recorded its merge as `71dbd9535201501605e000afe14069a2a0be46ec` (PR #56). The previous
+  revision could not name the candidate because a commit cannot record its own hash; it now
+  exists and is named.
+- Added **Candidate-state defects not covered by any prior review** — three defects present in
+  `packages/security-audit-sdk-core/` at the candidate that no earlier packet revision mentions,
+  each with an executed reproduction: **S-1** (producer-emittable `downstream_enrichment`),
+  **S-3/S-4** (module-copy-scoped authority), and **S-6** (packed artifact unusable as a
+  dependency).
+- Restated, for the second merge, that merge state, passing checks, and AI analysis are not
+  approval.
+
+This extension was prepared by an AI assistant. **It is not a technical review, not an
+independent review, and not an owner decision.** It adds reviewer input to tasks 12.4 and 12.5;
+it does not discharge them.
+
 ## Merge execution record
 
 Pull request [#41](https://github.com/nandohdc/bloodtrail/pull/41) was merged into `main` on
@@ -57,6 +78,29 @@ requires merging an *approved* remediation, and no approval was recorded at merg
 Renewed technical review and a renewed project-owner decision remain required, and must now
 be bound to the merged content rather than to a proposed branch.
 
+### Second merge — the 2026-08-08 packet refresh (PR #56)
+
+Pull request [#56](https://github.com/nandohdc/bloodtrail/pull/56) — *"docs(openspec): reconcile
+remediation findings and refresh the review packet"* — was merged into `main` on **2026-08-10**
+by Fernando Homem da Costa (`@nandohdc`) as merge commit
+`71dbd9535201501605e000afe14069a2a0be46ec`, bringing head commit
+`a7ac317725389d7df2b32d939bc0824feb49668e` from branch
+`docs/remediation-12-1-to-12-3-reconciliation` onto `main`.
+
+Checks recorded on the merge commit: `ci / lint`, `ci / test`, `ci / audit`, `sdk`, `contract`,
+`coverage`, and `sonar` all succeeded; `codescene delta` is pull-request-only and reports
+`skipped` on a push build.
+
+This merge carried **governance and documentation content only**. It changed no SDK bytes: the
+`packages/security-audit-sdk-core` tree object is identical at the final technical commit, at the
+candidate, and at the merge commit (see **SDK subtree equivalence proof**), and zero commits
+between `689fc394…` and `71dbd953…` touch the SDK package.
+
+Like the 2026-08-06 merge, this merge occurred **before** renewed technical review (12.4) and
+**before** a renewed owner exact-commit decision (12.5). It therefore does not constitute, imply,
+or substitute for either. **No approval is inferred from the merge, from the passing checks, from
+the merged state of `main`, or from any AI-produced analysis in or referenced by this packet.**
+
 Owner semantic decision: `ADOPT_COUNT_BOUNDED_FIFO_RETENTION`, Fernando Homem da Costa
 (`@nandohdc`), project owner, 2026-08-06. This semantic decision supersedes the prior
 24-hour, required-100,000-entry, fail-closed-capacity, and no-reuse-after-eviction F-08
@@ -71,10 +115,11 @@ publication authorization.
 - Final technical commit: `689fc394e36642b814df6672b3b514ba95c27944`
 - **Final SDK technical commit subject:** `docs(sdk): document F-08 bounded identity-retention migration`
 - **SDK subtree object at that commit:** `428d20296d65b6795b7d116939ec036187792416`
-- **Review candidate (repository state):** the commit that introduces this packet revision.
-  Resolved out of band and supplied to the 12.4 reviewer, because a commit cannot record its
-  own hash. The candidate's SDK subtree is proven identical to the final SDK technical
-  commit's below, so the technical target is unambiguous either way.
+- **Review candidate (repository state):** `a7ac317725389d7df2b32d939bc0824feb49668e` — the head
+  of PR #56, which introduced the 2026-08-08 packet revision. The previous revision could not
+  name this commit because a commit cannot record its own hash; it is now resolved and named.
+- **Candidate merge commit:** `71dbd9535201501605e000afe14069a2a0be46ec` (PR #56, merged
+  2026-08-10). Reviewing either the candidate or its merge selects the same SDK bytes.
 - **Technical reviewer:** PENDING (task 12.4)
 - **Review date:** PENDING
 - **Review method:** PENDING
@@ -96,9 +141,13 @@ leave that later evidence unreviewed.
 | Repository HEAD at reconciliation | `51f1ad340df8514428a86670b8bfc17f7f9bce96` |
 | `packages/security-audit-sdk-core` tree at `689fc394…` | `428d20296d65b6795b7d116939ec036187792416` |
 | `packages/security-audit-sdk-core` tree at HEAD | `428d20296d65b6795b7d116939ec036187792416` |
-| **Subtree equivalence** | **PASS — identical tree object** |
+| `packages/security-audit-sdk-core` tree at candidate `a7ac3177…` | `428d20296d65b6795b7d116939ec036187792416` |
+| `packages/security-audit-sdk-core` tree at merge `71dbd953…` | `428d20296d65b6795b7d116939ec036187792416` |
+| **Subtree equivalence** | **PASS — identical tree object at all four commits** |
 | Intervening commits | 12 |
 | Intervening commits modifying the SDK package | **0** |
+| Commits `689fc394…71dbd953` | 13 |
+| Of those, modifying the SDK package | **0** |
 | Working tree state at reconciliation | clean; index empty |
 
 Reproduce with:
@@ -161,7 +210,139 @@ adversarial and differential mutation controls, passes at the candidate. Per thi
 standard, passing tests are **not** approval and do not substitute for review.
 
 **Consequence for task 12.4:** the reviewer's scope is the candidate as a whole, and must
-explicitly include this post-review drift. It is not covered by any prior review.
+explicitly include this post-review drift. It is not covered by any prior review. The same
+applies to the three defects recorded in **Candidate-state defects not covered by any prior
+review** below; both sets are unreviewed and both are inside the 12.4 scope.
+
+## Candidate-state defects not covered by any prior review
+
+Three defects are present in `packages/security-audit-sdk-core/` at the candidate and are
+mentioned by no earlier packet revision. All three are therefore inside the 12.4 reviewer's
+declared scope, and none of them is a consequence of the post-review drift disclosed above —
+each predates it.
+
+Each reproduction below was executed against the candidate's SDK tree
+(`428d20296d65b6795b7d116939ec036187792416`) on Node 26.7.0 and is transcribed verbatim.
+**These reproductions were produced by an AI assistant and are reviewer input, not review.**
+The reviewer should re-execute them rather than rely on this transcription.
+
+### S-1 — a producer can self-assert `downstream_enrichment` trust (live defect)
+
+An ordinary producer can emit an extension claiming the highest downstream trust level, carrying
+arbitrary `risk.*`, and the SDK accepts it.
+
+| Property | Value |
+| --- | --- |
+| Class | **Live defect** — attacker-controlled input crosses a trust boundary |
+| Attacker-controlled input | `extensions[].provenance.trust_level` supplied by any SDK caller |
+| Current posture | **Fail open** — accepted and delivered to the sink |
+| Live exposure | None today: the package is `private`, unpublished, and not deployed |
+
+Mechanism, at the candidate:
+
+- `src/context.ts:314-316` — `registeredEnrichmentExtension()` is
+  `return brand(input, "registered_extension")`. It performs **no validation at brand time**.
+- `src/validation/semantic.ts:290-298` — `validateExtensions()` checks namespace registration and
+  byte bounds only. It never inspects `provenance.trust_level`.
+- `src/index.ts:38` — `registeredEnrichmentExtension` is exported public API.
+- `examples/scenarios.ts:264-278` — the shipped `registeredExtension()` example uses this exact
+  path and runs inside `npm run validate`.
+
+Reproduction (ordinary producer, complete valid event):
+
+```
+emit ok = true
+producer identity on that event = {"name":"synthetic-audit-producer","version":"0.1.0",
+                                   "instance_id":"synthetic-producer-instance"}
+extension provenance = {"trust_level":"downstream_enrichment",
+                        "source":"i-am-the-producer-not-a-downstream-engine","version":"1.0.0"}
+extension risk = {"level":"critical","reason_codes":["policy_baseline"]}
+```
+
+The invariant is **already normative and entirely unenforced**:
+`openspec/specs/security-audit-event-contract/spec.md`, requirement *"Extension fields are
+governed and non-escalating"*, states extensions "SHALL NOT … assign a higher trust level than
+their source permits".
+
+**Compatibility consequence the reviewer must weigh:** closing this removes or restricts exported,
+documented, example-exercised public API. `compatibility.json → semverClassification.major` lists
+"public API removal" explicitly, and the shipped example would fail `test:examples` until
+migrated. Producer-derived risk belongs in the canonical `risk.*` fields (`derived_server`,
+exported via `riskContext`); the enrichment namespace is for downstream engines.
+
+### S-3 / S-4 — authority is module-copy scoped, and duplication reports as an attack
+
+Brand authority lives in a module-private `WeakMap` (`src/context.ts:41`), so its scope is the
+module copy, not the SDK instance and not the process.
+
+| Property | Value |
+| --- | --- |
+| Class | **Design (S-3)** and **operability (S-4)** — not a live vulnerability |
+| Current posture | **Fail closed** — the safe direction |
+| Concern | The security property currently *rests on module resolution* |
+
+Reproduction, using two genuine on-disk copies (a query-string import is **not** a valid
+reproduction — relative imports resolve without the query, so `context.js` stays shared):
+
+```
+[P1a] brand constructors are module-level exports, not instance methods
+      typeof A.authoritativeActor = function
+
+[P2a] copy A createAuditContextFrame(brand from copy A) -> ACCEPTED (baseline, same copy)
+[P2b] copy A createAuditContextFrame(brand from copy B) -> REJECTED AUTHORITY_ESCALATION @ /actor
+```
+
+Two consequences follow. A **packaging fault surfaces as a security error code**, which will be
+misread as an attack during triage; and **legitimate composition breaks** — two libraries each
+depending on the core, unhoisted, cannot exchange contexts, with no "duplicate core detected"
+diagnostic to explain why.
+
+### S-6 — the packed artifact cannot be installed as a dependency (live defect)
+
+The shipped standalone validator `require()`s two packages that are declared only as
+`devDependencies`, so a production-only install fails at import time.
+
+| Property | Value |
+| --- | --- |
+| Class | **Live defect** — the artifact is unusable as a dependency |
+| Current posture | Fails eagerly at import, before any SDK API is reachable |
+| Live exposure | None today: the package is `private`, unpublished, and never installed |
+
+Reproduction — `npm pack`, then install the tarball into an empty consumer with `--omit=dev`,
+exactly what `npm i @bloodtrail/security-audit-sdk-core` would yield given `dependencies: {}`:
+
+```
+added 1 package
+node_modules: @bloodtrail
+
+IMPORT FAILED:
+Cannot find module 'ajv/dist/runtime/ucs2length'
+code=MODULE_NOT_FOUND
+```
+
+The import is eager (`src/validation/schema.ts` → `src/index.ts:77`), so it fails on import, not
+lazily. Shipped `require()` targets are `ajv/dist/runtime/ucs2length` and
+`ajv-formats/dist/formats`; both are `devDependencies` only.
+
+**Both relevant gates are structurally blind to it**, which the reviewer should treat as part of
+the finding rather than incidental:
+
+- `check-dependencies.mjs` reads manifest and lockfile declarations and `npm ls --omit=dev`. It
+  never inspects the shipped `require()`s.
+- `check-package-contents.mjs` asserts the validator **is** in the pack *and* that `dependencies`
+  is empty — two assertions that are individually true and jointly describe a broken artifact.
+- `compatibility.json` records `runtimeDependencyCount: 0` and
+  `modulePolicy: "esm-public-cjs-standalone-validator"`. Both are false of the built output; the
+  validator is not standalone.
+
+### Assurance limitations of this section
+
+These reproductions establish the *presence* of each defect on one runtime, at one tree, through
+the exercised paths only. They do not establish absence of related defects, do not quantify
+exploitability, and are not a security assessment. S-1 and S-6 are live defects in the candidate;
+S-3/S-4 is a design and operability concern that currently fails closed. None of the three has
+live exposure while the package remains private, unpublished, and undeployed — a condition that
+is itself governance state, not a technical control.
 
 ## Verification evidence at the candidate (2026-08-08)
 
