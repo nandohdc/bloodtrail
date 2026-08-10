@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/nandohdc/bloodtrail/compare/v0.2.3...v0.2.4) (2026-08-10)
+
+
+### Documentation
+
+* **openspec:** extend the remediation review packet with candidate defects ([#58](https://github.com/nandohdc/bloodtrail/issues/58)) ([#133](https://github.com/nandohdc/bloodtrail/issues/133)) ([5f3da30](https://github.com/nandohdc/bloodtrail/commit/5f3da30186766ef5680b75ec933bf1f315a25d19))
+
 ## [0.2.3](https://github.com/nandohdc/bloodtrail/compare/v0.2.2...v0.2.3) (2026-08-10)
 
 
