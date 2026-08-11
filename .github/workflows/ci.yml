@@ -350,6 +350,12 @@ jobs:
           fi
 
           if printf '%s' "${output}" | jq -e . >/dev/null 2>&1; then
+            # Print to stdout as well as the step summary. A summary is readable
+            # only in the web UI: it is absent from `gh run view --log` and from
+            # the REST API, so a failure here could not be diagnosed by anyone
+            # working from logs. Findings now appear in the job log too.
+            echo "CodeScene reported new code health issues:"
+            printf '%s\n' "${output}" | jq .
             {
               echo "### CodeScene: new code health issues"
               echo '```json'

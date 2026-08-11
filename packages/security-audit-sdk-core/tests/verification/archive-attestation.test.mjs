@@ -5,7 +5,7 @@
 // active change absent, which is the repository's own post-archive state, so
 // they need none of that restoration machinery.
 import assert from "node:assert/strict";
-import { chmodSync, cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -56,6 +56,20 @@ test("archive movement fails when no attestation records the archive", () => {
 test("archive movement fails when two attestations record the same archive", () => {
   const root = attestedCase("attestation-ambiguous", { duplicate: true });
   fails(root, "archive-movement-attestation-ambiguous");
+});
+
+// A committed movement must not block later archives. The unrelated-change check
+// is bounded to the working tree against HEAD; once the source is historical it
+// would otherwise treat every subsequently created archive as an unrelated
+// addition, making the remediation's own archive permanently block all others.
+test("a committed movement does not reject archives created afterwards", () => {
+  for (const options of [{}, { reachableSource: true }]) {
+    const root = attestedCase(`later-archive-${options.reachableSource ? "rederived" : "attested"}`, options);
+    const later = resolve(root, "openspec/changes/archive/2099-03-04-some-later-change");
+    mkdirSync(later, { recursive: true });
+    writeFileSync(resolve(later, "proposal.md"), "# A later, unrelated archive\n");
+    succeeds(root);
+  }
 });
 
 // The decisive control for the fallback rule. The archive is tampered AND the

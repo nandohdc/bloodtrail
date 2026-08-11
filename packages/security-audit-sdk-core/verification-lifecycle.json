@@ -74,6 +74,19 @@
         "tasks.md": { "mode": "100644", "oid": "cec5849386952a1627dfafaddb3eba98c7284b49" },
         "technical-review-packet.md": { "mode": "100644", "oid": "bbf9b8e2574751b277e978cf82907c7aefd71a7e" }
       }
+    },
+    {
+      "archive": "openspec/changes/archive/2026-08-11-attest-archive-movement",
+      "sourceRevision": "a73da8ba1d78519e090fe3a78dfd4273b8ddf2e7",
+      "attestedAt": "2026-08-11",
+      "policy": "NOT YET ENFORCED. validateArchiveMovement runs only for the change named by remediationChange, so no gate reads this entry today. It records the verified movement while sourceRevision is reachable: four blobs identical, tasks.md differing by exactly the 4.3 transition. Generalizing movement validation to every archived change is follow-up work tracked by right-size-change-governance.",
+      "files": {
+        ".openspec.yaml": { "mode": "100644", "oid": "a8821c74d0bd39900cc781d365e948b58ac13377" },
+        "design.md": { "mode": "100644", "oid": "d4f343db505981b3a92058ef218deaca682b4f11" },
+        "proposal.md": { "mode": "100644", "oid": "5c0fa31aacaaad6b949e04bb293816b1582453c7" },
+        "specs/security-audit-sdk-core/spec.md": { "mode": "100644", "oid": "b53ec08ac846d3553f4b777d8b4c164f152f78ca" },
+        "tasks.md": { "mode": "100644", "oid": "d8da66ad19c47cac87f44b55d46350c598513c20" }
+      }
     }
   ]
 }
