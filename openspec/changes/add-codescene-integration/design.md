@@ -78,6 +78,8 @@ So `continue-on-error` is applied to the install step alone, and the analysis st
 
 Without that flag the job was a **no-op gate** from the day it was added: it ran the analysis, received the findings, and reported every PR clean. The diagnostic run on PR #51 recorded `exit=0` alongside a complete findings JSON for two files and three rules. The invocation now passes `--error-on-warnings`.
 
+The same diagnostic captured `cs delta --help` in full for 1.0.37, which is worth recording because it bounds what the invocation can express. The entire option set is `--staged`, `--interactive`, `-f/--file`, `--error-on-warnings`, `--git-hook`, `--output-format`, `--pretty` and `--verbose`. None of them widens or narrows which files the analysis considers, so the scope question raised in task 4.5 cannot be a matter of flags we failed to pass. One caveat in that help text is easy to misread as an answer and is not: specifying an output format "will report new issues only - i.e. no improvents [sic] or explanations" suppresses *improvements*, not modified files — an introduced finding stays an introduced finding whichever file it lands in.
+
 The exit-code/JSON matrix below is correct *given the flag* — a non-zero exit still cannot by itself separate a finding from a broken token, and whether the run produced parseable JSON remains the second signal: a completed analysis always emits JSON on stdout, a failed one never does. This was confirmed rather than assumed: the findings JSON is still written to stdout when the flag makes the process exit non-zero.
 
 | Exit code | Parseable JSON | Meaning | Job result |
