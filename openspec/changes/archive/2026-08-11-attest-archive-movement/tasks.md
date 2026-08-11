@@ -23,4 +23,4 @@
 
 - [x] 4.1 Record in `CONTRIBUTING.md` that an archive pull request is merged with a merge commit where practical, noting it preserves the stronger re-derived path and is complementary to, not a substitute for, the attestation.
 - [x] 4.2 Run the full canonical verification on `main` and confirm the `sdk` job is green again, recording the runtime used and whether it is exact-matrix.
-- [ ] 4.3 Archive the change and validate in strict archived mode, recording its own movement attestation as the new process requires.
+- [x] 4.3 Archive the change and validate in strict archived mode, recording its own movement attestation as the new process requires.
