@@ -199,7 +199,14 @@ function validateArchiveMovement(resolvedLifecycle) {
     movementFailure("archive-movement-partial", `movement inventory is source=${sourceFiles.size}, archive=${archiveFiles.size}, active-remnants=${activeFiles.size}`);
   }
 
-  checkUnrelatedMovementChanges(source, exactArchive, movementViolations);
+  // Only meaningful while the movement is being made, when the comparison is
+  // bounded to the working tree against HEAD. Once the movement is committed the
+  // source is historical, and re-deriving this against an ever-growing diff would
+  // reject every archive created afterwards as an "unrelated addition". It was
+  // checked when the movement was made; the attestation covers it thereafter.
+  if (source?.revision === "HEAD") {
+    checkUnrelatedMovementChanges(source, exactArchive, movementViolations);
+  }
 
   if (movementViolations.length > 0) {
     throw new Error(`archive movement validation failed:\n${[...new Set(movementViolations)].sort(byCodePoint).join("\n")}`);
