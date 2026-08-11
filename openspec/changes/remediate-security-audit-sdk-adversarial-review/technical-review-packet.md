@@ -1429,6 +1429,59 @@ It is project governance only and does **not** constitute independent assurance,
 review, formal certification, legal advice, or organizational approval. No claim of independent
 assurance is made anywhere in this packet.
 
+## Post-decision confirmation and validation — tasks 12.6 and 12.7
+
+Both tasks were executed **after** the task 12.4 and 12.5 decision records existed in history, at
+`3252e4f06d9c616fa1fbdc81ef883f03ba7b6163` and `7b950604c664f80c5ce24257c16fb987e0b618b7`
+respectively, with an empty Git index. Runtime: Node v26.7.0, npm 11.19.0, macOS arm64.
+
+### Task 12.6 — production, publication, integration, and processing remain unauthorized
+
+Confirmed mechanically, not by assertion. Each row names the control that would fail if the
+exclusion were breached.
+
+| Exclusion | Status | Mechanical evidence |
+| --- | --- | --- |
+| Production deployment | NOT AUTHORIZED | no deployment workflow exists; `.github/workflows/` contains only `ci`, `conventional-commits`, and `release-please` |
+| Package publication | NOT AUTHORIZED | no `npm publish`, `NPM_TOKEN`, or registry reference in any workflow; `release-please.yml` has no publish step; `test:package` asserts `private: true` and `license: UNLICENSED` |
+| Framework integration | NOT AUTHORIZED | `test:scope` — 17 SDK source files, no `express`, `nestjs`, `fastify`, or `nextjs` reference; only `node:async_hooks` and `node:crypto` are importable |
+| Delivery infrastructure | NOT AUTHORIZED | `test:scope` forbids transport, exporter, collector, queue, outbox, storage, and SIEM names, imports, and exports; `test:dependencies` reports 0 runtime dependencies |
+| Real-user data processing | NOT AUTHORIZED | only the transport-neutral `AuditEventSink` interface ships; the sole implementations are `createCapturingAuditSink` and `createInMemoryAuditSink`, both non-production and reachable only through the `./testing` export |
+| Package surface | 2 exports | `.` and `./testing`; `test:package` allowlist passed at 80 intentional files with no source, tests, scripts, governance, or contract copies |
+
+The package remains at version `0.1.0`, `private: true`, `UNLICENSED`, with `dependencies: {}`.
+Cutting a release tag does not alter any row above.
+
+### Task 12.7 — post-decision validation
+
+`npm run verify` — the canonical verification, which removes `node_modules`, reinstalls from the
+lockfile with `npm ci --ignore-scripts`, and runs the full chain. **Exit 0.** All 23 steps passed:
+
+| Step | Result |
+| --- | --- |
+| Clean disposable output, install exact locked dependencies | PASS |
+| Reject pre-existing generated drift, regenerate, confirm determinism | PASS — byte-identical |
+| Strict source type-check, fresh build | PASS |
+| Runtime / fixture / semantic tests | **112 / 112 pass, 0 fail** |
+| Compile-time positive and negative API tests | PASS |
+| Synthetic documentation examples compiled and executed | PASS |
+| Package exports, compatibility policy, contract immutability | PASS |
+| Production-scope and forbidden-integration checks | PASS |
+| Zero-runtime and exact development dependency checks | PASS |
+| `npm audit --audit-level=low` | PASS — **found 0 vulnerabilities** |
+| npm package dry-run and file allowlist | PASS |
+| Exact changed-path enforcement | PASS — active mode |
+| Cross-artifact coherence sweep | PASS |
+| Verification lifecycle and differential mutation tests | **129 / 129 pass, 2 suites, 0 fail** |
+| Strict active-change OpenSpec validation | PASS — change is valid |
+| Strict repository OpenSpec validation | PASS — 5 passed, 0 failed |
+| Git whitespace, final-newline, empty-index checks | PASS |
+
+Runtime limitation, unchanged and restated so this record does not overstate itself: the run used
+**Node v26.7.0**, which is outside both declared CI cells (`24.2.0`, `26.5.0`). It is therefore
+supporting evidence, not exact-matrix evidence, and no refreshed exact-matrix evidence exists for
+this candidate. This limitation was acknowledged and accepted in the task 12.5 decision.
+
 ## Current decision
 
 Packet revision: 2026-08-11 independent review pass (task 12.4)
