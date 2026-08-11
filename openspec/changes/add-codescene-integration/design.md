@@ -105,6 +105,43 @@ The raw output is always written to `$GITHUB_STEP_SUMMARY`. CodeScene does not p
 
 Add CodeScene's project-level code health and knowledge distribution badges. These are static image URLs generated in the CodeScene UI after project creation.
 
+### Decision 7: What the gate actually covers — a parser blind spot, not a scoping rule
+
+PR #51 concluded that the gate had not reported a smell added to an *existing* file, and left the cause open. That framing was a confound. The canary on PR #140 established the real mechanism:
+
+> **CodeScene CLI 1.0.37's TypeScript analyser silently skips any function whose parameter list uses the `readonly` type modifier.** The function is not scored, not counted toward the file's Code Health, and never reaches `cs delta`. If *every* function in a file is affected, the file has no score at all — `cs check` prints `Code health score: N/A`.
+
+Seven synthetic variants, identical but for the signature, isolate it (run `31451854600`, job `93657664555`):
+
+| Variant | Parameter list | Score | Smells reported |
+|---|---|---|---|
+| v1 | `tags: string[]` | 8.72 | all three |
+| v2 | `tags: readonly string[]` | **N/A** | **none** |
+| v3 | `tags: ReadonlyArray<string>` | 8.72 | all three |
+| v4 | defaulted params (`boost = 0`, `tags: string[] = []`) | 8.72 | all three |
+| v5 | `readonly` in an *interface*, plain params | 8.72 | all three |
+| v6 | readonly function, then plain function | 8.72 | only the plain one |
+| v7 | plain function, then readonly function | 8.72 | only the plain one |
+
+v2 against v3 is the crux: `readonly string[]` and `ReadonlyArray<string>` are the same type to TypeScript, and only the first form breaks. So this is a gap in the analyser's grammar for the `readonly T[]` syntax in parameter position, not anything about immutability. v5 shows the modifier is harmless inside an interface declaration; v4 clears default values; v6 and v7 show the damage is confined to the offending function, in either order, rather than halting the parse.
+
+This explains every earlier observation exactly, with no residue:
+
+| File at head | Content | Score | Why |
+|---|---|---|---|
+| `probe-new.ts` (and PR #51's `canary.ts`) | one bad function, no `readonly` in params | 8.72 | analysed normally |
+| `bounded-fifo.ts` | clean class + `scoreSample(… tags: readonly string[] …)` | 10.00 | the bad function is invisible |
+| `testing.ts` | `createInMemoryAuditSink(options: { readonly capacity?: number } …)` degraded in place | 10.00 | as above |
+| `internal.ts` | clean base + three bad functions with `readonly` params | 9.38 | reports only the two pre-existing smells |
+
+PR #51's two `canary.ts` copies happened to take a named interface as their first parameter and carried no `readonly` in the parameter list; the `bounded-fifo.ts` copy took `tags: readonly string[]`. **The difference was the signature, not the file's newness** — which is why "coverage of existing files" looked like the variable. Rounds 1 and 2 also confirmed the result is keyed to content alone: the identical bytes copied to a path CodeScene had never seen scored identically, ruling out caching, path matching and git history.
+
+**Exposure in this repository.** On `main`, of 215 functions in `packages/security-audit-sdk-core/src`, ten sit in the blind spot: six use the proven-invisible `readonly T[]` operator form (`config.ts:192`, `context.ts:400`, `context.ts:406`, `errors.ts:114`, `operations.ts:82`, `validation/prohibited.ts:64`) and four use the inline `{ readonly … }` literal form that `testing.ts` indicates is also affected (`context.ts:127`, `context.ts:156`, `errors.ts:40`, `testing.ts:36`). That is a bounded blind spot, not a wholesale failure — but it is silent, and it grows with any new code written in the SDK's prevailing `readonly` style.
+
+**Consequence for the gate.** `codescene delta` remains a real gate: it fails on findings, as 4.4 proved. But it cannot be relied on as *exhaustive* for TypeScript. A function using `readonly` parameter types can carry any amount of complexity and the gate will stay green. SonarQube does flag such code (`typescript:S107`, `typescript:S3776` on the original `bounded-fifo.ts` canary), so the repository is not blind to it overall — the redundancy between the two analysers is what covers this, and that is now a load-bearing property rather than a nicety.
+
+The strictly correct scope claim is therefore: **`cs delta` gates newly introduced code health issues in the functions its TypeScript analyser can parse.** Claims of the form "fails for any newly introduced issue" are not supported.
+
 ## Risks / Trade-offs
 
 - **[Risk] The installer is interactive by default** → Mitigation: `sh -s -- -y`. `--output-format json` does *not* suppress the prompt — the prompt is in the install script, not the CLI, and assuming otherwise is what made the job fail on every run of PR #49.
