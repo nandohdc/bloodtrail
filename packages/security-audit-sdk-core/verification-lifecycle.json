@@ -88,5 +88,68 @@
         "tasks.md": { "mode": "100644", "oid": "d8da66ad19c47cac87f44b55d46350c598513c20" }
       }
     }
+  ],
+  "governanceRecords": [
+    {
+      "change": "implement-security-audit-sdk-core",
+      "policy": "Machine-readable restatement of the bindings the archived technical review packet already records. It adds no governance claim; check-governance-history.mjs verifies the Git properties those bindings assert.",
+      "reviewedCommit": "21c5c98503205257be87cb977b131b4a81ac430a",
+      "legacyCommitBinding": true,
+      "legacyReason": "Reviewed and archived 2026-07-31, before content-object binding existed. Retained as commit binding; not a precedent for new records.",
+      "governedCommits": [
+        "21c5c98503205257be87cb977b131b4a81ac430a",
+        "1f35896d6a51e759806ad5da0f0c56e17c7e065a",
+        "3734a295a0a32effeaf6b03d04d14542db12576e",
+        "86bf25d459d909d4fbdd151fb23c3c159ba1f365"
+      ],
+      "boundCommits": [
+        "21c5c98503205257be87cb977b131b4a81ac430a",
+        "1f35896d6a51e759806ad5da0f0c56e17c7e065a",
+        "86bf25d459d909d4fbdd151fb23c3c159ba1f365"
+      ],
+      "mergeCommits": [
+        { "commit": "86bf25d459d909d4fbdd151fb23c3c159ba1f365", "expectedParents": 2 },
+        { "commit": "3734a295a0a32effeaf6b03d04d14542db12576e", "expectedParents": 2 }
+      ],
+      "authorizations": {
+        "granted": ["sdk-core-as-contract-1.0.0-implementation-basis"],
+        "withheld": [
+          "package-publication",
+          "production-deployment",
+          "production-collection",
+          "real-user-processing",
+          "framework-integration",
+          "delivery-infrastructure"
+        ]
+      },
+      "assuranceLimitations": [
+        "Project-owner/implementer governance; not independent security, privacy, legal, or technical assurance."
+      ],
+      "signed": true,
+      "reviewer": { "name": "Fernando Homem da Costa (nandohdc)", "signedAt": "2026-07-31" }
+    },
+    {
+      "change": "right-size-change-governance",
+      "policy": "UNSIGNED. The implementation candidate is not reviewed. reviewedContent, reviewer, and signed are set only by the project owner in the separate governance commit that records openspec/changes/right-size-change-governance/governance-record.md.",
+      "governedCommits": ["706dd935caf6a58a2d223a3ec421303f989e9e88"],
+      "boundCommits": ["706dd935caf6a58a2d223a3ec421303f989e9e88"],
+      "mergeCommits": [],
+      "authorizations": {
+        "granted": [],
+        "withheld": [
+          "package-publication",
+          "production-deployment",
+          "production-collection",
+          "real-user-processing",
+          "framework-integration",
+          "delivery-infrastructure"
+        ]
+      },
+      "assuranceLimitations": [
+        "No human review has been performed. Passing gates, checked tasks, pull-request state, and merged state are not review, approval, or assurance.",
+        "AI-produced analysis informed the implementation and is not review, approval, or assurance."
+      ],
+      "signed": false
+    }
   ]
 }

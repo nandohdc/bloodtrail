@@ -47,10 +47,12 @@ await step("package exports", () => npm("test:exports"));
 await step("Node/TypeScript/contract compatibility policy", () => npm("test:compatibility"));
 await step("approved contract immutability", () => npm("test:contract-immutability"));
 await step("production-scope and forbidden integration checks", () => npm("test:scope"));
+await step("repository publication-path exclusion", () => npm("test:publication-path"));
 await step("zero-runtime and exact development dependency checks", () => npm("test:dependencies"));
 await step("npm audit at low threshold", () => command("npm", ["audit", "--audit-level=low"]));
 await step("npm package dry-run and file allowlist", () => npm("test:package"));
 await step("exact changed-path enforcement", () => npm("test:changed-paths"));
+await step("governance merge and history integrity", () => npm("test:governance-history"));
 await step("cross-artifact coherence sweep", () => npm("test:coherence"));
 await step("verification lifecycle unit and differential mutation tests", () => npm("test:verification"));
 if (lifecycle.mode === "active" || lifecycle.mode === "governed") {
