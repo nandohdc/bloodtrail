@@ -102,10 +102,16 @@ be bound to the merged content rather than to a proposed branch.
 
 Pull request [#56](https://github.com/nandohdc/bloodtrail/pull/56) — *"docs(openspec): reconcile
 remediation findings and refresh the review packet"* — was merged into `main` on **2026-08-10**
-by Fernando Homem da Costa (`@nandohdc`) as merge commit
-`71dbd9535201501605e000afe14069a2a0be46ec`, bringing head commit
+by Fernando Homem da Costa (`@nandohdc`) as ~~merge commit~~
+`71dbd9535201501605e000afe14069a2a0be46ec`, ~~bringing head commit
 `a7ac317725389d7df2b32d939bc0824feb49668e` from branch
-`docs/remediation-12-1-to-12-3-reconciliation` onto `main`.
+`docs/remediation-12-1-to-12-3-reconciliation` onto `main`~~.
+
+> **CORRECTED 2026-08-11 under task 12.8.** `71dbd953…` is a **squash merge with a single
+> parent** (`51f1ad34…`), not a merge commit, and `a7ac3177…` is **not an ancestor of `main`** —
+> it survives only on the still-existing branch `docs/remediation-12-1-to-12-3-reconciliation`.
+> The squash replayed the branch content as a new single-parent commit. No SDK bytes are
+> affected. See **Retrospective merge reconciliation — task 12.8**.
 
 Checks recorded on the merge commit: `ci / lint`, `ci / test`, `ci / audit`, `sdk`, `contract`,
 `coverage`, and `sonar` all succeeded; `codescene delta` is pull-request-only and reports
@@ -1482,6 +1488,80 @@ Runtime limitation, unchanged and restated so this record does not overstate its
 supporting evidence, not exact-matrix evidence, and no refreshed exact-matrix evidence exists for
 this candidate. This limitation was acknowledged and accepted in the task 12.5 decision.
 
+## Retrospective merge reconciliation — task 12.8
+
+**No merge was performed for this task, and none is authorized.** The remediation content was
+already on `main` before any renewed review or decision existed. Task 12.8 is discharged by
+recording and verifying that historical merge, not by repeating it. The task 12.5 decision
+records merge authorization as NOT GRANTED and the ordering deviation as recorded, not cured.
+
+### Remediation content merge — PR #41, method-compliant
+
+| Property | Verified value |
+| --- | --- |
+| Merge commit | `2f5787bb6120aa72d2cbd063fd963c5e23435e88` |
+| Parents | **2** — `9539089f4c4229a48c1f554e68c06d010a8cc76e` and `66bf3b721e604e715dbaae2a98888ddc1e6ff7fe` |
+| Merged correction commit | `66bf3b721e604e715dbaae2a98888ddc1e6ff7fe`, preserved as the second parent |
+| Merged tree | `b3297f6dc5e59582708464225a732829b2902b60` |
+| Merge method | true merge commit — **no squash, rebase, amendment, or force-push** |
+| Merged by / date | Fernando Homem da Costa (`@nandohdc`), 2026-08-06 |
+| GitHub record | PR #41, state `MERGED`, `mergeCommit.oid` matches |
+
+The correction commit survives as a real parent rather than being replayed, which is what
+distinguishes a compliant merge from a squash under this task's wording.
+
+### Governed history is intact
+
+Every governed commit remains an ancestor of `main` HEAD, so no history was rewritten, dropped,
+or replaced:
+
+| Commit | Role | Ancestry |
+| --- | --- | --- |
+| `b4206f92fc92c7355efaa80d9f878353cf794452` | remediation proposal baseline | ancestor — intact |
+| `66bf3b721e604e715dbaae2a98888ddc1e6ff7fe` | merged F-08 correction | ancestor — intact |
+| `689fc394e36642b814df6672b3b514ba95c27944` | final SDK technical commit | ancestor — intact |
+| `2f5787bb6120aa72d2cbd063fd963c5e23435e88` | content merge | ancestor — intact |
+| `71dbd9535201501605e000afe14069a2a0be46ec` | packet merge | ancestor — intact |
+
+### Correction — the packet merge was squashed, and the review candidate is not on `main`
+
+Verifying the second merge contradicted this packet's own description of it, so the finding is
+recorded here rather than left to propagate.
+
+| Property | Packet's earlier claim | Verified value |
+| --- | --- | --- |
+| `71dbd953…` merge method | "merge commit" bringing `a7ac3177…` onto `main` | **squash merge — one parent**, `51f1ad340df8514428a86670b8bfc17f7f9bce96` |
+| `a7ac317725389d7df2b32d939bc0824feb49668e` | "review candidate", "candidate merge commit… selects the same SDK bytes" | **not an ancestor of `main`**; survives only on the unmerged branch `docs/remediation-12-1-to-12-3-reconciliation`, local and on `origin` |
+
+This compounds finding **R-A**. The review candidate was not merely one packet revision stale —
+it is not in `main`'s history at all, because PR #56 was squash-merged and its branch head was
+left behind on a side branch. A technical review bound literally to `a7ac3177…`, as the
+2026-08-10 extension directed, would have been bound to a commit unreachable from the branch it
+purported to review.
+
+The task 12.4 review was bound instead to final SDK technical commit
+`689fc394e36642b814df6672b3b514ba95c27944` and SDK subtree
+`428d20296d65b6795b7d116939ec036187792416`, both ancestors of and present at `main` HEAD. That
+binding is unaffected by this correction, and the subtree-identity claim in the reviewer
+statement remains true at every commit it names. Only the word "merge commit", applied to
+`71dbd953…`, was imprecise; the signed statement is not rewritten, per this packet's convention
+of superseding rather than editing recorded evidence.
+
+**Scope of the deviation.** PR #56 carried governance documentation only. The
+`packages/security-audit-sdk-core` tree object is identical either side of it and zero commits in
+the range touch the package, so no remediation content was squashed. The remediation content
+merge, PR #41, remains method-compliant as recorded above.
+
+### Task-checkbox timing
+
+Tasks 12.8, 12.9, and 12.10 must remain **unchecked while the change is active**.
+`check-coherence.mjs` rejects a checked merge-archive task in active mode
+(`[active-merge-archive-pending]`, verified by controlled mutation), and
+`exactArchivedTaskReconciliation` in `check-changed-paths.mjs` requires all three to be unchecked
+in the movement source and checked only in the archived copy. All three therefore transition
+together, in the archive commit. This section is the task 12.8 evidence; the box it belongs to is
+ticked at archive time.
+
 ## Current decision
 
 Packet revision: 2026-08-11 independent review pass (task 12.4)
@@ -1545,7 +1625,12 @@ Merged correction commit: `66bf3b721e604e715dbaae2a98888ddc1e6ff7fe`
 Merged tree: `b3297f6dc5e59582708464225a732829b2902b60`
 Merge date: 2026-08-06
 Merged by: Fernando Homem da Costa (@nandohdc)
-Merge method: merge commit, two parents, no squash/rebase/amend/force-push
+Merge method: merge commit, two parents, no squash/rebase/amend/force-push - VERIFIED task 12.8
+Packet merge commit: `71dbd9535201501605e000afe14069a2a0be46ec` (PR #56)
+Packet merge method: SQUASH, single parent `51f1ad340df8514428a86670b8bfc17f7f9bce96` - corrects the earlier "merge commit" description; governance documentation only, no SDK bytes
+Review candidate `a7ac3177...` ancestry: NOT an ancestor of main; survives only on branch docs/remediation-12-1-to-12-3-reconciliation - compounds finding R-A
+Governed history rewritten: NO - baseline, correction, final technical commit, and both merges all remain ancestors of HEAD
+Task 12.8 second merge performed: NO - discharged by recording and verifying the historical merge
 Merge preceded renewed technical review and renewed owner decision: YES
 Approval inferred from merge: NONE
 Archive authorization: APPROVED - tasks 12.9 and 12.10, by the 2026-08-11 project-owner decision
