@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/nandohdc/bloodtrail/compare/v0.2.6...v0.2.7) (2026-08-11)
+
+
+### Documentation
+
+* **openspec:** resolve CodeScene observation 4.5 — a parser blind spot, not a scoping rule ([#139](https://github.com/nandohdc/bloodtrail/issues/139)) ([37f9680](https://github.com/nandohdc/bloodtrail/commit/37f9680bc33240b36f1e7af45606b9d004c1c98e))
+
 ## [0.2.6](https://github.com/nandohdc/bloodtrail/compare/v0.2.5...v0.2.6) (2026-08-10)
 
 
