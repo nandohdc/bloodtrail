@@ -323,23 +323,22 @@ jobs:
         run: |
           echo "::warning::CodeScene CLI could not be installed; delta analysis was skipped"
 
-      # TEMPORARY — canary diagnostics for openspec task 4.5, round 2. Lives on this
-      # throwaway branch only and is never merged.
+      # TEMPORARY — canary diagnostics for openspec task 4.5, round 3. Never merged.
       #
-      # Round 1 measured base before head using the same --file-name for both, and the
-      # head numbers came back byte-identical to base for every pre-existing file. That
-      # is either a real CodeScene behaviour or contamination from the call ordering,
-      # and round 1 cannot tell them apart. Round 2 removes every confound:
+      # Rounds 1 and 2 agree, and PASS 2 of round 2 proved the result is keyed to file
+      # content alone: the identical bytes at a path cs had never seen scored exactly
+      # as the original, so no cache, path or git-history effect is involved.
       #
-      #   * the delta runs FIRST, before any untracked file exists in the tree
-      #   * PASS 1 analyses HEAD before anything has touched a base copy
-      #   * PASS 2 re-analyses the identical bytes at a path CodeScene has never seen,
-      #     which separates "keyed to content" from "keyed to path or git history"
-      #   * PASS 3 analyses base last, where it can no longer contaminate anything
-      #   * --file-name is dropped entirely, and sha256 + line counts prove exactly
-      #     what bytes were on disk for each measurement
+      # What they showed is that specific *functions* are invisible to the analyser.
+      # internal.ts reports its two pre-existing smells and nothing at all for three
+      # appended functions of cc = 15 with 8 arguments each. The one bad function that
+      # IS detected, in probe-new.ts, is also the only one with no `readonly` in its
+      # parameter list; the three that vanish carry `tags: readonly string[]` or
+      # `options: { readonly capacity?: number }`.
       #
-      # Always exits 0 so it can never be mistaken for the gate's own verdict.
+      # This round tests that directly with synthetic variants that differ ONLY in the
+      # signature, so nothing about file identity, history or size can confound it.
+      # Everything is written and deleted inside the step; no fixture is committed.
       - name: Delta scope diagnostics
         if: steps.install.outcome == 'success'
         env:
@@ -347,61 +346,124 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           set +e
-          FILES="packages/security-audit-sdk-core/src/probe-new.ts
-          packages/security-audit-sdk-core/src/bounded-fifo.ts
-          packages/security-audit-sdk-core/src/testing.ts
-          packages/security-audit-sdk-core/src/internal.ts"
-
-          echo "=== cs version ==="
           cs version
-          echo "=== refs (head, base) ==="
-          git rev-parse HEAD "origin/${BASE_REF}"
-          echo "=== changed files ==="
-          git diff --name-only "origin/${BASE_REF}...HEAD"
+          D=packages/security-audit-sdk-core/src
+          # One shared body: cc = 15, 5 bumpy blocks, referencing kind/weight/floor/
+          # ceiling/boost/penalty/tags/strict. Only the signature line varies.
+          body() {
+            cat <<'TS'
+            let score = weight;
+            if (kind === "primary") {
+              if (weight > ceiling) {
+                score = ceiling;
+              } else if (weight < floor) {
+                score = strict ? 0 : floor;
+              }
+            } else if (kind === "secondary") {
+              if (tags.length > 0) {
+                score += boost;
+              } else {
+                score -= penalty;
+              }
+            }
+            for (const tag of tags) {
+              if (tag.startsWith("deny:")) {
+                if (strict) {
+                  score -= penalty * 2;
+                } else {
+                  score -= penalty;
+                }
+              } else if (tag.startsWith("allow:")) {
+                if (score < ceiling) {
+                  score += boost;
+                }
+              }
+            }
+            if (score < floor) {
+              if (strict) {
+                return floor;
+              }
+              return 0;
+            }
+            if (score > ceiling) {
+              return ceiling;
+            }
+            return score;
+          TS
+          }
 
-          # Delta first: the tree is still pristine, so no untracked copy can affect it.
-          echo "##### DELTA #####"
-          out="$(cs delta "origin/${BASE_REF}" --output-format json --pretty 2>d.err)"
+          # emit <file> <fnName> <paramList>
+          emit() {
+            printf 'export function %s(\n%s\n): number {\n' "$2" "$3" >> "$1"
+            body >> "$1"
+            printf '}\n\n' >> "$1"
+          }
+
+          PLAIN='  kind: string,
+            weight: number,
+            floor: number,
+            ceiling: number,
+            boost: number,
+            penalty: number,
+            tags: string[],
+            strict: boolean,'
+
+          RO='  kind: string,
+            weight: number,
+            floor: number,
+            ceiling: number,
+            boost: number,
+            penalty: number,
+            tags: readonly string[],
+            strict: boolean,'
+
+          ROGEN='  kind: string,
+            weight: number,
+            floor: number,
+            ceiling: number,
+            boost: number,
+            penalty: number,
+            tags: ReadonlyArray<string>,
+            strict: boolean,'
+
+          DEFAULTED='  kind: string,
+            weight: number,
+            floor: number,
+            ceiling: number,
+            boost = 0,
+            penalty = 0,
+            tags: string[] = [],
+            strict = false,'
+
+          rm -f "$D"/v*.ts
+          emit "$D/v1-plain.ts"        v1 "$PLAIN"
+          emit "$D/v2-readonly.ts"     v2 "$RO"
+          emit "$D/v3-readonlyarr.ts"  v3 "$ROGEN"
+          emit "$D/v4-defaults.ts"     v4 "$DEFAULTED"
+
+          # readonly present in an interface but NOT in the parameter list
+          printf 'export interface Box {\n  readonly a: string;\n  readonly b: readonly string[];\n}\n\n' > "$D/v5-ro-interface.ts"
+          emit "$D/v5-ro-interface.ts" v5 "$PLAIN"
+
+          # ordering: does a readonly signature hide only itself, or everything after it?
+          emit "$D/v6-ro-then-plain.ts" v6ro    "$RO"
+          emit "$D/v6-ro-then-plain.ts" v6plain "$PLAIN"
+          emit "$D/v7-plain-then-ro.ts" v7plain "$PLAIN"
+          emit "$D/v7-plain-then-ro.ts" v7ro    "$RO"
+
+          for f in "$D"/v*.ts; do
+            echo "########## ${f}"
+            grep -n 'export function' "$f"
+            cs check "$f"
+            echo "(exit=$?)"
+          done
+          rm -f "$D"/v*.ts
+
+          echo "##### delta (unchanged invocation, for the record) #####"
+          out="$(cs delta "origin/${BASE_REF}" --output-format json 2>d.err)"
           echo "exit=$?"
-          printf '%s\n' "${out}"
-          echo "--- stderr ---"; cat d.err
-
-          echo "##### PASS 1: HEAD, nothing has touched a base copy yet #####"
-          for f in ${FILES}; do
-            echo "--- ${f}"
-            wc -l < "${f}"
-            sha256sum "${f}"
-            cs check "${f}"
-            echo "(exit=$?)"
-          done
-
-          # Identical bytes, fresh path. If a copy scores worse than the original then
-          # the verdict is keyed to the path or its git history, not to the content.
-          echo "##### PASS 2: same bytes at a path cs has never seen #####"
-          for f in ${FILES}; do
-            c="packages/security-audit-sdk-core/src/zz-copy-$(basename "${f}")"
-            cp "${f}" "${c}"
-            echo "--- ${c}  (copy of ${f})"
-            sha256sum "${c}"
-            cs check "${c}"
-            echo "(exit=$?)"
-            rm -f "${c}"
-          done
-
-          echo "##### PASS 3: BASE, last so it cannot contaminate the passes above #####"
-          BASE="${RUNNER_TEMP}/base"
-          git worktree add --detach "${BASE}" "origin/${BASE_REF}" >/dev/null 2>&1
-          for f in ${FILES}; do
-            if [ -f "${BASE}/${f}" ]; then
-              echo "--- base ${f}"
-              wc -l < "${BASE}/${f}"
-              sha256sum "${BASE}/${f}"
-              cs check "${BASE}/${f}"
-              echo "(exit=$?)"
-            else
-              echo "--- base ${f}: absent (new file)"
-            fi
-          done
+          printf '%s\n' "${out}" | head -c 2000
+          cat d.err
           exit 0
 
       - name: Delta analysis
