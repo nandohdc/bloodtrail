@@ -104,8 +104,14 @@ error forward.
 Rollback is removing the two new gates and the capability; nothing else depends on them, and no
 runtime, contract, or package behavior is involved.
 
-## Open Questions
+## Settled during implementation
 
-- Whether the governance manifest belongs in each change directory or as a generalization of
-  `verification-lifecycle.json`. Both satisfy the specs and the gate reads either; this can be
-  settled during implementation without changing scope or task breakdown.
+**The governance manifest generalizes `verification-lifecycle.json`** rather than living in each
+change directory. It is a new top-level `governanceRecords` array; `schemaVersion` stays `1` because
+the addition is purely additive. The file is already loaded once and frozen as `lifecycleMetadata` by
+`scripts/lifecycle-policy.mjs`, already read by four gates, already declared in
+`compatibility.json.verificationLifecycle`, and already the subject of two differential suites, so
+the new gate and its controls inherit an established mechanism instead of introducing one.
+*Alternative considered:* a per-change file — rejected because it needs its own discovery pass, and
+because manifests that travel into `changes/archive/` would keep asserting ancestry over history
+that later squash merges legitimately rewrite.

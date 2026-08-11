@@ -53,7 +53,50 @@ separate commits for proposal, implementation, and archive — do not mix them. 
 allowlist only, leaving unrelated untracked files untouched.
 
 **AI review is not approval.** Never treat an AI review, a PR assignment, or an informal message as
-human or organizational approval. Bind formal reviews to the exact reviewed commit hash.
+human or organizational approval. AI-produced analysis may inform a governance record but is never
+review, approval, or assurance — and neither are passing gates, checked tasks, issue state,
+pull-request state, or merged state.
+
+## How much governance a change needs
+
+**Governance weight scales with what the change can actually affect.** While every workspace a
+change touches is unpublished, undeployed, and processing no real-user data, that change needs one
+signed governance record, the passing gates, and archive validation — and nothing else. No separate
+review, owner-decision, restriction-restatement, or revalidation task group. Full attestation,
+including independent technical assurance by someone other than the project owner, is required
+before publication or deployment authorization is granted, and is not required merely to land or
+archive a change.
+
+That lightweight path is conditioned on a **mechanically established** state, never a claimed one.
+`test:scope`, `test:package`, `test:dependencies`, and `test:publication-path` are what establish it.
+A change cannot assert its way onto the lightweight path.
+
+**Cite gates; do not restate them.** A governance record must not narrate in prose any claim about
+repository state that a gate already enforces — cite the gate instead. If a change depends on a
+repository-state claim that no gate checks, **add the gate**. That is what
+`test:publication-path` is: the "no publication path exists" claim used to be hand-verified once per
+change, and is now enforced on every run.
+
+**Bind the record to a content object.** A governance record names the reviewed tree or subtree
+identifier, and may additionally name a commit; a commit hash alone is not an accepted binding. A
+commit cannot record its own hash, and a squash merge orphans the commit a record named — that is
+exactly how the adversarial remediation ended up bound to `a7ac3177`, which is not an ancestor of
+`main`. A tree identifier survives squash, rebase, and cherry-pick. Bindings are declared as
+structured data in
+[`verification-lifecycle.json`](packages/security-audit-sdk-core/verification-lifecycle.json) under
+`governanceRecords`, and `test:governance-history` verifies them: declared merge commits must have
+their declared parent count, bound commits must remain ancestors of `HEAD`, and governed commits
+must still resolve.
+
+**Supersede in version control, not in-document.** When a governance record is revised, the new
+revision *replaces* the old content; Git keeps the prior revision. Do not accumulate superseded
+revisions inside the document — that convention is how one packet reached ~1,500 lines and came to
+contain revisions describing revisions. A short dated correction note is allowed in the one case
+where a prior statement was factually wrong and a reader could otherwise carry the error forward.
+
+**A task must change the repository or produce evidence.** Write tasks that add a gate, change code,
+or run something whose output is recorded — not tasks that assert a state, restate an exclusion, or
+re-describe what a previous task already did.
 
 ## Commit subjects
 
