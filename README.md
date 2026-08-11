@@ -135,10 +135,12 @@ block.
 | `sonar` | yes | repository-wide SonarQube scan and blocking quality gate |
 | `conventional-commits` | yes | the PR title and **every** commit subject in the PR |
 | `coverage` | no | line coverage for both code workspaces, uploaded for the Sonar scan |
-| `codescene delta` | yes | behavioral code health delta — `cs delta --error-on-warnings` against the PR target. Fails on newly introduced code health issues; a CodeScene outage or licence problem warns instead of failing |
+| `codescene delta` | yes | behavioral code health delta — `cs delta --error-on-warnings` against the PR target. Fails on newly introduced code health issues **in the functions its TypeScript analyser can parse** (see the caveat below); a CodeScene outage or licence problem warns instead of failing |
 
 CodeScene additionally posts a `CodeScene Code Health Review (<base branch>)` Check Run from its own GitHub App, with line-level annotations and per-path quality profiles from
 [`.codescene/custom-quality-gates.json`](.codescene/custom-quality-gates.json). It is **not** required to merge — its context name varies by base branch, and a required check that fails to post would block merges with no override.
+
+> **Caveat — CodeScene is not exhaustive for TypeScript.** CLI 1.0.37 silently skips any function whose parameter list uses the `readonly` type modifier (`tags: readonly string[]`, `{ readonly capacity?: number }`). Such a function is never scored and never reaches the gate, so it can carry any amount of complexity while the check stays green. The equivalent `ReadonlyArray<T>` spelling is analysed normally, and `readonly` inside an interface is unaffected. SonarQube does flag this code, so treat the two analysers as complementary rather than redundant. Evidence and the reproduction are in the OpenSpec change's design notes.
 
 `release-please` runs on pushes to `main` to maintain the Release PR. It is not a pull-request
 context and is not required to merge — see [`RELEASING.md`](RELEASING.md).
