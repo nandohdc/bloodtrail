@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.8](https://github.com/nandohdc/bloodtrail/compare/v0.2.7...v0.2.8) (2026-08-11)
+
+
+### Documentation
+
+* **openspec:** archive CodeScene integration ([#143](https://github.com/nandohdc/bloodtrail/issues/143)) ([3464fab](https://github.com/nandohdc/bloodtrail/commit/3464fabfc02d6df4147d997203c56f44ee53d2ff))
+
 ## [0.2.7](https://github.com/nandohdc/bloodtrail/compare/v0.2.6...v0.2.7) (2026-08-11)
 
 
