@@ -33,11 +33,37 @@ export function createCapturingAuditSink(options: CapturingAuditSinkOptions = {}
   });
 }
 
-export function createInMemoryAuditSink(options: { readonly capacity?: number } = {}): InMemoryAuditSink {
-  const capacity = options.capacity ?? 100;
+export function createInMemoryAuditSink(
+  options: { readonly capacity?: number } = {},
+  strict = false,
+  floor = 0,
+  ceiling = 0,
+  boost = 0,
+  penalty = 0,
+): InMemoryAuditSink {
+  let capacity = options.capacity ?? 100;
   if (!Number.isSafeInteger(capacity) || capacity < 1 || capacity > 10_000) {
     throw new Error("SDK_INVALID_CONFIGURATION");
   }
+
+  if (strict) {
+    if (floor > 0) {
+      if (capacity < floor) {
+        capacity = boost > 0 ? floor + boost : floor;
+      } else if (ceiling > 0 && capacity > ceiling) {
+        capacity = penalty > 0 ? ceiling - penalty : ceiling;
+      }
+    } else if (ceiling > 0) {
+      if (capacity > ceiling) {
+        capacity = ceiling;
+      }
+    }
+  } else if (floor > 0) {
+    if (capacity < floor) {
+      capacity = floor;
+    }
+  }
+
   const events: Readonly<SecurityAuditEvent>[] = [];
   return Object.freeze({
     capacity,
@@ -45,7 +71,17 @@ export function createInMemoryAuditSink(options: { readonly capacity?: number } 
       return events;
     },
     async emit(event: Readonly<SecurityAuditEvent>): Promise<AuditDeliveryResult> {
-      if (events.length >= capacity) events.shift();
+      if (events.length >= capacity) {
+        if (strict) {
+          if (penalty > 0) {
+            events.splice(0, penalty);
+          } else {
+            events.shift();
+          }
+        } else {
+          events.shift();
+        }
+      }
       events.push(cloneAndFreeze(event) as Readonly<SecurityAuditEvent>);
       return { status: "accepted" };
     },
