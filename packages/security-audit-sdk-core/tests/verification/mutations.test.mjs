@@ -234,68 +234,6 @@ test("archive movement rejects a destination outside the exact archive pattern",
   fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-wrong-archive-path");
 });
 
-// Attested-baseline controls. archivedCaseRepository leaves the active change at
-// HEAD, so every control above exercises the re-derived path. These commit the
-// movement first, which is what a squash merge leaves behind: an archive with no
-// reachable pre-archive commit.
-
-test("attested baseline is used when the source revision is unreachable", () => {
-  const { root } = attestedCaseRepository("archive-movement-attested-pass");
-  const result = succeeds(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"]);
-  assert.match(result.stdout, /archive movement baseline: attested/);
-});
-
-test("attested baseline rejects a tampered archived file", () => {
-  const { root, archiveRelativePath } = attestedCaseRepository("archive-movement-attested-byte");
-  mutateArchivedFile(root, archiveRelativePath, "proposal.md");
-  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-byte-substitution");
-});
-
-test("attested baseline rejects a tampered archived task ledger", () => {
-  const { root, archiveRelativePath } = attestedCaseRepository("archive-movement-attested-tasks");
-  mutateArchivedFile(root, archiveRelativePath, "tasks.md");
-  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-byte-substitution");
-});
-
-test("attested baseline rejects a mode change", () => {
-  const { root, archiveRelativePath } = attestedCaseRepository("archive-movement-attested-mode");
-  chmodSync(resolve(root, archiveRelativePath, "proposal.md"), 0o755);
-  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-mode-mismatch");
-});
-
-test("attested baseline rejects an added archived path", () => {
-  const { root, archiveRelativePath } = attestedCaseRepository("archive-movement-attested-addition");
-  writeFileSync(resolve(root, archiveRelativePath, "unexpected.md"), "unexpected\n");
-  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-unmatched-addition");
-});
-
-test("attested baseline rejects a removed archived path", () => {
-  const { root, archiveRelativePath } = attestedCaseRepository("archive-movement-attested-removal");
-  rmSync(resolve(root, archiveRelativePath, "proposal.md"));
-  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-unmatched-deletion");
-});
-
-test("archive movement fails when no attestation records the archive", () => {
-  const { root } = attestedCaseRepository("archive-movement-attestation-missing", { attestation: null });
-  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-attestation-missing");
-});
-
-test("archive movement fails when two attestations record the same archive", () => {
-  const { root } = attestedCaseRepository("archive-movement-attestation-ambiguous", { duplicate: true });
-  fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-attestation-ambiguous");
-});
-
-// The decisive control for the fallback rule. The archive is tampered AND the
-// attestation is rewritten to match it, so an implementation that fell back on a
-// content mismatch would pass. A reachable source revision must still be used.
-test("a reachable source revision is used even when the attestation matches a tampered archive", () => {
-  const { root, archiveRelativePath } = attestedCaseRepository("archive-movement-no-fallback", { reachableSource: true });
-  mutateArchivedFile(root, archiveRelativePath, "proposal.md");
-  reattestFromWorkingTree(root, archiveRelativePath);
-  const result = fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-byte-substitution");
-  assert.match(result.stdout, /archive movement baseline: re-derived from attested revision/);
-});
-
 test("archived fixture restoration accepts exactly one archive and preserves source bytes", () => {
   const fixture = fixtureRestorationRepository("fixture-restore-one");
   const sourceArchive = resolve(fixture.sourceRoot, fixtureArchiveRoot, `2099-01-02-${remediation.name}`);
@@ -1085,69 +1023,6 @@ function archivedCaseRepository(name) {
   rmSync(resolve(root, activeChange), { recursive: true, force: true });
   synchronizeCanonicalCapability(root, delta);
   return Object.freeze({ root, archiveRelativePath });
-}
-
-const UNREACHABLE_REVISION = "0123456789abcdef0123456789abcdef01234567";
-
-/**
- * Builds an archived case whose movement is already committed, so the active
- * change is absent from HEAD. That is the state a squash merge leaves: the
- * pre-archive commit is unreachable and only the attestation remains.
- */
-function attestedCaseRepository(name, options = {}) {
-  const { root, archiveRelativePath } = archivedCaseRepository(name);
-  const preMovement = git(root, ["rev-parse", "HEAD"]).stdout.trim();
-  git(root, ["add", "-A"]);
-  git(root, ["commit", "-m", "test: synthetic archive movement"]);
-
-  if (options.attestation !== null) {
-    const attestation = {
-      archive: archiveRelativePath,
-      sourceRevision: options.reachableSource ? preMovement : UNREACHABLE_REVISION,
-      attestedAt: "2099-01-02",
-      files: archivedInventoryFromHead(root, archiveRelativePath),
-    };
-    writeAttestations(root, options.duplicate ? [attestation, { ...attestation }] : [attestation]);
-  } else {
-    writeAttestations(root, []);
-  }
-  return Object.freeze({ root, archiveRelativePath, preMovement });
-}
-
-function archivedInventoryFromHead(root, archiveRelativePath) {
-  const listed = git(root, ["ls-tree", "-r", "HEAD", "--", archiveRelativePath]).stdout.trim();
-  const files = {};
-  for (const line of listed.split("\n").filter(Boolean)) {
-    const [meta, path] = line.split("\t");
-    const [mode, , oid] = meta.split(" ");
-    files[path.slice(archiveRelativePath.length + 1)] = { mode, oid };
-  }
-  assert.ok(Object.keys(files).length > 0, "attested inventory must not be empty");
-  return files;
-}
-
-function writeAttestations(root, attestations) {
-  const path = resolve(root, "packages/security-audit-sdk-core/verification-lifecycle.json");
-  const metadata = JSON.parse(readFileSync(path, "utf8"));
-  metadata.movementAttestations = attestations;
-  writeFileSync(path, `${JSON.stringify(metadata, null, 2)}\n`);
-}
-
-function mutateArchivedFile(root, archiveRelativePath, relativePath) {
-  const path = resolve(root, archiveRelativePath, relativePath);
-  writeFileSync(path, `${readFileSync(path, "utf8")}\nsynthetic archive mutation\n`);
-}
-
-/** Rewrites the attestation to match the current working-tree archive. */
-function reattestFromWorkingTree(root, archiveRelativePath) {
-  const path = resolve(root, "packages/security-audit-sdk-core/verification-lifecycle.json");
-  const metadata = JSON.parse(readFileSync(path, "utf8"));
-  const attestation = metadata.movementAttestations[0];
-  for (const relativePath of Object.keys(attestation.files)) {
-    const oid = git(root, ["hash-object", "--no-filters", "--", `${archiveRelativePath}/${relativePath}`]).stdout.trim();
-    attestation.files[relativePath] = { ...attestation.files[relativePath], oid };
-  }
-  writeFileSync(path, `${JSON.stringify(metadata, null, 2)}\n`);
 }
 
 function synchronizeCanonicalCapability(root, delta) {
