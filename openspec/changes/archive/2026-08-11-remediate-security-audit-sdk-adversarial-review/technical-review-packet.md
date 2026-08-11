@@ -1,8 +1,9 @@
 # Remediation Technical Review Packet
 
-Packet revision: **2026-08-10 candidate-defect extension (task 12.4 input)**
+Packet revision: **2026-08-11 independent review pass (task 12.4 input)**
 
-Prior revision: 2026-08-08 reconciliation refresh (tasks 12.1–12.3).
+Prior revisions: 2026-08-10 candidate-defect extension; 2026-08-08 reconciliation refresh
+(tasks 12.1–12.3).
 
 ## Current governance status
 
@@ -57,6 +58,25 @@ This extension was prepared by an AI assistant. **It is not a technical review, 
 independent review, and not an owner decision.** It adds reviewer input to tasks 12.4 and 12.5;
 it does not discharge them.
 
+### What the 2026-08-11 review pass changed
+
+- Re-executed all three candidate-state defect reproductions from scratch rather than reading
+  the prior transcript, as the prior revision instructed. **S-3/S-4 and S-6 reproduce exactly.
+  S-1 does not reproduce and is refuted as characterized** — the invariant the prior revision
+  called "entirely unenforced" is enforced structurally by the generated schema.
+- Reviewed the post-review drift, which no prior review of any kind covered. Conclusion:
+  behavior-preserving. Corrected its statistics (**637/325 across 16 files**, not 626/325 across
+  14) and the claim that none of it was motivated by a remediation requirement.
+- Recorded that the review candidate `a7ac3177…` is **one packet revision stale**: it predates
+  the 2026-08-10 extension that named it.
+- Added one new finding, **R-F**, not present in any prior revision: a repeated object reference
+  is reported as `PROHIBITED_DATA`.
+
+This pass was performed by an AI assistant. **It is not a technical review, not independent
+assurance, and not an owner decision.** It adds reviewer input to task 12.4; it does not
+discharge it. The reviewer identity, reviewed commit, and assurance limitations that 12.4
+requires remain PENDING and must be recorded by a human reviewer.
+
 ## Merge execution record
 
 Pull request [#41](https://github.com/nandohdc/bloodtrail/pull/41) was merged into `main` on
@@ -82,10 +102,16 @@ be bound to the merged content rather than to a proposed branch.
 
 Pull request [#56](https://github.com/nandohdc/bloodtrail/pull/56) — *"docs(openspec): reconcile
 remediation findings and refresh the review packet"* — was merged into `main` on **2026-08-10**
-by Fernando Homem da Costa (`@nandohdc`) as merge commit
-`71dbd9535201501605e000afe14069a2a0be46ec`, bringing head commit
+by Fernando Homem da Costa (`@nandohdc`) as ~~merge commit~~
+`71dbd9535201501605e000afe14069a2a0be46ec`, ~~bringing head commit
 `a7ac317725389d7df2b32d939bc0824feb49668e` from branch
-`docs/remediation-12-1-to-12-3-reconciliation` onto `main`.
+`docs/remediation-12-1-to-12-3-reconciliation` onto `main`~~.
+
+> **CORRECTED 2026-08-11 under task 12.8.** `71dbd953…` is a **squash merge with a single
+> parent** (`51f1ad34…`), not a merge commit, and `a7ac3177…` is **not an ancestor of `main`** —
+> it survives only on the still-existing branch `docs/remediation-12-1-to-12-3-reconciliation`.
+> The squash replayed the branch content as a new single-parent commit. No SDK bytes are
+> affected. See **Retrospective merge reconciliation — task 12.8**.
 
 Checks recorded on the merge commit: `ci / lint`, `ci / test`, `ci / audit`, `sdk`, `contract`,
 `coverage`, and `sonar` all succeeded; `codescene delta` is pull-request-only and reports
@@ -931,30 +957,645 @@ The historical merge authorization above is not an action and is now superseded.
 itself (12.8) has not been performed, and the amended F-08 specification candidate has no
 merge authorization.
 
+## Independent review pass — 2026-08-11 (task 12.4 input)
+
+Performed against the working tree at `main` HEAD `251b855142ea5c7c00196a73ab712efe55389b72`,
+whose `packages/security-audit-sdk-core` tree is `428d20296d65b6795b7d116939ec036187792416` —
+byte-identical to the final SDK technical commit, the candidate, and both merges. Runtime:
+Node v26.7.0, macOS arm64. Every reproduction below was **re-executed from scratch**, as the
+prior revision instructed, rather than read from its transcript.
+
+**Independence:** this pass took no part in the implementing pass and reached its conclusions
+from the source, the generated schema, and executed reproductions. It is nonetheless
+AI-produced, and is therefore reviewer input, not review, not approval, and not assurance.
+
+### R-A — the recorded review candidate is one packet revision stale
+
+| Property | Value |
+| --- | --- |
+| Candidate named by this packet | `a7ac317725389d7df2b32d939bc0824feb49668e` |
+| Packet revision present at that commit | 2026-08-08 reconciliation refresh, 804 lines |
+| Commit that introduced the 2026-08-10 extension | `5f3da30` (PR #133, merging PR #58) |
+| S-1 / S-3 / S-4 / S-6 sections present at `a7ac3177…` | **No** |
+| `main` HEAD at this pass | `251b855142ea5c7c00196a73ab712efe55389b72` |
+| SDK subtree at candidate, at `5f3da30`, and at HEAD | identical — `428d2029…` |
+| Remediation-directory delta `a7ac3177…HEAD` | this packet only, +189 −8 |
+
+The 2026-08-10 extension stated that the earlier revision "could not name the candidate because
+a commit cannot record its own hash; it is now resolved and named". It named the *previous*
+revision's commit, so the self-reference gap recurred one revision later: a review bound
+literally to `a7ac3177…` would review a repository state that does not contain the very defect
+disclosures the packet places inside the 12.4 reviewer's scope.
+
+**No SDK bytes are affected** — the subtree is identical at every commit in play. The exposure
+is governance scope only. The reviewer should bind 12.4 to a commit that actually contains the
+packet revision being relied on, and should expect that commit to be the one that records the
+review, which cannot name its own hash either. The durable fix is to bind the review to the
+**SDK subtree object** `428d2029…` plus a named packet revision, rather than to a commit hash
+that must exist before it is written.
+
+### R-B — S-1 does not reproduce; it is refuted as characterized
+
+The prior revision classified S-1 as a **live defect** — "a producer can self-assert
+`downstream_enrichment` trust… Current posture: **Fail open** — accepted and delivered" — and
+concluded the normative invariant is "already normative and entirely unenforced".
+
+Re-execution does reproduce the *literal* transcript: an ordinary producer emitting
+`trust_level: "downstream_enrichment"` with `risk.level: "critical"` is accepted. But that
+transcript does not demonstrate an escalation, and the surrounding conclusion is wrong.
+
+The contract source declares the namespace itself:
+
+```
+namespace  bloodtrail.audit.enrichment.v1
+authority  "downstream enrichment owner"
+trust      "downstream_enrichment"
+```
+
+`downstream_enrichment` **is** this namespace's own declared trust level. Writing it asserts
+exactly what the namespace permits, so it is not "a higher trust level than their source
+permits". It is also not "the highest downstream trust level": in the `trust_levels` registry it
+ranks fifth of seven, above only `client_claim` and `unknown`.
+
+The decisive test is whether a producer can assert a *higher* level. It cannot:
+
+```
+provenance.trust_level=authoritative_server   REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=verified_assertion     REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=observed_transport     REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=derived_server         REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=downstream_enrichment  ACCEPTED
+provenance.trust_level=client_claim           REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=unknown                REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=made_up_level          REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+unlisted field  extensions.*.attacker         REJECTED UNKNOWN_EXTENSION @ /extensions/…
+unlisted nested risk.score                    REJECTED UNKNOWN_EXTENSION @ /extensions/…/risk
+```
+
+The enforcing mechanism is in the generated schema, not in either module the prior revision
+inspected:
+
+```json
+"trust_level": { "const": "downstream_enrichment" }
+```
+
+with `additionalProperties: false` and `unevaluatedProperties: false` at every level and
+`maxProperties: 4` on `extensions`. The `const` makes escalation structurally impossible, and
+the allowlist the namespace declares is enforced too.
+
+**Why the prior revision missed it.** It audited brand time (`context.ts` —
+`registeredEnrichmentExtension` performs no validation: true) and the semantic layer
+(`semantic.ts` `validateExtensions` — namespace registration and byte bounds only: also true)
+and concluded the field "is never inspected". `validateSecurityAuditEvent` runs
+`validateSchemaStructure` **before** `validateBaseSemantics`, and that is where the field is
+inspected. The finding is a layering blind spot in the analysis, not a defect in the SDK.
+
+**Consequence for the reviewer.** The prior revision invites a **major-version breaking change**
+— removing or restricting exported, documented, example-exercised public API, citing
+`compatibility.json → semverClassification.major`. On this evidence that change is unnecessary
+and would remove working, contract-conformant API. Recommend withdrawing S-1 as a defect.
+
+The one residual observation, materially narrower than S-1 as written: the SDK does not verify
+that the *entity* populating the enrichment namespace is in fact a downstream enrichment engine.
+Since the namespace is pinned to a single low trust level, a producer gains no privilege by
+populating it, and `mapping_behavior` already states the namespace "never redefines canonical
+fields" — the canonical `risk` field was confirmed untouched (`null`) while the extension
+carried `critical`. Any consumer that reads extension risk as canonical risk is violating the
+declared mapping behavior; that is a consumer obligation, not an SDK defect.
+
+### R-C — S-3 / S-4 reproduces exactly as transcribed
+
+Two genuine on-disk copies, not a query-string import:
+
+```
+[P1a] typeof A.authoritativeActor = function
+      A.authoritativeActor === B.authoritativeActor = false
+[P2a] copy A createAuditContextFrame(brand from copy A) -> ACCEPTED
+[P2b] copy A createAuditContextFrame(brand from copy B) -> REJECTED AUTHORITY_ESCALATION @ /actor
+[P2c] copy B createAuditContextFrame(brand from copy A) -> REJECTED AUTHORITY_ESCALATION @ /actor
+```
+
+Symmetric, and confirmed to fail closed. The operability half is also confirmed: the error is
+`SecurityAuditSdkError`, code `AUTHORITY_ESCALATION`, category `authority`, message equal to the
+code, with nothing distinguishing a duplicate-install packaging fault from an attack. A
+triaging operator sees a security escalation. Classification as a design and operability
+concern rather than a live vulnerability is correct as written.
+
+### R-D — S-6 reproduces exactly as transcribed
+
+`npm pack`, then installing the tarball into an empty consumer with `--omit=dev`:
+
+```
+added 1 package
+IMPORT FAILED:
+Cannot find module 'ajv/dist/runtime/ucs2length'
+code=MODULE_NOT_FOUND
+```
+
+Shipped `require()` targets in `dist/generated/schema-validator.generated.cjs` are
+`ajv/dist/runtime/ucs2length` and `ajv-formats/dist/formats`; `dependencies` is `{}` and both
+packages are `devDependencies`. The failure is eager, at import, before any SDK API is reachable.
+
+The gate-blindness analysis is confirmed independently. `check-dependencies.mjs` contains no
+inspection of shipped `require()`s at all. `check-package-contents.mjs` asserts the validator is
+present in the pack (line 37) *and* that `dependencies` is empty (line 10) — two assertions that
+are individually true and jointly describe an artifact that cannot be installed.
+`compatibility.json` records `runtimeDependencyCount: 0` and
+`modulePolicy: "esm-public-cjs-standalone-validator"`; the validator is demonstrably not
+standalone. This defect surfaced a second time on its own during R-C, when relocating `dist/`
+outside the package made every import fail until `ajv` was made resolvable.
+
+### R-E — post-review drift is behavior-preserving
+
+This is the surface no prior review covered. All sixteen files were reviewed.
+
+**Statistics correction.** The prior revision reports "626 insertions, 325 deletions across 14
+files". The measured figure is **637 insertions, 325 deletions across 16 files**. Two files are
+absent from its table: `MIGRATION.md` (+10) and `package.json` (+1); 626 + 11 = 637.
+
+**Claim correction.** The prior revision states every contributing commit "was motivated by
+static-analysis compliance…, CI/coverage plumbing, or documentation — not by any remediation
+requirement." The omitted `MIGRATION.md` change documents the F-08 bounded identity-retention
+migration, which *is* a remediation requirement. The `package.json` change adds the
+`test:coverage` script; no version, engine, export, or dependency field moved.
+
+**Source review.** `context.ts` (4) is import consolidation with no behavioral change — the
+brand registry and constructors are untouched, which the prior revision's table row "Brand
+authority module" does not make clear. `validation/index.ts` (2) drops a redundant import that
+the file already re-exports. `config.ts` (6) widens an internal type that collapses to `string`
+anyway, and folds `descriptor === undefined || descriptor.value === undefined` into
+`descriptor?.value === undefined`; equivalent, and accessor-backed retention is still rejected
+earlier. `events.ts` (258) and `sdk.ts` (106) are extract-function refactors; `prohibited.ts`
+(50) splits `scan` into `scanScalar`/`scanArray`/`scanObject`. Each remediated behavior traced
+through the refactor unchanged, including commit-state derivation, terminal-success reservation,
+transformation pre/post prohibited scans, and cycle detection.
+
+Three deliberate details worth recording:
+
+- `sdk.ts` replaced the truthiness guard `completionEvent && suppliedOperation !== undefined`
+  with `completionEvent !== undefined && …`. These differ only if an event name could be the
+  empty string; names come from the frozen catalog, so they cannot.
+- `sdk.ts` merged two `try` blocks in `#handoffValidatedEvent`. A synchronous throw from
+  `sink.emit` and a rejected promise both yield `SDK_SINK_FAILURE`, and `pending` stays
+  `undefined` on a synchronous throw so such an event never enters `#inFlight` — preserving the
+  old control flow exactly.
+- `events.ts` carries a comment recording that `resolveEventIdentity` keeps `config` and
+  `normalizedInput` in scope so mutation control `M-F11-C` still compiles. Production structure
+  shaped by a test harness is a mild smell; it is documented and harmless here.
+
+**Assurance basis for the gate scripts.** `check-coherence.mjs` (198), `check-changed-paths.mjs`
+(166), `lifecycle-policy.mjs` (36), `generate-contract.mjs` (15), `verification-helpers.mjs`
+(12), and `check-scope.mjs` (11) were not reviewed line by line. Their assurance rests on the
+differential mutation controls, which prove each gate *fails* when its target defect is
+reintroduced — 25 named controls (`M-F07-A`–`D`, `M-F08-A`–`G`, `M-F10-A`–`G`, `M-F11-A`–`G`)
+plus the unnamed controls in `mutations.test.mjs`, all passing. The reviewer should note the
+asymmetry the prior revision records: **F-01, F-02, and F-03 — the blocker findings — have no
+named mutation controls**, and `sdk.ts`, which carries F-01 and F-02, is exactly what the drift
+refactored by 106 lines. Their post-drift assurance rests on the adversarial runtime tests in
+`pass2.test.ts` (5 `SDK_DUPLICATE_SUCCESS` and 3 `SDK_INVALID_OPERATION_TRANSITION` assertions)
+and in `f08`/`f11`, which pass but do not prove they would fail on regression.
+
+### R-F — new finding: a repeated object reference reports as `PROHIBITED_DATA`
+
+Not present in any prior packet revision.
+
+The two scanners on the validation path disagree about repeated references.
+`inspectSupportedValue` in `errors.ts` deletes each node from its ancestor set in a `finally`,
+so it rejects true **cycles** only. `scan` in `prohibited.ts` adds to `seen` and never removes,
+so it rejects any **repeated** reference. `normalizeCanonicalInput` uses `structuredClone`,
+which preserves shared references, so a DAG-shaped value passes the first scanner and is
+rejected by the second.
+
+Through public API — `validateSecurityAuditEvent` is exported from the package root:
+
+```
+control, no shared refs            -> SDK_MISSING_EVENT_FIELD @ /initiator   (reaches semantics)
+service and deployment distinct    -> SDK_MISSING_EVENT_FIELD @ /initiator   (reaches semantics)
+service === deployment (same obj)  -> PROHIBITED_DATA @ /deployment          (stops at the scan)
+```
+
+Stated most sharply, two values with byte-identical JSON serialization receive different
+verdicts based only on in-memory object identity:
+
+```
+identical JSON serialization: true
+  validate(in-memory, shared ref) -> PROHIBITED_DATA @ /deployment
+  validate(JSON round-tripped)    -> SDK_MISSING_EVENT_FIELD @ /event
+```
+
+| Property | Value |
+| --- | --- |
+| Class | Correctness and diagnostics; **not** a security defect |
+| Current posture | **Fail closed** — the input is rejected, never accepted |
+| Exposure | Programmatically constructed events only; `JSON.parse` output cannot share references |
+| Severity | Non-blocking |
+
+The input contains no prohibited data, yet the caller receives a privacy-category code naming a
+field that is legitimate. Because the SDK deliberately returns bounded errors with no caller
+data, there is no way for a caller to tell a genuine prohibited-data rejection from an
+accidental object reuse. Consumers validating deserialized events — the documented use — are
+unaffected.
+
+### Verification evidence for this pass
+
+| Item | Result |
+| --- | --- |
+| `npm run validate`, full chain | **PASS — exit 0** |
+| Runtime tests | 112 / 112 pass, 0 fail |
+| Verification / lifecycle tests | 129 / 129 pass, 2 suites, 0 fail |
+| `test:git` | PASS — whitespace, final newlines, index empty |
+| `test:changed-paths` | PASS — active mode |
+| Runtime used | **Node v26.7.0**, macOS arm64 |
+
+### Assurance limitations of this pass
+
+1. **AI-produced.** Per this change's own standard this is reviewer input, not review, not
+   approval, not assurance. It does not discharge task 12.4.
+2. **Off-matrix runtime.** Node v26.7.0 only. `compatibility.json` declares `24.2.0` and
+   `26.5.0`; neither is installed here. No refreshed exact-matrix evidence exists for the
+   candidate, and this pass does not produce any.
+3. **Gate scripts not reviewed line by line** (R-E); their assurance is delegated to the
+   differential mutation controls.
+4. **F-01, F-02, F-03 have no named mutation controls**, and `sdk.ts` was refactored inside the
+   unreviewed drift window.
+5. Reproductions establish the *presence or absence* of the specific behaviors exercised, on one
+   runtime, at one tree. They do not establish absence of related defects and are not a security
+   assessment.
+6. R-B refutes S-1 on the evidence gathered here. A reviewer who disagrees should re-run the
+   escalation matrix before acting on either position.
+
+## Renewed reviewer statement — task 12.4
+
+This is the operative task 12.4 record. The 2026-08-05 reviewer statement above remains
+**SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION** and is not revived by it.
+
+### Review identity
+
+- **Technical reviewer:** Fernando Homem da Costa (`@nandohdc`), project owner
+- **Review date:** 2026-08-11
+- **Reviewed final SDK technical commit:** `689fc394e36642b814df6672b3b514ba95c27944`
+- **Reviewed SDK subtree object:** `428d20296d65b6795b7d116939ec036187792416`
+- **Governance state reviewed:** this packet at its 2026-08-11 independent review pass revision,
+  with the repository at `main` HEAD `251b855142ea5c7c00196a73ab712efe55389b72`
+- **Review method:** direct reading of the SDK source at the reviewed subtree and of the
+  post-review drift diff, together with adoption of the executed reproductions and layered
+  verification recorded in **Independent review pass — 2026-08-11**
+- **Independence basis:** independent *of the implementing pass* — the review analysis was
+  performed by a party that took no part in implementation, per the 2026-08-06 governance
+  amendment. It is **not** independent third-party assurance, and no such claim is made
+
+### Statement (verbatim)
+
+> Decision: PASS
+>
+> I reviewed the SDK at final technical commit `689fc394e36642b814df6672b3b514ba95c27944`,
+> subtree `428d20296d65b6795b7d116939ec036187792416`, together with the governance evidence in
+> this packet at its 2026-08-11 revision. The subtree is byte-identical at the final technical
+> commit, at the review candidate, at both merge commits, and at current `main`, so the SDK bytes
+> under review are unambiguous.
+>
+> My scope was the post-review drift of 637 insertions and 325 deletions across 16 files, which
+> no prior review of any kind had covered; the three candidate-state defects S-1, S-3/S-4, and
+> S-6; the new finding R-F; and the finding dispositions reconciled under tasks 12.1 and 12.2.
+>
+> I find no blocking defect in that scope. The post-review drift is behavior-preserving: each
+> remediated behavior traces through the refactors unchanged.
+>
+> Withdrawn finding: S-1 is withdrawn. The invariant it reported as "entirely unenforced" is
+> enforced structurally by the generated schema, which pins the enrichment namespace's
+> `provenance.trust_level` to the single value `downstream_enrichment` and rejects every other
+> registry value, including every higher trust level. The remedial change it invited — removing
+> or restricting exported, documented, example-exercised public API — is not warranted and is not
+> authorized. The narrower true residue is that enforcement is single-layer, because the semantic
+> validator does not inspect the field; I record that as a defense-in-depth observation, not a
+> defect.
+>
+> Non-blocking risk: S-6 is a confirmed live defect. The packed artifact `require()`s two
+> `devDependencies` and cannot be imported from a production-only install, and both relevant
+> gates are structurally blind to it. It is non-blocking solely because the package is
+> unpublished and therefore cannot be installed by anyone. It would be blocking for a published
+> package.
+>
+> Non-blocking risk: S-3/S-4 — brand authority is scoped to the module copy, so a duplicate
+> installation surfaces as `AUTHORITY_ESCALATION` with no diagnostic distinguishing a packaging
+> fault from an attack. It fails closed.
+>
+> Non-blocking risk: R-F — a repeated object reference is reported as `PROHIBITED_DATA`, so two
+> values with identical JSON serialization can validate differently. It fails closed and affects
+> programmatically constructed events only.
+>
+> Documented limitation: F-01, F-02, and F-03 have no named differential mutation controls, and
+> `sdk.ts` — which carries F-01 and F-02 — was refactored inside the unreviewed drift window.
+> Their post-drift assurance rests on adversarial runtime tests that pass but do not prove they
+> would fail on regression. Any future change to `sdk.ts` should add those controls first.
+>
+> Documented limitation: I did not independently re-execute the reproductions or the layered
+> verification. I read and adopted them, and they were produced by an AI assistant, which is
+> reviewer input and is not review, approval, or assurance.
+>
+> Documented limitation: I did not review the six verification and generator scripts line by
+> line. I relied on their differential mutation controls.
+>
+> Documented limitation: no exact-runtime matrix evidence exists for this candidate. No run on
+> Node 24.2.0 or 26.5.0 was performed; the recorded run used off-matrix Node v26.7.0.
+>
+> Documented limitation: I am both the project owner and the technical reviewer. This is owner
+> self-review and does not constitute independent third-party assurance. Independence here means
+> independence from the implementing pass only, per the 2026-08-06 governance amendment.
+>
+> Recommendation to the project owner: make correction of S-6 an explicit precondition of any
+> future package-publication authorization. Binding that authorization is the owner decision's to
+> make under task 12.5, not this review's.
+>
+> I make this decision on my own reading of the evidence identified above. I do not infer it from
+> AI analysis, from passing tests or checks, from issue or pull-request state, from the merged
+> state of `main`, or from either merge having been performed.
+>
+> This statement is a technical review only. It is not a project-owner decision (task 12.5), not
+> merge authorization, and not archive authorization.
+>
+> Production deployment remains NOT AUTHORIZED.
+>
+> Package publication remains NOT AUTHORIZED.
+
+— Fernando Homem da Costa (@nandohdc), project owner and technical reviewer, 2026-08-11
+
+## Renewed project-owner decision — task 12.5
+
+This is the operative task 12.5 record. The 2026-08-05 owner decision above remains
+**SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION** and is not revived by it.
+
+### Decision identity
+
+- **Owner name:** Fernando Homem da Costa
+- **Owner handle:** `@nandohdc`
+- **Owner role:** Project owner
+- **Decision date:** 2026-08-11
+- **Owner-reviewed final SDK technical commit:** `689fc394e36642b814df6672b3b514ba95c27944`
+- **Owner-reviewed technical tree:** `b497a60b1c78b90099d9c144834e7e937861d8ff`
+- **Owner-reviewed SDK subtree:** `428d20296d65b6795b7d116939ec036187792416`
+- **Owner-reviewed technical-review evidence commit:** `3252e4f06d9c616fa1fbdc81ef883f03ba7b6163`
+- **Owner-reviewed technical-review evidence tree:** `7655120bb36f15140be80c7508fff3df7f1bd107`
+- **Owner decision:** APPROVED_FOR_ARCHIVE
+- **Merge authorization:** NOT GRANTED — the merge was performed on 2026-08-06 without prior
+  authorization and is reconciled retrospectively under task 12.8; no second merge is authorized
+- **Archive authorization:** APPROVED — tasks 12.9 and 12.10
+- **Production deployment authorization:** NOT AUTHORIZED
+- **Package publication authorization:** NOT AUTHORIZED
+
+### Owner statement (verbatim)
+
+> Owner: Fernando Homem da Costa (@nandohdc)
+>
+> Role: Project owner
+>
+> Decision date: 2026-08-11
+>
+> Owner decision: APPROVED_FOR_ARCHIVE
+>
+> I personally make this decision for the exact commits and trees identified above. No historical
+> owner decision is reused; the 2026-08-05 decision remains superseded and non-operative.
+>
+> Independent third-party assurance was NOT obtained. The technical review recorded under task
+> 12.4 was performed by me, as project owner. Its independence is independence from the
+> implementing pass only, per the 2026-08-06 governance amendment. No third party has reviewed
+> this remediation, this SDK, or this packet at any point. I make no claim of independent
+> assurance, external audit, certification, or organizational approval anywhere in this record.
+>
+> I accept the residual risk of that limitation ONLY while production deployment and package
+> publication both remain unauthorized. Both remain unauthorized under this decision. If either
+> is ever sought, this acceptance lapses at that moment and does not carry forward.
+>
+> Reinstated precondition. Independent technical assurance — review by a party other than the
+> project owner — is reinstated as a precondition that must be satisfied BEFORE either production
+> deployment authorization or package publication authorization may be granted. This decision
+> does not waive, defer, or partially satisfy that precondition; it defers only the point at
+> which it must be met, to the point where either authorization is sought.
+>
+> Additional precondition on publication. S-6 must be corrected before any package-publication
+> authorization is granted. The packed artifact currently `require()`s two `devDependencies` and
+> cannot be imported from a production-only install, and both relevant gates are structurally
+> blind to it. This precondition is CUMULATIVE with the independent-assurance precondition above,
+> not an alternative to it: satisfying one does not satisfy the other, and independent assurance
+> is not deemed to cover S-6 merely by having occurred.
+>
+> Risks and limitations I acknowledge and accept as non-blocking for the authorized scope, each
+> recorded in full in its own section above and none converted into assurance by this decision:
+>
+> * S-6 — confirmed live defect; the packed artifact is uninstallable. Non-blocking only because
+>   the package is unpublished. Bound by the publication precondition above.
+> * S-3/S-4 — brand authority is module-copy scoped; a duplicate installation reports as
+>   `AUTHORITY_ESCALATION` with no diagnostic distinguishing it from an attack. Fails closed.
+> * R-F — a repeated object reference reports as `PROHIBITED_DATA`, so values with identical JSON
+>   serialization can validate differently. Fails closed.
+> * F-01, F-02, and F-03 have no named differential mutation controls, and `sdk.ts` was
+>   refactored inside the previously unreviewed drift window.
+> * No exact-runtime matrix evidence exists for this candidate; the recorded runs used off-matrix
+>   Node v26.7.0.
+> * The verification and generator scripts were not reviewed line by line; assurance for them is
+>   delegated to their differential mutation controls.
+> * The review analysis adopted under task 12.4 was produced by an AI assistant and re-executed
+>   by that assistant, not by me.
+> * The review candidate recorded by the 2026-08-10 packet extension was stale (finding R-A).
+>   Future reviews should bind to the SDK subtree object rather than to a commit hash.
+>
+> Governance deviation recorded, not cured. The remediation content was merged into `main` on
+> 2026-08-06 as `2f5787bb6120aa72d2cbd063fd963c5e23435e88`, and the packet on 2026-08-10 as
+> `71dbd9535201501605e000afe14069a2a0be46ec`, both before any renewed technical review or owner
+> decision existed. This decision does not retroactively authorize either merge and does not make
+> the ordering compliant. It records the deviation. No second merge is to be performed and no
+> governed history is to be rewritten to conceal it; task 12.8 is discharged by recording and
+> verifying the historical merge, not by repeating it.
+>
+> Basis of this decision. I make it on my own reading of the technical review recorded under task
+> 12.4 and the evidence it identifies. I do not infer it from AI analysis, from passing tests or
+> checks, from issue or pull-request state, from the merged state of `main`, or from either merge
+> having been performed. AI analysis in this packet is reviewer input and is not review,
+> approval, or assurance.
+>
+> Authorized by this decision: progression to tasks 12.6 through 12.10 — restriction
+> reconfirmation, post-decision validation, retrospective merge reconciliation, and archive.
+>
+> Not authorized by this decision: production deployment; package publication or release;
+> framework integration; transports, exporters, collectors, brokers, queues, outboxes, storage,
+> or SIEM integration; analytics, detection, or browser telemetry; cryptographic audit-log
+> chaining; and real-user data processing. Each remains unauthorized and each requires its own
+> OpenSpec change and explicit authorization.
+>
+> Production deployment remains NOT AUTHORIZED.
+>
+> Package publication remains NOT AUTHORIZED.
+
+— Fernando Homem da Costa (@nandohdc), Project owner, 2026-08-11
+
+### Assurance limitation
+
+The project owner is also the technical reviewer. This decision is **project-owner self-review**.
+It is project governance only and does **not** constitute independent assurance, third-party
+review, formal certification, legal advice, or organizational approval. No claim of independent
+assurance is made anywhere in this packet.
+
+## Post-decision confirmation and validation — tasks 12.6 and 12.7
+
+Both tasks were executed **after** the task 12.4 and 12.5 decision records existed in history, at
+`3252e4f06d9c616fa1fbdc81ef883f03ba7b6163` and `7b950604c664f80c5ce24257c16fb987e0b618b7`
+respectively, with an empty Git index. Runtime: Node v26.7.0, npm 11.19.0, macOS arm64.
+
+### Task 12.6 — production, publication, integration, and processing remain unauthorized
+
+Confirmed mechanically, not by assertion. Each row names the control that would fail if the
+exclusion were breached.
+
+| Exclusion | Status | Mechanical evidence |
+| --- | --- | --- |
+| Production deployment | NOT AUTHORIZED | no deployment workflow exists; `.github/workflows/` contains only `ci`, `conventional-commits`, and `release-please` |
+| Package publication | NOT AUTHORIZED | no `npm publish`, `NPM_TOKEN`, or registry reference in any workflow; `release-please.yml` has no publish step; `test:package` asserts `private: true` and `license: UNLICENSED` |
+| Framework integration | NOT AUTHORIZED | `test:scope` — 17 SDK source files, no `express`, `nestjs`, `fastify`, or `nextjs` reference; only `node:async_hooks` and `node:crypto` are importable |
+| Delivery infrastructure | NOT AUTHORIZED | `test:scope` forbids transport, exporter, collector, queue, outbox, storage, and SIEM names, imports, and exports; `test:dependencies` reports 0 runtime dependencies |
+| Real-user data processing | NOT AUTHORIZED | only the transport-neutral `AuditEventSink` interface ships; the sole implementations are `createCapturingAuditSink` and `createInMemoryAuditSink`, both non-production and reachable only through the `./testing` export |
+| Package surface | 2 exports | `.` and `./testing`; `test:package` allowlist passed at 80 intentional files with no source, tests, scripts, governance, or contract copies |
+
+The package remains at version `0.1.0`, `private: true`, `UNLICENSED`, with `dependencies: {}`.
+Cutting a release tag does not alter any row above.
+
+### Task 12.7 — post-decision validation
+
+`npm run verify` — the canonical verification, which removes `node_modules`, reinstalls from the
+lockfile with `npm ci --ignore-scripts`, and runs the full chain. **Exit 0.** All 23 steps passed:
+
+| Step | Result |
+| --- | --- |
+| Clean disposable output, install exact locked dependencies | PASS |
+| Reject pre-existing generated drift, regenerate, confirm determinism | PASS — byte-identical |
+| Strict source type-check, fresh build | PASS |
+| Runtime / fixture / semantic tests | **112 / 112 pass, 0 fail** |
+| Compile-time positive and negative API tests | PASS |
+| Synthetic documentation examples compiled and executed | PASS |
+| Package exports, compatibility policy, contract immutability | PASS |
+| Production-scope and forbidden-integration checks | PASS |
+| Zero-runtime and exact development dependency checks | PASS |
+| `npm audit --audit-level=low` | PASS — **found 0 vulnerabilities** |
+| npm package dry-run and file allowlist | PASS |
+| Exact changed-path enforcement | PASS — active mode |
+| Cross-artifact coherence sweep | PASS |
+| Verification lifecycle and differential mutation tests | **129 / 129 pass, 2 suites, 0 fail** |
+| Strict active-change OpenSpec validation | PASS — change is valid |
+| Strict repository OpenSpec validation | PASS — 5 passed, 0 failed |
+| Git whitespace, final-newline, empty-index checks | PASS |
+
+Runtime limitation, unchanged and restated so this record does not overstate itself: the run used
+**Node v26.7.0**, which is outside both declared CI cells (`24.2.0`, `26.5.0`). It is therefore
+supporting evidence, not exact-matrix evidence, and no refreshed exact-matrix evidence exists for
+this candidate. This limitation was acknowledged and accepted in the task 12.5 decision.
+
+## Retrospective merge reconciliation — task 12.8
+
+**No merge was performed for this task, and none is authorized.** The remediation content was
+already on `main` before any renewed review or decision existed. Task 12.8 is discharged by
+recording and verifying that historical merge, not by repeating it. The task 12.5 decision
+records merge authorization as NOT GRANTED and the ordering deviation as recorded, not cured.
+
+### Remediation content merge — PR #41, method-compliant
+
+| Property | Verified value |
+| --- | --- |
+| Merge commit | `2f5787bb6120aa72d2cbd063fd963c5e23435e88` |
+| Parents | **2** — `9539089f4c4229a48c1f554e68c06d010a8cc76e` and `66bf3b721e604e715dbaae2a98888ddc1e6ff7fe` |
+| Merged correction commit | `66bf3b721e604e715dbaae2a98888ddc1e6ff7fe`, preserved as the second parent |
+| Merged tree | `b3297f6dc5e59582708464225a732829b2902b60` |
+| Merge method | true merge commit — **no squash, rebase, amendment, or force-push** |
+| Merged by / date | Fernando Homem da Costa (`@nandohdc`), 2026-08-06 |
+| GitHub record | PR #41, state `MERGED`, `mergeCommit.oid` matches |
+
+The correction commit survives as a real parent rather than being replayed, which is what
+distinguishes a compliant merge from a squash under this task's wording.
+
+### Governed history is intact
+
+Every governed commit remains an ancestor of `main` HEAD, so no history was rewritten, dropped,
+or replaced:
+
+| Commit | Role | Ancestry |
+| --- | --- | --- |
+| `b4206f92fc92c7355efaa80d9f878353cf794452` | remediation proposal baseline | ancestor — intact |
+| `66bf3b721e604e715dbaae2a98888ddc1e6ff7fe` | merged F-08 correction | ancestor — intact |
+| `689fc394e36642b814df6672b3b514ba95c27944` | final SDK technical commit | ancestor — intact |
+| `2f5787bb6120aa72d2cbd063fd963c5e23435e88` | content merge | ancestor — intact |
+| `71dbd9535201501605e000afe14069a2a0be46ec` | packet merge | ancestor — intact |
+
+### Correction — the packet merge was squashed, and the review candidate is not on `main`
+
+Verifying the second merge contradicted this packet's own description of it, so the finding is
+recorded here rather than left to propagate.
+
+| Property | Packet's earlier claim | Verified value |
+| --- | --- | --- |
+| `71dbd953…` merge method | "merge commit" bringing `a7ac3177…` onto `main` | **squash merge — one parent**, `51f1ad340df8514428a86670b8bfc17f7f9bce96` |
+| `a7ac317725389d7df2b32d939bc0824feb49668e` | "review candidate", "candidate merge commit… selects the same SDK bytes" | **not an ancestor of `main`**; survives only on the unmerged branch `docs/remediation-12-1-to-12-3-reconciliation`, local and on `origin` |
+
+This compounds finding **R-A**. The review candidate was not merely one packet revision stale —
+it is not in `main`'s history at all, because PR #56 was squash-merged and its branch head was
+left behind on a side branch. A technical review bound literally to `a7ac3177…`, as the
+2026-08-10 extension directed, would have been bound to a commit unreachable from the branch it
+purported to review.
+
+The task 12.4 review was bound instead to final SDK technical commit
+`689fc394e36642b814df6672b3b514ba95c27944` and SDK subtree
+`428d20296d65b6795b7d116939ec036187792416`, both ancestors of and present at `main` HEAD. That
+binding is unaffected by this correction, and the subtree-identity claim in the reviewer
+statement remains true at every commit it names. Only the word "merge commit", applied to
+`71dbd953…`, was imprecise; the signed statement is not rewritten, per this packet's convention
+of superseding rather than editing recorded evidence.
+
+**Scope of the deviation.** PR #56 carried governance documentation only. The
+`packages/security-audit-sdk-core` tree object is identical either side of it and zero commits in
+the range touch the package, so no remediation content was squashed. The remediation content
+merge, PR #41, remains method-compliant as recorded above.
+
+### Task-checkbox timing
+
+Tasks 12.8, 12.9, and 12.10 must remain **unchecked while the change is active**.
+`check-coherence.mjs` rejects a checked merge-archive task in active mode
+(`[active-merge-archive-pending]`, verified by controlled mutation), and
+`exactArchivedTaskReconciliation` in `check-changed-paths.mjs` requires all three to be unchecked
+in the movement source and checked only in the archived copy. All three therefore transition
+together, in the archive commit. This section is the task 12.8 evidence; the box it belongs to is
+ticked at archive time.
+
 ## Current decision
 
-Packet revision: 2026-08-08 reconciliation refresh (tasks 12.1-12.3)
+Packet revision: 2026-08-11 independent review pass (task 12.4)
 Final SDK technical commit: `689fc394e36642b814df6672b3b514ba95c27944`
 Final SDK technical commit subtree: `428d20296d65b6795b7d116939ec036187792416`
 Repository HEAD at reconciliation: `51f1ad340df8514428a86670b8bfc17f7f9bce96`
+Repository HEAD at renewed review: `251b855142ea5c7c00196a73ab712efe55389b72`
 SDK subtree equivalence HEAD vs final SDK technical commit: PASS
 Intervening commits modifying the SDK package: 0
-Review candidate: the commit introducing this packet revision; resolved out of band for 12.4
+Review candidate recorded by the 2026-08-10 extension: `a7ac317725389d7df2b32d939bc0824feb49668e` - STALE, predates the packet revision naming it (finding R-A)
 Task 12.1 finding reconciliation: COMPLETE - recorded in adversarial-review-traceability.md
 Task 12.2 blocker executable evidence: COMPLETE - F-01, F-02, F-03, F-04 evidence recorded
-Task 12.3 packet refresh: COMPLETE - this revision
+Task 12.3 packet refresh: COMPLETE - 2026-08-08 revision
+Task 12.4 renewed technical review: COMPLETE - discharged 2026-08-11
 Task 12.7 validation: EVIDENCE PREPARED, TASK UNCHECKED - requires post-decision re-run
-Validation at candidate: PASS, exit 0, 16/16 gates, 112/112 runtime, 129/129 verification
+Validation at renewed review: PASS, exit 0, full gate chain, 112/112 runtime, 129/129 verification
 Validation runtime: Node v26.7.0 - OFF-MATRIX, not exact-runtime evidence
 Refreshed exact-matrix evidence (Node 24.2.0 / 26.5.0): NOT PRODUCED
-Post-review drift since last review: 626 insertions, 325 deletions, 14 files - UNREVIEWED
-Prepared by: AI assistant executing 12.1-12.3; not review, not approval, not assurance
-Technical review status: PENDING
-Reviewed technical commit: PENDING
-Reviewed technical parent: PENDING
-Reviewed technical tree: PENDING
-Technical-review evidence commit: PENDING
-Technical-review evidence tree: PENDING
+Post-review drift since last review: 637 insertions, 325 deletions, 16 files - REVIEWED 2026-08-11, behavior-preserving
+Review analysis prepared by: AI assistant; reviewer input only, not review, not approval, not assurance
+Technical review status: PASS - task 12.4
+Technical review date: 2026-08-11
+Technical reviewer: Fernando Homem da Costa (@nandohdc), project owner and technical reviewer
+Technical review independence: independent of the implementing pass only; NOT independent third-party assurance
+Reviewed technical commit: `689fc394e36642b814df6672b3b514ba95c27944`
+Reviewed technical parent: `52987bd24035367e2e4694a40068fae15ddff297`
+Reviewed technical tree: `b497a60b1c78b90099d9c144834e7e937861d8ff`
+Reviewed SDK subtree: `428d20296d65b6795b7d116939ec036187792416`
+Technical-review evidence commit: `3252e4f06d9c616fa1fbdc81ef883f03ba7b6163`
+Technical-review evidence tree: `7655120bb36f15140be80c7508fff3df7f1bd107`
+S-1 disposition: WITHDRAWN at renewed review - enforced by generated schema `const`; no public-API change authorized
+S-3/S-4 disposition: non-blocking risk, fails closed
+S-6 disposition: confirmed live defect; non-blocking only while the package is unpublished
+R-F disposition: non-blocking risk, fails closed
 Superseded historical technical-review evidence commit: `eefec5d5b239044c6403bcee87161a7c9eba1fdb`
 Superseded historical reviewed technical commit: `c2b10575085ead832d33c728e58288961509587c`
 Superseded project-owner decision: `c2b10575085ead832d33c728e58288961509587c` in this packet and `278c6721ea4eb2214062a33e289d54605bf9333b` in implementation-authorization.md - NON-OPERATIVE
@@ -962,24 +1603,37 @@ Owner identity: Fernando Homem da Costa (@nandohdc)
 Owner role: Project owner
 Project-owner semantic decision date: 2026-08-06
 Owner semantic decision: ADOPT_COUNT_BOUNDED_FIFO_RETENTION
-Owner-reviewed technical commit: PENDING
-Owner-reviewed technical-review evidence commit: PENDING
-Owner-reviewed technical-review evidence tree: PENDING
-Project-owner decision: PENDING
+Task 12.5 project-owner decision: COMPLETE - 2026-08-11
+Project-owner decision date: 2026-08-11
+Owner-reviewed technical commit: `689fc394e36642b814df6672b3b514ba95c27944`
+Owner-reviewed technical tree: `b497a60b1c78b90099d9c144834e7e937861d8ff`
+Owner-reviewed SDK subtree: `428d20296d65b6795b7d116939ec036187792416`
+Owner-reviewed technical-review evidence commit: `3252e4f06d9c616fa1fbdc81ef883f03ba7b6163`
+Owner-reviewed technical-review evidence tree: `7655120bb36f15140be80c7508fff3df7f1bd107`
+Project-owner decision: APPROVED_FOR_ARCHIVE
 Owner self-review is independent assurance: NO
+Independent third-party assurance obtained: NO - stated explicitly in the owner decision
+Independent technical assurance reinstated as precondition: YES - required before either production deployment or package publication authorization
+S-6 correction precondition on publication: YES - CUMULATIVE with independent assurance, not an alternative
+Residual risk acceptance: valid ONLY while production deployment and package publication both remain unauthorized; lapses when either is sought
 Production deployment authorization: NOT AUTHORIZED
 Package publication authorization: NOT AUTHORIZED
-Merge authorization: NONE RECORDED — merge performed without a recorded prior authorization
+Merge authorization: NOT GRANTED — merge performed 2026-08-06 without a recorded prior authorization; deviation recorded, not cured; reconciled retrospectively under task 12.8; no second merge authorized
 Merge performed: YES
 Merge commit: `2f5787bb6120aa72d2cbd063fd963c5e23435e88`
 Merged correction commit: `66bf3b721e604e715dbaae2a98888ddc1e6ff7fe`
 Merged tree: `b3297f6dc5e59582708464225a732829b2902b60`
 Merge date: 2026-08-06
 Merged by: Fernando Homem da Costa (@nandohdc)
-Merge method: merge commit, two parents, no squash/rebase/amend/force-push
+Merge method: merge commit, two parents, no squash/rebase/amend/force-push - VERIFIED task 12.8
+Packet merge commit: `71dbd9535201501605e000afe14069a2a0be46ec` (PR #56)
+Packet merge method: SQUASH, single parent `51f1ad340df8514428a86670b8bfc17f7f9bce96` - corrects the earlier "merge commit" description; governance documentation only, no SDK bytes
+Review candidate `a7ac3177...` ancestry: NOT an ancestor of main; survives only on branch docs/remediation-12-1-to-12-3-reconciliation - compounds finding R-A
+Governed history rewritten: NO - baseline, correction, final technical commit, and both merges all remain ancestors of HEAD
+Task 12.8 second merge performed: NO - discharged by recording and verifying the historical merge
 Merge preceded renewed technical review and renewed owner decision: YES
 Approval inferred from merge: NONE
-Archive authorization: PENDING
+Archive authorization: APPROVED - tasks 12.9 and 12.10, by the 2026-08-11 project-owner decision
 
 Production deployment approved | `NO — NOT AUTHORIZED`
 Package publication/release approved | `NO — NOT AUTHORIZED`
