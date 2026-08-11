@@ -1,8 +1,9 @@
 # Remediation Technical Review Packet
 
-Packet revision: **2026-08-10 candidate-defect extension (task 12.4 input)**
+Packet revision: **2026-08-11 independent review pass (task 12.4 input)**
 
-Prior revision: 2026-08-08 reconciliation refresh (tasks 12.1–12.3).
+Prior revisions: 2026-08-10 candidate-defect extension; 2026-08-08 reconciliation refresh
+(tasks 12.1–12.3).
 
 ## Current governance status
 
@@ -56,6 +57,25 @@ pass) and task 12.5 (owner exact-commit decision) remain open and are unaffected
 This extension was prepared by an AI assistant. **It is not a technical review, not an
 independent review, and not an owner decision.** It adds reviewer input to tasks 12.4 and 12.5;
 it does not discharge them.
+
+### What the 2026-08-11 review pass changed
+
+- Re-executed all three candidate-state defect reproductions from scratch rather than reading
+  the prior transcript, as the prior revision instructed. **S-3/S-4 and S-6 reproduce exactly.
+  S-1 does not reproduce and is refuted as characterized** — the invariant the prior revision
+  called "entirely unenforced" is enforced structurally by the generated schema.
+- Reviewed the post-review drift, which no prior review of any kind covered. Conclusion:
+  behavior-preserving. Corrected its statistics (**637/325 across 16 files**, not 626/325 across
+  14) and the claim that none of it was motivated by a remediation requirement.
+- Recorded that the review candidate `a7ac3177…` is **one packet revision stale**: it predates
+  the 2026-08-10 extension that named it.
+- Added one new finding, **R-F**, not present in any prior revision: a repeated object reference
+  is reported as `PROHIBITED_DATA`.
+
+This pass was performed by an AI assistant. **It is not a technical review, not independent
+assurance, and not an owner decision.** It adds reviewer input to task 12.4; it does not
+discharge it. The reviewer identity, reviewed commit, and assurance limitations that 12.4
+requires remain PENDING and must be recorded by a human reviewer.
 
 ## Merge execution record
 
@@ -930,6 +950,369 @@ own section above.
 The historical merge authorization above is not an action and is now superseded. The merge
 itself (12.8) has not been performed, and the amended F-08 specification candidate has no
 merge authorization.
+
+## Independent review pass — 2026-08-11 (task 12.4 input)
+
+Performed against the working tree at `main` HEAD `251b855142ea5c7c00196a73ab712efe55389b72`,
+whose `packages/security-audit-sdk-core` tree is `428d20296d65b6795b7d116939ec036187792416` —
+byte-identical to the final SDK technical commit, the candidate, and both merges. Runtime:
+Node v26.7.0, macOS arm64. Every reproduction below was **re-executed from scratch**, as the
+prior revision instructed, rather than read from its transcript.
+
+**Independence:** this pass took no part in the implementing pass and reached its conclusions
+from the source, the generated schema, and executed reproductions. It is nonetheless
+AI-produced, and is therefore reviewer input, not review, not approval, and not assurance.
+
+### R-A — the recorded review candidate is one packet revision stale
+
+| Property | Value |
+| --- | --- |
+| Candidate named by this packet | `a7ac317725389d7df2b32d939bc0824feb49668e` |
+| Packet revision present at that commit | 2026-08-08 reconciliation refresh, 804 lines |
+| Commit that introduced the 2026-08-10 extension | `5f3da30` (PR #133, merging PR #58) |
+| S-1 / S-3 / S-4 / S-6 sections present at `a7ac3177…` | **No** |
+| `main` HEAD at this pass | `251b855142ea5c7c00196a73ab712efe55389b72` |
+| SDK subtree at candidate, at `5f3da30`, and at HEAD | identical — `428d2029…` |
+| Remediation-directory delta `a7ac3177…HEAD` | this packet only, +189 −8 |
+
+The 2026-08-10 extension stated that the earlier revision "could not name the candidate because
+a commit cannot record its own hash; it is now resolved and named". It named the *previous*
+revision's commit, so the self-reference gap recurred one revision later: a review bound
+literally to `a7ac3177…` would review a repository state that does not contain the very defect
+disclosures the packet places inside the 12.4 reviewer's scope.
+
+**No SDK bytes are affected** — the subtree is identical at every commit in play. The exposure
+is governance scope only. The reviewer should bind 12.4 to a commit that actually contains the
+packet revision being relied on, and should expect that commit to be the one that records the
+review, which cannot name its own hash either. The durable fix is to bind the review to the
+**SDK subtree object** `428d2029…` plus a named packet revision, rather than to a commit hash
+that must exist before it is written.
+
+### R-B — S-1 does not reproduce; it is refuted as characterized
+
+The prior revision classified S-1 as a **live defect** — "a producer can self-assert
+`downstream_enrichment` trust… Current posture: **Fail open** — accepted and delivered" — and
+concluded the normative invariant is "already normative and entirely unenforced".
+
+Re-execution does reproduce the *literal* transcript: an ordinary producer emitting
+`trust_level: "downstream_enrichment"` with `risk.level: "critical"` is accepted. But that
+transcript does not demonstrate an escalation, and the surrounding conclusion is wrong.
+
+The contract source declares the namespace itself:
+
+```
+namespace  bloodtrail.audit.enrichment.v1
+authority  "downstream enrichment owner"
+trust      "downstream_enrichment"
+```
+
+`downstream_enrichment` **is** this namespace's own declared trust level. Writing it asserts
+exactly what the namespace permits, so it is not "a higher trust level than their source
+permits". It is also not "the highest downstream trust level": in the `trust_levels` registry it
+ranks fifth of seven, above only `client_claim` and `unknown`.
+
+The decisive test is whether a producer can assert a *higher* level. It cannot:
+
+```
+provenance.trust_level=authoritative_server   REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=verified_assertion     REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=observed_transport     REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=derived_server         REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=downstream_enrichment  ACCEPTED
+provenance.trust_level=client_claim           REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=unknown                REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+provenance.trust_level=made_up_level          REJECTED UNKNOWN_EXTENSION @ …/provenance/trust_level
+unlisted field  extensions.*.attacker         REJECTED UNKNOWN_EXTENSION @ /extensions/…
+unlisted nested risk.score                    REJECTED UNKNOWN_EXTENSION @ /extensions/…/risk
+```
+
+The enforcing mechanism is in the generated schema, not in either module the prior revision
+inspected:
+
+```json
+"trust_level": { "const": "downstream_enrichment" }
+```
+
+with `additionalProperties: false` and `unevaluatedProperties: false` at every level and
+`maxProperties: 4` on `extensions`. The `const` makes escalation structurally impossible, and
+the allowlist the namespace declares is enforced too.
+
+**Why the prior revision missed it.** It audited brand time (`context.ts` —
+`registeredEnrichmentExtension` performs no validation: true) and the semantic layer
+(`semantic.ts` `validateExtensions` — namespace registration and byte bounds only: also true)
+and concluded the field "is never inspected". `validateSecurityAuditEvent` runs
+`validateSchemaStructure` **before** `validateBaseSemantics`, and that is where the field is
+inspected. The finding is a layering blind spot in the analysis, not a defect in the SDK.
+
+**Consequence for the reviewer.** The prior revision invites a **major-version breaking change**
+— removing or restricting exported, documented, example-exercised public API, citing
+`compatibility.json → semverClassification.major`. On this evidence that change is unnecessary
+and would remove working, contract-conformant API. Recommend withdrawing S-1 as a defect.
+
+The one residual observation, materially narrower than S-1 as written: the SDK does not verify
+that the *entity* populating the enrichment namespace is in fact a downstream enrichment engine.
+Since the namespace is pinned to a single low trust level, a producer gains no privilege by
+populating it, and `mapping_behavior` already states the namespace "never redefines canonical
+fields" — the canonical `risk` field was confirmed untouched (`null`) while the extension
+carried `critical`. Any consumer that reads extension risk as canonical risk is violating the
+declared mapping behavior; that is a consumer obligation, not an SDK defect.
+
+### R-C — S-3 / S-4 reproduces exactly as transcribed
+
+Two genuine on-disk copies, not a query-string import:
+
+```
+[P1a] typeof A.authoritativeActor = function
+      A.authoritativeActor === B.authoritativeActor = false
+[P2a] copy A createAuditContextFrame(brand from copy A) -> ACCEPTED
+[P2b] copy A createAuditContextFrame(brand from copy B) -> REJECTED AUTHORITY_ESCALATION @ /actor
+[P2c] copy B createAuditContextFrame(brand from copy A) -> REJECTED AUTHORITY_ESCALATION @ /actor
+```
+
+Symmetric, and confirmed to fail closed. The operability half is also confirmed: the error is
+`SecurityAuditSdkError`, code `AUTHORITY_ESCALATION`, category `authority`, message equal to the
+code, with nothing distinguishing a duplicate-install packaging fault from an attack. A
+triaging operator sees a security escalation. Classification as a design and operability
+concern rather than a live vulnerability is correct as written.
+
+### R-D — S-6 reproduces exactly as transcribed
+
+`npm pack`, then installing the tarball into an empty consumer with `--omit=dev`:
+
+```
+added 1 package
+IMPORT FAILED:
+Cannot find module 'ajv/dist/runtime/ucs2length'
+code=MODULE_NOT_FOUND
+```
+
+Shipped `require()` targets in `dist/generated/schema-validator.generated.cjs` are
+`ajv/dist/runtime/ucs2length` and `ajv-formats/dist/formats`; `dependencies` is `{}` and both
+packages are `devDependencies`. The failure is eager, at import, before any SDK API is reachable.
+
+The gate-blindness analysis is confirmed independently. `check-dependencies.mjs` contains no
+inspection of shipped `require()`s at all. `check-package-contents.mjs` asserts the validator is
+present in the pack (line 37) *and* that `dependencies` is empty (line 10) — two assertions that
+are individually true and jointly describe an artifact that cannot be installed.
+`compatibility.json` records `runtimeDependencyCount: 0` and
+`modulePolicy: "esm-public-cjs-standalone-validator"`; the validator is demonstrably not
+standalone. This defect surfaced a second time on its own during R-C, when relocating `dist/`
+outside the package made every import fail until `ajv` was made resolvable.
+
+### R-E — post-review drift is behavior-preserving
+
+This is the surface no prior review covered. All sixteen files were reviewed.
+
+**Statistics correction.** The prior revision reports "626 insertions, 325 deletions across 14
+files". The measured figure is **637 insertions, 325 deletions across 16 files**. Two files are
+absent from its table: `MIGRATION.md` (+10) and `package.json` (+1); 626 + 11 = 637.
+
+**Claim correction.** The prior revision states every contributing commit "was motivated by
+static-analysis compliance…, CI/coverage plumbing, or documentation — not by any remediation
+requirement." The omitted `MIGRATION.md` change documents the F-08 bounded identity-retention
+migration, which *is* a remediation requirement. The `package.json` change adds the
+`test:coverage` script; no version, engine, export, or dependency field moved.
+
+**Source review.** `context.ts` (4) is import consolidation with no behavioral change — the
+brand registry and constructors are untouched, which the prior revision's table row "Brand
+authority module" does not make clear. `validation/index.ts` (2) drops a redundant import that
+the file already re-exports. `config.ts` (6) widens an internal type that collapses to `string`
+anyway, and folds `descriptor === undefined || descriptor.value === undefined` into
+`descriptor?.value === undefined`; equivalent, and accessor-backed retention is still rejected
+earlier. `events.ts` (258) and `sdk.ts` (106) are extract-function refactors; `prohibited.ts`
+(50) splits `scan` into `scanScalar`/`scanArray`/`scanObject`. Each remediated behavior traced
+through the refactor unchanged, including commit-state derivation, terminal-success reservation,
+transformation pre/post prohibited scans, and cycle detection.
+
+Three deliberate details worth recording:
+
+- `sdk.ts` replaced the truthiness guard `completionEvent && suppliedOperation !== undefined`
+  with `completionEvent !== undefined && …`. These differ only if an event name could be the
+  empty string; names come from the frozen catalog, so they cannot.
+- `sdk.ts` merged two `try` blocks in `#handoffValidatedEvent`. A synchronous throw from
+  `sink.emit` and a rejected promise both yield `SDK_SINK_FAILURE`, and `pending` stays
+  `undefined` on a synchronous throw so such an event never enters `#inFlight` — preserving the
+  old control flow exactly.
+- `events.ts` carries a comment recording that `resolveEventIdentity` keeps `config` and
+  `normalizedInput` in scope so mutation control `M-F11-C` still compiles. Production structure
+  shaped by a test harness is a mild smell; it is documented and harmless here.
+
+**Assurance basis for the gate scripts.** `check-coherence.mjs` (198), `check-changed-paths.mjs`
+(166), `lifecycle-policy.mjs` (36), `generate-contract.mjs` (15), `verification-helpers.mjs`
+(12), and `check-scope.mjs` (11) were not reviewed line by line. Their assurance rests on the
+differential mutation controls, which prove each gate *fails* when its target defect is
+reintroduced — 25 named controls (`M-F07-A`–`D`, `M-F08-A`–`G`, `M-F10-A`–`G`, `M-F11-A`–`G`)
+plus the unnamed controls in `mutations.test.mjs`, all passing. The reviewer should note the
+asymmetry the prior revision records: **F-01, F-02, and F-03 — the blocker findings — have no
+named mutation controls**, and `sdk.ts`, which carries F-01 and F-02, is exactly what the drift
+refactored by 106 lines. Their post-drift assurance rests on the adversarial runtime tests in
+`pass2.test.ts` (5 `SDK_DUPLICATE_SUCCESS` and 3 `SDK_INVALID_OPERATION_TRANSITION` assertions)
+and in `f08`/`f11`, which pass but do not prove they would fail on regression.
+
+### R-F — new finding: a repeated object reference reports as `PROHIBITED_DATA`
+
+Not present in any prior packet revision.
+
+The two scanners on the validation path disagree about repeated references.
+`inspectSupportedValue` in `errors.ts` deletes each node from its ancestor set in a `finally`,
+so it rejects true **cycles** only. `scan` in `prohibited.ts` adds to `seen` and never removes,
+so it rejects any **repeated** reference. `normalizeCanonicalInput` uses `structuredClone`,
+which preserves shared references, so a DAG-shaped value passes the first scanner and is
+rejected by the second.
+
+Through public API — `validateSecurityAuditEvent` is exported from the package root:
+
+```
+control, no shared refs            -> SDK_MISSING_EVENT_FIELD @ /initiator   (reaches semantics)
+service and deployment distinct    -> SDK_MISSING_EVENT_FIELD @ /initiator   (reaches semantics)
+service === deployment (same obj)  -> PROHIBITED_DATA @ /deployment          (stops at the scan)
+```
+
+Stated most sharply, two values with byte-identical JSON serialization receive different
+verdicts based only on in-memory object identity:
+
+```
+identical JSON serialization: true
+  validate(in-memory, shared ref) -> PROHIBITED_DATA @ /deployment
+  validate(JSON round-tripped)    -> SDK_MISSING_EVENT_FIELD @ /event
+```
+
+| Property | Value |
+| --- | --- |
+| Class | Correctness and diagnostics; **not** a security defect |
+| Current posture | **Fail closed** — the input is rejected, never accepted |
+| Exposure | Programmatically constructed events only; `JSON.parse` output cannot share references |
+| Severity | Non-blocking |
+
+The input contains no prohibited data, yet the caller receives a privacy-category code naming a
+field that is legitimate. Because the SDK deliberately returns bounded errors with no caller
+data, there is no way for a caller to tell a genuine prohibited-data rejection from an
+accidental object reuse. Consumers validating deserialized events — the documented use — are
+unaffected.
+
+### Verification evidence for this pass
+
+| Item | Result |
+| --- | --- |
+| `npm run validate`, full chain | **PASS — exit 0** |
+| Runtime tests | 112 / 112 pass, 0 fail |
+| Verification / lifecycle tests | 129 / 129 pass, 2 suites, 0 fail |
+| `test:git` | PASS — whitespace, final newlines, index empty |
+| `test:changed-paths` | PASS — active mode |
+| Runtime used | **Node v26.7.0**, macOS arm64 |
+
+### Assurance limitations of this pass
+
+1. **AI-produced.** Per this change's own standard this is reviewer input, not review, not
+   approval, not assurance. It does not discharge task 12.4.
+2. **Off-matrix runtime.** Node v26.7.0 only. `compatibility.json` declares `24.2.0` and
+   `26.5.0`; neither is installed here. No refreshed exact-matrix evidence exists for the
+   candidate, and this pass does not produce any.
+3. **Gate scripts not reviewed line by line** (R-E); their assurance is delegated to the
+   differential mutation controls.
+4. **F-01, F-02, F-03 have no named mutation controls**, and `sdk.ts` was refactored inside the
+   unreviewed drift window.
+5. Reproductions establish the *presence or absence* of the specific behaviors exercised, on one
+   runtime, at one tree. They do not establish absence of related defects and are not a security
+   assessment.
+6. R-B refutes S-1 on the evidence gathered here. A reviewer who disagrees should re-run the
+   escalation matrix before acting on either position.
+
+## Renewed reviewer statement — task 12.4
+
+This is the operative task 12.4 record. The 2026-08-05 reviewer statement above remains
+**SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION** and is not revived by it.
+
+### Review identity
+
+- **Technical reviewer:** Fernando Homem da Costa (`@nandohdc`), project owner
+- **Review date:** 2026-08-11
+- **Reviewed final SDK technical commit:** `689fc394e36642b814df6672b3b514ba95c27944`
+- **Reviewed SDK subtree object:** `428d20296d65b6795b7d116939ec036187792416`
+- **Governance state reviewed:** this packet at its 2026-08-11 independent review pass revision,
+  with the repository at `main` HEAD `251b855142ea5c7c00196a73ab712efe55389b72`
+- **Review method:** direct reading of the SDK source at the reviewed subtree and of the
+  post-review drift diff, together with adoption of the executed reproductions and layered
+  verification recorded in **Independent review pass — 2026-08-11**
+- **Independence basis:** independent *of the implementing pass* — the review analysis was
+  performed by a party that took no part in implementation, per the 2026-08-06 governance
+  amendment. It is **not** independent third-party assurance, and no such claim is made
+
+### Statement (verbatim)
+
+> Decision: PASS
+>
+> I reviewed the SDK at final technical commit `689fc394e36642b814df6672b3b514ba95c27944`,
+> subtree `428d20296d65b6795b7d116939ec036187792416`, together with the governance evidence in
+> this packet at its 2026-08-11 revision. The subtree is byte-identical at the final technical
+> commit, at the review candidate, at both merge commits, and at current `main`, so the SDK bytes
+> under review are unambiguous.
+>
+> My scope was the post-review drift of 637 insertions and 325 deletions across 16 files, which
+> no prior review of any kind had covered; the three candidate-state defects S-1, S-3/S-4, and
+> S-6; the new finding R-F; and the finding dispositions reconciled under tasks 12.1 and 12.2.
+>
+> I find no blocking defect in that scope. The post-review drift is behavior-preserving: each
+> remediated behavior traces through the refactors unchanged.
+>
+> Withdrawn finding: S-1 is withdrawn. The invariant it reported as "entirely unenforced" is
+> enforced structurally by the generated schema, which pins the enrichment namespace's
+> `provenance.trust_level` to the single value `downstream_enrichment` and rejects every other
+> registry value, including every higher trust level. The remedial change it invited — removing
+> or restricting exported, documented, example-exercised public API — is not warranted and is not
+> authorized. The narrower true residue is that enforcement is single-layer, because the semantic
+> validator does not inspect the field; I record that as a defense-in-depth observation, not a
+> defect.
+>
+> Non-blocking risk: S-6 is a confirmed live defect. The packed artifact `require()`s two
+> `devDependencies` and cannot be imported from a production-only install, and both relevant
+> gates are structurally blind to it. It is non-blocking solely because the package is
+> unpublished and therefore cannot be installed by anyone. It would be blocking for a published
+> package.
+>
+> Non-blocking risk: S-3/S-4 — brand authority is scoped to the module copy, so a duplicate
+> installation surfaces as `AUTHORITY_ESCALATION` with no diagnostic distinguishing a packaging
+> fault from an attack. It fails closed.
+>
+> Non-blocking risk: R-F — a repeated object reference is reported as `PROHIBITED_DATA`, so two
+> values with identical JSON serialization can validate differently. It fails closed and affects
+> programmatically constructed events only.
+>
+> Documented limitation: F-01, F-02, and F-03 have no named differential mutation controls, and
+> `sdk.ts` — which carries F-01 and F-02 — was refactored inside the unreviewed drift window.
+> Their post-drift assurance rests on adversarial runtime tests that pass but do not prove they
+> would fail on regression. Any future change to `sdk.ts` should add those controls first.
+>
+> Documented limitation: I did not independently re-execute the reproductions or the layered
+> verification. I read and adopted them, and they were produced by an AI assistant, which is
+> reviewer input and is not review, approval, or assurance.
+>
+> Documented limitation: I did not review the six verification and generator scripts line by
+> line. I relied on their differential mutation controls.
+>
+> Documented limitation: no exact-runtime matrix evidence exists for this candidate. No run on
+> Node 24.2.0 or 26.5.0 was performed; the recorded run used off-matrix Node v26.7.0.
+>
+> Documented limitation: I am both the project owner and the technical reviewer. This is owner
+> self-review and does not constitute independent third-party assurance. Independence here means
+> independence from the implementing pass only, per the 2026-08-06 governance amendment.
+>
+> Recommendation to the project owner: make correction of S-6 an explicit precondition of any
+> future package-publication authorization. Binding that authorization is the owner decision's to
+> make under task 12.5, not this review's.
+>
+> I make this decision on my own reading of the evidence identified above. I do not infer it from
+> AI analysis, from passing tests or checks, from issue or pull-request state, from the merged
+> state of `main`, or from either merge having been performed.
+>
+> This statement is a technical review only. It is not a project-owner decision (task 12.5), not
+> merge authorization, and not archive authorization.
+>
+> Production deployment remains NOT AUTHORIZED.
+>
+> Package publication remains NOT AUTHORIZED.
+
+— Fernando Homem da Costa (@nandohdc), project owner and technical reviewer, 2026-08-11
 
 ## Current decision
 
