@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.9](https://github.com/nandohdc/bloodtrail/compare/v0.2.8...v0.2.9) (2026-08-11)
+
+
+### Fixed
+
+* **sdk:** attest archive movement so verification survives squash merges ([#148](https://github.com/nandohdc/bloodtrail/issues/148)) ([a73da8b](https://github.com/nandohdc/bloodtrail/commit/a73da8ba1d78519e090fe3a78dfd4273b8ddf2e7))
+
+
+### Documentation
+
+* **openspec:** archive the archive-movement attestation change ([#149](https://github.com/nandohdc/bloodtrail/issues/149)) ([12b731d](https://github.com/nandohdc/bloodtrail/commit/12b731d3689e8c3c8b2bd58f924f1da951ff518c))
+* **openspec:** complete and archive the SDK adversarial-review remediation ([#20](https://github.com/nandohdc/bloodtrail/issues/20)) ([#146](https://github.com/nandohdc/bloodtrail/issues/146)) ([706dd93](https://github.com/nandohdc/bloodtrail/commit/706dd935caf6a58a2d223a3ec421303f989e9e88))
+
 ## [0.2.8](https://github.com/nandohdc/bloodtrail/compare/v0.2.7...v0.2.8) (2026-08-11)
 
 
