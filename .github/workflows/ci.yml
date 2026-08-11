@@ -323,14 +323,23 @@ jobs:
         run: |
           echo "::warning::CodeScene CLI could not be installed; delta analysis was skipped"
 
-      # TEMPORARY — canary diagnostics for openspec task 4.5. Lives on this throwaway
-      # branch only and is never merged. Measures what PR #51 did not: the absolute
-      # Code Health score of every case file at base *and* at head. Without those two
-      # numbers, "the delta omitted the file" cannot be told apart from "the delta
-      # omitted the file because its score never left the healthy band".
+      # TEMPORARY — canary diagnostics for openspec task 4.5, round 2. Lives on this
+      # throwaway branch only and is never merged.
       #
-      # Runs before the gate step, which exits 1 on findings. Always exits 0 itself so
-      # it can never be mistaken for the gate's own verdict.
+      # Round 1 measured base before head using the same --file-name for both, and the
+      # head numbers came back byte-identical to base for every pre-existing file. That
+      # is either a real CodeScene behaviour or contamination from the call ordering,
+      # and round 1 cannot tell them apart. Round 2 removes every confound:
+      #
+      #   * the delta runs FIRST, before any untracked file exists in the tree
+      #   * PASS 1 analyses HEAD before anything has touched a base copy
+      #   * PASS 2 re-analyses the identical bytes at a path CodeScene has never seen,
+      #     which separates "keyed to content" from "keyed to path or git history"
+      #   * PASS 3 analyses base last, where it can no longer contaminate anything
+      #   * --file-name is dropped entirely, and sha256 + line counts prove exactly
+      #     what bytes were on disk for each measurement
+      #
+      # Always exits 0 so it can never be mistaken for the gate's own verdict.
       - name: Delta scope diagnostics
         if: steps.install.outcome == 'success'
         env:
@@ -338,8 +347,11 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           set +e
-          BASE="${RUNNER_TEMP}/base"
-          git worktree add --detach "${BASE}" "origin/${BASE_REF}" >/dev/null 2>&1
+          FILES="packages/security-audit-sdk-core/src/probe-new.ts
+          packages/security-audit-sdk-core/src/bounded-fifo.ts
+          packages/security-audit-sdk-core/src/testing.ts
+          packages/security-audit-sdk-core/src/internal.ts"
+
           echo "=== cs version ==="
           cs version
           echo "=== refs (head, base) ==="
@@ -347,46 +359,49 @@ jobs:
           echo "=== changed files ==="
           git diff --name-only "origin/${BASE_REF}...HEAD"
 
-          # cs review's documented usage is `cs review [<options>] [<file>]` with a
-          # --file-name option; whether it accepts both together is untested, so fall
-          # back to the bare positional form rather than losing the measurement.
-          review() {
-            local path="$1" logical="$2" out rc
-            out="$(cs review --output-format json --file-name "${logical}" "${path}" 2>&1)"; rc=$?
-            if [ "${rc}" -ne 0 ]; then
-              echo "(--file-name form failed rc=${rc}: ${out})"
-              out="$(cs review --output-format json "${path}" 2>&1)"; rc=$?
-            fi
-            printf '%s\n' "${out}"
-            echo "(exit=${rc})"
-          }
+          # Delta first: the tree is still pristine, so no untracked copy can affect it.
+          echo "##### DELTA #####"
+          out="$(cs delta "origin/${BASE_REF}" --output-format json --pretty 2>d.err)"
+          echo "exit=$?"
+          printf '%s\n' "${out}"
+          echo "--- stderr ---"; cat d.err
 
-          for f in \
-            packages/security-audit-sdk-core/src/probe-new.ts \
-            packages/security-audit-sdk-core/src/bounded-fifo.ts \
-            packages/security-audit-sdk-core/src/testing.ts \
-            packages/security-audit-sdk-core/src/internal.ts
-          do
-            echo "=== ${f} :: review @ BASE ==="
-            if [ -f "${BASE}/${f}" ]; then
-              review "${BASE}/${f}" "${f}"
-            else
-              echo "(absent at base — new file)"
-            fi
-            echo "=== ${f} :: review @ HEAD ==="
-            review "${f}" "${f}"
-            # A file the TypeScript analyser skipped produces nothing here, which is
-            # what separates a parser failure from a scoping rule.
-            echo "=== ${f} :: check @ HEAD ==="
+          echo "##### PASS 1: HEAD, nothing has touched a base copy yet #####"
+          for f in ${FILES}; do
+            echo "--- ${f}"
+            wc -l < "${f}"
+            sha256sum "${f}"
             cs check "${f}"
             echo "(exit=$?)"
           done
 
-          echo "=== delta (same invocation as the gate, pretty-printed) ==="
-          out="$(cs delta "origin/${BASE_REF}" --output-format json --pretty 2>diag.err)"
-          echo "exit=$?"
-          echo "--- stdout ---"; printf '%s\n' "${out}"
-          echo "--- stderr ---"; cat diag.err
+          # Identical bytes, fresh path. If a copy scores worse than the original then
+          # the verdict is keyed to the path or its git history, not to the content.
+          echo "##### PASS 2: same bytes at a path cs has never seen #####"
+          for f in ${FILES}; do
+            c="packages/security-audit-sdk-core/src/zz-copy-$(basename "${f}")"
+            cp "${f}" "${c}"
+            echo "--- ${c}  (copy of ${f})"
+            sha256sum "${c}"
+            cs check "${c}"
+            echo "(exit=$?)"
+            rm -f "${c}"
+          done
+
+          echo "##### PASS 3: BASE, last so it cannot contaminate the passes above #####"
+          BASE="${RUNNER_TEMP}/base"
+          git worktree add --detach "${BASE}" "origin/${BASE_REF}" >/dev/null 2>&1
+          for f in ${FILES}; do
+            if [ -f "${BASE}/${f}" ]; then
+              echo "--- base ${f}"
+              wc -l < "${BASE}/${f}"
+              sha256sum "${BASE}/${f}"
+              cs check "${BASE}/${f}"
+              echo "(exit=$?)"
+            else
+              echo "--- base ${f}: absent (new file)"
+            fi
+          done
           exit 0
 
       - name: Delta analysis
