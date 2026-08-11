@@ -1314,30 +1314,155 @@ This is the operative task 12.4 record. The 2026-08-05 reviewer statement above 
 
 — Fernando Homem da Costa (@nandohdc), project owner and technical reviewer, 2026-08-11
 
+## Renewed project-owner decision — task 12.5
+
+This is the operative task 12.5 record. The 2026-08-05 owner decision above remains
+**SUPERSEDED BY POST-REVIEW F-08 SPECIFICATION CORRECTION** and is not revived by it.
+
+### Decision identity
+
+- **Owner name:** Fernando Homem da Costa
+- **Owner handle:** `@nandohdc`
+- **Owner role:** Project owner
+- **Decision date:** 2026-08-11
+- **Owner-reviewed final SDK technical commit:** `689fc394e36642b814df6672b3b514ba95c27944`
+- **Owner-reviewed technical tree:** `b497a60b1c78b90099d9c144834e7e937861d8ff`
+- **Owner-reviewed SDK subtree:** `428d20296d65b6795b7d116939ec036187792416`
+- **Owner-reviewed technical-review evidence commit:** `3252e4f06d9c616fa1fbdc81ef883f03ba7b6163`
+- **Owner-reviewed technical-review evidence tree:** `7655120bb36f15140be80c7508fff3df7f1bd107`
+- **Owner decision:** APPROVED_FOR_ARCHIVE
+- **Merge authorization:** NOT GRANTED — the merge was performed on 2026-08-06 without prior
+  authorization and is reconciled retrospectively under task 12.8; no second merge is authorized
+- **Archive authorization:** APPROVED — tasks 12.9 and 12.10
+- **Production deployment authorization:** NOT AUTHORIZED
+- **Package publication authorization:** NOT AUTHORIZED
+
+### Owner statement (verbatim)
+
+> Owner: Fernando Homem da Costa (@nandohdc)
+>
+> Role: Project owner
+>
+> Decision date: 2026-08-11
+>
+> Owner decision: APPROVED_FOR_ARCHIVE
+>
+> I personally make this decision for the exact commits and trees identified above. No historical
+> owner decision is reused; the 2026-08-05 decision remains superseded and non-operative.
+>
+> Independent third-party assurance was NOT obtained. The technical review recorded under task
+> 12.4 was performed by me, as project owner. Its independence is independence from the
+> implementing pass only, per the 2026-08-06 governance amendment. No third party has reviewed
+> this remediation, this SDK, or this packet at any point. I make no claim of independent
+> assurance, external audit, certification, or organizational approval anywhere in this record.
+>
+> I accept the residual risk of that limitation ONLY while production deployment and package
+> publication both remain unauthorized. Both remain unauthorized under this decision. If either
+> is ever sought, this acceptance lapses at that moment and does not carry forward.
+>
+> Reinstated precondition. Independent technical assurance — review by a party other than the
+> project owner — is reinstated as a precondition that must be satisfied BEFORE either production
+> deployment authorization or package publication authorization may be granted. This decision
+> does not waive, defer, or partially satisfy that precondition; it defers only the point at
+> which it must be met, to the point where either authorization is sought.
+>
+> Additional precondition on publication. S-6 must be corrected before any package-publication
+> authorization is granted. The packed artifact currently `require()`s two `devDependencies` and
+> cannot be imported from a production-only install, and both relevant gates are structurally
+> blind to it. This precondition is CUMULATIVE with the independent-assurance precondition above,
+> not an alternative to it: satisfying one does not satisfy the other, and independent assurance
+> is not deemed to cover S-6 merely by having occurred.
+>
+> Risks and limitations I acknowledge and accept as non-blocking for the authorized scope, each
+> recorded in full in its own section above and none converted into assurance by this decision:
+>
+> * S-6 — confirmed live defect; the packed artifact is uninstallable. Non-blocking only because
+>   the package is unpublished. Bound by the publication precondition above.
+> * S-3/S-4 — brand authority is module-copy scoped; a duplicate installation reports as
+>   `AUTHORITY_ESCALATION` with no diagnostic distinguishing it from an attack. Fails closed.
+> * R-F — a repeated object reference reports as `PROHIBITED_DATA`, so values with identical JSON
+>   serialization can validate differently. Fails closed.
+> * F-01, F-02, and F-03 have no named differential mutation controls, and `sdk.ts` was
+>   refactored inside the previously unreviewed drift window.
+> * No exact-runtime matrix evidence exists for this candidate; the recorded runs used off-matrix
+>   Node v26.7.0.
+> * The verification and generator scripts were not reviewed line by line; assurance for them is
+>   delegated to their differential mutation controls.
+> * The review analysis adopted under task 12.4 was produced by an AI assistant and re-executed
+>   by that assistant, not by me.
+> * The review candidate recorded by the 2026-08-10 packet extension was stale (finding R-A).
+>   Future reviews should bind to the SDK subtree object rather than to a commit hash.
+>
+> Governance deviation recorded, not cured. The remediation content was merged into `main` on
+> 2026-08-06 as `2f5787bb6120aa72d2cbd063fd963c5e23435e88`, and the packet on 2026-08-10 as
+> `71dbd9535201501605e000afe14069a2a0be46ec`, both before any renewed technical review or owner
+> decision existed. This decision does not retroactively authorize either merge and does not make
+> the ordering compliant. It records the deviation. No second merge is to be performed and no
+> governed history is to be rewritten to conceal it; task 12.8 is discharged by recording and
+> verifying the historical merge, not by repeating it.
+>
+> Basis of this decision. I make it on my own reading of the technical review recorded under task
+> 12.4 and the evidence it identifies. I do not infer it from AI analysis, from passing tests or
+> checks, from issue or pull-request state, from the merged state of `main`, or from either merge
+> having been performed. AI analysis in this packet is reviewer input and is not review,
+> approval, or assurance.
+>
+> Authorized by this decision: progression to tasks 12.6 through 12.10 — restriction
+> reconfirmation, post-decision validation, retrospective merge reconciliation, and archive.
+>
+> Not authorized by this decision: production deployment; package publication or release;
+> framework integration; transports, exporters, collectors, brokers, queues, outboxes, storage,
+> or SIEM integration; analytics, detection, or browser telemetry; cryptographic audit-log
+> chaining; and real-user data processing. Each remains unauthorized and each requires its own
+> OpenSpec change and explicit authorization.
+>
+> Production deployment remains NOT AUTHORIZED.
+>
+> Package publication remains NOT AUTHORIZED.
+
+— Fernando Homem da Costa (@nandohdc), Project owner, 2026-08-11
+
+### Assurance limitation
+
+The project owner is also the technical reviewer. This decision is **project-owner self-review**.
+It is project governance only and does **not** constitute independent assurance, third-party
+review, formal certification, legal advice, or organizational approval. No claim of independent
+assurance is made anywhere in this packet.
+
 ## Current decision
 
-Packet revision: 2026-08-08 reconciliation refresh (tasks 12.1-12.3)
+Packet revision: 2026-08-11 independent review pass (task 12.4)
 Final SDK technical commit: `689fc394e36642b814df6672b3b514ba95c27944`
 Final SDK technical commit subtree: `428d20296d65b6795b7d116939ec036187792416`
 Repository HEAD at reconciliation: `51f1ad340df8514428a86670b8bfc17f7f9bce96`
+Repository HEAD at renewed review: `251b855142ea5c7c00196a73ab712efe55389b72`
 SDK subtree equivalence HEAD vs final SDK technical commit: PASS
 Intervening commits modifying the SDK package: 0
-Review candidate: the commit introducing this packet revision; resolved out of band for 12.4
+Review candidate recorded by the 2026-08-10 extension: `a7ac317725389d7df2b32d939bc0824feb49668e` - STALE, predates the packet revision naming it (finding R-A)
 Task 12.1 finding reconciliation: COMPLETE - recorded in adversarial-review-traceability.md
 Task 12.2 blocker executable evidence: COMPLETE - F-01, F-02, F-03, F-04 evidence recorded
-Task 12.3 packet refresh: COMPLETE - this revision
+Task 12.3 packet refresh: COMPLETE - 2026-08-08 revision
+Task 12.4 renewed technical review: COMPLETE - discharged 2026-08-11
 Task 12.7 validation: EVIDENCE PREPARED, TASK UNCHECKED - requires post-decision re-run
-Validation at candidate: PASS, exit 0, 16/16 gates, 112/112 runtime, 129/129 verification
+Validation at renewed review: PASS, exit 0, full gate chain, 112/112 runtime, 129/129 verification
 Validation runtime: Node v26.7.0 - OFF-MATRIX, not exact-runtime evidence
 Refreshed exact-matrix evidence (Node 24.2.0 / 26.5.0): NOT PRODUCED
-Post-review drift since last review: 626 insertions, 325 deletions, 14 files - UNREVIEWED
-Prepared by: AI assistant executing 12.1-12.3; not review, not approval, not assurance
-Technical review status: PENDING
-Reviewed technical commit: PENDING
-Reviewed technical parent: PENDING
-Reviewed technical tree: PENDING
-Technical-review evidence commit: PENDING
-Technical-review evidence tree: PENDING
+Post-review drift since last review: 637 insertions, 325 deletions, 16 files - REVIEWED 2026-08-11, behavior-preserving
+Review analysis prepared by: AI assistant; reviewer input only, not review, not approval, not assurance
+Technical review status: PASS - task 12.4
+Technical review date: 2026-08-11
+Technical reviewer: Fernando Homem da Costa (@nandohdc), project owner and technical reviewer
+Technical review independence: independent of the implementing pass only; NOT independent third-party assurance
+Reviewed technical commit: `689fc394e36642b814df6672b3b514ba95c27944`
+Reviewed technical parent: `52987bd24035367e2e4694a40068fae15ddff297`
+Reviewed technical tree: `b497a60b1c78b90099d9c144834e7e937861d8ff`
+Reviewed SDK subtree: `428d20296d65b6795b7d116939ec036187792416`
+Technical-review evidence commit: `3252e4f06d9c616fa1fbdc81ef883f03ba7b6163`
+Technical-review evidence tree: `7655120bb36f15140be80c7508fff3df7f1bd107`
+S-1 disposition: WITHDRAWN at renewed review - enforced by generated schema `const`; no public-API change authorized
+S-3/S-4 disposition: non-blocking risk, fails closed
+S-6 disposition: confirmed live defect; non-blocking only while the package is unpublished
+R-F disposition: non-blocking risk, fails closed
 Superseded historical technical-review evidence commit: `eefec5d5b239044c6403bcee87161a7c9eba1fdb`
 Superseded historical reviewed technical commit: `c2b10575085ead832d33c728e58288961509587c`
 Superseded project-owner decision: `c2b10575085ead832d33c728e58288961509587c` in this packet and `278c6721ea4eb2214062a33e289d54605bf9333b` in implementation-authorization.md - NON-OPERATIVE
@@ -1345,14 +1470,22 @@ Owner identity: Fernando Homem da Costa (@nandohdc)
 Owner role: Project owner
 Project-owner semantic decision date: 2026-08-06
 Owner semantic decision: ADOPT_COUNT_BOUNDED_FIFO_RETENTION
-Owner-reviewed technical commit: PENDING
-Owner-reviewed technical-review evidence commit: PENDING
-Owner-reviewed technical-review evidence tree: PENDING
-Project-owner decision: PENDING
+Task 12.5 project-owner decision: COMPLETE - 2026-08-11
+Project-owner decision date: 2026-08-11
+Owner-reviewed technical commit: `689fc394e36642b814df6672b3b514ba95c27944`
+Owner-reviewed technical tree: `b497a60b1c78b90099d9c144834e7e937861d8ff`
+Owner-reviewed SDK subtree: `428d20296d65b6795b7d116939ec036187792416`
+Owner-reviewed technical-review evidence commit: `3252e4f06d9c616fa1fbdc81ef883f03ba7b6163`
+Owner-reviewed technical-review evidence tree: `7655120bb36f15140be80c7508fff3df7f1bd107`
+Project-owner decision: APPROVED_FOR_ARCHIVE
 Owner self-review is independent assurance: NO
+Independent third-party assurance obtained: NO - stated explicitly in the owner decision
+Independent technical assurance reinstated as precondition: YES - required before either production deployment or package publication authorization
+S-6 correction precondition on publication: YES - CUMULATIVE with independent assurance, not an alternative
+Residual risk acceptance: valid ONLY while production deployment and package publication both remain unauthorized; lapses when either is sought
 Production deployment authorization: NOT AUTHORIZED
 Package publication authorization: NOT AUTHORIZED
-Merge authorization: NONE RECORDED — merge performed without a recorded prior authorization
+Merge authorization: NOT GRANTED — merge performed 2026-08-06 without a recorded prior authorization; deviation recorded, not cured; reconciled retrospectively under task 12.8; no second merge authorized
 Merge performed: YES
 Merge commit: `2f5787bb6120aa72d2cbd063fd963c5e23435e88`
 Merged correction commit: `66bf3b721e604e715dbaae2a98888ddc1e6ff7fe`
@@ -1362,7 +1495,7 @@ Merged by: Fernando Homem da Costa (@nandohdc)
 Merge method: merge commit, two parents, no squash/rebase/amend/force-push
 Merge preceded renewed technical review and renewed owner decision: YES
 Approval inferred from merge: NONE
-Archive authorization: PENDING
+Archive authorization: APPROVED - tasks 12.9 and 12.10, by the 2026-08-11 project-owner decision
 
 Production deployment approved | `NO — NOT AUTHORIZED`
 Package publication/release approved | `NO — NOT AUTHORIZED`
