@@ -124,3 +124,21 @@ branch, rebasing rewrites history underneath it and its next push either fails o
 commits. For those branches, fetch before pushing and merge rather than rebase, accepting that the
 merge commit must then be squashed or reworded before the PR can pass. Prefer to pause the
 automation and rebase once it is idle.
+
+## Archive PRs: prefer a merge commit
+
+Merge a PR that archives an OpenSpec change with a merge commit rather than a squash, where the
+required checks allow it.
+
+Archive-movement validation compares the archive against the active change it replaced. When the
+pre-archive commit is still reachable it re-derives that comparison from history, which proves the
+archive is an exact move. A squash replays the branch as one commit whose parent is the target
+branch tip, so the pre-archive state disappears and re-derivation is no longer possible — PR #146
+broke `main` this way.
+
+The movement attestation in
+[`verification-lifecycle.json`](packages/security-audit-sdk-core/verification-lifecycle.json)
+covers that case: when the attested source revision is unreachable, verification compares the
+archive against recorded blob objects instead. That detects any change to the archive after the
+attestation, but it does not re-derive the original move. **The attestation is the safety net, not
+a reason to squash** — a merge commit keeps the stronger check available.
