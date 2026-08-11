@@ -57,5 +57,23 @@
   },
   "localIgnoredFiles": {
     "policy": "Git-standard ignored files are excluded with git ls-files --others --exclude-standard. Non-ignored untracked SDK source and OpenSpec evidence remain visible; unrelated local instruction files outside governed roots are classified but are not SDK implementation scope."
-  }
+  },
+  "movementAttestations": [
+    {
+      "archive": "openspec/changes/archive/2026-08-11-remediate-security-audit-sdk-adversarial-review",
+      "sourceRevision": "f03d98bb7b18edab0a941cdf1c8014a185618865",
+      "attestedAt": "2026-08-11",
+      "policy": "Movement exactness verified by re-derivation against sourceRevision while it was reachable. Each entry records the expected archived file mode and blob object. When sourceRevision is resolvable and still contains the active change, verification re-derives from history and ignores these entries. When it is unreachable, verification compares the archive against these entries instead, which detects post-attestation tampering but does not re-derive the original move.",
+      "files": {
+        ".openspec.yaml": { "mode": "100644", "oid": "5849c2dbf41c3e6adf01905e54928c4ecde07b49" },
+        "adversarial-review-traceability.md": { "mode": "100644", "oid": "bb3ccee7b74f4e65873e555efa6313fe76ce39a6" },
+        "design.md": { "mode": "100644", "oid": "e07a4bb3ec371f416ed4cfadf404c83275ac1b71" },
+        "implementation-authorization.md": { "mode": "100644", "oid": "0da503b177a360aa8609a18089a82929c8bd2e79" },
+        "proposal.md": { "mode": "100644", "oid": "944858894f2d2bd3e21f1300ad79fd4e6337f40e" },
+        "specs/security-audit-sdk-core/spec.md": { "mode": "100644", "oid": "f243597df776cb221efd8949642182f8081b63bf" },
+        "tasks.md": { "mode": "100644", "oid": "cec5849386952a1627dfafaddb3eba98c7284b49" },
+        "technical-review-packet.md": { "mode": "100644", "oid": "bbf9b8e2574751b277e978cf82907c7aefd71a7e" }
+      }
+    }
+  ]
 }

@@ -143,8 +143,9 @@ function validateArchiveMovement(resolvedLifecycle) {
   const exactPattern = new RegExp(remediation.archivePattern);
   movementRule("archive-movement-wrong-archive-path", exactPattern.test(exactArchive), `archive destination ${exactArchive} does not match ${remediation.archivePattern}`);
 
-  const source = resolveMovementSource(exactArchive, movementViolations);
-  const sourceFiles = source ? gitTreeInventory(source.revision, remediation.active) : new Map();
+  const baseline = resolveMovementBaseline(exactArchive, movementViolations);
+  const source = baseline.source;
+  const sourceFiles = baseline.files;
   const archiveFiles = workingTreeInventory(exactArchive, movementViolations);
   const activeFiles = workingTreeInventory(remediation.active, movementViolations);
 
@@ -168,7 +169,11 @@ function validateArchiveMovement(resolvedLifecycle) {
       sourceEntry.mode === destinationEntry.mode,
       `${sourcePath} mode ${sourceEntry.mode} differs from ${destinationPath} mode ${destinationEntry.mode}`,
     );
-    if (relativePath === "tasks.md") {
+    // On the attested path there is no reachable source revision to replay the
+    // transitions against, so tasks.md is compared by object like every other
+    // file: the attestation records its post-transition blob, and the transition
+    // itself was validated by re-derivation when the attestation was written.
+    if (relativePath === "tasks.md" && baseline.mode === "rederived") {
       movementRule(
         "archive-movement-unauthorized-task-difference",
         archivedTasksMatchSource(source, sourcePath, destinationPath, movementViolations),
@@ -210,27 +215,94 @@ function validateArchiveMovement(resolvedLifecycle) {
   }
 }
 
-function resolveMovementSource(archiveRelative, movementViolations) {
+/**
+ * Resolves the baseline the archive is compared against, by one of two paths.
+ *
+ * `rederived` reconstructs the source inventory from history and is the stronger
+ * check: it proves the archive is an exact move of what the active change held.
+ * `attested` compares against recorded blob objects and proves only that the
+ * archive has not changed since it was attested.
+ *
+ * The repository squash-merges by default, which replays a branch as one commit
+ * and destroys the intermediate state re-derivation needs. Fallback is therefore
+ * keyed strictly on *reachability* of the attested source revision, never on a
+ * content mismatch — otherwise altering the archive and the attestation together
+ * would face a weaker check than altering the archive alone.
+ */
+function resolveMovementBaseline(archiveRelative, movementViolations) {
+  // The archive commit itself: the active change is still at HEAD, so the
+  // movement is fully re-derivable and the attestation is validated as written.
   const headInventory = gitTreeInventory("HEAD", remediation.active);
-  if (headInventory.size > 0) return Object.freeze({ revision: "HEAD", movementCommit: null });
-
-  const commits = git(["log", "--format=%H", "--diff-filter=A", "--", `${archiveRelative}/`])
-    .split("\n")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  const candidates = [];
-  for (const commit of commits) {
-    const parent = git(["show", "-s", "--format=%P", commit]).trim().split(" ")[0];
-    if (!parent) continue;
-    if (gitTreeInventory(parent, remediation.active).size === 0) continue;
-    if (gitTreeInventory(commit, archiveRelative).size === 0) continue;
-    candidates.push({ revision: parent, movementCommit: commit });
+  if (headInventory.size > 0) {
+    process.stdout.write("archive movement baseline: re-derived from HEAD\n");
+    return Object.freeze({
+      mode: "rederived",
+      source: Object.freeze({ revision: "HEAD", movementCommit: null }),
+      files: headInventory,
+    });
   }
-  if (candidates.length !== 1) {
-    movementViolations.push(`[archive-movement-source-baseline] expected one archive movement commit with an active parent, found ${candidates.length}`);
+
+  const attestation = movementAttestationFor(archiveRelative, movementViolations);
+  if (!attestation) return Object.freeze({ mode: "unresolved", source: null, files: new Map() });
+
+  // The attested revision is authoritative. Scanning history for a commit that
+  // added the archive is what squash merging defeats: it finds the squash commit
+  // whose parent is the target branch tip, not the pre-archive branch commit.
+  if (revisionCarriesActiveChange(attestation.sourceRevision)) {
+    process.stdout.write(`archive movement baseline: re-derived from attested revision ${attestation.sourceRevision}\n`);
+    return Object.freeze({
+      mode: "rederived",
+      source: Object.freeze({ revision: attestation.sourceRevision, movementCommit: null }),
+      files: gitTreeInventory(attestation.sourceRevision, remediation.active),
+    });
+  }
+
+  process.stdout.write(
+    `archive movement baseline: attested (source revision ${attestation.sourceRevision} is unreachable; comparing recorded objects only)\n`,
+  );
+  return Object.freeze({ mode: "attested", source: null, files: attestedInventory(attestation) });
+}
+
+function movementAttestationFor(archiveRelative, movementViolations) {
+  const entries = metadata.movementAttestations;
+  if (entries === undefined) return null;
+  if (!Array.isArray(entries)) throw new TypeError("movementAttestations must be an array");
+  const matches = entries.filter((entry) => entry?.archive === archiveRelative);
+  if (matches.length === 0) {
+    movementViolations.push(`[archive-movement-attestation-missing] no movement attestation records ${archiveRelative}`);
     return null;
   }
-  return Object.freeze(candidates[0]);
+  if (matches.length > 1) {
+    movementViolations.push(`[archive-movement-attestation-ambiguous] ${matches.length} attestations record ${archiveRelative}`);
+    return null;
+  }
+  const attestation = matches[0];
+  assert(/^[0-9a-f]{40}$/.test(attestation.sourceRevision ?? ""), "movement attestation sourceRevision must be a full Git commit");
+  assert(attestation.files && typeof attestation.files === "object" && !Array.isArray(attestation.files), "movement attestation files must be an object");
+  return attestation;
+}
+
+function attestedInventory(attestation) {
+  const inventory = new Map();
+  for (const [relativePath, entry] of Object.entries(attestation.files)) {
+    assert(/^[0-9a-f]{40}$/.test(entry?.oid ?? ""), `movement attestation oid for ${relativePath} must be a full object id`);
+    assert(/^\d{6}$/.test(entry?.mode ?? ""), `movement attestation mode for ${relativePath} must be a six-digit file mode`);
+    inventory.set(relativePath, Object.freeze({
+      mode: entry.mode,
+      oid: entry.oid,
+      path: `${remediation.active}/${relativePath}`,
+    }));
+  }
+  return inventory;
+}
+
+function revisionCarriesActiveChange(revision) {
+  try {
+    git(["rev-parse", "--verify", `${revision}^{commit}`]);
+  } catch {
+    return false;
+  }
+  return gitTreeInventory(revision, remediation.active).size > 0;
 }
 
 function exactArchivedTaskReconciliation(sourceText, movementViolations) {
