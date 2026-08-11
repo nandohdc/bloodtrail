@@ -199,7 +199,7 @@ function validateArchiveMovement(resolvedLifecycle) {
     movementFailure("archive-movement-partial", `movement inventory is source=${sourceFiles.size}, archive=${archiveFiles.size}, active-remnants=${activeFiles.size}`);
   }
 
-  checkUnrelatedMovementChanges(source, exactArchive, movementViolations);
+  checkUnrelatedMovementChanges(baseline.inProgressSource, exactArchive, movementViolations);
 
   if (movementViolations.length > 0) {
     throw new Error(`archive movement validation failed:\n${[...new Set(movementViolations)].sort(byCodePoint).join("\n")}`);
@@ -235,15 +235,18 @@ function resolveMovementBaseline(archiveRelative, movementViolations) {
   const headInventory = gitTreeInventory("HEAD", remediation.active);
   if (headInventory.size > 0) {
     process.stdout.write("archive movement baseline: re-derived from HEAD\n");
-    return Object.freeze({
-      mode: "rederived",
-      source: Object.freeze({ revision: "HEAD", movementCommit: null }),
-      files: headInventory,
-    });
+    // inProgressSource is set only here. The unrelated-change scan is bounded to
+    // the working tree against HEAD, so it applies only while the movement is
+    // being made. Once committed the source is historical, it was scanned then,
+    // and re-deriving it against an ever-growing diff would reject every archive
+    // created afterwards. Carrying the decision here rather than branching at the
+    // call site keeps that knowledge with the resolution that already has it.
+    const source = Object.freeze({ revision: "HEAD", movementCommit: null });
+    return Object.freeze({ mode: "rederived", source, files: headInventory, inProgressSource: source });
   }
 
   const attestation = movementAttestationFor(archiveRelative, movementViolations);
-  if (!attestation) return Object.freeze({ mode: "unresolved", source: null, files: new Map() });
+  if (!attestation) return Object.freeze({ mode: "unresolved", source: null, files: new Map(), inProgressSource: null });
 
   // The attested revision is authoritative. Scanning history for a commit that
   // added the archive is what squash merging defeats: it finds the squash commit
@@ -254,13 +257,14 @@ function resolveMovementBaseline(archiveRelative, movementViolations) {
       mode: "rederived",
       source: Object.freeze({ revision: attestation.sourceRevision, movementCommit: null }),
       files: gitTreeInventory(attestation.sourceRevision, remediation.active),
+      inProgressSource: null,
     });
   }
 
   process.stdout.write(
     `archive movement baseline: attested (source revision ${attestation.sourceRevision} is unreachable; comparing recorded objects only)\n`,
   );
-  return Object.freeze({ mode: "attested", source: null, files: attestedInventory(attestation) });
+  return Object.freeze({ mode: "attested", source: null, files: attestedInventory(attestation), inProgressSource: null });
 }
 
 function movementAttestationFor(archiveRelative, movementViolations) {
@@ -544,15 +548,8 @@ function assertReviewedPathShape(rawPath, ownership) {
   }
 }
 
-/**
- * Only meaningful while the movement is being made, when the comparison is
- * bounded to the working tree against HEAD. Once the movement is committed the
- * source is historical, and re-deriving this against an ever-growing diff would
- * reject every archive created afterwards as an "unrelated addition". It was
- * checked when the movement was made; the attestation covers it thereafter.
- */
+/** Receives a source only while the movement is in progress; see resolveMovementBaseline. */
 function checkUnrelatedMovementChanges(source, exactArchive, movementViolations) {
-  if (source?.revision !== "HEAD") return;
   for (const record of collectMovementChanges(source)) {
     if (isUnrelatedActiveDeletion(record)) {
       movementViolations.push(`[archive-movement-unrelated-change-deletion] ${record.path} belongs to another active change`);
