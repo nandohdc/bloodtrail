@@ -63,11 +63,16 @@ test("M-GH-D a removed manifest is rejected rather than vacuously passing", () =
   fails(root, "governance-manifest-missing");
 });
 
+// The binding is removed explicitly rather than assumed absent. This control used
+// to rely on the governed record being unsigned, so it silently stopped testing
+// anything the moment that record was signed with a real binding.
 test("M-GH-E a signed record with no content-object binding is rejected", () => {
   const root = caseRepository("signed-without-content-object");
   mutate(root, (record) => {
     record.signed = true;
     record.reviewer = { name: "Synthetic Verification Reviewer", signedAt: "2099-01-02" };
+    delete record.reviewedContent;
+    delete record.legacyCommitBinding;
   });
   fails(root, "governance-content-binding-missing");
 });

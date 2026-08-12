@@ -132,12 +132,21 @@
     },
     {
       "change": "right-size-change-governance",
-      "policy": "UNSIGNED. The implementation candidate is not reviewed. reviewedContent, reviewer, and signed are set only by the project owner in the separate governance commit that records openspec/changes/right-size-change-governance/governance-record.md.",
+      "policy": "Signed by the project owner. reviewedContent binds the reviewed subtrees of the candidate commit; test:governance-history resolves each path inside candidateRoot and compares it to the declared object.",
+      "reviewedCommit": "b557b5f184069c35175af4c896722f3f6b0b75da",
+      "reviewedContent": {
+        "kind": "tree",
+        "candidateRoot": "9442711836b6aa1b01eabccd2d9b31ea23a7feaa",
+        "entries": [
+          { "path": "packages/security-audit-sdk-core/scripts", "object": "c1023448e4b4925cae266456fdc498b39e120bdb" },
+          { "path": "packages/security-audit-sdk-core/tests/verification", "object": "55301935defab0f758f5ca4866f620b958fcfd5d" }
+        ]
+      },
       "governedCommits": ["706dd935caf6a58a2d223a3ec421303f989e9e88"],
       "boundCommits": ["706dd935caf6a58a2d223a3ec421303f989e9e88"],
       "mergeCommits": [],
       "authorizations": {
-        "granted": [],
+        "granted": ["right-size-change-governance-to-land-and-archive"],
         "withheld": [
           "package-publication",
           "production-deployment",
@@ -148,10 +157,11 @@
         ]
       },
       "assuranceLimitations": [
-        "No human review has been performed. Passing gates, checked tasks, pull-request state, and merged state are not review, approval, or assurance.",
+        "Project-owner/implementer governance; not independent security, privacy, legal, or technical assurance.",
         "AI-produced analysis informed the implementation and is not review, approval, or assurance."
       ],
-      "signed": false
+      "signed": true,
+      "reviewer": { "name": "Fernando Homem da Costa (nandohdc)", "signedAt": "2026-08-12" }
     }
   ]
 }

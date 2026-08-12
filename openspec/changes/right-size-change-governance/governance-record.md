@@ -1,26 +1,24 @@
 # Governance record — right-size-change-governance
 
-> **STATUS: UNSIGNED — NOT OPERATIVE EVIDENCE.**
-> This is a blank form. It records no review, no decision, and no authorization. Every field marked
-> `<TO BE COMPLETED BY THE PROJECT OWNER>` is a placeholder. Until the project owner completes and
-> commits it, and sets `signed: true` with the matching `reviewedContent` and `reviewer` in
-> `governanceRecords` in
+> **STATUS: SIGNED by the project owner.** The matching `signed: true`, `reviewer`, and
+> `reviewedContent` are recorded in `governanceRecords` in
 > [`verification-lifecycle.json`](../../../packages/security-audit-sdk-core/verification-lifecycle.json),
-> this change has **not** been reviewed or approved.
+> and `test:governance-history` verifies the binding below by resolving each reviewed path inside the
+> candidate root tree and comparing it to the declared object.
 >
 > AI-produced analysis, passing gates, checked tasks, pull-request state, and merged state are not
-> review, approval, or assurance, and none of them may be substituted for the signature below.
+> review, approval, or assurance, and none of them was substituted for the signature below.
 
 ## Binding
 
 | Field | Value |
 | --- | --- |
-| Candidate root tree | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
-| Reviewed subtree — `packages/security-audit-sdk-core/scripts` | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
-| Reviewed subtree — `packages/security-audit-sdk-core/tests/verification` | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
-| Reviewed commit (supplementary) | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
-| Reviewer / project owner | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
-| Review date | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
+| Candidate root tree | `9442711836b6aa1b01eabccd2d9b31ea23a7feaa` |
+| Reviewed subtree — `packages/security-audit-sdk-core/scripts` | `c1023448e4b4925cae266456fdc498b39e120bdb` |
+| Reviewed subtree — `packages/security-audit-sdk-core/tests/verification` | `55301935defab0f758f5ca4866f620b958fcfd5d` |
+| Reviewed commit (supplementary) | `b557b5f184069c35175af4c896722f3f6b0b75da` |
+| Reviewer / project owner | Fernando Homem da Costa (`nandohdc`) |
+| Review date | 2026-08-12 |
 
 Obtain every value from the reviewed implementation commit, and record the same values in the
 `reviewedContent` of this change's `governanceRecords` entry:
@@ -79,15 +77,15 @@ passing, so none of them is vacuous.
 
 ## Assurance limitations
 
-- `<TO BE COMPLETED BY THE PROJECT OWNER>` — at minimum, whether this is project-owner/implementer
-  governance rather than independent security, privacy, legal, or technical assurance.
+- Project-owner/implementer governance; not independent security, privacy, legal, or technical
+  assurance.
 - AI-produced analysis informed the implementation. It is not review, approval, or assurance.
 
 ## Authorizations
 
 | Authorization | Decision |
 | --- | --- |
-| Change approved to land and archive | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
+| Change approved to land and archive | `YES — APPROVED` |
 | Package publication/release approved | `NO — NOT AUTHORIZED` |
 | Production deployment approved | `NO — NOT AUTHORIZED` |
 | Production collection approved | `NO — NOT AUTHORIZED` |
@@ -101,7 +99,10 @@ whether this change is approved to land and archive.
 
 ## Signature
 
-`<TO BE COMPLETED BY THE PROJECT OWNER>`
+Signed by Fernando Homem da Costa (`nandohdc`), project owner and sole CODEOWNER, on 2026-08-12,
+binding the content objects in the table above. The authoritative machine-readable form of this
+signature is the `right-size-change-governance` entry in `governanceRecords`, where `signed` is
+`true`; `test:governance-history` verifies its bindings on every run.
 
 Superseding this record replaces its content in place. Prior revisions are retrieved from Git
 history, not retained inside this document.
