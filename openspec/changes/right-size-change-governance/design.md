@@ -139,6 +139,15 @@ lockfiles are not in the scanned surface and manifests are read as structured da
 *Alternative considered:* scanning all tracked text for publication strings — rejected because it
 fails on its own documentation, which is how a check gets deleted rather than trusted.
 
+Reviewing the candidate showed the first cut of that surface still had the flaw it was designed to
+avoid, in two places. A bare `uses: ./` was treated as "scan every file beneath the reference", which
+swept the whole repository and failed on `RELEASING.md:10` — the line stating that no workflow here
+runs `npm publish`. And documentation *under* `.github/` was scanned verbatim, so an ordinary
+pull-request template naming the exclusion would have failed the gate; comment stripping is claimed
+for YAML and shell only, and prose cannot be made safe by stripping. Both are now bounded: a local
+reference resolves the way the workflow runner resolves it — a file, or a directory carrying an
+`action.yml` — and fails closed otherwise, and documentation is outside the surface wherever it lives.
+
 **Content binding resolves a path against a candidate tree; the durable half is path-to-object.**
 The first implementation checked only that `reviewedContent.object` resolved to *a* tree, so a record
 could claim `packages/security-audit-sdk-core` while supplying the tree of `.github` — and the

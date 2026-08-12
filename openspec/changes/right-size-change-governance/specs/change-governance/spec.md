@@ -59,9 +59,14 @@ enforce them, and SHALL NOT require a separate governance task.
 The gate that establishes the unpublished condition SHALL scan tracked repository content, not
 workflow files alone. It SHALL reject a package publication command, package-registry publication
 configuration, or publication credential wherever it appears in a tracked package manifest's script
-bodies, in any tracked file under the repository automation directory, and in any local path a
-workflow references as an action or a script. A tracked package manifest SHALL declare itself
+bodies, in any non-documentation file under the repository automation directory, and in any local
+path a workflow references as an action or a script. A tracked package manifest SHALL declare itself
 private; a tracked manifest that does not is a publishable workspace and SHALL be rejected.
+
+A local reference SHALL be resolved as the workflow runner resolves it — a file, or a directory
+carrying an action definition — and SHALL NOT be read as an instruction to scan every file beneath an
+arbitrary path. Expanding the surface that way would draw documentation, lockfiles, and build output
+into it and make the gate fail on prose describing the exclusion.
 
 The gate SHALL NOT claim to analyse reachability through shell indirection. Its boundary SHALL be
 the absence of publication capability anywhere in the scanned surface — a stronger and decidable
@@ -99,8 +104,14 @@ registry or describe publication SHALL NOT be treated as publication paths.
 
 #### Scenario: Documentation and lockfiles name publication
 - **WHEN** documentation describes package publication, or a dependency lockfile names a package
-  registry
+  registry, including documentation held under the automation directory such as a pull-request
+  template
 - **THEN** the gate passes, because neither is a publication path
+
+#### Scenario: Local reference does not resolve to automation
+- **WHEN** a workflow references a local path that is neither a file nor a directory carrying an
+  action definition, such as the repository root
+- **THEN** the gate fails closed on that reference, and does not scan the paths beneath it
 
 #### Scenario: Nothing is scanned
 - **WHEN** no workflow file and no tracked package manifest is scanned
