@@ -28,6 +28,17 @@ proportionate rule before that happens.
   attestation reactivates when publication or deployment is sought.
 - **Assertions become gates.** Any claim about repository state that a script can check is
   enforced by a gate and cited, not restated in prose.
+- **The publication-path exclusion covers tracked content, not workflow files alone.** A publication
+  command in a tracked manifest script, a workflow that reaches it through `npm run`, a tracked
+  manifest that is not private, and local automation a workflow invokes are all rejected. The gate
+  forbids the capability across the scanned surface rather than claiming to trace shell reachability.
+- **A content binding is mechanically resolved.** A signed record declares a candidate root tree and
+  one entry per reviewed path; Git resolves the path within that tree and the gate compares the
+  result to the declared object. Claiming one path while supplying another path's tree is rejected,
+  and a reviewed path may not contain the record that binds it.
+- **Every declared archive movement is anchored in history.** Enforcement covers all declared
+  attestations, not one hard-coded change, and the comparison anchor is the commit history shows
+  introduced the archive — so rewriting an archived file together with its recorded object fails.
 - **Merge and history properties are gate-enforced.** A new check asserts merge-commit parentage
   and that governed commits remain ancestors of `HEAD`. This replaces prose merge verification and
   would have caught the 2026-08-10 squash on the day it happened.
@@ -54,10 +65,12 @@ remediation and is deliberately left intact as archived history.
 
 ## Impact
 
-- **New:** `openspec/specs/change-governance/spec.md`; a merge and history property check under
-  `packages/security-audit-sdk-core/scripts/`, wired into `validate` and `verify`.
-- **Modified:** `CONTRIBUTING.md` governance and task-granularity guidance; `README.md` validation
-  gate table.
+- **New:** `openspec/specs/change-governance/spec.md`; a merge and history property check and an
+  archive-attestation anchor check under `packages/security-audit-sdk-core/scripts/`, both wired into
+  `validate` and `verify`, each with its own differential control suite.
+- **Modified:** `CONTRIBUTING.md` governance and task-granularity guidance; `README.md` and
+  `.hermes.md` validation gate tables; the publication-path and governance-history gates and their
+  controls; `verification-lifecycle.json` gains an anchoring commit per movement attestation.
 - **Unchanged and explicitly out of scope:** every executable gate that exists today; the rule that
   AI analysis is never review, approval, or assurance, which caught both the incorrect S-1 finding
   and the incorrect merge description; the frozen contract; the authorization boundary; and the SDK
