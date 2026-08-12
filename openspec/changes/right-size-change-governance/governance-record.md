@@ -15,16 +15,45 @@
 
 | Field | Value |
 | --- | --- |
-| Reviewed content object (tree) | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
-| Reviewed content path | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
+| Candidate root tree | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
+| Reviewed subtree — `packages/security-audit-sdk-core/scripts` | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
+| Reviewed subtree — `packages/security-audit-sdk-core/tests/verification` | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
 | Reviewed commit (supplementary) | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
 | Reviewer / project owner | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
 | Review date | `<TO BE COMPLETED BY THE PROJECT OWNER>` |
 
-The content object is primary. Obtain it from the implementation commit with
-`git rev-parse <implementation-commit>^{tree}`; it survives squash merge, rebase, and cherry-pick,
-and can be named by the later commit that carries this record. A commit hash alone is not an
-accepted binding — `test:governance-history` rejects it.
+Obtain every value from the reviewed implementation commit, and record the same values in the
+`reviewedContent` of this change's `governanceRecords` entry:
+
+```bash
+CANDIDATE=<the exact reviewed implementation commit>
+git rev-parse "$CANDIDATE^{tree}"                                              # candidateRoot
+git rev-parse "$CANDIDATE:packages/security-audit-sdk-core/scripts"            # entries[].object
+git rev-parse "$CANDIDATE:packages/security-audit-sdk-core/tests/verification" # entries[].object
+```
+
+```json
+"reviewedContent": {
+  "kind": "tree",
+  "candidateRoot": "<root tree>",
+  "entries": [
+    { "path": "packages/security-audit-sdk-core/scripts", "object": "<subtree>" },
+    { "path": "packages/security-audit-sdk-core/tests/verification", "object": "<subtree>" }
+  ]
+}
+```
+
+`test:governance-history` resolves each `path` inside `candidateRoot` and compares it to `object`, so
+these values cannot be transposed or borrowed from another path. It also requires every `object` to be
+carried at its `path` by history reachable from `HEAD`, which is the half that survives a squash merge
+— the candidate root tree does not, because this record is committed on top of the candidate rather
+than inside it.
+
+The reviewed paths are subtrees this signing commit does not touch. The package root is deliberately
+not one of them: it contains
+[`verification-lifecycle.json`](../../../packages/security-audit-sdk-core/verification-lifecycle.json),
+so binding it would mean signing changed the reviewed content, and the gate rejects that as
+self-referential. A commit hash alone remains an unaccepted binding.
 
 ## Gates cited, not restated
 
@@ -35,14 +64,18 @@ introduces:
 | --- | --- |
 | Governance weight is proportionate to authorization state | `test:publication-path`, `test:scope`, `test:package`, `test:dependencies` establish the unpublished, undeployed condition mechanically; `CONTRIBUTING.md` states the proportionate path |
 | Repository-state claims are gate-enforced rather than narrated | `test:publication-path` closes the one previously hand-verified claim; `CONTRIBUTING.md` requires citation over restatement |
+| Publication capability is excluded across tracked repository content | `test:publication-path` — manifest script bodies, manifest `private`, every automation file, workflow-referenced local paths, `.npmrc`, `publishConfig`; unreadable referenced content fails closed |
 | Merge and history integrity are gate-enforced | `test:governance-history` — declared merge parent counts, bound-commit ancestry of `HEAD`, governed-commit resolution |
-| Review and authorization are one signed record bound to a content object | this record plus the `governanceRecords` entry; `governance-content-binding-missing` rejects a signed record with no content object |
+| Declared archive movements are anchored in version-control history | `test:archive-attestations` — every declared attestation and its archive compared against the commit that introduced it |
+| Review and authorization are one signed record bound to a content object | this record plus the `governanceRecords` entry; `governance-content-binding-missing` rejects a signed record with no content object, and `governance-content-object-mismatch` rejects a path bound to another path's tree |
 | Superseded governance records supersede in version control | `CONTRIBUTING.md`; this change replaced `design.md`'s Open Questions rather than appending to them |
 
-Differential controls for both gates are in
-`packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs` and
-`packages/security-audit-sdk-core/tests/verification/publication-path-mutations.test.mjs`, run by
-`test:verification`.
+Differential controls for all three gates are in
+`packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs`,
+`packages/security-audit-sdk-core/tests/verification/publication-path-mutations.test.mjs`, and
+`packages/security-audit-sdk-core/tests/verification/archive-attestation-anchor.test.mjs`, run by
+`test:verification`. Each includes a control that removes the check and shows the same mutation then
+passing, so none of them is vacuous.
 
 ## Assurance limitations
 

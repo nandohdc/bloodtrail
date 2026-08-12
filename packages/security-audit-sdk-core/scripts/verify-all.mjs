@@ -53,6 +53,7 @@ await step("npm audit at low threshold", () => command("npm", ["audit", "--audit
 await step("npm package dry-run and file allowlist", () => npm("test:package"));
 await step("exact changed-path enforcement", () => npm("test:changed-paths"));
 await step("governance merge and history integrity", () => npm("test:governance-history"));
+await step("archive movement attestation anchoring", () => npm("test:archive-attestations"));
 await step("cross-artifact coherence sweep", () => npm("test:coherence"));
 await step("verification lifecycle unit and differential mutation tests", () => npm("test:verification"));
 if (lifecycle.mode === "active" || lifecycle.mode === "governed") {

@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import {
   assert,
@@ -7,6 +7,7 @@ import {
   repositoryRoot,
   splitNull,
 } from "./verification-helpers.mjs";
+import { gitTreeInventory, workingTreeInventory } from "./archive-inventory.mjs";
 import {
   lifecycleMetadata,
   parseLifecycleArguments,
@@ -146,8 +147,8 @@ function validateArchiveMovement(resolvedLifecycle) {
   const baseline = resolveMovementBaseline(exactArchive, movementViolations);
   const source = baseline.source;
   const sourceFiles = baseline.files;
-  const archiveFiles = workingTreeInventory(exactArchive, movementViolations);
-  const activeFiles = workingTreeInventory(remediation.active, movementViolations);
+  const archiveFiles = archiveInventory(exactArchive, movementViolations);
+  const activeFiles = archiveInventory(remediation.active, movementViolations);
 
   movementRule("archive-movement-retained-active-file", activeFiles.size === 0, `active remediation retains ${activeFiles.size} file(s)`);
   movementRule("archive-movement-partial", sourceFiles.size > 0, "source baseline contains no active remediation files");
@@ -228,6 +229,12 @@ function validateArchiveMovement(resolvedLifecycle) {
  * keyed strictly on *reachability* of the attested source revision, never on a
  * content mismatch — otherwise altering the archive and the attestation together
  * would face a weaker check than altering the archive alone.
+ *
+ * On the `attested` path the archive and the attestation are both mutable
+ * working-tree content, so agreeing with each other is not evidence. What makes
+ * that pair honest is `check-archive-attestations.mjs`, which compares both
+ * against the commit history shows introduced the archive. Both gates run in
+ * `validate` and `verify`; neither subsumes the other.
  */
 function resolveMovementBaseline(archiveRelative, movementViolations) {
   // The archive commit itself: the active change is still at HEAD, so the
@@ -323,48 +330,14 @@ function exactArchivedTaskReconciliation(sourceText, movementViolations) {
   return expected;
 }
 
-function gitTreeInventory(revision, prefix) {
-  const inventory = new Map();
-  const records = splitNull(git(["ls-tree", "-r", "-z", revision, "--", prefix]));
-  for (const record of records) {
-    const separator = record.indexOf("\t");
-    assert(separator !== -1, `unable to parse git tree record for ${prefix}`);
-    const [mode, type, oid] = record.slice(0, separator).split(" ");
-    const path = record.slice(separator + 1);
-    assert(type === "blob", `archive movement requires blob entries, found ${type} at ${path}`);
-    assert(path.startsWith(`${prefix}/`), `tree path ${path} is outside ${prefix}`);
-    const relativePath = path.slice(prefix.length + 1);
-    assert(!inventory.has(relativePath), `duplicate tree path ${relativePath}`);
-    inventory.set(relativePath, Object.freeze({ mode, oid, path }));
+// The inventories themselves live in archive-inventory.mjs, shared with
+// check-archive-attestations.mjs. Only the mapping into this gate's diagnostic
+// vocabulary stays here.
+function archiveInventory(rootRelative, movementViolations) {
+  const { inventory, problems } = workingTreeInventory(repositoryRoot, rootRelative);
+  for (const problem of problems) {
+    movementViolations.push(`[archive-movement-mode-mismatch] unsupported filesystem entry at ${problem.path}`);
   }
-  return inventory;
-}
-
-function workingTreeInventory(rootRelative, movementViolations) {
-  const inventory = new Map();
-  const root = resolve(repositoryRoot, rootRelative);
-  if (!existsSync(root)) return inventory;
-
-  function walk(directory) {
-    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
-      const absolute = resolve(directory, entry.name);
-      if (entry.isDirectory()) {
-        walk(absolute);
-        continue;
-      }
-      const stat = lstatSync(absolute);
-      const path = normalizeRepositoryPath(relative(repositoryRoot, absolute));
-      const relativePath = path.slice(rootRelative.length + 1);
-      if (!entry.isFile() && !entry.isSymbolicLink()) {
-        movementViolations.push(`[archive-movement-mode-mismatch] unsupported filesystem entry at ${path}`);
-        continue;
-      }
-      const mode = gitFileMode(entry, stat);
-      const oid = git(["hash-object", "--no-filters", "--", path]).trim();
-      inventory.set(relativePath, Object.freeze({ mode, oid, path }));
-    }
-  }
-  walk(root);
   return inventory;
 }
 
@@ -483,11 +456,6 @@ function collectMovementChanges(source) {
   if (!source) return [];
   if (source.movementCommit) return trackedChangesBetween(source.revision, source.movementCommit);
   return workingChangesAgainst(source.revision);
-}
-
-function gitFileMode(entry, stat) {
-  if (entry.isSymbolicLink()) return "120000";
-  return (stat.mode & 0o111) === 0 ? "100644" : "100755";
 }
 
 function isUnrelatedActiveDeletion(record) {

@@ -88,6 +88,29 @@ structured data in
 their declared parent count, bound commits must remain ancestors of `HEAD`, and governed commits
 must still resolve.
 
+The binding is *resolved*, not just well formed. A record declares the candidate commit's root tree
+and one entry per reviewed path:
+
+```json
+"reviewedContent": {
+  "kind": "tree",
+  "candidateRoot": "<git rev-parse <candidate>^{tree}>",
+  "entries": [{ "path": "…", "object": "<git rev-parse <candidate>:…>" }]
+}
+```
+
+Git resolves `candidateRoot:path` and the gate compares it to `object`, so naming one path while
+supplying another path's tree is rejected. Each object must also be carried at its path by history
+reachable from `HEAD` — that half is mandatory and is what survives the squash merge, because the
+candidate root tree itself does not: the signing commit sits on top of the candidate, so only the
+signing commit's tree lands on `main`.
+
+**A reviewed path may not contain the record.** `verification-lifecycle.json` carries the records, so
+binding a path that contains it means signing changes the reviewed content. Bind subtrees the signing
+commit does not touch — `packages/security-audit-sdk-core/scripts` rather than
+`packages/security-audit-sdk-core`. The gate rejects the self-referential form up front instead of
+letting it pass on the branch and fail on `main`.
+
 **Supersede in version control, not in-document.** When a governance record is revised, the new
 revision *replaces* the old content; Git keeps the prior revision. Do not accumulate superseded
 revisions inside the document — that convention is how one packet reached ~1,500 lines and came to
@@ -181,7 +204,18 @@ broke `main` this way.
 
 The movement attestation in
 [`verification-lifecycle.json`](packages/security-audit-sdk-core/verification-lifecycle.json)
-covers that case: when the attested source revision is unreachable, verification compares the
-archive against recorded blob objects instead. That detects any change to the archive after the
-attestation, but it does not re-derive the original move. **The attestation is the safety net, not
-a reason to squash** — a merge commit keeps the stronger check available.
+covers that case: when the attested source revision is unreachable, `test:changed-paths` compares the
+archive against recorded blob objects instead. That does not re-derive the original move, and on its
+own it would not detect an archived file rewritten *together with* its recorded object — the archive
+and the attestation are both mutable working-tree content, so agreeing with each other proves
+nothing.
+
+`test:archive-attestations` is what makes that pair honest. It compares both the archive and the
+recorded inventory against `anchorCommit`, the commit history shows introduced the archive, derived by
+walking history for that path rather than read from the manifest. It checks every declared
+attestation, not one named change. Its bounded claim: **a history-derived anchor does not withstand
+rewriting the history it derives from** — that is bounded by `main` being protected against
+force-push, and by a rewrite invalidating every recorded commit identifier at or after the anchor.
+
+**The attestation is the safety net, not a reason to squash** — a merge commit keeps the stronger
+re-derivation available.
