@@ -169,6 +169,31 @@ test("M-PP-R a tracked automation file missing from the working tree fails close
   assert.match(result.stderr, /check-conventional-commits\.mjs/);
 });
 
+// A local reference resolves the way GitHub Actions resolves one. Treating it as
+// "scan everything underneath" made a bare `./` sweep the whole repository and
+// then fail on RELEASING.md, which legitimately states that no workflow here runs
+// npm publish — the false positive that gets a gate distrusted rather than fixed.
+test("M-PP-S a repository-root local reference fails closed instead of sweeping the tree", () => {
+  const root = caseRepository("local-reference-root");
+  appendWorkflow(root, ["      - uses: ./"]);
+  const result = fails(root, "publication-unscannable-automation");
+  assert.doesNotMatch(result.stderr, /RELEASING\.md/, "documentation must stay outside the scanned surface");
+  assert.doesNotMatch(result.stderr, /package-lock\.json/, "lockfiles must stay outside the scanned surface");
+});
+
+// Comment stripping is claimed for YAML and shell only, so documentation cannot
+// be made safe by stripping: it has to be out of the surface. A pull-request
+// template naming the exclusion is the ordinary case.
+test("M-PP-T documentation under the automation directory is not a publication path", () => {
+  const root = caseRepository("automation-documentation");
+  writeTracked(root, ".github/PULL_REQUEST_TEMPLATE.md", [
+    "## Checklist",
+    "",
+    "- [ ] This change runs no `npm publish` step and introduces no NPM_TOKEN.",
+  ]);
+  succeeds(root);
+});
+
 test("M-PP-P scanning no tracked manifest at all is rejected rather than vacuously passing", () => {
   const root = caseRepository("no-manifests");
   mutateChecker(root, 'entry === "package.json" || entry.endsWith("/package.json")', "false");

@@ -60,7 +60,13 @@ const WORKFLOW_ROOT = `${AUTOMATION_ROOT}/workflows`;
 // executable. No such guarantee holds for other file types, where lines are
 // scanned verbatim.
 const COMMENT_STRIPPED = /\.(?:ya?ml|sh|bash|zsh)$/i;
+// Documentation is outside the surface wherever it lives, including under the
+// automation directory. Prose cannot be made safe by comment stripping, and a
+// pull-request template that names the exclusion — or RELEASING.md, which states
+// that no workflow here publishes — must not read as a publication path.
+const DOCUMENTATION = /\.(?:md|markdown|mdx|txt|rst|adoc)$/i;
 const LOCAL_REFERENCE = /\buses\s*:\s*(\.[^\s"']+)/;
+const ACTION_DEFINITIONS = ["action.yml", "action.yaml"];
 
 const failures = [];
 const localReferences = new Map();
@@ -78,7 +84,7 @@ const trackedFiles = splitNull(git(["ls-files", "-z"]));
 const automationFiles = union(
   (await filesUnder(resolve(repositoryRoot, AUTOMATION_ROOT))).map(toRepositoryPath),
   trackedFiles.filter((entry) => entry.startsWith(`${AUTOMATION_ROOT}/`)),
-);
+).filter((path) => !DOCUMENTATION.test(path));
 for (const path of automationFiles) await scanAutomationFile(path);
 
 for (const reference of [...localReferences.keys()].sort(byCodePoint)) {
@@ -152,14 +158,38 @@ async function scanLocalReference(reference, origin) {
     fail("publication-unscannable-automation", origin, `local reference ${reference} resolves outside the repository: expected a repository path, found an external one`);
     return;
   }
-  const referenced = (await filesUnder(absolute)).map(toRepositoryPath);
+  const referenced = (await referencedAutomation(absolute)).map(toRepositoryPath);
   if (referenced.length === 0) {
-    fail("publication-unscannable-automation", origin, `local reference ${reference} resolves to no readable file: expected scannable automation, found none`);
+    fail("publication-unscannable-automation", origin, `local reference ${reference} resolves to no scannable automation: expected a file or a directory carrying ${ACTION_DEFINITIONS.join(" or ")}, found neither`);
     return;
   }
   for (const path of referenced) {
     if (automationFiles.includes(path)) continue;
     await scanAutomationFile(path);
+  }
+}
+
+// Resolved the way GitHub Actions resolves a local `uses:` — a file, or a
+// directory carrying an action definition. Scanning everything beneath any
+// referenced path instead would make a bare "./" sweep the whole repository,
+// dragging documentation, lockfiles, and build output into the surface; a
+// directory with no action definition is not automation this gate can establish
+// anything about, so it fails closed rather than expanding.
+async function referencedAutomation(absolute) {
+  const stat = await describeEntry(absolute);
+  if (stat === null) return [];
+  if (stat.isFile()) return [absolute];
+  if (!stat.isDirectory()) return [];
+  const definitions = await Promise.all(ACTION_DEFINITIONS.map((name) => describeEntry(resolve(absolute, name))));
+  if (definitions.every((definition) => definition === null)) return [];
+  return (await filesUnder(absolute)).filter((path) => !DOCUMENTATION.test(path));
+}
+
+async function describeEntry(absolute) {
+  try {
+    return await lstat(absolute);
+  } catch {
+    return null;
   }
 }
 
@@ -177,12 +207,8 @@ function scanManifest(path, manifest) {
 }
 
 async function filesUnder(root, pattern) {
-  let stat;
-  try {
-    stat = await lstat(root);
-  } catch {
-    return [];
-  }
+  const stat = await describeEntry(root);
+  if (stat === null) return [];
   if (stat.isFile()) return [root];
   if (!stat.isDirectory()) return [];
   const entries = await readdir(root, { withFileTypes: true, recursive: true });

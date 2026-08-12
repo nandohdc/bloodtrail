@@ -26,7 +26,7 @@
 - [x] 5.1 Add differential controls proving the gate accepts a publication command reached indirectly: a tracked non-private manifest whose script publishes, a workflow invoking it through `npm run`, and local `.github` automation carrying a publication command. Confirm each fails against the current implementation without ever executing a publication command.
 - [x] 5.2 Extend the gate to scan every tracked package manifest's script bodies and `private` flag, every tracked file under the automation directory, and every local path a workflow references, failing closed on content it cannot read. Preserve the existing command, credential, registry, `.npmrc`, `publishConfig`, comment-stripping, and empty-scan controls unchanged.
 - [x] 5.3 Add a non-vacuity control proving the rejection comes from the manifest-script scan, and a false-positive control proving documentation and lockfile references still pass.
-- [ ] 5.4 Bound the widened surface: resolve a local `uses:` reference as the workflow runner does rather than scanning every path beneath it, exclude documentation from the automation directory, and add controls proving a repository-root reference fails closed without reporting `RELEASING.md` and that a pull-request template naming the exclusion passes.
+- [x] 5.4 Bound the widened surface: resolve a local `uses:` reference as the workflow runner does rather than scanning every path beneath it, exclude documentation from the automation directory, and add controls proving a repository-root reference fails closed without reporting `RELEASING.md` and that a pull-request template naming the exclusion passes.
 
 ## 6. Remediation: exact reviewed-content binding
 
