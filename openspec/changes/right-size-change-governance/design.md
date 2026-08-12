@@ -148,6 +148,17 @@ for YAML and shell only, and prose cannot be made safe by stripping. Both are no
 reference resolves the way the workflow runner resolves it — a file, or a directory carrying an
 `action.yml` — and fails closed otherwise, and documentation is outside the surface wherever it lives.
 
+A third defect, found in review of that same cut, ran the other way. Both of the above failed *closed*
+— noisy, but safe. This one failed open: the reference pattern required a literal `.` immediately
+after `uses:`, so `uses: "./a"` and `uses: './a'` captured nothing, while the runner treats all three
+spellings as one reference. For a reference outside `.github/` that was a complete escape, because
+nothing else brings such a path into the surface: the automation walk does not reach it, and no entry
+reached the fallback that resolves references. A workflow pointing at `./tools/publisher`, whose
+`action.yml` ran `npm publish`, made the gate exit 0 over content it never read. The pattern now
+accepts an optional quote, which is why that quote must stay — the negated character class already
+ends the capture at either quote, so the group is doing real work and is not redundant punctuation.
+`M-PP-U` is the control that depends on the capture, and it fails against the unquoted pattern.
+
 **Content binding resolves a path against a candidate tree; the durable half is path-to-object.**
 The first implementation checked only that `reviewedContent.object` resolved to *a* tree, so a record
 could claim `packages/security-audit-sdk-core` while supplying the tree of `.github` — and the

@@ -27,6 +27,7 @@
 - [x] 5.2 Extend the gate to scan every tracked package manifest's script bodies and `private` flag, every tracked file under the automation directory, and every local path a workflow references, failing closed on content it cannot read. Preserve the existing command, credential, registry, `.npmrc`, `publishConfig`, comment-stripping, and empty-scan controls unchanged.
 - [x] 5.3 Add a non-vacuity control proving the rejection comes from the manifest-script scan, and a false-positive control proving documentation and lockfile references still pass.
 - [x] 5.4 Bound the widened surface: resolve a local `uses:` reference as the workflow runner does rather than scanning every path beneath it, exclude documentation from the automation directory, and add controls proving a repository-root reference fails closed without reporting `RELEASING.md` and that a pull-request template naming the exclusion passes.
+- [x] 5.5 Capture the quoted spellings of a local reference, which the runner treats identically and the first cut dropped: a quoted reference outside the automation directory reached nothing, so a referenced action carrying a publication command went unscanned and the gate passed. Add a control that depends on the capture, and confirm it fails against the unquoted pattern.
 
 ## 6. Remediation: exact reviewed-content binding
 
