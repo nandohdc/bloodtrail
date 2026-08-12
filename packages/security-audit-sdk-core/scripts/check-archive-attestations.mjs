@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { byCodePoint, git, repositoryRoot } from "./verification-helpers.mjs";
-import { boundedFailure, lifecycleMetadata, repositoryPathProblem } from "./lifecycle-policy.mjs";
+import { boundedFailure, lifecycleMetadata } from "./lifecycle-policy.mjs";
+import { repositoryPathProblem } from "./repository-path.mjs";
 import { gitTreeInventory, workingTreeInventory } from "./archive-inventory.mjs";
 
 /**

@@ -193,25 +193,6 @@ export function boundedFailure(id, file, message) {
   return Object.freeze({ id: String(id), file: String(file), message: String(message).slice(0, 240) });
 }
 
-/**
- * Why a value is not usable as a repository-relative path, or null when it is.
- * The reason is a bounded fragment naming the rule, never the caller's data.
- *
- * Directories are permitted, which is why this is not shared with
- * `check-changed-paths.mjs`'s reviewed-source-path rules: those must reject a
- * directory, and folding the two together would weaken that gate.
- */
-export function repositoryPathProblem(path) {
-  if (typeof path !== "string" || path.length === 0) return "must be a non-empty string";
-  if (path.includes("\0")) return "must not contain a null byte";
-  if (path.includes("..")) return "must not contain path traversal";
-  if (path.startsWith("/") || /^[A-Za-z]:[\\/]/.test(path)) return "must be repository-relative, not absolute";
-  if (path.includes("\\")) return "must use forward slashes";
-  if (path.endsWith("/")) return "must not end with a path separator";
-  if (/[*?[{]/.test(path)) return "must not contain glob characters";
-  return null;
-}
-
 async function matchingArchives(root, pattern) {
   const archiveRoot = resolve(root, "openspec/changes/archive");
   let entries;

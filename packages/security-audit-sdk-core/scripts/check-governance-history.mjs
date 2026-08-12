@@ -1,6 +1,7 @@
 import { relative, resolve } from "node:path";
 import { byCodePoint, git, packageRoot, repositoryRoot } from "./verification-helpers.mjs";
-import { boundedFailure, lifecycleMetadata, repositoryPathProblem } from "./lifecycle-policy.mjs";
+import { boundedFailure, lifecycleMetadata } from "./lifecycle-policy.mjs";
+import { repositoryPathProblem } from "./repository-path.mjs";
 
 const OBJECT_ID = /^[0-9a-f]{40}$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
