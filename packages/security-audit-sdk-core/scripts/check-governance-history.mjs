@@ -5,17 +5,20 @@ import { repositoryPathProblem } from "./repository-path.mjs";
 
 const OBJECT_ID = /^[0-9a-f]{40}$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+// Declared above RECORD_PATH, which resolves it: a const is not initialised until
+// its own line runs.
+const MANIFEST_FILE = "verification-lifecycle.json";
 // The file that carries the records themselves. A reviewed path containing it
 // would be changed by the act of signing.
-const RECORD_PATH = relative(repositoryRoot, resolve(packageRoot, "verification-lifecycle.json")).replaceAll("\\", "/");
+const RECORD_PATH = relative(repositoryRoot, resolve(packageRoot, MANIFEST_FILE)).replaceAll("\\", "/");
 const failures = [];
 const verified = { governed: 0, bound: 0, merges: 0, content: 0, candidateRoots: 0 };
 const records = lifecycleMetadata.governanceRecords;
 
 if (records === undefined) {
-  fail("governance-manifest-missing", "verification-lifecycle.json", "governanceRecords is absent; governance bindings must be declared as structured data");
+  fail("governance-manifest-missing", MANIFEST_FILE, "governanceRecords is absent; governance bindings must be declared as structured data");
 } else if (!Array.isArray(records) || records.length === 0) {
-  fail("governance-manifest-missing", "verification-lifecycle.json", `governanceRecords must be a non-empty array, found ${describe(records)}`);
+  fail("governance-manifest-missing", MANIFEST_FILE, `governanceRecords must be a non-empty array, found ${describe(records)}`);
 } else {
   for (const [index, record] of records.entries()) checkRecord(record, labelFor(record, index));
 }

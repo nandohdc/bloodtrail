@@ -71,6 +71,9 @@ const DOCUMENTATION = /\.(?:md|markdown|mdx|txt|rst|adoc)$/i;
 // class already ends the capture at either quote, so no closing quote is needed.
 const LOCAL_REFERENCE = /\buses\s*:\s*["']?(\.[^\s"']+)/;
 const ACTION_DEFINITIONS = ["action.yml", "action.yaml"];
+// The fail-closed diagnostic, named once: it is raised from three places, and all
+// three must report the same id for the exclusion to be auditable.
+const UNSCANNABLE_AUTOMATION = "publication-unscannable-automation";
 
 const failures = [];
 const localReferences = new Map();
@@ -136,7 +139,7 @@ async function scanAutomationFile(relativePath) {
   try {
     text = await readFile(resolve(repositoryRoot, relativePath), "utf8");
   } catch {
-    fail("publication-unscannable-automation", relativePath, "automation content could not be read: expected a readable file, found none; the exclusion cannot be established over unscanned content");
+    fail(UNSCANNABLE_AUTOMATION, relativePath, "automation content could not be read: expected a readable file, found none; the exclusion cannot be established over unscanned content");
     return;
   }
   const stripped = COMMENT_STRIPPED.test(relativePath);
@@ -159,12 +162,12 @@ async function scanLocalReference(reference, origin) {
   const absolute = resolve(repositoryRoot, reference);
   const contained = absolute === repositoryRoot || absolute.startsWith(`${repositoryRoot}${sep}`);
   if (!contained) {
-    fail("publication-unscannable-automation", origin, `local reference ${reference} resolves outside the repository: expected a repository path, found an external one`);
+    fail(UNSCANNABLE_AUTOMATION, origin, `local reference ${reference} resolves outside the repository: expected a repository path, found an external one`);
     return;
   }
   const referenced = (await referencedAutomation(absolute)).map(toRepositoryPath);
   if (referenced.length === 0) {
-    fail("publication-unscannable-automation", origin, `local reference ${reference} resolves to no scannable automation: expected a file or a directory carrying ${ACTION_DEFINITIONS.join(" or ")}, found neither`);
+    fail(UNSCANNABLE_AUTOMATION, origin, `local reference ${reference} resolves to no scannable automation: expected a file or a directory carrying ${ACTION_DEFINITIONS.join(" or ")}, found neither`);
     return;
   }
   for (const path of referenced) {

@@ -37,6 +37,10 @@ const ARCHIVE_ROOT = "openspec/changes/archive/";
 const OBJECT_ID = /^[0-9a-f]{40}$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const FILE_MODE = /^\d{6}$/;
+// Named because it is the diagnostic for seven distinct malformed-input cases:
+// repeating the literal is what Sonar's duplicate-literal rule flags, and a typo
+// in one of seven copies would silently split the id.
+const ENTRY_INVALID = "archive-attestation-entry-invalid";
 
 const failures = [];
 const reports = [];
@@ -73,7 +77,7 @@ function fail(id, file, message) {
 function checkAttestation(attestation, index, declaredArchives) {
   const label = `movementAttestations[${index}]`;
   if (!isPlainObject(attestation)) {
-    fail("archive-attestation-entry-invalid", label, `attestation must be an object, found ${describe(attestation)}`);
+    fail(ENTRY_INVALID, label, `attestation must be an object, found ${describe(attestation)}`);
     return;
   }
   const archive = attestation.archive;
@@ -87,7 +91,7 @@ function checkAttestation(attestation, index, declaredArchives) {
   }
   const { inventory: workingInventory, problems } = workingTreeInventory(repositoryRoot, archive);
   for (const problem of problems) {
-    fail("archive-attestation-entry-invalid", problem.path, "archived path is neither a file nor a symbolic link and cannot be compared by object");
+    fail(ENTRY_INVALID, problem.path, "archived path is neither a file nor a symbolic link and cannot be compared by object");
   }
 
   const anchor = deriveAnchor(archive);
@@ -115,15 +119,15 @@ function checkArchivePath(label, archive, declaredArchives) {
 function checkMetadata(archive, attestation) {
   let valid = true;
   if (!OBJECT_ID.test(attestation.sourceRevision ?? "")) {
-    fail("archive-attestation-entry-invalid", archive, `sourceRevision must be a full 40-character lowercase hexadecimal Git commit, found ${describe(attestation.sourceRevision)}`);
+    fail(ENTRY_INVALID, archive, `sourceRevision must be a full 40-character lowercase hexadecimal Git commit, found ${describe(attestation.sourceRevision)}`);
     valid = false;
   }
   if (!ISO_DATE.test(attestation.attestedAt ?? "")) {
-    fail("archive-attestation-entry-invalid", archive, `attestedAt must be an ISO date, found ${describe(attestation.attestedAt)}`);
+    fail(ENTRY_INVALID, archive, `attestedAt must be an ISO date, found ${describe(attestation.attestedAt)}`);
     valid = false;
   }
   if (attestation.anchorCommit !== undefined && !OBJECT_ID.test(attestation.anchorCommit)) {
-    fail("archive-attestation-entry-invalid", archive, `anchorCommit must be a full 40-character lowercase hexadecimal Git commit, found ${describe(attestation.anchorCommit)}`);
+    fail(ENTRY_INVALID, archive, `anchorCommit must be a full 40-character lowercase hexadecimal Git commit, found ${describe(attestation.anchorCommit)}`);
     valid = false;
   }
   return valid;
@@ -141,12 +145,12 @@ function declaredInventoryOf(archive, attestation) {
   for (const [relativePath, entry] of Object.entries(files)) {
     const problem = repositoryPathProblem(relativePath);
     if (problem) {
-      fail("archive-attestation-entry-invalid", archive, `files key ${JSON.stringify(relativePath)} ${problem}`);
+      fail(ENTRY_INVALID, archive, `files key ${JSON.stringify(relativePath)} ${problem}`);
       valid = false;
       continue;
     }
     if (!hasInventoryEntryShape(entry)) {
-      fail("archive-attestation-entry-invalid", `${archive}/${relativePath}`, `files entry must record a six-digit mode and a full object id, found ${describe(entry)}`);
+      fail(ENTRY_INVALID, `${archive}/${relativePath}`, `files entry must record a six-digit mode and a full object id, found ${describe(entry)}`);
       valid = false;
       continue;
     }
