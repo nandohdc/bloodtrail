@@ -65,7 +65,11 @@ const COMMENT_STRIPPED = /\.(?:ya?ml|sh|bash|zsh)$/i;
 // pull-request template that names the exclusion — or RELEASING.md, which states
 // that no workflow here publishes — must not read as a publication path.
 const DOCUMENTATION = /\.(?:md|markdown|mdx|txt|rst|adoc)$/i;
-const LOCAL_REFERENCE = /\buses\s*:\s*(\.[^\s"']+)/;
+// The optional quote matches the runner: `uses: ./a`, `uses: "./a"`, and
+// `uses: './a'` are the same reference to GitHub Actions, so a gate that read
+// only the bare form would leave the quoted spellings unscanned. The negated
+// class already ends the capture at either quote, so no closing quote is needed.
+const LOCAL_REFERENCE = /\buses\s*:\s*["']?(\.[^\s"']+)/;
 const ACTION_DEFINITIONS = ["action.yml", "action.yaml"];
 
 const failures = [];

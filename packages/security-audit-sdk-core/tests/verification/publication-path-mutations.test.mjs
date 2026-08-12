@@ -181,6 +181,25 @@ test("M-PP-S a repository-root local reference fails closed instead of sweeping 
   assert.doesNotMatch(result.stderr, /package-lock\.json/, "lockfiles must stay outside the scanned surface");
 });
 
+// Quoting a local reference is legal YAML and changes nothing for the runner, so
+// it must change nothing for the gate either. A reference outside the automation
+// directory is the case that depends on the capture: nothing else brings
+// tools/ into the surface.
+test("M-PP-U a quoted local reference is resolved rather than ignored", () => {
+  const root = caseRepository("quoted-local-reference");
+  writeTracked(root, "tools/publisher/action.yml", [
+    "name: publisher",
+    "runs:",
+    "  using: composite",
+    "  steps:",
+    "    - run: npm publish --access public",
+    "      shell: bash",
+  ]);
+  appendWorkflow(root, ['      - uses: "./tools/publisher"']);
+  const result = fails(root, "publication-command");
+  assert.match(result.stderr, /tools\/publisher\/action\.yml:\d+/);
+});
+
 // Comment stripping is claimed for YAML and shell only, so documentation cannot
 // be made safe by stripping: it has to be out of the surface. A pull-request
 // template naming the exclusion is the ordinary case.
