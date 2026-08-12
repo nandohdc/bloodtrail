@@ -142,9 +142,12 @@ archived file together with its recorded object SHALL therefore fail even after 
 revision has become unavailable, because the archive and the attestation are both compared against
 evidence neither of them can restate.
 
-An attestation SHALL declare its anchoring commit. Verification SHALL reject a declared anchoring
-commit that is not the commit history shows introduced the archive, and one that is not an ancestor
-of the branch head.
+Verification SHALL derive the anchor from history whatever the attestation declares. An attestation
+MAY additionally declare its anchoring commit, and where it does, verification SHALL reject one that
+is not an ancestor of the branch head, and one that is not the commit history shows introduced the
+archive. Declaring it SHALL NOT be a precondition of the movement commit itself, because the commit
+that introduces an archive cannot be named by the commit that creates it; enforcement therefore rests
+on the derived anchor and never on the declaration.
 
 Where an archived path is not yet present in history — the state while its movement commit is being
 prepared — verification SHALL report the anchor as pending and SHALL still require the archive to
@@ -179,6 +182,11 @@ mainline branch and by the recorded commit identifiers such a rewrite would inva
 - **WHEN** an attestation declares an anchoring commit that history does not show introduced the
   archive, or that is not an ancestor of the branch head
 - **THEN** verification fails
+
+#### Scenario: Anchoring commit is not declared
+- **WHEN** an attestation records an archive that is in history but declares no anchoring commit
+- **THEN** verification anchors it against the commit derived from history and reports that the
+  anchor was derived rather than declared
 
 #### Scenario: Archive is not yet committed
 - **WHEN** an attestation records an archive that is present in the working tree but not yet in

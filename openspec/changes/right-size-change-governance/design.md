@@ -182,8 +182,13 @@ attestation are both mutable working-tree content, so rewriting an archived file
 object passed. The anchor is derived instead from the commit reachable from `HEAD` that introduced
 the archived path, obtained by walking history for that path and never from a value the manifest
 declares. Both the working-tree archive and the declared inventory are compared against it, so a
-coordinated rewrite fails twice. Every declared attestation is checked, and each declares its
-anchoring commit, which must equal the commit history shows introduced the archive.
+coordinated rewrite fails twice. Every declared attestation is checked.
+
+`anchorCommit` is declared for the reader and cross-checked, but enforcement rests on the derived
+anchor, never on the declaration — and declaring it cannot be a precondition of the movement commit,
+because a commit cannot name the commit that introduces its own archive. So the field is optional,
+verified when present (it must be an ancestor of `HEAD` and must equal the derived anchor), and its
+absence is reported. Both existing attestations declare it; that is the whole migration.
 
 The residual is stated rather than implied: **a history-derived anchor does not withstand rewriting
 the history it derives from.** What bounds that is outside this gate — `main` is protected against
