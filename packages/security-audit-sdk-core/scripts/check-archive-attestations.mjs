@@ -145,7 +145,7 @@ function declaredInventoryOf(archive, attestation) {
       valid = false;
       continue;
     }
-    if (!isPlainObject(entry) || !FILE_MODE.test(entry.mode ?? "") || !OBJECT_ID.test(entry.oid ?? "")) {
+    if (!hasInventoryEntryShape(entry)) {
       fail("archive-attestation-entry-invalid", `${archive}/${relativePath}`, `files entry must record a six-digit mode and a full object id, found ${describe(entry)}`);
       valid = false;
       continue;
@@ -170,14 +170,16 @@ function deriveAnchor(archive) {
     fail("archive-attestation-anchor-derivation", archive, `cannot establish the introducing commit: ${introducing} is the oldest commit touching this archive, yet parent ${carriedByParent} already carries it`);
     return { kind: "unresolved" };
   }
-  return { kind: "anchored", commit: introducing, inventory: gitTreeInventory(introducing, archive) };
+  // The archive travels with the anchor so the comparison below needs one
+  // subject argument rather than a separate path alongside it.
+  return { kind: "anchored", archive, commit: introducing, inventory: gitTreeInventory(introducing, archive) };
 }
 
 function verifyAnchored(attestation, anchor, declaredInventory, workingInventory) {
-  const archive = attestation.archive;
+  const archive = anchor.archive;
   checkDeclaredAnchorCommit(attestation, anchor);
-  compare("archive-attestation-drift", archive, anchor, declaredInventory, "the attestation");
-  compare("archive-attestation-anchor-mismatch", archive, anchor, workingInventory, "the working tree");
+  compare("archive-attestation-drift", anchor, declaredInventory, "the attestation");
+  compare("archive-attestation-anchor-mismatch", anchor, workingInventory, "the working tree");
   counts.anchored += 1;
   counts.files += anchor.inventory.size;
   reports.push(`  ${archive}: anchored at ${anchor.commit} (${anchor.inventory.size} file(s))${attestation.anchorCommit === undefined ? ", anchor derived but not declared" : ""}`);
@@ -210,28 +212,27 @@ function verifyPending(attestation, declaredInventory, workingInventory) {
   reports.push(`  ${archive}: pending, not yet in history (${declaredInventory.size} file(s) compared against the working tree)`);
 }
 
-function compare(id, archive, anchor, actual, subject) {
+function compare(id, anchor, actual, subject) {
   for (const difference of differences(anchor.inventory, actual)) {
-    fail(id, `${archive}/${difference.path}`, `${difference.message} between anchor ${anchor.commit} and ${subject}`);
+    fail(id, `${anchor.archive}/${difference.path}`, `${difference.message} between anchor ${anchor.commit} and ${subject}`);
   }
 }
 
 /** Mode, object, and path-set differences between two inventories. */
 function differences(expected, actual) {
+  const changed = [...expected].flatMap(([path, entry]) => entryDifferences(path, entry, actual.get(path)));
+  const added = [...actual.keys()]
+    .filter((path) => !expected.has(path))
+    .map((path) => ({ path, message: "expected absent, found present" }));
+  return [...changed, ...added].sort((left, right) => byCodePoint(left.path, right.path));
+}
+
+function entryDifferences(path, entry, other) {
+  if (other === undefined) return [{ path, message: "expected present, found absent" }];
   const found = [];
-  for (const [path, entry] of expected) {
-    const other = actual.get(path);
-    if (other === undefined) {
-      found.push({ path, message: "expected present, found absent" });
-      continue;
-    }
-    if (other.mode !== entry.mode) found.push({ path, message: `expected mode ${entry.mode}, found ${other.mode}` });
-    if (other.oid !== entry.oid) found.push({ path, message: `expected object ${entry.oid}, found ${other.oid}` });
-  }
-  for (const path of actual.keys()) {
-    if (!expected.has(path)) found.push({ path, message: "expected absent, found present" });
-  }
-  return found.sort((left, right) => byCodePoint(left.path, right.path));
+  if (other.mode !== entry.mode) found.push({ path, message: `expected mode ${entry.mode}, found ${other.mode}` });
+  if (other.oid !== entry.oid) found.push({ path, message: `expected object ${entry.oid}, found ${other.oid}` });
+  return found;
 }
 
 function isAncestorOfHead(commit) {
@@ -251,6 +252,12 @@ function quietGit(args) {
   } catch {
     return null;
   }
+}
+
+function hasInventoryEntryShape(entry) {
+  if (!isPlainObject(entry)) return false;
+  if (!FILE_MODE.test(entry.mode ?? "")) return false;
+  return OBJECT_ID.test(entry.oid ?? "");
 }
 
 function isPlainObject(value) {
