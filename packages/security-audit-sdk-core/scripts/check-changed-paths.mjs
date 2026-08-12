@@ -17,6 +17,31 @@ import {
 const metadata = lifecycleMetadata;
 const remediation = metadata.remediationChange;
 const ownership = metadata.ownership;
+
+// A table rather than a ladder of throws, for the reason CodeScene names: one
+// decision point per rule put assertReviewedPathShape near this file's complexity
+// ceiling and pulled the file's mean up with it. The rules, their order, and every
+// message are unchanged — vp-reviewed-paths.test.mjs asserts the messages
+// verbatim, so a table that altered one would fail rather than pass quietly.
+//
+// Declared here, above the top-level validation call below, because a const is
+// not initialised until its own line runs: further down the file it sat in the
+// temporal dead zone when that call reached it.
+//
+// "\0" below is the NUL character. The previous spelling was String.raw`\0`, the
+// two-character sequence backslash-zero, so an embedded NUL passed every guard
+// and was accepted. A literal backslash-zero is still rejected by the
+// forward-slash rule.
+const REVIEWED_PATH_RULES = Object.freeze([
+  Object.freeze([(path) => typeof path !== "string" || path.length === 0, (path) => `must be a non-empty string, got: ${JSON.stringify(path)}`]),
+  Object.freeze([(path) => path.includes("\0"), (path) => `contains null byte: ${JSON.stringify(path)}`]),
+  Object.freeze([(path) => path.includes(".."), (path) => `must not contain path traversal: ${path}`]),
+  Object.freeze([isAbsolutePath, (path) => `must be a repository-relative path, not absolute: ${path}`]),
+  Object.freeze([(path) => path.includes("\\"), (path) => `must use forward slashes: ${path}`]),
+  Object.freeze([(path) => path.endsWith("/"), (path) => `must be a file path, not a directory: ${path}`]),
+  Object.freeze([(path) => /[*?[{]/.test(path), (path) => `must not contain glob characters: ${path}`]),
+]);
+
 const requestedLifecycle = parseLifecycleArguments();
 let lifecycle;
 try {
@@ -479,41 +504,17 @@ function archivedTasksMatchSource(source, sourcePath, destinationPath, movementV
 }
 
 function assertReviewedPathShape(rawPath, ownership) {
-  if (typeof rawPath !== "string" || rawPath.length === 0) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must be a non-empty string, got: ${JSON.stringify(rawPath)}`);
+  for (const [violates, message] of REVIEWED_PATH_RULES) {
+    if (violates(rawPath)) throw new Error(`reviewedNewSdkSourcePaths entry ${message(rawPath)}`);
   }
-
-  // "\0" is the NUL character. The previous spelling was String.raw`\0`, the
-  // two-character sequence backslash-zero, so an embedded NUL passed every
-  // guard and was accepted. A literal backslash-zero is still rejected below
-  // by the forward-slash rule.
-  if (rawPath.includes("\0")) {
-    throw new Error(`reviewedNewSdkSourcePaths entry contains null byte: ${JSON.stringify(rawPath)}`);
-  }
-
-  if (rawPath.includes("..")) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must not contain path traversal: ${rawPath}`);
-  }
-
-  if (rawPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(rawPath)) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must be a repository-relative path, not absolute: ${rawPath}`);
-  }
-
-  if (rawPath.includes("\\")) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must use forward slashes: ${rawPath}`);
-  }
-
-  if (rawPath.endsWith("/")) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must be a file path, not a directory: ${rawPath}`);
-  }
-
-  if (/[*?[{]/.test(rawPath)) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must not contain glob characters: ${rawPath}`);
-  }
-
   if (!ownership.sdkSourcePrefixes.some((prefix) => rawPath.startsWith(prefix))) {
     throw new Error(`reviewedNewSdkSourcePaths entry is outside configured SDK source prefixes: ${rawPath}`);
   }
+}
+
+function isAbsolutePath(path) {
+  if (path.startsWith("/")) return true;
+  return /^[A-Za-z]:[\\/]/.test(path);
 }
 
 /** Receives a source only while the movement is in progress; see resolveMovementBaseline. */
