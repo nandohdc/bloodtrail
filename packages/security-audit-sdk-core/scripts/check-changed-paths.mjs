@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import {
   assert,
@@ -7,6 +7,7 @@ import {
   repositoryRoot,
   splitNull,
 } from "./verification-helpers.mjs";
+import { gitTreeInventory, workingTreeInventory } from "./archive-inventory.mjs";
 import {
   lifecycleMetadata,
   parseLifecycleArguments,
@@ -16,6 +17,31 @@ import {
 const metadata = lifecycleMetadata;
 const remediation = metadata.remediationChange;
 const ownership = metadata.ownership;
+
+// A table rather than a ladder of throws, for the reason CodeScene names: one
+// decision point per rule put assertReviewedPathShape near this file's complexity
+// ceiling and pulled the file's mean up with it. The rules, their order, and every
+// message are unchanged — vp-reviewed-paths.test.mjs asserts the messages
+// verbatim, so a table that altered one would fail rather than pass quietly.
+//
+// Declared here, above the top-level validation call below, because a const is
+// not initialised until its own line runs: further down the file it sat in the
+// temporal dead zone when that call reached it.
+//
+// "\0" below is the NUL character. The previous spelling was String.raw`\0`, the
+// two-character sequence backslash-zero, so an embedded NUL passed every guard
+// and was accepted. A literal backslash-zero is still rejected by the
+// forward-slash rule.
+const REVIEWED_PATH_RULES = Object.freeze([
+  Object.freeze([(path) => typeof path !== "string" || path.length === 0, (path) => `must be a non-empty string, got: ${JSON.stringify(path)}`]),
+  Object.freeze([(path) => path.includes("\0"), (path) => `contains null byte: ${JSON.stringify(path)}`]),
+  Object.freeze([(path) => path.includes(".."), (path) => `must not contain path traversal: ${path}`]),
+  Object.freeze([isAbsolutePath, (path) => `must be a repository-relative path, not absolute: ${path}`]),
+  Object.freeze([(path) => path.includes("\\"), (path) => `must use forward slashes: ${path}`]),
+  Object.freeze([(path) => path.endsWith("/"), (path) => `must be a file path, not a directory: ${path}`]),
+  Object.freeze([(path) => /[*?[{]/.test(path), (path) => `must not contain glob characters: ${path}`]),
+]);
+
 const requestedLifecycle = parseLifecycleArguments();
 let lifecycle;
 try {
@@ -146,8 +172,8 @@ function validateArchiveMovement(resolvedLifecycle) {
   const baseline = resolveMovementBaseline(exactArchive, movementViolations);
   const source = baseline.source;
   const sourceFiles = baseline.files;
-  const archiveFiles = workingTreeInventory(exactArchive, movementViolations);
-  const activeFiles = workingTreeInventory(remediation.active, movementViolations);
+  const archiveFiles = archiveInventory(exactArchive, movementViolations);
+  const activeFiles = archiveInventory(remediation.active, movementViolations);
 
   movementRule("archive-movement-retained-active-file", activeFiles.size === 0, `active remediation retains ${activeFiles.size} file(s)`);
   movementRule("archive-movement-partial", sourceFiles.size > 0, "source baseline contains no active remediation files");
@@ -228,6 +254,12 @@ function validateArchiveMovement(resolvedLifecycle) {
  * keyed strictly on *reachability* of the attested source revision, never on a
  * content mismatch — otherwise altering the archive and the attestation together
  * would face a weaker check than altering the archive alone.
+ *
+ * On the `attested` path the archive and the attestation are both mutable
+ * working-tree content, so agreeing with each other is not evidence. What makes
+ * that pair honest is `check-archive-attestations.mjs`, which compares both
+ * against the commit history shows introduced the archive. Both gates run in
+ * `validate` and `verify`; neither subsumes the other.
  */
 function resolveMovementBaseline(archiveRelative, movementViolations) {
   // The archive commit itself: the active change is still at HEAD, so the
@@ -323,48 +355,14 @@ function exactArchivedTaskReconciliation(sourceText, movementViolations) {
   return expected;
 }
 
-function gitTreeInventory(revision, prefix) {
-  const inventory = new Map();
-  const records = splitNull(git(["ls-tree", "-r", "-z", revision, "--", prefix]));
-  for (const record of records) {
-    const separator = record.indexOf("\t");
-    assert(separator !== -1, `unable to parse git tree record for ${prefix}`);
-    const [mode, type, oid] = record.slice(0, separator).split(" ");
-    const path = record.slice(separator + 1);
-    assert(type === "blob", `archive movement requires blob entries, found ${type} at ${path}`);
-    assert(path.startsWith(`${prefix}/`), `tree path ${path} is outside ${prefix}`);
-    const relativePath = path.slice(prefix.length + 1);
-    assert(!inventory.has(relativePath), `duplicate tree path ${relativePath}`);
-    inventory.set(relativePath, Object.freeze({ mode, oid, path }));
+// The inventories themselves live in archive-inventory.mjs, shared with
+// check-archive-attestations.mjs. Only the mapping into this gate's diagnostic
+// vocabulary stays here.
+function archiveInventory(rootRelative, movementViolations) {
+  const { inventory, problems } = workingTreeInventory(repositoryRoot, rootRelative);
+  for (const problem of problems) {
+    movementViolations.push(`[archive-movement-mode-mismatch] unsupported filesystem entry at ${problem.path}`);
   }
-  return inventory;
-}
-
-function workingTreeInventory(rootRelative, movementViolations) {
-  const inventory = new Map();
-  const root = resolve(repositoryRoot, rootRelative);
-  if (!existsSync(root)) return inventory;
-
-  function walk(directory) {
-    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
-      const absolute = resolve(directory, entry.name);
-      if (entry.isDirectory()) {
-        walk(absolute);
-        continue;
-      }
-      const stat = lstatSync(absolute);
-      const path = normalizeRepositoryPath(relative(repositoryRoot, absolute));
-      const relativePath = path.slice(rootRelative.length + 1);
-      if (!entry.isFile() && !entry.isSymbolicLink()) {
-        movementViolations.push(`[archive-movement-mode-mismatch] unsupported filesystem entry at ${path}`);
-        continue;
-      }
-      const mode = gitFileMode(entry, stat);
-      const oid = git(["hash-object", "--no-filters", "--", path]).trim();
-      inventory.set(relativePath, Object.freeze({ mode, oid, path }));
-    }
-  }
-  walk(root);
   return inventory;
 }
 
@@ -485,11 +483,6 @@ function collectMovementChanges(source) {
   return workingChangesAgainst(source.revision);
 }
 
-function gitFileMode(entry, stat) {
-  if (entry.isSymbolicLink()) return "120000";
-  return (stat.mode & 0o111) === 0 ? "100644" : "100755";
-}
-
 function isUnrelatedActiveDeletion(record) {
   return record.status === "D"
     && record.path.startsWith("openspec/changes/")
@@ -511,41 +504,17 @@ function archivedTasksMatchSource(source, sourcePath, destinationPath, movementV
 }
 
 function assertReviewedPathShape(rawPath, ownership) {
-  if (typeof rawPath !== "string" || rawPath.length === 0) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must be a non-empty string, got: ${JSON.stringify(rawPath)}`);
+  for (const [violates, message] of REVIEWED_PATH_RULES) {
+    if (violates(rawPath)) throw new Error(`reviewedNewSdkSourcePaths entry ${message(rawPath)}`);
   }
-
-  // "\0" is the NUL character. The previous spelling was String.raw`\0`, the
-  // two-character sequence backslash-zero, so an embedded NUL passed every
-  // guard and was accepted. A literal backslash-zero is still rejected below
-  // by the forward-slash rule.
-  if (rawPath.includes("\0")) {
-    throw new Error(`reviewedNewSdkSourcePaths entry contains null byte: ${JSON.stringify(rawPath)}`);
-  }
-
-  if (rawPath.includes("..")) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must not contain path traversal: ${rawPath}`);
-  }
-
-  if (rawPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(rawPath)) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must be a repository-relative path, not absolute: ${rawPath}`);
-  }
-
-  if (rawPath.includes("\\")) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must use forward slashes: ${rawPath}`);
-  }
-
-  if (rawPath.endsWith("/")) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must be a file path, not a directory: ${rawPath}`);
-  }
-
-  if (/[*?[{]/.test(rawPath)) {
-    throw new Error(`reviewedNewSdkSourcePaths entry must not contain glob characters: ${rawPath}`);
-  }
-
   if (!ownership.sdkSourcePrefixes.some((prefix) => rawPath.startsWith(prefix))) {
     throw new Error(`reviewedNewSdkSourcePaths entry is outside configured SDK source prefixes: ${rawPath}`);
   }
+}
+
+function isAbsolutePath(path) {
+  if (path.startsWith("/")) return true;
+  return /^[A-Za-z]:[\\/]/.test(path);
 }
 
 /** Receives a source only while the movement is in progress; see resolveMovementBaseline. */

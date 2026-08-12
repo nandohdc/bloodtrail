@@ -1,16 +1,24 @@
-import { byCodePoint, git } from "./verification-helpers.mjs";
+import { relative, resolve } from "node:path";
+import { byCodePoint, git, packageRoot, repositoryRoot } from "./verification-helpers.mjs";
 import { boundedFailure, lifecycleMetadata } from "./lifecycle-policy.mjs";
+import { repositoryPathProblem } from "./repository-path.mjs";
 
 const OBJECT_ID = /^[0-9a-f]{40}$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+// Declared above RECORD_PATH, which resolves it: a const is not initialised until
+// its own line runs.
+const MANIFEST_FILE = "verification-lifecycle.json";
+// The file that carries the records themselves. A reviewed path containing it
+// would be changed by the act of signing.
+const RECORD_PATH = relative(repositoryRoot, resolve(packageRoot, MANIFEST_FILE)).replaceAll("\\", "/");
 const failures = [];
-const verified = { governed: 0, bound: 0, merges: 0, content: 0 };
+const verified = { governed: 0, bound: 0, merges: 0, content: 0, candidateRoots: 0 };
 const records = lifecycleMetadata.governanceRecords;
 
 if (records === undefined) {
-  fail("governance-manifest-missing", "verification-lifecycle.json", "governanceRecords is absent; governance bindings must be declared as structured data");
+  fail("governance-manifest-missing", MANIFEST_FILE, "governanceRecords is absent; governance bindings must be declared as structured data");
 } else if (!Array.isArray(records) || records.length === 0) {
-  fail("governance-manifest-missing", "verification-lifecycle.json", `governanceRecords must be a non-empty array, found ${describe(records)}`);
+  fail("governance-manifest-missing", MANIFEST_FILE, `governanceRecords must be a non-empty array, found ${describe(records)}`);
 } else {
   for (const [index, record] of records.entries()) checkRecord(record, labelFor(record, index));
 }
@@ -21,7 +29,7 @@ if (failures.length > 0) {
 }
 
 process.stdout.write(
-  `governance history passed: ${records.length} record(s); ${verified.governed} governed commit(s) resolve; ${verified.bound} bound commit(s) are ancestors of HEAD; ${verified.merges} declared merge commit(s) have their expected parent count; ${verified.content} reviewed content object(s) resolve to a tree\n`,
+  `governance history passed: ${records.length} record(s); ${verified.governed} governed commit(s) resolve; ${verified.bound} bound commit(s) are ancestors of HEAD; ${verified.merges} declared merge commit(s) have their expected parent count; ${verified.content} reviewed content object(s) bound to their declared path; ${verified.candidateRoots} candidate root tree(s) resolve\n`,
 );
 
 function fail(id, label, message) {
@@ -108,23 +116,103 @@ function checkMergeCommit(label, property, entry) {
 
 // A tree identifier survives squash merge, rebase, and cherry-pick, and can be
 // named by a later commit without the self-reference a commit hash would need.
+//
+// Resolving it is what makes the binding mean something. The declared object must
+// be the object the declared path resolves to — first inside the candidate root
+// tree the record names, and always somewhere in history reachable from HEAD.
+// Only the second is mandatory: the candidate commit is not the commit that signs
+// it, so a squash merge lands the signing commit's tree on the mainline and
+// orphans the candidate's root tree. Requiring that root to resolve forever would
+// turn the mainline red; requiring the path-to-object binding to be carried by
+// history is what actually survives.
 function checkReviewedContent(label, record) {
   const value = record.reviewedContent;
   if (value === undefined) return;
   if (!hasReviewedContentShape(value)) {
-    fail("governance-record-shape", label, `reviewedContent must be an object with kind "tree", a repository-relative path, and a full object id, found ${describe(value)}`);
+    fail("governance-record-shape", label, `reviewedContent must be an object with kind "tree", an optional candidateRoot object id, and a non-empty entries array of {path, object}, found ${describe(value)}`);
     return;
   }
-  const type = objectType(value.object);
+  const candidateRoot = resolveCandidateRoot(label, value);
+  for (const [index, entry] of value.entries.entries()) {
+    checkReviewedEntry(label, `reviewedContent.entries[${index}]`, entry, candidateRoot);
+  }
+}
+
+/** Returns the root tree to resolve paths against, or null when unavailable. */
+function resolveCandidateRoot(label, value) {
+  if (value.candidateRoot === undefined) return null;
+  const type = objectType(value.candidateRoot);
   if (type === null) {
-    fail("governance-content-object-unresolvable", label, `reviewedContent.object ${value.object} does not resolve to an object in this repository`);
-    return;
+    // Reported, not silently skipped: this is the expected post-squash state.
+    process.stdout.write(`governance content: candidate root ${value.candidateRoot} for ${label} is absent from this repository; path bindings are verified against history only\n`);
+    return null;
   }
   if (type !== "tree") {
-    fail("governance-content-object-not-tree", label, `reviewedContent.object ${value.object}: expected object type tree, found ${type}`);
+    fail("governance-content-root-not-tree", label, `reviewedContent.candidateRoot ${value.candidateRoot}: expected object type tree, found ${type}`);
+    return null;
+  }
+  verified.candidateRoots += 1;
+  return value.candidateRoot;
+}
+
+function checkReviewedEntry(label, property, entry, candidateRoot) {
+  if (!hasReviewedEntryShape(entry)) {
+    fail("governance-record-shape", label, `${property} must be an object with a repository-relative path and a full object id, found ${describe(entry)}`);
     return;
   }
+  const problem = repositoryPathProblem(entry.path);
+  if (problem) {
+    fail("governance-content-path-invalid", label, `${property}.path ${JSON.stringify(entry.path)} ${problem}`);
+    return;
+  }
+  if (containsRecord(entry.path)) {
+    fail("governance-content-self-referential", label, `${property}.path ${entry.path} contains ${RECORD_PATH}, the record that binds it: signing would change the reviewed content`);
+    return;
+  }
+  if (!checkReviewedObject(label, property, entry, candidateRoot)) return;
   verified.content += 1;
+}
+
+function checkReviewedObject(label, property, entry, candidateRoot) {
+  const type = objectType(entry.object);
+  if (type === null) {
+    fail("governance-content-object-unresolvable", label, `${property}.object ${entry.object} does not resolve to an object in this repository`);
+    return false;
+  }
+  if (type !== "tree") {
+    fail("governance-content-object-not-tree", label, `${property}.object ${entry.object}: expected object type tree, found ${type}`);
+    return false;
+  }
+  if (candidateRoot !== null) {
+    const resolved = resolveInTree(candidateRoot, entry.path);
+    if (resolved === null) {
+      fail("governance-content-path-unresolved", label, `${property}.path ${entry.path} does not resolve under candidate root ${candidateRoot}`);
+      return false;
+    }
+    if (resolved !== entry.object) {
+      fail("governance-content-object-mismatch", label, `${property} ${entry.path} under candidate root ${candidateRoot}: expected ${resolved}, found ${entry.object}`);
+      return false;
+    }
+  }
+  if (!carriedAtPath(entry.path, entry.object)) {
+    fail("governance-content-object-unreachable", label, `${property}.object ${entry.object} is not carried at ${entry.path} by any commit reachable from HEAD: expected a binding history preserves, found none`);
+    return false;
+  }
+  return true;
+}
+
+// The durable half. HEAD is tried first because a record signed on top of its
+// candidate binds subtrees the signing commit did not touch; the walk covers the
+// case where the mainline has moved on since.
+function carriedAtPath(path, object) {
+  if (resolveInTree("HEAD", path) === object) return true;
+  const commits = (quietGit(["rev-list", "HEAD", "--", path]) ?? "").split("\n").filter(Boolean);
+  return commits.some((commit) => resolveInTree(commit, path) === object);
+}
+
+function containsRecord(path) {
+  if (path === RECORD_PATH) return true;
+  return RECORD_PATH.startsWith(`${path}/`);
 }
 
 function checkReviewedCommit(label, record) {
@@ -197,8 +285,15 @@ function hasMergeCommitShape(entry) {
 function hasReviewedContentShape(value) {
   if (!isPlainObject(value)) return false;
   if (value.kind !== "tree") return false;
-  if (!isNonEmptyString(value.path)) return false;
-  return isObjectId(value.object);
+  if (value.candidateRoot !== undefined && !isObjectId(value.candidateRoot)) return false;
+  if (!Array.isArray(value.entries)) return false;
+  return value.entries.length > 0;
+}
+
+function hasReviewedEntryShape(entry) {
+  if (!isPlainObject(entry)) return false;
+  if (typeof entry.path !== "string") return false;
+  return isObjectId(entry.object);
 }
 
 function hasReviewerShape(reviewer) {
@@ -263,6 +358,11 @@ function parentCount(commit) {
 
 function objectType(object) {
   return quietGit(["cat-file", "-t", object])?.trim() ?? null;
+}
+
+/** The object a path resolves to inside a revision or tree, or null. */
+function resolveInTree(revision, path) {
+  return quietGit(["rev-parse", "--verify", "--quiet", `${revision}:${path}`])?.trim() ?? null;
 }
 
 // Git reports "this is not true" as a non-zero exit, which the shared helper

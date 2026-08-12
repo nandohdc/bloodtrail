@@ -62,8 +62,9 @@
     {
       "archive": "openspec/changes/archive/2026-08-11-remediate-security-audit-sdk-adversarial-review",
       "sourceRevision": "f03d98bb7b18edab0a941cdf1c8014a185618865",
+      "anchorCommit": "706dd935caf6a58a2d223a3ec421303f989e9e88",
       "attestedAt": "2026-08-11",
-      "policy": "Movement exactness verified by re-derivation against sourceRevision while it was reachable. Each entry records the expected archived file mode and blob object. When sourceRevision is resolvable and still contains the active change, verification re-derives from history and ignores these entries. When it is unreachable, verification compares the archive against these entries instead, which detects post-attestation tampering but does not re-derive the original move.",
+      "policy": "Movement exactness verified by re-derivation against sourceRevision while it was reachable. Each entry records the expected archived file mode and blob object. When sourceRevision is resolvable and still contains the active change, check-changed-paths.mjs re-derives from history and ignores these entries; when it is unreachable it compares the archive against these entries instead, which does not re-derive the original move. check-archive-attestations.mjs additionally compares both this inventory and the working-tree archive against anchorCommit, the commit history shows introduced the archive, so rewriting an archived file together with its recorded object is detected.",
       "files": {
         ".openspec.yaml": { "mode": "100644", "oid": "5849c2dbf41c3e6adf01905e54928c4ecde07b49" },
         "adversarial-review-traceability.md": { "mode": "100644", "oid": "bb3ccee7b74f4e65873e555efa6313fe76ce39a6" },
@@ -78,8 +79,9 @@
     {
       "archive": "openspec/changes/archive/2026-08-11-attest-archive-movement",
       "sourceRevision": "a73da8ba1d78519e090fe3a78dfd4273b8ddf2e7",
+      "anchorCommit": "12b731d3689e8c3c8b2bd58f924f1da951ff518c",
       "attestedAt": "2026-08-11",
-      "policy": "NOT YET ENFORCED. validateArchiveMovement runs only for the change named by remediationChange, so no gate reads this entry today. It records the verified movement while sourceRevision is reachable: four blobs identical, tasks.md differing by exactly the 4.3 transition. Generalizing movement validation to every archived change is follow-up work tracked by right-size-change-governance.",
+      "policy": "ENFORCED by check-archive-attestations.mjs, which verifies every declared attestation rather than only the change named by remediationChange. It records the movement verified while sourceRevision was reachable: four blobs identical, tasks.md differing by exactly the 4.3 transition. This inventory and the working-tree archive are both compared against anchorCommit, the commit history shows introduced the archive. validateArchiveMovement in check-changed-paths.mjs still does not read this entry; it is keyed to remediationChange, and generalizing it was rejected in favour of a separate gate that leaves its controls intact.",
       "files": {
         ".openspec.yaml": { "mode": "100644", "oid": "a8821c74d0bd39900cc781d365e948b58ac13377" },
         "design.md": { "mode": "100644", "oid": "d4f343db505981b3a92058ef218deaca682b4f11" },
@@ -130,12 +132,21 @@
     },
     {
       "change": "right-size-change-governance",
-      "policy": "UNSIGNED. The implementation candidate is not reviewed. reviewedContent, reviewer, and signed are set only by the project owner in the separate governance commit that records openspec/changes/right-size-change-governance/governance-record.md.",
+      "policy": "Signed by the project owner. reviewedContent binds the reviewed subtrees of the candidate commit; test:governance-history resolves each path inside candidateRoot and compares it to the declared object.",
+      "reviewedCommit": "b557b5f184069c35175af4c896722f3f6b0b75da",
+      "reviewedContent": {
+        "kind": "tree",
+        "candidateRoot": "9442711836b6aa1b01eabccd2d9b31ea23a7feaa",
+        "entries": [
+          { "path": "packages/security-audit-sdk-core/scripts", "object": "c1023448e4b4925cae266456fdc498b39e120bdb" },
+          { "path": "packages/security-audit-sdk-core/tests/verification", "object": "55301935defab0f758f5ca4866f620b958fcfd5d" }
+        ]
+      },
       "governedCommits": ["706dd935caf6a58a2d223a3ec421303f989e9e88"],
       "boundCommits": ["706dd935caf6a58a2d223a3ec421303f989e9e88"],
       "mergeCommits": [],
       "authorizations": {
-        "granted": [],
+        "granted": ["right-size-change-governance-to-land-and-archive"],
         "withheld": [
           "package-publication",
           "production-deployment",
@@ -146,10 +157,11 @@
         ]
       },
       "assuranceLimitations": [
-        "No human review has been performed. Passing gates, checked tasks, pull-request state, and merged state are not review, approval, or assurance.",
+        "Project-owner/implementer governance; not independent security, privacy, legal, or technical assurance.",
         "AI-produced analysis informed the implementation and is not review, approval, or assurance."
       ],
-      "signed": false
+      "signed": true,
+      "reviewer": { "name": "Fernando Homem da Costa (nandohdc)", "signedAt": "2026-08-12" }
     }
   ]
 }

@@ -93,9 +93,10 @@ Consumer documentation: [API reference](packages/security-audit-sdk-core/API.md)
 ## Validation gates
 
 ```bash
-# SDK — full chain (19 gates: generate, check:generated, typecheck, build, runtime, types,
+# SDK — full chain (20 gates: generate, check:generated, typecheck, build, runtime, types,
 # examples, exports, compatibility, contract-immutability, scope, publication-path,
-# dependencies, package, changed-paths, governance-history, coherence, verification, git)
+# dependencies, package, changed-paths, governance-history, archive-attestations,
+# coherence, verification, git)
 npm run validate --prefix packages/security-audit-sdk-core
 
 # SDK — build + cross-cutting matrix, no git/package/coherence gates.
@@ -114,8 +115,9 @@ Targeted gates worth knowing (all `--prefix packages/security-audit-sdk-core`):
 | `test:contract-immutability` | the frozen contract was not mutated |
 | `test:compatibility` | `compatibility.json` still holds, including the pinned toolchain |
 | `test:scope` | no out-of-scope surface crept in (the authorization boundary above) |
-| `test:publication-path` | no workflow, `.npmrc`, or `publishConfig` can publish the package — the enforced form of "no publication path exists" |
-| `test:governance-history` | the Git properties a governance record asserts: declared merge commits have their expected parent count, bound commits remain ancestors of `HEAD`, governed commits still resolve |
+| `test:publication-path` | nothing in tracked content can publish the package: no manifest script, automation file, local action a workflow references, `.npmrc`, `publishConfig`, or non-private manifest. The gate forbids the capability across the scanned surface rather than tracing shell reachability, and fails closed on referenced content it cannot read |
+| `test:governance-history` | the Git properties a governance record asserts: declared merge commits have their expected parent count, bound commits remain ancestors of `HEAD`, governed commits still resolve, and each reviewed path resolves to exactly the content object the record declares |
+| `test:archive-attestations` | every declared archive-movement attestation, and the archive itself, match the commit history shows introduced that archive — so an archived file rewritten together with its recorded object is detected |
 | `test:coherence` | package identity, version, and consumer docs agree |
 | `test:verification` | the mutation/evidence suite in `tests/verification/` |
 | `test:changed-paths` / `test:git` | staged scope and git state are clean |

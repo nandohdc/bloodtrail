@@ -115,3 +115,120 @@ the new gate and its controls inherit an established mechanism instead of introd
 *Alternative considered:* a per-change file — rejected because it needs its own discovery pass, and
 because manifests that travel into `changes/archive/` would keep asserting ancestry over history
 that later squash merges legitimately rewrite.
+
+## Settled during remediation
+
+Three of the gates this change introduced enforced less than the change claimed. Each was reproduced
+against the implementation in disposable clones before being corrected, and each correction is
+carried by a differential control that fails without it.
+
+**The publication-path gate forbids the capability instead of tracing reachability.** The first
+implementation scanned `.github/workflows/*.y*ml` and nothing else, so a `"release": "npm publish"`
+script in a tracked manifest — invoked by `npm run release --prefix …` from a workflow — passed, and
+manifest `private` was never checked. Following the indirection properly would mean a shell
+call-graph analysis, and a regex that claimed to do that would be the kind of assertion this change
+exists to remove. The gate therefore states and enforces a different, decidable property: **no
+tracked package manifest script, no tracked file under `.github/`, and no local path a workflow
+references may contain a publication command, registry publication configuration, or publication
+credential — whether or not anything invokes it.** That is strictly stronger than reachability, and
+it is checkable by reading content. Anything a workflow references that the gate cannot read fails
+closed, because an exclusion cannot be established over unscanned content. The scan surface stays
+narrow enough to keep the existing false-positive controls valid: `RELEASING.md` may still describe
+`npm publish` and every lockfile may still name `registry.npmjs.org`, because documentation and
+lockfiles are not in the scanned surface and manifests are read as structured data rather than text.
+*Alternative considered:* scanning all tracked text for publication strings — rejected because it
+fails on its own documentation, which is how a check gets deleted rather than trusted.
+
+Reviewing the candidate showed the first cut of that surface still had the flaw it was designed to
+avoid, in two places. A bare `uses: ./` was treated as "scan every file beneath the reference", which
+swept the whole repository and failed on `RELEASING.md:10` — the line stating that no workflow here
+runs `npm publish`. And documentation *under* `.github/` was scanned verbatim, so an ordinary
+pull-request template naming the exclusion would have failed the gate; comment stripping is claimed
+for YAML and shell only, and prose cannot be made safe by stripping. Both are now bounded: a local
+reference resolves the way the workflow runner resolves it — a file, or a directory carrying an
+`action.yml` — and fails closed otherwise, and documentation is outside the surface wherever it lives.
+
+A third defect, found in review of that same cut, ran the other way. Both of the above failed *closed*
+— noisy, but safe. This one failed open: the reference pattern required a literal `.` immediately
+after `uses:`, so `uses: "./a"` and `uses: './a'` captured nothing, while the runner treats all three
+spellings as one reference. For a reference outside `.github/` that was a complete escape, because
+nothing else brings such a path into the surface: the automation walk does not reach it, and no entry
+reached the fallback that resolves references. A workflow pointing at `./tools/publisher`, whose
+`action.yml` ran `npm publish`, made the gate exit 0 over content it never read. The pattern now
+accepts an optional quote, which is why that quote must stay — the negated character class already
+ends the capture at either quote, so the group is doing real work and is not redundant punctuation.
+`M-PP-U` is the control that depends on the capture, and it fails against the unquoted pattern.
+
+**Content binding resolves a path against a candidate tree; the durable half is path-to-object.**
+The first implementation checked only that `reviewedContent.object` resolved to *a* tree, so a record
+could claim `packages/security-audit-sdk-core` while supplying the tree of `.github` — and the
+record form told the owner to compute a **root** tree, which the gate would then have compared as
+though it were that subtree. The settled shape is a candidate root tree plus one entry per reviewed
+path:
+
+```json
+"reviewedContent": {
+  "kind": "tree",
+  "candidateRoot": "<git rev-parse <candidate>^{tree}>",
+  "entries": [{ "path": "…", "object": "<git rev-parse <candidate>:…>" }]
+}
+```
+
+Git resolves `candidateRoot:path` and the gate compares it to `object`, so a mismatch, an
+unresolvable path, a malformed path, and a blob where a tree belongs are all rejected by name.
+
+`candidateRoot` cannot be a *hard* resolvability requirement. The candidate commit is not the commit
+that signs it — a record cannot name the tree it is part of — so the signing commit sits on top of
+the candidate, and a squash merge lands only the branch tip's tree on `main`. The candidate's root
+tree is then orphaned and absent from a fresh clone, and a gate that required it to resolve would
+turn `main` red permanently. The mandatory half is therefore the **path-to-object binding verified
+against history**: some commit reachable from `HEAD` must carry `object` at `path`. That is what
+survives squash, rebase, and cherry-pick, and it is what rejects the `.github` substitution even
+when the candidate root is gone. `candidateRoot` is verified exactly when it resolves, and its
+absence is reported rather than silently skipped.
+
+This is also why a reviewed path may not contain the governance manifest. Binding
+`packages/security-audit-sdk-core` while the record lives in
+`packages/security-audit-sdk-core/verification-lifecycle.json` means signing changes the reviewed
+tree, so the bound object never lands on `main`: green on the branch, red on `main`. Rejecting it up
+front with a named diagnostic is the honest form of that failure. Reviewed paths are consequently
+subtrees the signing commit does not touch.
+
+**Archive movement is anchored in history, not in the pair it is meant to police.** Movement
+validation ran only for the change named by `remediationChange`, so the attestation for
+`2026-08-11-attest-archive-movement` was read by nothing — `verification-lifecycle.json` said so and
+named this change as the owner of the fix. Worse, on the attested path the archive and the
+attestation are both mutable working-tree content, so rewriting an archived file *and* its recorded
+object passed. The anchor is derived instead from the commit reachable from `HEAD` that introduced
+the archived path, obtained by walking history for that path and never from a value the manifest
+declares. Both the working-tree archive and the declared inventory are compared against it, so a
+coordinated rewrite fails twice. Every declared attestation is checked.
+
+`anchorCommit` is declared for the reader and cross-checked, but enforcement rests on the derived
+anchor, never on the declaration — and declaring it cannot be a precondition of the movement commit,
+because a commit cannot name the commit that introduces its own archive. So the field is optional,
+verified when present (it must be an ancestor of `HEAD` and must equal the derived anchor), and its
+absence is reported. Both existing attestations declare it; that is the whole migration.
+
+The residual is stated rather than implied: **a history-derived anchor does not withstand rewriting
+the history it derives from.** What bounds that is outside this gate — `main` is protected against
+force-push, and a rewrite at or before an anchor changes the identifier of every descendant commit,
+including the bound commits `test:governance-history` requires to remain ancestors of `HEAD`. This
+gate detects the attack it is specified to detect: archive and attestation rewritten together with
+history intact. It is not offered as tamper-proof storage.
+*Alternative considered:* recording a tree object for the archive alongside its per-file objects —
+rejected as cosmetic, because a tree identifier is a pure function of the files, so an adversary who
+rewrites the files recomputes it.
+
+**Enforcement lives in a new gate, `test:archive-attestations`.** It runs over every declared
+attestation independently of lifecycle mode and change selection, and leaves the existing
+`check-changed-paths.mjs` movement logic — the most heavily mutation-tested code in the repository —
+untouched. `validate` and `verify` run both, which is where the composite property holds.
+*Alternative considered:* extending the movement validation in place — rejected because its
+lifecycle gating is exactly what limited enforcement to one named change, and because rewriting it
+risks weakening controls that already work.
+
+Two boundaries deliberately not moved: the gate does not require an attestation for archives that
+never declared one (five historical archives predate the mechanism, and demanding attestations for
+them would rewrite frozen artifacts), and no archived artifact is edited — migration is one
+`anchorCommit` field per existing entry.

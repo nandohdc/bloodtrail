@@ -14,6 +14,11 @@ const SQUASHED_COMMIT = "71dbd9535201501605e000afe14069a2a0be46ec"; // one paren
 const UNREACHABLE_COMMIT = "a7ac317725389d7df2b32d939bc0824feb49668e"; // resolves, orphaned by a squash merge
 const MISSING_COMMIT = "0123456789abcdef0123456789abcdef01234567"; // syntactically valid, never existed
 const GOVERNED_RECORD = "right-size-change-governance";
+// Reviewed subtrees the signing commit does not touch, so their objects survive
+// the merge. The package root is deliberately not one of them: it contains the
+// record itself.
+const REVIEWED_PATH = "packages/security-audit-sdk-core/scripts";
+const SECOND_REVIEWED_PATH = "packages/security-audit-sdk-core/tests/verification";
 
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-governance-history-"));
 const controlRoot = resolve(suiteRoot, "control");
@@ -58,11 +63,16 @@ test("M-GH-D a removed manifest is rejected rather than vacuously passing", () =
   fails(root, "governance-manifest-missing");
 });
 
+// The binding is removed explicitly rather than assumed absent. This control used
+// to rely on the governed record being unsigned, so it silently stopped testing
+// anything the moment that record was signed with a real binding.
 test("M-GH-E a signed record with no content-object binding is rejected", () => {
   const root = caseRepository("signed-without-content-object");
   mutate(root, (record) => {
     record.signed = true;
     record.reviewer = { name: "Synthetic Verification Reviewer", signedAt: "2099-01-02" };
+    delete record.reviewedContent;
+    delete record.legacyCommitBinding;
   });
   fails(root, "governance-content-binding-missing");
 });
@@ -71,23 +81,102 @@ test("M-GH-F a signed record naming a blob as its reviewed content object is rej
   const root = caseRepository("content-object-not-tree");
   const blob = git(root, ["rev-parse", "HEAD:README.md"]).stdout.trim();
   assert.match(blob, /^[0-9a-f]{40}$/, "control requires a resolvable blob object");
-  mutate(root, (record) => {
-    record.signed = true;
-    record.reviewer = { name: "Synthetic Verification Reviewer", signedAt: "2099-01-02" };
-    record.reviewedContent = { kind: "tree", path: "packages/security-audit-sdk-core", object: blob };
-  });
+  sign(root, { object: blob });
   const result = fails(root, "governance-content-object-not-tree");
   assert.match(result.stderr, /expected object type tree, found blob/);
 });
 
 test("M-GH-G an unresolvable reviewed content object is rejected", () => {
   const root = caseRepository("content-object-unresolvable");
-  mutate(root, (record) => {
-    record.signed = true;
-    record.reviewer = { name: "Synthetic Verification Reviewer", signedAt: "2099-01-02" };
-    record.reviewedContent = { kind: "tree", path: "packages/security-audit-sdk-core", object: MISSING_COMMIT };
-  });
+  sign(root, { object: MISSING_COMMIT });
   fails(root, "governance-content-object-unresolvable");
+});
+
+// The binding defect. Every mutation below was accepted while the gate checked
+// only that the declared object resolved to *a* tree, so a record could name one
+// reviewed path and supply the content of another.
+test("M-GH-L a reviewed object belonging to a different path is rejected", () => {
+  const root = caseRepository("content-object-mismatch");
+  const unrelated = treeOf(root, ".github");
+  sign(root, { object: unrelated });
+  const result = fails(root, "governance-content-object-mismatch");
+  assert.match(result.stderr, new RegExp(`${REVIEWED_PATH}`));
+  assert.match(result.stderr, new RegExp(`expected ${treeOf(root, REVIEWED_PATH)}, found ${unrelated}`));
+});
+
+test("M-GH-M an exact candidate root, path, and subtree relationship passes", () => {
+  const root = caseRepository("content-binding-exact");
+  sign(root, {});
+  const result = succeeds(root);
+  assert.match(result.stdout, /2 reviewed content object\(s\) bound to their declared path/);
+  assert.match(result.stdout, /1 candidate root tree\(s\) resolve/);
+});
+
+test("M-GH-N a malformed reviewed path is rejected", () => {
+  for (const path of ["../etc", "/etc/passwd", "packages\\security-audit-sdk-core", "packages/", "packages/*", ""]) {
+    const root = caseRepository(`content-path-invalid-${Buffer.from(path).toString("hex")}`);
+    sign(root, { path });
+    fails(root, "governance-content-path-invalid");
+  }
+});
+
+test("M-GH-O a reviewed path that does not resolve under the candidate root is rejected", () => {
+  const root = caseRepository("content-path-unresolved");
+  sign(root, { path: "packages/security-audit-sdk-core/absent-subtree" });
+  const result = fails(root, "governance-content-path-unresolved");
+  assert.match(result.stderr, /absent-subtree/);
+});
+
+test("M-GH-P a candidate root that is not a tree is rejected", () => {
+  const root = caseRepository("content-root-not-tree");
+  const blob = git(root, ["rev-parse", "HEAD:README.md"]).stdout.trim();
+  sign(root, { candidateRoot: blob });
+  const result = fails(root, "governance-content-root-not-tree");
+  assert.match(result.stderr, /expected object type tree, found blob/);
+});
+
+// Signing a record stored inside the reviewed path changes the reviewed content,
+// so the binding could never survive the merge that carries it.
+test("M-GH-Q a reviewed path containing the governance record is rejected", () => {
+  const root = caseRepository("content-self-referential");
+  sign(root, { path: "packages/security-audit-sdk-core" });
+  const result = fails(root, "governance-content-self-referential");
+  assert.match(result.stderr, /verification-lifecycle\.json/);
+});
+
+// The durable half of the binding, which is what survives a squash merge: the
+// object must be carried at that path by history, with no candidate root to
+// resolve against.
+test("M-GH-S a reviewed object no reachable commit carries at that path is rejected", () => {
+  const root = caseRepository("content-object-unreachable");
+  sign(root, { object: treeOf(root, ".github"), candidateRoot: null });
+  const result = fails(root, "governance-content-object-unreachable");
+  assert.match(result.stderr, new RegExp(REVIEWED_PATH));
+});
+
+// The post-squash state, from the other side: the candidate root tree is gone,
+// and the path-to-object bindings must still be enforced rather than skipped.
+test("M-GH-U an absent candidate root is reported while the path bindings remain enforced", () => {
+  const absent = caseRepository("candidate-root-absent");
+  sign(absent, { candidateRoot: MISSING_COMMIT });
+  const result = succeeds(absent);
+  assert.match(result.stdout, new RegExp(`candidate root ${MISSING_COMMIT} for ${GOVERNED_RECORD} is absent`));
+  assert.match(result.stdout, /2 reviewed content object\(s\) bound to their declared path/);
+  assert.match(result.stdout, /0 candidate root tree\(s\) resolve/);
+
+  const substituted = caseRepository("candidate-root-absent-substituted");
+  sign(substituted, { candidateRoot: MISSING_COMMIT, object: treeOf(substituted, ".github") });
+  fails(substituted, "governance-content-object-unreachable");
+});
+
+test("M-GH-T removing the path/object comparison lets the substituted tree pass", () => {
+  const root = caseRepository("content-comparison-removed");
+  sign(root, { object: treeOf(root, ".github") });
+  fails(root, "governance-content-object-mismatch");
+  // Both halves must go: the candidate-root comparison and the history binding.
+  mutateChecker(root, "resolved !== entry.object", "false");
+  mutateChecker(root, "!carriedAtPath(entry.path, entry.object)", "false");
+  succeeds(root);
 });
 
 test("M-GH-H a record withholding nothing is rejected", () => {
@@ -168,6 +257,45 @@ function declareMerge(root, commit, expectedParents) {
     assert.equal(record.mergeCommits.length, 0, "control record must declare no merge commit before this mutation");
     record.mergeCommits.push({ commit, expectedParents });
   });
+}
+
+/**
+ * Signs the governed record with a content binding. By default the binding is
+ * exact: the candidate root is HEAD's tree and each entry carries the object
+ * that path actually resolves to. Overrides substitute one part at a time so a
+ * control isolates a single defect; `candidateRoot: null` omits it, which is the
+ * state a squash merge leaves behind.
+ */
+function sign(root, overrides = {}) {
+  const path = overrides.path ?? REVIEWED_PATH;
+  const object = overrides.object ?? resolvableTreeOf(root, path);
+  const candidateRoot = "candidateRoot" in overrides
+    ? overrides.candidateRoot
+    : git(root, ["rev-parse", "HEAD^{tree}"]).stdout.trim();
+  mutate(root, (record) => {
+    record.signed = true;
+    record.reviewer = { name: "Synthetic Verification Reviewer", signedAt: "2099-01-02" };
+    record.reviewedContent = {
+      kind: "tree",
+      ...(candidateRoot === null ? {} : { candidateRoot }),
+      entries: [
+        { path, object },
+        { path: SECOND_REVIEWED_PATH, object: treeOf(root, SECOND_REVIEWED_PATH) },
+      ],
+    };
+  });
+}
+
+function treeOf(root, path) {
+  const result = git(root, ["rev-parse", `HEAD:${path}`]);
+  return result.stdout.trim();
+}
+
+/** Keeps a malformed or absent path from also failing as an unresolvable object. */
+function resolvableTreeOf(root, path) {
+  const result = runDisposableGit(root, ["rev-parse", "--verify", "--quiet", `HEAD:${path}`]);
+  if (result.status === 0 && /^[0-9a-f]{40}$/.test(result.stdout.trim())) return result.stdout.trim();
+  return treeOf(root, REVIEWED_PATH);
 }
 
 function mutate(root, apply) {
