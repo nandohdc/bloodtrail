@@ -11,19 +11,25 @@
  * function at the code-health complexity threshold on its own and degraded the
  * mean complexity of whichever file held it. A table adds rules without adding
  * branches, so the next rule costs nothing.
+ *
+ * Each rule is an object, not a positional pair. A pair widens to
+ * `string | function` on destructuring, which made `repositoryPathProblem` look
+ * like it returned a reason, a predicate, or null, and raised Sonar S3800.
+ * Naming the members keeps the return type `string | null`; do not fold the
+ * table back into tuples.
  */
 const RULES = Object.freeze([
-  Object.freeze(["must not contain a null byte", (path) => path.includes("\0")]),
-  Object.freeze(["must not contain path traversal", (path) => path.includes("..")]),
-  Object.freeze(["must be repository-relative, not absolute", isAbsolute]),
-  Object.freeze(["must use forward slashes", (path) => path.includes("\\")]),
-  Object.freeze(["must not end with a path separator", (path) => path.endsWith("/")]),
-  Object.freeze(["must not contain glob characters", (path) => /[*?[{]/.test(path)]),
+  Object.freeze({ reason: "must not contain a null byte", violates: (path) => path.includes("\0") }),
+  Object.freeze({ reason: "must not contain path traversal", violates: (path) => path.includes("..") }),
+  Object.freeze({ reason: "must be repository-relative, not absolute", violates: isAbsolute }),
+  Object.freeze({ reason: "must use forward slashes", violates: (path) => path.includes("\\") }),
+  Object.freeze({ reason: "must not end with a path separator", violates: (path) => path.endsWith("/") }),
+  Object.freeze({ reason: "must not contain glob characters", violates: (path) => /[*?[{]/.test(path) }),
 ]);
 
 export function repositoryPathProblem(path) {
   if (!isNonEmptyString(path)) return "must be a non-empty string";
-  for (const [reason, violates] of RULES) {
+  for (const { reason, violates } of RULES) {
     if (violates(path)) return reason;
   }
   return null;

@@ -37,9 +37,8 @@ const ARCHIVE_ROOT = "openspec/changes/archive/";
 const OBJECT_ID = /^[0-9a-f]{40}$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const FILE_MODE = /^\d{6}$/;
-// Named because it is the diagnostic for seven distinct malformed-input cases:
-// repeating the literal is what Sonar's duplicate-literal rule flags, and a typo
-// in one of seven copies would silently split the id.
+// Named because it is the diagnostic for seven distinct malformed-input cases: a
+// typo in one of seven copies would silently split the id.
 const ENTRY_INVALID = "archive-attestation-entry-invalid";
 
 const failures = [];
@@ -67,7 +66,7 @@ if (failures.length > 0) {
 }
 
 process.stdout.write(
-  `archive attestations passed: ${counts.declared} declared, ${counts.anchored} anchored, ${counts.pending} pending, ${counts.files} archived file(s) verified against history\n${reports.sort(byCodePoint).join("\n")}\n`,
+  `archive attestations passed: ${counts.declared} declared, ${counts.anchored} anchored, ${counts.pending} pending, ${counts.files} archived file(s) verified against history\n${reports.toSorted(byCodePoint).join("\n")}\n`,
 );
 
 function fail(id, file, message) {
