@@ -209,10 +209,20 @@
     "required_check": {
       "context": "design-pattern-governance",
       "evidence_method": "github-branch-protection-api",
-      "evidence_command": "gh api repos/nandohdc/bloodtrail/branches/main/protection --jq '.required_status_checks.contexts'",
-      "verified": false,
-      "verified_contexts": [],
-      "blocking_reason": "The governance CI job is not yet configured as a required status check. Configuring it is a repository-settings change owned by the project owner. Activation stays incomplete until verified is true and context appears in verified_contexts."
+      "evidence_command": "gh api repos/nandohdc/bloodtrail/branches/main/protection/required_status_checks",
+      "verified": true,
+      "verified_contexts": [
+        "ci / lint",
+        "ci / test",
+        "ci / audit",
+        "sonar",
+        "sdk",
+        "contract",
+        "conventional-commits",
+        "codescene delta",
+        "design-pattern-governance"
+      ],
+      "blocking_reason": "Required-check enforcement was verified from the GitHub branch-protection API. Activation still requires activation-time evidence because repository settings are mutable."
     }
   },
   "merge": {

@@ -121,13 +121,12 @@ export function collectRangePaths(base, head, cwd, sink) {
  * it would be noise that trains people to ignore the diagnostic. What this
  * catches is behaviour arriving where the class says there should be none.
  */
-export function checkHiddenImplementation(paths, byClass, base, head, cwd, sink) {
+export function checkHiddenImplementation({ paths, byClass, base, head, cwd, sink }) {
   const lowerClassified = new Set([
     ...(byClass.get("documentation_only") ?? []),
     ...(byClass.get("governance_record_only") ?? []),
   ]);
   for (const path of paths) {
-    if (!lowerClassified.has(path) && !looksLikeSupportingPath(path)) continue;
     if (!lowerClassified.has(path)) continue;
     const added = addedContent(base, head, path, cwd);
     if (added === null) continue;

@@ -49,12 +49,7 @@ export function verifyActivation(record, recordPath, context, sink) {
   const { cwd, policy } = context;
   if (!requireCompleteHistory(cwd, sink)) return;
 
-  for (const forbidden of ["activation_commit", "own_commit", "self_hash"]) {
-    if (record[forbidden] !== undefined) {
-      sink.fail("activation-self-reference", recordPath,
-        `activation record must not bind its own hash via ${forbidden}`);
-    }
-  }
+  checkActivationSelfReference(record, recordPath, sink);
 
   const merge = resolveCommit(record.merge_commit, cwd);
   if (merge === null) {
@@ -69,26 +64,41 @@ export function verifyActivation(record, recordPath, context, sink) {
     return;
   }
 
+  verifyActivationParent(activationCommit, merge, { cwd, recordPath, sink });
+  verifyMergeTree(record, merge, { cwd, recordPath, sink });
+
+  verifyMergeStrategy(record, { merge, cwd, recordPath, sink });
+  verifyBoundCommits(record, { merge, cwd, recordPath, sink });
+  verifyBoundBlobs(record, cwd, recordPath, sink);
+  verifyActivationScope(record, { activationCommit, merge, policy, cwd, recordPath, sink });
+  verifyRequiredCheck(record.required_check, recordPath, sink);
+}
+
+function checkActivationSelfReference(record, recordPath, sink) {
+  for (const forbidden of ["activation_commit", "own_commit", "self_hash"]) {
+    if (record[forbidden] === undefined) continue;
+    sink.fail("activation-self-reference", recordPath,
+      `activation record must not bind its own hash via ${forbidden}`);
+  }
+}
+
+function verifyActivationParent(activationCommit, merge, { cwd, recordPath, sink }) {
   const parents = parentsOf(activationCommit, cwd) ?? [];
   if (parents.length !== 1) {
     sink.fail("activation-parent", recordPath,
       `the activation commit must have exactly one parent, found ${parents.length}`);
-  } else if (parents[0] !== merge) {
-    sink.fail("activation-parent", recordPath,
-      `the activation commit's parent is ${parents[0].slice(0, 12)}, not the bound merge commit ${merge.slice(0, 12)}`);
+    return;
   }
+  if (parents[0] === merge) return;
+  sink.fail("activation-parent", recordPath,
+    `the activation commit's parent is ${parents[0].slice(0, 12)}, not the bound merge commit ${merge.slice(0, 12)}`);
+}
 
+function verifyMergeTree(record, merge, { cwd, recordPath, sink }) {
   const mergeTree = treeOf(merge, cwd);
-  if (mergeTree !== record.merge_tree) {
-    sink.fail("activation-hash-mismatch", recordPath,
-      `bound merge tree ${String(record.merge_tree)} does not match the merge commit's tree ${String(mergeTree)}`);
-  }
-
-  verifyMergeStrategy(record, merge, cwd, recordPath, sink);
-  verifyBoundCommits(record, merge, cwd, recordPath, sink);
-  verifyBoundBlobs(record, cwd, recordPath, sink);
-  verifyActivationScope(record, activationCommit, merge, policy, cwd, recordPath, sink);
-  verifyRequiredCheck(record.required_check, recordPath, sink);
+  if (mergeTree === record.merge_tree) return;
+  sink.fail("activation-hash-mismatch", recordPath,
+    `bound merge tree ${String(record.merge_tree)} does not match the merge commit's tree ${String(mergeTree)}`);
 }
 
 function findActivationCommit(recordPath, merge, cwd) {
@@ -130,7 +140,7 @@ function firstParentChain(head, stopAt, cwd) {
   return chain.reverse();
 }
 
-function verifyMergeStrategy(record, merge, cwd, recordPath, sink) {
+function verifyMergeStrategy(record, { merge, cwd, recordPath, sink }) {
   const parents = parentsOf(merge, cwd) ?? [];
   const strategy = record.merge_strategy;
   if (strategy === "merge_commit") {
@@ -145,7 +155,7 @@ function verifyMergeStrategy(record, merge, cwd, recordPath, sink) {
   }
 }
 
-function verifyBoundCommits(record, merge, cwd, recordPath, sink) {
+function verifyBoundCommits(record, { merge, cwd, recordPath, sink }) {
   for (const [field, id] of [
     ["technical_commit", "technical-commit-absent"],
     ["signed_record_commit", "signed-record-commit-absent"],
@@ -187,7 +197,7 @@ function verifyBoundBlobs(record, cwd, recordPath, sink) {
   }
 }
 
-function verifyActivationScope(record, activationCommit, merge, policy, cwd, recordPath, sink) {
+function verifyActivationScope(record, { activationCommit, merge, policy, cwd, recordPath, sink }) {
   const allowlist = record.allowlisted_activation_paths ?? [];
   const mergeTree = treeOf(merge, cwd);
   const activationTree = treeOf(activationCommit, cwd);
@@ -214,18 +224,27 @@ export function verifyRequiredCheck(check, recordPath, sink) {
     sink.fail("required-check-evidence-absent", recordPath, "activation evidence records no required-check proof");
     return;
   }
-  if (check.verified !== true) {
-    sink.fail("required-check-unverified", recordPath,
-      "required-status enforcement for the protected reference is not verified; activation remains incomplete");
-  }
+  verifyRequiredCheckStatus(check, recordPath, sink);
+  verifyRequiredCheckContext(check, recordPath, sink);
+  verifyRequiredCheckDigest(check, recordPath, sink);
+}
+
+function verifyRequiredCheckStatus(check, recordPath, sink) {
+  if (check.verified === true) return;
+  sink.fail("required-check-unverified", recordPath,
+    "required-status enforcement for the protected reference is not verified; activation remains incomplete");
+}
+
+function verifyRequiredCheckContext(check, recordPath, sink) {
   const contexts = check.verified_contexts ?? [];
-  if (!contexts.includes(check.context)) {
-    sink.fail("required-check-context-absent", recordPath,
-      `required check ${String(check.context)} does not appear in the verified contexts`);
-  }
-  if (typeof check.evidence_digest !== "string" || !/^sha256:[0-9a-f]{64}$/.test(check.evidence_digest)) {
-    sink.fail("required-check-evidence-absent", recordPath, "required-check evidence has no verifiable digest");
-  }
+  if (contexts.includes(check.context)) return;
+  sink.fail("required-check-context-absent", recordPath,
+    `required check ${String(check.context)} does not appear in the verified contexts`);
+}
+
+function verifyRequiredCheckDigest(check, recordPath, sink) {
+  if (typeof check.evidence_digest === "string" && /^sha256:[0-9a-f]{64}$/.test(check.evidence_digest)) return;
+  sink.fail("required-check-evidence-absent", recordPath, "required-check evidence has no verifiable digest");
 }
 
 /**

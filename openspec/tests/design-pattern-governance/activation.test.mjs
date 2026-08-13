@@ -261,6 +261,10 @@ describe("R12 activation requires verified required-check enforcement", () => {
 describe("R18 bootstrap is exact and one-time", () => {
   it("rejects bootstrap while required-check enforcement is unverified", () => {
     const repository = fixture();
+    const policy = JSON.parse(repository.read(POLICY_PATH));
+    policy.protected_mainline.required_check.verified = false;
+    policy.protected_mainline.required_check.verified_contexts = [];
+    repository.write(POLICY_PATH, JSON.stringify(policy, null, 2) + "\n");
     assertDiagnostic(runChecker(repository, { phase: "bootstrap" }), "required-check-evidence-absent");
   });
 

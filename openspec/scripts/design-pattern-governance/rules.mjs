@@ -9,26 +9,39 @@
 
 import { accountForImplementationInvariants, accountForInvariants } from "./catalog.mjs";
 
-export function applyAssessmentRules(assessment, schema, context, documentPath, sink) {
+export function applyAssessmentRules(assessment, schema, { context, documentPath, sink }) {
   const declared = (schema.rules ?? []).map((rule) => rule.id);
-  for (const id of declared) {
-    const rule = ASSESSMENT_RULES[id];
-    if (!rule) {
-      sink.fail("rule-unimplemented", documentPath, `schema declares rule ${id} which the checker does not implement`);
-      continue;
-    }
+  for (const id of declared) applyDeclaredRule(id, assessment, { context, documentPath, sink });
+  for (const id of Object.keys(ASSESSMENT_RULES)) reportUndeclaredRule(id, declared, { documentPath, sink });
+}
+
+function applyDeclaredRule(id, assessment, { context, documentPath, sink }) {
+  const rule = ASSESSMENT_RULES[id];
+  if (rule) {
     rule(assessment, context, documentPath, sink);
+    return;
   }
-  for (const id of Object.keys(ASSESSMENT_RULES)) {
-    if (!declared.includes(id)) {
-      sink.fail("rule-undeclared", documentPath, `checker implements rule ${id} which the schema does not declare`);
-    }
-  }
+  sink.fail("rule-unimplemented", documentPath, `schema declares rule ${id} which the checker does not implement`);
+}
+
+function reportUndeclaredRule(id, declared, { documentPath, sink }) {
+  if (declared.includes(id)) return;
+  sink.fail("rule-undeclared", documentPath, `checker implements rule ${id} which the schema does not declare`);
 }
 
 const isFull = (assessment) => assessment.assessment_level === "full";
 const candidates = (assessment) => assessment.candidate_approaches ?? [];
 const candidateOfKind = (assessment, kind) => candidates(assessment).filter((entry) => entry.kind === kind);
+
+function reportMissingRejectionReason(id, reasons, { documentPath, sink }) {
+  if (reasons[id]) return;
+  sink.fail("rejection-reason-absent", documentPath, `rejected approach ${id} has no recorded reason`);
+}
+
+function reportUnknownRejectionReason(id, known, { documentPath, sink }) {
+  if (known.has(id)) return;
+  sink.fail("rejection-reason-unknown-approach", documentPath, `rejection reason names unknown approach ${id}`);
+}
 
 const ASSESSMENT_RULES = Object.freeze({
   "assessment-full-requires-direct-candidate"(assessment, context, documentPath, sink) {
@@ -86,15 +99,11 @@ const ASSESSMENT_RULES = Object.freeze({
   "assessment-rejection-covers-every-rejected-id"(assessment, context, documentPath, sink) {
     const reasons = assessment.rejection_reasons ?? {};
     for (const id of assessment.rejected_alternative_ids ?? []) {
-      if (!reasons[id]) {
-        sink.fail("rejection-reason-absent", documentPath, `rejected approach ${id} has no recorded reason`);
-      }
+      reportMissingRejectionReason(id, reasons, { documentPath, sink });
     }
     const known = new Set(candidates(assessment).map((entry) => entry.id));
     for (const id of Object.keys(reasons)) {
-      if (!known.has(id)) {
-        sink.fail("rejection-reason-unknown-approach", documentPath, `rejection reason names unknown approach ${id}`);
-      }
+      reportUnknownRejectionReason(id, known, { documentPath, sink });
     }
   },
 
@@ -127,7 +136,7 @@ const ASSESSMENT_RULES = Object.freeze({
     if (!sink.require((assessment.implementation_invariant_ids ?? []).length > 0,
       "implementation-invariants-absent", documentPath,
       "a direct-implementation decision must record implementation-specific invariants")) return;
-    accountForImplementationInvariants(assessment, documentPath, sink);
+    accountForImplementationInvariants(assessment, { documentPath, sink });
   },
 
   "assessment-named-pattern-rejects-direct"(assessment, context, documentPath, sink) {
@@ -149,7 +158,7 @@ const ASSESSMENT_RULES = Object.freeze({
     if (!sink.require(assessment.catalog_binding !== undefined,
       "named-pattern-catalog-binding-absent", documentPath,
       "a named-pattern decision must bind the catalog version and its invariants")) return;
-    if (context.registry) accountForInvariants(assessment, context.registry, documentPath, sink);
+    if (context.registry) accountForInvariants(assessment, context.registry, { documentPath, sink });
   },
 
   "assessment-named-pattern-has-selected-patterns"(assessment, context, documentPath, sink) {

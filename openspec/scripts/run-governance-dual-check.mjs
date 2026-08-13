@@ -136,12 +136,21 @@ function report(result) {
   process.stdout.write(describe("candidate", result.candidate));
   process.stdout.write(describe("baseline ", result.baseline));
 
-  if (result.baseline && result.baseline.exit_code !== 0 && result.candidate.exit_code === 0) {
-    process.stderr.write(
-      "dual-check disagreement: the trusted baseline rejects what the candidate accepts. "
-      + "A candidate checker is never the sole judge of whether it weakened itself.\n",
-    );
-  }
+  reportSelfApprovalDisagreement(result);
+}
+
+function reportSelfApprovalDisagreement(result) {
+  if (!baselineRejectsCandidatePass(result)) return;
+  process.stderr.write(
+    "dual-check disagreement: the trusted baseline rejects what the candidate accepts. "
+    + "A candidate checker is never the sole judge of whether it weakened itself.\n",
+  );
+}
+
+function baselineRejectsCandidatePass(result) {
+  if (!result.baseline) return false;
+  if (result.baseline.exit_code === 0) return false;
+  return result.candidate.exit_code === 0;
 }
 
 function describe(label, run) {

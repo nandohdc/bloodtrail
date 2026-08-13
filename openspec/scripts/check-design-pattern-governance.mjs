@@ -64,6 +64,16 @@ import {
 
 const DEFAULT_POLICY = "openspec/governance/design-pattern-policy.json";
 const PHASES = new Set(["assessment", "implementation", "final", "bootstrap", "activation"]);
+const ARGUMENT_OPTIONS = Object.freeze({
+  "--phase": valueOption((parsed, value) => { parsed.phase = value; }),
+  "--repo-root": valueOption((parsed, value) => { parsed.repoRoot = resolve(value); }),
+  "--policy": valueOption((parsed, value) => { parsed.policyPath = value; }),
+  "--change": valueOption((parsed, value) => { parsed.change = value; }),
+  "--base": valueOption((parsed, value) => { parsed.base = value; }),
+  "--json": flagOption((parsed) => { parsed.json = true; }),
+  "--help": flagOption((parsed) => { parsed.help = true; }),
+  "-h": flagOption((parsed) => { parsed.help = true; }),
+});
 
 const options = parseArguments(process.argv.slice(2));
 if (options.help) {
@@ -100,13 +110,32 @@ function run(opts, diagnostics) {
 
   const registry = loadRegistry(repositoryRoot, policy.invariant_registry.path, diagnostics);
   const catalog = registry
-    ? loadCatalog(repositoryRoot, policy.catalog.path, policy.catalog.entry_count, registry, diagnostics)
+    ? loadCatalog(repositoryRoot, policy.catalog.path, {
+      expectedEntryCount: policy.catalog.entry_count, registry, sink: diagnostics,
+    })
     : null;
 
   const schemas = loadSchemas(repositoryRoot, policy, diagnostics);
   const state = activationState(repositoryRoot, policy, diagnostics);
+  const context = createContext({ repositoryRoot, cwd, policy, registry, catalog, schemas, state });
 
-  const context = {
+  if (opts.phase === "bootstrap") {
+    return runBootstrapPhase(opts, context, state, diagnostics);
+  }
+
+  if (opts.phase === "activation") {
+    return runActivationPhase(opts, context, state, diagnostics);
+  }
+
+  checkAssessments(opts, context, schemas, diagnostics);
+  if (phaseIncludesPerimeter(opts.phase)) checkPerimeter(opts, context, diagnostics);
+  if (opts.phase === "final") runFinalChecks(context, schemas, state, diagnostics);
+
+  return summarise(opts, context, state, diagnostics);
+}
+
+function createContext({ repositoryRoot, cwd, policy, registry, catalog, schemas, state }) {
+  return {
     repositoryRoot,
     cwd,
     policy,
@@ -125,37 +154,34 @@ function run(opts, diagnostics) {
     previouslyOptedIn: state.record?.opted_in_changes ?? [],
     provenanceExpansionTriggers: schemas.provenance?.scope_expansion_triggers ?? [],
   };
+}
 
-  if (opts.phase === "bootstrap") {
-    verifyBootstrap(context, diagnostics);
-    return summarise(opts, context, state, diagnostics);
-  }
-
-  if (opts.phase === "activation") {
-    if (!state.active) {
-      diagnostics.fail("activation-commit-absent", state.path ?? DEFAULT_POLICY,
-        "activation was requested but no activation record exists; enforcement has not begun");
-    } else {
-      verifyActivation(state.record, state.path, context, diagnostics);
-    }
-    return summarise(opts, context, state, diagnostics);
-  }
-
-  checkAssessments(opts, context, schemas, diagnostics);
-
-  if (opts.phase === "implementation" || opts.phase === "final") {
-    checkPerimeter(opts, context, diagnostics);
-  }
-
-  if (opts.phase === "final") {
-    checkActorNeutralDocuments(repositoryRoot, policy, diagnostics);
-    checkTemplates(repositoryRoot, diagnostics);
-    checkCiJob(repositoryRoot, policy, diagnostics);
-    checkProvenance(context, schemas, diagnostics);
-    if (state.active) verifyActivation(state.record, state.path, context, diagnostics);
-  }
-
+function runBootstrapPhase(opts, context, state, diagnostics) {
+  verifyBootstrap(context, diagnostics);
   return summarise(opts, context, state, diagnostics);
+}
+
+function runActivationPhase(opts, context, state, diagnostics) {
+  if (state.active) {
+    verifyActivation(state.record, state.path, context, diagnostics);
+  } else {
+    diagnostics.fail("activation-commit-absent", state.path ?? DEFAULT_POLICY,
+      "activation was requested but no activation record exists; enforcement has not begun");
+  }
+  return summarise(opts, context, state, diagnostics);
+}
+
+function phaseIncludesPerimeter(phase) {
+  return phase === "implementation" || phase === "final";
+}
+
+function runFinalChecks(context, schemas, state, diagnostics) {
+  const { repositoryRoot, policy } = context;
+  checkActorNeutralDocuments(repositoryRoot, policy, diagnostics);
+  checkTemplates(repositoryRoot, diagnostics);
+  checkCiJob(repositoryRoot, policy, diagnostics);
+  checkProvenance(context, schemas, diagnostics);
+  if (state.active) verifyActivation(state.record, state.path, context, diagnostics);
 }
 
 function loadSchemas(repositoryRoot, policy, diagnostics) {
@@ -182,15 +208,20 @@ function checkAssessments(opts, context, schemas, diagnostics) {
     // failure would report a cardinality violation and hide the requirement it
     // actually breaches — and a reader who fixed only what was reported would
     // then meet the second diagnostic on the next run.
-    validateDocument(document, schema, path, context, diagnostics);
-    applyAssessmentRules(document, schema, context, path, diagnostics);
+    validateDocument(document, schema, { documentPath: path, context, sink: diagnostics });
+    applyAssessmentRules(document, schema, { context, documentPath: path, sink: diagnostics });
 
     if (reportRetrospectiveException(document.retrospective_exception, path, diagnostics)) {
       // A retrospective exception is the recorded reason ordering cannot be
       // reconstructed, so re-deriving it would fail on exactly the history the
       // exception exists to acknowledge is missing.
     } else if (document.ordering) {
-      verifyAssessmentOrdering(document.ordering, governedPatterns(context.policy), context.cwd, path, diagnostics);
+      verifyAssessmentOrdering(document.ordering, {
+        governedPatterns: governedPatterns(context.policy),
+        cwd: context.cwd,
+        documentPath: path,
+        sink: diagnostics,
+      });
     }
     for (const trigger of document.applicability?.triggers_matched ?? []) {
       const existing = context.observedTriggersByChange.get(changeId) ?? [];
@@ -254,7 +285,7 @@ function checkPerimeter(opts, context, diagnostics) {
   const byClass = classifyPaths(range.paths, policy);
   const emergencyPaths = emergencyPathSet(policy.emergency_records);
   checkUnclassifiedPaths(byClass, emergencyPaths, diagnostics);
-  checkHiddenImplementation(range.paths, byClass, base, head, cwd, diagnostics);
+  checkHiddenImplementation({ paths: range.paths, byClass, base, head, cwd, sink: diagnostics });
 
   const governed = range.paths.filter((path) => matchesSelection(path, governedPatterns(policy)));
   const changes = collectOpenSpecChanges(
@@ -263,8 +294,8 @@ function checkPerimeter(opts, context, diagnostics) {
     activeChangeIds(context.repositoryRoot),
   );
   checkOpenSpecAssociation(governed, changes, diagnostics);
-  checkGrandfatheredScopes(policy, governed, changes, context, diagnostics);
-  checkSchemaEvolution(range.paths, base, policy, context, diagnostics);
+  checkGrandfatheredScopes(policy, governed, changes, { context, diagnostics });
+  checkSchemaEvolution(range.paths, base, policy, { context, diagnostics });
 
   context.governanceCore = isGovernanceCore(range.paths, policy);
   context.rangeBase = base;
@@ -279,9 +310,15 @@ function checkProvenance(context, schemas, diagnostics) {
   const { policy, repositoryRoot } = context;
   const documentPath = "openspec/governance/design-pattern-policy.json";
 
-  validateGrandfathering(policy.grandfathering, provenance, context, documentPath, diagnostics);
-  validateOptIns(policy.opt_ins, policy.withdrawals, provenance, context, documentPath, diagnostics);
-  validateEmergencyRecords(policy.emergency_records, provenance, context, documentPath, diagnostics);
+  const validation = { context, documentPath, sink: diagnostics };
+  validateGrandfathering(policy.grandfathering, provenance, validation);
+  validateOptIns({
+    optIns: policy.opt_ins,
+    withdrawals: policy.withdrawals,
+    provenanceSchema: provenance,
+    ...validation,
+  });
+  validateEmergencyRecords(policy.emergency_records, provenance, validation);
 
   // An emergency record ends when its change merges or is abandoned. Reading
   // that from the change's actual presence is what keeps termination free of a
@@ -289,7 +326,7 @@ function checkProvenance(context, schemas, diagnostics) {
   for (const record of policy.emergency_records ?? []) {
     const changeExists = existsSync(resolve(repositoryRoot, "openspec/changes", record.change));
     const merged = archivedChangeExists(repositoryRoot, record.change);
-    checkEmergencyTermination(record, changeExists, merged, documentPath, diagnostics);
+    checkEmergencyTermination(record, { changeExists, changeMerged: merged, documentPath, sink: diagnostics });
   }
 }
 
@@ -301,7 +338,7 @@ function checkProvenance(context, schemas, diagnostics) {
  * bounded paths first was the original mistake: it removed precisely the
  * out-of-scope paths the check exists to find, so the control could never fire.
  */
-function checkGrandfatheredScopes(policy, governedPaths, changes, context, diagnostics) {
+function checkGrandfatheredScopes(policy, governedPaths, changes, { context, diagnostics }) {
   const expansionTriggers = context.provenanceExpansionTriggers ?? [];
   for (const entry of policy.grandfathering ?? []) {
     const change = changes.find((candidate) => candidate.id === entry.change);
@@ -309,7 +346,9 @@ function checkGrandfatheredScopes(policy, governedPaths, changes, context, diagn
     const touched = governedPaths.filter((path) => matchesSelection(path, ownedPatterns));
     if (touched.length === 0) continue;
     const observed = context.observedTriggersByChange?.get(entry.change) ?? [];
-    checkGrandfatheredScope(entry, touched, observed, expansionTriggers, diagnostics);
+    checkGrandfatheredScope(entry, {
+      changedPaths: touched, observedTriggers: observed, expansionTriggers, sink: diagnostics,
+    });
   }
 }
 
@@ -321,7 +360,7 @@ function checkGrandfatheredScopes(policy, governedPaths, changes, context, diagn
  * candidate cannot edit — comparing a candidate schema to itself would accept
  * any weakening as long as it was internally consistent.
  */
-function checkSchemaEvolution(paths, base, policy, context, diagnostics) {
+function checkSchemaEvolution(paths, base, policy, { context, diagnostics }) {
   const schemaPaths = Object.values(policy.schemas ?? {}).filter((path) => paths.includes(path));
   for (const relativePath of schemaPaths) {
     const baselineText = blobAt(base, relativePath, context.cwd);
@@ -437,25 +476,31 @@ function parseArguments(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     const [flag, inlineValue] = argument.includes("=") ? splitOnce(argument, "=") : [argument, null];
-    const value = () => inlineValue ?? argv[++index];
-    switch (flag) {
-      case "--phase": parsed.phase = value(); break;
-      case "--repo-root": parsed.repoRoot = resolve(value()); break;
-      case "--policy": parsed.policyPath = value(); break;
-      case "--change": parsed.change = value(); break;
-      case "--base": parsed.base = value(); break;
-      case "--json": parsed.json = true; break;
-      case "--help": case "-h": parsed.help = true; break;
-      default:
-        process.stderr.write(`unsupported argument: ${argument}\n${usage()}`);
-        process.exit(2);
-    }
+    const option = ARGUMENT_OPTIONS[flag];
+    if (!option) rejectArgument(argument);
+    const value = option.takesValue ? (inlineValue ?? argv[++index]) : null;
+    option.apply(parsed, value);
   }
-  if (!PHASES.has(parsed.phase)) {
-    process.stderr.write(`unsupported phase: ${parsed.phase}\n${usage()}`);
-    process.exit(2);
-  }
+  if (!PHASES.has(parsed.phase)) rejectPhase(parsed.phase);
   return parsed;
+}
+
+function valueOption(apply) {
+  return Object.freeze({ takesValue: true, apply });
+}
+
+function flagOption(apply) {
+  return Object.freeze({ takesValue: false, apply });
+}
+
+function rejectArgument(argument) {
+  process.stderr.write(`unsupported argument: ${argument}\n${usage()}`);
+  process.exit(2);
+}
+
+function rejectPhase(phase) {
+  process.stderr.write(`unsupported phase: ${phase}\n${usage()}`);
+  process.exit(2);
 }
 
 function splitOnce(value, separator) {

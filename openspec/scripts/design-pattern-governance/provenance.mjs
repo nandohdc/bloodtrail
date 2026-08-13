@@ -15,27 +15,35 @@ import { objectAtPath, resolveCommit, tryGit } from "./git.mjs";
 import { matchesAny } from "./paths.mjs";
 import { validateRecord } from "./schema.mjs";
 
-export function validateGrandfathering(entries, provenanceSchema, context, documentPath, sink) {
+export function validateGrandfathering(entries, provenanceSchema, { context, documentPath, sink }) {
   const seen = new Set();
   for (const entry of entries ?? []) {
-    if (seen.has(entry.change)) {
-      sink.fail("grandfathering-duplicate", documentPath, `change ${entry.change} has more than one grandfathering entry`);
-    }
-    seen.add(entry.change);
-
-    const definition = entry.class === "mainline_present"
-      ? provenanceSchema.records.grandfathering_mainline_present
-      : provenanceSchema.records.grandfathering_external_in_flight;
-
-    if (!definition) {
-      sink.fail("grandfathering-class-unknown", documentPath, `grandfathering class ${String(entry.class)} is not defined`);
-      continue;
-    }
-    validateRecord(entry, definition, documentPath, context, sink);
-
-    if (entry.class === "mainline_present") verifyMainlinePresent(entry, context, documentPath, sink);
-    if (entry.class === "external_in_flight") verifyExternalInFlight(entry, context, documentPath, sink);
+    recordUniqueGrandfatheringChange(entry, seen, { documentPath, sink });
+    validateGrandfatheringEntry(entry, provenanceSchema, { context, documentPath, sink });
   }
+}
+
+function recordUniqueGrandfatheringChange(entry, seen, { documentPath, sink }) {
+  if (seen.has(entry.change)) {
+    sink.fail("grandfathering-duplicate", documentPath, `change ${entry.change} has more than one grandfathering entry`);
+  }
+  seen.add(entry.change);
+}
+
+function validateGrandfatheringEntry(entry, provenanceSchema, { context, documentPath, sink }) {
+  const definition = grandfatheringDefinition(entry.class, provenanceSchema);
+  if (!definition) {
+    sink.fail("grandfathering-class-unknown", documentPath, `grandfathering class ${String(entry.class)} is not defined`);
+    return;
+  }
+  validateRecord(entry, definition, { recordPath: documentPath, context, sink });
+  if (entry.class === "mainline_present") verifyMainlinePresent(entry, context, documentPath, sink);
+  if (entry.class === "external_in_flight") verifyExternalInFlight(entry, context, documentPath, sink);
+}
+
+function grandfatheringDefinition(entryClass, provenanceSchema) {
+  if (entryClass === "mainline_present") return provenanceSchema.records.grandfathering_mainline_present;
+  return provenanceSchema.records.grandfathering_external_in_flight;
 }
 
 function verifyMainlinePresent(entry, context, documentPath, sink) {
@@ -73,100 +81,129 @@ function verifyExternalInFlight(entry, context, documentPath, sink) {
  * failure this guards: a change admitted for one bounded correction quietly
  * growing a public API under the same exemption.
  */
-export function checkGrandfatheredScope(entry, changedPaths, observedTriggers, expansionTriggers, sink) {
-  for (const path of changedPaths) {
-    if (matchesAny(path, entry.bounded_paths ?? [])) continue;
-    sink.fail("grandfathered-scope-expanded", path,
-      `path is outside the recorded scope of grandfathered change ${entry.change} and requires normal full governance`);
-  }
-  for (const trigger of observedTriggers) {
-    if (!expansionTriggers.includes(trigger)) continue;
-    sink.fail("grandfathered-scope-expanded", entry.change,
-      `grandfathered change adds ${trigger}, which requires normal full governance for the expanded scope`);
-  }
+export function checkGrandfatheredScope(entry, { changedPaths, observedTriggers, expansionTriggers, sink }) {
+  for (const path of changedPaths) checkGrandfatheredPath(entry, path, sink);
+  for (const trigger of observedTriggers) checkGrandfatheredTrigger(entry, trigger, { expansionTriggers, sink });
 }
 
-export function validateOptIns(optIns, withdrawals, provenanceSchema, context, documentPath, sink) {
+function checkGrandfatheredPath(entry, path, sink) {
+  if (matchesAny(path, entry.bounded_paths ?? [])) return;
+  sink.fail("grandfathered-scope-expanded", path,
+    `path is outside the recorded scope of grandfathered change ${entry.change} and requires normal full governance`);
+}
+
+function checkGrandfatheredTrigger(entry, trigger, { expansionTriggers, sink }) {
+  if (!expansionTriggers.includes(trigger)) return;
+  sink.fail("grandfathered-scope-expanded", entry.change,
+    `grandfathered change adds ${trigger}, which requires normal full governance for the expanded scope`);
+}
+
+export function validateOptIns({ optIns, withdrawals, provenanceSchema, context, documentPath, sink }) {
   const definition = provenanceSchema.records.opt_in;
   const byChange = new Map();
   for (const entry of optIns ?? []) {
-    validateRecord(entry, definition, documentPath, context, sink);
+    validateRecord(entry, definition, { recordPath: documentPath, context, sink });
     byChange.set(entry.change, entry);
-    if (resolveCommit(entry.commit, context.cwd) === null) {
-      sink.fail("optin-commit-unresolvable", documentPath, `opt-in for ${entry.change} names a commit that is not in this history`);
-    }
+    validateOptInCommit(entry, { context, documentPath, sink });
   }
 
   const withdrawalDefinition = provenanceSchema.records.withdrawal;
   for (const entry of withdrawals ?? []) {
-    validateRecord(entry, withdrawalDefinition, documentPath, context, sink);
-    const optIn = byChange.get(entry.change);
-    if (!optIn) {
-      sink.fail("withdrawal-without-optin", documentPath, `withdrawal for ${entry.change} matches no recorded opt-in`);
-      continue;
-    }
-    if (optIn.commit !== entry.withdraws_opt_in_commit) {
-      sink.fail("withdrawal-optin-mismatch", documentPath,
-        `withdrawal for ${entry.change} names a different opt-in commit than the recorded one`);
-    }
-    const earliest = context.earliestImplementationByChange?.get(entry.change);
-    if (earliest) {
-      sink.fail("withdrawal-after-implementation", documentPath,
-        `opt-in for ${entry.change} became irrevocable at its first governed implementation commit ${earliest.slice(0, 12)}`);
-    }
+    validateRecord(entry, withdrawalDefinition, { recordPath: documentPath, context, sink });
+    validateWithdrawal(entry, byChange, { context, documentPath, sink });
   }
 
   // Silent withdrawal: an opt-in that was recorded and is now simply gone. The
   // known set is supplied by the caller from the previous activation evidence,
   // so disappearance is detected rather than inferred from its own absence.
   for (const change of context.previouslyOptedIn ?? []) {
-    if (byChange.has(change)) continue;
-    const withdrawn = (withdrawals ?? []).some((entry) => entry.change === change);
-    if (!withdrawn) {
-      sink.fail("withdrawal-silent", documentPath,
-        `opt-in for ${change} disappeared without explicit project-owner withdrawal evidence`);
-    }
+    validatePreviouslyOptedInChange(change, byChange, withdrawals, { documentPath, sink });
   }
 }
 
-export function validateEmergencyRecords(records, provenanceSchema, context, documentPath, sink) {
+function validateOptInCommit(entry, { context, documentPath, sink }) {
+  if (resolveCommit(entry.commit, context.cwd) !== null) return;
+  sink.fail("optin-commit-unresolvable", documentPath, `opt-in for ${entry.change} names a commit that is not in this history`);
+}
+
+function validateWithdrawal(entry, byChange, { context, documentPath, sink }) {
+  const optIn = byChange.get(entry.change);
+  if (!optIn) {
+    sink.fail("withdrawal-without-optin", documentPath, `withdrawal for ${entry.change} matches no recorded opt-in`);
+    return;
+  }
+  if (optIn.commit !== entry.withdraws_opt_in_commit) {
+    sink.fail("withdrawal-optin-mismatch", documentPath,
+      `withdrawal for ${entry.change} names a different opt-in commit than the recorded one`);
+  }
+  const earliest = context.earliestImplementationByChange?.get(entry.change);
+  if (!earliest) return;
+  sink.fail("withdrawal-after-implementation", documentPath,
+    `opt-in for ${entry.change} became irrevocable at its first governed implementation commit ${earliest.slice(0, 12)}`);
+}
+
+function validatePreviouslyOptedInChange(change, byChange, withdrawals, { documentPath, sink }) {
+  if (byChange.has(change)) return;
+  const withdrawn = (withdrawals ?? []).some((entry) => entry.change === change);
+  if (withdrawn) return;
+  sink.fail("withdrawal-silent", documentPath,
+    `opt-in for ${change} disappeared without explicit project-owner withdrawal evidence`);
+}
+
+export function validateEmergencyRecords(records, provenanceSchema, { context, documentPath, sink }) {
   const definition = provenanceSchema.records.emergency;
   const forbidden = definition.forbidden_fields ?? [];
   const nonDowngradable = definition.non_downgradable_triggers ?? [];
   const seen = new Set();
 
   for (const entry of records ?? []) {
-    validateRecord(entry, definition, documentPath, context, sink);
-
-    for (const field of forbidden) {
-      if (entry[field] !== undefined) {
-        sink.fail("emergency-clock-based", documentPath,
-          `emergency record for ${entry.change} declares ${field}; emergency classification never expires on a clock`);
-      }
-    }
-
-    if (seen.has(entry.change)) {
-      sink.fail("emergency-record-reused", documentPath, `more than one emergency record binds change ${entry.change}`);
-    }
-    seen.add(entry.change);
-
-    const attempted = (context.observedTriggersByChange?.get(entry.change) ?? [])
-      .filter((trigger) => nonDowngradable.includes(trigger));
-    if (attempted.length > 0 && entry.conservative_path_class !== "governed_implementation") {
-      sink.fail("emergency-trigger-downgrade", documentPath,
-        `emergency record for ${entry.change} attempts to downgrade ${attempted.join(", ")}`);
-    }
-
-    if (entry.disposition !== "conservative_full_assessment") {
-      sink.fail("emergency-assessment-downgrade", documentPath,
-        `emergency record for ${entry.change} must still require a full assessment`);
-    }
-
-    if (entry.terminated_by === "pending") {
-      sink.warn("emergency-classification-in-effect", documentPath,
-        `change ${entry.change} proceeds under emergency classification with a conservative full assessment; follow-up ${entry.follow_up} is mandatory`);
-    }
+    validateEmergencyRecord(entry, definition, {
+      forbidden, nonDowngradable, seen, context, documentPath, sink,
+    });
   }
+}
+
+function validateEmergencyRecord(entry, definition, options) {
+  const { forbidden, nonDowngradable, seen, context, documentPath, sink } = options;
+  validateRecord(entry, definition, { recordPath: documentPath, context, sink });
+  for (const field of forbidden) checkForbiddenEmergencyField(entry, field, { documentPath, sink });
+  checkEmergencyReuse(entry, seen, { documentPath, sink });
+  checkEmergencyTriggerDowngrade(entry, nonDowngradable, { context, documentPath, sink });
+  checkEmergencyDisposition(entry, { documentPath, sink });
+  reportActiveEmergency(entry, { documentPath, sink });
+}
+
+function checkForbiddenEmergencyField(entry, field, { documentPath, sink }) {
+  if (entry[field] === undefined) return;
+  sink.fail("emergency-clock-based", documentPath,
+    `emergency record for ${entry.change} declares ${field}; emergency classification never expires on a clock`);
+}
+
+function checkEmergencyReuse(entry, seen, { documentPath, sink }) {
+  if (seen.has(entry.change)) {
+    sink.fail("emergency-record-reused", documentPath, `more than one emergency record binds change ${entry.change}`);
+  }
+  seen.add(entry.change);
+}
+
+function checkEmergencyTriggerDowngrade(entry, nonDowngradable, { context, documentPath, sink }) {
+  const attempted = (context.observedTriggersByChange?.get(entry.change) ?? [])
+    .filter((trigger) => nonDowngradable.includes(trigger));
+  if (attempted.length === 0 || entry.conservative_path_class === "governed_implementation") return;
+  sink.fail("emergency-trigger-downgrade", documentPath,
+    `emergency record for ${entry.change} attempts to downgrade ${attempted.join(", ")}`);
+}
+
+function checkEmergencyDisposition(entry, { documentPath, sink }) {
+  if (entry.disposition === "conservative_full_assessment") return;
+  sink.fail("emergency-assessment-downgrade", documentPath,
+    `emergency record for ${entry.change} must still require a full assessment`);
+}
+
+function reportActiveEmergency(entry, { documentPath, sink }) {
+  if (entry.terminated_by !== "pending") return;
+  sink.warn("emergency-classification-in-effect", documentPath,
+    `change ${entry.change} proceeds under emergency classification with a conservative full assessment; follow-up ${entry.follow_up} is mandatory`);
 }
 
 /**
@@ -174,15 +211,26 @@ export function validateEmergencyRecords(records, provenanceSchema, context, doc
  * or abandoned change ends its emergency record; a record still marked pending
  * for a change that is gone is itself a failure.
  */
-export function checkEmergencyTermination(entry, changeExists, changeMerged, documentPath, sink) {
-  if (entry.terminated_by === "pending" && !changeExists && !changeMerged) {
+export function checkEmergencyTermination(entry, { changeExists, changeMerged, documentPath, sink }) {
+  if (pendingEmergencyIsStale(entry, { changeExists, changeMerged })) {
     sink.fail("emergency-not-terminated", documentPath,
       `emergency record for ${entry.change} is still pending although the change is neither active nor merged`);
   }
-  if (entry.terminated_by !== "pending" && changeExists) {
+  if (terminatedEmergencyIsActive(entry, changeExists)) {
     sink.fail("emergency-terminated-early", documentPath,
       `emergency record for ${entry.change} is marked ${entry.terminated_by} while the change is still active`);
   }
+}
+
+function pendingEmergencyIsStale(entry, { changeExists, changeMerged }) {
+  if (entry.terminated_by !== "pending") return false;
+  if (changeExists) return false;
+  return !changeMerged;
+}
+
+function terminatedEmergencyIsActive(entry, changeExists) {
+  if (entry.terminated_by === "pending") return false;
+  return changeExists;
 }
 
 export function emergencyPathSet(records) {

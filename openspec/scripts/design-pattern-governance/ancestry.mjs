@@ -26,7 +26,7 @@ export function requireCompleteHistory(cwd, sink) {
  * is what makes "earliest" mean earliest rather than "the first one I happened
  * to find".
  */
-export function findEarliestGovernedImplementationCommit(baseline, head, governedPatterns, cwd, sink) {
+export function findEarliestGovernedImplementationCommit({ baseline, head, governedPatterns, cwd, sink }) {
   const commits = commitsBetween(baseline, head, cwd);
   if (commits === null) {
     sink.fail("history-unavailable", baseline, `cannot enumerate commits between ${baseline} and ${head}`);
@@ -43,7 +43,7 @@ export function findEarliestGovernedImplementationCommit(baseline, head, governe
   return null;
 }
 
-export function verifyAssessmentOrdering(ordering, governedPatterns, cwd, documentPath, sink) {
+export function verifyAssessmentOrdering(ordering, { governedPatterns, cwd, documentPath, sink }) {
   if (!requireCompleteHistory(cwd, sink)) return;
 
   const baseline = resolveCommit(ordering.proposal_baseline_commit, cwd);
@@ -53,56 +53,69 @@ export function verifyAssessmentOrdering(ordering, governedPatterns, cwd, docume
     return;
   }
 
-  const assessmentCommit = ordering.assessment_commit ? resolveCommit(ordering.assessment_commit, cwd) : null;
-  if (ordering.assessment_commit && assessmentCommit === null) {
+  const assessment = resolveOptionalCommit(ordering.assessment_commit, cwd);
+  if (assessment.invalid) {
     sink.fail("assessment-commit-unresolvable", documentPath,
       `assessment commit ${ordering.assessment_commit} is not a commit in this history`);
     return;
   }
-  if (assessmentCommit === null) return;
+  if (assessment.commit === null) return;
 
-  // The assessment commit must not itself carry implementation. An assessment
-  // that arrives with the code it approves has not preceded it.
-  const assessmentPaths = pathsChangedByCommit(assessmentCommit, cwd) ?? [];
-  if (assessmentPaths.some((path) => matchesSelection(path, governedPatterns))) {
-    sink.fail("assessment-shares-implementation-commit", documentPath,
-      "the assessment commit also changes a governed implementation path");
-  }
+  checkAssessmentCommitPaths(assessment.commit, { governedPatterns, cwd, documentPath, sink });
 
-  const earliest = ordering.earliest_governed_implementation_commit
-    ? resolveCommit(ordering.earliest_governed_implementation_commit, cwd)
-    : null;
-
-  if (ordering.earliest_governed_implementation_commit && earliest === null) {
+  const earliest = resolveOptionalCommit(ordering.earliest_governed_implementation_commit, cwd);
+  if (earliest.invalid) {
     sink.fail("implementation-ancestry-unavailable", documentPath,
       `earliest governed implementation commit ${ordering.earliest_governed_implementation_commit} is not in this history`);
     return;
   }
+  checkEarliestRelation(assessment.commit, earliest.commit, { cwd, documentPath, sink });
 
-  if (earliest !== null) {
-    if (assessmentCommit === earliest) {
-      sink.fail("assessment-shares-implementation-commit", documentPath,
-        "the assessment commit and the earliest governed implementation commit are the same commit");
-    } else if (!isAncestor(assessmentCommit, earliest, cwd)) {
-      sink.fail("assessment-follows-implementation", documentPath,
-        "the assessment commit is not an ancestor of the earliest governed implementation commit");
-    }
-  }
-
-  const technical = ordering.final_technical_commit ? resolveCommit(ordering.final_technical_commit, cwd) : null;
-  if (ordering.final_technical_commit && technical === null) {
+  const technical = resolveOptionalCommit(ordering.final_technical_commit, cwd);
+  if (technical.invalid) {
     sink.fail("technical-commit-unresolvable", documentPath,
       `final technical commit ${ordering.final_technical_commit} is not in this history`);
     return;
   }
-  if (technical !== null && !isAncestor(assessmentCommit, technical, cwd)) {
-    sink.fail("assessment-unrelated", documentPath,
-      "the assessment commit is not an ancestor of the final technical commit");
-  }
-  if (!isAncestor(baseline, assessmentCommit, cwd)) {
+  checkTechnicalRelation(assessment.commit, technical.commit, { cwd, documentPath, sink });
+  if (!isAncestor(baseline, assessment.commit, cwd)) {
     sink.fail("assessment-unrelated", documentPath,
       "the assessment commit is not a descendant of the proposal baseline");
   }
+}
+
+function resolveOptionalCommit(reference, cwd) {
+  if (!reference) return { commit: null, invalid: false };
+  const commit = resolveCommit(reference, cwd);
+  if (commit !== null) return { commit, invalid: false };
+  return { commit: null, invalid: true };
+}
+
+function checkAssessmentCommitPaths(assessmentCommit, { governedPatterns, cwd, documentPath, sink }) {
+  // The assessment commit must not itself carry implementation. An assessment
+  // that arrives with the code it approves has not preceded it.
+  const assessmentPaths = pathsChangedByCommit(assessmentCommit, cwd) ?? [];
+  if (!assessmentPaths.some((path) => matchesSelection(path, governedPatterns))) return;
+  sink.fail("assessment-shares-implementation-commit", documentPath,
+    "the assessment commit also changes a governed implementation path");
+}
+
+function checkEarliestRelation(assessmentCommit, earliest, { cwd, documentPath, sink }) {
+  if (earliest === null) return;
+  if (assessmentCommit === earliest) {
+    sink.fail("assessment-shares-implementation-commit", documentPath,
+      "the assessment commit and the earliest governed implementation commit are the same commit");
+    return;
+  }
+  if (isAncestor(assessmentCommit, earliest, cwd)) return;
+  sink.fail("assessment-follows-implementation", documentPath,
+    "the assessment commit is not an ancestor of the earliest governed implementation commit");
+}
+
+function checkTechnicalRelation(assessmentCommit, technical, { cwd, documentPath, sink }) {
+  if (technical === null || isAncestor(assessmentCommit, technical, cwd)) return;
+  sink.fail("assessment-unrelated", documentPath,
+    "the assessment commit is not an ancestor of the final technical commit");
 }
 
 /**

@@ -41,6 +41,39 @@ function setOrdering(repository, ordering) {
   });
 }
 
+function assertOrderingFailure(expectedId, scenario) {
+  const repository = fixture();
+  const baseline = repository.head();
+  const ordering = arrangeInvalidOrdering(repository, baseline, scenario);
+  setOrdering(repository, { proposal_baseline_commit: baseline, ...ordering });
+  repository.commit("docs: bind ordering evidence");
+  assertDiagnostic(check(repository), expectedId);
+}
+
+function arrangeInvalidOrdering(repository, baseline, scenario) {
+  writeImplementation(repository, "export function feature() { return 1; }\n");
+  if (scenario === "assessment-after-implementation") {
+    const implementation = repository.commit("feat: implement before assessing");
+    setOrdering(repository, { proposal_baseline_commit: baseline });
+    return {
+      assessment_commit: repository.commit("docs: record the assessment late"),
+      earliest_governed_implementation_commit: implementation,
+    };
+  }
+
+  setOrdering(repository, { proposal_baseline_commit: baseline });
+  const assessmentCommit = repository.commit(
+    scenario === "shared-commit" ? "feat: assess and implement together" : "docs: assessment carrying implementation",
+  );
+  if (scenario === "shared-commit") {
+    return {
+      assessment_commit: assessmentCommit,
+      earliest_governed_implementation_commit: assessmentCommit,
+    };
+  }
+  return { assessment_commit: assessmentCommit };
+}
+
 describe("R10 assessment ordering", () => {
   it("accepts an assessment commit that precedes the earliest governed implementation commit", () => {
     const repository = fixture();
@@ -63,43 +96,27 @@ describe("R10 assessment ordering", () => {
     assertPasses(check(repository));
   });
 
-  it("rejects an assessment commit that follows the implementation", () => {
-    const repository = fixture();
-    const baseline = repository.head();
-
-    writeImplementation(repository, "export function feature() { return 1; }\n");
-    const implementation = repository.commit("feat: implement before assessing");
-
-    setOrdering(repository, { proposal_baseline_commit: baseline });
-    const assessmentCommit = repository.commit("docs: record the assessment late");
-
-    setOrdering(repository, {
-      proposal_baseline_commit: baseline,
-      assessment_commit: assessmentCommit,
-      earliest_governed_implementation_commit: implementation,
+  for (const scenario of [
+    {
+      name: "rejects an assessment commit that follows the implementation",
+      diagnostic: "assessment-follows-implementation",
+      arrangement: "assessment-after-implementation",
+    },
+    {
+      name: "rejects an assessment and implementation introduced by one commit",
+      diagnostic: "assessment-shares-implementation-commit",
+      arrangement: "shared-commit",
+    },
+    {
+      name: "rejects an assessment commit that also changes a governed implementation path",
+      diagnostic: "assessment-shares-implementation-commit",
+      arrangement: "implementation-in-assessment",
+    },
+  ]) {
+    it(scenario.name, () => {
+      assertOrderingFailure(scenario.diagnostic, scenario.arrangement);
     });
-    repository.commit("docs: bind ordering evidence");
-
-    assertDiagnostic(check(repository), "assessment-follows-implementation");
-  });
-
-  it("rejects an assessment and implementation introduced by one commit", () => {
-    const repository = fixture();
-    const baseline = repository.head();
-
-    writeImplementation(repository, "export function feature() { return 1; }\n");
-    setOrdering(repository, { proposal_baseline_commit: baseline });
-    const shared = repository.commit("feat: assess and implement together");
-
-    setOrdering(repository, {
-      proposal_baseline_commit: baseline,
-      assessment_commit: shared,
-      earliest_governed_implementation_commit: shared,
-    });
-    repository.commit("docs: bind ordering evidence");
-
-    assertDiagnostic(check(repository), "assessment-shares-implementation-commit");
-  });
+  }
 
   it("rejects an assessment commit that is not an ancestor of the final technical commit", () => {
     const repository = fixture();
@@ -142,20 +159,6 @@ describe("R10 assessment ordering", () => {
     repository.commit("docs: bind an unresolvable implementation commit");
 
     assertDiagnostic(check(repository), "implementation-ancestry-unavailable");
-  });
-
-  it("rejects an assessment commit that also changes a governed implementation path", () => {
-    const repository = fixture();
-    const baseline = repository.head();
-
-    writeImplementation(repository, "export function feature() { return 1; }\n");
-    setOrdering(repository, { proposal_baseline_commit: baseline });
-    const assessmentCommit = repository.commit("docs: assessment carrying implementation");
-
-    setOrdering(repository, { proposal_baseline_commit: baseline, assessment_commit: assessmentCommit });
-    repository.commit("docs: bind ordering evidence");
-
-    assertDiagnostic(check(repository), "assessment-shares-implementation-commit");
   });
 
   it("fails closed with activation-history-unavailable on a shallow clone", () => {

@@ -60,54 +60,71 @@ const REQUIRED_FAMILIES = Object.freeze([
 export function loadPolicy(repositoryRoot, relativePath, sink) {
   const before = sink.count;
   const absolute = resolve(repositoryRoot, relativePath);
+  const stats = policyStats(absolute, relativePath, sink);
+  if (stats === null) return { policy: null };
+  const text = readPolicyText(absolute, relativePath, stats, sink);
+  if (text === null) return { policy: null };
+  const parsed = parsePolicyText(text, relativePath, sink);
+  if (parsed === null) return { policy: null };
+  if (!validatePolicyIdentity(parsed, relativePath, sink)) return { policy: null };
 
+  return validateStructure(parsed, relativePath, sink, before);
+}
+
+function policyStats(absolute, relativePath, sink) {
   let stats;
   try {
     stats = statSync(absolute);
   } catch {
     sink.fail("policy-absent", relativePath, "policy file does not exist; absence never means no applicable changes");
-    return { policy: null };
+    return null;
   }
-  if (!stats.isFile()) {
-    sink.fail("policy-absent", relativePath, "policy path is not a regular file");
-    return { policy: null };
-  }
+  if (stats.isFile()) return stats;
+  sink.fail("policy-absent", relativePath, "policy path is not a regular file");
+  return null;
+}
+
+function readPolicyText(absolute, relativePath, stats, sink) {
   if (stats.size === 0) {
     sink.fail("policy-empty", relativePath, "policy file has zero bytes");
-    return { policy: null };
+    return null;
   }
-
   let text;
   try {
     text = readFileSync(absolute, "utf8");
   } catch (error) {
     sink.fail("policy-unreadable", relativePath, `policy file could not be read: ${String(error?.message ?? error)}`);
-    return { policy: null };
+    return null;
   }
-  if (text.trim().length === 0) {
-    sink.fail("policy-empty", relativePath, "policy file contains only whitespace");
-    return { policy: null };
-  }
+  if (text.trim().length > 0) return text;
+  sink.fail("policy-empty", relativePath, "policy file contains only whitespace");
+  return null;
+}
 
-  let parsed;
+function parsePolicyText(text, relativePath, sink) {
   try {
-    parsed = JSON.parse(text);
+    return JSON.parse(text);
   } catch (error) {
     const id = looksTruncated(text) ? "policy-truncated" : "policy-invalid-json";
     sink.fail(id, relativePath, `policy JSON did not parse: ${String(error?.message ?? error).slice(0, 160)}`);
-    return { policy: null };
+    return null;
   }
+}
 
-  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+function validatePolicyIdentity(parsed, relativePath, sink) {
+  if (!isRecord(parsed)) {
     sink.fail("policy-invalid-json", relativePath, "policy must be a JSON object");
-    return { policy: null };
+    return false;
   }
-  if (parsed.schema !== POLICY_SCHEMA) {
-    sink.fail("policy-invalid-json", relativePath, `policy schema must be ${POLICY_SCHEMA}`);
-    return { policy: null };
-  }
+  if (parsed.schema === POLICY_SCHEMA) return true;
+  sink.fail("policy-invalid-json", relativePath, `policy schema must be ${POLICY_SCHEMA}`);
+  return false;
+}
 
-  return validateStructure(parsed, relativePath, sink, before);
+function isRecord(value) {
+  if (value === null) return false;
+  if (typeof value !== "object") return false;
+  return !Array.isArray(value);
 }
 
 function validateStructure(parsed, relativePath, sink, before) {
@@ -158,7 +175,7 @@ function validateVersions(parsed, relativePath, sink) {
 
 function validateVocabulary(parsed, relativePath, sink) {
   const families = parsed.controlled_values;
-  if (!families || typeof families !== "object" || Array.isArray(families)) {
+  if (!isRecord(families)) {
     sink.fail("policy-incomplete", relativePath, "controlled_values must be an object of families");
     return;
   }
@@ -173,23 +190,27 @@ function validateVocabulary(parsed, relativePath, sink) {
   // whether the families themselves are well formed, so it must not stop the count.
   if (sink.count !== beforeFamilies) return;
 
-  const declared = parsed.controlled_value_counts ?? {};
+  validateVocabularyCounts(families, parsed.controlled_value_counts ?? {}, relativePath, sink);
+  validateVocabularyUniqueness(families, relativePath, sink);
+}
+
+function validateVocabularyCounts(families, declared, relativePath, sink) {
   const memberships = Object.values(families).reduce((total, values) => total + values.length, 0);
   const unique = new Set(Object.values(families).flat()).size;
   const familyCount = Object.keys(families).length;
-
   sink.require(familyCount === declared.families, "controlled-vocabulary-count", relativePath,
     `declared ${declared.families} families, found ${familyCount}`);
   sink.require(memberships === declared.memberships, "controlled-vocabulary-count", relativePath,
     `declared ${declared.memberships} family memberships, found ${memberships}`);
   sink.require(unique === declared.unique_values, "controlled-vocabulary-count", relativePath,
     `declared ${declared.unique_values} unique controlled values, found ${unique}`);
+}
 
+function validateVocabularyUniqueness(families, relativePath, sink) {
   for (const family of Object.keys(families)) {
     const values = families[family];
-    if (new Set(values).size !== values.length) {
-      sink.fail("controlled-vocabulary-duplicate", relativePath, `family ${family} repeats a value`);
-    }
+    if (new Set(values).size === values.length) continue;
+    sink.fail("controlled-vocabulary-duplicate", relativePath, `family ${family} repeats a value`);
   }
 }
 
@@ -200,26 +221,39 @@ function validatePathSets(parsed, relativePath, sink) {
     return;
   }
   const known = new Set(parsed.controlled_values?.path_class ?? []);
-  for (const entry of classes) {
-    if (!entry || typeof entry !== "object") {
-      sink.fail("path-classification-absent", relativePath, "each path class entry must be an object");
-      continue;
-    }
-    if (!known.has(entry.class)) {
-      sink.fail("path-classification-absent", relativePath, `path class ${String(entry.class)} is not a controlled value`);
-    }
-    if (!Array.isArray(entry.patterns) || entry.patterns.length === 0) {
-      sink.fail("path-classification-absent", relativePath, `path class ${String(entry.class)} declares no patterns`);
-      continue;
-    }
-    for (const pattern of entry.patterns) {
-      const candidate = pattern.endsWith("/") ? pattern.slice(0, -1) : pattern;
-      if (!isWellFormedPath(candidate)) {
-        sink.fail("path-classification-malformed", relativePath, `path class ${String(entry.class)} has a malformed pattern ${String(pattern)}`);
-      }
-    }
-  }
+  for (const entry of classes) validatePathClass(entry, known, relativePath, sink);
 
+  validateRequiredPathSets(parsed, relativePath, sink);
+
+  const roots = parsed.protected_history_roots;
+  if (!Array.isArray(roots) || roots.length === 0) {
+    sink.fail("protected-root-absent", relativePath, "protected_history_roots must be a non-empty array");
+  }
+}
+
+function validatePathClass(entry, known, relativePath, sink) {
+  if (!isRecord(entry)) {
+    sink.fail("path-classification-absent", relativePath, "each path class entry must be an object");
+    return;
+  }
+  if (!known.has(entry.class)) {
+    sink.fail("path-classification-absent", relativePath, `path class ${String(entry.class)} is not a controlled value`);
+  }
+  if (!Array.isArray(entry.patterns) || entry.patterns.length === 0) {
+    sink.fail("path-classification-absent", relativePath, `path class ${String(entry.class)} declares no patterns`);
+    return;
+  }
+  for (const pattern of entry.patterns) validatePathPattern(entry.class, pattern, relativePath, sink);
+}
+
+function validatePathPattern(pathClass, pattern, relativePath, sink) {
+  const candidate = pattern.endsWith("/") ? pattern.slice(0, -1) : pattern;
+  if (isWellFormedPath(candidate)) return;
+  sink.fail("path-classification-malformed", relativePath,
+    `path class ${String(pathClass)} has a malformed pattern ${String(pattern)}`);
+}
+
+function validateRequiredPathSets(parsed, relativePath, sink) {
   for (const [key, id] of [
     ["normative_paths", "policy-incomplete"],
     ["governance_record_only_paths", "policy-incomplete"],
@@ -231,16 +265,11 @@ function validatePathSets(parsed, relativePath, sink) {
       sink.fail(id, relativePath, `${key} must be a non-empty array`);
     }
   }
-
-  const roots = parsed.protected_history_roots;
-  if (!Array.isArray(roots) || roots.length === 0) {
-    sink.fail("protected-root-absent", relativePath, "protected_history_roots must be a non-empty array");
-  }
 }
 
 function validateProtectedMainline(parsed, relativePath, sink) {
   const mainline = parsed.protected_mainline;
-  if (!mainline || typeof mainline !== "object") {
+  if (!isRecord(mainline)) {
     sink.fail("protected-mainline-evidence-absent", relativePath, "protected_mainline is missing");
     return;
   }
@@ -251,14 +280,17 @@ function validateProtectedMainline(parsed, relativePath, sink) {
     sink.fail("policy-weakened", relativePath, "protected_mainline must continue to state that a branch name is not protection evidence");
   }
   const check = mainline.required_check;
-  if (!check || typeof check !== "object") {
+  if (!isRecord(check)) {
     sink.fail("protected-mainline-evidence-absent", relativePath, "protected_mainline.required_check is missing");
     return;
   }
+  validateRequiredCheckFields(check, relativePath, sink);
+}
+
+function validateRequiredCheckFields(check, relativePath, sink) {
   for (const key of ["context", "evidence_method", "evidence_command", "verified", "verified_contexts"]) {
-    if (check[key] === undefined) {
-      sink.fail("protected-mainline-evidence-absent", relativePath, `required_check lacks ${key}`);
-    }
+    if (check[key] !== undefined) continue;
+    sink.fail("protected-mainline-evidence-absent", relativePath, `required_check lacks ${key}`);
   }
 }
 

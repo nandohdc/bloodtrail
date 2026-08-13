@@ -16,17 +16,23 @@ Authorized proposal baseline: `e536c9b74ec009a1bfad1c1561d478cb48600ba4`
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment` | passed |
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase implementation` | passed |
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase final` | passed |
-| `node openspec/scripts/check-design-pattern-governance.mjs --phase bootstrap` | fails closed: `required-check-evidence-absent` — expected, see below |
+| `node openspec/scripts/check-design-pattern-governance.mjs --phase bootstrap` | passed; enforcement remains pending until the dedicated activation record exists |
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase activation` | fails closed: `activation-commit-absent` — expected, no activation record exists |
 | `node openspec/scripts/run-governance-dual-check.mjs` | candidate passed; baseline unavailable, see below |
 | `node --test openspec/tests/design-pattern-governance/*.test.mjs` | 136 tests, 136 pass, 0 fail |
 | `npm run check:generated --prefix packages/security-audit-sdk-core` | generated artifacts current |
 | `npm run validate --prefix packages/security-audit-sdk-core` | full chain green, 192 verification tests pass |
 | `npm run validate --prefix contracts/security-audit` | 14 tests pass |
+| `gh api repos/nandohdc/bloodtrail/branches/main/protection/required_status_checks` | strict enforcement verified for all nine contexts; exact response digest `sha256:f74b4db9e0858bc20f288f3f5596b6b233b77ecd65791dee81816c707893ba10` |
+| CodeScene required delta / Cloud review on `c5719279b9f74c1aa1a56bc1630632626e9f3bd9` | failed on the same 12 code-health targets: 10 production modules below 10.00, including 6 with `Bumpy Road Ahead`, plus duplication in 2 test modules; remediated by behavior-preserving extraction and context-object refactors without suppressions |
+| DeepScan on `c5719279b9f74c1aa1a56bc1630632626e9f3bd9` | advisory result reports `3 new and 0 fixed issues`; the public result does not expose rule, severity, path, or line, so the findings are deferred rather than inferred |
 
-The two fail-closed results are the correct answers, not defects. Bootstrap requires verified
-required-status enforcement, which is a repository-settings change the owner has not made. Activation
-requires an activation record, which does not exist and must not exist before merge.
+The activation fail-closed result is the correct answer, not a defect: activation requires an
+activation record, which does not exist and must not exist before merge. After the owner added
+`design-pattern-governance` to the existing strict required-context set without removing or weakening
+any prior context, bootstrap passed against the final uncommitted candidate. The exact API response is
+preserved by the digest above; activation must capture fresh API evidence because repository settings
+are mutable.
 
 The dual-check baseline is unavailable because **no governance checker exists at the merge base** —
 this change introduces it. The driver reports that explicitly rather than passing silently. Once this
@@ -109,10 +115,10 @@ Reported independently. Evidence for one is not evidence for another.
 | State | Status |
 | --- | --- |
 | Apply authorization | **granted** — groups 1–8 only, recorded in `apply-authorization.md` |
-| Technical commit readiness | **yes** — every gate above green |
+| Technical commit readiness | **yes** — final disposable-copy validation and two independent read-only reviews passed; CodeScene must still pass on published T |
 | Signed governance record | **not started** — withheld; no record exists |
 | Merge readiness | **not started** |
-| Activation readiness | **blocked** — required-status enforcement unverified, an owner settings change |
+| Activation readiness | **blocked** — required-status enforcement is verified, but T, S, M, and activation-time evidence do not yet exist |
 | Canonical materialization | **not started** — `openspec/specs/software-design-pattern-governance/` deliberately absent |
 | Archive readiness | **not started** |
 | Production / publication authorization | **withheld** — unchanged by anything in this change |
@@ -128,6 +134,15 @@ Reported independently. Evidence for one is not evidence for another.
    checker. The requirement anticipates this — it is why bootstrap demands exact approved objects and
    human review. The asymmetry itself is proven under test: a candidate checker edited to return
    success unconditionally passes its own run while the trusted baseline still rejects the evidence.
-3. **The governance CI job is not yet a required status check.** Configuring it is the owner's
-   action. Until then the job runs but does not block, and activation stays incomplete.
+3. **Required-check evidence is time-bound external state.** The governance CI job is now a strict
+   required status check, but the branch-protection response must be captured again immediately before
+   merge and activation rather than treating this digest as permanent evidence.
 4. **50 of 137 diagnostics lack a dedicated named assertion**, as detailed above.
+5. **CodeScene must evaluate the published final technical commit.** The local CLI cannot authenticate
+   without `CS_ACCESS_TOKEN`, so the required `codescene delta` result and the distinct advisory Cloud
+   result remain publication-time evidence. The candidate addresses every file/function named by the
+   baseline findings; both independent read-only reviews found no fail-open or behavioral regression.
+6. **DeepScan issue detail was inaccessible from the public result.** It reports three new issues but
+   exposes no rule, severity, path, or line without an authenticated dashboard. No defect was guessed
+   from that count. The advisory findings are deliberately deferred pending exact owner-visible detail;
+   any later accepted normative correction invalidates this candidate and requires a new T.
