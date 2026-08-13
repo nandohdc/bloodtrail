@@ -2,7 +2,7 @@
 
 > **STATUS: SIGNED by the project owner.** The matching `signed: true`, `reviewer`, and
 > `reviewedContent` are recorded in `governanceRecords` in
-> [`verification-lifecycle.json`](../../../packages/security-audit-sdk-core/verification-lifecycle.json),
+> [`verification-lifecycle.json`](../../../../packages/security-audit-sdk-core/verification-lifecycle.json),
 > and `test:governance-history` verifies the binding below by resolving each reviewed path inside the
 > candidate root tree and comparing it to the declared object.
 >
@@ -17,8 +17,17 @@
 | Reviewed subtree — `packages/security-audit-sdk-core/scripts` | `8505d3a7f3e1a2a0e851e6655bd5263d1a5556d3` |
 | Reviewed subtree — `packages/security-audit-sdk-core/tests/verification` | `7919daf21a0e1a376af73f82f2a1a393e0a5c196` |
 | Reviewed commit (supplementary) | `f7239d7d0cb910ab0d6d74ab8233f7d81aeabd31` |
+| Bound commit | `f7239d7d0cb910ab0d6d74ab8233f7d81aeabd31` |
+| Governed commits | `ff0154dac`, `f7239d7d0`, `4a551f796` |
 | Reviewer / project owner | Fernando Homem da Costa (`nandohdc`) |
 | Review date | 2026-08-12 |
+
+> **Correction, 2026-08-13.** `governedCommits` and `boundCommits` in the `governanceRecords` entry
+> named `706dd935c` — the archive commit of the adversarial-review remediation, and a commit of a
+> different change. It was carried unrevised from this record's first revision; the 2026-08-12
+> re-binding corrected `reviewedCommit` and left it in place. Both fields now name this change's own
+> mainline commits, as the table above records. The correction does not touch the reviewed content
+> objects, so the signature's binding is unchanged.
 
 Obtain every value from the reviewed implementation commit — once it is on the mainline, so that a
 squash merge cannot orphan it afterwards — and record the same values in the `reviewedContent` of
@@ -56,7 +65,7 @@ stay carried by history. It also removes a dependency on an unmerged branch surv
 
 The reviewed paths are subtrees this signing commit does not touch — a property to re-establish, not
 assume, whenever this record is renewed. The package root is deliberately not one of them: it contains
-[`verification-lifecycle.json`](../../../packages/security-audit-sdk-core/verification-lifecycle.json),
+[`verification-lifecycle.json`](../../../../packages/security-audit-sdk-core/verification-lifecycle.json),
 so binding it would mean signing changed the reviewed content, and the gate rejects that as
 self-referential. A commit hash alone remains an unaccepted binding.
 
