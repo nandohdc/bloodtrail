@@ -200,11 +200,11 @@ function validateRegisteredPatternsCataloged(patternIds, registered, relativePat
 }
 
 function validateCatalogInvariantCitations(text, registered, knownInvariants, { relativePath, sink }) {
-  validateCitedInvariantsKnown(text, registered, knownInvariants, relativePath, sink);
+  validateCitedInvariantsKnown(text, registered, knownInvariants, { relativePath, sink });
   validateKnownInvariantsCited(text, knownInvariants, relativePath, sink);
 }
 
-function validateCitedInvariantsKnown(text, registered, knownInvariants, relativePath, sink) {
+function validateCitedInvariantsKnown(text, registered, knownInvariants, { relativePath, sink }) {
   for (const cited of text.matchAll(/`(pattern-[a-z0-9-]+-[a-z0-9-]+)`/g)) {
     if (knownInvariants.has(cited[1]) || registered.has(cited[1])) continue;
     sink.fail("unknown-invariant", relativePath, `catalog cites unknown invariant ${cited[1]}`);
