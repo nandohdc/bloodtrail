@@ -13,18 +13,19 @@
 
 | Field | Value |
 | --- | --- |
-| Candidate root tree | `9442711836b6aa1b01eabccd2d9b31ea23a7feaa` |
-| Reviewed subtree — `packages/security-audit-sdk-core/scripts` | `c1023448e4b4925cae266456fdc498b39e120bdb` |
-| Reviewed subtree — `packages/security-audit-sdk-core/tests/verification` | `55301935defab0f758f5ca4866f620b958fcfd5d` |
-| Reviewed commit (supplementary) | `b557b5f184069c35175af4c896722f3f6b0b75da` |
+| Candidate root tree | `d0b390f6e5e64fc87665cad9be68c70ebeab1810` |
+| Reviewed subtree — `packages/security-audit-sdk-core/scripts` | `8505d3a7f3e1a2a0e851e6655bd5263d1a5556d3` |
+| Reviewed subtree — `packages/security-audit-sdk-core/tests/verification` | `7919daf21a0e1a376af73f82f2a1a393e0a5c196` |
+| Reviewed commit (supplementary) | `f7239d7d0cb910ab0d6d74ab8233f7d81aeabd31` |
 | Reviewer / project owner | Fernando Homem da Costa (`nandohdc`) |
 | Review date | 2026-08-12 |
 
-Obtain every value from the reviewed implementation commit, and record the same values in the
-`reviewedContent` of this change's `governanceRecords` entry:
+Obtain every value from the reviewed implementation commit — once it is on the mainline, so that a
+squash merge cannot orphan it afterwards — and record the same values in the `reviewedContent` of
+this change's `governanceRecords` entry:
 
 ```bash
-CANDIDATE=<the exact reviewed implementation commit>
+CANDIDATE=<the exact reviewed implementation commit, as merged>
 git rev-parse "$CANDIDATE^{tree}"                                              # candidateRoot
 git rev-parse "$CANDIDATE:packages/security-audit-sdk-core/scripts"            # entries[].object
 git rev-parse "$CANDIDATE:packages/security-audit-sdk-core/tests/verification" # entries[].object
@@ -43,12 +44,18 @@ git rev-parse "$CANDIDATE:packages/security-audit-sdk-core/tests/verification" #
 
 `test:governance-history` resolves each `path` inside `candidateRoot` and compares it to `object`, so
 these values cannot be transposed or borrowed from another path. It also requires every `object` to be
-carried at its `path` by history reachable from `HEAD`, which is the half that survives a squash merge
-— the candidate root tree does not, because this record is committed on top of the candidate rather
-than inside it.
+carried at its `path` by history reachable from `HEAD`, which is the half a squash merge can break.
 
-The reviewed paths are subtrees this signing commit does not touch. The package root is deliberately
-not one of them: it contains
+The candidate is therefore the merged mainline commit, not a commit on the branch that produced it.
+An earlier revision of this record bound `b557b5f18`, a pre-squash branch commit: the act of signing
+changed one reviewed subtree, two later commits on the same branch changed the other, and the squash
+merge left every one of those commits unreachable — so the binding named objects no longer carried at
+their paths, and the gate rejected it on the mainline. Binding the merged commit makes both halves
+durable: `f7239d7d0` stays an ancestor of `HEAD`, so its root tree keeps resolving and its subtrees
+stay carried by history. It also removes a dependency on an unmerged branch surviving deletion.
+
+The reviewed paths are subtrees this signing commit does not touch — a property to re-establish, not
+assume, whenever this record is renewed. The package root is deliberately not one of them: it contains
 [`verification-lifecycle.json`](../../../packages/security-audit-sdk-core/verification-lifecycle.json),
 so binding it would mean signing changed the reviewed content, and the gate rejects that as
 self-referential. A commit hash alone remains an unaccepted binding.

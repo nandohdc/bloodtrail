@@ -132,14 +132,14 @@
     },
     {
       "change": "right-size-change-governance",
-      "policy": "Signed by the project owner. reviewedContent binds the reviewed subtrees of the candidate commit; test:governance-history resolves each path inside candidateRoot and compares it to the declared object.",
-      "reviewedCommit": "b557b5f184069c35175af4c896722f3f6b0b75da",
+      "policy": "Signed by the project owner. reviewedContent binds the reviewed subtrees of the candidate commit; test:governance-history resolves each path inside candidateRoot and compares it to the declared object. The candidate is the merged mainline commit, not a pre-squash branch commit: an earlier binding named subtrees that later commits on the same branch changed, and the squash merge orphaned them.",
+      "reviewedCommit": "f7239d7d0cb910ab0d6d74ab8233f7d81aeabd31",
       "reviewedContent": {
         "kind": "tree",
-        "candidateRoot": "9442711836b6aa1b01eabccd2d9b31ea23a7feaa",
+        "candidateRoot": "d0b390f6e5e64fc87665cad9be68c70ebeab1810",
         "entries": [
-          { "path": "packages/security-audit-sdk-core/scripts", "object": "c1023448e4b4925cae266456fdc498b39e120bdb" },
-          { "path": "packages/security-audit-sdk-core/tests/verification", "object": "55301935defab0f758f5ca4866f620b958fcfd5d" }
+          { "path": "packages/security-audit-sdk-core/scripts", "object": "8505d3a7f3e1a2a0e851e6655bd5263d1a5556d3" },
+          { "path": "packages/security-audit-sdk-core/tests/verification", "object": "7919daf21a0e1a376af73f82f2a1a393e0a5c196" }
         ]
       },
       "governedCommits": ["706dd935caf6a58a2d223a3ec421303f989e9e88"],

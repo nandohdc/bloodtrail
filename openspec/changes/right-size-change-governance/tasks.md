@@ -44,6 +44,6 @@
 
 ## 8. Re-verification and landing
 
-- [ ] 8.1 Run the full validation chain and strict OpenSpec validation on the revised candidate and record the result, including the runtime used.
-- [ ] 8.2 Record the single signed governance record for this change — reviewer, reviewed content object, assurance limitations, authorizations granted and withheld — using the shape this change introduces.
+- [x] 8.1 Run the full validation chain and strict OpenSpec validation on the revised candidate and record the result, including the runtime used.
+- [x] 8.2 Record the single signed governance record for this change — reviewer, reviewed content object, assurance limitations, authorizations granted and withheld — using the shape this change introduces, binding the candidate as merged so a squash merge cannot orphan it.
 - [ ] 8.3 Archive the change and validate in strict archived mode.
