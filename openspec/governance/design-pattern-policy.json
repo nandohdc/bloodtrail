@@ -141,7 +141,8 @@
         "SECURITY.md",
         "RELEASING.md",
         "CHANGELOG.md",
-        "docs/"
+        "docs/",
+        ".hermes/"
       ]
     }
   ],

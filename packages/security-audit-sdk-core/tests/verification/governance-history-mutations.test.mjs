@@ -20,6 +20,23 @@ const GOVERNED_RECORD = "right-size-change-governance";
 const REVIEWED_PATH = "packages/security-audit-sdk-core/scripts";
 const SECOND_REVIEWED_PATH = "packages/security-audit-sdk-core/tests/verification";
 
+// Totals are derived from the manifest the control overlays, not written as
+// literals. Signing a governance record is routine work; a hardcoded total makes
+// every new record fail tests that are about the binding checks and have nothing
+// to say about how many records exist.
+const CONTROL_RECORDS = JSON.parse(
+  readFileSync(resolve(packageRoot, "verification-lifecycle.json"), "utf8"),
+).governanceRecords;
+const RECORD_COUNT = CONTROL_RECORDS.length;
+// sign() replaces the governed record's binding with exactly two entries and one
+// candidate root, so every other record contributes whatever it already declares.
+const SIGNED_ENTRIES = 2;
+const OTHER_RECORDS = CONTROL_RECORDS.filter((record) => record.change !== GOVERNED_RECORD);
+const BOUND_CONTENT_OBJECTS = SIGNED_ENTRIES
+  + OTHER_RECORDS.reduce((total, record) => total + (record.reviewedContent?.entries?.length ?? 0), 0);
+const OTHER_CANDIDATE_ROOTS = OTHER_RECORDS
+  .filter((record) => typeof record.reviewedContent?.candidateRoot === "string").length;
+
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-governance-history-"));
 const controlRoot = resolve(suiteRoot, "control");
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
@@ -29,7 +46,7 @@ prepareControl();
 test("G-00 unmutated control passes and reports what it verified", () => {
   const root = caseRepository("control-pass");
   const result = succeeds(root);
-  assert.match(result.stdout, /governance history passed: 2 record\(s\)/);
+  assert.match(result.stdout, new RegExp(`governance history passed: ${RECORD_COUNT} record\\(s\\)`));
   assert.match(result.stdout, /bound commit\(s\) are ancestors of HEAD/);
   assert.match(result.stdout, /declared merge commit\(s\) have their expected parent count/);
 });
@@ -108,8 +125,8 @@ test("M-GH-M an exact candidate root, path, and subtree relationship passes", ()
   const root = caseRepository("content-binding-exact");
   sign(root, {});
   const result = succeeds(root);
-  assert.match(result.stdout, /2 reviewed content object\(s\) bound to their declared path/);
-  assert.match(result.stdout, /1 candidate root tree\(s\) resolve/);
+  assert.match(result.stdout, new RegExp(`${BOUND_CONTENT_OBJECTS} reviewed content object\\(s\\) bound to their declared path`));
+  assert.match(result.stdout, new RegExp(`${OTHER_CANDIDATE_ROOTS + 1} candidate root tree\\(s\\) resolve`));
 });
 
 test("M-GH-N a malformed reviewed path is rejected", () => {
@@ -161,8 +178,8 @@ test("M-GH-U an absent candidate root is reported while the path bindings remain
   sign(absent, { candidateRoot: MISSING_COMMIT });
   const result = succeeds(absent);
   assert.match(result.stdout, new RegExp(`candidate root ${MISSING_COMMIT} for ${GOVERNED_RECORD} is absent`));
-  assert.match(result.stdout, /2 reviewed content object\(s\) bound to their declared path/);
-  assert.match(result.stdout, /0 candidate root tree\(s\) resolve/);
+  assert.match(result.stdout, new RegExp(`${BOUND_CONTENT_OBJECTS} reviewed content object\\(s\\) bound to their declared path`));
+  assert.match(result.stdout, new RegExp(`${OTHER_CANDIDATE_ROOTS} candidate root tree\\(s\\) resolve`));
 
   const substituted = caseRepository("candidate-root-absent-substituted");
   sign(substituted, { candidateRoot: MISSING_COMMIT, object: treeOf(substituted, ".github") });
