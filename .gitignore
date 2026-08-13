@@ -6,3 +6,4 @@ coverage/
 !.env.example
 .vscode/settings.json
 CLAUDE.md
+AGENTS.md
