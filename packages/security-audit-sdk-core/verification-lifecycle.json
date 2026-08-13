@@ -132,7 +132,7 @@
     },
     {
       "change": "right-size-change-governance",
-      "policy": "Signed by the project owner. reviewedContent binds the reviewed subtrees of the candidate commit; test:governance-history resolves each path inside candidateRoot and compares it to the declared object. The candidate is the merged mainline commit, not a pre-squash branch commit: an earlier binding named subtrees that later commits on the same branch changed, and the squash merge orphaned them.",
+      "policy": "Signed by the project owner. reviewedContent binds the reviewed subtrees of the candidate commit; test:governance-history resolves each path inside candidateRoot and compares it to the declared object. The candidate is the merged mainline commit, not a pre-squash branch commit: an earlier binding named subtrees that later commits on the same branch changed, and the squash merge orphaned them. Correction, 2026-08-13: governedCommits and boundCommits previously named 706dd935, the archive commit of the adversarial-review remediation, carried unrevised from this record's first revision. They now name this change's own mainline commits, and boundCommits names the reviewed commit alone.",
       "reviewedCommit": "f7239d7d0cb910ab0d6d74ab8233f7d81aeabd31",
       "reviewedContent": {
         "kind": "tree",
@@ -142,8 +142,12 @@
           { "path": "packages/security-audit-sdk-core/tests/verification", "object": "7919daf21a0e1a376af73f82f2a1a393e0a5c196" }
         ]
       },
-      "governedCommits": ["706dd935caf6a58a2d223a3ec421303f989e9e88"],
-      "boundCommits": ["706dd935caf6a58a2d223a3ec421303f989e9e88"],
+      "governedCommits": [
+        "ff0154dac4527f4bb6abbc59a0dc9701a630f6a0",
+        "f7239d7d0cb910ab0d6d74ab8233f7d81aeabd31",
+        "4a551f796e0dc06bf3b310966645f00ab02c5dbe"
+      ],
+      "boundCommits": ["f7239d7d0cb910ab0d6d74ab8233f7d81aeabd31"],
       "mergeCommits": [],
       "authorizations": {
         "granted": ["right-size-change-governance-to-land-and-archive"],
