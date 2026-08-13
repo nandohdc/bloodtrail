@@ -1,0 +1,103 @@
+/**
+ * R11-R12 — the perimeter is actor-neutral, behavioural, and fails closed on
+ * anything it cannot classify.
+ */
+
+import assert from "node:assert/strict";
+import { after, describe, it } from "node:test";
+
+import { createRepository } from "./support/disposable-repo.mjs";
+import { POLICY_PATH, assertDiagnostic, assertPasses, runChecker } from "./support/harness.mjs";
+
+const repositories = [];
+function fixture() {
+  const repository = createRepository();
+  repositories.push(repository);
+  return repository;
+}
+after(() => {
+  for (const repository of repositories) repository.dispose();
+});
+
+const check = (repository, base) => runChecker(repository, { phase: "implementation", base });
+
+describe("R11 unclassified paths fail closed", () => {
+  it("rejects a path matching no declared classification", () => {
+    const repository = fixture();
+    const base = repository.head();
+    repository.write("unclassified-territory/thing.mjs", "export const thing = 1;\n");
+    repository.commit("feat: add an unclassified path");
+
+    assertDiagnostic(check(repository, base), "path-unclassified");
+  });
+
+  it("accepts a path the policy classifies", () => {
+    const repository = fixture();
+    const base = repository.head();
+    repository.write("packages/example/src/feature.mjs", "export const feature = 1;\n");
+    repository.commit("feat: add a classified path");
+
+    assertPasses(check(repository, base));
+  });
+});
+
+describe("R11 behaviour overrides the declared classification", () => {
+  it("rejects exported implementation arriving on a documentation-only path", () => {
+    const repository = fixture();
+    const base = repository.head();
+    // docs/ is classified documentation_only. Shipping exported behaviour there
+    // is the "documentation-only claim changes implementation" case.
+    repository.write("docs/helper.mjs", "export function helper() { return 1; }\n");
+    repository.mutateJson(POLICY_PATH, (policy) => {
+      policy.path_classes.push({ class: "documentation_only", patterns: ["docs/helper.mjs"] });
+      return policy;
+    });
+    repository.commit("docs: add a documentation file that is really code");
+
+    assertDiagnostic(check(repository, base), "hidden-implementation");
+  });
+
+  it("does not flag exported behaviour on a path whose class expects it", () => {
+    const repository = fixture();
+    const base = repository.head();
+    repository.write("packages/example/src/feature.mjs", "export function feature() { return 1; }\n");
+    repository.commit("feat: exported behaviour where behaviour belongs");
+
+    const result = check(repository, base);
+    assert.ok(!result.ids.includes("hidden-implementation"),
+      `governed implementation should not be reported as hidden, got [${result.ids.join(", ")}]`);
+  });
+});
+
+describe("R11 the material commit range is inspected as a whole", () => {
+  it("sees a path introduced in an intermediate commit and reverted at the tip", () => {
+    const repository = fixture();
+    const base = repository.head();
+
+    repository.write("unclassified-territory/split.mjs", "export const split = 1;\n");
+    repository.commit("chore: introduce mid-range");
+    repository.remove("unclassified-territory/split.mjs");
+    repository.commit("chore: remove before the tip");
+
+    // A tip-only diff shows nothing. Range inspection is what makes splitting a
+    // change across commits stop being a way to lower its classification.
+    assertDiagnostic(check(repository, base), "path-unclassified");
+  });
+});
+
+describe("R11 the perimeter is actor-neutral", () => {
+  it("returns the identical verdict regardless of who authored the commit", () => {
+    const verdicts = ["Human Contributor <human@example.invalid>", "Some Agent <agent@example.invalid>"].map((author) => {
+      const repository = fixture();
+      const base = repository.head();
+      repository.write("unclassified-territory/thing.mjs", "export const thing = 1;\n");
+      repository.git(["add", "-A"]);
+      repository.git(["commit", "--author", author, "-m", "feat: same change, different author"]);
+      const result = check(repository, base);
+      return { ids: [...result.ids].sort(), status: result.status };
+    });
+
+    assert.deepEqual(verdicts[0], verdicts[1],
+      "the same changed paths must produce the same verdict for every actor");
+  });
+});

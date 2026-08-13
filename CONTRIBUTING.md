@@ -57,6 +57,48 @@ human or organizational approval. AI-produced analysis may inform a governance r
 review, approval, or assurance — and neither are passing gates, checked tasks, issue state,
 pull-request state, or merged state.
 
+## Design-pattern governance applies to everyone
+
+[`docs/design-pattern-governance.md`](docs/design-pattern-governance.md) is the full policy. It
+applies identically to humans, Hermes, Claude Code, other agents, direct commits, pull requests, and
+scripts — there is no actor for whom a different rule holds. `AGENTS.md`, `CLAUDE.md`, and the
+generated skill directories are **not** policy sources; the canonical capability, the policy
+configuration, the checker, and the required `design-pattern-governance` CI check are.
+
+What it asks of a change touching a governed implementation path:
+
+- **Name the OpenSpec change that owns the modified capability.** An unrelated change does not
+  satisfy the association, and code without one is rejected.
+- **Compare candidate approaches, don't pick a pattern from a list.** A full assessment compares
+  direct implementation with at least one materially plausible alternative. Naming a catalog pattern
+  is never required — `direct_implementation` is a first-class decision. Every rejection must cite
+  architectural forces; "best practice", popularity, and speculative future use are not reasons, and
+  enumerating patterns that do not match your forces fails rather than passes.
+- **If you do select a catalog pattern, you bind it.** Record the pattern ID, catalog version, every
+  required invariant, and the test evidence for each. See
+  [`openspec/governance/design-pattern-catalog.md`](openspec/governance/design-pattern-catalog.md) —
+  24 entries, and deliberately not exhaustive.
+- **Assess before you implement.** The assessment commit must be an ancestor of the earliest commit
+  that touches a governed implementation path. Assessment and implementation in one commit fails, and
+  amending an assessment afterwards does not backdate it.
+- **Classification reads behaviour, not labels.** Implementation hidden in tests, build files,
+  scripts, or configuration is still implementation. A public API change called internal-only, or
+  concurrency called performance-only, is classified by what it does. Path classes are minimum
+  floors, never ceilings, and an unclassified path fails closed.
+
+Changes to governance itself — the checker, policy, schemas, catalog, invariant registry, the
+actor-neutral documents, or the CI workflow — additionally run **both** the trusted baseline checker
+and the candidate checker, recorded separately. A candidate checker is never the sole judge of
+whether it weakened itself.
+
+```bash
+node openspec/scripts/check-design-pattern-governance.mjs --phase final
+node openspec/scripts/run-governance-dual-check.mjs        # governance-core changes
+```
+
+Hermes and other agents run these as a convenience. Running one is not a substitute for the required
+CI check, and bypassing one does not bypass governance.
+
 ## How much governance a change needs
 
 **Governance weight scales with what the change can actually affect.** While every workspace a

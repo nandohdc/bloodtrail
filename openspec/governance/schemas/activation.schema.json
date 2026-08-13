@@ -1,0 +1,63 @@
+{
+  "schema": "bloodtrail.design-pattern-governance.closed-schema",
+  "id": "activation",
+  "version": "1.1",
+  "supported_versions": ["1.0", "1.1"],
+  "closed": true,
+  "note": "The activation record is created in the dedicated commit A, whose sole parent is exactly the protected-mainline merge commit M. It never records its own commit hash: a commit cannot contain its own identifier. Activation begins at A; everything before A is classified by grandfathering, and A and its descendants use normal enforcement.",
+  "fields": {
+    "schema_version": { "type": "string", "required": true, "enum": ["1.0", "1.1"] },
+    "protected_reference": { "type": "string", "required": true, "pattern": "^refs/heads/[A-Za-z0-9._/-]{1,100}$" },
+    "merge_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+    "merge_tree": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+    "merge_strategy": { "type": "string", "required": true, "controlled_value": "merge_strategy" },
+    "technical_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+    "signed_record_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+    "signed_record_content_object": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+    "bound_blobs": {
+      "type": "map", "required": true, "key_pattern": "^[A-Za-z0-9._/-]{3,200}$",
+      "value": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+    },
+    "required_check": {
+      "type": "object", "required": true, "closed": true,
+      "fields": {
+        "context": { "type": "string", "required": true, "min_length": 3 },
+        "evidence_method": { "type": "string", "required": true, "min_length": 3 },
+        "evidence_digest": { "type": "string", "required": true, "pattern": "^sha256:[0-9a-f]{64}$" },
+        "verified": { "type": "boolean", "required": true },
+        "verified_contexts": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string" } }
+      }
+    },
+    "supported_schema_versions": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string", "pattern": "^\\d+\\.\\d+$" } },
+    "grandfathered_entries": {
+      "type": "array", "required": true,
+      "items": {
+        "type": "object", "closed": true,
+        "fields": {
+          "change": { "type": "string", "required": true },
+          "class": { "type": "string", "required": true, "controlled_value": "grandfathering_class" },
+          "proposal_blob": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" }
+        }
+      }
+    },
+    "allowlisted_activation_paths": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string", "repository_relative": true } }
+  },
+  "rules": [
+    { "id": "activation-parent-is-exactly-merge", "requirement": "R17" },
+    { "id": "activation-record-does-not-bind-own-hash", "requirement": "R17" },
+    { "id": "activation-changes-only-allowlisted-paths", "requirement": "R17" },
+    { "id": "activation-technical-commit-reachable", "requirement": "R17" },
+    { "id": "activation-signed-record-reachable", "requirement": "R17" },
+    { "id": "activation-checker-blob-matches-technical-commit", "requirement": "R17" },
+    { "id": "activation-policy-blob-matches-technical-commit", "requirement": "R17" },
+    { "id": "activation-requires-verified-required-check", "requirement": "R12" },
+    { "id": "activation-branch-name-is-not-protection", "requirement": "R12" },
+    { "id": "activation-requires-complete-history", "requirement": "R17" },
+    { "id": "activation-rejects-squash-merge", "requirement": "R16" },
+    { "id": "activation-rejects-rebase-merge", "requirement": "R16" },
+    { "id": "activation-must-follow-merge", "requirement": "R17" },
+    { "id": "bootstrap-requires-exact-approved-objects", "requirement": "R18" },
+    { "id": "bootstrap-not-re-enterable-after-activation", "requirement": "R18" }
+  ],
+  "forbidden_self_reference_fields": ["activation_commit", "own_commit", "self_hash"]
+}

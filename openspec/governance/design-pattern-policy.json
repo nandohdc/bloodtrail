@@ -1,0 +1,296 @@
+{
+  "schema": "bloodtrail.design-pattern-governance.policy",
+  "policy_schema_version": "1.1",
+  "supported_policy_schema_versions": ["1.0", "1.1"],
+  "note": "Authoritative configuration for openspec/scripts/check-design-pattern-governance.mjs. Absent, empty, truncated, invalid, versionless, unsupported, or incomplete evidence fails closed (R13); it never means no applicable changes, a successful skip, or permission.",
+  "schema_compatibility": {
+    "current": "1.1",
+    "supported": ["1.0", "1.1"],
+    "minor_rule": "A minor increment MAY add optional evidence. It MUST NOT remove a field, narrow an enum, make mandatory evidence optional, or change the meaning of an existing field.",
+    "major_rule": "Removing or weakening mandatory evidence requires a new major version, an explicit migration, and governance-core review under R14.",
+    "unknown_newer": "unknown-new-version",
+    "unsupported_older": "unsupported-old-version",
+    "active_change_migration": "A pre-existing active change MAY remain on 1.0 until its signed governance record is prepared, at which point it migrates to the current version. New changes use the current version.",
+    "id_reuse": "prohibited",
+    "aliases": [],
+    "migrations": [],
+    "deprecations": [],
+    "deactivations": []
+  },
+  "controlled_values": {
+    "assessment_level": ["abbreviated", "full"],
+    "checker_phase": ["activation", "assessment", "bootstrap", "final", "implementation"],
+    "decision": ["direct_implementation", "named_pattern"],
+    "emergency_disposition": ["conservative_full_assessment"],
+    "grandfathering_class": ["external_in_flight", "mainline_present"],
+    "lifecycle_state": [
+      "abandoned",
+      "active",
+      "apply_authorized",
+      "archived",
+      "governance_signed",
+      "merged",
+      "proposal"
+    ],
+    "merge_strategy": ["fast_forward", "merge_commit"],
+    "path_class": [
+      "documentation_only",
+      "governance_core",
+      "governance_record_only",
+      "governed_implementation",
+      "unclassified"
+    ],
+    "review_path_kind": ["governance_record_only", "normative"],
+    "security_declaration": ["false", "true"]
+  },
+  "controlled_value_counts": {
+    "families": 10,
+    "memberships": 30,
+    "unique_values": 29,
+    "shared_values": ["governance_record_only"],
+    "shared_by": ["path_class", "review_path_kind"]
+  },
+  "definitions": {
+    "full_assessment_change": "A change matching any entry in full_assessment_triggers.",
+    "abbreviated_eligible_change": "A change satisfying every entry in abbreviated_criteria and proving that no full_assessment_trigger applies.",
+    "material_capability_modification": "A change that adds, modifies, or removes a normative capability requirement, or that modifies a capability-owned governed implementation path while matching a full_assessment_trigger.",
+    "applicable_baseline": "The proposal baseline a change is classified and compared against. Post-activation work uses the activation-record commit or a descendant; grandfathered work uses its recorded baseline and bounded scope.",
+    "normative_path": "Any path matching normative_paths: governed implementation, tests proving invariants, assessment and design artifacts, schemas, checker, policy configuration, catalog, invariant definitions, compatibility claims, workflow, and CI.",
+    "governance_record_only_path": "Any path in the closed governance_record_only_paths allowlist."
+  },
+  "rejected_applicability_terms": [
+    "materially modifies",
+    "materially new",
+    "non-trivial",
+    "significant change",
+    "substantial change"
+  ],
+  "full_assessment_triggers": [
+    "public_api",
+    "integration",
+    "lifecycle_or_state",
+    "concurrency",
+    "persistence",
+    "security_sensitive_behavior",
+    "governance_core_path",
+    "canonical_capability_requirement"
+  ],
+  "abbreviated_criteria": [
+    "one bounded correction",
+    "introduces no new abstraction",
+    "adds no new module, class, or interface",
+    "changes no public API surface",
+    "proves that no full_assessment_trigger applies"
+  ],
+  "security_dimensions": [
+    "audit_integrity",
+    "authentication_or_authorization",
+    "authority_provenance",
+    "concurrency",
+    "confidentiality",
+    "cryptography",
+    "error_disclosure",
+    "external_security_integration",
+    "fail_posture",
+    "lifecycle",
+    "mutation_ownership",
+    "privacy_transformation",
+    "resource_retention",
+    "retry_or_redelivery",
+    "trust_boundary"
+  ],
+  "security_rules": {
+    "false_requires_dimension_justification": true,
+    "positive_declaration_overrides_path_class": true,
+    "path_classes_are_minimum_floors": true
+  },
+  "path_classes": [
+    {
+      "class": "governance_core",
+      "patterns": [
+        "openspec/scripts/",
+        "openspec/governance/",
+        "openspec/tests/design-pattern-governance/",
+        "docs/design-pattern-governance.md",
+        ".github/workflows/",
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        "CONTRIBUTING.md"
+      ]
+    },
+    {
+      "class": "governance_record_only",
+      "patterns": [
+        "packages/security-audit-sdk-core/verification-lifecycle.json",
+        "openspec/governance/records/"
+      ]
+    },
+    {
+      "class": "governed_implementation",
+      "patterns": [
+        "packages/",
+        "contracts/",
+        "research/",
+        "openspec/specs/",
+        "openspec/changes/"
+      ]
+    },
+    {
+      "class": "documentation_only",
+      "patterns": [
+        "README.md",
+        "SECURITY.md",
+        "RELEASING.md",
+        "CHANGELOG.md",
+        "docs/"
+      ]
+    }
+  ],
+  "planning_artifact_patterns": [
+    "openspec/changes/*/proposal.md",
+    "openspec/changes/*/design.md",
+    "openspec/changes/*/tasks.md",
+    "openspec/changes/*/assessment.json",
+    "openspec/changes/*/.openspec.yaml",
+    "openspec/changes/*/specs/"
+  ],
+  "planning_artifact_note": "Planning artifacts are normative — changing one after signing makes the signed record stale — but they are not governed *implementation*. Ordering excludes them, because an assessment commit necessarily writes the assessment, and counting that as implementation would make every correctly ordered assessment fail as though it had shipped code alongside itself.",
+  "path_class_notes": {
+    "resolution": "The longest matching pattern wins, then the most specific class. A path matching no pattern is unclassified and fails closed.",
+    "floors_not_ceilings": "A path class establishes the minimum trigger set. Behavioural evidence may raise it and never lowers it.",
+    "record_file_granularity": "packages/security-audit-sdk-core/verification-lifecycle.json is classified governance_record_only as a whole file. It also carries ownership and attestation fields that are normative in substance. A commit that touches it and any normative path is not governance-record-only, which bounds but does not eliminate the residual; check-changed-paths.mjs and check-governance-history.mjs enforce the fields themselves."
+  },
+  "governance_core_artifacts": [
+    "openspec/scripts/check-design-pattern-governance.mjs",
+    "openspec/scripts/run-governance-dual-check.mjs",
+    "openspec/scripts/design-pattern-governance/",
+    "openspec/governance/design-pattern-policy.json",
+    "openspec/governance/activation-record.json",
+    "openspec/governance/schemas/",
+    "openspec/governance/design-pattern-catalog.md",
+    "openspec/governance/invariant-registry.json",
+    "docs/design-pattern-governance.md",
+    ".github/workflows/ci.yml",
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    "CONTRIBUTING.md"
+  ],
+  "normative_paths": [
+    "packages/",
+    "contracts/",
+    "research/",
+    "openspec/specs/",
+    "openspec/changes/",
+    "openspec/scripts/",
+    "openspec/governance/",
+    "openspec/tests/",
+    "docs/design-pattern-governance.md",
+    ".github/workflows/",
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    "CONTRIBUTING.md"
+  ],
+  "governance_record_only_paths": [
+    "packages/security-audit-sdk-core/verification-lifecycle.json",
+    "openspec/governance/records/"
+  ],
+  "protected_history_roots": [
+    "contracts/security-audit/",
+    "openspec/specs/security-audit-event-contract/",
+    "openspec/changes/archive/"
+  ],
+  "actor_neutral_documents": [
+    "CONTRIBUTING.md",
+    "docs/design-pattern-governance.md",
+    ".github/PULL_REQUEST_TEMPLATE.md"
+  ],
+  "non_authoritative_sources": ["AGENTS.md", "CLAUDE.md", ".hermes.md", ".hermes/skills/", ".claude/skills/", ".agents/skills/"],
+  "protected_mainline": {
+    "reference": "refs/heads/main",
+    "repository": "nandohdc/bloodtrail",
+    "branch_name_is_not_protection_evidence": true,
+    "required_check": {
+      "context": "design-pattern-governance",
+      "evidence_method": "github-branch-protection-api",
+      "evidence_command": "gh api repos/nandohdc/bloodtrail/branches/main/protection --jq '.required_status_checks.contexts'",
+      "verified": false,
+      "verified_contexts": [],
+      "blocking_reason": "The governance CI job is not yet configured as a required status check. Configuring it is a repository-settings change owned by the project owner. Activation stays incomplete until verified is true and context appears in verified_contexts."
+    }
+  },
+  "merge": {
+    "permitted_strategies": ["merge_commit", "fast_forward"],
+    "prohibited_strategies": ["squash", "rebase", "amend", "force_push"],
+    "rationale": "Squash and rebase replace the reviewed technical commit with a new object, so the activation record could not bind it. The repository permits merge commits and does not require linear history, so an identity-preserving merge is available."
+  },
+  "activation": {
+    "state": "pending",
+    "record_path": "openspec/governance/activation-record.json",
+    "bootstrap_available": true,
+    "note": "Activation begins at the activation-record commit A, whose sole parent is the protected-mainline merge commit M. Until A exists in protected history, enforcement is not active and bootstrap is the only permitted activation path. A never references its own hash.",
+    "required_bindings": [
+      "protected_reference",
+      "merge_commit",
+      "merge_tree",
+      "technical_commit",
+      "signed_record_commit",
+      "signed_record_content_object",
+      "checker_blob",
+      "policy_blob",
+      "schema_blobs",
+      "catalog_blob",
+      "actor_neutral_policy_blob",
+      "required_check_identity",
+      "required_check_enforcement_evidence",
+      "supported_schema_versions",
+      "grandfathered_entries"
+    ]
+  },
+  "grandfathering": [
+    {
+      "change": "correct-local-instruction-verification-premise",
+      "class": "mainline_present",
+      "proposal_path": "openspec/changes/correct-local-instruction-verification-premise/proposal.md",
+      "proposal_blob": "1c452d4570295f6193309e6d66679dda1b53999b",
+      "proposal_baseline_commit": "9e356f3",
+      "bounded_paths": [
+        "openspec/changes/correct-local-instruction-verification-premise/",
+        "packages/security-audit-sdk-core/scripts/",
+        "packages/security-audit-sdk-core/tests/verification/",
+        "packages/security-audit-sdk-core/verification-lifecycle.json"
+      ],
+      "bounded_scope": "The local-instruction verification premise correction as recorded in its proposal at proposal_blob. Any new public API, integration, persistence, lifecycle, concurrency, security boundary, governed capability, or path outside bounded_paths requires normal full governance."
+    }
+  ],
+  "grandfathering_notes": {
+    "sdk_remediation": "remediate-security-audit-sdk-adversarial-review archived on 2026-08-11 and is no longer an active change, so it needs no grandfathering entry. The preferred SDK-first rollout order is therefore already satisfied, and its classification comes from actual mainline tree state rather than asserted provenance.",
+    "external_in_flight": "Retained for any change that is still only on a remote branch at activation. None currently applies."
+  },
+  "opt_ins": [],
+  "withdrawals": [],
+  "emergency_records": [],
+  "catalog": {
+    "path": "openspec/governance/design-pattern-catalog.md",
+    "version": "1.0.0",
+    "entry_count": 24,
+    "exhaustive": false
+  },
+  "invariant_registry": {
+    "path": "openspec/governance/invariant-registry.json",
+    "version": "1.0.0"
+  },
+  "schemas": {
+    "assessment": "openspec/governance/schemas/assessment.schema.json",
+    "signed_governance_record": "openspec/governance/schemas/signed-governance-record.schema.json",
+    "activation": "openspec/governance/schemas/activation.schema.json",
+    "provenance": "openspec/governance/schemas/provenance.schema.json"
+  },
+  "checker": {
+    "path": "openspec/scripts/check-design-pattern-governance.mjs",
+    "dual_check_driver": "openspec/scripts/run-governance-dual-check.mjs",
+    "supported_policy_schema_versions": ["1.0", "1.1"],
+    "diagnostic_limit": 200,
+    "message_limit": 240
+  },
+  "history": {
+    "complete_history_required": true,
+    "shallow_clone_diagnostic": "activation-history-unavailable"
+  }
+}
