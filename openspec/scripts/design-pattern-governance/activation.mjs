@@ -46,7 +46,7 @@ export function activationState(repositoryRoot, policy, sink) {
  * history; every binding it declares is re-derived from Git rather than trusted.
  */
 export function verifyActivation(record, recordPath, context, sink) {
-  const { cwd, policy } = context;
+  const { cwd } = context;
   if (!requireCompleteHistory(cwd, sink)) return;
 
   checkActivationSelfReference(record, recordPath, sink);
@@ -69,8 +69,8 @@ export function verifyActivation(record, recordPath, context, sink) {
 
   verifyMergeStrategy(record, { merge, cwd, recordPath, sink });
   verifyBoundCommits(record, { merge, cwd, recordPath, sink });
-  verifyBoundBlobs(record, cwd, recordPath, sink);
-  verifyActivationScope(record, { activationCommit, merge, policy, cwd, recordPath, sink });
+  verifyBoundBlobs(record, cwd, sink);
+  verifyActivationScope(record, { activationCommit, merge, cwd, recordPath, sink });
   verifyRequiredCheck(record.required_check, recordPath, sink);
 }
 
@@ -183,7 +183,7 @@ function verifySignedRecordContentObject(contentObject, cwd, recordPath, sink) {
   }
 }
 
-function verifyBoundBlobs(record, cwd, recordPath, sink) {
+function verifyBoundBlobs(record, cwd, sink) {
   const technical = resolveCommit(record.technical_commit, cwd);
   if (technical === null) return;
   for (const [path, expected] of Object.entries(record.bound_blobs ?? {})) {
@@ -200,7 +200,7 @@ function verifyBoundBlobs(record, cwd, recordPath, sink) {
   }
 }
 
-function verifyActivationScope(record, { activationCommit, merge, policy, cwd, recordPath, sink }) {
+function verifyActivationScope(record, { activationCommit, merge, cwd, recordPath, sink }) {
   const allowlist = record.allowlisted_activation_paths ?? [];
   const mergeTree = treeOf(merge, cwd);
   const activationTree = treeOf(activationCommit, cwd);
@@ -214,7 +214,6 @@ function verifyActivationScope(record, { activationCommit, merge, policy, cwd, r
     sink.fail("activation-unrelated-change", path,
       "the activation commit changes a path outside the activation allowlist");
   }
-  void policy;
 }
 
 function changedBetweenTrees(from, to, cwd) {

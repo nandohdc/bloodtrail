@@ -37,7 +37,7 @@ function validateGrandfatheringEntry(entry, provenanceSchema, { context, documen
     return;
   }
   validateRecord(entry, definition, { recordPath: documentPath, context, sink });
-  if (entry.class === "mainline_present") verifyMainlinePresent(entry, context, documentPath, sink);
+  if (entry.class === "mainline_present") verifyMainlinePresent(entry, context, sink);
   if (entry.class === "external_in_flight") verifyExternalInFlight(entry, context, documentPath, sink);
 }
 
@@ -46,7 +46,7 @@ function grandfatheringDefinition(entryClass, provenanceSchema) {
   return provenanceSchema.records.grandfathering_external_in_flight;
 }
 
-function verifyMainlinePresent(entry, context, documentPath, sink) {
+function verifyMainlinePresent(entry, context, sink) {
   const { cwd, mainlineRevision } = context;
   if (!mainlineRevision) return;
   const actual = objectAtPath(mainlineRevision, entry.proposal_path, cwd);

@@ -62,7 +62,7 @@ function buildGovernedHistory(repository, options = {}) {
     protected_reference: "refs/heads/main",
     merge_commit: merge,
     merge_tree: repository.git(["rev-parse", `${merge}^{tree}`]).trim(),
-    merge_strategy: options.strategy === "squash" ? "merge_commit" : (options.strategy === "rebase" ? "merge_commit" : "merge_commit"),
+    merge_strategy: "merge_commit",
     technical_commit: options.technicalCommit ?? technical,
     signed_record_commit: signed,
     signed_record_content_object: repository.git(["rev-parse", `${technical}^{tree}`]).trim(),
