@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/nandohdc/bloodtrail/compare/v0.2.9...v0.3.0) (2026-08-13)
+
+
+### Added
+
+* **governance:** enforce proportionate change governance ([#151](https://github.com/nandohdc/bloodtrail/issues/151)) ([ff0154d](https://github.com/nandohdc/bloodtrail/commit/ff0154dac4527f4bb6abbc59a0dc9701a630f6a0))
+
+
+### Fixed
+
+* **governance:** enforce publication paths, content binding, and archive anchors ([#153](https://github.com/nandohdc/bloodtrail/issues/153)) ([f7239d7](https://github.com/nandohdc/bloodtrail/commit/f7239d7d0cb910ab0d6d74ab8233f7d81aeabd31))
+* **governance:** re-bind the signed record to the merged content ([#154](https://github.com/nandohdc/bloodtrail/issues/154)) ([4a551f7](https://github.com/nandohdc/bloodtrail/commit/4a551f796e0dc06bf3b310966645f00ab02c5dbe))
+
 ## [0.2.9](https://github.com/nandohdc/bloodtrail/compare/v0.2.8...v0.2.9) (2026-08-11)
 
 
