@@ -166,6 +166,107 @@
       ],
       "signed": true,
       "reviewer": { "name": "Fernando Homem da Costa (nandohdc)", "signedAt": "2026-08-12" }
+    },
+    {
+      "change": "establish-design-pattern-governance",
+      "policy": "Owner-signed decision bound to exact technical commit 4f1ee3b and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and the empty pre-merge mergeCommits list. The record authorizes only identity-preserving merge and dedicated activation preparation; it does not authorize canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
+      "reviewedCommit": "4f1ee3b544add8d991b3b6a0822dbe9e2028086d",
+      "reviewedContent": {
+        "kind": "tree",
+        "candidateRoot": "649fc51eb5fd1e2cc24d099e013e592ecf5f6053",
+        "entries": [
+          { "path": "openspec/changes/establish-design-pattern-governance", "object": "1dbc1d5763085c90a68b710a618ea651e3e6ddff" },
+          { "path": "openspec/governance", "object": "b0f7ca2f983aa730bf38e9ff84420bd057548d96" },
+          { "path": "openspec/scripts", "object": "2f8f2ee57e5536028aca83588de92c5a9c23b785" },
+          { "path": "openspec/tests/design-pattern-governance", "object": "df36ba54525a8be9af0b50b0e56c216241d46110" }
+        ]
+      },
+      "governedCommits": [
+        "c5719279b9f74c1aa1a56bc1630632626e9f3bd9",
+        "eed4c4d2562d2f57d6e5cfaa477c406336add5a7",
+        "f525881ddc8eaa4958966ffd9932f765fdbcf6a5",
+        "4f1ee3b544add8d991b3b6a0822dbe9e2028086d"
+      ],
+      "boundCommits": ["4f1ee3b544add8d991b3b6a0822dbe9e2028086d"],
+      "mergeCommits": [],
+      "designPatternGovernance": {
+        "assessment": {
+          "path": "openspec/changes/establish-design-pattern-governance/assessment.json",
+          "digest": "sha256:f45d5f60229cd37b8199107265d1dce379c0c46ac3af2de0a12e7aae1ec11563",
+          "assessmentCommit": "c5719279b9f74c1aa1a56bc1630632626e9f3bd9"
+        },
+        "catalogInvariants": [],
+        "implementationInvariants": [
+          "implementation-deterministic-relations",
+          "implementation-exact-history-binding",
+          "implementation-actor-neutral-perimeter",
+          "implementation-fail-closed-evidence",
+          "implementation-approval-separation"
+        ],
+        "candidateComparisonReviewed": true,
+        "securityClassificationReviewed": true,
+        "checkerResults": {
+          "baseline": {
+            "sourceRef": "e536c9b74ec009a1bfad1c1561d478cb48600ba4",
+            "checkerBlob": null,
+            "exitCode": null,
+            "diagnostics": ["baseline checker unavailable because this change introduces the checker"]
+          },
+          "candidate": {
+            "sourceRef": "4f1ee3b544add8d991b3b6a0822dbe9e2028086d",
+            "checkerBlob": "777a7269d81af7c6c13dd6f6b96be4890f4417c9",
+            "exitCode": 0,
+            "diagnostics": []
+          }
+        },
+        "divergences": [
+          {
+            "description": "The trusted baseline contains no governance checker, so a distinct baseline execution cannot be produced for the change that introduces it.",
+            "accepted": true,
+            "reason": "The asymmetry is explicit, bootstrap is object-bound, and mutation tests prove that later governance-core changes are checked by both baseline and candidate implementations."
+          },
+          {
+            "description": "DeepScan reports three advisory issues but its public result exposes no rule, severity, path, or line.",
+            "accepted": true,
+            "reason": "No defect was inferred from an unauthenticated count. Any later accepted normative correction invalidates this binding and requires a new technical commit and review."
+          }
+        ],
+        "requiredCheckEvidence": {
+          "method": "github-branch-protection-api",
+          "digest": "sha256:f74b4db9e0858bc20f288f3f5596b6b233b77ecd65791dee81816c707893ba10",
+          "plan": "Re-query exact branch-protection bytes immediately before merge and activation, bind the activation-time digest, and fail closed if any required context or strict enforcement differs."
+        },
+        "activationAuthorized": true
+      },
+      "authorizations": {
+        "granted": [
+          "store-governance-record-s-for-exact-technical-commit",
+          "identity-preserving-merge-of-pr-157",
+          "dedicated-direct-child-activation-commit"
+        ],
+        "withheld": [
+          "canonical-capability-materialization",
+          "openspec-archive",
+          "package-publication",
+          "production-deployment",
+          "production-collection",
+          "real-user-processing",
+          "framework-integration",
+          "delivery-infrastructure"
+        ]
+      },
+      "assuranceLimitations": [
+        "Project-owner/implementer governance; not independent security, privacy, legal, or technical assurance.",
+        "AI-produced analysis informed the implementation and is not review, approval, or assurance.",
+        "DeepScan issue details were unavailable without authenticated dashboard access and were not inferred from the advisory issue count."
+      ],
+      "signed": true,
+      "signatureDecision": "Yes, I approve.",
+      "reviewer": {
+        "name": "Fernando Homem da Costa (nandohdc)",
+        "role": "Project owner and technical decision-maker",
+        "signedAt": "2026-08-13"
+      }
     }
   ]
 }
