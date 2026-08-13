@@ -77,7 +77,7 @@ A named pattern SHALL be selected only when observable forces justify it, direct
 - **THEN** assessment verification SHALL reject the selection
 
 ### Requirement: R5 — Selected patterns bind versioned catalog invariants
-Every catalog pattern entry SHALL define versioned invariant IDs. A named-pattern assessment SHALL record pattern ID, catalog version, applicable required invariant IDs, conditional invariant IDs, non-applicable conditional IDs with force-based reasons, implementation task IDs, and verification evidence IDs. The checker SHALL load the referenced catalog version and account for every mandatory invariant. A mandatory invariant MAY be non-applicable only when catalog-declared conditional, force-justified, and explicitly acknowledged by final correspondence review.
+Every catalog pattern entry SHALL define versioned invariant IDs. A named-pattern assessment SHALL record pattern ID, catalog version, applicable required invariant IDs, conditional invariant IDs, non-applicable conditional IDs with force-based reasons, implementation task IDs, and verification evidence IDs. The checker SHALL load the referenced catalog version and account for every mandatory invariant. A mandatory invariant MAY be non-applicable only when catalog-declared conditional, force-justified, and explicitly acknowledged in the signed governance record.
 
 #### Scenario: State omits transition invariants
 - **WHEN** State is selected without all required transition invariant IDs and evidence
@@ -370,57 +370,65 @@ Governance-core artifacts SHALL include checker, policy configuration, activatio
 - **WHEN** an acknowledged governance-core change satisfies trusted baseline and candidate future-format checks
 - **THEN** technical review MAY consider it without either checker implying owner approval
 
-### Requirement: R15 — Correspondence binds a frozen technical commit
-The technical correspondence record commit R SHALL bind the preceding technical commit T without invalidating itself. Normative paths SHALL include implementation, invariant tests, assessment/design artifacts, schemas, checker, policy, catalog, invariant definitions, compatibility claims, workflow, and CI. Governance-record-only paths SHALL use a closed allowlist for correspondence, owner decision, status, merge-readiness, and archive-readiness records. Any post-review normative change SHALL invalidate correspondence. Governance-record-only commits SHALL NOT invalidate it.
+### Requirement: R15 — One signed governance record binds frozen technical content
+Technical review and the project-owner decision SHALL be recorded as a single signed governance record S rather than as separate governance records or separate governed task groups. S SHALL bind a content object — a tree or subtree identifier — covering the reviewed technical content, and SHALL additionally name the technical commit T; a commit hash alone SHALL NOT satisfy the binding. A reviewed path SHALL NOT contain S. Normative paths SHALL include implementation, invariant tests, assessment/design artifacts, schemas, checker, policy, catalog, invariant definitions, compatibility claims, workflow, and CI. Governance-record-only paths SHALL use a closed allowlist for the signed governance record, status record, merge-readiness record, and archive-readiness record. Any post-signing normative change SHALL invalidate S. Governance-record-only commits SHALL NOT invalidate it.
 
-#### Scenario: Governance-only commit follows correspondence
-- **WHEN** a closed governance-record-only commit follows R without changing normative blobs
-- **THEN** correspondence binding to T SHALL remain valid
+#### Scenario: Review and decision are recorded separately
+- **WHEN** technical review and the project-owner decision are recorded as two governance records or two governed task groups
+- **THEN** governance verification SHALL reject the split record
 
-#### Scenario: Normative commit follows correspondence
-- **WHEN** any normative path changes after R
-- **THEN** correspondence SHALL become stale and require review of a new T
+#### Scenario: Record binds only a commit hash
+- **WHEN** a signed record names a reviewed commit without binding a reviewed content object
+- **THEN** binding verification SHALL reject the record
 
-#### Scenario: Test evidence changes after review
-- **WHEN** a test proving an invariant changes after R
-- **THEN** correspondence SHALL become stale
+#### Scenario: Governance-only commit follows the signed record
+- **WHEN** a closed governance-record-only commit follows S without changing normative blobs
+- **THEN** the binding of S to T SHALL remain valid
 
-#### Scenario: Assessment changes after review
-- **WHEN** assessment or design evidence changes after R
-- **THEN** correspondence SHALL become stale
+#### Scenario: Normative commit follows the signed record
+- **WHEN** any normative path changes after S
+- **THEN** S SHALL become stale and require a new signed record for a new T
 
-#### Scenario: Checker changes after review
-- **WHEN** checker, schema, policy, catalog, workflow, or CI changes after R
-- **THEN** correspondence SHALL become stale
+#### Scenario: Test evidence changes after signing
+- **WHEN** a test proving an invariant changes after S
+- **THEN** S SHALL become stale
+
+#### Scenario: Assessment changes after signing
+- **WHEN** assessment or design evidence changes after S
+- **THEN** S SHALL become stale
+
+#### Scenario: Checker changes after signing
+- **WHEN** checker, schema, policy, catalog, workflow, or CI changes after S
+- **THEN** S SHALL become stale
 
 #### Scenario: Archive relocation is byte-identical
 - **WHEN** archive relocation preserves every governed blob byte-for-byte
-- **THEN** correspondence MAY remain valid while the archive commit records the relocation
+- **THEN** S MAY remain valid while the archive commit records the relocation
 
 ### Requirement: R16 — Governed merge preserves reviewed identities
-The governed history SHALL use T, R binding T, G following R, M introducing T/R/G on the protected mainline, and A directly following M. M SHALL use a merge commit or fast-forward preserving identities. Squash merge, rebase merge, amendment, force-push, and other history rewriting SHALL be prohibited.
+The governed history SHALL use T, the signed governance record commit S binding T, M introducing T and S on the protected mainline, and A directly following M. M SHALL use a merge commit or fast-forward preserving identities. Squash merge, rebase merge, amendment, force-push, and other history rewriting SHALL be prohibited.
 
 #### Scenario: Merge commit preserves identities
-- **WHEN** M introduces T, R, and G with their exact identities through a merge commit
+- **WHEN** M introduces T and S with their exact identities through a merge commit
 - **THEN** merge identity verification SHALL accept the strategy
 
 #### Scenario: Fast-forward preserves identities
-- **WHEN** the protected mainline fast-forwards through T, R, and G without rewriting them
+- **WHEN** the protected mainline fast-forwards through T and S without rewriting them
 - **THEN** merge identity verification SHALL accept the strategy
 
 #### Scenario: Squash merge is attempted
-- **WHEN** T, R, and G would be replaced by a squash commit
+- **WHEN** T and S would be replaced by a squash commit
 - **THEN** governed merge verification SHALL reject activation
 
 #### Scenario: Rebase merge is attempted
-- **WHEN** T, R, or G would receive a rewritten identity through rebase merge
+- **WHEN** T or S would receive a rewritten identity through rebase merge
 - **THEN** governed merge verification SHALL reject activation
 
 ### Requirement: R17 — Activation uses a dedicated direct-child record
-The protected mainline reference SHALL be configured explicitly. The activation-record commit A SHALL be a dedicated commit whose sole parent is exactly M and whose tree changes only the activation record and specifically allowlisted evidence. A SHALL bind the protected reference, M and its tree, T, R, G, checker blob, policy blob, schema blobs, catalog blob, actor-neutral policy-document blob, required-CI identity and enforcement evidence, supported schema versions, and grandfathered entries. A SHALL NOT reference its own hash. Activation SHALL begin at A.
+The protected mainline reference SHALL be configured explicitly. The activation-record commit A SHALL be a dedicated commit whose sole parent is exactly M and whose tree changes only the activation record and specifically allowlisted evidence. A SHALL bind the protected reference, M and its tree, T, the signed governance record S and its reviewed content object, checker blob, policy blob, schema blobs, catalog blob, actor-neutral policy-document blob, required-CI identity and enforcement evidence, supported schema versions, and grandfathered entries. A SHALL NOT reference its own hash. Activation SHALL begin at A.
 
 #### Scenario: Valid technical governance merge activation sequence
-- **WHEN** exact T then R then G are identity-preserved by M and A is M's dedicated direct child with all bound evidence
+- **WHEN** exact T then S are identity-preserved by M and A is M's dedicated direct child with all bound evidence
 - **THEN** activation verification SHALL identify A as the activation boundary
 
 #### Scenario: Activation record precedes mainline merge
@@ -448,11 +456,11 @@ The protected mainline reference SHALL be configured explicitly. The activation-
 - **THEN** activation verification SHALL fail with the policy-blob-mismatch diagnostic
 
 #### Scenario: Activation history is shallow
-- **WHEN** the clone lacks history required to prove T/R/G/M/A ancestry
+- **WHEN** the clone lacks history required to prove T/S/M/A ancestry
 - **THEN** activation verification SHALL fail with the activation-history-unavailable diagnostic
 
 ### Requirement: R18 — Bootstrap is exact and one-time
-Before normal enforcement exists, one-time bootstrap SHALL permit only creation of A after proving exact approved T, exact R, exact G, exact M parent, exact artifact blobs, required-check evidence, and no unrelated A changes. Bootstrap SHALL end permanently after A and SHALL NOT be re-entered.
+Before normal enforcement exists, one-time bootstrap SHALL permit only creation of A after proving exact approved T, the exact signed governance record S and its reviewed content object, exact M parent, exact artifact blobs, required-check evidence, and no unrelated A changes. Bootstrap SHALL end permanently after A and SHALL NOT be re-entered.
 
 #### Scenario: Exact bootstrap succeeds
 - **WHEN** every approved identity and blob matches and A changes only allowlisted activation evidence
@@ -551,22 +559,22 @@ During apply, the actual generated Hermes skill frontmatter and repository-suppo
 - **THEN** canonical CI and perimeter enforcement SHALL still govern the change
 
 ### Requirement: R23 — Governance lifecycle states remain distinct
-Proposal validation, apply authorization, technical verification, correspondence review, project-owner decision, merge readiness, activation, production/publication authorization, canonical materialization, and archive readiness SHALL remain distinct states. AI review, PR assignment, authorship, and informal messages SHALL NOT create owner approval or apply authorization.
+Proposal validation, apply authorization, technical verification, signed governance review and decision, merge readiness, activation, production/publication authorization, canonical materialization, and archive readiness SHALL remain distinct states. Recording review and decision in one signed record SHALL NOT merge the states that record establishes with the states that precede or follow it. AI review, PR assignment, authorship, and informal messages SHALL NOT create owner approval or apply authorization.
 
 #### Scenario: Proposal validation is mistaken for authorization
 - **WHEN** proposal artifacts validate but no explicit project-owner apply authorization exists
 - **THEN** implementation SHALL remain unauthorized and every apply task SHALL remain unchecked
 
 #### Scenario: AI review is presented as owner approval
-- **WHEN** AI review, PR assignment, or an informal message exists without an exact-commit owner decision
-- **THEN** owner-governance, merge, activation, and archive states SHALL remain incomplete
+- **WHEN** AI review, PR assignment, or an informal message exists without a signed governance record bound to reviewed content
+- **THEN** signed-governance, merge, activation, and archive states SHALL remain incomplete
 
 #### Scenario: Technical checks pass without production approval
 - **WHEN** all technical checks pass but publication or deployment authorization is absent
 - **THEN** production and publication SHALL remain prohibited
 
 ### Requirement: R24 — Archive evidence is validated explicitly
-Archive validation SHALL NOT assume that `openspec validate --all --strict` validates archived changes. The governed archive step SHALL explicitly verify task completeness, T/R/G bindings, owner decision, canonical capability materialization, production/publication restrictions, immutable archive contents, exact changed paths, and byte identity of governed evidence. Archive SHALL occur only after active enforcement is verified.
+Archive validation SHALL NOT assume that `openspec validate --all --strict` validates archived changes. The governed archive step SHALL explicitly verify task completeness, the T and S bindings, the signed record's authorizations granted and withheld, canonical capability materialization, production/publication restrictions, immutable archive contents, exact changed paths, and byte identity of governed evidence. Archive SHALL occur only after active enforcement is verified.
 
 #### Scenario: Repository-wide strict validation passes alone
 - **WHEN** `openspec validate --all --strict` passes without explicit archive-evidence checks
@@ -578,7 +586,7 @@ Archive validation SHALL NOT assume that `openspec validate --all --strict` vali
 
 #### Scenario: Archived governed blob changes
 - **WHEN** archive relocation changes any governed blob bytes
-- **THEN** archive verification SHALL reject the archive and invalidate correspondence
+- **THEN** archive verification SHALL reject the archive and invalidate the signed governance record
 
 #### Scenario: Canonical capability is missing
 - **WHEN** archive does not materialize the approved canonical capability
