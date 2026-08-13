@@ -173,7 +173,10 @@ function verifyBoundCommits(record, { merge, cwd, recordPath, sink }) {
     }
   }
 
-  const contentObject = record.signed_record_content_object;
+  verifySignedRecordContentObject(record.signed_record_content_object, cwd, recordPath, sink);
+}
+
+function verifySignedRecordContentObject(contentObject, cwd, recordPath, sink) {
   if (typeof contentObject === "string" && objectType(contentObject, cwd) === null) {
     sink.fail("signed-record-content-absent", recordPath,
       `the signed record's reviewed content object ${contentObject.slice(0, 12)} is not present in this repository`);

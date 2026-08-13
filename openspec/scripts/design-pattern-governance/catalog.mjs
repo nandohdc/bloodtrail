@@ -181,10 +181,18 @@ function validateCatalogRegistry({ text, patternIds, registry, relativePath, sin
 }
 
 function compareCatalogPatternIds(patternIds, registered, relativePath, sink) {
+  validateCatalogPatternsRegistered(patternIds, registered, relativePath, sink);
+  validateRegisteredPatternsCataloged(patternIds, registered, relativePath, sink);
+}
+
+function validateCatalogPatternsRegistered(patternIds, registered, relativePath, sink) {
   for (const id of patternIds) {
     if (registered.has(id)) continue;
     sink.fail("catalog-registry-divergence", relativePath, `catalog pattern ${id} is absent from the invariant registry`);
   }
+}
+
+function validateRegisteredPatternsCataloged(patternIds, registered, relativePath, sink) {
   for (const id of registered) {
     if (patternIds.includes(id)) continue;
     sink.fail("catalog-registry-divergence", relativePath, `registry pattern ${id} is absent from the catalog`);
@@ -192,10 +200,18 @@ function compareCatalogPatternIds(patternIds, registered, relativePath, sink) {
 }
 
 function validateCatalogInvariantCitations(text, registered, knownInvariants, { relativePath, sink }) {
+  validateCitedInvariantsKnown(text, registered, knownInvariants, relativePath, sink);
+  validateKnownInvariantsCited(text, knownInvariants, relativePath, sink);
+}
+
+function validateCitedInvariantsKnown(text, registered, knownInvariants, relativePath, sink) {
   for (const cited of text.matchAll(/`(pattern-[a-z0-9-]+-[a-z0-9-]+)`/g)) {
     if (knownInvariants.has(cited[1]) || registered.has(cited[1])) continue;
     sink.fail("unknown-invariant", relativePath, `catalog cites unknown invariant ${cited[1]}`);
   }
+}
+
+function validateKnownInvariantsCited(text, knownInvariants, relativePath, sink) {
   for (const invariantId of knownInvariants.keys()) {
     if (text.includes(`\`${invariantId}\``)) continue;
     sink.fail("catalog-registry-divergence", relativePath,
@@ -307,9 +323,15 @@ function validateNonApplicableInvariant(entry, conditional, { documentPath, sink
 
 function validateInvariantEvidence(id, evidence, kind, { documentPath, sink }) {
   const entry = evidence[id];
-  if (entry && (entry.task_ids ?? []).length > 0 && (entry.evidence_ids ?? []).length > 0) return;
+  if (hasCompleteInvariantEvidence(entry)) return;
   sink.fail("invariant-evidence-absent", documentPath,
     `${kind} invariant ${id} has no implementation task or verification evidence`);
+}
+
+function hasCompleteInvariantEvidence(entry) {
+  if (!entry) return false;
+  if (!((entry.task_ids ?? []).length > 0)) return false;
+  return (entry.evidence_ids ?? []).length > 0;
 }
 
 export function accountForImplementationInvariants(assessment, { documentPath, sink }) {

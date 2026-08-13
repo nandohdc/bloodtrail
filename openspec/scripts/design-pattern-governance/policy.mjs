@@ -133,11 +133,7 @@ function validateStructure(parsed, relativePath, sink, before) {
     return { policy: null };
   }
 
-  for (const key of REQUIRED_TOP_LEVEL) {
-    if (parsed[key] === undefined) {
-      sink.fail("policy-incomplete", relativePath, `policy lacks required section ${key}`);
-    }
-  }
+  validateRequiredTopLevel(parsed, relativePath, sink);
   if (sink.count !== before) return { policy: null };
 
   validateVersions(parsed, relativePath, sink);
@@ -147,6 +143,14 @@ function validateStructure(parsed, relativePath, sink, before) {
   validateCheckerCompatibility(parsed, relativePath, sink);
 
   return { policy: sink.count === before ? Object.freeze(parsed) : null };
+}
+
+function validateRequiredTopLevel(parsed, relativePath, sink) {
+  for (const key of REQUIRED_TOP_LEVEL) {
+    if (parsed[key] === undefined) {
+      sink.fail("policy-incomplete", relativePath, `policy lacks required section ${key}`);
+    }
+  }
 }
 
 function validateVersions(parsed, relativePath, sink) {
@@ -163,6 +167,10 @@ function validateVersions(parsed, relativePath, sink) {
     sink.fail("policy-incomplete", relativePath, "policy lacks schema_compatibility");
     return;
   }
+  validateSchemaCompatibility(compatibility, relativePath, sink);
+}
+
+function validateSchemaCompatibility(compatibility, relativePath, sink) {
   for (const key of ["current", "supported", "minor_rule", "major_rule", "unknown_newer", "unsupported_older", "id_reuse"]) {
     if (compatibility[key] === undefined) {
       sink.fail("policy-incomplete", relativePath, `schema_compatibility lacks ${key}`);
