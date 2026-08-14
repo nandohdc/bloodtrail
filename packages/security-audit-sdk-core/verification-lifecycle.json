@@ -340,23 +340,23 @@
     },
     {
       "change": "establish-design-pattern-governance",
-      "policy": "Owner-signed decision bound to exact technical commit 11996085a55ecb0ba627532ea67558793064d21c and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and declared merge parent counts. The record authorizes only identity-preserving merge and dedicated activation preparation; it does not authorize canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
-      "reviewedCommit": "11996085a55ecb0ba627532ea67558793064d21c",
+      "policy": "Owner-signed decision bound to exact technical commit ce692b2b26cceedc7af3e645258f2d3993906e2e and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and declared merge parent counts. The record authorizes only the identity-preserving merge of that commit; the activation record is not rebuilt by this cycle and no push to the protected reference is authorized. It does not authorize canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
+      "reviewedCommit": "ce692b2b26cceedc7af3e645258f2d3993906e2e",
       "reviewedContent": {
         "kind": "tree",
-        "candidateRoot": "879f64aff1c460ae4fba5c1e8de3d40a4525a20f",
+        "candidateRoot": "c222f2b01bdc690670e78d0282d8c6bb2894fe3c",
         "entries": [
           {
             "path": "openspec/changes/establish-design-pattern-governance",
-            "object": "d528035c0290a2eea0dda98a4d38cf850e2c954e"
+            "object": "52fa3bb163f3246de056009f40cd7bf98fe3dd6f"
           },
           {
             "path": "openspec/governance",
-            "object": "1632a70adb16d54f7b2169207dc7f7ea806c60c0"
+            "object": "060542423cfe26e57aa51c36ac12da85c3ec6fb2"
           },
           {
             "path": "openspec/scripts",
-            "object": "c879962d3fa5f662cd0c18e81e8ae383fdc9de31"
+            "object": "052602d9c6c12a43969c7ff579e941e505a8fb59"
           },
           {
             "path": "packages/security-audit-sdk-core/tests/verification",
@@ -364,7 +364,7 @@
           },
           {
             "path": "openspec/tests/design-pattern-governance",
-            "object": "54e3f775b4316e1fea01ef68b59b966c89894a94"
+            "object": "2e33c468fd82688b445f7cd958a2a5cb76b3ad5e"
           }
         ]
       },
@@ -379,10 +379,11 @@
         "ce13943ad5819073921fced9fb3168485992f407",
         "b8e845ede58ebed46b4fc0d4a9205949759deac3",
         "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b",
-        "11996085a55ecb0ba627532ea67558793064d21c"
+        "11996085a55ecb0ba627532ea67558793064d21c",
+        "ce692b2b26cceedc7af3e645258f2d3993906e2e"
       ],
       "boundCommits": [
-        "11996085a55ecb0ba627532ea67558793064d21c"
+        "ce692b2b26cceedc7af3e645258f2d3993906e2e"
       ],
       "mergeCommits": [
         {
@@ -398,7 +399,7 @@
         "assessment": {
           "path": "openspec/changes/establish-design-pattern-governance/assessment.json",
           "digest": "sha256:784639b2301b75b4edfd7cee3a4a92825c783dc0f919c843ea663d0506fffa04",
-          "assessmentCommit": "11996085a55ecb0ba627532ea67558793064d21c"
+          "assessmentCommit": "ce692b2b26cceedc7af3e645258f2d3993906e2e"
         },
         "catalogInvariants": [],
         "implementationInvariants": [
@@ -412,19 +413,21 @@
         "securityClassificationReviewed": true,
         "checkerResults": {
           "baseline": {
-            "sourceRef": "e536c9b74ec009a1bfad1c1561d478cb48600ba4",
-            "checkerBlob": null,
-            "exitCode": null,
-            "diagnostics": [
-              "baseline checker unavailable because this change introduces the checker"
-            ]
-          },
-          "candidate": {
-            "sourceRef": "11996085a55ecb0ba627532ea67558793064d21c",
+            "sourceRef": "5e732c163f3c3a88586d1370e3779d725a6cb7a5",
             "checkerBlob": "c9f836ac56855b8fc4eaaef37aed88805264910b",
             "exitCode": 1,
             "diagnostics": [
-              "final phase at T2 failed with signed-review-stale for the three fixture-isolation paths changed after the prior signed record; this was the intended fail-closed R15 state and is cleared by this record"
+              "final phase at T3 under the protected-mainline checker and its modules, reading the candidate's data, failed with the same three signed-review-stale paths as the candidate; the candidate therefore did not weaken itself",
+              "the recorded checkerBlob is the entry script's, which this change does not touch, so it does not distinguish baseline from candidate; the runs did execute different module code because the baseline materialises openspec/scripts/design-pattern-governance/ from its own ref"
+            ]
+          },
+          "candidate": {
+            "sourceRef": "ce692b2b26cceedc7af3e645258f2d3993906e2e",
+            "checkerBlob": "c9f836ac56855b8fc4eaaef37aed88805264910b",
+            "exitCode": 1,
+            "diagnostics": [
+              "final phase at T3 failed with signed-review-stale for the three normative paths changed after the prior signed record (the evidence packet, activation.mjs, and activation.test.mjs); this was the intended fail-closed R15 state and is cleared by this record",
+              "activation-commit-absent is absent from this run and from the pull-request preview of T3, which is the synthetic two-parent merge shape that produced it before the fix"
             ]
           }
         },
@@ -438,12 +441,27 @@
             "description": "Before this record existed, final verification at T2 failed with signed-review-stale for the fixture-isolation fix, because the record merged before it still bound 5ceff7f. The failure was the intended R15 state for a post-signing normative change, not a defect.",
             "accepted": true,
             "reason": "The staleness was real and is the reason this re-signing exists; introducing the record is the governance-record-only commit that clears it, and R15 now rejects any further normative change after T2."
+          },
+          {
+            "description": "Before this record existed, final verification at T3 failed with signed-review-stale for the evidence packet, activation.mjs, and activation.test.mjs, because the record merged before it still bound 11996085. The failure was the intended R15 state for a post-signing normative fix, not a defect.",
+            "accepted": true,
+            "reason": "The staleness was real and is the reason this re-signing exists; introducing the record is the governance-record-only commit that clears it, and R15 now rejects any further normative change after T3."
+          },
+          {
+            "description": "The activation record is not rebuilt by this cycle and continues to bind merge commit 5973c767a2bec815410e05a2b711fc8ed4a85f75, technical commit 11996085a55ecb0ba627532ea67558793064d21c, and signed record commit 1379a26a263645216bf7f5a3cd29b798b62803f6, which are earlier than this record's reviewed commit.",
+            "accepted": true,
+            "reason": "Activation is a one-time event bound to the merge that landed the governance implementation, and R18 exists to stop that binding being replaced later. Rebinding is also mechanically impossible: the derivation treats a record already present at the bound merge as not introduced there, and any merge taken from the current mainline inherits it. None of the record's nine bound blobs is touched by this change, all remain byte-identical at their technical commit, and ee6fb3c31e1297dab6a5e19e66b7106b3ed83809 stays the sole introducer on the first-parent chain after the merge."
+          },
+          {
+            "description": "The activation record's bound_blobs cover openspec/scripts/check-design-pattern-governance.mjs but not the openspec/scripts/design-pattern-governance/ modules it imports, so this change alters enforcement behaviour without altering a bound blob.",
+            "accepted": true,
+            "reason": "The gap is pre-existing rather than introduced here, and it is recorded rather than silently relied upon. Closing it means re-deriving the bound blob set, which is a separate change requiring its own authorization; this record does not treat the unchanged checker blob as evidence that enforcement behaviour is unchanged."
           }
         ],
         "requiredCheckEvidence": {
           "method": "github-branch-protection-api",
           "digest": "sha256:f74b4db9e0858bc20f288f3f5596b6b233b77ecd65791dee81816c707893ba10",
-          "plan": "Re-query exact branch-protection bytes immediately before merge and activation, bind the activation-time digest, and fail closed if any required context or strict enforcement differs."
+          "plan": "Re-queried at T3 and unchanged. Re-query exact branch-protection bytes immediately before merge and fail closed if any required context or strict enforcement differs. The activation record's own required-check evidence is not re-derived, because this cycle does not rebuild it."
         },
         "activationAuthorized": true
       },
@@ -451,7 +469,8 @@
         "granted": [
           "store-governance-record-s-for-exact-technical-commit",
           "identity-preserving-merge-of-pr-157",
-          "dedicated-direct-child-activation-commit"
+          "dedicated-direct-child-activation-commit",
+          "identity-preserving-merge-of-pr-161"
         ],
         "withheld": [
           "canonical-capability-materialization",
@@ -469,7 +488,7 @@
         "AI-produced analysis informed the implementation and is not review, approval, or assurance."
       ],
       "signed": true,
-      "signatureDecision": "Owner decision given 2026-08-14: approve exact technical commit 11996085a55ecb0ba627532ea67558793064d21c; authorize its governance-record-only direct child S2 updating packages/security-audit-sdk-core/verification-lifecycle.json, the identity-preserving merge of the T2 PR, and the rebuilt dedicated direct-child activation commit bound to the new merge; withhold canonicalization, archive, publication, deployment, production collection, real-user processing, framework integration, and delivery infrastructure. The owner answered: Approve.",
+      "signatureDecision": "Owner decision given 2026-08-14: approve exact technical commit ce692b2b26cceedc7af3e645258f2d3993906e2e (the fix in openspec/scripts/design-pattern-governance/activation.mjs, three regressions in openspec/tests/design-pattern-governance/activation.test.mjs, and the evidence-packet update); authorize its governance-record-only direct child S3 updating only packages/security-audit-sdk-core/verification-lifecycle.json, and the identity-preserving merge of pull request 161; the activation record is not rebuilt and no push to the protected reference is authorized; withhold canonicalization, archive, publication, deployment, production collection, real-user processing, framework integration, and delivery infrastructure. The owner answered: Approve.",
       "reviewer": {
         "name": "Fernando Homem da Costa (nandohdc)",
         "role": "Project owner and technical decision-maker",
