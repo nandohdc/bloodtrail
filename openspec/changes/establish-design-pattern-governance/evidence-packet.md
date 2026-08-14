@@ -164,8 +164,8 @@ after activation, and a sixth when repairing the fifth, each repaired by its own
    the named baseline and phase equal to those actually compared. Naming the baseline makes the
    acceptance expire by itself — once the repair lands the baseline moves and it matches nothing, so
    the gate returns to full strength with nothing to remember to remove. Unreadable policy, record,
-   or schema all leave the disagreement rejected. Sixteen self-governance regressions cover the
-   accepting case and every rejection dimension, and the original self-approving-candidate control
+   or schema all leave the disagreement rejected. Self-governance regressions cover the accepting
+   case and every rejection dimension named above, and the original self-approving-candidate control
    still fails the gate.
 
    The narrowing is real and is recorded as such: the dual check no longer fails on every
