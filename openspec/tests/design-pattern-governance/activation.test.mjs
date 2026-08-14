@@ -7,6 +7,7 @@
  */
 
 import { after, describe, it } from "node:test";
+import assert from "node:assert/strict";
 
 import { createRepository } from "./support/disposable-repo.mjs";
 import { POLICY_PATH, assertDiagnostic, assertNoDiagnostic, assertPasses, runChecker } from "./support/harness.mjs";
@@ -25,6 +26,16 @@ after(() => {
 });
 
 const check = (repository) => runChecker(repository, { phase: "activation" });
+
+describe("fixture isolation from the live activation record", () => {
+  it("never seeds the live activation record into disposable fixtures", () => {
+    const repository = fixture();
+    // The live record binds the real merge/technical/signed commits, which do
+    // not exist in a fixture. Inheriting it would make every fixture fail for
+    // that reason alone, so seeding must exclude it.
+    assert.throws(() => repository.read(ACTIVATION_PATH));
+  });
+});
 
 /**
  * Builds the governed sequence: technical commit T on a branch, the signed

@@ -19,7 +19,7 @@ Authorized proposal baseline: `e536c9b74ec009a1bfad1c1561d478cb48600ba4`
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase bootstrap` | passed; enforcement remains pending until the dedicated activation record exists |
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase activation` | fails closed: `activation-commit-absent` — expected, no activation record exists |
 | `node openspec/scripts/run-governance-dual-check.mjs` | candidate passed; baseline unavailable, see below |
-| `node --test openspec/tests/design-pattern-governance/*.test.mjs` | 177 tests, 177 pass, 0 fail |
+| `node --test openspec/tests/design-pattern-governance/*.test.mjs` | 178 tests, 178 pass, 0 fail |
 | `npm run check:generated --prefix packages/security-audit-sdk-core` | generated artifacts current |
 | `npm run validate --prefix packages/security-audit-sdk-core` | full chain green, 194 verification tests pass |
 | `npm run validate --prefix contracts/security-audit` | 14 tests pass |
@@ -94,7 +94,9 @@ have a dedicated named-identifier assertion. That is a stated gap, not a claim o
 
 ## R15 recovery controls
 
-Three post-signing defects were found by independent review and are repaired by this change:
+Three post-signing defects were found by independent review and are repaired by the original
+technical change; a fourth surfaced later during activation preflight and is repaired by this
+re-signing delta:
 
 1. **Review freshness was specified but not enforced.** R15 requires any post-signing normative
    change to invalidate the signed record, yet the checker passed while six normative paths had
@@ -128,6 +130,11 @@ Three post-signing defects were found by independent review and are repaired by 
    suite green. `governance-history-mutations.test.mjs` now carries an independent expected record
    inventory (record IDs, one record per change, minimum reviewed paths, no duplicate bindings) and
    two controls that reproduce the bypasses and show the inventory rejecting them.
+4. **Disposable fixtures inherited the live activation record.** The fixture seeder copies the
+   governance directory verbatim, so once a real activation record exists it lands in every fixture
+   and fails them all: its merge/technical/signed bindings resolve only in the real repository. The
+   seeder now excludes the record, and an activation-suite regression asserts fixtures never inherit
+   it.
 
 The signed-record source is now closed policy: `review_freshness.record_path` is a required policy
 section validated as a well-formed repository path inside the governance-record-only allowlist, so
