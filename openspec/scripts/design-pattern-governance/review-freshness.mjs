@@ -217,14 +217,14 @@ function archiveDirectoryEntries(repositoryRoot) {
 function carriesRelocatedArtifact(archiveName, id, cwd, sink) {
   const archivedPath = `openspec/changes/archive/${archiveName}`;
   for (const artifact of ARCHIVE_ARTIFACTS) {
-    const relocated = artifactWasRelocated(archivedPath, id, artifact, cwd, sink);
+    const relocated = artifactWasRelocated({ archivedPath, id, artifact, cwd, sink });
     if (relocated === HISTORY_UNAVAILABLE) return false;
     if (relocated) return true;
   }
   return false;
 }
 
-function artifactWasRelocated(archivedPath, id, artifact, cwd, sink) {
+function artifactWasRelocated({ archivedPath, id, artifact, cwd, sink }) {
   const archivedObject = objectAtPath("HEAD", `${archivedPath}/${artifact}`, cwd);
   if (archivedObject === null) return false;
   const activePath = `openspec/changes/${id}/${artifact}`;
@@ -388,14 +388,14 @@ function priorSignedRecord(changeId, currentBlob, { recordPath, cwd, sink }) {
   }
   for (const commit of splitLines(touched.value)) {
     if (objectAtPath(commit, recordPath, cwd) === currentBlob) continue;
-    const prior = signedRecordInManifestAt(commit, recordPath, changeId, cwd, sink);
+    const prior = signedRecordInManifestAt(commit, changeId, { recordPath, cwd, sink });
     if (prior === HISTORY_UNAVAILABLE) return HISTORY_UNAVAILABLE;
     if (prior !== null) return prior;
   }
   return null;
 }
 
-function signedRecordInManifestAt(commit, recordPath, changeId, cwd, sink) {
+function signedRecordInManifestAt(commit, changeId, { recordPath, cwd, sink }) {
   const parsed = parseHistoricalManifest(commit, recordPath, cwd, sink);
   if (parsed === HISTORY_UNAVAILABLE) return HISTORY_UNAVAILABLE;
   if (parsed === null) return null;
