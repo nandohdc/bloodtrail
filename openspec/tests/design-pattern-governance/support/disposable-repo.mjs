@@ -122,6 +122,10 @@ export function createRepository(options = {}) {
     mkdirSync(dirname(destination), { recursive: true });
     cpSync(source, destination, { recursive: true });
   }
+  // The live activation record binds the real merge/technical/signed commits,
+  // which do not exist in a fixture. Inheriting it would make every fixture
+  // fail for that reason alone, so fixtures always build their own records.
+  rmSync(join(root, "openspec/governance/activation-record.json"), { force: true });
 
   repository.write("README.md", "# Governance fixture\n");
   // The signed-record source the policy names. Fixtures seed an empty manifest
