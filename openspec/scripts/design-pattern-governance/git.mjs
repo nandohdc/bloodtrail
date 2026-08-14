@@ -149,20 +149,30 @@ export function pathsChangedByCommitIncludingMerges(commit, cwd) {
   const parents = parentsOf(commit, cwd);
   if (parents === null) return null;
   if (parents.length <= 1) return pathsChangedByCommit(commit, cwd);
+  return mergeSpecificPaths(commit, parents, cwd);
+}
+
+function mergeSpecificPaths(commit, parents, cwd) {
+  const candidates = mergeChangedCandidates(commit, parents, cwd);
+  if (candidates === null) return null;
+  return [...candidates]
+    .filter((path) => isNewAgainstEveryParent(path, commit, parents, cwd))
+    .sort();
+}
+
+function mergeChangedCandidates(commit, parents, cwd) {
   const candidates = new Set();
   for (const parent of parents) {
     const result = tryGit(["diff", "--no-renames", "--name-only", "-z", parent, commit], { cwd });
     if (!result.ok) return null;
     for (const path of splitNull(result.value)) candidates.add(path);
   }
-  const genuinelyNew = [];
-  for (const path of candidates) {
-    const atCommit = objectAtPath(commit, path, cwd);
-    if (parents.every((parent) => objectAtPath(parent, path, cwd) !== atCommit)) {
-      genuinelyNew.push(path);
-    }
-  }
-  return genuinelyNew.sort();
+  return candidates;
+}
+
+function isNewAgainstEveryParent(path, commit, parents, cwd) {
+  const atCommit = objectAtPath(commit, path, cwd);
+  return parents.every((parent) => objectAtPath(parent, path, cwd) !== atCommit);
 }
 
 export function untrackedPaths(cwd) {

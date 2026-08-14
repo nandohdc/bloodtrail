@@ -284,22 +284,28 @@ function validateRequiredPathSets(parsed, relativePath, sink) {
  * which is the exact self-reference R15 forbids.
  */
 function validateReviewFreshness(parsed, relativePath, sink) {
-  const section = parsed.review_freshness;
-  if (!isRecord(section)) {
+  if (!isRecord(parsed.review_freshness)) {
     sink.fail("policy-incomplete", relativePath, "review_freshness must be an object");
     return;
   }
-  const recordPath = section.record_path;
+  const recordPath = parsed.review_freshness.record_path;
   if (typeof recordPath !== "string" || recordPath.length === 0) {
     sink.fail("policy-incomplete", relativePath, "review_freshness.record_path must be a non-empty string");
     return;
   }
+  validateRecordPathForm(recordPath, relativePath, sink);
+  requireRecordPathCovered(recordPath, parsed.governance_record_only_paths ?? [], relativePath, sink);
+}
+
+function validateRecordPathForm(recordPath, relativePath, sink) {
   const problem = pathProblem(recordPath);
   if (problem !== null) {
     sink.fail("policy-incomplete", relativePath, `review_freshness.record_path ${problem}`);
-    return;
   }
-  if (!matchesAny(recordPath, parsed.governance_record_only_paths ?? [])) {
+}
+
+function requireRecordPathCovered(recordPath, allowed, relativePath, sink) {
+  if (!matchesAny(recordPath, allowed)) {
     sink.fail("review-freshness-record-path-unprotected", relativePath,
       `review_freshness.record_path ${recordPath} is not covered by governance_record_only_paths; the signed-record source must sit inside the closed allowlist`);
   }
