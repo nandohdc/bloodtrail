@@ -340,15 +340,15 @@
     },
     {
       "change": "establish-design-pattern-governance",
-      "policy": "Owner-signed decision bound to exact technical commit 5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and the empty pre-merge mergeCommits list. The record authorizes only identity-preserving merge and dedicated activation preparation; it does not authorize canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
-      "reviewedCommit": "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b",
+      "policy": "Owner-signed decision bound to exact technical commit 11996085a55ecb0ba627532ea67558793064d21c and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and the empty pre-merge mergeCommits list. The record authorizes only identity-preserving merge and dedicated activation preparation; it does not authorize canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
+      "reviewedCommit": "11996085a55ecb0ba627532ea67558793064d21c",
       "reviewedContent": {
         "kind": "tree",
-        "candidateRoot": "9f25b9bbc044050096e1e813ad8328f9b7251c39",
+        "candidateRoot": "879f64aff1c460ae4fba5c1e8de3d40a4525a20f",
         "entries": [
           {
             "path": "openspec/changes/establish-design-pattern-governance",
-            "object": "f7bd897b7d55c989ff7db13d368bd4bc386045b5"
+            "object": "d528035c0290a2eea0dda98a4d38cf850e2c954e"
           },
           {
             "path": "openspec/governance",
@@ -364,7 +364,7 @@
           },
           {
             "path": "openspec/tests/design-pattern-governance",
-            "object": "2915f00455cb514595bfdebb7897a5551be63fec"
+            "object": "54e3f775b4316e1fea01ef68b59b966c89894a94"
           }
         ]
       },
@@ -378,17 +378,18 @@
         "fbbebe7917390f10f506ba22f28e990346b9518a",
         "ce13943ad5819073921fced9fb3168485992f407",
         "b8e845ede58ebed46b4fc0d4a9205949759deac3",
-        "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b"
+        "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b",
+        "11996085a55ecb0ba627532ea67558793064d21c"
       ],
       "boundCommits": [
-        "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b"
+        "11996085a55ecb0ba627532ea67558793064d21c"
       ],
       "mergeCommits": [],
       "designPatternGovernance": {
         "assessment": {
           "path": "openspec/changes/establish-design-pattern-governance/assessment.json",
           "digest": "sha256:784639b2301b75b4edfd7cee3a4a92825c783dc0f919c843ea663d0506fffa04",
-          "assessmentCommit": "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b"
+          "assessmentCommit": "11996085a55ecb0ba627532ea67558793064d21c"
         },
         "catalogInvariants": [],
         "implementationInvariants": [
@@ -410,11 +411,11 @@
             ]
           },
           "candidate": {
-            "sourceRef": "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b",
+            "sourceRef": "11996085a55ecb0ba627532ea67558793064d21c",
             "checkerBlob": "c9f836ac56855b8fc4eaaef37aed88805264910b",
             "exitCode": 1,
             "diagnostics": [
-              "final phase at T_NEW failed with signed-review-stale for every normative path changed after the superseded signed record; this was the intended fail-closed R15 state and is cleared by this record"
+              "final phase at T2 failed with signed-review-stale for the three fixture-isolation paths changed after the prior signed record; this was the intended fail-closed R15 state and is cleared by this record"
             ]
           }
         },
@@ -425,9 +426,9 @@
             "reason": "The asymmetry is explicit, bootstrap is object-bound, and mutation tests prove that later governance-core changes are checked by both baseline and candidate implementations."
           },
           {
-            "description": "Before this record existed, final verification at T_NEW failed with 23 signed-review-stale diagnostics naming every normative path changed after the superseded signed record f53a071. The failure was the intended R15 state for a stale binding, not a defect.",
+            "description": "Before this record existed, final verification at T2 failed with signed-review-stale for the fixture-isolation fix, because the record merged before it still bound 5ceff7f. The failure was the intended R15 state for a post-signing normative change, not a defect.",
             "accepted": true,
-            "reason": "The staleness was real and is the reason this replacement record exists; introducing the record is the governance-record-only commit that clears it, and R15 now rejects any further normative change after T_NEW."
+            "reason": "The staleness was real and is the reason this re-signing exists; introducing the record is the governance-record-only commit that clears it, and R15 now rejects any further normative change after T2."
           }
         ],
         "requiredCheckEvidence": {
@@ -459,7 +460,7 @@
         "AI-produced analysis informed the implementation and is not review, approval, or assurance."
       ],
       "signed": true,
-      "signatureDecision": "Owner decision given 2026-08-14 in answer to the exact-quoted approval question: approve exact technical commit 5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b; authorize its governance-record-only direct child S_NEW (parent 12e5d77, the documentation-only plan commit), the identity-preserving merge of PR #157, and the dedicated direct-child activation commit A; withhold canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, and delivery infrastructure. The owner answered: yes.",
+      "signatureDecision": "Owner decision given 2026-08-14: approve exact technical commit 11996085a55ecb0ba627532ea67558793064d21c; authorize its governance-record-only direct child S2 updating packages/security-audit-sdk-core/verification-lifecycle.json, the identity-preserving merge of the T2 PR, and the rebuilt dedicated direct-child activation commit bound to the new merge; withhold canonicalization, archive, publication, deployment, production collection, real-user processing, framework integration, and delivery infrastructure. The owner answered: Approve.",
       "reviewer": {
         "name": "Fernando Homem da Costa (nandohdc)",
         "role": "Project owner and technical decision-maker",
