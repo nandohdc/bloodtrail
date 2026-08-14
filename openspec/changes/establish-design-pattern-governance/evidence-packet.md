@@ -19,7 +19,7 @@ Authorized proposal baseline: `e536c9b74ec009a1bfad1c1561d478cb48600ba4`
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase bootstrap` | passed; enforcement remains pending until the dedicated activation record exists |
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase activation` | fails closed: `activation-commit-absent` — expected, no activation record exists |
 | `node openspec/scripts/run-governance-dual-check.mjs` | candidate passed; baseline unavailable, see below |
-| `node --test openspec/tests/design-pattern-governance/*.test.mjs` | 181 tests, 181 pass, 0 fail |
+| `node --test openspec/tests/design-pattern-governance/*.test.mjs` | 192 tests, 192 pass, 0 fail |
 | `npm run check:generated --prefix packages/security-audit-sdk-core` | generated artifacts current |
 | `npm run validate --prefix packages/security-audit-sdk-core` | full chain green, 194 verification tests pass |
 | `npm run validate --prefix contracts/security-audit` | 14 tests pass |
@@ -95,8 +95,8 @@ have a dedicated named-identifier assertion. That is a stated gap, not a claim o
 ## R15 recovery controls
 
 Three post-signing defects were found by independent review and are repaired by the original
-technical change; a fourth surfaced during activation preflight and a fifth on the first pull
-request after activation, each repaired by its own re-signing delta:
+technical change; a fourth surfaced during activation preflight, a fifth on the first pull request
+after activation, and a sixth when repairing the fifth, each repaired by its own re-signing delta:
 
 1. **Review freshness was specified but not enforced.** R15 requires any post-signing normative
    change to invalidate the signed record, yet the checker passed while six normative paths had
@@ -148,6 +148,31 @@ request after activation, each repaired by its own re-signing delta:
    two-parent commit that genuinely introduces the record is still rejected for its parent count.
    Three activation-suite regressions cover the preview shape, a record arriving only by merging a
    side branch, and that parent-count guard.
+6. **The dual check could not distinguish a repair from self-approval.** `run-governance-dual-check`
+   failed whenever the baseline failed, so a candidate that *passes* where the baseline *fails* was
+   always read as self-approval. That is also exactly what repairing a false positive in the baseline
+   looks like, and the verdicts alone cannot separate the two — so no correction to a checker false
+   positive could ever land, including defect 5. Repairing defect 5 hit this immediately: the
+   baseline raised `activation-commit-absent` on the pull-request preview while the candidate
+   passed. The disagreement is now tolerated only when one canonical current signed record binds it
+   in advance, under `openspec/governance/schemas/baseline-disagreement.schema.json`, which the dual
+   check loads and enforces rather than duplicating in code. Every dimension is exact rather than
+   sufficient: one singular acceptance on one record and never combined across records; the declared
+   diagnostics equal to the raised ones as `{id, path}` pairs, so no superset can pre-approve
+   rejections nobody reviewed; the named technical commit equal to the record's own `reviewedCommit`,
+   with the record commit derived from history and required to be that commit's direct child; and
+   the named baseline and phase equal to those actually compared. Naming the baseline makes the
+   acceptance expire by itself — once the repair lands the baseline moves and it matches nothing, so
+   the gate returns to full strength with nothing to remember to remove. Unreadable policy, record,
+   or schema all leave the disagreement rejected. Sixteen self-governance regressions cover the
+   accepting case and every rejection dimension, and the original self-approving-candidate control
+   still fails the gate.
+
+   The narrowing is real and is recorded as such: the dual check no longer fails on every
+   disagreement. What it does not narrow is the baseline's own verdict, which remains the thing a
+   candidate cannot reach. This does not close the pre-existing fact that the dual-check script is
+   itself candidate-editable; its integrity has always rested on the baseline checker plus human
+   review, not on the script.
 
 The signed-record source is now closed policy: `review_freshness.record_path` is a required policy
 section validated as a well-formed repository path inside the governance-record-only allowlist, so

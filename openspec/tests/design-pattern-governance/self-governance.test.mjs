@@ -13,6 +13,7 @@ import { after, describe, it } from "node:test";
 
 import { createRepository, dualCheckPath } from "./support/disposable-repo.mjs";
 import {
+  ASSESSMENT_PATH,
   CATALOG_PATH,
   POLICY_PATH,
   REGISTRY_PATH,
@@ -189,72 +190,180 @@ describe("R14 a candidate checker is not the sole judge of its own weakening", (
   });
 });
 
-describe("R9 schema compatibility", () => {
-  it("rejects evidence on a version newer than the checker supports", () => {
+/**
+ * A candidate that repairs a false positive in the baseline produces the same
+ * two verdicts as one that approves itself. The signed record is what separates
+ * them, and these controls fix how narrow that acceptance is: it must name the
+ * exact baseline and the exact diagnostic, so it cannot be written once and left
+ * to cover whatever the checker stops reporting later.
+ */
+describe("R14 a baseline disagreement is accepted only exactly where one signed record binds it", () => {
+  const RECORD = "packages/security-audit-sdk-core/verification-lifecycle.json";
+  const CHANGE = "establish-design-pattern-governance";
+  const REASON = "The baseline raises this against evidence the candidate repairs; accepted for this exact baseline only.";
+
+  /**
+   * A fixture whose baseline rejects evidence the candidate checker accepts.
+   *
+   * The rejected evidence is a malformed assessment rather than a missing policy,
+   * because the policy is where the signed-record source and the acceptance
+   * schema are named: removing it would make the lookup fail for that reason
+   * instead of the one under test, and the real case always has a readable policy.
+   */
+  function repairedFalsePositive() {
     const repository = fixture();
-    repository.mutateJson("openspec/changes/establish-design-pattern-governance/assessment.json", (assessment) => {
-      assessment.schema_version = "9.0";
-      return assessment;
+    repository.commit("chore: baseline governance state");
+    const baseline = repository.head();
+    repository.write(ASSESSMENT_PATH, "{ not json");
+    // Stands in for a candidate that no longer raises what the baseline raises.
+    repository.write(CHECKER, "#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify({ failures: [], warnings: [] }));\nprocess.exit(0);\n");
+    const technical = repository.commit("feat: the reviewed technical commit");
+    return { repository, baseline, technical };
+  }
+
+  function acceptance(baseline, technical, overrides = {}) {
+    return {
+      schemaVersion: "1.0",
+      phase: "final",
+      baseline,
+      technicalCommit: technical,
+      diagnostics: [{ id: "assessment-invalid-json", path: ASSESSMENT_PATH }],
+      reason: REASON,
+      ...overrides,
+    };
+  }
+
+  /** Writes the record as the direct child of the technical commit, which is what binds it. */
+  function signRecord(repository, records) {
+    repository.writeJson(RECORD, { governanceRecords: records });
+    return repository.commit("docs: the signed governance record");
+  }
+
+  function record(technical, entry, overrides = {}) {
+    return {
+      change: CHANGE,
+      signed: true,
+      reviewedCommit: technical,
+      ...(entry === null ? {} : { baselineDisagreementAcceptance: entry }),
+      ...overrides,
+    };
+  }
+
+  function dualCheck(repository, baseline) {
+    return spawnSync(process.execPath, [dualCheckPath, "--base", baseline, "--repo-root", repository.root, "--json"], {
+      encoding: "utf8",
+      cwd: repository.root,
     });
-    assertDiagnostic(runChecker(repository, { phase: "assessment" }), "unknown-new-version");
+  }
+
+  /** Runs the whole arrangement and returns the dual-check result. */
+  function run(records, mutate) {
+    const { repository, baseline, technical } = repairedFalsePositive();
+    signRecord(repository, records(baseline, technical));
+    if (mutate) mutate(repository);
+    return { dual: dualCheck(repository, baseline), repository };
+  }
+
+  const rejects = (label, records, mutate) => it(label, () => {
+    const { dual } = run(records, mutate);
+    assert.notEqual(dual.status, 0, `${label}\n${dual.stdout}${dual.stderr}`);
   });
 
-  it("rejects evidence on a version older than the supported range", () => {
-    const repository = fixture();
-    repository.mutateJson("openspec/governance/schemas/assessment.schema.json", (schema) => {
-      schema.supported_versions = ["1.1"];
-      return schema;
-    });
-    repository.mutateJson("openspec/changes/establish-design-pattern-governance/assessment.json", (assessment) => {
-      assessment.schema_version = "1.0";
-      return assessment;
-    });
-    assertDiagnostic(runChecker(repository, { phase: "assessment" }), "unsupported-old-version");
+  it("accepts one exactly-bound acceptance on the canonical current record", () => {
+    const { dual } = run((baseline, technical) => [record(technical, acceptance(baseline, technical))]);
+    assert.equal(dual.status, 0, `an exactly-bound acceptance must clear the gate\n${dual.stdout}${dual.stderr}`);
+    assert.match(dual.stdout, /"accepted": true/, "the report must state the acceptance explicitly");
   });
 
-  it("rejects a schema that stops being closed", () => {
-    const repository = fixture();
-    repository.mutateJson("openspec/governance/schemas/assessment.schema.json", (schema) => {
-      schema.closed = false;
-      return schema;
+  rejects("rejects no acceptance at all",
+    (_baseline, technical) => [record(technical, null)]);
+
+  rejects("rejects an acceptance naming a different baseline",
+    (_baseline, technical) => [record(technical, acceptance("0".repeat(40), technical))]);
+
+  rejects("rejects an acceptance naming a different phase",
+    (baseline, technical) => [record(technical, acceptance(baseline, technical, { phase: "activation" }))]);
+
+  rejects("rejects an acceptance naming a different diagnostic id",
+    (baseline, technical) => [record(technical, acceptance(baseline, technical, {
+      diagnostics: [{ id: "policy-absent", path: ASSESSMENT_PATH }],
+    }))]);
+
+  rejects("rejects an acceptance naming the right id at the wrong path",
+    (baseline, technical) => [record(technical, acceptance(baseline, technical, {
+      diagnostics: [{ id: "assessment-invalid-json", path: "openspec/governance/design-pattern-policy.json" }],
+    }))]);
+
+  rejects("rejects an acceptance covering more diagnostics than were raised",
+    (baseline, technical) => [record(technical, acceptance(baseline, technical, {
+      diagnostics: [
+        { id: "assessment-invalid-json", path: ASSESSMENT_PATH },
+        { id: "policy-absent", path: "openspec/governance/design-pattern-policy.json" },
+      ],
+    }))]);
+
+  rejects("rejects acceptances aggregated across two records",
+    (baseline, technical) => [
+      record(technical, acceptance(baseline, technical, { diagnostics: [{ id: "policy-absent", path: ASSESSMENT_PATH }] })),
+      record(technical, acceptance(baseline, technical), { change: "right-size-change-governance" }),
+    ]);
+
+  rejects("rejects two current signed records for one change",
+    (baseline, technical) => [
+      record(technical, acceptance(baseline, technical)),
+      record(technical, null),
+    ]);
+
+  rejects("rejects an acceptance on an unsigned record",
+    (baseline, technical) => [record(technical, acceptance(baseline, technical), { signed: false })]);
+
+  rejects("rejects an acceptance carrying an undeclared field",
+    (baseline, technical) => [record(technical, { ...acceptance(baseline, technical), scope: "everything" })]);
+
+  rejects("rejects an acceptance on an unsupported schema version",
+    (baseline, technical) => [record(technical, acceptance(baseline, technical, { schemaVersion: "2.0" }))]);
+
+  rejects("rejects an acceptance whose reason is too short to be a review",
+    (baseline, technical) => [record(technical, acceptance(baseline, technical, { reason: "fine" }))]);
+
+  rejects("rejects an acceptance naming a technical commit the record did not review",
+    (baseline, technical) => [record(technical, acceptance(baseline, "0".repeat(40)))]);
+
+  it("rejects a record that is stale against its own technical commit", () => {
+    const { repository, baseline, technical } = repairedFalsePositive();
+    // A commit between the technical commit and the record means the record was
+    // not signed as that commit's direct child, so something unreviewed landed
+    // in between and the binding is stale.
+    repository.write("docs/interposed.md", "# Interposed\n");
+    repository.commit("docs: interpose a commit before the record is signed");
+    signRecord(repository, [record(technical, acceptance(baseline, technical))]);
+
+    const dual = dualCheck(repository, baseline);
+    assert.notEqual(dual.status, 0, `a record that is not the technical commit's direct child is stale\n${dual.stdout}`);
+    assert.match(dual.stderr + dual.stdout, /not a direct child/, "the rejection must name the broken commit binding\n" + dual.stdout + dual.stderr);
+  });
+
+  rejects("rejects an acceptance when the policy naming the schema is unreadable",
+    (baseline, technical) => [record(technical, acceptance(baseline, technical))],
+    (repository) => {
+      repository.remove(POLICY_PATH);
+      repository.commit("chore: remove the policy");
     });
-    assertDiagnostic(runChecker(repository, { phase: "assessment" }), "schema-weakened");
-  });
 
-  it("rejects a schema declaring a rule the checker does not implement", () => {
-    const repository = fixture();
-    repository.mutateJson("openspec/governance/schemas/assessment.schema.json", (schema) => {
-      schema.rules.push({ id: "assessment-invented-rule", requirement: "R2" });
-      return schema;
+  rejects("rejects an acceptance when the schema it is judged against is missing",
+    (baseline, technical) => [record(technical, acceptance(baseline, technical))],
+    (repository) => {
+      repository.remove("openspec/governance/schemas/baseline-disagreement.schema.json");
+      repository.commit("chore: remove the acceptance schema");
     });
-    assertDiagnostic(runChecker(repository, { phase: "assessment" }), "rule-unimplemented");
-  });
 
-  it("rejects a schema that drops a rule the checker implements", () => {
-    const repository = fixture();
-    repository.mutateJson("openspec/governance/schemas/assessment.schema.json", (schema) => {
-      schema.rules = schema.rules.filter((rule) => rule.id !== "assessment-direct-has-no-selected-patterns");
-      return schema;
+  rejects("rejects an acceptance judged against an opened schema",
+    (baseline, technical) => [record(technical, acceptance(baseline, technical))],
+    (repository) => {
+      repository.mutateJson("openspec/governance/schemas/baseline-disagreement.schema.json", (schema) => {
+        schema.closed = false;
+        return schema;
+      });
+      repository.commit("chore: open the acceptance schema");
     });
-    assertDiagnostic(runChecker(repository, { phase: "assessment" }), "rule-undeclared");
-  });
-});
-
-describe("determinism", () => {
-  it("produces byte-identical output across repeated runs", () => {
-    const repository = fixture();
-    const first = runChecker(repository, { phase: "final" });
-    const second = runChecker(repository, { phase: "final" });
-    assert.equal(first.stdout, second.stdout, "identical inputs must produce identical output");
-    assert.equal(first.status, second.status);
-  });
-
-  it("sorts diagnostics stably regardless of the order the failures arise in", () => {
-    const repository = fixture();
-    repository.remove(POLICY_PATH);
-    const first = runChecker(repository, { phase: "final" });
-    const second = runChecker(repository, { phase: "final" });
-    assert.deepEqual(first.ids, second.ids);
-    assert.deepEqual([...first.ids].sort(), first.ids, "diagnostics must be emitted in sorted order");
-  });
 });

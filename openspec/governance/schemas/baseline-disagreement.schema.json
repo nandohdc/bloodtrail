@@ -1,0 +1,77 @@
+{
+  "schema": "bloodtrail.design-pattern-governance.closed-schema",
+  "id": "baseline-disagreement",
+  "version": "1.0",
+  "supported_versions": ["1.0"],
+  "closed": true,
+  "note": "A dual-check disagreement is the signature of a candidate checker approving itself, and it is also what repairing a false positive in the baseline looks like. The verdicts alone cannot separate them, so the signed governance record may accept one disagreement in advance. This schema is what makes that acceptance narrow enough to review: it is a single object on a single canonical current signed record, it names the exact baseline, the exact technical commit it was reviewed against, the exact phase, and the exact structured diagnostics the baseline raises. The dual-check loads this schema and enforces it, so the field set here is the field set enforced; there is no second copy to drift. An acceptance may never be a list, may never be spread across records, and may never cover a diagnostic the baseline did not raise.",
+  "fields": {
+    "schemaVersion": {
+      "type": "string",
+      "required": true,
+      "enum": ["1.0"]
+    },
+    "phase": {
+      "type": "string",
+      "required": true,
+      "enum": ["final"]
+    },
+    "baseline": {
+      "type": "string",
+      "required": true,
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "technicalCommit": {
+      "type": "string",
+      "required": true,
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "diagnostics": {
+      "type": "array",
+      "required": true,
+      "min_items": 1,
+      "max_items": 25,
+      "items": {
+        "type": "object",
+        "closed": true,
+        "fields": {
+          "id": {
+            "type": "string",
+            "required": true,
+            "pattern": "^[a-z][a-z0-9-]{2,63}$"
+          },
+          "path": {
+            "type": "string",
+            "required": true,
+            "min_length": 1,
+            "max_length": 400
+          }
+        }
+      }
+    },
+    "reason": {
+      "type": "string",
+      "required": true,
+      "min_length": 40,
+      "max_length": 1000
+    }
+  },
+  "rules": [
+    {
+      "id": "baseline-disagreement-single-acceptance",
+      "statement": "Exactly one governance record in the signed-record source may carry an acceptance, and that record must be the one canonical current signed record for its change. Two acceptances, or two signed records for one change, reject the disagreement rather than combining."
+    },
+    {
+      "id": "baseline-disagreement-exact-commit-binding",
+      "statement": "technicalCommit must equal the carrying record's reviewedCommit, and the commit that introduced the current record bytes must be a direct child of that technical commit. An acceptance whose record was not signed against the commit under review is stale."
+    },
+    {
+      "id": "baseline-disagreement-exact-diagnostic-equality",
+      "statement": "The declared diagnostics must equal the baseline's raised diagnostics exactly, compared as sorted id-and-path pairs. A superset silently pre-approves diagnostics nobody reviewed; a subset leaves an unreviewed rejection unaccounted for."
+    },
+    {
+      "id": "baseline-disagreement-exact-baseline-and-phase",
+      "statement": "baseline must equal the exact ref the dual check compared against, and phase must equal the phase it ran. An acceptance therefore expires on its own once the repair lands and the baseline moves."
+    }
+  ]
+}
