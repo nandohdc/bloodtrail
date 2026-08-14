@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.1",
+  "change_id": "establish-design-pattern-governance",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Governance verdicts must be reproducible from committed bytes and Git history alone, independent of actor and wall clock.",
+    "Absent, corrupt, or incomplete evidence must deny rather than read as nothing-to-check.",
+    "Ordering, provenance, and activation must bind exact Git objects that no party to the change can rewrite.",
+    "A candidate version of the checker must not be the sole judge of whether it weakened itself.",
+    "The rule system has one owner in one repository and no independently variable rule provider."
+  ],
+  "applicability": {
+    "triggers_matched": ["governance_core_path", "canonical_capability_requirement", "security_sensitive_behavior"],
+    "material_capability_modification": true,
+    "capabilities": ["software-design-pattern-governance"]
+  },
+  "owned_paths": [
+    "openspec/scripts/",
+    "openspec/governance/",
+    "openspec/tests/design-pattern-governance/",
+    "docs/design-pattern-governance.md",
+    ".github/workflows/ci.yml",
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    "CONTRIBUTING.md",
+    "packages/security-audit-sdk-core/verification-lifecycle.json",
+    "packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-functions",
+      "kind": "direct_implementation",
+      "summary": "Dependency-free phase-aware validation functions over closed schema data and Git objects, with one named diagnostic per control.",
+      "forces_addressed": [
+        "Governance verdicts must be reproducible from committed bytes and Git history alone, independent of actor and wall clock.",
+        "Absent, corrupt, or incomplete evidence must deny rather than read as nothing-to-check.",
+        "Ordering, provenance, and activation must bind exact Git objects that no party to the change can rewrite.",
+        "The rule system has one owner in one repository and no independently variable rule provider."
+      ]
+    },
+    {
+      "id": "approach-composed-specifications",
+      "kind": "alternative",
+      "summary": "Composable Specification objects representing each policy predicate, combined through total and/or/not operators into a rule tree evaluated per phase.",
+      "forces_addressed": [
+        "The rule system has one owner in one repository and no independently variable rule provider.",
+        "A candidate version of the checker must not be the sole judge of whether it weakened itself."
+      ],
+      "catalog_pattern_id": "pattern-specification"
+    }
+  ],
+  "selected_approach_id": "approach-direct-functions",
+  "rejected_alternative_ids": ["approach-composed-specifications"],
+  "rejection_reasons": {
+    "approach-composed-specifications": {
+      "forces": [
+        "The rule system has one owner in one repository and no independently variable rule provider.",
+        "Ordering, provenance, and activation must bind exact Git objects that no party to the change can rewrite."
+      ],
+      "reason": "Specification answers a variation force that is not present here: there is no independently owned or runtime-selected family of predicates, and no second rule provider to compose against. It would add participant and lifecycle concepts without improving deterministic evidence, baseline trust, or exact Git binding, and its combinator tree would put a layer of indirection between a failing control and the named diagnostic a mutation test has to demand."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-deterministic-relations",
+    "implementation-exact-history-binding",
+    "implementation-actor-neutral-perimeter",
+    "implementation-fail-closed-evidence",
+    "implementation-approval-separation"
+  ],
+  "invariant_evidence": {
+    "implementation-deterministic-relations": {
+      "task_ids": ["5.1", "8.5"],
+      "evidence_ids": ["determinism.test.mjs: identical output across repeated runs", "diagnostics.mjs: code-point sorting, not localeCompare"]
+    },
+    "implementation-exact-history-binding": {
+      "task_ids": ["5.7", "5.8", "5.9", "7.2", "7.3"],
+      "evidence_ids": ["ancestry.test.mjs", "activation.test.mjs", "disposable-git fixtures for parent, blob, squash, rebase, and shallow history", "review-freshness.test.mjs: the signed record locates its own introducing commit and rejects post-T normative commits"]
+    },
+    "implementation-actor-neutral-perimeter": {
+      "task_ids": ["5.3", "7.1"],
+      "evidence_ids": ["perimeter.test.mjs: identical verdict for identical paths regardless of author", "no actor-conditional branch in perimeter.mjs", "perimeter.test.mjs: the Hermes documentation exception admits only .hermes/plans/ and rejects sibling configuration, scripts, skills, and hooks"]
+    },
+    "implementation-fail-closed-evidence": {
+      "task_ids": ["5.2", "5.10", "6.8", "7.6"],
+      "evidence_ids": ["policy.test.mjs: absent, empty, truncated, invalid, versionless, unsupported, and incompatible policy each assert their own diagnostic id", "review-freshness.test.mjs: removed, ambiguous, uncommitted, absent, and shallow-history record states fail with their own diagnostics"]
+    },
+    "implementation-approval-separation": {
+      "task_ids": ["6.10", "8.10"],
+      "evidence_ids": ["apply-authorization.md records granted and withheld authorizations separately", "signed-governance-record schema requires the withheld set"]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "e536c9b74ec009a1bfad1c1561d478cb48600ba4"
+  },
+  "verification_task_ids": ["8.1", "8.2", "8.3", "8.4", "8.5", "8.6"]
+}

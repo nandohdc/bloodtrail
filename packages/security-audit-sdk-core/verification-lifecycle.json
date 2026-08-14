@@ -28,20 +28,128 @@
     "traceabilityCommit": "71cabfe50e18af9f242ec9cd8b4aee33632e5792",
     "taskCount": 91,
     "taskGroups": [
-      { "id": "F-04", "issue": 24, "phase": "implementation", "taskRange": { "start": "1.1", "end": "1.8" } },
-      { "id": "F-01", "issue": 21, "phase": "implementation", "taskRange": { "start": "2.1", "end": "2.8" } },
-      { "id": "F-02", "issue": 22, "phase": "implementation", "taskRange": { "start": "3.1", "end": "3.7" } },
-      { "id": "F-03", "issue": 23, "phase": "implementation", "taskRange": { "start": "4.1", "end": "4.6" } },
-      { "id": "F-05/F-12", "issue": 25, "phase": "implementation", "taskRange": { "start": "5.1", "end": "5.8" } },
-      { "id": "F-06/F-09", "issue": 26, "phase": "implementation", "taskRange": { "start": "6.1", "end": "6.8" } },
-      { "id": "F-07", "issue": 27, "phase": "implementation", "taskRange": { "start": "7.1", "end": "7.6" } },
-      { "id": "F-08", "issue": 28, "phase": "implementation", "taskRange": { "start": "8.1", "end": "8.8" } },
-      { "id": "F-10", "issue": 29, "phase": "implementation", "taskRange": { "start": "9.1", "end": "9.6" } },
-      { "id": "F-11", "issue": 30, "phase": "implementation", "taskRange": { "start": "10.1", "end": "10.7" } },
-      { "id": "full-regression", "phase": "regression", "taskRange": { "start": "11.1", "end": "11.9" } },
-      { "id": "exact-commit-review", "phase": "technical-review", "taskRange": { "start": "12.1", "end": "12.4" } },
-      { "id": "project-owner-governance", "phase": "owner-governance", "taskRange": { "start": "12.5", "end": "12.7" } },
-      { "id": "merge-archive", "phase": "merge-archive", "taskRange": { "start": "12.8", "end": "12.10" } }
+      {
+        "id": "F-04",
+        "issue": 24,
+        "phase": "implementation",
+        "taskRange": {
+          "start": "1.1",
+          "end": "1.8"
+        }
+      },
+      {
+        "id": "F-01",
+        "issue": 21,
+        "phase": "implementation",
+        "taskRange": {
+          "start": "2.1",
+          "end": "2.8"
+        }
+      },
+      {
+        "id": "F-02",
+        "issue": 22,
+        "phase": "implementation",
+        "taskRange": {
+          "start": "3.1",
+          "end": "3.7"
+        }
+      },
+      {
+        "id": "F-03",
+        "issue": 23,
+        "phase": "implementation",
+        "taskRange": {
+          "start": "4.1",
+          "end": "4.6"
+        }
+      },
+      {
+        "id": "F-05/F-12",
+        "issue": 25,
+        "phase": "implementation",
+        "taskRange": {
+          "start": "5.1",
+          "end": "5.8"
+        }
+      },
+      {
+        "id": "F-06/F-09",
+        "issue": 26,
+        "phase": "implementation",
+        "taskRange": {
+          "start": "6.1",
+          "end": "6.8"
+        }
+      },
+      {
+        "id": "F-07",
+        "issue": 27,
+        "phase": "implementation",
+        "taskRange": {
+          "start": "7.1",
+          "end": "7.6"
+        }
+      },
+      {
+        "id": "F-08",
+        "issue": 28,
+        "phase": "implementation",
+        "taskRange": {
+          "start": "8.1",
+          "end": "8.8"
+        }
+      },
+      {
+        "id": "F-10",
+        "issue": 29,
+        "phase": "implementation",
+        "taskRange": {
+          "start": "9.1",
+          "end": "9.6"
+        }
+      },
+      {
+        "id": "F-11",
+        "issue": 30,
+        "phase": "implementation",
+        "taskRange": {
+          "start": "10.1",
+          "end": "10.7"
+        }
+      },
+      {
+        "id": "full-regression",
+        "phase": "regression",
+        "taskRange": {
+          "start": "11.1",
+          "end": "11.9"
+        }
+      },
+      {
+        "id": "exact-commit-review",
+        "phase": "technical-review",
+        "taskRange": {
+          "start": "12.1",
+          "end": "12.4"
+        }
+      },
+      {
+        "id": "project-owner-governance",
+        "phase": "owner-governance",
+        "taskRange": {
+          "start": "12.5",
+          "end": "12.7"
+        }
+      },
+      {
+        "id": "merge-archive",
+        "phase": "merge-archive",
+        "taskRange": {
+          "start": "12.8",
+          "end": "12.10"
+        }
+      }
     ]
   },
   "ownership": {
@@ -66,14 +174,38 @@
       "attestedAt": "2026-08-11",
       "policy": "Movement exactness verified by re-derivation against sourceRevision while it was reachable. Each entry records the expected archived file mode and blob object. When sourceRevision is resolvable and still contains the active change, check-changed-paths.mjs re-derives from history and ignores these entries; when it is unreachable it compares the archive against these entries instead, which does not re-derive the original move. check-archive-attestations.mjs additionally compares both this inventory and the working-tree archive against anchorCommit, the commit history shows introduced the archive, so rewriting an archived file together with its recorded object is detected.",
       "files": {
-        ".openspec.yaml": { "mode": "100644", "oid": "5849c2dbf41c3e6adf01905e54928c4ecde07b49" },
-        "adversarial-review-traceability.md": { "mode": "100644", "oid": "bb3ccee7b74f4e65873e555efa6313fe76ce39a6" },
-        "design.md": { "mode": "100644", "oid": "e07a4bb3ec371f416ed4cfadf404c83275ac1b71" },
-        "implementation-authorization.md": { "mode": "100644", "oid": "0da503b177a360aa8609a18089a82929c8bd2e79" },
-        "proposal.md": { "mode": "100644", "oid": "944858894f2d2bd3e21f1300ad79fd4e6337f40e" },
-        "specs/security-audit-sdk-core/spec.md": { "mode": "100644", "oid": "f243597df776cb221efd8949642182f8081b63bf" },
-        "tasks.md": { "mode": "100644", "oid": "cec5849386952a1627dfafaddb3eba98c7284b49" },
-        "technical-review-packet.md": { "mode": "100644", "oid": "bbf9b8e2574751b277e978cf82907c7aefd71a7e" }
+        ".openspec.yaml": {
+          "mode": "100644",
+          "oid": "5849c2dbf41c3e6adf01905e54928c4ecde07b49"
+        },
+        "adversarial-review-traceability.md": {
+          "mode": "100644",
+          "oid": "bb3ccee7b74f4e65873e555efa6313fe76ce39a6"
+        },
+        "design.md": {
+          "mode": "100644",
+          "oid": "e07a4bb3ec371f416ed4cfadf404c83275ac1b71"
+        },
+        "implementation-authorization.md": {
+          "mode": "100644",
+          "oid": "0da503b177a360aa8609a18089a82929c8bd2e79"
+        },
+        "proposal.md": {
+          "mode": "100644",
+          "oid": "944858894f2d2bd3e21f1300ad79fd4e6337f40e"
+        },
+        "specs/security-audit-sdk-core/spec.md": {
+          "mode": "100644",
+          "oid": "f243597df776cb221efd8949642182f8081b63bf"
+        },
+        "tasks.md": {
+          "mode": "100644",
+          "oid": "cec5849386952a1627dfafaddb3eba98c7284b49"
+        },
+        "technical-review-packet.md": {
+          "mode": "100644",
+          "oid": "bbf9b8e2574751b277e978cf82907c7aefd71a7e"
+        }
       }
     },
     {
@@ -83,11 +215,26 @@
       "attestedAt": "2026-08-11",
       "policy": "ENFORCED by check-archive-attestations.mjs, which verifies every declared attestation rather than only the change named by remediationChange. It records the movement verified while sourceRevision was reachable: four blobs identical, tasks.md differing by exactly the 4.3 transition. This inventory and the working-tree archive are both compared against anchorCommit, the commit history shows introduced the archive. validateArchiveMovement in check-changed-paths.mjs still does not read this entry; it is keyed to remediationChange, and generalizing it was rejected in favour of a separate gate that leaves its controls intact.",
       "files": {
-        ".openspec.yaml": { "mode": "100644", "oid": "a8821c74d0bd39900cc781d365e948b58ac13377" },
-        "design.md": { "mode": "100644", "oid": "d4f343db505981b3a92058ef218deaca682b4f11" },
-        "proposal.md": { "mode": "100644", "oid": "5c0fa31aacaaad6b949e04bb293816b1582453c7" },
-        "specs/security-audit-sdk-core/spec.md": { "mode": "100644", "oid": "b53ec08ac846d3553f4b777d8b4c164f152f78ca" },
-        "tasks.md": { "mode": "100644", "oid": "d8da66ad19c47cac87f44b55d46350c598513c20" }
+        ".openspec.yaml": {
+          "mode": "100644",
+          "oid": "a8821c74d0bd39900cc781d365e948b58ac13377"
+        },
+        "design.md": {
+          "mode": "100644",
+          "oid": "d4f343db505981b3a92058ef218deaca682b4f11"
+        },
+        "proposal.md": {
+          "mode": "100644",
+          "oid": "5c0fa31aacaaad6b949e04bb293816b1582453c7"
+        },
+        "specs/security-audit-sdk-core/spec.md": {
+          "mode": "100644",
+          "oid": "b53ec08ac846d3553f4b777d8b4c164f152f78ca"
+        },
+        "tasks.md": {
+          "mode": "100644",
+          "oid": "d8da66ad19c47cac87f44b55d46350c598513c20"
+        }
       }
     }
   ],
@@ -110,11 +257,19 @@
         "86bf25d459d909d4fbdd151fb23c3c159ba1f365"
       ],
       "mergeCommits": [
-        { "commit": "86bf25d459d909d4fbdd151fb23c3c159ba1f365", "expectedParents": 2 },
-        { "commit": "3734a295a0a32effeaf6b03d04d14542db12576e", "expectedParents": 2 }
+        {
+          "commit": "86bf25d459d909d4fbdd151fb23c3c159ba1f365",
+          "expectedParents": 2
+        },
+        {
+          "commit": "3734a295a0a32effeaf6b03d04d14542db12576e",
+          "expectedParents": 2
+        }
       ],
       "authorizations": {
-        "granted": ["sdk-core-as-contract-1.0.0-implementation-basis"],
+        "granted": [
+          "sdk-core-as-contract-1.0.0-implementation-basis"
+        ],
         "withheld": [
           "package-publication",
           "production-deployment",
@@ -128,7 +283,10 @@
         "Project-owner/implementer governance; not independent security, privacy, legal, or technical assurance."
       ],
       "signed": true,
-      "reviewer": { "name": "Fernando Homem da Costa (nandohdc)", "signedAt": "2026-07-31" }
+      "reviewer": {
+        "name": "Fernando Homem da Costa (nandohdc)",
+        "signedAt": "2026-07-31"
+      }
     },
     {
       "change": "right-size-change-governance",
@@ -138,8 +296,14 @@
         "kind": "tree",
         "candidateRoot": "d0b390f6e5e64fc87665cad9be68c70ebeab1810",
         "entries": [
-          { "path": "packages/security-audit-sdk-core/scripts", "object": "8505d3a7f3e1a2a0e851e6655bd5263d1a5556d3" },
-          { "path": "packages/security-audit-sdk-core/tests/verification", "object": "7919daf21a0e1a376af73f82f2a1a393e0a5c196" }
+          {
+            "path": "packages/security-audit-sdk-core/scripts",
+            "object": "8505d3a7f3e1a2a0e851e6655bd5263d1a5556d3"
+          },
+          {
+            "path": "packages/security-audit-sdk-core/tests/verification",
+            "object": "7919daf21a0e1a376af73f82f2a1a393e0a5c196"
+          }
         ]
       },
       "governedCommits": [
@@ -147,10 +311,14 @@
         "f7239d7d0cb910ab0d6d74ab8233f7d81aeabd31",
         "4a551f796e0dc06bf3b310966645f00ab02c5dbe"
       ],
-      "boundCommits": ["f7239d7d0cb910ab0d6d74ab8233f7d81aeabd31"],
+      "boundCommits": [
+        "f7239d7d0cb910ab0d6d74ab8233f7d81aeabd31"
+      ],
       "mergeCommits": [],
       "authorizations": {
-        "granted": ["right-size-change-governance-to-land-and-archive"],
+        "granted": [
+          "right-size-change-governance-to-land-and-archive"
+        ],
         "withheld": [
           "package-publication",
           "production-deployment",
@@ -165,7 +333,138 @@
         "AI-produced analysis informed the implementation and is not review, approval, or assurance."
       ],
       "signed": true,
-      "reviewer": { "name": "Fernando Homem da Costa (nandohdc)", "signedAt": "2026-08-12" }
+      "reviewer": {
+        "name": "Fernando Homem da Costa (nandohdc)",
+        "signedAt": "2026-08-12"
+      }
+    },
+    {
+      "change": "establish-design-pattern-governance",
+      "policy": "Owner-signed decision bound to exact technical commit 5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and the empty pre-merge mergeCommits list. The record authorizes only identity-preserving merge and dedicated activation preparation; it does not authorize canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
+      "reviewedCommit": "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b",
+      "reviewedContent": {
+        "kind": "tree",
+        "candidateRoot": "9f25b9bbc044050096e1e813ad8328f9b7251c39",
+        "entries": [
+          {
+            "path": "openspec/changes/establish-design-pattern-governance",
+            "object": "f7bd897b7d55c989ff7db13d368bd4bc386045b5"
+          },
+          {
+            "path": "openspec/governance",
+            "object": "1632a70adb16d54f7b2169207dc7f7ea806c60c0"
+          },
+          {
+            "path": "openspec/scripts",
+            "object": "c879962d3fa5f662cd0c18e81e8ae383fdc9de31"
+          },
+          {
+            "path": "packages/security-audit-sdk-core/tests/verification",
+            "object": "1ebb4763396973e15ea385725edfc8ab92c53cc0"
+          },
+          {
+            "path": "openspec/tests/design-pattern-governance",
+            "object": "2915f00455cb514595bfdebb7897a5551be63fec"
+          }
+        ]
+      },
+      "governedCommits": [
+        "c5719279b9f74c1aa1a56bc1630632626e9f3bd9",
+        "eed4c4d2562d2f57d6e5cfaa477c406336add5a7",
+        "f525881ddc8eaa4958966ffd9932f765fdbcf6a5",
+        "4f1ee3b544add8d991b3b6a0822dbe9e2028086d",
+        "5fd0258321d1304f4d2f7aba8d60c0c0de570343",
+        "6c2269c459a3fc16ae54d92fda69100fe5f9204f",
+        "fbbebe7917390f10f506ba22f28e990346b9518a",
+        "ce13943ad5819073921fced9fb3168485992f407",
+        "b8e845ede58ebed46b4fc0d4a9205949759deac3",
+        "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b"
+      ],
+      "boundCommits": [
+        "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b"
+      ],
+      "mergeCommits": [],
+      "designPatternGovernance": {
+        "assessment": {
+          "path": "openspec/changes/establish-design-pattern-governance/assessment.json",
+          "digest": "sha256:784639b2301b75b4edfd7cee3a4a92825c783dc0f919c843ea663d0506fffa04",
+          "assessmentCommit": "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b"
+        },
+        "catalogInvariants": [],
+        "implementationInvariants": [
+          "implementation-deterministic-relations",
+          "implementation-exact-history-binding",
+          "implementation-actor-neutral-perimeter",
+          "implementation-fail-closed-evidence",
+          "implementation-approval-separation"
+        ],
+        "candidateComparisonReviewed": true,
+        "securityClassificationReviewed": true,
+        "checkerResults": {
+          "baseline": {
+            "sourceRef": "e536c9b74ec009a1bfad1c1561d478cb48600ba4",
+            "checkerBlob": null,
+            "exitCode": null,
+            "diagnostics": [
+              "baseline checker unavailable because this change introduces the checker"
+            ]
+          },
+          "candidate": {
+            "sourceRef": "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b",
+            "checkerBlob": "c9f836ac56855b8fc4eaaef37aed88805264910b",
+            "exitCode": 1,
+            "diagnostics": [
+              "final phase at T_NEW failed with signed-review-stale for every normative path changed after the superseded signed record; this was the intended fail-closed R15 state and is cleared by this record"
+            ]
+          }
+        },
+        "divergences": [
+          {
+            "description": "The trusted baseline contains no governance checker, so a distinct baseline execution cannot be produced for the change that introduces it.",
+            "accepted": true,
+            "reason": "The asymmetry is explicit, bootstrap is object-bound, and mutation tests prove that later governance-core changes are checked by both baseline and candidate implementations."
+          },
+          {
+            "description": "Before this record existed, final verification at T_NEW failed with 23 signed-review-stale diagnostics naming every normative path changed after the superseded signed record f53a071. The failure was the intended R15 state for a stale binding, not a defect.",
+            "accepted": true,
+            "reason": "The staleness was real and is the reason this replacement record exists; introducing the record is the governance-record-only commit that clears it, and R15 now rejects any further normative change after T_NEW."
+          }
+        ],
+        "requiredCheckEvidence": {
+          "method": "github-branch-protection-api",
+          "digest": "sha256:f74b4db9e0858bc20f288f3f5596b6b233b77ecd65791dee81816c707893ba10",
+          "plan": "Re-query exact branch-protection bytes immediately before merge and activation, bind the activation-time digest, and fail closed if any required context or strict enforcement differs."
+        },
+        "activationAuthorized": true
+      },
+      "authorizations": {
+        "granted": [
+          "store-governance-record-s-for-exact-technical-commit",
+          "identity-preserving-merge-of-pr-157",
+          "dedicated-direct-child-activation-commit"
+        ],
+        "withheld": [
+          "canonical-capability-materialization",
+          "openspec-archive",
+          "package-publication",
+          "production-deployment",
+          "production-collection",
+          "real-user-processing",
+          "framework-integration",
+          "delivery-infrastructure"
+        ]
+      },
+      "assuranceLimitations": [
+        "Project-owner/implementer governance; not independent security, privacy, legal, or technical assurance.",
+        "AI-produced analysis informed the implementation and is not review, approval, or assurance."
+      ],
+      "signed": true,
+      "signatureDecision": "Owner decision given 2026-08-14 in answer to the exact-quoted approval question: approve exact technical commit 5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b; authorize its governance-record-only direct child S_NEW (parent 12e5d77, the documentation-only plan commit), the identity-preserving merge of PR #157, and the dedicated direct-child activation commit A; withhold canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, and delivery infrastructure. The owner answered: yes.",
+      "reviewer": {
+        "name": "Fernando Homem da Costa (nandohdc)",
+        "role": "Project owner and technical decision-maker",
+        "signedAt": "2026-08-14"
+      }
     }
   ]
 }

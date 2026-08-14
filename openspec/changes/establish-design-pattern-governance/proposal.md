@@ -4,9 +4,11 @@ Bloodtrail needs repository-wide, actor-neutral design-pattern governance that i
 
 The policy must require substantive assessment without forcing catalog patterns. A full assessment compares direct implementation with at least one materially plausible alternative, then binds any selected catalog pattern to versioned catalog invariants. The policy must apply equally to humans, agents, pull requests, direct commits, and scripts.
 
+A second correction reconciles the landing lifecycle with the `change-governance` capability, which became canonical after this proposal was written. That capability requires technical review and the project-owner decision to be recorded as one signed governance record bound to a content object rather than as separate governed task groups, and requires scope-exclusion confirmations to cite the gates that enforce them rather than restate them in prose. The three-commit T → R → G sequence and the prose exclusion tasks are replaced accordingly. Identity-preserving merge and the dedicated activation record are kept: the repository permits merge commits and does not require linear history, so both remain realizable.
+
 ## What Changes
 
-- Define a realizable identity-preserving activation history: reviewed technical commit, later governance records, protected-mainline merge commit, and a dedicated child activation-record commit.
+- Define a realizable identity-preserving activation history: reviewed technical commit, one signed governance record binding a reviewed content object, protected-mainline merge commit, and a dedicated child activation-record commit.
 - Require verified evidence that the governance CI job is a required check for a configured protected mainline reference; activation fails closed when that evidence or history is unavailable.
 - Close the governance perimeter for every governed implementation path, including implementation hidden in tests, build files, scripts, or configuration and work split across commits.
 - Define separate `mainline_present` and `external_in_flight` grandfathering classes, bounded scope expansion rules, and exact-commit opt-in and withdrawal behavior.
@@ -29,7 +31,7 @@ The policy must require substantive assessment without forcing catalog patterns.
 This proposal governs the future apply plan for:
 
 - the canonical `software-design-pattern-governance` capability;
-- versioned assessment and correspondence schemas;
+- versioned assessment and signed-governance-record schemas;
 - a 24-entry catalog and invariant registry;
 - actor-neutral policy documentation;
 - baseline and candidate checker behavior;
@@ -45,7 +47,7 @@ This corrective commit does not authorize apply and does not implement the gover
 - checker code, schemas, policy configuration, catalog documents, invariant registry, fixtures, tests, or CI workflows;
 - Hermes skills or generated Hermes configuration;
 - branch protection or required-check configuration;
-- activation, correspondence, owner-decision, merge-readiness, or archive records;
+- activation, signed-governance, merge-readiness, or archive records;
 - canonical capabilities or archived changes;
 - SDK code, the active SDK-remediation change, canonical contracts, research artifacts, production code, or publication/deployment behavior.
 
@@ -53,7 +55,7 @@ Every task remains unchecked. Task 1.1 is the explicit project-owner apply-autho
 
 ## Compatibility and Rollout
 
-The preferred rollout is to finish and merge `remediate-security-audit-sdk-adversarial-review` before activating design-pattern governance. If activation occurs first, that change must be represented by a complete `external_in_flight` grandfathering record bound to its remote branch and exact proposal evidence. The proposal does not assert that this change exists in the reviewed `origin/main` proposal-baseline tree.
+The preferred rollout was to finish and merge `remediate-security-audit-sdk-adversarial-review` before activating design-pattern governance. That order has since been satisfied — the remediation archived on 2026-08-11 — so activation classifies it from actual mainline tree state as `mainline_present` rather than asserting proposal-baseline provenance. The `external_in_flight` class is retained for any change that is still only on a remote branch at activation, bound to its remote branch and exact proposal evidence.
 
 Grandfathering preserves only recorded scope. New public API, integration, persistence, lifecycle, concurrency, security boundary, governed capability, or paths outside the record require normal full governance. Explicit opt-in is bound to an exact commit, may be withdrawn only before the first governed implementation commit through explicit project-owner governance evidence, and is irrevocable afterward.
 
@@ -61,7 +63,7 @@ Governed activation requires a configured protected mainline reference, normally
 
 ## Enforcement Strategy
 
-- The canonical capability, policy configuration, trusted baseline checker, candidate checker, and required CI check are authoritative.
+- The canonical capability, policy configuration, trusted baseline checker, candidate checker, and required CI check are authoritative. Scope-exclusion claims cite the gates that enforce them; they are not restated in prose.
 - Actor-neutral checked-in documentation explains the perimeter to every contributor and tool.
 - Complete Git ancestry is required for activation, assessment ordering, review binding, merge identity, and grandfathering; shallow or missing history fails closed.
 - A full assessment evaluates direct implementation and at least one materially plausible alternative. Rejected alternatives require force-based reasons.
@@ -77,7 +79,7 @@ Governed activation requires a configured protected mainline reference, normally
 - **Grandfathering overreach:** resolved by two provenance classes, exact scope, and normal full governance for any recorded-scope expansion matching a full trigger.
 - **Retrospective evidence laundering:** resolved by Git ancestry checks and explicit human-owned retrospective exceptions that state their reduced assurance.
 - **Pattern cargo culting:** resolved by candidate approaches rather than mandatory pattern enumeration and by direct implementation as a first-class option.
-- **Self-weakening governance:** resolved by baseline-plus-candidate checking and mandatory reviewer acknowledgement.
+- **Self-weakening governance:** resolved by baseline-plus-candidate checking and mandatory reviewer acknowledgement in the signed governance record.
 - **Clock-dependent emergency behavior:** avoided by exact-change, path-bounded records that terminate only when the change is merged or abandoned.
 
 ## Success Criteria
@@ -103,4 +105,4 @@ None.
 
 ## Impact
 
-If later authorized, apply may materialize only the artifacts and integrations explicitly planned by this change and must use the separated technical, correspondence, owner-governance, merge, activation, canonicalization, and archive lifecycle. This corrective proposal itself has no implementation, runtime, production, publication, branch-protection, merge, or archive effect.
+If later authorized, apply may materialize only the artifacts and integrations explicitly planned by this change and must use the separated technical, signed-governance, merge, activation, canonicalization, and archive lifecycle. This corrective proposal itself has no implementation, runtime, production, publication, branch-protection, merge, or archive effect.

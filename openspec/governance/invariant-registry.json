@@ -1,0 +1,278 @@
+{
+  "schema": "bloodtrail.design-pattern-governance.invariant-registry",
+  "version": "1.0.0",
+  "catalog_version": "1.0.0",
+  "note": "Immutable versioned invariant IDs. An ID is never reused for a new meaning. Renaming goes through aliases; removal goes through deactivations with a replacement and a migration for every governed reference. `required` invariants must all be accounted for by a named-pattern assessment; `conditional` invariants may be declared non-applicable only with a force-based reason acknowledged in the signed governance record.",
+  "id_policy": {
+    "reuse": "prohibited",
+    "rename": "alias plus migration mapping",
+    "removal": "deactivation record plus replacement plus migration of every governed reference",
+    "deprecation": "meaning is preserved; references continue to resolve"
+  },
+  "implementation_invariant_namespace": {
+    "prefix": "implementation-",
+    "note": "Direct implementations record implementation-specific invariants under this prefix. They are declared per change in the assessment, not registered here, and they never claim catalog-pattern conformance."
+  },
+  "aliases": [],
+  "migrations": [],
+  "deprecations": [],
+  "deactivations": [],
+  "patterns": {
+    "pattern-adapter": {
+      "name": "Adapter",
+      "category": "Boundary",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-adapter-boundary-isolation": { "kind": "required", "since_version": "1.0.0", "statement": "No foreign type, error, or handle from the adaptee crosses the adapter's outward interface." },
+        "pattern-adapter-error-translation": { "kind": "required", "since_version": "1.0.0", "statement": "Every adaptee failure is translated into the local error vocabulary; no foreign error escapes untranslated." },
+        "pattern-adapter-no-leaked-lifecycle": { "kind": "required", "since_version": "1.0.0", "statement": "The adaptee's construction, connection, and disposal lifecycle is owned by the adapter and is not exposed to callers." },
+        "pattern-adapter-bidirectional-fidelity": { "kind": "conditional", "since_version": "1.0.0", "condition": "the adapter translates in both directions", "statement": "A value translated outward and back is equal to the original under the declared equality." }
+      }
+    },
+    "pattern-strategy": {
+      "name": "Strategy",
+      "category": "Behavioural",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-strategy-stable-contract": { "kind": "required", "since_version": "1.0.0", "statement": "Every strategy satisfies one contract whose pre- and postconditions do not vary by implementation." },
+        "pattern-strategy-observable-variation": { "kind": "required", "since_version": "1.0.0", "statement": "At least two realistic implementations exist and differ observably; a single implementation is not a Strategy." },
+        "pattern-strategy-no-shared-mutable-state": { "kind": "required", "since_version": "1.0.0", "statement": "Strategies share no mutable state, so substituting one cannot change another's behaviour." },
+        "pattern-strategy-selection-is-explicit": { "kind": "conditional", "since_version": "1.0.0", "condition": "selection happens at runtime", "statement": "Selection is an explicit, auditable input rather than inferred from ambient state." }
+      }
+    },
+    "pattern-state": {
+      "name": "State",
+      "category": "Lifecycle",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-state-explicit-transition-table": { "kind": "required", "since_version": "1.0.0", "statement": "The permitted transitions are enumerated explicitly rather than implied by scattered conditionals." },
+        "pattern-state-invalid-transition-rejected": { "kind": "required", "since_version": "1.0.0", "statement": "An invalid transition is rejected with a distinct diagnostic and leaves the prior state intact." },
+        "pattern-state-transition-ownership": { "kind": "required", "since_version": "1.0.0", "statement": "Exactly one component may perform a transition; no caller can mutate the state field directly." },
+        "pattern-state-terminal-states-absorbing": { "kind": "required", "since_version": "1.0.0", "statement": "A terminal state accepts no further transition, including a repeat of the transition that reached it." },
+        "pattern-state-concurrent-transition-safety": { "kind": "conditional", "since_version": "1.0.0", "condition": "transitions can be attempted concurrently", "statement": "Concurrent transition attempts resolve to exactly one winner, and the losers observe the rejection." }
+      }
+    },
+    "pattern-command": {
+      "name": "Command",
+      "category": "Behavioural",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-command-immutable-payload": { "kind": "required", "since_version": "1.0.0", "statement": "A command's payload is frozen at construction and is not mutated by execution." },
+        "pattern-command-explicit-outcome": { "kind": "required", "since_version": "1.0.0", "statement": "Execution returns an explicit success or failure outcome rather than signalling through ambient state." },
+        "pattern-command-no-hidden-side-channel": { "kind": "required", "since_version": "1.0.0", "statement": "Every effect a command has is either in its declared outcome or in a declared dependency; none is hidden in shared globals." },
+        "pattern-command-undo-symmetry": { "kind": "conditional", "since_version": "1.0.0", "condition": "the command declares an undo", "statement": "Undo restores the exact prior observable state or fails explicitly; it never partially reverts." }
+      }
+    },
+    "pattern-factory": {
+      "name": "Factory",
+      "category": "Construction",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-factory-validates-before-construction": { "kind": "required", "since_version": "1.0.0", "statement": "Inputs are validated before any instance exists, so no invalid instance is ever constructed." },
+        "pattern-factory-returns-fully-initialised": { "kind": "required", "since_version": "1.0.0", "statement": "A returned instance requires no further initialisation call to satisfy its invariants." },
+        "pattern-factory-failure-is-explicit": { "kind": "required", "since_version": "1.0.0", "statement": "Construction failure is an explicit result or a declared throw, never a partially built instance or a null." }
+      }
+    },
+    "pattern-builder": {
+      "name": "Builder",
+      "category": "Construction",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-builder-terminal-validation": { "kind": "required", "since_version": "1.0.0", "statement": "All cross-field validation runs at the terminal build step, where the value is complete." },
+        "pattern-builder-no-partial-escape": { "kind": "required", "since_version": "1.0.0", "statement": "No partially configured product is observable outside the builder." },
+        "pattern-builder-single-use-or-reset": { "kind": "required", "since_version": "1.0.0", "statement": "A builder is either single-use or explicitly reset; a second build never inherits the first build's state implicitly." }
+      }
+    },
+    "pattern-facade": {
+      "name": "Facade",
+      "category": "Boundary",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-facade-no-subsystem-leakage": { "kind": "required", "since_version": "1.0.0", "statement": "No subsystem type, handle, or error escapes through the facade's interface." },
+        "pattern-facade-adds-no-hidden-policy": { "kind": "required", "since_version": "1.0.0", "statement": "The facade simplifies access without adding undeclared authorization, retry, or caching policy." },
+        "pattern-facade-error-aggregation-is-explicit": { "kind": "required", "since_version": "1.0.0", "statement": "When the facade aggregates several subsystem failures, the aggregation rule is declared and lossless enough to diagnose." }
+      }
+    },
+    "pattern-decorator": {
+      "name": "Decorator",
+      "category": "Structural",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-decorator-contract-preservation": { "kind": "required", "since_version": "1.0.0", "statement": "A decorator satisfies the decorated contract exactly; it never narrows accepted inputs or widens declared failures." },
+        "pattern-decorator-order-documented": { "kind": "required", "since_version": "1.0.0", "statement": "Where composition order changes behaviour, the required order is documented and enforced." },
+        "pattern-decorator-no-identity-forgery": { "kind": "required", "since_version": "1.0.0", "statement": "A decorator does not present itself as the decorated instance for identity, equality, or authority purposes." }
+      }
+    },
+    "pattern-specification": {
+      "name": "Specification",
+      "category": "Behavioural",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-specification-pure-predicate": { "kind": "required", "since_version": "1.0.0", "statement": "A specification is a pure predicate over its argument; the same argument always yields the same verdict." },
+        "pattern-specification-composition-is-total": { "kind": "required", "since_version": "1.0.0", "statement": "Composition operators are total: every combination of specifications yields a specification with the same contract." },
+        "pattern-specification-no-side-effects": { "kind": "required", "since_version": "1.0.0", "statement": "Evaluating a specification performs no I/O, mutation, or logging that a caller could depend on." }
+      }
+    },
+    "pattern-repository": {
+      "name": "Repository",
+      "category": "Persistence",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-repository-persistence-ownership": { "kind": "required", "since_version": "1.0.0", "statement": "The repository is the only component that reads or writes its aggregate's storage." },
+        "pattern-repository-semantics-declared": { "kind": "required", "since_version": "1.0.0", "statement": "Read-your-writes, staleness, and ordering semantics are declared rather than inherited implicitly from the store." },
+        "pattern-repository-no-leaked-query-language": { "kind": "required", "since_version": "1.0.0", "statement": "No store-specific query language, cursor, or connection escapes the repository interface." },
+        "pattern-repository-identity-stability": { "kind": "required", "since_version": "1.0.0", "statement": "An aggregate's identity is stable across load, save, and reload, and is not derived from mutable content." },
+        "pattern-repository-transaction-participation": { "kind": "conditional", "since_version": "1.0.0", "condition": "the repository participates in an enclosing transaction", "statement": "Participation is explicit; the repository never silently opens or commits its own transaction inside another." }
+      }
+    },
+    "pattern-unit-of-work": {
+      "name": "Unit of Work",
+      "category": "Persistence",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-unit-of-work-atomic-commit": { "kind": "required", "since_version": "1.0.0", "statement": "All tracked changes commit together or none does." },
+        "pattern-unit-of-work-explicit-rollback": { "kind": "required", "since_version": "1.0.0", "statement": "Rollback is explicit and total; an abandoned unit of work leaves no applied change." },
+        "pattern-unit-of-work-no-partial-visibility": { "kind": "required", "since_version": "1.0.0", "statement": "No observer outside the unit of work sees a subset of its changes before commit." }
+      }
+    },
+    "pattern-domain-service": {
+      "name": "Domain Service",
+      "category": "Behavioural",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-domain-service-stateless": { "kind": "required", "since_version": "1.0.0", "statement": "A domain service holds no per-call state between invocations." },
+        "pattern-domain-service-owns-no-persistence": { "kind": "required", "since_version": "1.0.0", "statement": "A domain service performs no storage access of its own; persistence stays with repositories." },
+        "pattern-domain-service-explicit-inputs": { "kind": "required", "since_version": "1.0.0", "statement": "Every input a domain service depends on is a declared parameter, not ambient context." }
+      }
+    },
+    "pattern-immutable-value-object": {
+      "name": "Immutable Value Object",
+      "category": "Data",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-immutable-value-object-deep-freeze": { "kind": "required", "since_version": "1.0.0", "statement": "The value and everything reachable from it is frozen; no nested container remains mutable." },
+        "pattern-immutable-value-object-structural-equality": { "kind": "required", "since_version": "1.0.0", "statement": "Equality is structural, and two values with equal contents are interchangeable everywhere." },
+        "pattern-immutable-value-object-validated-at-construction": { "kind": "required", "since_version": "1.0.0", "statement": "Every invariant is checked at construction, so no invalid value can exist." },
+        "pattern-immutable-value-object-no-identity-semantics": { "kind": "required", "since_version": "1.0.0", "statement": "Nothing depends on reference identity; copying a value never changes behaviour." }
+      }
+    },
+    "pattern-capability": {
+      "name": "Capability",
+      "category": "Security",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-capability-unforgeable-runtime-authority": { "kind": "required", "since_version": "1.0.0", "statement": "A capability cannot be produced by a cast, a literal, a clone, or a hand-rolled object; only its constructor can create one, and holding it is the authority." },
+        "pattern-capability-no-ambient-fallback": { "kind": "required", "since_version": "1.0.0", "statement": "Absence of a capability denies the operation; there is no ambient-authority fallback path." },
+        "pattern-capability-explicit-attenuation": { "kind": "required", "since_version": "1.0.0", "statement": "Narrowing a capability produces a new, weaker capability; it never mutates or widens the original." },
+        "pattern-capability-revocation-is-observable": { "kind": "conditional", "since_version": "1.0.0", "condition": "the capability can be revoked", "statement": "After revocation every use fails with a distinct diagnostic rather than silently degrading." }
+      }
+    },
+    "pattern-explicit-trust-boundary": {
+      "name": "Explicit Trust Boundary",
+      "category": "Security",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-explicit-trust-boundary-input-classification": { "kind": "required", "since_version": "1.0.0", "statement": "Every input crossing the boundary is classified as trusted or untrusted at a single identifiable place." },
+        "pattern-explicit-trust-boundary-normalisation-before-use": { "kind": "required", "since_version": "1.0.0", "statement": "Untrusted input is normalised and validated before any use, including before being logged or used in a path." },
+        "pattern-explicit-trust-boundary-claims-distinguished-from-authority": { "kind": "required", "since_version": "1.0.0", "statement": "A client-supplied claim stays type-distinguishable from a server-authoritative value and can never be substituted for one." }
+      }
+    },
+    "pattern-fail-closed": {
+      "name": "Fail Closed",
+      "category": "Security",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-fail-closed-absent-evidence-denies": { "kind": "required", "since_version": "1.0.0", "statement": "Absent, empty, or unreadable evidence denies; it never reads as nothing-to-check or as permission." },
+        "pattern-fail-closed-error-path-denies": { "kind": "required", "since_version": "1.0.0", "statement": "Every error path, including an unexpected exception, resolves to denial rather than to the permissive branch." },
+        "pattern-fail-closed-diagnostic-is-distinct": { "kind": "required", "since_version": "1.0.0", "statement": "Each denial reason has a distinct stable diagnostic, so a denial cannot be mistaken for a different one." }
+      }
+    },
+    "pattern-authority-provenance": {
+      "name": "Authority Provenance",
+      "category": "Security",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-authority-provenance-source-recorded": { "kind": "required", "since_version": "1.0.0", "statement": "Every authoritative value records where its authority came from." },
+        "pattern-authority-provenance-client-claims-not-authoritative": { "kind": "required", "since_version": "1.0.0", "statement": "A value originating from a client is never promoted to authoritative without an explicit, recorded server-side decision." },
+        "pattern-authority-provenance-survives-serialisation": { "kind": "required", "since_version": "1.0.0", "statement": "Provenance survives cloning and serialisation, or the value fails closed on the far side rather than arriving unmarked." }
+      }
+    },
+    "pattern-idempotency-key": {
+      "name": "Idempotency Key",
+      "category": "Delivery",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-idempotency-key-deterministic-derivation": { "kind": "required", "since_version": "1.0.0", "statement": "The key is derived deterministically from the request's identifying content, not from a clock or a random source." },
+        "pattern-idempotency-key-replay-returns-first-outcome": { "kind": "required", "since_version": "1.0.0", "statement": "A replay returns the first outcome rather than performing the effect again." },
+        "pattern-idempotency-key-scope-is-bounded": { "kind": "required", "since_version": "1.0.0", "statement": "The key's uniqueness scope and retention are declared; two different operations cannot collide inside that scope." }
+      }
+    },
+    "pattern-atomic-reservation": {
+      "name": "Atomic Reservation",
+      "category": "Concurrency",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-atomic-reservation-pre-await-reservation": { "kind": "required", "since_version": "1.0.0", "statement": "The reservation is taken synchronously before the first await, so no interleaving can observe the unreserved state." },
+        "pattern-atomic-reservation-release-on-failure": { "kind": "required", "since_version": "1.0.0", "statement": "Every failure path releases the reservation, including a thrown exception and a rejected promise." },
+        "pattern-atomic-reservation-single-terminal-completion": { "kind": "required", "since_version": "1.0.0", "statement": "A reservation completes terminally at most once; a second completion is rejected rather than ignored." },
+        "pattern-atomic-reservation-no-double-commit": { "kind": "required", "since_version": "1.0.0", "statement": "Two concurrent attempts to commit the same reservation resolve to exactly one commit and one explicit rejection." }
+      }
+    },
+    "pattern-transactional-outbox": {
+      "name": "Transactional Outbox",
+      "category": "Delivery",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-transactional-outbox-same-transaction-write": { "kind": "required", "since_version": "1.0.0", "statement": "The outbox row is written in the same transaction as the state change it describes." },
+        "pattern-transactional-outbox-at-least-once-delivery-declared": { "kind": "required", "since_version": "1.0.0", "statement": "Delivery is declared at-least-once; exactly-once is not claimed." },
+        "pattern-transactional-outbox-consumer-idempotency-required": { "kind": "required", "since_version": "1.0.0", "statement": "Every consumer is idempotent under redelivery, and that requirement is stated at the boundary." }
+      }
+    },
+    "pattern-circuit-breaker": {
+      "name": "Circuit Breaker",
+      "category": "Resilience",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-circuit-breaker-explicit-states": { "kind": "required", "since_version": "1.0.0", "statement": "Closed, open, and half-open are explicit states with declared transition thresholds." },
+        "pattern-circuit-breaker-half-open-probe-bounded": { "kind": "required", "since_version": "1.0.0", "statement": "The half-open state admits a bounded number of concurrent probes, not an unbounded rush." },
+        "pattern-circuit-breaker-open-fails-fast": { "kind": "required", "since_version": "1.0.0", "statement": "While open, calls fail immediately with a distinct diagnostic rather than waiting on a timeout." }
+      }
+    },
+    "pattern-bulkhead": {
+      "name": "Bulkhead",
+      "category": "Resilience",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-bulkhead-bounded-partition": { "kind": "required", "since_version": "1.0.0", "statement": "Each partition has an explicit bound that exhaustion cannot exceed." },
+        "pattern-bulkhead-rejection-is-explicit": { "kind": "required", "since_version": "1.0.0", "statement": "Exceeding a partition's bound rejects explicitly rather than queueing without limit." },
+        "pattern-bulkhead-no-shared-exhaustible-resource": { "kind": "required", "since_version": "1.0.0", "statement": "Partitions share no exhaustible resource that would let one starve another." }
+      }
+    },
+    "pattern-bounded-retry": {
+      "name": "Bounded Retry",
+      "category": "Resilience",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-bounded-retry-finite-attempts": { "kind": "required", "since_version": "1.0.0", "statement": "The attempt count is finite and declared; exhaustion surfaces the underlying failure." },
+        "pattern-bounded-retry-only-retryable-failures": { "kind": "required", "since_version": "1.0.0", "statement": "Only failures classified retryable are retried; a validation or authorization failure is never retried." },
+        "pattern-bounded-retry-jittered-backoff": { "kind": "required", "since_version": "1.0.0", "statement": "Backoff includes jitter, so concurrent clients do not synchronise into a retry storm." },
+        "pattern-bounded-retry-idempotent-operation-required": { "kind": "required", "since_version": "1.0.0", "statement": "The retried operation is idempotent, or retry is not applied to it." }
+      }
+    },
+    "pattern-ambient-context": {
+      "name": "Ambient Context / Context Propagation",
+      "category": "Runtime / Execution Context",
+      "since_version": "1.0.0",
+      "invariants": {
+        "pattern-ambient-context-immutable-frame": { "kind": "required", "since_version": "1.0.0", "statement": "A context frame is immutable once established; a nested scope creates a new frame rather than mutating the enclosing one." },
+        "pattern-ambient-context-explicit-run-scope-ownership": { "kind": "required", "since_version": "1.0.0", "statement": "Every frame is established by an explicit run scope that owns its entry and exit; no code sets the frame outside a run scope." },
+        "pattern-ambient-context-no-global-authority-fallback": { "kind": "required", "since_version": "1.0.0", "statement": "When no frame exists there is no global or default frame to fall back to." },
+        "pattern-ambient-context-concurrent-isolation": { "kind": "required", "since_version": "1.0.0", "statement": "Concurrent execution contexts observe only their own frame; neither can read or affect the other's." },
+        "pattern-ambient-context-no-cross-request-leakage": { "kind": "required", "since_version": "1.0.0", "statement": "No frame value reaches a different request, task, or scope than the one that established it." },
+        "pattern-ambient-context-no-retention-after-scope-exit": { "kind": "required", "since_version": "1.0.0", "statement": "After a scope exits — normally, by exception, or by promise rejection — its frame is no longer observable and is not retained." },
+        "pattern-ambient-context-authority-not-inferred-from-presence": { "kind": "required", "since_version": "1.0.0", "statement": "The presence of a context frame grants nothing; authorization always comes from an explicit capability or an explicit authoritative value inside the frame." },
+        "pattern-ambient-context-explicit-missing-context-behavior": { "kind": "required", "since_version": "1.0.0", "statement": "Behaviour when no context exists is explicit and declared — a stated failure or a stated documented default — never an implicit empty frame." }
+      }
+    }
+  }
+}

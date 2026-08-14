@@ -89,6 +89,34 @@ jobs:
 
       - run: npm audit --audit-level=high
 
+  # Repository-level design-pattern governance. Deliberately has no npm install
+  # step: the checker is dependency-free and the tests are plain .mjs run by
+  # node --test, so this job introduces no root package and no publishable
+  # workspace. See docs/design-pattern-governance.md.
+  design-pattern-governance:
+    name: design-pattern-governance
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0                     # ancestry, activation, and grandfathering need complete history
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+
+      - name: Governance checker
+        run: node openspec/scripts/check-design-pattern-governance.mjs --phase final
+
+      # Baseline plus candidate. A candidate checker is never the sole judge of
+      # whether it weakened itself, so the merge-base version is run against the
+      # candidate's data as well.
+      - name: Baseline and candidate checkers
+        run: node openspec/scripts/run-governance-dual-check.mjs --base "${{ github.event.pull_request.base.sha || github.event.before }}"
+
+      - name: Governance test suite
+        run: node --test openspec/tests/design-pattern-governance/*.test.mjs
+
   # Line coverage for the two workspaces that have product code behind tests.
   # Runs on Node 26 because both packages pin engines above the Node 22 the
   # sonar job uses, and the SDK must be built before its tests can run.

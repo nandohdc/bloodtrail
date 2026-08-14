@@ -1,6 +1,8 @@
 ## Context
 
-The reviewed proposal commit `a17eb79a2dd0172bb888278a39ad898280a2f59a` failed architectural review. This proposal-only correction replaces ambiguous activation, provenance, ordering, applicability, and self-enforcement assumptions with a Git-realizable model. No apply authorization exists and no implementation artifact is created here.
+The reviewed proposal commit `a17eb79a2dd0172bb888278a39ad898280a2f59a` failed architectural review. This proposal-only correction replaces ambiguous activation, provenance, ordering, applicability, and self-enforcement assumptions with a Git-realizable model.
+
+A second correction reconciles the landing lifecycle with the canonical `change-governance` capability, which became canonical after this proposal was first written. That capability requires technical review and the project-owner decision to be one signed governance record bound to a content object rather than separate governed task groups, and requires scope-exclusion confirmations to cite the gates that enforce them rather than restate them in prose. The three-commit T → R → G sequence and the prose exclusion tasks are replaced accordingly; identity-preserving merge and the dedicated activation record are kept, because the repository permits merge commits and does not require linear history.
 
 The policy must be reproducible from a complete clone, independent of actor and wall clock, and unable to treat absent evidence as non-applicability. OpenSpec strict validation remains a structural gate; it is not owner authorization, architectural approval, branch-protection evidence, archive validation, or proof that a candidate checker did not weaken itself.
 
@@ -26,7 +28,7 @@ Non-goals:
 
 ## Controlled Vocabulary
 
-The initial policy has 30 unique controlled values across 31 family memberships in 10 families; `governance_record_only` is intentionally shared by the path-class and review-path-kind families. IDs are immutable within a major schema version and cannot be silently reused.
+The initial policy has 29 unique controlled values across 30 family memberships in 10 families; `governance_record_only` is intentionally shared by the path-class and review-path-kind families. IDs are immutable within a major schema version and cannot be silently reused.
 
 | Family | Values |
 | --- | --- |
@@ -37,7 +39,7 @@ The initial policy has 30 unique controlled values across 31 family memberships 
 | path class | `governed_implementation`, `governance_core`, `documentation_only`, `governance_record_only`, `unclassified` |
 | review path kind | `normative`, `governance_record_only` |
 | security declaration | `true`, `false` |
-| lifecycle state | `proposal`, `apply_authorized`, `technical_reviewed`, `owner_governed`, `merged`, `active`, `archived`, `abandoned` |
+| lifecycle state | `proposal`, `apply_authorized`, `governance_signed`, `merged`, `active`, `archived`, `abandoned` |
 | merge strategy | `merge_commit`, `fast_forward` |
 | emergency disposition | `conservative_full_assessment` |
 
@@ -48,7 +50,7 @@ Defined terms:
 - **Material capability modification:** a change that adds, modifies, or removes a normative capability requirement, or modifies a governed implementation path owned by that capability and matches a full trigger.
 - **Applicable baseline:** the proposal baseline used to classify and compare a change. For post-activation work it must be the activation-record commit or a descendant; grandfathered work uses the recorded baseline and bounded scope.
 - **Normative path:** governed implementation, tests proving invariants, assessment/design artifacts, schemas, checker, policy configuration, catalog, invariant definitions, compatibility claims, workflow, or CI enforcement.
-- **Governance-record-only path:** a closed allowlist for the technical correspondence packet, owner decision, status record, merge-readiness record, and archive-readiness record.
+- **Governance-record-only path:** a closed allowlist for the signed governance record, status record, merge-readiness record, and archive-readiness record.
 
 ## Design Pattern Assessment
 
@@ -85,7 +87,7 @@ This block is proposal review evidence for the future schema, not checker output
     "8.5",
     "8.6"
   ],
-  "correspondence_review_task_id": "9.2"
+  "signed_governance_record_task_id": "9.3"
 }
 ```
 
@@ -158,14 +160,15 @@ The protected mainline reference is configured explicitly, normally as `refs/hea
 The exact sequence is:
 
 1. **Reviewed technical commit T:** checker, policy configuration, schemas, 24-entry catalog, actor-neutral documentation, workflow integrations, tests, and fixtures.
-2. **Technical correspondence commit R:** a later governance-record-only commit binding T.
-3. **Owner-governance commit G:** a later governance-record-only commit binding T and R and recording publication/deployment restrictions and activation authorization.
-4. **Protected-mainline merge commit M:** introduces T/R/G using a merge commit or fast-forward and preserves their identities. Squash, rebase, and history rewriting are prohibited.
-5. **Activation-record commit A:** a dedicated commit immediately after M whose only parent is M. It contains only the activation record and specifically allowlisted activation evidence. Activation begins at A.
+2. **Signed governance record commit S:** a later governance-record-only commit carrying one signed record that binds the reviewed content object, names T, and states the reviewer, assurance limitations, authorizations granted, and authorizations withheld — including publication/deployment restrictions and activation authorization. Review and decision are one record, not two.
+3. **Protected-mainline merge commit M:** introduces T and S using a merge commit or fast-forward and preserves their identities. Squash, rebase, and history rewriting are prohibited.
+4. **Activation-record commit A:** a dedicated commit immediately after M whose only parent is M. It contains only the activation record and specifically allowlisted activation evidence. Activation begins at A.
 
-A binds the protected reference, M, M's tree, T, R, G, checker/configuration/schema/catalog/actor-neutral-policy blobs, required-check identity, supported schema versions, and grandfathered entries. It does not bind its own hash. A baseline before A is classified by grandfathering; A or descendants use normal enforcement.
+A binds the protected reference, M, M's tree, T, S and its reviewed content object, checker/configuration/schema/catalog/actor-neutral-policy blobs, required-check identity, supported schema versions, and grandfathered entries. It does not bind its own hash. A baseline before A is classified by grandfathering; A or descendants use normal enforcement.
 
-Bootstrap is one-time validation before normal enforcement. It requires exact approved T/R/G/M, exact artifact blobs, required-check evidence, and no unrelated A changes. It ends permanently at A. Unknown or shallow activation history fails with a stable diagnostic.
+Bootstrap is one-time validation before normal enforcement. It requires exact approved T/S/M, exact artifact blobs, required-check evidence, and no unrelated A changes. It ends permanently at A. Unknown or shallow activation history fails with a stable diagnostic.
+
+The content-object binding, rather than a commit hash alone, is what the canonical `change-governance` capability requires: a commit cannot record its own identifier, and a commit can be orphaned. Naming T in addition is permitted and useful here, because the identity-preserving merge this design mandates keeps T reachable.
 
 ### D2 — Actor-neutral governance perimeter
 
@@ -175,7 +178,7 @@ The authoritative surfaces are the canonical capability, policy configuration, b
 
 ### D3 — Grandfathering and rollout
 
-Preferred rollout: merge the active SDK remediation first, activate governance second. No claim is made that the remediation exists in the reviewed `origin/main` proposal tree.
+Preferred rollout: merge the active SDK remediation first, activate governance second. That order has since been satisfied — `remediate-security-audit-sdk-adversarial-review` archived on 2026-08-11 — so it is classified from actual mainline tree state as `mainline_present`, and the `external_in_flight` path is retained for any change that is still only on a remote branch at activation.
 
 `mainline_present` records change ID, proposal path/blob hash, proposal baseline commit, and membership in M's tree. `external_in_flight` records change ID, remote branch reference, exact branch head, proposal baseline, proposal blob, `.openspec.yaml` metadata hash, owner rationale, and bounded paths/scope. The classes are alternatives, not an impossible conjunction.
 
@@ -189,7 +192,7 @@ A retrospective exception is available only for grandfathered or emergency work 
 
 ### D5 — Catalog invariant binding
 
-Every catalog entry has immutable versioned invariant IDs. A named-pattern assessment records pattern ID, catalog version, required, conditional, and non-applicable invariant IDs, force-based reasons, implementation task IDs, and verification evidence IDs. Every mandatory invariant must be accounted for. Non-applicability is permitted only for catalog-declared conditional invariants, a force-based reason, and explicit correspondence-review acknowledgement.
+Every catalog entry has immutable versioned invariant IDs. A named-pattern assessment records pattern ID, catalog version, required, conditional, and non-applicable invariant IDs, force-based reasons, implementation task IDs, and verification evidence IDs. Every mandatory invariant must be accounted for. Non-applicability is permitted only for catalog-declared conditional invariants, a force-based reason, and explicit acknowledgement in the signed governance record.
 
 Direct implementation uses implementation-specific invariant IDs and keeps selected-pattern IDs empty. It does not claim catalog conformance.
 
@@ -240,7 +243,7 @@ Security trigger dimensions are trust boundary, authority provenance, authentica
 
 ### D9 — Review freshness and merge identity
 
-R binds T from a governance-record-only path without invalidating itself. Governance-only G after R remains valid. Any post-review normative change invalidates correspondence, including tests, assessment, checker, schema, catalog, compatibility, workflow, and CI. Archive relocation preserves correspondence only when every governed blob is byte-identical. Governed merge permits only merge commit or fast-forward; no alternate-strategy escape hatch exists.
+S binds T from a governance-record-only path without invalidating itself, and no reviewed path contains S — signing a record stored inside the reviewed content would change that content. Later governance-record-only commits remain valid. Any post-signing normative change invalidates S, including tests, assessment, checker, schema, catalog, compatibility, workflow, and CI. Archive relocation preserves S only when every governed blob is byte-identical. Governed merge permits only merge commit or fast-forward; no alternate-strategy escape hatch exists.
 
 ### D10 — Schema compatibility and ID lifecycle
 
@@ -258,13 +261,13 @@ An emergency record is bound to exact change ID, proposal baseline, affected pat
 
 ### D13 — Lifecycle and archive separation
 
-Activation boundary and lifecycle states are separate requirements. Proposal validation is not apply authorization. AI review, assignment, and informal messages are not owner approval. Technical review, owner governance, merge, activation, canonical materialization, and archive readiness remain distinct.
+Activation boundary and lifecycle states are separate requirements. Proposal validation is not apply authorization. AI review, assignment, and informal messages are not owner approval. Signed governance, merge, activation, canonical materialization, and archive readiness remain distinct. Recording review and decision in one record collapses two records into one; it does not collapse that record's state into the states around it.
 
-`openspec validate --all --strict` is not assumed to validate archived changes. Archive tasks explicitly verify task completeness, T/R/G bindings, owner decision, canonical capability materialization, publication/deployment restrictions, exact archive contents, and byte identity. Archive occurs only after active enforcement is verified and according to the governed lifecycle.
+`openspec validate --all --strict` is not assumed to validate archived changes. Archive tasks explicitly verify task completeness, the T and S bindings, the signed record's authorizations granted and withheld, canonical capability materialization, publication/deployment restrictions, exact archive contents, and byte identity. Archive occurs only after active enforcement is verified and according to the governed lifecycle.
 
 ## Proposal Structural Counts
 
-This corrected proposal contains exactly 24 normative requirements, 127 scenarios, 100 unchecked tasks, 24 planned catalog entries, and 30 unique controlled values across 31 family memberships in 10 families. These counts are calculated from the corrected artifacts and are verification assertions, not implementation progress.
+This corrected proposal contains exactly 24 normative requirements, 129 scenarios, 98 tasks, 24 planned catalog entries, and 29 unique controlled values across 30 family memberships in 10 families. These counts are calculated from the corrected artifacts and are verification assertions, not implementation progress.
 
 ## Compatibility Matrix
 
@@ -288,12 +291,12 @@ This corrected proposal contains exactly 24 normative requirements, 127 scenario
 
 1. Record exact proposal apply authorization; no later task starts before it.
 2. Finalize vocabulary, activation lifecycle, perimeter, path classes, schema compatibility, and rollout records.
-3. Create schemas, catalog, invariant registry, actor-neutral documentation, and assessment/correspondence templates.
+3. Create schemas, catalog, invariant registry, actor-neutral documentation, and assessment/governance-record templates.
 4. Implement the trusted-compatible checker behavior, then baseline-plus-candidate compatibility controls.
 5. Add fixtures, mutations, Hermes executable integration, and CI.
 6. Configure and verify the governance CI job as a required check for the protected mainline reference.
 7. Run full technical verification and create T.
-8. Create R, then G, with closed governance-record-only scope.
+8. Create S, one signed governance record with closed governance-record-only scope.
 9. Merge using an identity-preserving strategy to create or identify M.
 10. Bootstrap and commit A as M's direct child; verify active enforcement.
 11. Materialize the canonical capability and archive only through the governed lifecycle with explicit archive validation.

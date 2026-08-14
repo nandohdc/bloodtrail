@@ -1,0 +1,129 @@
+{
+  "schema": "bloodtrail.design-pattern-governance.closed-schema",
+  "id": "signed-governance-record",
+  "version": "1.1",
+  "supported_versions": ["1.0", "1.1"],
+  "closed": true,
+  "note": "One signed record carries technical review and the project-owner decision together, as the canonical change-governance capability requires. It binds a content object — a tree or subtree identifier — and additionally names the technical commit. A commit hash alone does not satisfy the binding, because a commit cannot record its own identifier and can be orphaned. No reviewed path may contain this record: signing a record stored inside the reviewed content would change that content.",
+  "fields": {
+    "schema_version": { "type": "string", "required": true, "enum": ["1.0", "1.1"] },
+    "change_id": { "type": "string", "required": true, "pattern": "^[a-z0-9][a-z0-9-]{2,99}$" },
+    "reviewed_content": {
+      "type": "object", "required": true, "closed": true,
+      "fields": {
+        "kind": { "type": "string", "required": true, "enum": ["tree"] },
+        "candidate_root": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+        "entries": {
+          "type": "array", "required": true, "min_items": 1, "max_items": 50,
+          "items": {
+            "type": "object", "closed": true,
+            "fields": {
+              "path": { "type": "string", "required": true, "repository_relative": true },
+              "object": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+              "kind": { "type": "string", "required": true, "enum": ["tree", "blob"] }
+            }
+          }
+        }
+      }
+    },
+    "technical_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+    "assessment": {
+      "type": "object", "required": true, "closed": true,
+      "fields": {
+        "path": { "type": "string", "required": true, "repository_relative": true },
+        "digest": { "type": "string", "required": true, "pattern": "^sha256:[0-9a-f]{64}$" },
+        "assessment_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "reviewer": {
+      "type": "object", "required": true, "closed": true,
+      "fields": {
+        "name": { "type": "string", "required": true, "min_length": 3 },
+        "role": { "type": "string", "required": true, "min_length": 3 },
+        "signed_at": { "type": "string", "required": true, "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+      }
+    },
+    "signed": { "type": "boolean", "required": true },
+    "catalog_invariants": {
+      "type": "array", "required": true,
+      "items": {
+        "type": "object", "closed": true,
+        "fields": {
+          "invariant_id": { "type": "string", "required": true },
+          "catalog_version": { "type": "string", "required": true, "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+          "evidence_ids": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string" } },
+          "acknowledged": { "type": "boolean", "required": true }
+        }
+      }
+    },
+    "implementation_invariants": { "type": "array", "required": true, "items": { "type": "string" } },
+    "candidate_comparison_reviewed": { "type": "boolean", "required": true },
+    "security_classification_reviewed": { "type": "boolean", "required": true },
+    "checker_results": {
+      "type": "object", "required": true, "closed": true,
+      "fields": {
+        "baseline": {
+          "type": "object", "required": true, "closed": true,
+          "fields": {
+            "source_ref": { "type": "string", "required": true, "min_length": 3 },
+            "checker_blob": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+            "exit_code": { "type": "integer", "required": true },
+            "diagnostics": { "type": "array", "required": true, "items": { "type": "string" } }
+          }
+        },
+        "candidate": {
+          "type": "object", "required": true, "closed": true,
+          "fields": {
+            "source_ref": { "type": "string", "required": true, "min_length": 3 },
+            "checker_blob": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+            "exit_code": { "type": "integer", "required": true },
+            "diagnostics": { "type": "array", "required": true, "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "divergences": {
+      "type": "array", "required": true,
+      "items": {
+        "type": "object", "closed": true,
+        "fields": {
+          "description": { "type": "string", "required": true, "min_length": 20 },
+          "accepted": { "type": "boolean", "required": true },
+          "reason": { "type": "string", "required": true, "min_length": 20 }
+        }
+      }
+    },
+    "assurance_limitations": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string", "min_length": 20 } },
+    "authorizations": {
+      "type": "object", "required": true, "closed": true,
+      "fields": {
+        "granted": { "type": "array", "required": true, "items": { "type": "string", "min_length": 3 } },
+        "withheld": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string", "min_length": 3 } }
+      }
+    },
+    "activation_authorized": { "type": "boolean", "required": true },
+    "required_check_evidence_plan": { "type": "string", "required": true, "min_length": 40 }
+  },
+  "rules": [
+    { "id": "record-binds-content-object", "requirement": "R15" },
+    { "id": "record-commit-hash-alone-insufficient", "requirement": "R15" },
+    { "id": "record-path-resolves-in-candidate-content", "requirement": "R15" },
+    { "id": "record-declared-object-matches-path", "requirement": "R15" },
+    { "id": "record-reviewed-path-excludes-record", "requirement": "R15" },
+    { "id": "record-reviewed-path-well-formed", "requirement": "R15" },
+    { "id": "record-single-record-per-change", "requirement": "R15" },
+    { "id": "record-signed-required-for-governance-state", "requirement": "R23" },
+    { "id": "record-withheld-includes-publication-and-deployment", "requirement": "R23" },
+    { "id": "record-dual-checker-results-distinct", "requirement": "R14" },
+    { "id": "record-acknowledges-non-applicable-invariants", "requirement": "R5" },
+    { "id": "record-stale-after-normative-change", "requirement": "R15" }
+  ],
+  "mandatory_withheld_authorizations": [
+    "package-publication",
+    "production-deployment",
+    "production-collection",
+    "real-user-processing",
+    "framework-integration",
+    "delivery-infrastructure"
+  ]
+}

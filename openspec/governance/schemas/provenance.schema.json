@@ -1,0 +1,108 @@
+{
+  "schema": "bloodtrail.design-pattern-governance.closed-schema",
+  "id": "provenance",
+  "version": "1.1",
+  "supported_versions": ["1.0", "1.1"],
+  "closed": true,
+  "note": "Grandfathering, opt-in, withdrawal, and emergency classification records. The two grandfathering classes are alternatives, not a conjunction: a change is either present in the merge commit's tree or it is only on a remote branch, and requiring both would be unsatisfiable. Emergency classification is bound to one exact change and ends when that change merges or is abandoned; it never consults a wall clock.",
+  "records": {
+    "grandfathering_mainline_present": {
+      "closed": true,
+      "fields": {
+        "change": { "type": "string", "required": true, "pattern": "^[a-z0-9][a-z0-9-]{2,99}$" },
+        "class": { "type": "string", "required": true, "enum": ["mainline_present"] },
+        "proposal_path": { "type": "string", "required": true, "repository_relative": true },
+        "proposal_blob": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+        "proposal_baseline_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{7,40}$" },
+        "bounded_paths": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string", "repository_relative": true } },
+        "bounded_scope": { "type": "string", "required": true, "min_length": 40 }
+      },
+      "rules": [
+        { "id": "grandfather-mainline-present-in-merge-tree", "requirement": "R19" },
+        { "id": "grandfather-proposal-blob-matches-tree", "requirement": "R19" }
+      ]
+    },
+    "grandfathering_external_in_flight": {
+      "closed": true,
+      "fields": {
+        "change": { "type": "string", "required": true, "pattern": "^[a-z0-9][a-z0-9-]{2,99}$" },
+        "class": { "type": "string", "required": true, "enum": ["external_in_flight"] },
+        "remote_branch_reference": { "type": "string", "required": true, "pattern": "^refs/remotes/[A-Za-z0-9._/-]{1,200}$" },
+        "branch_head": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+        "proposal_baseline_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{7,40}$" },
+        "proposal_blob": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+        "openspec_metadata_hash": { "type": "string", "required": true, "pattern": "^sha256:[0-9a-f]{64}$" },
+        "owner_rationale": { "type": "string", "required": true, "min_length": 40 },
+        "bounded_paths": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string", "repository_relative": true } },
+        "bounded_scope": { "type": "string", "required": true, "min_length": 40 }
+      },
+      "rules": [
+        { "id": "grandfather-external-absent-from-merge-tree", "requirement": "R19" },
+        { "id": "grandfather-external-branch-head-resolves", "requirement": "R19" }
+      ]
+    },
+    "opt_in": {
+      "closed": true,
+      "fields": {
+        "change": { "type": "string", "required": true, "pattern": "^[a-z0-9][a-z0-9-]{2,99}$" },
+        "commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+        "owner_governance_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+        "scope_paths": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string", "repository_relative": true } }
+      },
+      "rules": [
+        { "id": "optin-bound-to-exact-commit", "requirement": "R20" },
+        { "id": "optin-irrevocable-after-first-implementation", "requirement": "R20" }
+      ]
+    },
+    "withdrawal": {
+      "closed": true,
+      "fields": {
+        "change": { "type": "string", "required": true, "pattern": "^[a-z0-9][a-z0-9-]{2,99}$" },
+        "withdraws_opt_in_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+        "owner_governance_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+        "reason": { "type": "string", "required": true, "min_length": 40 }
+      },
+      "rules": [
+        { "id": "withdrawal-requires-explicit-owner-evidence", "requirement": "R20" },
+        { "id": "withdrawal-rejected-after-first-implementation", "requirement": "R20" },
+        { "id": "withdrawal-silent-disappearance-rejected", "requirement": "R20" }
+      ]
+    },
+    "emergency": {
+      "closed": true,
+      "fields": {
+        "change": { "type": "string", "required": true, "pattern": "^[a-z0-9][a-z0-9-]{2,99}$" },
+        "proposal_baseline_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+        "affected_paths": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string", "repository_relative": true } },
+        "conservative_path_class": { "type": "string", "required": true, "controlled_value": "path_class" },
+        "disposition": { "type": "string", "required": true, "controlled_value": "emergency_disposition" },
+        "reason": { "type": "string", "required": true, "min_length": 40 },
+        "incident_reference": { "type": "string", "required": true, "min_length": 3 },
+        "follow_up": { "type": "string", "required": true, "min_length": 3 },
+        "owner_governance_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+        "terminated_by": { "type": "string", "required": true, "enum": ["pending", "merged", "abandoned"] }
+      },
+      "rules": [
+        { "id": "emergency-all-fields-present", "requirement": "R21" },
+        { "id": "emergency-bound-to-exact-change", "requirement": "R21" },
+        { "id": "emergency-cannot-downgrade-triggers", "requirement": "R21" },
+        { "id": "emergency-requires-full-assessment", "requirement": "R21" },
+        { "id": "emergency-terminates-on-merge-or-abandonment", "requirement": "R21" },
+        { "id": "emergency-no-wall-clock-expiry", "requirement": "R21" },
+        { "id": "emergency-emits-distinct-warning", "requirement": "R21" }
+      ],
+      "non_downgradable_triggers": ["public_api", "security_sensitive_behavior", "concurrency", "persistence", "integration"],
+      "forbidden_fields": ["expires_at", "valid_until", "ttl_seconds", "expiry"]
+    }
+  },
+  "scope_expansion_triggers": [
+    "public_api",
+    "integration",
+    "persistence",
+    "lifecycle_or_state",
+    "concurrency",
+    "security_sensitive_behavior",
+    "canonical_capability_requirement"
+  ],
+  "scope_expansion_rule": "A grandfathered change that adds any scope_expansion_trigger, or touches a path outside its bounded_paths, requires normal full governance for the expanded scope. Grandfathering never covers the expansion."
+}

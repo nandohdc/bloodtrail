@@ -1,0 +1,165 @@
+{
+  "schema": "bloodtrail.design-pattern-governance.closed-schema",
+  "id": "assessment",
+  "version": "1.1",
+  "supported_versions": ["1.0", "1.1"],
+  "closed": true,
+  "note": "Closed schema. Unknown properties are rejected. Interpreted by openspec/scripts/design-pattern-governance/schema.mjs, not by a JSON Schema library, because the repository permits no runtime dependency here. Field constraints are data; cross-field relations are named rules implemented in code so each one is auditable by name.",
+  "fields": {
+    "schema_version": { "type": "string", "required": true, "enum": ["1.0", "1.1"] },
+    "change_id": { "type": "string", "required": true, "pattern": "^[a-z0-9][a-z0-9-]{2,99}$" },
+    "assessment_level": { "type": "string", "required": true, "controlled_value": "assessment_level" },
+    "decision": { "type": "string", "required": true, "controlled_value": "decision" },
+    "forces": {
+      "type": "array", "required": true, "min_items": 1, "max_items": 20,
+      "items": { "type": "string", "min_length": 8, "max_length": 300 }
+    },
+    "applicability": {
+      "type": "object", "required": true, "closed": true,
+      "fields": {
+        "triggers_matched": {
+          "type": "array", "required": true, "max_items": 8,
+          "items": { "type": "string", "member_of": "full_assessment_triggers" }
+        },
+        "full_trigger_absence_proof": { "type": "string", "required": false, "min_length": 40, "max_length": 1000 },
+        "material_capability_modification": { "type": "boolean", "required": true },
+        "capabilities": { "type": "array", "required": true, "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,99}$" } }
+      }
+    },
+    "owned_paths": {
+      "type": "array", "required": false, "max_items": 60,
+      "items": { "type": "string", "repository_relative": true }
+    },
+    "candidate_approaches": {
+      "type": "array", "required": true, "min_items": 1, "max_items": 6,
+      "items": {
+        "type": "object", "closed": true,
+        "fields": {
+          "id": { "type": "string", "required": true, "pattern": "^approach-[a-z0-9][a-z0-9-]{2,79}$" },
+          "kind": { "type": "string", "required": true, "enum": ["direct_implementation", "alternative"] },
+          "summary": { "type": "string", "required": true, "min_length": 20, "max_length": 600 },
+          "forces_addressed": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string" } },
+          "catalog_pattern_id": { "type": "string", "required": false, "pattern": "^pattern-[a-z0-9][a-z0-9-]{2,79}$" }
+        }
+      }
+    },
+    "selected_approach_id": { "type": "string", "required": true, "pattern": "^approach-[a-z0-9][a-z0-9-]{2,79}$" },
+    "rejected_alternative_ids": {
+      "type": "array", "required": true, "min_items": 1, "max_items": 6,
+      "items": { "type": "string", "pattern": "^approach-[a-z0-9][a-z0-9-]{2,79}$" }
+    },
+    "rejection_reasons": {
+      "type": "map", "required": true, "key_pattern": "^approach-[a-z0-9][a-z0-9-]{2,79}$",
+      "value": {
+        "type": "object", "closed": true,
+        "fields": {
+          "forces": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string" } },
+          "reason": { "type": "string", "required": true, "min_length": 40, "max_length": 1000 }
+        }
+      }
+    },
+    "selected_pattern_ids": {
+      "type": "array", "required": true, "max_items": 4,
+      "items": { "type": "string", "pattern": "^pattern-[a-z0-9][a-z0-9-]{2,79}$" }
+    },
+    "catalog_binding": {
+      "type": "object", "required": false, "closed": true,
+      "fields": {
+        "catalog_version": { "type": "string", "required": true, "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "pattern_id": { "type": "string", "required": true, "pattern": "^pattern-[a-z0-9][a-z0-9-]{2,79}$" },
+        "required_invariant_ids": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string" } },
+        "conditional_invariant_ids": { "type": "array", "required": true, "items": { "type": "string" } },
+        "non_applicable_invariants": {
+          "type": "array", "required": true,
+          "items": {
+            "type": "object", "closed": true,
+            "fields": {
+              "invariant_id": { "type": "string", "required": true },
+              "forces": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string" } },
+              "reason": { "type": "string", "required": true, "min_length": 40, "max_length": 1000 },
+              "acknowledged_in_signed_record": { "type": "boolean", "required": true }
+            }
+          }
+        }
+      }
+    },
+    "implementation_invariant_ids": {
+      "type": "array", "required": true, "max_items": 20,
+      "items": { "type": "string", "pattern": "^implementation-[a-z0-9][a-z0-9-]{2,79}$" }
+    },
+    "invariant_evidence": {
+      "type": "map", "required": true, "key_pattern": "^(pattern|implementation)-[a-z0-9][a-z0-9-]{2,79}$",
+      "value": {
+        "type": "object", "closed": true,
+        "fields": {
+          "task_ids": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string", "pattern": "^\\d+\\.\\d+$" } },
+          "evidence_ids": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string", "min_length": 3 } }
+        }
+      }
+    },
+    "security_sensitive": { "type": "boolean", "required": true },
+    "security_justification": {
+      "type": "map", "required": false, "key_pattern": "^[a-z_]+$",
+      "value": { "type": "string", "min_length": 20, "max_length": 600 }
+    },
+    "ordering": {
+      "type": "object", "required": true, "closed": true,
+      "fields": {
+        "proposal_baseline_commit": { "type": "string", "required": true, "pattern": "^[0-9a-f]{40}$" },
+        "assessment_commit": { "type": "string", "required": false, "pattern": "^[0-9a-f]{40}$" },
+        "earliest_governed_implementation_commit": { "type": "string", "required": false, "pattern": "^[0-9a-f]{40}$" },
+        "final_technical_commit": { "type": "string", "required": false, "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "retrospective_exception": {
+      "type": "object", "required": false, "closed": true,
+      "fields": {
+        "owner": { "type": "string", "required": true, "min_length": 3 },
+        "reason": { "type": "string", "required": true, "min_length": 40, "max_length": 1000 },
+        "commits": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string", "pattern": "^[0-9a-f]{40}$" } },
+        "paths": { "type": "array", "required": true, "min_items": 1, "items": { "type": "string" } },
+        "residual_risk": { "type": "string", "required": true, "min_length": 40 },
+        "reduced_assurance_acknowledged": { "type": "boolean", "required": true },
+        "eligibility": { "type": "string", "required": true, "enum": ["grandfathered", "emergency"] }
+      }
+    },
+    "verification_task_ids": {
+      "type": "array", "required": true, "min_items": 1,
+      "items": { "type": "string", "pattern": "^\\d+\\.\\d+$" }
+    }
+  },
+  "rules": [
+    { "id": "assessment-full-requires-direct-candidate", "requirement": "R2" },
+    { "id": "assessment-full-requires-alternative-candidate", "requirement": "R2" },
+    { "id": "assessment-candidate-forces-relevant", "requirement": "R2" },
+    { "id": "assessment-candidate-ids-unique", "requirement": "R2" },
+    { "id": "assessment-rejection-force-based", "requirement": "R2" },
+    { "id": "assessment-rejection-covers-every-rejected-id", "requirement": "R2" },
+    { "id": "assessment-selected-approach-not-rejected", "requirement": "R2" },
+    { "id": "assessment-direct-has-no-selected-patterns", "requirement": "R3" },
+    { "id": "assessment-direct-has-no-catalog-binding", "requirement": "R3" },
+    { "id": "assessment-direct-records-implementation-invariants", "requirement": "R3" },
+    { "id": "assessment-named-pattern-rejects-direct", "requirement": "R4" },
+    { "id": "assessment-named-pattern-requires-catalog-binding", "requirement": "R4" },
+    { "id": "assessment-named-pattern-has-selected-patterns", "requirement": "R4" },
+    { "id": "assessment-invariant-evidence-complete", "requirement": "R5" },
+    { "id": "assessment-non-applicable-must-be-conditional", "requirement": "R5" },
+    { "id": "assessment-non-applicable-requires-acknowledgement", "requirement": "R5" },
+    { "id": "assessment-security-false-requires-justification", "requirement": "R8" },
+    { "id": "assessment-security-false-contradicted-by-trigger", "requirement": "R8" },
+    { "id": "assessment-abbreviated-requires-absence-proof", "requirement": "R1" },
+    { "id": "assessment-abbreviated-rejected-when-trigger-matches", "requirement": "R1" },
+    { "id": "assessment-material-modification-requires-full", "requirement": "R1" },
+    { "id": "assessment-ordering-distinct-commits", "requirement": "R10" },
+    { "id": "assessment-retrospective-exception-eligibility", "requirement": "R10" }
+  ],
+  "non_force_based_reason_patterns": [
+    "^best practice",
+    "^industry standard",
+    "^widely used",
+    "^it is standard",
+    "^everyone uses",
+    "^common pattern",
+    "^recommended by"
+  ]
+}
