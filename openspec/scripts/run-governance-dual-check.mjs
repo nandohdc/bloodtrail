@@ -375,12 +375,19 @@ function firstItemViolation(value, items, label) {
 
 function validateStringField(value, definition, label) {
   if (typeof value !== "string") return `${label} is not a string`;
-  if (Array.isArray(definition.enum) && !definition.enum.includes(value)) {
-    return `${label} is not one of ${definition.enum.join(", ")}`;
-  }
-  if (definition.pattern !== undefined && !new RegExp(definition.pattern).test(value)) {
-    return `${label} does not match ${definition.pattern}`;
-  }
+  return violatedStringConstraint(value, definition, label);
+}
+
+/** Constraints in declaration order, so the reported violation is the first one. */
+function violatedStringConstraint(value, definition, label) {
+  if (isOutsideEnum(value, definition)) return `${label} is not one of ${definition.enum.join(", ")}`;
+  if (isOffPattern(value, definition)) return `${label} does not match ${definition.pattern}`;
+  return violatedLengthConstraint(value, definition, label);
+}
+
+function violatedLengthConstraint(value, definition, label) {
+  // Trimmed for the minimum so whitespace cannot pad a reason to length, but raw
+  // for the maximum so a bound stays a bound.
   if (definition.min_length !== undefined && value.trim().length < definition.min_length) {
     return `${label} is shorter than ${definition.min_length} character(s)`;
   }
@@ -388,6 +395,14 @@ function validateStringField(value, definition, label) {
     return `${label} is longer than ${definition.max_length} character(s)`;
   }
   return null;
+}
+
+function isOutsideEnum(value, definition) {
+  return Array.isArray(definition.enum) && !definition.enum.includes(value);
+}
+
+function isOffPattern(value, definition) {
+  return definition.pattern !== undefined && !new RegExp(definition.pattern).test(value);
 }
 
 function report(result) {
