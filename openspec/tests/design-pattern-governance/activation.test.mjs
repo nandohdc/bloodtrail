@@ -177,6 +177,58 @@ describe("R17 the activation record is M's dedicated direct child", () => {
   });
 });
 
+/**
+ * A pull-request checkout is a synthetic two-parent merge of the base branch and the head branch.
+ * Once activation has landed, that merge's first parent already carries the activation record, so
+ * the merge inherits it rather than introducing it. Treating every two-parent commit as an
+ * introduction made each ordinary preview register a second candidate beside the real activation
+ * commit, and the derivation requires exactly one.
+ */
+describe("R17 a commit carrying the record from a parent did not introduce it", () => {
+  it("accepts an ordinary merge after activation", () => {
+    const repository = fixture();
+    const { record } = buildGovernedHistory(repository);
+    commitActivation(repository, record);
+
+    repository.branch("feat/followup");
+    repository.write("docs/followup.md", "# Follow-up\n");
+    repository.commit("docs: an ordinary post-activation follow-up");
+    repository.checkout("main");
+    repository.git(["merge", "--no-ff", "feat/followup", "-m", "Merge followup"]);
+
+    assertPasses(check(repository));
+  });
+
+  it("rejects a record that arrives only by merging a side branch", () => {
+    const repository = fixture();
+    const { record } = buildGovernedHistory(repository);
+    // No activation commit on main: the record reaches the mainline through a merge, which
+    // inherited it and so is not the dedicated direct child the requirement demands.
+    repository.branch("feat/activation-carried");
+    repository.writeJson(ACTIVATION_PATH, record);
+    repository.commit("chore: carry an activation record on a side branch");
+    repository.checkout("main");
+    repository.git(["merge", "--no-ff", "feat/activation-carried", "-m", "Merge activation-carried"]);
+
+    assertDiagnostic(check(repository), "activation-commit-absent");
+  });
+
+  it("still rejects a two-parent commit that introduces the record itself", () => {
+    const repository = fixture();
+    const { record } = buildGovernedHistory(repository);
+    repository.branch("feat/side");
+    repository.write("docs/side.md", "# Side\n");
+    repository.commit("docs: a side-branch commit");
+    repository.checkout("main");
+    // The record is absent from both parents and added by the merge itself, so it genuinely is
+    // introduced here. The parent-count rule is what must still reject it.
+    repository.git(["merge", "--no-ff", "--no-commit", "feat/side"]);
+    commitActivation(repository, record);
+
+    assertDiagnostic(check(repository), "activation-parent");
+  });
+});
+
 describe("R16 the governed merge preserves reviewed identities", () => {
   it("rejects a squash merge, which replaces the reviewed commits", () => {
     const repository = fixture();

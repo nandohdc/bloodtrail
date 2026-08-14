@@ -19,7 +19,7 @@ Authorized proposal baseline: `e536c9b74ec009a1bfad1c1561d478cb48600ba4`
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase bootstrap` | passed; enforcement remains pending until the dedicated activation record exists |
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase activation` | fails closed: `activation-commit-absent` — expected, no activation record exists |
 | `node openspec/scripts/run-governance-dual-check.mjs` | candidate passed; baseline unavailable, see below |
-| `node --test openspec/tests/design-pattern-governance/*.test.mjs` | 178 tests, 178 pass, 0 fail |
+| `node --test openspec/tests/design-pattern-governance/*.test.mjs` | 181 tests, 181 pass, 0 fail |
 | `npm run check:generated --prefix packages/security-audit-sdk-core` | generated artifacts current |
 | `npm run validate --prefix packages/security-audit-sdk-core` | full chain green, 194 verification tests pass |
 | `npm run validate --prefix contracts/security-audit` | 14 tests pass |
@@ -95,8 +95,8 @@ have a dedicated named-identifier assertion. That is a stated gap, not a claim o
 ## R15 recovery controls
 
 Three post-signing defects were found by independent review and are repaired by the original
-technical change; a fourth surfaced later during activation preflight and is repaired by this
-re-signing delta:
+technical change; a fourth surfaced during activation preflight and a fifth on the first pull
+request after activation, each repaired by its own re-signing delta:
 
 1. **Review freshness was specified but not enforced.** R15 requires any post-signing normative
    change to invalidate the signed record, yet the checker passed while six normative paths had
@@ -135,6 +135,19 @@ re-signing delta:
    and fails them all: its merge/technical/signed bindings resolve only in the real repository. The
    seeder now excludes the record, and an activation-suite regression asserts fixtures never inherit
    it.
+5. **A pull-request preview was misread as a second activation introduction.** The activation
+   commit is derived from history rather than named by the record, and the derivation counted any
+   two-parent commit as introducing the record because it only ever compared against a single
+   parent. A pull-request checkout is a synthetic two-parent merge whose first parent is the base
+   branch, which after activation already carries the record — so every ordinary preview produced a
+   second candidate beside the real activation commit, the derivation demanded exactly one, and the
+   required check failed closed on each of them with `activation-commit-absent`. A commit now
+   introduces a path only when the path is present at it and absent from *every* parent, the same
+   rule `pathsChangedByCommitIncludingMerges` already applies to merge-specific paths. The rule is
+   actor-neutral and knows nothing about pull requests: single-parent behaviour is unchanged, and a
+   two-parent commit that genuinely introduces the record is still rejected for its parent count.
+   Three activation-suite regressions cover the preview shape, a record arriving only by merging a
+   side branch, and that parent-count guard.
 
 The signed-record source is now closed policy: `review_freshness.record_path` is a required policy
 section validated as a well-formed repository path inside the governance-record-only allowlist, so

@@ -111,21 +111,33 @@ function findActivationCommit(recordPath, merge, cwd) {
 
 function childCommitsIntroducing(path, merge, cwd) {
   const result = [];
-  const objectAtMerge = objectAtPath(merge, path, cwd);
+  if (objectAtPath(merge, path, cwd) !== null) return result; // present already at M: not introduced after it
   const head = resolveCommit("HEAD", cwd);
   if (head === null) return result;
-  const objectAtHead = objectAtPath(head, path, cwd);
-  if (objectAtHead === null) return result;
-  if (objectAtMerge !== null) return result; // present already at M: not introduced after it
+  if (objectAtPath(head, path, cwd) === null) return result;
   // Walk the first-parent chain forward from M looking for the introduction.
-  const chain = firstParentChain(head, merge, cwd);
-  for (const commit of chain) {
-    const parents = parentsOf(commit, cwd) ?? [];
-    const before = parents.length === 1 ? objectAtPath(parents[0], path, cwd) : null;
-    const after = objectAtPath(commit, path, cwd);
-    if (before === null && after !== null) result.push(commit);
+  for (const commit of firstParentChain(head, merge, cwd)) {
+    if (introducesPath(commit, path, cwd)) result.push(commit);
   }
   return result;
+}
+
+/**
+ * Whether a commit introduces a path: present at the commit, absent from *every* parent.
+ *
+ * The single-parent form is obvious; the two-parent form is what this exists for. A pull-request
+ * checkout is a synthetic merge of the base branch and the head branch, so once activation has
+ * landed, the preview's first parent already carries the activation record. Counting any two-parent
+ * commit as an introduction made every ordinary preview register a second candidate beside the real
+ * activation commit, and findActivationCommit requires exactly one — so the required check failed on
+ * each such preview. Nothing here knows about pull requests: what a commit inherits from a parent
+ * was not introduced there, which is the same rule pathsChangedByCommitIncludingMerges applies to
+ * merge-specific paths.
+ */
+function introducesPath(commit, path, cwd) {
+  if (objectAtPath(commit, path, cwd) === null) return false;
+  const parents = parentsOf(commit, cwd) ?? [];
+  return parents.every((parent) => objectAtPath(parent, path, cwd) === null);
 }
 
 function firstParentChain(head, stopAt, cwd) {
