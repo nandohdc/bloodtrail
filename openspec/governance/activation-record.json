@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.1",
+  "protected_reference": "refs/heads/main",
+  "merge_commit": "5973c767a2bec815410e05a2b711fc8ed4a85f75",
+  "merge_tree": "0a74a3195c17fcc7e18d5b8bd7267bab759f8fea",
+  "merge_strategy": "merge_commit",
+  "technical_commit": "11996085a55ecb0ba627532ea67558793064d21c",
+  "signed_record_commit": "1379a26a263645216bf7f5a3cd29b798b62803f6",
+  "signed_record_content_object": "879f64aff1c460ae4fba5c1e8de3d40a4525a20f",
+  "bound_blobs": {
+    "openspec/scripts/check-design-pattern-governance.mjs": "c9f836ac56855b8fc4eaaef37aed88805264910b",
+    "openspec/governance/design-pattern-policy.json": "c8ce23d2df59d3e6910af4d7eb8bb242ed010c4a",
+    "openspec/governance/schemas/activation.schema.json": "e0e8b49c3d79aaa9a114e1c77693b1c70ecbbe84",
+    "openspec/governance/schemas/assessment.schema.json": "8238aea2a9c8af86c0bcb8fd0c5bad99291301eb",
+    "openspec/governance/schemas/provenance.schema.json": "100ef90b9395a50d6aa7f5ea4ff695ca1fdaf33c",
+    "openspec/governance/schemas/signed-governance-record.schema.json": "a3771a2063f9fcfb0d0a5d3c1e80433b6611c6f1",
+    "openspec/governance/design-pattern-catalog.md": "7f64878a7c263ae780e02a183787df417b3060bb",
+    "docs/design-pattern-governance.md": "c16b70e218aabaed531c9a9ca5efd31c85dc0742",
+    ".github/PULL_REQUEST_TEMPLATE.md": "d19efe29bb66f818bb765b9263b17ab7f068b982"
+  },
+  "required_check": {
+    "context": "design-pattern-governance",
+    "evidence_method": "github-branch-protection-api",
+    "evidence_digest": "sha256:f74b4db9e0858bc20f288f3f5596b6b233b77ecd65791dee81816c707893ba10",
+    "verified": true,
+    "verified_contexts": [
+      "ci / lint",
+      "ci / test",
+      "ci / audit",
+      "sonar",
+      "sdk",
+      "contract",
+      "conventional-commits",
+      "codescene delta",
+      "design-pattern-governance"
+    ]
+  },
+  "supported_schema_versions": ["1.0", "1.1"],
+  "grandfathered_entries": [
+    {
+      "change": "correct-local-instruction-verification-premise",
+      "class": "mainline_present",
+      "proposal_blob": "1c452d4570295f6193309e6d66679dda1b53999b"
+    }
+  ],
+  "allowlisted_activation_paths": [
+    "openspec/governance/activation-record.json"
+  ]
+}
