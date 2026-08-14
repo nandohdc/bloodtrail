@@ -101,3 +101,50 @@ describe("R11 the perimeter is actor-neutral", () => {
       "the same changed paths must produce the same verdict for every actor");
   });
 });
+
+describe("R11 the Hermes documentation exception is narrow", () => {
+  it("classifies landing plans as documentation", () => {
+    const repository = fixture();
+    const base = repository.head();
+    repository.write(".hermes/plans/example.md", "# Example landing plan\n");
+    repository.commit("docs: add a landing plan");
+
+    assertPasses(check(repository, base));
+  });
+
+  it("does not let configuration inherit the documentation exception", () => {
+    const repository = fixture();
+    const base = repository.head();
+    repository.write(".hermes/config.yaml", "model: default\n");
+    repository.commit("chore: add hermes configuration");
+
+    assertDiagnostic(check(repository, base), "path-unclassified");
+  });
+
+  it("does not let scripts inherit the documentation exception", () => {
+    const repository = fixture();
+    const base = repository.head();
+    repository.write(".hermes/scripts/check.mjs", "export function check() { return 1; }\n");
+    repository.commit("chore: add a hermes script");
+
+    assertDiagnostic(check(repository, base), "path-unclassified");
+  });
+
+  it("does not let skill instructions inherit the documentation exception", () => {
+    const repository = fixture();
+    const base = repository.head();
+    repository.write(".hermes/skills/example/SKILL.md", "# Example skill\n");
+    repository.commit("docs: add a hermes skill");
+
+    assertDiagnostic(check(repository, base), "path-unclassified");
+  });
+
+  it("does not accept an executable hook as documentation", () => {
+    const repository = fixture();
+    const base = repository.head();
+    repository.write(".hermes/hooks/preflight.sh", "#!/bin/sh\necho \"preflight checks\"\n");
+    repository.commit("chore: add a hermes hook");
+
+    assertDiagnostic(check(repository, base), "path-unclassified");
+  });
+});

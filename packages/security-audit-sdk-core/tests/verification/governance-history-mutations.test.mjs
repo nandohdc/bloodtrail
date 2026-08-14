@@ -37,6 +37,29 @@ const BOUND_CONTENT_OBJECTS = SIGNED_ENTRIES
 const OTHER_CANDIDATE_ROOTS = OTHER_RECORDS
   .filter((record) => typeof record.reviewedContent?.candidateRoot === "string").length;
 
+// The independent expected inventory. Deliberately NOT derived from the manifest:
+// the aggregate counts above recompute from whatever the manifest currently
+// holds, so removing a record or narrowing a binding can normalize the expected
+// result. This inventory is what the mutation suite independently requires to
+// exist, and it only changes through an explicit, reviewed edit to this file.
+const EXPECTED_RECORD_IDS = Object.freeze([
+  "implement-security-audit-sdk-core",
+  "right-size-change-governance",
+  "establish-design-pattern-governance",
+]);
+const MINIMUM_REVIEWED_PATHS = Object.freeze({
+  "right-size-change-governance": Object.freeze([
+    "packages/security-audit-sdk-core/scripts",
+    "packages/security-audit-sdk-core/tests/verification",
+  ]),
+  "establish-design-pattern-governance": Object.freeze([
+    "openspec/changes/establish-design-pattern-governance",
+    "openspec/governance",
+    "openspec/scripts",
+    "openspec/tests/design-pattern-governance",
+  ]),
+});
+
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-governance-history-"));
 const controlRoot = resolve(suiteRoot, "control");
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
@@ -44,11 +67,42 @@ test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
 prepareControl();
 
 test("G-00 unmutated control passes and reports what it verified", () => {
+  assertInventory(controlRoot);
   const root = caseRepository("control-pass");
   const result = succeeds(root);
   assert.match(result.stdout, new RegExp(`governance history passed: ${RECORD_COUNT} record\\(s\\)`));
   assert.match(result.stdout, /bound commit\(s\) are ancestors of HEAD/);
   assert.match(result.stdout, /declared merge commit\(s\) have their expected parent count/);
+});
+
+test("G-01 removing a whole governance record keeps the gate green but violates the independent inventory", () => {
+  const root = caseRepository("record-removed-bypass");
+  mutateLifecycle(root, (lifecycle) => {
+    lifecycle.governanceRecords = lifecycle.governanceRecords
+      .filter((record) => record.change !== "establish-design-pattern-governance");
+  });
+  // The bypass this control documents: the gate's expectations derive from the
+  // manifest it overlays, so deleting the record normalizes the expected result
+  // instead of failing it.
+  succeeds(root);
+  // The independent inventory is what actually rejects the removal.
+  assert.throws(() => assertInventory(root), /establish-design-pattern-governance/,
+    "removing the establish-design-pattern-governance record must violate the independent inventory");
+});
+
+test("G-02 narrowing a reviewed-content binding keeps the gate green but violates the independent inventory", () => {
+  const root = caseRepository("binding-narrowed-bypass");
+  mutateLifecycle(root, (lifecycle) => {
+    const record = lifecycle.governanceRecords
+      .find((entry) => entry.change === "establish-design-pattern-governance");
+    assert.ok(record?.reviewedContent?.entries?.length > 0, "control record must carry reviewed content");
+    record.reviewedContent.entries.pop();
+  });
+  // Same bypass shape: every remaining declared entry is valid, so the gate
+  // stays green while the binding it is supposed to protect has shrunk.
+  succeeds(root);
+  assert.throws(() => assertInventory(root), /openspec\/tests\/design-pattern-governance/,
+    "dropping a minimum reviewed path must violate the independent inventory");
 });
 
 test("M-GH-A a squash declared as a two-parent merge is rejected with the actual count", () => {
@@ -230,6 +284,44 @@ test("M-GH-K removing the resolution check lets the unresolvable commit pass", (
   mutateChecker(root, "!commitResolves(commit)", "false");
   succeeds(root);
 });
+
+/**
+ * The independent expected inventory. Asserts what must exist regardless of
+ * what the gate's own dynamic totals are willing to normalize away: the exact
+ * current record set, exactly one record per expected change, every minimum
+ * reviewed path per record, and no duplicate reviewed path within a record.
+ */
+function assertInventory(root) {
+  const manifestPath = resolve(root, "packages/security-audit-sdk-core/verification-lifecycle.json");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  assert.ok(Array.isArray(manifest.governanceRecords), "the control manifest must declare governanceRecords");
+  const records = manifest.governanceRecords;
+
+  const actualIds = records.map((record) => record.change).sort();
+  assert.deepEqual(actualIds, [...EXPECTED_RECORD_IDS].sort(),
+    "the exact expected record set must be present");
+
+  const byChange = new Map();
+  for (const record of records) {
+    const current = byChange.get(record.change) ?? [];
+    byChange.set(record.change, [...current, record]);
+  }
+  for (const [change, entries] of byChange) {
+    assert.equal(entries.length, 1, `exactly one governance record must exist for ${change}`);
+  }
+
+  for (const record of records) {
+    const paths = record.reviewedContent?.entries?.map((entry) => entry.path) ?? [];
+    const unique = new Set(paths);
+    assert.equal(unique.size, paths.length,
+      `the ${record.change} record must not bind the same reviewed path twice`);
+    const minimum = MINIMUM_REVIEWED_PATHS[record.change] ?? [];
+    for (const path of minimum) {
+      assert.ok(unique.has(path),
+        `the ${record.change} record must continue to bind the reviewed path ${path}`);
+    }
+  }
+}
 
 function prepareControl() {
   git(repositoryRoot, ["clone", "--quiet", "--no-hardlinks", repositoryRoot, controlRoot]);

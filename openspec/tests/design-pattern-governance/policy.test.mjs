@@ -147,3 +147,50 @@ describe("R13 fail-closed policy loading", () => {
     assertDiagnostic(result, "policy-absent");
   });
 });
+
+describe("R15 the signed-record source is declared and fail-closed", () => {
+  it("fails with policy-incomplete when review_freshness is removed", () => {
+    const repository = fixture();
+    repository.mutateJson(POLICY_PATH, (policy) => {
+      delete policy.review_freshness;
+      return policy;
+    });
+    assertDiagnostic(runChecker(repository), "policy-incomplete");
+  });
+
+  it("fails with policy-incomplete when record_path is missing", () => {
+    const repository = fixture();
+    repository.mutateJson(POLICY_PATH, (policy) => {
+      delete policy.review_freshness.record_path;
+      return policy;
+    });
+    assertDiagnostic(runChecker(repository), "policy-incomplete");
+  });
+
+  it("fails with policy-incomplete when record_path is empty", () => {
+    const repository = fixture();
+    repository.mutateJson(POLICY_PATH, (policy) => {
+      policy.review_freshness.record_path = "";
+      return policy;
+    });
+    assertDiagnostic(runChecker(repository), "policy-incomplete");
+  });
+
+  it("fails with policy-incomplete when record_path traverses out of the repository", () => {
+    const repository = fixture();
+    repository.mutateJson(POLICY_PATH, (policy) => {
+      policy.review_freshness.record_path = "../verification-lifecycle.json";
+      return policy;
+    });
+    assertDiagnostic(runChecker(repository), "policy-incomplete");
+  });
+
+  it("fails when record_path escapes the governance-record-only allowlist", () => {
+    const repository = fixture();
+    repository.mutateJson(POLICY_PATH, (policy) => {
+      policy.review_freshness.record_path = "openspec/scripts/check-design-pattern-governance.mjs";
+      return policy;
+    });
+    assertDiagnostic(runChecker(repository), "review-freshness-record-path-unprotected");
+  });
+});

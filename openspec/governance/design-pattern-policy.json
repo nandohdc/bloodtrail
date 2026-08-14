@@ -142,7 +142,7 @@
         "RELEASING.md",
         "CHANGELOG.md",
         "docs/",
-        ".hermes/"
+        ".hermes/plans/"
       ]
     }
   ],
@@ -192,6 +192,9 @@
     "packages/security-audit-sdk-core/verification-lifecycle.json",
     "openspec/governance/records/"
   ],
+  "review_freshness": {
+    "record_path": "packages/security-audit-sdk-core/verification-lifecycle.json"
+  },
   "protected_history_roots": [
     "contracts/security-audit/",
     "openspec/specs/security-audit-event-contract/",

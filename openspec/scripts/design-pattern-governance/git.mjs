@@ -135,6 +135,36 @@ export function pathsChangedByCommit(commit, cwd) {
   return result.ok ? splitNull(result.value) : null;
 }
 
+/**
+ * Paths a commit changed, where a merge commit counts only the content it adds
+ * beyond every parent.
+ *
+ * A plain `diff-tree` on a merge reports nothing, so the merge's own edits would
+ * be invisible; `-m` against every parent reports the whole merged line and
+ * would flag an identity-preserving merge for carrying content that individual
+ * range commits already account for. Only paths whose content at the merge
+ * differs from *every* parent are new work the merge itself introduced.
+ */
+export function pathsChangedByCommitIncludingMerges(commit, cwd) {
+  const parents = parentsOf(commit, cwd);
+  if (parents === null) return null;
+  if (parents.length <= 1) return pathsChangedByCommit(commit, cwd);
+  const candidates = new Set();
+  for (const parent of parents) {
+    const result = tryGit(["diff", "--no-renames", "--name-only", "-z", parent, commit], { cwd });
+    if (!result.ok) return null;
+    for (const path of splitNull(result.value)) candidates.add(path);
+  }
+  const genuinelyNew = [];
+  for (const path of candidates) {
+    const atCommit = objectAtPath(commit, path, cwd);
+    if (parents.every((parent) => objectAtPath(parent, path, cwd) !== atCommit)) {
+      genuinelyNew.push(path);
+    }
+  }
+  return genuinelyNew.sort();
+}
+
 export function untrackedPaths(cwd) {
   const result = tryGit(["ls-files", "--others", "--exclude-standard", "-z"], { cwd });
   return result.ok ? splitNull(result.value) : [];

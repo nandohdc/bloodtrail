@@ -15,17 +15,18 @@ Authorized proposal baseline: `e536c9b74ec009a1bfad1c1561d478cb48600ba4`
 | `openspec validate --all --strict` | 5 passed, 0 failed |
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment` | passed |
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase implementation` | passed |
-| `node openspec/scripts/check-design-pattern-governance.mjs --phase final` | passed |
+| `node openspec/scripts/check-design-pattern-governance.mjs --phase final` | fails closed with `signed-review-stale` — the expected R15 state against the historical signed record; see "R15 recovery controls" below. Full final success is required on the replacement signed record S_NEW |
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase bootstrap` | passed; enforcement remains pending until the dedicated activation record exists |
 | `node openspec/scripts/check-design-pattern-governance.mjs --phase activation` | fails closed: `activation-commit-absent` — expected, no activation record exists |
 | `node openspec/scripts/run-governance-dual-check.mjs` | candidate passed; baseline unavailable, see below |
-| `node --test openspec/tests/design-pattern-governance/*.test.mjs` | 136 tests, 136 pass, 0 fail |
+| `node --test openspec/tests/design-pattern-governance/*.test.mjs` | 177 tests, 177 pass, 0 fail |
 | `npm run check:generated --prefix packages/security-audit-sdk-core` | generated artifacts current |
-| `npm run validate --prefix packages/security-audit-sdk-core` | full chain green, 192 verification tests pass |
+| `npm run validate --prefix packages/security-audit-sdk-core` | full chain green, 194 verification tests pass |
 | `npm run validate --prefix contracts/security-audit` | 14 tests pass |
 | `gh api repos/nandohdc/bloodtrail/branches/main/protection/required_status_checks` | strict enforcement verified for all nine contexts; exact response digest `sha256:f74b4db9e0858bc20f288f3f5596b6b233b77ecd65791dee81816c707893ba10` |
-| CodeScene required delta / Cloud review on `c5719279b9f74c1aa1a56bc1630632626e9f3bd9` | failed on the same 12 code-health targets: 10 production modules below 10.00, including 6 with `Bumpy Road Ahead`, plus duplication in 2 test modules; remediated by behavior-preserving extraction and context-object refactors without suppressions |
-| DeepScan on `c5719279b9f74c1aa1a56bc1630632626e9f3bd9` | advisory result reports `3 new and 0 fixed issues`; the public result does not expose rule, severity, path, or line, so the findings are deferred rather than inferred |
+| Required `codescene delta` on `6c2269c459a3fc16ae54d92fda69100fe5f9204f` | passed |
+| CodeScene Cloud review on `6c2269c459a3fc16ae54d92fda69100fe5f9204f` | passed |
+| DeepScan on `6c2269c459a3fc16ae54d92fda69100fe5f9204f` | advisory result currently green: `0 new and 0 fixed issues`; recorded as an observed external status, not as approval or assurance |
 
 The activation fail-closed result is the correct answer, not a defect: activation requires an
 activation record, which does not exist and must not exist before merge. After the owner added
@@ -82,7 +83,7 @@ gate. All ran green in the SDK chain above:
 
 ## Control coverage
 
-137 diagnostic identifiers are reachable in the checker. 87 are asserted **by exact identifier** in
+145 diagnostic identifiers are reachable in the checker. 95 are asserted **by exact identifier** in
 the test suite — not merely by a non-zero exit, because a test that accepts any failure passes when
 the checker breaks for an unrelated reason.
 
@@ -90,6 +91,47 @@ The remaining 50 are shape-level schema diagnostics (`schema-type`, `schema-patt
 `schema-length`, …) and secondary variants of covered cases (`assessment-invalid-json`,
 `catalog-absent`, `template-absent`). They are reachable and exercised indirectly; they do not each
 have a dedicated named-identifier assertion. That is a stated gap, not a claim of completeness.
+
+## R15 recovery controls
+
+Three post-signing defects were found by independent review and are repaired by this change:
+
+1. **Review freshness was specified but not enforced.** R15 requires any post-signing normative
+   change to invalidate the signed record, yet the checker passed while six normative paths had
+   changed after the historical signed record `f53a07115e91da1fc4f0ae7469d5899b1bd5afa4`.
+   `review-freshness.mjs` now derives everything from history: it locates the current signed record
+   for each active change, finds the commit that introduced those exact record bytes after the bound
+   technical commit, requires that commit to be governance-record-only, and rejects every commit in
+   `T..HEAD` that touches a normative path. Merge commits count only content new relative to every
+   parent, so an identity-preserving merge does not invalidate the record it carries. The seven new
+   diagnostics (`signed-record-source-absent`, `signed-record-source-invalid`,
+   `signed-record-ambiguous`, `signed-record-removed`, `signed-record-uncommitted`,
+   `signed-review-history-unavailable`, `signed-review-stale`) are each asserted by exact identifier
+   in `review-freshness.test.mjs`. Against the current head, final verification now names exactly the
+   six discovered post-sign normative changes and permits the record-only and plan-documentation
+   commits — the fail-closed answer. A dangling-binding control completes it: any signed record whose
+   change id matches no active change, no archived change directory, and no grandfathering entry is
+   rejected as ambiguous. Both exemption sets are content-gated, not name-gated: an active change
+   only counts when its assessment exists, and an archive only counts when its assessment or proposal
+   is the byte-identical object history carried at the active change path. Renaming or deleting a
+   change directory, stripping its assessment, or planting a contentless or foreign archive directory
+ therefore cannot silently de-activate the record that binds it. A stated residual: a byte-for-byte
+ copy of a real historical archive artifact is indistinguishable from a genuine relocation at this
+ checker's level, and the archive-movement attestations gate remains the higher authority for it.
+2. **The Hermes documentation exception was too broad.** `.hermes/` classified every Hermes path as
+   documentation, including configuration, scripts, skills, and hooks. The class now names only
+   `.hermes/plans/`; sibling Hermes content fails closed as unclassified, proven by five perimeter
+   tests.
+3. **The governance-history mutation suite normalized its own expectations.** Aggregate totals were
+   derived from the mutable manifest, so removing the whole
+   `establish-design-pattern-governance` record or narrowing its reviewed-content binding kept the
+   suite green. `governance-history-mutations.test.mjs` now carries an independent expected record
+   inventory (record IDs, one record per change, minimum reviewed paths, no duplicate bindings) and
+   two controls that reproduce the bypasses and show the inventory rejecting them.
+
+The signed-record source is now closed policy: `review_freshness.record_path` is a required policy
+section validated as a well-formed repository path inside the governance-record-only allowlist, so
+the checker has exactly one fail-closed source for active signed records.
 
 **Four dead controls were found and fixed during verification.** `checkOpenSpecAssociation`,
 `checkGrandfatheredScope`, `checkEmergencyTermination`, and `compareSchemaCompatibility` were
@@ -115,9 +157,9 @@ Reported independently. Evidence for one is not evidence for another.
 | State | Status |
 | --- | --- |
 | Apply authorization | **granted** — groups 1–8 only, recorded in `apply-authorization.md` |
-| Technical commit readiness | **yes** — final disposable-copy validation and two independent read-only reviews passed; CodeScene must still pass on published T |
-| Signed governance record | **not started** — withheld; no record exists |
-| Merge readiness | **not started** |
+| Technical commit readiness | **yes** — after the R15 recovery controls above, subject to the disposable-copy validation and independent reviews of the exact replacement commit |
+| Signed governance record | **superseded and stale** — historical `S = f53a07115e91da1fc4f0ae7469d5899b1bd5afa4` bound `T = 4f1ee3b544add8d991b3b6a0822dbe9e2028086d`; six normative paths changed after it, so it cannot bind current content. A replacement record for the replacement technical commit requires fresh explicit owner approval |
+| Merge readiness | **blocked** — requires the replacement signed record and exact-head checks |
 | Activation readiness | **blocked** — required-status enforcement is verified, but T, S, M, and activation-time evidence do not yet exist |
 | Canonical materialization | **not started** — `openspec/specs/software-design-pattern-governance/` deliberately absent |
 | Archive readiness | **not started** |
@@ -137,12 +179,14 @@ Reported independently. Evidence for one is not evidence for another.
 3. **Required-check evidence is time-bound external state.** The governance CI job is now a strict
    required status check, but the branch-protection response must be captured again immediately before
    merge and activation rather than treating this digest as permanent evidence.
-4. **50 of 137 diagnostics lack a dedicated named assertion**, as detailed above.
-5. **CodeScene must evaluate the published final technical commit.** The local CLI cannot authenticate
-   without `CS_ACCESS_TOKEN`, so the required `codescene delta` result and the distinct advisory Cloud
-   result remain publication-time evidence. The candidate addresses every file/function named by the
-   baseline findings; both independent read-only reviews found no fail-open or behavioral regression.
-6. **DeepScan issue detail was inaccessible from the public result.** It reports three new issues but
-   exposes no rule, severity, path, or line without an authenticated dashboard. No defect was guessed
-   from that count. The advisory findings are deliberately deferred pending exact owner-visible detail;
-   any later accepted normative correction invalidates this candidate and requires a new T.
+4. **50 of 145 diagnostics lack a dedicated named assertion**, as detailed above.
+5. **Required `codescene delta` and the advisory Cloud review have passed on the current head**, but
+   they must pass again on the published replacement technical commit `T_NEW` and on the signed
+   record commit `S_NEW`. No CodeScene signal is suppressed and the two signals remain distinct.
+6. **DeepScan is currently green on the observed head.** It is an advisory external status only; it is
+   neither approval nor assurance, and it must be re-read on the published replacement commits rather
+   than assumed stable.
+7. **The replacement technical commit must remain red on final verification until the replacement
+   signed record exists.** The discovered stale state (six post-sign normative paths) makes
+   `signed-review-stale` the correct fail-closed answer against the historical record; any other
+   failure on exact `T_NEW`, or any failure at all on exact `S_NEW`, blocks the lifecycle.

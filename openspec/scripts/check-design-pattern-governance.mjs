@@ -52,6 +52,7 @@ import {
   verifyAssessmentOrdering,
 } from "./design-pattern-governance/ancestry.mjs";
 import { activationState, verifyActivation, verifyBootstrap } from "./design-pattern-governance/activation.mjs";
+import { verifySignedReviewFreshness } from "./design-pattern-governance/review-freshness.mjs";
 import {
   checkEmergencyTermination,
   checkGrandfatheredScope,
@@ -151,6 +152,7 @@ function createContext({ repositoryRoot, cwd, policy, registry, catalog, schemas
     mainlineRevision: mainlineRevision(policy, cwd),
     earliestImplementationByChange: new Map(),
     observedTriggersByChange: new Map(),
+    activeChangeIds: new Set(),
     previouslyOptedIn: state.record?.opted_in_changes ?? [],
     provenanceExpansionTriggers: schemas.provenance?.scope_expansion_triggers ?? [],
   };
@@ -177,6 +179,14 @@ function phaseIncludesPerimeter(phase) {
 
 function runFinalChecks(context, schemas, state, diagnostics) {
   const { repositoryRoot, policy } = context;
+  verifySignedReviewFreshness({
+    changeIds: context.activeChangeIds,
+    allChangeIds: discoverActiveChangeIds(repositoryRoot),
+    repositoryRoot,
+    cwd: context.cwd,
+    policy,
+    sink: diagnostics,
+  });
   checkActorNeutralDocuments(repositoryRoot, policy, diagnostics);
   checkTemplates(repositoryRoot, diagnostics);
   checkCiJob(repositoryRoot, policy, diagnostics);
@@ -203,6 +213,7 @@ function checkAssessments(opts, context, schemas, diagnostics) {
 
   for (const { changeId, path, document } of discoverAssessments(context.repositoryRoot, opts.change, diagnostics)) {
     if (!checkDocumentVersion(document, schema, path, diagnostics)) continue;
+    context.activeChangeIds.add(changeId);
 
     // Structural and relational checks both run. Stopping at the first structural
     // failure would report a cardinality violation and hide the requirement it
@@ -260,6 +271,35 @@ function discoverAssessments(repositoryRoot, only, diagnostics) {
       "the named change carries no assessment evidence");
   }
   return found;
+}
+
+/**
+ * Every active change id, regardless of any --change restriction. Review
+ * freshness uses this for its dangling-binding check so a scoped run cannot
+ * misreport the other active changes' signed records as orphaned. A directory
+ * only counts when it carries its assessment, mirroring assessment discovery:
+ * a bare or decoy directory name must not exempt a signed record.
+ */
+function discoverActiveChangeIds(repositoryRoot) {
+  const changesRoot = resolve(repositoryRoot, "openspec/changes");
+  let entries;
+  try {
+    entries = readdirSync(changesRoot, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((candidate) => candidate.isDirectory() && candidate.name !== "archive")
+    .filter((candidate) => {
+      try {
+        statSync(resolve(changesRoot, candidate.name, "assessment.json"));
+        return true;
+      } catch {
+        return false;
+      }
+    })
+    .map((candidate) => candidate.name)
+    .sort();
 }
 
 function checkPerimeter(opts, context, diagnostics) {

@@ -74,16 +74,16 @@
       "evidence_ids": ["determinism.test.mjs: identical output across repeated runs", "diagnostics.mjs: code-point sorting, not localeCompare"]
     },
     "implementation-exact-history-binding": {
-      "task_ids": ["5.7", "5.9", "7.2", "7.3"],
-      "evidence_ids": ["ancestry.test.mjs", "activation.test.mjs", "disposable-git fixtures for parent, blob, squash, rebase, and shallow history"]
+      "task_ids": ["5.7", "5.8", "5.9", "7.2", "7.3"],
+      "evidence_ids": ["ancestry.test.mjs", "activation.test.mjs", "disposable-git fixtures for parent, blob, squash, rebase, and shallow history", "review-freshness.test.mjs: the signed record locates its own introducing commit and rejects post-T normative commits"]
     },
     "implementation-actor-neutral-perimeter": {
       "task_ids": ["5.3", "7.1"],
-      "evidence_ids": ["perimeter.test.mjs: identical verdict for identical paths regardless of author", "no actor-conditional branch in perimeter.mjs"]
+      "evidence_ids": ["perimeter.test.mjs: identical verdict for identical paths regardless of author", "no actor-conditional branch in perimeter.mjs", "perimeter.test.mjs: the Hermes documentation exception admits only .hermes/plans/ and rejects sibling configuration, scripts, skills, and hooks"]
     },
     "implementation-fail-closed-evidence": {
-      "task_ids": ["5.2", "5.10", "7.6"],
-      "evidence_ids": ["policy.test.mjs: absent, empty, truncated, invalid, versionless, unsupported, and incompatible policy each assert their own diagnostic id"]
+      "task_ids": ["5.2", "5.10", "6.8", "7.6"],
+      "evidence_ids": ["policy.test.mjs: absent, empty, truncated, invalid, versionless, unsupported, and incompatible policy each assert their own diagnostic id", "review-freshness.test.mjs: removed, ambiguous, uncommitted, absent, and shallow-history record states fail with their own diagnostics"]
     },
     "implementation-approval-separation": {
       "task_ids": ["6.10", "8.10"],

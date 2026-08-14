@@ -10,7 +10,7 @@
 
 import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
-import { isWellFormedPath } from "./paths.mjs";
+import { isWellFormedPath, matchesAny, pathProblem } from "./paths.mjs";
 
 export const POLICY_SCHEMA = "bloodtrail.design-pattern-governance.policy";
 
@@ -27,6 +27,7 @@ const REQUIRED_TOP_LEVEL = Object.freeze([
   "governance_core_artifacts",
   "normative_paths",
   "governance_record_only_paths",
+  "review_freshness",
   "protected_history_roots",
   "actor_neutral_documents",
   "protected_mainline",
@@ -139,6 +140,7 @@ function validateStructure(parsed, relativePath, sink, before) {
   validateVersions(parsed, relativePath, sink);
   validateVocabulary(parsed, relativePath, sink);
   validatePathSets(parsed, relativePath, sink);
+  validateReviewFreshness(parsed, relativePath, sink);
   validateProtectedMainline(parsed, relativePath, sink);
   validateCheckerCompatibility(parsed, relativePath, sink);
 
@@ -272,6 +274,34 @@ function validateRequiredPathSets(parsed, relativePath, sink) {
     if (!Array.isArray(values) || values.length === 0) {
       sink.fail(id, relativePath, `${key} must be a non-empty array`);
     }
+  }
+}
+
+/**
+ * The one closed source the signed-review verifier reads. The record path must
+ * sit inside the governance-record-only allowlist, because a signed record
+ * stored on any other path would change reviewed content by the act of signing,
+ * which is the exact self-reference R15 forbids.
+ */
+function validateReviewFreshness(parsed, relativePath, sink) {
+  const section = parsed.review_freshness;
+  if (!isRecord(section)) {
+    sink.fail("policy-incomplete", relativePath, "review_freshness must be an object");
+    return;
+  }
+  const recordPath = section.record_path;
+  if (typeof recordPath !== "string" || recordPath.length === 0) {
+    sink.fail("policy-incomplete", relativePath, "review_freshness.record_path must be a non-empty string");
+    return;
+  }
+  const problem = pathProblem(recordPath);
+  if (problem !== null) {
+    sink.fail("policy-incomplete", relativePath, `review_freshness.record_path ${problem}`);
+    return;
+  }
+  if (!matchesAny(recordPath, parsed.governance_record_only_paths ?? [])) {
+    sink.fail("review-freshness-record-path-unprotected", relativePath,
+      `review_freshness.record_path ${recordPath} is not covered by governance_record_only_paths; the signed-record source must sit inside the closed allowlist`);
   }
 }
 

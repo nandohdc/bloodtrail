@@ -124,6 +124,11 @@ export function createRepository(options = {}) {
   }
 
   repository.write("README.md", "# Governance fixture\n");
+  // The signed-record source the policy names. Fixtures seed an empty manifest
+  // because the live one binds real commits that do not exist here; a fixture
+  // with no signed records is the legitimate pre-signing technical state.
+  repository.write("packages/security-audit-sdk-core/verification-lifecycle.json",
+    `${JSON.stringify({ governanceRecords: [] }, null, 2)}\n`);
   if (options.seedChange === false) {
     // For fixtures that must start with no OpenSpec change at all, so the
     // association check sees a genuinely empty set rather than a deletion.
