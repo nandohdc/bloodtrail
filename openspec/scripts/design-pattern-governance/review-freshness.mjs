@@ -34,6 +34,8 @@ import { touchesNormativePath } from "./perimeter.mjs";
 import { matchesAny } from "./paths.mjs";
 
 const OBJECT_ID = /^[0-9a-f]{40}$/;
+const HISTORY_UNAVAILABLE = Symbol("history-unavailable");
+const ARCHIVE_ARTIFACTS = Object.freeze(["assessment.json", "proposal.md"]);
 
 /**
  * @param {{ changeIds: Iterable<string>, allChangeIds?: Iterable<string>,
@@ -46,20 +48,9 @@ export function verifySignedReviewFreshness({ changeIds, allChangeIds, repositor
   // a scoped run would report the other active changes' records as dangling.
   const knownChanges = new Set(allChangeIds ?? activeChanges);
 
-  const recordPath = requireRecordPath(policy, sink);
-  if (recordPath === null) return;
-
-  const source = readRecordSource(repositoryRoot, recordPath, sink);
-  if (source === null) return;
-  if (!isCommittedSource(source, recordPath, cwd, sink)) return;
-
-  if (!historyIsComplete(cwd)) {
-    sink.fail("signed-review-history-unavailable", recordPath,
-      "review freshness requires complete Git history; a shallow clone cannot prove what followed the signed record");
-    return;
-  }
-
-  const context = { repositoryRoot, cwd, policy, recordPath, sink };
+  const prepared = prepareVerification(repositoryRoot, cwd, policy, sink);
+  if (prepared === null) return;
+  const { source, context } = prepared;
 
   // A signed record whose change id matches nothing active, nothing archived,
   // and nothing grandfathered is a dangling binding: renaming or deleting a
@@ -69,6 +60,27 @@ export function verifySignedReviewFreshness({ changeIds, allChangeIds, repositor
   for (const changeId of activeChanges) {
     verifyChange(changeId, source, context);
   }
+}
+
+/** Loads and validates every input the verifier needs, or null with diagnostics. */
+function prepareVerification(repositoryRoot, cwd, policy, sink) {
+  const recordPath = requireRecordPath(policy, sink);
+  if (recordPath === null) return null;
+  const source = loadCommittedSource(repositoryRoot, recordPath, cwd, sink);
+  if (source === null) return null;
+  return { source, context: { repositoryRoot, cwd, policy, recordPath, sink } };
+}
+
+function loadCommittedSource(repositoryRoot, recordPath, cwd, sink) {
+  const source = readRecordSource(repositoryRoot, recordPath, sink);
+  if (source === null) return null;
+  if (!isCommittedSource(source, recordPath, cwd, sink)) return null;
+  if (!historyIsComplete(cwd)) {
+    sink.fail("signed-review-history-unavailable", recordPath,
+      "review freshness requires complete Git history; a shallow clone cannot prove what followed the signed record");
+    return null;
+  }
+  return source;
 }
 
 /** The closed signed-record source path, or null with a diagnostic. */
@@ -91,19 +103,26 @@ function isCommittedSource(source, recordPath, cwd, sink) {
 }
 
 function readRecordSource(repositoryRoot, recordPath, sink) {
-  const absolute = resolve(repositoryRoot, recordPath);
-  let text;
+  const text = readSourceText(repositoryRoot, recordPath, sink);
+  if (text === null) return null;
+  if (text.trim().length === 0) {
+    sink.fail("signed-record-source-invalid", recordPath, "signed-record source has no content");
+    return null;
+  }
+  return parseSourceManifest(text, recordPath, sink);
+}
+
+function readSourceText(repositoryRoot, recordPath, sink) {
   try {
-    text = readFileSync(absolute, "utf8");
+    return readFileSync(resolve(repositoryRoot, recordPath), "utf8");
   } catch {
     sink.fail("signed-record-source-absent", recordPath,
       "signed-record source does not exist or is unreadable; absence never means no signed records");
     return null;
   }
-  if (text.trim().length === 0) {
-    sink.fail("signed-record-source-invalid", recordPath, "signed-record source has no content");
-    return null;
-  }
+}
+
+function parseSourceManifest(text, recordPath, sink) {
   let parsed;
   try {
     parsed = JSON.parse(text);
@@ -121,37 +140,45 @@ function readRecordSource(repositoryRoot, recordPath, sink) {
 }
 
 function hasManifestShape(parsed) {
-  return parsed !== null
-    && typeof parsed === "object"
-    && !Array.isArray(parsed)
-    && Array.isArray(parsed.governanceRecords);
+  return isRecordObject(parsed) && Array.isArray(parsed.governanceRecords);
 }
 
 function checkDanglingRecords(source, knownChanges, context) {
-  const { repositoryRoot, cwd, policy, recordPath, sink } = context;
-  const archived = archivedChangeIds(repositoryRoot, cwd, sink);
-  const grandfathered = new Set(
-    (policy.grandfathering ?? []).map((entry) => entry?.change).filter((change) => typeof change === "string"),
-  );
+  const known = {
+    active: knownChanges,
+    archived: archivedChangeIds(context.repositoryRoot, context.cwd, context.sink),
+    grandfathered: collectGrandfatheredIds(context.policy),
+  };
   for (const record of source.records) {
-    if (!isRecordObject(record) || record.signed !== true) continue;
-    const changeId = record.change;
-    if (typeof changeId !== "string" || changeId.length === 0) {
-      sink.fail("signed-record-ambiguous", recordPath,
-        "a signed governance record carries no valid change id");
-      continue;
-    }
-    if (isKnownChange(changeId, knownChanges, archived, grandfathered)) continue;
-    sink.fail("signed-record-ambiguous", recordPath,
-      `the signed record binds ${changeId}, which is neither an active change, nor a grandfathered change, nor present under openspec/changes/archive/; a signed binding whose change disappeared must not stay silent`);
+    reportDanglingRecord(record, known, context);
   }
 }
 
-function isKnownChange(changeId, active, archived, grandfathered) {
-  return active.has(changeId) || archived.has(changeId) || grandfathered.has(changeId);
+function collectGrandfatheredIds(policy) {
+  return new Set(
+    (policy.grandfathering ?? []).map((entry) => entry?.change).filter((change) => typeof change === "string"),
+  );
 }
 
-/** Change ids present as directories under openspec/changes/archive/.
+function reportDanglingRecord(record, known, context) {
+  if (!isRecordObject(record) || record.signed !== true) return;
+  const changeId = record.change;
+  if (typeof changeId !== "string" || changeId.length === 0) {
+    context.sink.fail("signed-record-ambiguous", context.recordPath,
+      "a signed governance record carries no valid change id");
+    return;
+  }
+  if (isKnownChange(changeId, known)) return;
+  context.sink.fail("signed-record-ambiguous", context.recordPath,
+    `the signed record binds ${changeId}, which is neither an active change, nor a grandfathered change, nor present under openspec/changes/archive/; a signed binding whose change disappeared must not stay silent`);
+}
+
+function isKnownChange(changeId, known) {
+  return known.active.has(changeId) || known.archived.has(changeId) || known.grandfathered.has(changeId);
+}
+
+/**
+ * Change ids present as directories under openspec/changes/archive/.
  *
  * Only an archive that carries the change's own relocated artifacts counts: the
  * archived artifact's object must be the object history carried at the active
@@ -164,17 +191,7 @@ function isKnownChange(changeId, active, archived, grandfathered) {
  */
 function archivedChangeIds(repositoryRoot, cwd, sink) {
   const ids = new Set();
-  let entries;
-  try {
-    entries = readdirSync(resolve(repositoryRoot, "openspec/changes/archive"), { withFileTypes: true });
-  } catch {
-    return ids;
-  }
-  // Sorted for strict determinism: membership is order-independent, but the
-  // rare multi-archive history-failure diagnostic order must not vary by machine.
-  entries.sort((left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0));
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
+  for (const entry of archiveDirectoryEntries(repositoryRoot)) {
     // Archive directories carry a leading date: 2026-08-13-right-size-change-governance.
     const id = entry.name.replace(/^\d{4}-\d{2}-\d{2}-/, "");
     if (id.length === 0) continue;
@@ -183,24 +200,41 @@ function archivedChangeIds(repositoryRoot, cwd, sink) {
   return ids;
 }
 
-const ARCHIVE_ARTIFACTS = Object.freeze(["assessment.json", "proposal.md"]);
+function archiveDirectoryEntries(repositoryRoot) {
+  let entries;
+  try {
+    entries = readdirSync(resolve(repositoryRoot, "openspec/changes/archive"), { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  // Sorted for strict determinism: membership is order-independent, but the
+  // rare multi-archive history-failure diagnostic order must not vary by machine.
+  entries.sort((left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0));
+  return entries.filter((entry) => entry.isDirectory());
+}
 
 /** Whether an archived artifact is the exact object history carried at the active path. */
 function carriesRelocatedArtifact(archiveName, id, cwd, sink) {
   const archivedPath = `openspec/changes/archive/${archiveName}`;
   for (const artifact of ARCHIVE_ARTIFACTS) {
-    const archivedObject = objectAtPath("HEAD", `${archivedPath}/${artifact}`, cwd);
-    if (archivedObject === null) continue;
-    const activePath = `openspec/changes/${id}/${artifact}`;
-    const carried = historyCarriesObjectAt(activePath, archivedObject, cwd);
-    if (carried === null) {
-      sink.fail("signed-review-history-unavailable", archivedPath,
-        `cannot enumerate the history of ${activePath}; archive relocation cannot be verified`);
-      return false;
-    }
-    if (carried) return true;
+    const relocated = artifactWasRelocated(archivedPath, id, artifact, cwd, sink);
+    if (relocated === HISTORY_UNAVAILABLE) return false;
+    if (relocated) return true;
   }
   return false;
+}
+
+function artifactWasRelocated(archivedPath, id, artifact, cwd, sink) {
+  const archivedObject = objectAtPath("HEAD", `${archivedPath}/${artifact}`, cwd);
+  if (archivedObject === null) return false;
+  const activePath = `openspec/changes/${id}/${artifact}`;
+  const carried = historyCarriesObjectAt(activePath, archivedObject, cwd);
+  if (carried === null) {
+    sink.fail("signed-review-history-unavailable", archivedPath,
+      `cannot enumerate the history of ${activePath}; archive relocation cannot be verified`);
+    return HISTORY_UNAVAILABLE;
+  }
+  return carried;
 }
 
 /** True when some commit reachable from HEAD carried `object` at `path`; null when history is unreadable. */
@@ -234,48 +268,54 @@ function verifyUnsignedChange(changeId, context) {
 }
 
 function verifyBinding(changeId, record, context) {
-  const { cwd, recordPath, sink } = context;
   const technical = requireAncestorTechnicalCommit(changeId, record, context);
   if (technical === null) return;
 
-  const range = commitsBetween(technical, "HEAD", cwd);
+  const range = commitsBetween(technical, "HEAD", context.cwd);
   if (range === null) {
-    sink.fail("signed-review-history-unavailable", recordPath,
+    context.sink.fail("signed-review-history-unavailable", context.recordPath,
       `cannot enumerate commits between ${technical} and HEAD`);
     return;
   }
 
-  const currentBlob = objectAtPath("HEAD", recordPath, cwd);
-  const signedCommit = locateSignedCommit(technical, range, recordPath, currentBlob, cwd, sink);
+  const currentBlob = objectAtPath("HEAD", context.recordPath, context.cwd);
+  const signedCommit = locateSignedCommit(range, currentBlob, technical, context);
   if (signedCommit === null) return;
-  if (!checkNoNarrowing(changeId, record, recordPath, currentBlob, cwd, sink)) return;
+  if (!checkNoNarrowing(changeId, record, currentBlob, context)) return;
 
   scanPostTechnicalCommits(signedCommit, range, context);
 }
 
 /** Returns the bound technical commit, or null after raising a diagnostic. */
-function requireAncestorTechnicalCommit(changeId, record, { cwd, recordPath, sink }) {
-  const technical = record.reviewedCommit;
-  if (typeof technical !== "string" || !OBJECT_ID.test(technical)) {
-    sink.fail("signed-review-history-unavailable", recordPath,
-      `the signed record for ${changeId} does not name a well-formed reviewedCommit`);
-    return null;
-  }
-  if (resolveCommit(technical, cwd) === null) {
-    sink.fail("signed-review-history-unavailable", recordPath,
-      `reviewedCommit ${technical} for ${changeId} does not resolve in this repository`);
-    return null;
-  }
-  if (!isAncestor(technical, "HEAD", cwd)) {
-    sink.fail("signed-review-history-unavailable", recordPath,
+function requireAncestorTechnicalCommit(changeId, record, context) {
+  const technical = wellFormedTechnical(changeId, record, context);
+  if (technical === null) return null;
+  if (!resolvesInRepository(technical, changeId, context)) return null;
+  if (!isAncestor(technical, "HEAD", context.cwd)) {
+    context.sink.fail("signed-review-history-unavailable", context.recordPath,
       `reviewedCommit ${technical} for ${changeId} is not an ancestor of HEAD; the signed record cannot be ordered against its own history`);
     return null;
   }
   return technical;
 }
 
+function wellFormedTechnical(changeId, record, { recordPath, sink }) {
+  const technical = record.reviewedCommit;
+  if (typeof technical === "string" && OBJECT_ID.test(technical)) return technical;
+  sink.fail("signed-review-history-unavailable", recordPath,
+    `the signed record for ${changeId} does not name a well-formed reviewedCommit`);
+  return null;
+}
+
+function resolvesInRepository(technical, changeId, { cwd, recordPath, sink }) {
+  if (resolveCommit(technical, cwd) !== null) return true;
+  sink.fail("signed-review-history-unavailable", recordPath,
+    `reviewedCommit ${technical} for ${changeId} does not resolve in this repository`);
+  return false;
+}
+
 /** The first commit after T carrying the current record bytes, or null after a diagnostic. */
-function locateSignedCommit(technical, range, recordPath, currentBlob, cwd, sink) {
+function locateSignedCommit(range, currentBlob, technical, { recordPath, cwd, sink }) {
   for (const commit of range) {
     if (objectAtPath(commit, recordPath, cwd) === currentBlob) return commit;
   }
@@ -288,10 +328,14 @@ function locateSignedCommit(technical, range, recordPath, currentBlob, cwd, sink
  * Rejects re-binding the same technical commit with a narrower reviewed-content
  * set than a prior signed record declared for that commit.
  */
-function checkNoNarrowing(changeId, record, recordPath, currentBlob, cwd, sink) {
-  const prior = priorSignedRecord(changeId, recordPath, currentBlob, cwd, sink);
+function checkNoNarrowing(changeId, record, currentBlob, context) {
+  const prior = priorSignedRecord(changeId, currentBlob, context);
   if (prior === HISTORY_UNAVAILABLE) return false;
   if (prior === null) return true;
+  return requireNoNarrowing(changeId, record, prior, context);
+}
+
+function requireNoNarrowing(changeId, record, prior, { recordPath, sink }) {
   if (prior.reviewedCommit !== record.reviewedCommit) return true;
   if (coversReviewedContent(record, prior)) return true;
   sink.fail("signed-record-ambiguous", recordPath,
@@ -304,36 +348,38 @@ function checkNoNarrowing(changeId, record, recordPath, currentBlob, cwd, sink) 
  * excluded: it is a closed artifact with its own dedicated allowlist whose
  * exactness bootstrap and activation verification enforce (R17-R18).
  */
-function scanPostTechnicalCommits(signedCommit, range, { cwd, policy, sink }) {
+function scanPostTechnicalCommits(signedCommit, range, context) {
+  for (const commit of range) {
+    const paths = pathsChangedByCommitIncludingMerges(commit, context.cwd);
+    if (paths === null) {
+      context.sink.fail("signed-review-history-unavailable", commit,
+        "cannot enumerate the paths a commit changed after the signed record");
+      return;
+    }
+    reportStalePaths(paths, commit, signedCommit, context);
+  }
+}
+
+function reportStalePaths(paths, commit, signedCommit, { policy, sink }) {
   const permitted = [
     ...(policy.governance_record_only_paths ?? []),
     ...(policy.activation?.record_path ? [policy.activation.record_path] : []),
   ];
-  for (const commit of range) {
-    const paths = pathsChangedByCommitIncludingMerges(commit, cwd);
-    if (paths === null) {
-      sink.fail("signed-review-history-unavailable", commit,
-        "cannot enumerate the paths a commit changed after the signed record");
-      return;
-    }
-    for (const path of paths) {
-      if (matchesAny(path, permitted)) continue;
-      if (touchesNormativePath([path], policy)) {
-        sink.fail("signed-review-stale", path,
-          `commit ${commit} changed ${path} after signed record ${signedCommit}; the signed review is stale; re-sign a new technical commit`);
-      }
+  for (const path of paths) {
+    if (matchesAny(path, permitted)) continue;
+    if (touchesNormativePath([path], policy)) {
+      sink.fail("signed-review-stale", path,
+        `commit ${commit} changed ${path} after signed record ${signedCommit}; the signed review is stale; re-sign a new technical commit`);
     }
   }
 }
-
-const HISTORY_UNAVAILABLE = Symbol("history-unavailable");
 
 /**
  * The most recent signed record for a change whose raw bytes differ from the
  * current record blob, or null when none exists. Used to reject narrowing a
  * binding while claiming the same reviewed commit.
  */
-function priorSignedRecord(changeId, recordPath, currentBlob, cwd, sink) {
+function priorSignedRecord(changeId, currentBlob, { recordPath, cwd, sink }) {
   const touched = tryGit(["rev-list", "HEAD", "--", recordPath], { cwd });
   if (!touched.ok) {
     sink.fail("signed-review-history-unavailable", recordPath,
@@ -342,13 +388,19 @@ function priorSignedRecord(changeId, recordPath, currentBlob, cwd, sink) {
   }
   for (const commit of splitLines(touched.value)) {
     if (objectAtPath(commit, recordPath, cwd) === currentBlob) continue;
-    const parsed = parseHistoricalManifest(commit, recordPath, cwd, sink);
-    if (parsed === HISTORY_UNAVAILABLE) return HISTORY_UNAVAILABLE;
-    if (parsed === null) continue;
-    const signed = parsed.governanceRecords.filter((record) => isSignedRecordFor(record, changeId));
-    if (signed.length > 0) return signed[signed.length - 1];
+    const prior = signedRecordInManifestAt(commit, recordPath, changeId, cwd, sink);
+    if (prior === HISTORY_UNAVAILABLE) return HISTORY_UNAVAILABLE;
+    if (prior !== null) return prior;
   }
   return null;
+}
+
+function signedRecordInManifestAt(commit, recordPath, changeId, cwd, sink) {
+  const parsed = parseHistoricalManifest(commit, recordPath, cwd, sink);
+  if (parsed === HISTORY_UNAVAILABLE) return HISTORY_UNAVAILABLE;
+  if (parsed === null) return null;
+  const signed = parsed.governanceRecords.filter((record) => isSignedRecordFor(record, changeId));
+  return signed.length > 0 ? signed[signed.length - 1] : null;
 }
 
 function historyCarriesSignedRecord(changeId, { recordPath, cwd, sink }) {
@@ -359,12 +411,21 @@ function historyCarriesSignedRecord(changeId, { recordPath, cwd, sink }) {
     return true;
   }
   for (const commit of splitLines(touched.value)) {
-    const parsed = parseHistoricalManifest(commit, recordPath, cwd, sink);
-    if (parsed === HISTORY_UNAVAILABLE) return true;
-    if (parsed === null) continue;
-    if (parsed.governanceRecords.some((record) => isSignedRecordFor(record, changeId))) return true;
+    if (manifestCarriesRecord(commit, changeId, { recordPath, cwd, sink })) return true;
   }
   return false;
+}
+
+/**
+ * Whether a historical manifest carries a signed record for the change. An
+ * unreadable manifest counts as carrying one, so a broken history fails closed
+ * on the removed-record path rather than reading as never signed.
+ */
+function manifestCarriesRecord(commit, changeId, { recordPath, cwd, sink }) {
+  const parsed = parseHistoricalManifest(commit, recordPath, cwd, sink);
+  if (parsed === HISTORY_UNAVAILABLE) return true;
+  if (parsed === null) return false;
+  return parsed.governanceRecords.some((record) => isSignedRecordFor(record, changeId));
 }
 
 /**
