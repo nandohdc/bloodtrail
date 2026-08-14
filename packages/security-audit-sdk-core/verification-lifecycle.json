@@ -340,7 +340,7 @@
     },
     {
       "change": "establish-design-pattern-governance",
-      "policy": "Owner-signed decision bound to exact technical commit 11996085a55ecb0ba627532ea67558793064d21c and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and the empty pre-merge mergeCommits list. The record authorizes only identity-preserving merge and dedicated activation preparation; it does not authorize canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
+      "policy": "Owner-signed decision bound to exact technical commit 11996085a55ecb0ba627532ea67558793064d21c and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and declared merge parent counts. The record authorizes only identity-preserving merge and dedicated activation preparation; it does not authorize canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
       "reviewedCommit": "11996085a55ecb0ba627532ea67558793064d21c",
       "reviewedContent": {
         "kind": "tree",
@@ -384,7 +384,16 @@
       "boundCommits": [
         "11996085a55ecb0ba627532ea67558793064d21c"
       ],
-      "mergeCommits": [],
+      "mergeCommits": [
+        {
+          "commit": "a2ce4d8983b385e3ea06685780bd436d99dbc3c3",
+          "expectedParents": 2
+        },
+        {
+          "commit": "5973c767a2bec815410e05a2b711fc8ed4a85f75",
+          "expectedParents": 2
+        }
+      ],
       "designPatternGovernance": {
         "assessment": {
           "path": "openspec/changes/establish-design-pattern-governance/assessment.json",
