@@ -340,19 +340,35 @@
     },
     {
       "change": "establish-design-pattern-governance",
-      "policy": "Owner-signed decision bound to exact technical commit 5ab9811a470f911117b09986a3c0cec08bb450e3 and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and declared merge parent counts. The reviewed scope is cumulative: it is the five normative subtrees at that commit, which carry the whole visible history from the activation-preview fix through the dual-check acceptance. This record additionally carries the one baselineDisagreementAcceptance the dual check may honour; run-governance-dual-check.mjs binds it to this record's own reviewedCommit and to the record commit derived from history as that commit's direct child. The record authorizes only the identity-preserving merge of pull request 161; the activation record is not rebuilt by this cycle and no push to the protected reference is authorized. It does not authorize canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
-      "reviewedCommit": "5ab9811a470f911117b09986a3c0cec08bb450e3",
+      "policy": "Owner-signed decision bound to exact technical commit 874fe253f83937dba0996178c4c8c1aad82d7bdf and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and declared merge parent counts. The reviewed scope is cumulative: the exact commit names every reviewed byte, while the content-object entries bind the repository-managed agent instruction trees, actor-neutral governance documentation tree, active change, policy and invariant tests, and the checker and verification-test subtrees protected by the prior record. Baseline and candidate checkers agree and require this governance-record-only direct child to clear the expected signed-review-stale state. This record authorizes only storing that direct child; it does not authorize merging pull request 162, rebuilding activation, pushing to protected main, canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
+      "reviewedCommit": "874fe253f83937dba0996178c4c8c1aad82d7bdf",
       "reviewedContent": {
         "kind": "tree",
-        "candidateRoot": "9394ab2b629b41bc762344e29d23fd83e4b163dc",
+        "candidateRoot": "06a7ba449c6ffafcae0eee97edc59957487625f9",
         "entries": [
           {
+            "path": ".agents",
+            "object": "4826dad554a7574c28a6fdfbc2fe4c4da97f6af4"
+          },
+          {
+            "path": ".claude",
+            "object": "36ea49578146089212a7764317fafcb504b7a78b"
+          },
+          {
+            "path": ".hermes",
+            "object": "61add73fe29b587755f16983302fcb90bb7c5c3a"
+          },
+          {
+            "path": "docs",
+            "object": "abe64d3c78b3325374ee1c938860435d2f2b9022"
+          },
+          {
             "path": "openspec/changes/establish-design-pattern-governance",
-            "object": "4ce3561b301215bebb339ab981f4b1cede5bc2e8"
+            "object": "397fcb471225bf95e8166f926cfdf160c8f13f29"
           },
           {
             "path": "openspec/governance",
-            "object": "1d9dac9e22f721fba2a9aa1837bd1c6ad04f62db"
+            "object": "262453ffefadc54975ec2fcde4c1cd3356b617c0"
           },
           {
             "path": "openspec/scripts",
@@ -364,7 +380,7 @@
           },
           {
             "path": "openspec/tests/design-pattern-governance",
-            "object": "e869a955b612c553073000bd8f249ec3e0fa6856"
+            "object": "51221932a5d5691cbaa03216c13249267da85cec"
           }
         ]
       },
@@ -384,10 +400,17 @@
         "bc4f89071e7aac9e6892af66ea37d14ad8d66971",
         "bf022f675a2ed9e70ad415f67d9325fd57513137",
         "26c64d1f084a581cdb8c1c916acb4576efbe70b9",
-        "5ab9811a470f911117b09986a3c0cec08bb450e3"
+        "5ab9811a470f911117b09986a3c0cec08bb450e3",
+        "ff54b3650c65a291439414b26cfd256c62f7e154",
+        "fb17323ab3e57d71e99e9126faaf33c5efa66b50",
+        "147dab7425ab38a4e830483e09adba8bf293574b",
+        "f6e1110e5b6dd0524c9944e4e612ec39de1928b9",
+        "98cccaf8b07f8b53ccf75a3df2c1bc8aeb16694f",
+        "11dff538784a41f87a0f1694b28aa9f0bf634613",
+        "874fe253f83937dba0996178c4c8c1aad82d7bdf"
       ],
       "boundCommits": [
-        "5ab9811a470f911117b09986a3c0cec08bb450e3"
+        "874fe253f83937dba0996178c4c8c1aad82d7bdf"
       ],
       "mergeCommits": [
         {
@@ -397,13 +420,17 @@
         {
           "commit": "5973c767a2bec815410e05a2b711fc8ed4a85f75",
           "expectedParents": 2
+        },
+        {
+          "commit": "fb17323ab3e57d71e99e9126faaf33c5efa66b50",
+          "expectedParents": 2
         }
       ],
       "designPatternGovernance": {
         "assessment": {
           "path": "openspec/changes/establish-design-pattern-governance/assessment.json",
-          "digest": "sha256:784639b2301b75b4edfd7cee3a4a92825c783dc0f919c843ea663d0506fffa04",
-          "assessmentCommit": "5ab9811a470f911117b09986a3c0cec08bb450e3"
+          "digest": "sha256:febbd1856ac6b9f3e09246af09d0036b179b7f5232f7b0b2a41ac7c8925d0094",
+          "assessmentCommit": "874fe253f83937dba0996178c4c8c1aad82d7bdf"
         },
         "catalogInvariants": [],
         "implementationInvariants": [
@@ -417,90 +444,61 @@
         "securityClassificationReviewed": true,
         "checkerResults": {
           "baseline": {
-            "sourceRef": "5e732c163f3c3a88586d1370e3779d725a6cb7a5",
+            "sourceRef": "fb17323ab3e57d71e99e9126faaf33c5efa66b50",
             "checkerBlob": "c9f836ac56855b8fc4eaaef37aed88805264910b",
             "exitCode": 1,
             "diagnostics": [
-              "on the pull-request preview of T6, which is the synthetic two-parent merge shape, the baseline raised exactly one diagnostic: activation-commit-absent at openspec/governance/activation-record.json, while the candidate passed; that disagreement is the false positive T6's cycle repairs and is the one this record accepts in advance",
-              "on the linear branch history the baseline raises no diagnostic, because the misread needs the two-parent preview shape to appear; the disagreement is therefore reproducible only where CI runs it",
-              "the recorded checkerBlob is the entry script's, which this change does not touch, so it does not distinguish baseline from candidate; the runs did execute different module code because the baseline materialises openspec/scripts/design-pattern-governance/ from its own ref, where activation.mjs is the single differing module"
+              "the trusted-baseline final check rejects the cumulative post-sign normative changes only with signed-review-stale; it reports no path-unclassified or activation diagnostic",
+              "the baseline and candidate agree, so this record carries no baseline-disagreement acceptance"
             ]
           },
           "candidate": {
-            "sourceRef": "5ab9811a470f911117b09986a3c0cec08bb450e3",
+            "sourceRef": "874fe253f83937dba0996178c4c8c1aad82d7bdf",
             "checkerBlob": "c9f836ac56855b8fc4eaaef37aed88805264910b",
             "exitCode": 1,
             "diagnostics": [
-              "final phase at T6 failed with signed-review-stale and nothing else, naming the five normative paths changed after the prior signed record: the evidence packet, design-pattern-policy.json, baseline-disagreement.schema.json, run-governance-dual-check.mjs, and self-governance.test.mjs; this was the intended fail-closed R15 state and is cleared by this record",
-              "activation-commit-absent is absent from this run, as it was at T3; the fixed candidate does not raise it in either the linear or the preview shape"
+              "the exact-T pull-request job reports 69 signed-review-stale diagnostics and no other governance diagnostic, covering repository-managed generated agent instructions, .hermes.md, actor-neutral governance documents, active-change artifacts, design-pattern-policy.json, and perimeter.test.mjs",
+              "path-unclassified and activation-commit-absent are absent; the governance-record-only direct child is expected to clear the stale diagnostics"
             ]
           }
         },
         "divergences": [
           {
-            "description": "The trusted baseline contains no governance checker, so a distinct baseline execution cannot be produced for the change that introduces it.",
+            "description": "Before this record exists, exact-T final verification fails with 69 signed-review-stale diagnostics for the cumulative normative work after ff54b3650c65a291439414b26cfd256c62f7e154.",
             "accepted": true,
-            "reason": "The asymmetry is explicit, bootstrap is object-bound, and mutation tests prove that later governance-core changes are checked by both baseline and candidate implementations."
+            "reason": "The staleness is real and is the reason this re-signing exists; this governance-record-only direct child clears it, and R15 rejects any later normative change."
           },
           {
-            "description": "Before this record existed, final verification at T2 failed with signed-review-stale for the fixture-isolation fix, because the record merged before it still bound 5ceff7f. The failure was the intended R15 state for a post-signing normative change, not a defect.",
+            "description": "The prior signed record carried a baseline-disagreement acceptance for a historical activation-preview false positive, but the current baseline and candidate agree.",
             "accepted": true,
-            "reason": "The staleness was real and is the reason this re-signing exists; introducing the record is the governance-record-only commit that clears it, and R15 now rejects any further normative change after T2."
+            "reason": "The expired acceptance is removed rather than rolled forward; this record grants no baseline-disagreement exception."
           },
           {
-            "description": "Before this record existed, final verification at T3 failed with signed-review-stale for the evidence packet, activation.mjs, and activation.test.mjs, because the record merged before it still bound 11996085. The failure was the intended R15 state for a post-signing normative fix, not a defect.",
+            "description": "The one-time activation record remains bound to its historical merge, technical commit, signed-record commit, and bound blobs rather than being rebuilt for this cycle.",
             "accepted": true,
-            "reason": "The staleness was real and is the reason this re-signing exists; introducing the record is the governance-record-only commit that clears it, and R15 now rejects any further normative change after T3."
+            "reason": "Activation is a one-time historical event under R18. The owner's exact-T approval authorizes only the new signed record and does not authorize activation-record replacement or a protected-main push."
           },
           {
-            "description": "Before this record existed, final verification at T6 failed with signed-review-stale for the evidence packet, design-pattern-policy.json, baseline-disagreement.schema.json, run-governance-dual-check.mjs, and self-governance.test.mjs, because the record merged before it still bound ce692b2b. The failure was the intended R15 state for post-signing normative work, not a defect.",
+            "description": "The reviewedContent verifier currently accepts tree objects only, so root-level .hermes.md and CONTRIBUTING.md cannot be separate reviewedContent entries without binding the repository root that contains this record.",
             "accepted": true,
-            "reason": "The staleness was real and is the reason this re-signing exists; introducing the record is the governance-record-only commit that clears it, and R15 now rejects any further normative change after T6. The observed run is recorded verbatim in checkerResults.candidate rather than summarised."
-          },
-          {
-            "description": "The dual check's baseline-rejects/candidate-passes disagreement is accepted in advance by this record rather than resolved. The baseline continues to raise activation-commit-absent on the pull-request preview until the repair reaches the protected mainline.",
-            "accepted": true,
-            "reason": "The verdicts alone cannot separate a candidate that approved itself from a candidate that repaired a false positive, so the acceptance is what makes the second case landable. Every dimension is exact rather than sufficient: one singular acceptance on this one canonical current signed record, a technicalCommit equal to this record's own reviewedCommit, a record commit derived from history and required to be that commit's direct child, a named baseline and phase equal to those actually compared, and declared diagnostics equal to the raised ones as id-and-path pairs. It expires on its own: once this merge lands the baseline moves and the acceptance matches nothing."
-          },
-          {
-            "description": "The activation record is not rebuilt by this cycle and continues to bind merge commit 5973c767a2bec815410e05a2b711fc8ed4a85f75, technical commit 11996085a55ecb0ba627532ea67558793064d21c, and signed record commit 1379a26a263645216bf7f5a3cd29b798b62803f6, which are earlier than this record's reviewed commit.",
-            "accepted": true,
-            "reason": "Activation is a one-time event bound to the merge that landed the governance implementation, and R18 exists to stop that binding being replaced later. Rebinding is also mechanically impossible: the derivation treats a record already present at the bound merge as not introduced there, and any merge taken from the current mainline inherits it. None of the record's nine bound blobs is touched by this change, all remain byte-identical at their technical commit, and ee6fb3c31e1297dab6a5e19e66b7106b3ed83809 stays the sole introducer on the first-parent chain after the merge."
-          },
-          {
-            "description": "The activation record's bound_blobs cover openspec/scripts/check-design-pattern-governance.mjs but not the openspec/scripts/design-pattern-governance/ modules it imports, so this change alters enforcement behaviour without altering a bound blob.",
-            "accepted": true,
-            "reason": "The gap is pre-existing rather than introduced here, and it is recorded rather than silently relied upon. Closing it means re-deriving the bound blob set, which is a separate change requiring its own authorization; this record does not treat the unchanged checker blob as evidence that enforcement behaviour is unchanged."
+            "reason": "The exact technical commit still names those reviewed bytes, while the non-self-referential content-object entries bind every reviewed subtree. This record states the limitation rather than claiming blob-level binding the executable gate rejects."
           }
         ],
         "requiredCheckEvidence": {
           "method": "github-branch-protection-api",
           "digest": "sha256:f74b4db9e0858bc20f288f3f5596b6b233b77ecd65791dee81816c707893ba10",
-          "plan": "Re-queried at T6 and unchanged. Re-query exact branch-protection bytes immediately before merge and fail closed if any required context or strict enforcement differs. The activation record's own required-check evidence is not re-derived, because this cycle does not rebuild it."
+          "plan": "Re-queried at exact T and unchanged with strict enforcement and the nine declared required contexts. Exact T is green on every required context except the expected stale-only design-pattern-governance check. A later merge requires separate owner authorization, a fresh API read, exact-S identity, and every exact-S required context green."
         },
-        "activationAuthorized": true
-      },
-      "baselineDisagreementAcceptance": {
-        "schemaVersion": "1.0",
-        "phase": "final",
-        "baseline": "5e732c163f3c3a88586d1370e3779d725a6cb7a5",
-        "technicalCommit": "5ab9811a470f911117b09986a3c0cec08bb450e3",
-        "diagnostics": [
-          {
-            "id": "activation-commit-absent",
-            "path": "openspec/governance/activation-record.json"
-          }
-        ],
-        "reason": "The baseline checker counts any two-parent commit as introducing the activation record, so it reads the pull-request preview's synthetic merge as a second introduction beside the real activation commit and raises activation-commit-absent. That is the false positive this change repairs, and the repaired candidate passes. The owner reviewed the exact disagreement at exact technical commit 5ab9811a against exact baseline 5e732c16 and accepted it here rather than weakening the dual check. It expires by itself once the repair lands and the baseline moves."
+        "activationAuthorized": false
       },
       "authorizations": {
         "granted": [
-          "store-governance-record-s-for-exact-technical-commit",
-          "identity-preserving-merge-of-pr-157",
-          "dedicated-direct-child-activation-commit",
-          "identity-preserving-merge-of-pr-161"
+          "store-governance-record-s-for-exact-technical-commit"
         ],
         "withheld": [
+          "identity-preserving-merge-of-pr-162",
+          "activation-record-rebuild",
+          "protected-main-push",
           "canonical-capability-materialization",
           "openspec-archive",
           "package-publication",
@@ -516,11 +514,11 @@
         "AI-produced analysis informed the implementation and is not review, approval, or assurance."
       ],
       "signed": true,
-      "signatureDecision": "Owner decision given 2026-08-14, transcribed from the owner's own words (typographic arrow and dash rendered as ASCII, no other alteration): 'Approve exact technical commit T6 = 5ab9811a470f911117b09986a3c0cec08bb450e3, including its visible T4 -> T5 -> T6 history and the cumulative five-path normative scope. Authorize its governance-record-only direct child S4 touching only packages/security-audit-sdk-core/verification-lifecycle.json, binding reviewedCommit and technicalCommit to exact T6 and carrying the singular baseline-disagreement acceptance for baseline 5e732c163f3c3a88586d1370e3779d725a6cb7a5, phase final, and exactly activation-commit-absent at openspec/governance/activation-record.json. Authorize pushing T4-T6 and S4 to PR #161 and, only after local/tracking/live PR identity agrees on exact S4 and every required exact-S4 check is green, the identity-preserving merge using --merge --match-head-commit <S4>. Do not rewrite history, rebuild the activation record, or push directly to protected main. Canonicalization, archive, publication, deployment, production collection, real-user processing, framework integration, and delivery infrastructure remain withheld.' Asked to resolve the two mechanics the decision left open, the owner further chose: add --admin to the merge invocation, which substitutes for the sole CODEOWNER's approval only and never for a required check; and push T4-T6 first so continuous integration classifies exact T6 before S4 exists.",
+      "signatureDecision": "Owner decision given 2026-08-15 in direct reply to the exact-commit request: 'approve 874fe253f83937dba0996178c4c8c1aad82d7bdf'. The request expressly asked for authorization of the governance-record-only direct child for that exact technical commit. The decision therefore authorizes only S touching packages/security-audit-sdk-core/verification-lifecycle.json and binding exact T; it does not authorize merge, activation-record replacement, or a protected-main push.",
       "reviewer": {
         "name": "Fernando Homem da Costa (nandohdc)",
         "role": "Project owner and technical decision-maker",
-        "signedAt": "2026-08-14"
+        "signedAt": "2026-08-15"
       }
     }
   ]
