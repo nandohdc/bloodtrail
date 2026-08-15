@@ -32,6 +32,7 @@ import {
 } from "./git.mjs";
 import { touchesNormativePath } from "./perimeter.mjs";
 import { matchesAny } from "./paths.mjs";
+import { byCodePoint } from "./diagnostics.mjs";
 
 const OBJECT_ID = /^[0-9a-f]{40}$/;
 const HISTORY_UNAVAILABLE = Symbol("history-unavailable");
@@ -209,7 +210,7 @@ function archiveDirectoryEntries(repositoryRoot) {
   }
   // Sorted for strict determinism: membership is order-independent, but the
   // rare multi-archive history-failure diagnostic order must not vary by machine.
-  entries.sort((left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0));
+  entries.sort((left, right) => byCodePoint(left.name, right.name));
   return entries.filter((entry) => entry.isDirectory());
 }
 
