@@ -176,14 +176,17 @@ workflow refresh after activation, each repaired by its own re-signing delta:
    review, not on the script.
 7. **Repository-managed generated agent instructions matched no path class.** OpenSpec 1.9 regenerated
    48 instruction files under `.agents/skills/`, `.claude/commands/opsx/`, `.claude/skills/`, and
-   `.hermes/skills/`. The perimeter correctly failed closed with `path-unclassified`, but the policy
-   implementation had omitted those roots even though R14 already treated generated integration as
-   governance-core and R22 required regeneration drift to fail CI. The four roots are now
-   governance-core, normative, owned by this full assessment, and still explicitly non-authoritative;
+   `.hermes/skills/`. The perimeter correctly failed closed with `path-unclassified`. Before this
+   correction R14 named Hermes integration as governance-core and R22 governed Hermes regeneration,
+   but the actor-neutral mirrored roots were not stated explicitly in the contract or policy. This
+   correction generalizes those controls across all repository-managed generated agent integrations.
+   The four roots are now governance-core, normative, owned by this full assessment, and still
+   explicitly non-authoritative;
    they do not inherit the documentation-only exception. A perimeter regression checks a
-   representative path from every root against classification, governance-core applicability, and
-   review freshness. The focused test was observed failing with `unclassified` before the policy
-   change and passes afterward. The complete 192-test governance suite passes. Before the replacement
+   representative path from every root against classification, governance-core applicability,
+   review freshness, and non-authoritative-source status. The focused test was observed failing with
+   `unclassified` before the policy change and passes afterward. The complete 192-test governance
+   suite passes. Before the replacement
    signed record exists, candidate and trusted-baseline final checks both reject the generated files
    with `signed-review-stale`, which is the intended exact-commit review boundary rather than another
    checker defect.
