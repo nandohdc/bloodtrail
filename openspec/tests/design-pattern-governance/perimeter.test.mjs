@@ -6,6 +6,11 @@
 import assert from "node:assert/strict";
 import { after, describe, it } from "node:test";
 
+import {
+  classifyPath,
+  isGovernanceCore,
+  touchesNormativePath,
+} from "../../scripts/design-pattern-governance/perimeter.mjs";
 import { createRepository } from "./support/disposable-repo.mjs";
 import { POLICY_PATH, assertDiagnostic, assertPasses, runChecker } from "./support/harness.mjs";
 
@@ -130,13 +135,21 @@ describe("R11 the Hermes documentation exception is narrow", () => {
     assertDiagnostic(check(repository, base), "path-unclassified");
   });
 
-  it("does not let skill instructions inherit the documentation exception", () => {
+  it("classifies generated agent instructions as non-documentation governance core", () => {
     const repository = fixture();
-    const base = repository.head();
-    repository.write(".hermes/skills/example/SKILL.md", "# Example skill\n");
-    repository.commit("docs: add a hermes skill");
+    const policy = repository.readJson(POLICY_PATH);
+    const paths = [
+      ".agents/skills/openspec-apply-change/SKILL.md",
+      ".claude/commands/opsx/apply.md",
+      ".claude/skills/openspec-apply-change/SKILL.md",
+      ".hermes/skills/openspec-apply-change/SKILL.md",
+    ];
 
-    assertDiagnostic(check(repository, base), "path-unclassified");
+    for (const path of paths) {
+      assert.equal(classifyPath(path, policy), "governance_core", path);
+      assert.equal(isGovernanceCore([path], policy), true, path);
+      assert.equal(touchesNormativePath([path], policy), true, path);
+    }
   });
 
   it("does not accept an executable hook as documentation", () => {

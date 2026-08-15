@@ -348,7 +348,7 @@ After activation, absent, empty, truncated, invalid JSON, missing schema version
 - **THEN** verification SHALL fail with the checker-policy-incompatible diagnostic
 
 ### Requirement: R14 — Governance-core changes run trusted and candidate checks
-Governance-core artifacts SHALL include checker, policy configuration, activation record, schemas, catalog, invariant registry, actor-neutral policy documentation, Hermes integration, CI governance workflow, and governed path classifications. Each governance-core change SHALL require full assessment, security-sensitive analysis, explicit reviewer acknowledgement, trusted baseline-checker validation from the merge-base/protected-mainline baseline, and candidate-checker validation. A candidate checker SHALL NOT be its sole judge.
+Governance-core artifacts SHALL include checker, policy configuration, activation record, schemas, catalog, invariant registry, actor-neutral policy documentation, repository-managed generated agent integrations, CI governance workflow, and governed path classifications. Each governance-core change SHALL require full assessment, security-sensitive analysis, explicit reviewer acknowledgement, trusted baseline-checker validation from the merge-base/protected-mainline baseline, and candidate-checker validation. A candidate checker SHALL NOT be its sole judge.
 
 #### Scenario: Checker is changed to succeed unconditionally
 - **WHEN** the candidate checker is changed to return success for invalid evidence
@@ -539,8 +539,8 @@ For an otherwise unclassified path, an emergency classification record SHALL bin
 - **WHEN** the exact governed change is merged or abandoned
 - **THEN** the emergency classification SHALL cease without consulting wall-clock time
 
-### Requirement: R22 — Hermes integration is executable but non-authoritative
-During apply, the actual generated Hermes skill frontmatter and repository-supported allowed-tools syntax SHALL be inspected. The minimum valid permission expansion SHALL permit `node openspec/scripts/check-design-pattern-governance.mjs`; no assumption that `Bash(openspec:)` permits Node SHALL be accepted. Workflow tests SHALL assert both governed sequence and command permission, and regeneration through `openspec update` SHALL fail CI if either is removed. Hermes SHALL remain convenience-only.
+### Requirement: R22 — Generated agent integration is executable but non-authoritative
+During apply, the actual generated skill frontmatter and repository-supported allowed-tools syntax SHALL be inspected. Repository-managed generated agent instruction roots SHALL be classified as governance-core and normative while remaining non-authoritative. The minimum valid permission expansion SHALL permit `node openspec/scripts/check-design-pattern-governance.mjs`; no assumption that `Bash(openspec:)` permits Node SHALL be accepted. Workflow tests SHALL assert path classification, governed sequence, and command permission, and regeneration through `openspec update` SHALL fail CI if any property is removed. Canonical policy and required CI SHALL remain authoritative.
 
 #### Scenario: Generated allowed-tools permits checker
 - **WHEN** the repository-managed Hermes skill is materialized
@@ -554,9 +554,9 @@ During apply, the actual generated Hermes skill frontmatter and repository-suppo
 - **WHEN** `openspec update` removes the sequence or checker permission
 - **THEN** CI SHALL fail the workflow drift test
 
-#### Scenario: Non-Hermes actor changes code
-- **WHEN** a human or other agent bypasses Hermes convenience checks
-- **THEN** canonical CI and perimeter enforcement SHALL still govern the change
+#### Scenario: Generated instruction root changes
+- **WHEN** a repository-managed generated agent instruction changes regardless of the actor
+- **THEN** the perimeter SHALL govern its root as normative governance-core content while canonical CI remains authoritative
 
 ### Requirement: R23 — Governance lifecycle states remain distinct
 Proposal validation, apply authorization, technical verification, signed governance review and decision, merge readiness, activation, production/publication authorization, canonical materialization, and archive readiness SHALL remain distinct states. Recording review and decision in one signed record SHALL NOT merge the states that record establishes with the states that precede or follow it. AI review, PR assignment, authorship, and informal messages SHALL NOT create owner approval or apply authorization.

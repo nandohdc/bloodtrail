@@ -229,7 +229,7 @@ Ambient Context belongs to Runtime / Execution Context. Required invariants cove
 
 After activation, absent, empty, truncated, invalid, unsupported, incompatible, or hash-mismatched policy/activation evidence fails with a stable distinct diagnostic. Missing classifications or protected roots also fail. Missing policy never means zero applicable changes or successful skip.
 
-Governance-core includes checker, policy, activation record, schemas, catalog, invariant registry, actor-neutral documentation, Hermes integration, CI workflow, and path classifications. Every governance-core change requires a full assessment, security-sensitive analysis, explicit reviewer acknowledgement, baseline-checker validation, and candidate-checker validation. The trusted checker from the merge-base/protected-mainline baseline and the candidate checker both run; neither pass substitutes for the other.
+Governance-core includes checker, policy, activation record, schemas, catalog, invariant registry, actor-neutral documentation, repository-managed generated agent integrations, CI workflow, and path classifications. Every governance-core change requires a full assessment, security-sensitive analysis, explicit reviewer acknowledgement, baseline-checker validation, and candidate-checker validation. The trusted checker from the merge-base/protected-mainline baseline and the candidate checker both run; neither pass substitutes for the other.
 
 ### D7 — Candidate approaches
 
@@ -251,9 +251,9 @@ The initial current schema version is `1.1`, and the initial explicit supported 
 
 Pattern and invariant IDs cannot be reused. Deprecation preserves meaning; rename uses explicit alias/migration mapping; removal requires replacement/deactivation procedure and migration for every governed reference. Schema, checker, policy, and catalog changes run baseline plus candidate checkers.
 
-### D11 — Executable Hermes integration
+### D11 — Executable generated-agent integration
 
-During apply, inspect actual generated skill frontmatter and repository-supported allowed-tools syntax. Authorize only the minimum expansion needed to run `node openspec/scripts/check-design-pattern-governance.mjs`. Do not assume `Bash(openspec:)` permits Node. Tests assert the governed sequence and command permission; `openspec update` regeneration must fail CI if either disappears. Hermes remains non-authoritative.
+During apply, inspect actual generated skill frontmatter and repository-supported allowed-tools syntax. Classify the repository-managed generated instruction roots as governance-core and normative while keeping them non-authoritative. Authorize only the minimum expansion needed to run `node openspec/scripts/check-design-pattern-governance.mjs`. Do not assume `Bash(openspec:)` permits Node. Tests assert path classification, the governed sequence, and command permission; `openspec update` regeneration must fail CI if any property disappears. Canonical policy and required CI remain authoritative.
 
 ### D12 — Exact-change emergency classification
 

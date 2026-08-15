@@ -96,7 +96,8 @@ have a dedicated named-identifier assertion. That is a stated gap, not a claim o
 
 Three post-signing defects were found by independent review and are repaired by the original
 technical change; a fourth surfaced during activation preflight, a fifth on the first pull request
-after activation, and a sixth when repairing the fifth, each repaired by its own re-signing delta:
+after activation, a sixth when repairing the fifth, and a seventh on the first generated-agent
+workflow refresh after activation, each repaired by its own re-signing delta:
 
 1. **Review freshness was specified but not enforced.** R15 requires any post-signing normative
    change to invalidate the signed record, yet the checker passed while six normative paths had
@@ -173,6 +174,19 @@ after activation, and a sixth when repairing the fifth, each repaired by its own
    candidate cannot reach. This does not close the pre-existing fact that the dual-check script is
    itself candidate-editable; its integrity has always rested on the baseline checker plus human
    review, not on the script.
+7. **Repository-managed generated agent instructions matched no path class.** OpenSpec 1.9 regenerated
+   48 instruction files under `.agents/skills/`, `.claude/commands/opsx/`, `.claude/skills/`, and
+   `.hermes/skills/`. The perimeter correctly failed closed with `path-unclassified`, but the policy
+   implementation had omitted those roots even though R14 already treated generated integration as
+   governance-core and R22 required regeneration drift to fail CI. The four roots are now
+   governance-core, normative, owned by this full assessment, and still explicitly non-authoritative;
+   they do not inherit the documentation-only exception. A perimeter regression checks a
+   representative path from every root against classification, governance-core applicability, and
+   review freshness. The focused test was observed failing with `unclassified` before the policy
+   change and passes afterward. The complete 192-test governance suite passes. Before the replacement
+   signed record exists, candidate and trusted-baseline final checks both reject the generated files
+   with `signed-review-stale`, which is the intended exact-commit review boundary rather than another
+   checker defect.
 
 The signed-record source is now closed policy: `review_freshness.record_path` is a required policy
 section validated as a well-formed repository path inside the governance-record-only allowlist, so
@@ -235,3 +249,7 @@ Reported independently. Evidence for one is not evidence for another.
    signed record exists.** The discovered stale state (six post-sign normative paths) makes
    `signed-review-stale` the correct fail-closed answer against the historical record; any other
    failure on exact `T_NEW`, or any failure at all on exact `S_NEW`, blocks the lifecycle.
+8. **The generated-agent refresh requires a new exact-commit review.** Its replacement technical
+   commit must remain red only with `signed-review-stale` until a governance-record-only direct child
+   binds all repository-managed generated instruction roots and the cumulative governance evidence.
+   AI review, authorship, the pull-request assignment, and this evidence packet are not approval.

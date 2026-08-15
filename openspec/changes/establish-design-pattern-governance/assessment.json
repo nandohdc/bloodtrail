@@ -16,6 +16,10 @@
     "capabilities": ["software-design-pattern-governance"]
   },
   "owned_paths": [
+    ".agents/skills/",
+    ".claude/commands/opsx/",
+    ".claude/skills/",
+    ".hermes/skills/",
     "openspec/scripts/",
     "openspec/governance/",
     "openspec/tests/design-pattern-governance/",
@@ -79,7 +83,7 @@
     },
     "implementation-actor-neutral-perimeter": {
       "task_ids": ["5.3", "7.1"],
-      "evidence_ids": ["perimeter.test.mjs: identical verdict for identical paths regardless of author", "no actor-conditional branch in perimeter.mjs", "perimeter.test.mjs: the Hermes documentation exception admits only .hermes/plans/ and rejects sibling configuration, scripts, skills, and hooks"]
+      "evidence_ids": ["perimeter.test.mjs: identical verdict for identical paths regardless of author", "no actor-conditional branch in perimeter.mjs", "perimeter.test.mjs: the Hermes documentation exception admits only .hermes/plans/, rejects sibling configuration, scripts, and hooks, and classifies repository-managed generated agent instruction roots as normative governance-core content"]
     },
     "implementation-fail-closed-evidence": {
       "task_ids": ["5.2", "5.10", "6.8", "7.6"],

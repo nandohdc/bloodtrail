@@ -85,7 +85,7 @@
 - [x] 7.6 Add policy/self-governance mutations for removed/truncated policy, unsupported schema, checker weakening, path widening, root removal, optional invariants, CI removal, and actor-neutral-document removal (R9, R13-R14).
 - [x] 7.7 Add review, provenance, opt-in, emergency, Ambient Context, and archive fixtures covering every R7, R15, R19-R21, and R24 scenario.
 - [ ] 7.8 Inspect actual generated Hermes skill frontmatter and authorize the minimum repository-supported allowed-tools expansion for `node openspec/scripts/check-design-pattern-governance.mjs` without assuming `Bash(openspec:)` suffices (R22).
-- [x] 7.9 Test both the governed Hermes sequence and checker-command permission, and fail CI if `openspec update` regeneration removes either property (R22).
+- [x] 7.9 Classify repository-managed generated agent instruction roots as normative governance-core content, test the governed Hermes sequence and checker-command permission, and fail CI if `openspec update` regeneration removes any property (R22).
 - [x] 7.10 Add the authoritative governance CI job, configure it as a required status check for the protected reference, verify enforcement independently, and preserve exact evidence for A (R12, R17-R18).
 
 ## 8. Full technical verification and exact proposal-baseline evidence
