@@ -24,7 +24,6 @@ import {
   riskContext,
   serviceWorkload,
   sessionEvidence,
-  type AuditDeliveryResult,
   type AuditEventSink,
   type AuditIdentifierProvider,
   type SecurityAuditEvent,

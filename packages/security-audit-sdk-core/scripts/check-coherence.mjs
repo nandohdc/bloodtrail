@@ -1,7 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { basename, relative, resolve } from "node:path";
 import {
-  assert,
   byCodePoint,
   packageRoot,
   readJson,

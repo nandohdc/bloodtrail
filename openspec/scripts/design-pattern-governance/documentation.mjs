@@ -121,7 +121,7 @@ export function checkCiJob(repositoryRoot, policy, sink) {
   const context = policy.protected_mainline?.required_check?.context;
   if (typeof context !== "string") return;
 
-  if (!new RegExp(`^\\s{2}${escapeRegExp(context)}:`, "m").test(text)) {
+  if (!new RegExp(String.raw`^\s{2}${escapeRegExp(context)}:`, "m").test(text)) {
     sink.fail("governance-ci-absent", relativePath,
       `the CI workflow declares no ${context} job; removing or disabling it fails baseline verification`);
     return;

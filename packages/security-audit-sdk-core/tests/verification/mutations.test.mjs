@@ -1117,12 +1117,6 @@ function git(root, args) {
   return result;
 }
 
-function command(cwd, executable, args) {
-  const result = spawnSync(executable, args, { cwd, encoding: "utf8" });
-  assert.equal(result.status, 0, `${executable} ${args.join(" ")} failed:\n${result.stdout}\n${result.stderr}`);
-  return result;
-}
-
 function typecheckFails(root, expected) {
   const packagePath = resolve(root, "packages/security-audit-sdk-core");
   const compiler = resolve(packageRoot, "node_modules/typescript/bin/tsc");
