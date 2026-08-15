@@ -108,6 +108,9 @@
     {
       "class": "governance_core",
       "patterns": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".hermes.md",
         ".agents/skills/",
         ".claude/commands/opsx/",
         ".claude/skills/",
@@ -165,6 +168,9 @@
     "record_file_granularity": "packages/security-audit-sdk-core/verification-lifecycle.json is classified governance_record_only as a whole file. It also carries ownership and attestation fields that are normative in substance. A commit that touches it and any normative path is not governance-record-only, which bounds but does not eliminate the residual; check-changed-paths.mjs and check-governance-history.mjs enforce the fields themselves."
   },
   "governance_core_artifacts": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".hermes.md",
     ".agents/skills/",
     ".claude/commands/opsx/",
     ".claude/skills/",
@@ -183,6 +189,9 @@
     "CONTRIBUTING.md"
   ],
   "normative_paths": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".hermes.md",
     ".agents/skills/",
     ".claude/commands/opsx/",
     ".claude/skills/",

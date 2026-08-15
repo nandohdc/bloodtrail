@@ -61,9 +61,9 @@ pull-request state, or merged state.
 
 [`docs/design-pattern-governance.md`](docs/design-pattern-governance.md) is the full policy. It
 applies identically to humans, Hermes, Claude Code, other agents, direct commits, pull requests, and
-scripts — there is no actor for whom a different rule holds. `AGENTS.md`, `CLAUDE.md`, and the
-generated skill directories are **not** policy sources; the canonical capability, the policy
-configuration, the checker, and the required `design-pattern-governance` CI check are.
+scripts — there is no actor for whom a different rule holds. `AGENTS.md`, `CLAUDE.md`, `.hermes.md`,
+and generated agent instruction surfaces are **not** policy sources; the canonical capability, the
+policy configuration, the checker, and the required `design-pattern-governance` CI check are.
 
 What it asks of a change touching a governed implementation path:
 

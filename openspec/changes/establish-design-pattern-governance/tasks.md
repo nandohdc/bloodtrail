@@ -45,7 +45,7 @@
 - [x] 4.5 Add Ambient Context security guidance for hidden authority/confused deputy, concurrency/nested/cleanup tests, misuse distinctions, and required cross-links (R7).
 - [x] 4.6 Create the assessment template using candidate approaches consistently and requiring direct plus one plausible alternative for full assessments (R2-R4).
 - [x] 4.7 Create the ADR template and the signed-governance-record template with content-object binding, exact-commit, catalog-invariant, security, compatibility, authorizations-granted-and-withheld, and reduced-assurance fields.
-- [x] 4.8 Add actor-neutral governance policy to `CONTRIBUTING.md`, dedicated governance documentation, and a pull-request template without making AGENTS.md, CLAUDE.md, or Hermes authoritative (R12).
+- [x] 4.8 Add actor-neutral governance policy to `CONTRIBUTING.md`, dedicated governance documentation, and a pull-request template without making `AGENTS.md`, `CLAUDE.md`, `.hermes.md`, or generated agent instructions authoritative (R12).
 - [x] 4.9 Document path classes as minimum trigger floors, governed capability association, direct-human/non-Hermes applicability, and required CI authority (R8, R11-R12).
 - [x] 4.10 Add documentation checks for 24 entries, invariant IDs, template headings, candidate terminology, actor-neutral perimeter, cross-links, and absence of exhaustive-pattern claims.
 
@@ -64,7 +64,7 @@
 
 ## 6. Candidate checker compatibility and governance self-protection
 
-- [x] 6.1 Implement governance-core path detection for checker, policy, activation record, schemas, catalog, invariant registry, actor-neutral docs, Hermes, CI, and path classifications (R14).
+- [x] 6.1 Implement governance-core path detection for checker, policy, activation record, schemas, catalog, invariant registry, actor-neutral docs, repository-managed agent instruction surfaces, CI, and path classifications (R14).
 - [x] 6.2 Require full assessment, security-sensitive analysis, explicit reviewer acknowledgement, trusted baseline checker, and candidate checker for every governance-core change (R14).
 - [x] 6.3 Run the trusted checker from merge-base/protected-mainline and the candidate checker from the proposed branch with isolated inputs and stable evidence capture.
 - [x] 6.4 Make baseline validation reject candidate success-short-circuiting, silent path widening, protected-root removal, optionalized invariants, CI removal, and actor-neutral-document removal (R13-R14).
@@ -85,7 +85,7 @@
 - [x] 7.6 Add policy/self-governance mutations for removed/truncated policy, unsupported schema, checker weakening, path widening, root removal, optional invariants, CI removal, and actor-neutral-document removal (R9, R13-R14).
 - [x] 7.7 Add review, provenance, opt-in, emergency, Ambient Context, and archive fixtures covering every R7, R15, R19-R21, and R24 scenario.
 - [ ] 7.8 Inspect actual generated Hermes skill frontmatter and authorize the minimum repository-supported allowed-tools expansion for `node openspec/scripts/check-design-pattern-governance.mjs` without assuming `Bash(openspec:)` suffices (R22).
-- [x] 7.9 Classify repository-managed generated agent instruction roots as normative governance-core content, test the governed Hermes sequence and checker-command permission, and fail CI if `openspec update` regeneration removes any property (R22).
+- [x] 7.9 Classify repository-managed root and generated agent instruction surfaces as normative governance-core content, test the governed Hermes sequence and checker-command permission, and fail CI if `openspec update` regeneration removes any generated property (R22).
 - [x] 7.10 Add the authoritative governance CI job, configure it as a required status check for the protected reference, verify enforcement independently, and preserve exact evidence for A (R12, R17-R18).
 
 ## 8. Full technical verification and exact proposal-baseline evidence

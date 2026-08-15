@@ -135,22 +135,25 @@ describe("R11 the Hermes documentation exception is narrow", () => {
     assertDiagnostic(check(repository, base), "path-unclassified");
   });
 
-  it("classifies generated agent instructions as non-authoritative governance core", () => {
+  it("classifies repository-managed agent instructions as non-authoritative governance core", () => {
     const repository = fixture();
     const policy = repository.readJson(POLICY_PATH);
     const surfaces = [
-      { root: ".agents/skills/", path: ".agents/skills/openspec-apply-change/SKILL.md" },
-      { root: ".claude/commands/opsx/", path: ".claude/commands/opsx/apply.md" },
-      { root: ".claude/skills/", path: ".claude/skills/openspec-apply-change/SKILL.md" },
-      { root: ".hermes/skills/", path: ".hermes/skills/openspec-apply-change/SKILL.md" },
+      { source: "AGENTS.md", path: "AGENTS.md" },
+      { source: "CLAUDE.md", path: "CLAUDE.md" },
+      { source: ".hermes.md", path: ".hermes.md" },
+      { source: ".agents/skills/", path: ".agents/skills/openspec-apply-change/SKILL.md" },
+      { source: ".claude/commands/opsx/", path: ".claude/commands/opsx/apply.md" },
+      { source: ".claude/skills/", path: ".claude/skills/openspec-apply-change/SKILL.md" },
+      { source: ".hermes/skills/", path: ".hermes/skills/openspec-apply-change/SKILL.md" },
     ];
 
-    for (const { root, path } of surfaces) {
+    for (const { source, path } of surfaces) {
       assert.equal(classifyPath(path, policy), "governance_core", path);
       assert.equal(isGovernanceCore([path], policy), true, path);
       assert.equal(touchesNormativePath([path], policy), true, path);
-      assert.ok(policy.non_authoritative_sources.includes(root),
-        `${root} must remain a non-authoritative source`);
+      assert.ok(policy.non_authoritative_sources.includes(source),
+        `${source} must remain a non-authoritative source`);
     }
   });
 

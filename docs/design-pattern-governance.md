@@ -12,7 +12,7 @@ different rule holds.
 | The canonical `software-design-pattern-governance` capability | `AGENTS.md` |
 | `openspec/governance/design-pattern-policy.json` | `CLAUDE.md` |
 | `openspec/scripts/check-design-pattern-governance.mjs` (trusted baseline) | `.hermes.md` |
-| The candidate checker, where a governance-core change is involved | Generated skills under `.hermes/`, `.claude/skills/`, `.agents/skills/` |
+| The candidate checker, where a governance-core change is involved | Generated instructions under `.hermes/skills/`, `.claude/commands/opsx/`, `.claude/skills/`, `.agents/skills/` |
 | The required `design-pattern-governance` CI check | Any agent's convenience check |
 
 This document, `CONTRIBUTING.md`, and `.github/PULL_REQUEST_TEMPLATE.md` describe the same policy in
@@ -141,9 +141,9 @@ regardless of how many technical checks pass.
 ## Governance changes govern themselves
 
 A change touching governance-core artifacts — the checker, the policy, the activation record, the
-schemas, the catalog, the invariant registry, the actor-neutral documents, the Hermes integration,
-the CI workflow, or the path classifications — requires a full assessment, security-sensitive
-analysis, explicit reviewer acknowledgement, **and two checker runs**: the trusted baseline checker
+schemas, the catalog, the invariant registry, the actor-neutral documents, repository-managed root
+or generated agent instructions, the CI workflow, or the path classifications — requires a full
+assessment, security-sensitive analysis, explicit reviewer acknowledgement, **and two checker runs**: the trusted baseline checker
 from the merge base or protected mainline, and the candidate checker from the branch. Both results
 are recorded separately. A candidate checker is never the sole judge of whether it weakened itself.
 

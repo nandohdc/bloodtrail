@@ -282,14 +282,14 @@ After activation, any change touching a governed implementation path SHALL be as
 - **THEN** the same perimeter and evidence requirements SHALL apply
 
 ### Requirement: R12 — Actor-neutral policy and required CI are authoritative
-The canonical capability, policy configuration, trusted baseline checker, candidate checker where applicable, and required governance CI check SHALL be authoritative. Checked-in `CONTRIBUTING.md`, governance documentation, and a pull-request template SHALL describe the perimeter. AGENTS.md, CLAUDE.md, and Hermes skills SHALL NOT be sole policy sources. Activation SHALL be prohibited until required-check enforcement is verified for the configured protected mainline reference and stored as activation evidence.
+The canonical capability, policy configuration, trusted baseline checker, candidate checker where applicable, and required governance CI check SHALL be authoritative. Checked-in `CONTRIBUTING.md`, governance documentation, and a pull-request template SHALL describe the perimeter. `AGENTS.md`, `CLAUDE.md`, `.hermes.md`, and generated agent instructions SHALL NOT be sole policy sources. Activation SHALL be prohibited until required-check enforcement is verified for the configured protected mainline reference and stored as activation evidence.
 
 #### Scenario: Actor-neutral documentation is absent
 - **WHEN** the actor-neutral perimeter document or pull-request guidance is removed
 - **THEN** governance-core verification SHALL reject the change
 
-#### Scenario: Hermes guidance conflicts with canonical policy
-- **WHEN** Hermes instructions conflict with the canonical capability or checker
+#### Scenario: Agent guidance conflicts with canonical policy
+- **WHEN** repository-managed agent instructions conflict with the canonical capability or checker
 - **THEN** canonical policy and required CI SHALL control and the conflict SHALL fail verification
 
 #### Scenario: Required branch check is missing
@@ -348,7 +348,7 @@ After activation, absent, empty, truncated, invalid JSON, missing schema version
 - **THEN** verification SHALL fail with the checker-policy-incompatible diagnostic
 
 ### Requirement: R14 — Governance-core changes run trusted and candidate checks
-Governance-core artifacts SHALL include checker, policy configuration, activation record, schemas, catalog, invariant registry, actor-neutral policy documentation, repository-managed generated agent integrations, CI governance workflow, and governed path classifications. Each governance-core change SHALL require full assessment, security-sensitive analysis, explicit reviewer acknowledgement, trusted baseline-checker validation from the merge-base/protected-mainline baseline, and candidate-checker validation. A candidate checker SHALL NOT be its sole judge.
+Governance-core artifacts SHALL include checker, policy configuration, activation record, schemas, catalog, invariant registry, actor-neutral policy documentation, repository-managed root and generated agent instruction surfaces, CI governance workflow, and governed path classifications. Each governance-core change SHALL require full assessment, security-sensitive analysis, explicit reviewer acknowledgement, trusted baseline-checker validation from the merge-base/protected-mainline baseline, and candidate-checker validation. A candidate checker SHALL NOT be its sole judge.
 
 #### Scenario: Checker is changed to succeed unconditionally
 - **WHEN** the candidate checker is changed to return success for invalid evidence
@@ -539,8 +539,8 @@ For an otherwise unclassified path, an emergency classification record SHALL bin
 - **WHEN** the exact governed change is merged or abandoned
 - **THEN** the emergency classification SHALL cease without consulting wall-clock time
 
-### Requirement: R22 — Generated agent integration is executable but non-authoritative
-During apply, the actual generated skill frontmatter and repository-supported allowed-tools syntax SHALL be inspected. Repository-managed generated agent instruction roots SHALL be classified as governance-core and normative while remaining non-authoritative. The minimum valid permission expansion SHALL permit `node openspec/scripts/check-design-pattern-governance.mjs`; no assumption that `Bash(openspec:)` permits Node SHALL be accepted. Workflow tests SHALL assert path classification, governed sequence, and command permission, and regeneration through `openspec update` SHALL fail CI if any property is removed. Canonical policy and required CI SHALL remain authoritative.
+### Requirement: R22 — Repository-managed agent integration is executable but non-authoritative
+Repository-managed root and generated agent instruction surfaces SHALL be classified as governance-core and normative while remaining non-authoritative. During apply, the actual generated skill frontmatter and repository-supported allowed-tools syntax SHALL be inspected. The minimum valid permission expansion SHALL permit `node openspec/scripts/check-design-pattern-governance.mjs`; no assumption that `Bash(openspec:)` permits Node SHALL be accepted. Workflow tests SHALL assert path classification, governed sequence, and command permission, and regeneration through `openspec update` SHALL fail CI if any generated property is removed. Canonical policy and required CI SHALL remain authoritative.
 
 #### Scenario: Generated allowed-tools permits checker
 - **WHEN** the repository-managed Hermes skill is materialized
@@ -554,9 +554,9 @@ During apply, the actual generated skill frontmatter and repository-supported al
 - **WHEN** `openspec update` removes the sequence or checker permission
 - **THEN** CI SHALL fail the workflow drift test
 
-#### Scenario: Generated instruction root changes
-- **WHEN** a repository-managed generated agent instruction changes regardless of the actor
-- **THEN** the perimeter SHALL govern its root as normative governance-core content while canonical CI remains authoritative
+#### Scenario: Agent instruction surface changes
+- **WHEN** a repository-managed root or generated agent instruction changes regardless of the actor
+- **THEN** the perimeter SHALL govern its surface as normative governance-core content while canonical CI remains authoritative
 
 ### Requirement: R23 — Governance lifecycle states remain distinct
 Proposal validation, apply authorization, technical verification, signed governance review and decision, merge readiness, activation, production/publication authorization, canonical materialization, and archive readiness SHALL remain distinct states. Recording review and decision in one signed record SHALL NOT merge the states that record establishes with the states that precede or follow it. AI review, PR assignment, authorship, and informal messages SHALL NOT create owner approval or apply authorization.
