@@ -18,8 +18,8 @@ A second correction reconciles the landing lifecycle with the `change-governance
 - Define full-assessment, abbreviated-eligible, and material-capability-modification vocabulary and comprehensive security-sensitive trigger dimensions.
 - Define normative paths, governance-record-only paths, stale-review invalidation, identity-preserving merge behavior, schema compatibility, and baseline-plus-candidate checking for governance-core changes.
 - Define deterministic fail-closed behavior for absent, corrupt, truncated, incompatible, or weakened governance evidence.
-- Plan actor-neutral documentation in `CONTRIBUTING.md`, governance documentation, and a pull-request template; Hermes remains an early-feedback convenience rather than an authority.
-- Plan executable Hermes allowed-tools verification using the actual generated frontmatter syntax discovered during apply.
+- Plan actor-neutral documentation in `CONTRIBUTING.md`, governance documentation, and a pull-request template; repository-managed agent instruction surfaces remain early-feedback conveniences rather than authorities.
+- Plan governance-core classification for root and generated agent instruction surfaces and executable Hermes allowed-tools verification using the actual generated frontmatter syntax discovered during apply.
 - Define an exact-change, path-bounded emergency classification record with conservative classification and no clock-based expiry.
 - Expand the planned catalog to 24 entries by adding Ambient Context / Context Propagation and its authority, concurrency, lifecycle, and cleanup invariants.
 - Separate deterministic activation from governance lifecycle-state separation.
@@ -35,7 +35,7 @@ This proposal governs the future apply plan for:
 - a 24-entry catalog and invariant registry;
 - actor-neutral policy documentation;
 - baseline and candidate checker behavior;
-- fixtures, mutation tests, Hermes convenience integration, and the required CI job;
+- fixtures, mutation tests, repository-managed agent convenience integration, and the required CI job;
 - exact-commit review, governance, activation, enforcement, and archive evidence.
 
 Only proposal artifacts under `openspec/changes/establish-design-pattern-governance/` are changed by this corrective commit.

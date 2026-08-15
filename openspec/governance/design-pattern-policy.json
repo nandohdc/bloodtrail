@@ -108,6 +108,13 @@
     {
       "class": "governance_core",
       "patterns": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".hermes.md",
+        ".agents/skills/",
+        ".claude/commands/opsx/",
+        ".claude/skills/",
+        ".hermes/skills/",
         "openspec/scripts/",
         "openspec/governance/",
         "openspec/tests/design-pattern-governance/",
@@ -161,6 +168,13 @@
     "record_file_granularity": "packages/security-audit-sdk-core/verification-lifecycle.json is classified governance_record_only as a whole file. It also carries ownership and attestation fields that are normative in substance. A commit that touches it and any normative path is not governance-record-only, which bounds but does not eliminate the residual; check-changed-paths.mjs and check-governance-history.mjs enforce the fields themselves."
   },
   "governance_core_artifacts": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".hermes.md",
+    ".agents/skills/",
+    ".claude/commands/opsx/",
+    ".claude/skills/",
+    ".hermes/skills/",
     "openspec/scripts/check-design-pattern-governance.mjs",
     "openspec/scripts/run-governance-dual-check.mjs",
     "openspec/scripts/design-pattern-governance/",
@@ -175,6 +189,13 @@
     "CONTRIBUTING.md"
   ],
   "normative_paths": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".hermes.md",
+    ".agents/skills/",
+    ".claude/commands/opsx/",
+    ".claude/skills/",
+    ".hermes/skills/",
     "packages/",
     "contracts/",
     "research/",
@@ -205,7 +226,7 @@
     "docs/design-pattern-governance.md",
     ".github/PULL_REQUEST_TEMPLATE.md"
   ],
-  "non_authoritative_sources": ["AGENTS.md", "CLAUDE.md", ".hermes.md", ".hermes/skills/", ".claude/skills/", ".agents/skills/"],
+  "non_authoritative_sources": ["AGENTS.md", "CLAUDE.md", ".hermes.md", ".hermes/skills/", ".claude/commands/opsx/", ".claude/skills/", ".agents/skills/"],
   "protected_mainline": {
     "reference": "refs/heads/main",
     "repository": "nandohdc/bloodtrail",

@@ -96,7 +96,9 @@ have a dedicated named-identifier assertion. That is a stated gap, not a claim o
 
 Three post-signing defects were found by independent review and are repaired by the original
 technical change; a fourth surfaced during activation preflight, a fifth on the first pull request
-after activation, and a sixth when repairing the fifth, each repaired by its own re-signing delta:
+after activation, a sixth when repairing the fifth, a seventh on the first generated-agent workflow
+refresh after activation, and an eighth on the next root-agent guidance change, each repaired by its
+own re-signing delta:
 
 1. **Review freshness was specified but not enforced.** R15 requires any post-signing normative
    change to invalidate the signed record, yet the checker passed while six normative paths had
@@ -109,9 +111,9 @@ after activation, and a sixth when repairing the fifth, each repaired by its own
    diagnostics (`signed-record-source-absent`, `signed-record-source-invalid`,
    `signed-record-ambiguous`, `signed-record-removed`, `signed-record-uncommitted`,
    `signed-review-history-unavailable`, `signed-review-stale`) are each asserted by exact identifier
-   in `review-freshness.test.mjs`. Against the current head, final verification now names exactly the
-   six discovered post-sign normative changes and permits the record-only and plan-documentation
-   commits — the fail-closed answer. A dangling-binding control completes it: any signed record whose
+   in `review-freshness.test.mjs`. At the time of discovery, final verification named exactly the six
+   post-sign normative changes and permitted the record-only and plan-documentation commits — the
+   fail-closed answer. A dangling-binding control completes it: any signed record whose
    change id matches no active change, no archived change directory, and no grandfathering entry is
    rejected as ambiguous. Both exemption sets are content-gated, not name-gated: an active change
    only counts when its assessment exists, and an archive only counts when its assessment or proposal
@@ -173,6 +175,33 @@ after activation, and a sixth when repairing the fifth, each repaired by its own
    candidate cannot reach. This does not close the pre-existing fact that the dual-check script is
    itself candidate-editable; its integrity has always rested on the baseline checker plus human
    review, not on the script.
+7. **Repository-managed generated agent instructions matched no path class.** OpenSpec 1.9 regenerated
+   48 instruction files under `.agents/skills/`, `.claude/commands/opsx/`, `.claude/skills/`, and
+   `.hermes/skills/`. The perimeter correctly failed closed with `path-unclassified`. Before this
+   correction R14 named Hermes integration as governance-core and R22 governed Hermes regeneration,
+   but the actor-neutral mirrored roots were not stated explicitly in the contract or policy. This
+   correction generalizes those controls across all repository-managed generated agent integrations.
+   The four roots are now governance-core, normative, owned by this full assessment, and still
+   explicitly non-authoritative;
+   they do not inherit the documentation-only exception. A perimeter regression checks a
+   representative path from every root against classification, governance-core applicability,
+   review freshness, and non-authoritative-source status. The focused test was observed failing with
+   `unclassified` before the policy change and passes afterward. The complete 192-test governance
+   suite passes. Before the replacement
+   signed record exists, candidate and trusted-baseline final checks both reject the generated files
+   with `signed-review-stale`, which is the intended exact-commit review boundary rather than another
+   checker defect.
+8. **Repository-managed root agent instructions matched no path class.** The policy already listed
+   `AGENTS.md`, `CLAUDE.md`, and `.hermes.md` as non-authoritative sources, but none was classified,
+   governance-core, or normative. The first post-activation `.hermes.md` guidance update therefore
+   failed closed with `path-unclassified`. The omission affected the whole sibling set, not only the
+   reported file. All three root instruction files are now governance-core and normative while
+   remaining explicitly non-authoritative, and the existing perimeter regression covers them beside
+   every generated instruction surface. The actor-neutral governance documents name the same root and
+   generated surfaces without promoting them to policy sources. The focused regression was observed
+   failing on `AGENTS.md` before the policy correction and passes afterward. Before the replacement
+   signed record exists, final verification must reject the cumulative normative delta only with
+   `signed-review-stale`.
 
 The signed-record source is now closed policy: `review_freshness.record_path` is a required policy
 section validated as a well-formed repository path inside the governance-record-only allowlist, so
@@ -203,7 +232,7 @@ Reported independently. Evidence for one is not evidence for another.
 | --- | --- |
 | Apply authorization | **granted** — groups 1–8 only, recorded in `apply-authorization.md` |
 | Technical commit readiness | **yes** — after the R15 recovery controls above, subject to the disposable-copy validation and independent reviews of the exact replacement commit |
-| Signed governance record | **superseded and stale** — historical `S = f53a07115e91da1fc4f0ae7469d5899b1bd5afa4` bound `T = 4f1ee3b544add8d991b3b6a0822dbe9e2028086d`; six normative paths changed after it, so it cannot bind current content. A replacement record for the replacement technical commit requires fresh explicit owner approval |
+| Signed governance record | **superseded and stale** — historical `S = f53a07115e91da1fc4f0ae7469d5899b1bd5afa4` bound `T = 4f1ee3b544add8d991b3b6a0822dbe9e2028086d`; cumulative normative changes after it mean it cannot bind current content. A replacement record for the replacement technical commit requires fresh explicit owner approval |
 | Merge readiness | **blocked** — requires the replacement signed record and exact-head checks |
 | Activation readiness | **blocked** — required-status enforcement is verified, but T, S, M, and activation-time evidence do not yet exist |
 | Canonical materialization | **not started** — `openspec/specs/software-design-pattern-governance/` deliberately absent |
@@ -232,6 +261,14 @@ Reported independently. Evidence for one is not evidence for another.
    neither approval nor assurance, and it must be re-read on the published replacement commits rather
    than assumed stable.
 7. **The replacement technical commit must remain red on final verification until the replacement
-   signed record exists.** The discovered stale state (six post-sign normative paths) makes
+   signed record exists.** The cumulative post-sign normative changes make
    `signed-review-stale` the correct fail-closed answer against the historical record; any other
    failure on exact `T_NEW`, or any failure at all on exact `S_NEW`, blocks the lifecycle.
+8. **The generated-agent refresh requires a new exact-commit review.** Its replacement technical
+   commit must remain red only with `signed-review-stale` until a governance-record-only direct child
+   binds all repository-managed generated instruction roots and the cumulative governance evidence.
+   AI review, authorship, the pull-request assignment, and this evidence packet are not approval.
+9. **The root-agent classification correction advances that replacement technical commit again.**
+   The replacement signed record must bind `AGENTS.md`, `CLAUDE.md`, `.hermes.md`, the generated
+   instruction roots, and the cumulative governance evidence at one exact reviewed technical commit;
+   no earlier red or intermediate commit is the approval target.

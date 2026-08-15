@@ -6,6 +6,11 @@
 import assert from "node:assert/strict";
 import { after, describe, it } from "node:test";
 
+import {
+  classifyPath,
+  isGovernanceCore,
+  touchesNormativePath,
+} from "../../scripts/design-pattern-governance/perimeter.mjs";
 import { createRepository } from "./support/disposable-repo.mjs";
 import { POLICY_PATH, assertDiagnostic, assertPasses, runChecker } from "./support/harness.mjs";
 
@@ -130,13 +135,26 @@ describe("R11 the Hermes documentation exception is narrow", () => {
     assertDiagnostic(check(repository, base), "path-unclassified");
   });
 
-  it("does not let skill instructions inherit the documentation exception", () => {
+  it("classifies repository-managed agent instructions as non-authoritative governance core", () => {
     const repository = fixture();
-    const base = repository.head();
-    repository.write(".hermes/skills/example/SKILL.md", "# Example skill\n");
-    repository.commit("docs: add a hermes skill");
+    const policy = repository.readJson(POLICY_PATH);
+    const surfaces = [
+      { source: "AGENTS.md", path: "AGENTS.md" },
+      { source: "CLAUDE.md", path: "CLAUDE.md" },
+      { source: ".hermes.md", path: ".hermes.md" },
+      { source: ".agents/skills/", path: ".agents/skills/openspec-apply-change/SKILL.md" },
+      { source: ".claude/commands/opsx/", path: ".claude/commands/opsx/apply.md" },
+      { source: ".claude/skills/", path: ".claude/skills/openspec-apply-change/SKILL.md" },
+      { source: ".hermes/skills/", path: ".hermes/skills/openspec-apply-change/SKILL.md" },
+    ];
 
-    assertDiagnostic(check(repository, base), "path-unclassified");
+    for (const { source, path } of surfaces) {
+      assert.equal(classifyPath(path, policy), "governance_core", path);
+      assert.equal(isGovernanceCore([path], policy), true, path);
+      assert.equal(touchesNormativePath([path], policy), true, path);
+      assert.ok(policy.non_authoritative_sources.includes(source),
+        `${source} must remain a non-authoritative source`);
+    }
   });
 
   it("does not accept an executable hook as documentation", () => {
