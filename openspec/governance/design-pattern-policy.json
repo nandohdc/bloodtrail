@@ -294,7 +294,8 @@
     "assessment": "openspec/governance/schemas/assessment.schema.json",
     "signed_governance_record": "openspec/governance/schemas/signed-governance-record.schema.json",
     "activation": "openspec/governance/schemas/activation.schema.json",
-    "provenance": "openspec/governance/schemas/provenance.schema.json"
+    "provenance": "openspec/governance/schemas/provenance.schema.json",
+    "baseline_disagreement": "openspec/governance/schemas/baseline-disagreement.schema.json"
   },
   "checker": {
     "path": "openspec/scripts/check-design-pattern-governance.mjs",
