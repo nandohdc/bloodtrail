@@ -340,23 +340,23 @@
     },
     {
       "change": "establish-design-pattern-governance",
-      "policy": "Owner-signed decision bound to exact technical commit ce692b2b26cceedc7af3e645258f2d3993906e2e and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and declared merge parent counts. The record authorizes only the identity-preserving merge of that commit; the activation record is not rebuilt by this cycle and no push to the protected reference is authorized. It does not authorize canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
-      "reviewedCommit": "ce692b2b26cceedc7af3e645258f2d3993906e2e",
+      "policy": "Owner-signed decision bound to exact technical commit 5ab9811a470f911117b09986a3c0cec08bb450e3 and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and declared merge parent counts. The reviewed scope is cumulative: it is the five normative subtrees at that commit, which carry the whole visible history from the activation-preview fix through the dual-check acceptance. This record additionally carries the one baselineDisagreementAcceptance the dual check may honour; run-governance-dual-check.mjs binds it to this record's own reviewedCommit and to the record commit derived from history as that commit's direct child. The record authorizes only the identity-preserving merge of pull request 161; the activation record is not rebuilt by this cycle and no push to the protected reference is authorized. It does not authorize canonicalization, archive, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
+      "reviewedCommit": "5ab9811a470f911117b09986a3c0cec08bb450e3",
       "reviewedContent": {
         "kind": "tree",
-        "candidateRoot": "c222f2b01bdc690670e78d0282d8c6bb2894fe3c",
+        "candidateRoot": "9394ab2b629b41bc762344e29d23fd83e4b163dc",
         "entries": [
           {
             "path": "openspec/changes/establish-design-pattern-governance",
-            "object": "52fa3bb163f3246de056009f40cd7bf98fe3dd6f"
+            "object": "4ce3561b301215bebb339ab981f4b1cede5bc2e8"
           },
           {
             "path": "openspec/governance",
-            "object": "060542423cfe26e57aa51c36ac12da85c3ec6fb2"
+            "object": "1d9dac9e22f721fba2a9aa1837bd1c6ad04f62db"
           },
           {
             "path": "openspec/scripts",
-            "object": "052602d9c6c12a43969c7ff579e941e505a8fb59"
+            "object": "267b97d7aeea25903acf20f3b87a81afeb55287c"
           },
           {
             "path": "packages/security-audit-sdk-core/tests/verification",
@@ -364,7 +364,7 @@
           },
           {
             "path": "openspec/tests/design-pattern-governance",
-            "object": "2e33c468fd82688b445f7cd958a2a5cb76b3ad5e"
+            "object": "e869a955b612c553073000bd8f249ec3e0fa6856"
           }
         ]
       },
@@ -380,10 +380,14 @@
         "b8e845ede58ebed46b4fc0d4a9205949759deac3",
         "5ceff7f1b7dea8546c5708e453e3d4ab5ac6e76b",
         "11996085a55ecb0ba627532ea67558793064d21c",
-        "ce692b2b26cceedc7af3e645258f2d3993906e2e"
+        "ce692b2b26cceedc7af3e645258f2d3993906e2e",
+        "bc4f89071e7aac9e6892af66ea37d14ad8d66971",
+        "bf022f675a2ed9e70ad415f67d9325fd57513137",
+        "26c64d1f084a581cdb8c1c916acb4576efbe70b9",
+        "5ab9811a470f911117b09986a3c0cec08bb450e3"
       ],
       "boundCommits": [
-        "ce692b2b26cceedc7af3e645258f2d3993906e2e"
+        "5ab9811a470f911117b09986a3c0cec08bb450e3"
       ],
       "mergeCommits": [
         {
@@ -399,7 +403,7 @@
         "assessment": {
           "path": "openspec/changes/establish-design-pattern-governance/assessment.json",
           "digest": "sha256:784639b2301b75b4edfd7cee3a4a92825c783dc0f919c843ea663d0506fffa04",
-          "assessmentCommit": "ce692b2b26cceedc7af3e645258f2d3993906e2e"
+          "assessmentCommit": "5ab9811a470f911117b09986a3c0cec08bb450e3"
         },
         "catalogInvariants": [],
         "implementationInvariants": [
@@ -417,17 +421,18 @@
             "checkerBlob": "c9f836ac56855b8fc4eaaef37aed88805264910b",
             "exitCode": 1,
             "diagnostics": [
-              "final phase at T3 under the protected-mainline checker and its modules, reading the candidate's data, failed with the same three signed-review-stale paths as the candidate; the candidate therefore did not weaken itself",
-              "the recorded checkerBlob is the entry script's, which this change does not touch, so it does not distinguish baseline from candidate; the runs did execute different module code because the baseline materialises openspec/scripts/design-pattern-governance/ from its own ref"
+              "on the pull-request preview of T6, which is the synthetic two-parent merge shape, the baseline raised exactly one diagnostic: activation-commit-absent at openspec/governance/activation-record.json, while the candidate passed; that disagreement is the false positive T6's cycle repairs and is the one this record accepts in advance",
+              "on the linear branch history the baseline raises no diagnostic, because the misread needs the two-parent preview shape to appear; the disagreement is therefore reproducible only where CI runs it",
+              "the recorded checkerBlob is the entry script's, which this change does not touch, so it does not distinguish baseline from candidate; the runs did execute different module code because the baseline materialises openspec/scripts/design-pattern-governance/ from its own ref, where activation.mjs is the single differing module"
             ]
           },
           "candidate": {
-            "sourceRef": "ce692b2b26cceedc7af3e645258f2d3993906e2e",
+            "sourceRef": "5ab9811a470f911117b09986a3c0cec08bb450e3",
             "checkerBlob": "c9f836ac56855b8fc4eaaef37aed88805264910b",
             "exitCode": 1,
             "diagnostics": [
-              "final phase at T3 failed with signed-review-stale for the three normative paths changed after the prior signed record (the evidence packet, activation.mjs, and activation.test.mjs); this was the intended fail-closed R15 state and is cleared by this record",
-              "activation-commit-absent is absent from this run and from the pull-request preview of T3, which is the synthetic two-parent merge shape that produced it before the fix"
+              "final phase at T6 failed with signed-review-stale and nothing else, naming the five normative paths changed after the prior signed record: the evidence packet, design-pattern-policy.json, baseline-disagreement.schema.json, run-governance-dual-check.mjs, and self-governance.test.mjs; this was the intended fail-closed R15 state and is cleared by this record",
+              "activation-commit-absent is absent from this run, as it was at T3; the fixed candidate does not raise it in either the linear or the preview shape"
             ]
           }
         },
@@ -448,6 +453,16 @@
             "reason": "The staleness was real and is the reason this re-signing exists; introducing the record is the governance-record-only commit that clears it, and R15 now rejects any further normative change after T3."
           },
           {
+            "description": "Before this record existed, final verification at T6 failed with signed-review-stale for the evidence packet, design-pattern-policy.json, baseline-disagreement.schema.json, run-governance-dual-check.mjs, and self-governance.test.mjs, because the record merged before it still bound ce692b2b. The failure was the intended R15 state for post-signing normative work, not a defect.",
+            "accepted": true,
+            "reason": "The staleness was real and is the reason this re-signing exists; introducing the record is the governance-record-only commit that clears it, and R15 now rejects any further normative change after T6. The observed run is recorded verbatim in checkerResults.candidate rather than summarised."
+          },
+          {
+            "description": "The dual check's baseline-rejects/candidate-passes disagreement is accepted in advance by this record rather than resolved. The baseline continues to raise activation-commit-absent on the pull-request preview until the repair reaches the protected mainline.",
+            "accepted": true,
+            "reason": "The verdicts alone cannot separate a candidate that approved itself from a candidate that repaired a false positive, so the acceptance is what makes the second case landable. Every dimension is exact rather than sufficient: one singular acceptance on this one canonical current signed record, a technicalCommit equal to this record's own reviewedCommit, a record commit derived from history and required to be that commit's direct child, a named baseline and phase equal to those actually compared, and declared diagnostics equal to the raised ones as id-and-path pairs. It expires on its own: once this merge lands the baseline moves and the acceptance matches nothing."
+          },
+          {
             "description": "The activation record is not rebuilt by this cycle and continues to bind merge commit 5973c767a2bec815410e05a2b711fc8ed4a85f75, technical commit 11996085a55ecb0ba627532ea67558793064d21c, and signed record commit 1379a26a263645216bf7f5a3cd29b798b62803f6, which are earlier than this record's reviewed commit.",
             "accepted": true,
             "reason": "Activation is a one-time event bound to the merge that landed the governance implementation, and R18 exists to stop that binding being replaced later. Rebinding is also mechanically impossible: the derivation treats a record already present at the bound merge as not introduced there, and any merge taken from the current mainline inherits it. None of the record's nine bound blobs is touched by this change, all remain byte-identical at their technical commit, and ee6fb3c31e1297dab6a5e19e66b7106b3ed83809 stays the sole introducer on the first-parent chain after the merge."
@@ -461,9 +476,22 @@
         "requiredCheckEvidence": {
           "method": "github-branch-protection-api",
           "digest": "sha256:f74b4db9e0858bc20f288f3f5596b6b233b77ecd65791dee81816c707893ba10",
-          "plan": "Re-queried at T3 and unchanged. Re-query exact branch-protection bytes immediately before merge and fail closed if any required context or strict enforcement differs. The activation record's own required-check evidence is not re-derived, because this cycle does not rebuild it."
+          "plan": "Re-queried at T6 and unchanged. Re-query exact branch-protection bytes immediately before merge and fail closed if any required context or strict enforcement differs. The activation record's own required-check evidence is not re-derived, because this cycle does not rebuild it."
         },
         "activationAuthorized": true
+      },
+      "baselineDisagreementAcceptance": {
+        "schemaVersion": "1.0",
+        "phase": "final",
+        "baseline": "5e732c163f3c3a88586d1370e3779d725a6cb7a5",
+        "technicalCommit": "5ab9811a470f911117b09986a3c0cec08bb450e3",
+        "diagnostics": [
+          {
+            "id": "activation-commit-absent",
+            "path": "openspec/governance/activation-record.json"
+          }
+        ],
+        "reason": "The baseline checker counts any two-parent commit as introducing the activation record, so it reads the pull-request preview's synthetic merge as a second introduction beside the real activation commit and raises activation-commit-absent. That is the false positive this change repairs, and the repaired candidate passes. The owner reviewed the exact disagreement at exact technical commit 5ab9811a against exact baseline 5e732c16 and accepted it here rather than weakening the dual check. It expires by itself once the repair lands and the baseline moves."
       },
       "authorizations": {
         "granted": [
@@ -488,7 +516,7 @@
         "AI-produced analysis informed the implementation and is not review, approval, or assurance."
       ],
       "signed": true,
-      "signatureDecision": "Owner decision given 2026-08-14: approve exact technical commit ce692b2b26cceedc7af3e645258f2d3993906e2e (the fix in openspec/scripts/design-pattern-governance/activation.mjs, three regressions in openspec/tests/design-pattern-governance/activation.test.mjs, and the evidence-packet update); authorize its governance-record-only direct child S3 updating only packages/security-audit-sdk-core/verification-lifecycle.json, and the identity-preserving merge of pull request 161; the activation record is not rebuilt and no push to the protected reference is authorized; withhold canonicalization, archive, publication, deployment, production collection, real-user processing, framework integration, and delivery infrastructure. The owner answered: Approve.",
+      "signatureDecision": "Owner decision given 2026-08-14, transcribed from the owner's own words (typographic arrow and dash rendered as ASCII, no other alteration): 'Approve exact technical commit T6 = 5ab9811a470f911117b09986a3c0cec08bb450e3, including its visible T4 -> T5 -> T6 history and the cumulative five-path normative scope. Authorize its governance-record-only direct child S4 touching only packages/security-audit-sdk-core/verification-lifecycle.json, binding reviewedCommit and technicalCommit to exact T6 and carrying the singular baseline-disagreement acceptance for baseline 5e732c163f3c3a88586d1370e3779d725a6cb7a5, phase final, and exactly activation-commit-absent at openspec/governance/activation-record.json. Authorize pushing T4-T6 and S4 to PR #161 and, only after local/tracking/live PR identity agrees on exact S4 and every required exact-S4 check is green, the identity-preserving merge using --merge --match-head-commit <S4>. Do not rewrite history, rebuild the activation record, or push directly to protected main. Canonicalization, archive, publication, deployment, production collection, real-user processing, framework integration, and delivery infrastructure remain withheld.' Asked to resolve the two mechanics the decision left open, the owner further chose: add --admin to the merge invocation, which substitutes for the sole CODEOWNER's approval only and never for a required check; and push T4-T6 first so continuous integration classifies exact T6 before S4 exists.",
       "reviewer": {
         "name": "Fernando Homem da Costa (nandohdc)",
         "role": "Project owner and technical decision-maker",
