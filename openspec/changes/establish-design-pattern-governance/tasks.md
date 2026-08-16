@@ -84,7 +84,7 @@
 - [x] 7.5 Add candidate/security fixtures for no alternative, omitted direct evaluation, best-practice reasons, irrelevant boilerplate, false without reason, authority/concurrency contradiction, retention, lifecycle, and positive override (R2-R4, R8).
 - [x] 7.6 Add policy/self-governance mutations for removed/truncated policy, unsupported schema, checker weakening, path widening, root removal, optional invariants, CI removal, and actor-neutral-document removal (R9, R13-R14).
 - [x] 7.7 Add review, provenance, opt-in, emergency, Ambient Context, and archive fixtures covering every R7, R15, R19-R21, and R24 scenario.
-- [ ] 7.8 Inspect actual generated Hermes skill frontmatter and authorize the minimum repository-supported allowed-tools expansion for `node openspec/scripts/check-design-pattern-governance.mjs` without assuming `Bash(openspec:)` suffices (R22).
+- [x] 7.8 Inspect actual generated Hermes skill frontmatter and authorize the minimum repository-supported allowed-tools expansion for `node openspec/scripts/check-design-pattern-governance.mjs` without assuming `Bash(openspec:)` suffices (R22).
 - [x] 7.9 Classify repository-managed root and generated agent instruction surfaces as normative governance-core content, test the governed Hermes sequence and checker-command permission, and fail CI if `openspec update` regeneration removes any generated property (R22).
 - [x] 7.10 Add the authoritative governance CI job, configure it as a required status check for the protected reference, verify enforcement independently, and preserve exact evidence for A (R12, R17-R18).
 
@@ -103,25 +103,25 @@
 
 ## 9. Frozen technical commit and the signed governance record
 
-- [ ] 9.1 After technical commit readiness is yes, stage only the exact implementation allowlist, inspect the staged scope, create T, push it, and prove local, tracking, live remote, and review target identity.
-- [ ] 9.2 Prepare one signed governance record binding the reviewed content object and naming T, covering reviewer identity, reviewed paths and their objects, catalog invariants, candidate comparison, security classification, dual-checker results, activation bootstrap, required-CI evidence plan, assurance limitations, and the authorizations granted and withheld; leave the signature pending (R5, R14-R16).
-- [ ] 9.3 Obtain the project owner's signature on that single record without inferring it from AI review, PR assignment, authorship, passing gates, or informal messages (R23).
-- [ ] 9.4 Store S after T using only the governance-record-only allowlist, and prove it alters no normative blob and that no reviewed path contains S (R15-R16).
-- [ ] 9.5 If any normative artifact changes after signing, invalidate S, create a new T, rerun all gates, and obtain a new signature rather than reusing a stale record (R15).
-- [ ] 9.6 Rerun lifecycle-state, stale-review, protected-path, strict-validation, and local/tracking/live-remote identity checks after S.
-- [ ] 9.7 Verify the live pull-request head, required checks, required-status enforcement, mergeability, and exact reviewed identities before merge.
-- [ ] 9.8 Prohibit squash, rebase, amendment, force-push, or any alternate strategy that rewrites T or S (R16).
-- [ ] 9.9 Report signed-governance, merge, activation, production/publication, and archive states independently.
+- [x] 9.1 After technical commit readiness is yes, stage only the exact implementation allowlist, inspect the staged scope, create T, push it, and prove local, tracking, live remote, and review target identity.
+- [x] 9.2 Prepare one signed governance record binding the reviewed content object and naming T, covering reviewer identity, reviewed paths and their objects, catalog invariants, candidate comparison, security classification, dual-checker results, activation bootstrap, required-CI evidence plan, assurance limitations, and the authorizations granted and withheld; leave the signature pending (R5, R14-R16).
+- [x] 9.3 Obtain the project owner's signature on that single record without inferring it from AI review, PR assignment, authorship, passing gates, or informal messages (R23).
+- [x] 9.4 Store S after T using only the governance-record-only allowlist, and prove it alters no normative blob and that no reviewed path contains S (R15-R16).
+- [x] 9.5 If any normative artifact changes after signing, invalidate S, create a new T, rerun all gates, and obtain a new signature rather than reusing a stale record (R15).
+- [x] 9.6 Rerun lifecycle-state, stale-review, protected-path, strict-validation, and local/tracking/live-remote identity checks after S.
+- [x] 9.7 Verify the live pull-request head, required checks, required-status enforcement, mergeability, and exact reviewed identities before merge.
+- [x] 9.8 Prohibit squash, rebase, amendment, force-push, or any alternate strategy that rewrites T or S (R16).
+- [x] 9.9 Report signed-governance, merge, activation, production/publication, and archive states independently.
 
 ## 10. Identity-preserving merge, activation, enforcement, canonicalization, and archive
 
-- [ ] 10.1 Merge T and S onto the configured protected mainline by merge commit or fast-forward only, identify M, and prove exact T and S identities and the M tree (R16).
-- [ ] 10.2 Run one-time bootstrap against exact T/S/M, the reviewed content object, artifact blobs, required-check evidence, schema support, and grandfathered entries; reject unrelated activation changes (R17-R18).
-- [ ] 10.3 Create dedicated A immediately after M with sole parent M and only the activation record and allowlisted evidence; do not reference A's own hash (R17-R18).
-- [ ] 10.4 Push A and verify protected-mainline, local, tracking, live remote, parent, tree, bound blobs, required-check identity, and complete ancestry.
-- [ ] 10.5 Verify active enforcement from A using direct-human, non-Hermes, missing-policy, corrupted-policy, unsupported-schema, perimeter, invariant, and self-weakening controls.
-- [ ] 10.6 Verify bootstrap cannot be re-entered and that pre-A baselines use bounded grandfathering while A and descendants use normal enforcement.
-- [ ] 10.7 Materialize the canonical capability only after active enforcement and through the governed lifecycle; preserve exact technical and governance bindings.
+- [x] 10.1 Merge T and S onto the configured protected mainline by merge commit or fast-forward only, identify M, and prove exact T and S identities and the M tree (R16).
+- [x] 10.2 Run one-time bootstrap against exact T/S/M, the reviewed content object, artifact blobs, required-check evidence, schema support, and grandfathered entries; reject unrelated activation changes (R17-R18).
+- [x] 10.3 Create dedicated A immediately after M with sole parent M and only the activation record and allowlisted evidence; do not reference A's own hash (R17-R18).
+- [x] 10.4 Push A and verify protected-mainline, local, tracking, live remote, parent, tree, bound blobs, required-check identity, and complete ancestry.
+- [x] 10.5 Verify active enforcement from A using direct-human, non-Hermes, missing-policy, corrupted-policy, unsupported-schema, perimeter, invariant, and self-weakening controls.
+- [x] 10.6 Verify bootstrap cannot be re-entered and that pre-A baselines use bounded grandfathering while A and descendants use normal enforcement.
+- [x] 10.7 Materialize the canonical capability only after active enforcement and through the governed lifecycle; preserve exact technical and governance bindings.
 - [ ] 10.8 Run explicit archive-evidence validation for task completeness, T and S, the signed record's authorizations granted and withheld, canonical capability, production/publication restrictions, exact paths, immutable bytes, and archive contents; do not rely on `openspec validate --all --strict` alone (R24).
 - [ ] 10.9 Create the separate governed archive commit only after archive readiness is yes, then verify byte-identical governed evidence and required CI.
 - [ ] 10.10 Report M, A, canonical capability, archive commit, active enforcement, historical preservation, continuing production/publication restrictions, and final lifecycle states without conflating technical, signed-governance, merge, activation, or archive evidence.
