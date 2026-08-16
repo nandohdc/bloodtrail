@@ -196,7 +196,7 @@ function archivedChangeIds(repositoryRoot, cwd, sink) {
     // Archive directories carry a leading date: 2026-08-13-right-size-change-governance.
     const id = entry.name.replace(/^\d{4}-\d{2}-\d{2}-/, "");
     if (id.length === 0) continue;
-    if (carriesRelocatedArtifact(entry.name, id, cwd, sink)) ids.add(id);
+    if (carriesRelocatedArtifact(entry.name, id, { cwd, sink })) ids.add(id);
   }
   return ids;
 }

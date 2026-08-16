@@ -214,7 +214,7 @@ export function collectRelocatedChangeIds(paths, cwd, sink) {
     if (!match) continue;
     const archiveName = match[1];
     const id = archiveName.replace(/^\d{4}-\d{2}-\d{2}-/, "");
-    if (!carriesRelocatedArtifact(archiveName, id, cwd, sink, "history-unavailable")) continue;
+    if (!carriesRelocatedArtifact(archiveName, id, { cwd, sink, historyUnavailableId: "history-unavailable" })) continue;
     const archiveDir = `openspec/changes/archive/${archiveName}`;
     if (!relocated.has(id)) relocated.set(id, new Set());
     relocated.get(id).add(archiveDir);
@@ -249,22 +249,26 @@ export function collectOpenSpecChanges(paths, readAssessment, activeChangeIds = 
   return [...ids].sort().map((id) => {
     const assessment = readAssessment(id);
     const capabilities = assessment?.applicability?.capabilities ?? [];
-    const archivedDirs = relocated.get(id);
     return {
       id,
       capabilities,
-      ownedPaths: [
-        `openspec/changes/${id}/`,
-        ...[...(archivedDirs ?? [])].map((archiveDir) => `${archiveDir}/`),
-        // A relocated change keeps its archived capability declaration for the
-        // association's capability gate, but the declaration no longer covers
-        // canonical spec paths or its former owned paths: further work on
-        // anything but the relocation itself requires a new active change.
-        ...(archivedDirs ? [] : (assessment?.owned_paths ?? [])),
-        ...(archivedDirs ? [] : capabilities.map((capability) => `openspec/specs/${capability}/`)),
-      ],
+      ownedPaths: ownedPathsFor(id, assessment, capabilities, relocated.get(id)),
     };
   });
+}
+
+/** The paths a change owns, scoped to its active form or its recognised relocation. */
+function ownedPathsFor(id, assessment, capabilities, archivedDirs) {
+  const paths = [`openspec/changes/${id}/`];
+  for (const archiveDir of archivedDirs ?? []) paths.push(`${archiveDir}/`);
+  // A relocated change keeps its archived capability declaration for the
+  // association's capability gate, but the declaration no longer covers
+  // canonical spec paths or its former owned paths: further work on anything
+  // but the relocation itself requires a new active change.
+  if (archivedDirs) return paths;
+  paths.push(...(assessment?.owned_paths ?? []));
+  paths.push(...capabilities.map((capability) => `openspec/specs/${capability}/`));
+  return paths;
 }
 
 export function checkUnclassifiedPaths(byClass, emergencyPaths, sink) {

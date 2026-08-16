@@ -20,7 +20,7 @@ const HISTORY_UNAVAILABLE = Symbol("history-unavailable");
 export const RELOCATION_ARTIFACTS = Object.freeze(["assessment.json", "proposal.md"]);
 
 /** Whether the archived directory carries at least one relocated artifact. */
-export function carriesRelocatedArtifact(archiveName, id, cwd, sink, historyUnavailableId = "signed-review-history-unavailable") {
+export function carriesRelocatedArtifact(archiveName, id, { cwd, sink, historyUnavailableId = "signed-review-history-unavailable" }) {
   const archivedPath = `openspec/changes/archive/${archiveName}`;
   for (const artifact of RELOCATION_ARTIFACTS) {
     const relocated = artifactWasRelocated({ archivedPath, id, artifact, cwd, sink, historyUnavailableId });

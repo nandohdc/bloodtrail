@@ -311,3 +311,11 @@ proposal.json is the exact object history carried at the active change path, and
 change then owns its archived evidence and the move — nothing else; a planted decoy, drifted
 archived evidence, and post-relocation capability edits all still fail closed. Four association
 regressions pin the behaviour; the complete 196-test governance suite passes.
+
+**Final-cycle repair addendum (defect 10).** The first CI run of the repair technical commit
+surfaced two CodeScene delta findings in the new code: `collectOpenSpecChanges` reached the
+cyclomatic-complexity threshold (10/10) and `carriesRelocatedArtifact` exceeded the argument-count
+maximum (5/4). Both are refactored without behaviour change: the owned-paths assembly moved into an
+`ownedPathsFor` helper, and the relocation verifier takes a context object for the caller-specific
+diagnostic id. The complete governance suite still passes, and the codescene delta gate runs clean
+on the refactored commit.
