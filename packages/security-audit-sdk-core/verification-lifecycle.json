@@ -340,11 +340,11 @@
     },
     {
       "change": "establish-design-pattern-governance",
-      "policy": "Owner-signed decision bound to exact technical commit d0b760b77e9f61cdc84bda60cd202dbcc38ca12a and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and declared merge parent counts. The reviewed scope is cumulative: the exact commit names every reviewed byte, while the content-object entries bind the repository-managed agent instruction trees, the actor-neutral governance documentation tree, the active change, the newly materialized canonical capability, the governance module, the checker subtree, and the policy and invariant verification tests protected by the prior record. At exact T the baseline and candidate checkers agree and reject only with the three signed-review-stale diagnostics on the changed normative paths (tasks.md, evidence-packet.md, and the materialized canonical spec); this governance-record-only direct child clears that expected state. This record authorizes storing that direct child and, after an identity-preserving merge of exact T and S onto the protected mainline, the governed archive movement with its explicit R24 archive-evidence validation and final task reconciliation. It does not authorize merging pull request 165, rebuilding activation, pushing to protected main, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
-      "reviewedCommit": "d0b760b77e9f61cdc84bda60cd202dbcc38ca12a",
+      "policy": "Owner-signed decision bound to exact technical commit fcd0bf6b52f3dc5c8df3f4772a65cfe682e54d86 and its declared content objects. test:governance-history verifies commit reachability, path-to-object identity, record-path exclusion, and declared merge parent counts. This record supersedes the prior finalization record: the first governed archive move under active enforcement exposed that the association perimeter had no recognition for the byte-identical archive relocation the contract mandates (R15, R24), and this technical commit repairs it additively by sharing the existing relocation rule between review freshness and the perimeter, with four association regressions. The reviewed scope is cumulative: the exact commit names every reviewed byte, while the content-object entries bind the repository-managed agent instruction trees, the actor-neutral governance documentation tree, the active change, the materialized canonical capability, the governance module and checker subtree, and the policy and invariant verification tests. At exact T the baseline and candidate checkers agree and reject only with the six signed-review-stale diagnostics on the changed normative paths; this governance-record-only direct child clears that expected state. The canonical capability was materialized at T' d0b760b and remains bound by the prior signed record; this record does not re-materialize anything. This record authorizes storing the direct child and, after an identity-preserving merge of exact T and S onto the protected mainline, the governed archive movement with its explicit R24 archive-evidence validation and final task reconciliation. It does not authorize merging pull request 166, rebuilding activation, pushing to protected main, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
+      "reviewedCommit": "fcd0bf6b52f3dc5c8df3f4772a65cfe682e54d86",
       "reviewedContent": {
         "kind": "tree",
-        "candidateRoot": "649670b3a45e68e4851af8ac8ce7460c151123f7",
+        "candidateRoot": "8e1006748c7947c2363557a00a5556a23e5fb5b7",
         "entries": [
           {
             "path": ".agents",
@@ -364,7 +364,7 @@
           },
           {
             "path": "openspec/changes/establish-design-pattern-governance",
-            "object": "c47366891be7b6ab506a6ccfdc9d7fa446b5960a"
+            "object": "160acce69ebd2ca13923861c0b1ea643405f14c9"
           },
           {
             "path": "openspec/governance",
@@ -372,7 +372,7 @@
           },
           {
             "path": "openspec/scripts",
-            "object": "f2229bda7c98f9b1b3fd568e9863f8dd378a72a4"
+            "object": "0842d3ddfbfd907cd288b1157599881f0add4360"
           },
           {
             "path": "openspec/specs/software-design-pattern-governance",
@@ -384,7 +384,7 @@
           },
           {
             "path": "openspec/tests/design-pattern-governance",
-            "object": "51221932a5d5691cbaa03216c13249267da85cec"
+            "object": "0b3c968c9694b99133d55a496fa02b64649141fe"
           }
         ]
       },
@@ -416,10 +416,12 @@
         "841ff7e799cb29101051c6d3d5a08bd381bb82c9",
         "0e3f6b33a1613dcff303843ff21ee915e1a897e5",
         "66830541ed2c95e2824558cbf74f58e25f73e984",
-        "d0b760b77e9f61cdc84bda60cd202dbcc38ca12a"
+        "d0b760b77e9f61cdc84bda60cd202dbcc38ca12a",
+        "502fa92da3788f0c3f299fe46491e434d655d1c6",
+        "fcd0bf6b52f3dc5c8df3f4772a65cfe682e54d86"
       ],
       "boundCommits": [
-        "d0b760b77e9f61cdc84bda60cd202dbcc38ca12a"
+        "fcd0bf6b52f3dc5c8df3f4772a65cfe682e54d86"
       ],
       "mergeCommits": [
         {
@@ -437,13 +439,17 @@
         {
           "commit": "66830541ed2c95e2824558cbf74f58e25f73e984",
           "expectedParents": 2
+        },
+        {
+          "commit": "502fa92da3788f0c3f299fe46491e434d655d1c6",
+          "expectedParents": 2
         }
       ],
       "designPatternGovernance": {
         "assessment": {
           "path": "openspec/changes/establish-design-pattern-governance/assessment.json",
           "digest": "sha256:febbd1856ac6b9f3e09246af09d0036b179b7f5232f7b0b2a41ac7c8925d0094",
-          "assessmentCommit": "d0b760b77e9f61cdc84bda60cd202dbcc38ca12a"
+          "assessmentCommit": "fcd0bf6b52f3dc5c8df3f4772a65cfe682e54d86"
         },
         "catalogInvariants": [],
         "implementationInvariants": [
@@ -457,21 +463,21 @@
         "securityClassificationReviewed": true,
         "checkerResults": {
           "baseline": {
-            "sourceRef": "4348624bf3a5acb5bb33bc2fe6314291485c51d0",
+            "sourceRef": "502fa92da3788f0c3f299fe46491e434d655d1c6",
             "checkerBlob": "c9f836ac56855b8fc4eaaef37aed88805264910b",
             "exitCode": 1,
             "diagnostics": [
-              "the trusted-baseline final check rejects the exact-T normative delta only with signed-review-stale on the three changed normative paths (tasks.md, evidence-packet.md, and the materialized canonical spec); it reports no path-unclassified, no activation, and no other diagnostic",
+              "the trusted-baseline final check rejects the exact-T normative delta only with signed-review-stale on the six changed normative paths (evidence packet, checker script, archive-relocation module, perimeter, review-freshness, and association tests); it reports no path-unclassified, no activation, and no other diagnostic",
               "the baseline and candidate agree, so this record carries no baseline-disagreement acceptance"
             ]
           },
           "candidate": {
-            "sourceRef": "d0b760b77e9f61cdc84bda60cd202dbcc38ca12a",
-            "checkerBlob": "c9f836ac56855b8fc4eaaef37aed88805264910b",
+            "sourceRef": "fcd0bf6b52f3dc5c8df3f4772a65cfe682e54d86",
+            "checkerBlob": "13cd54e26afafb56355ef1bf422d36f5d0cd03da",
             "exitCode": 1,
             "diagnostics": [
-              "the exact-T final check reports exactly three signed-review-stale diagnostics, one per changed normative path, and no other governance diagnostic",
-              "the governance-record-only direct child is expected to clear the stale diagnostics at exact S"
+              "the exact-T final check reports exactly six signed-review-stale diagnostics, one per changed normative path, and no other governance diagnostic",
+              "the candidate checker script itself changed in this governance-core commit (blob 13cd54e26afa versus the activation-bound c9f836ac); baseline and candidate were both run and agree on identical verdicts, the activation phase still passes because activation is a one-time historical boundary, and the governance-record-only direct child is expected to clear the stale diagnostics at exact S"
             ]
           }
         },
@@ -482,26 +488,25 @@
             "reason": "The exact technical commit still names those reviewed bytes, while the non-self-referential content-object entries bind every reviewed subtree. This record states the limitation rather than claiming blob-level binding the executable gate rejects."
           },
           {
-            "description": "The reviewed docs subtree at T' includes docs/agents/ merged by PR #164 (chore: setup agent skills) after the prior record.",
+            "description": "The candidate checker blob differs from the activation record's bound checker blob.",
             "accepted": true,
-            "reason": "The finalization branch is cut from the current protected mainline, the exact technical commit names every reviewed byte, and the live final-phase checker passes at that baseline."
+            "reason": "Activation is a one-time historical boundary (R18); the activation phase verifies the historical bindings and passes. The checker change is the reviewed governance-core repair itself, dual-checked with baseline and candidate agreement, and is not an activation weakening."
           }
         ],
         "requiredCheckEvidence": {
           "method": "github-branch-protection-api",
           "digest": "sha256:f74b4db9e0858bc20f288f3f5596b6b233b77ecd65791dee81816c707893ba10",
-          "plan": "Re-queried at exact T with strict enforcement and the nine declared required contexts; byte-identical digest to the prior evidence. Exact T is expected red only on the design-pattern-governance check with the three signed-review-stale diagnostics. A later merge remains an owner action and requires a fresh API read at exact S, exact-S identity, and every exact-S required context green."
+          "plan": "Re-queried at exact T with strict enforcement and the nine declared required contexts; byte-identical digest to the prior evidence. Exact T is expected red only on the design-pattern-governance check with the six signed-review-stale diagnostics. A later merge remains an owner action and requires a fresh API read at exact S, exact-S identity, and every exact-S required context green."
         },
         "activationAuthorized": false
       },
       "authorizations": {
         "granted": [
           "store-governance-record-s-for-exact-technical-commit",
-          "canonical-capability-materialization-at-exact-t",
           "governed-archive-movement-after-identity-preserving-merge"
         ],
         "withheld": [
-          "identity-preserving-merge-of-pr-165",
+          "identity-preserving-merge-of-pr-166",
           "activation-record-rebuild",
           "package-publication",
           "production-deployment",
@@ -516,7 +521,7 @@
         "AI-produced analysis informed the implementation and is not review, approval, or assurance."
       ],
       "signed": true,
-      "signatureDecision": "Owner decision given 2026-08-16 in two recorded acts: the owner authorized the final governed cycle ('Authorize the final cycle: T' + signed record + archive', covering canonical capability materialization, lifecycle task reconciliation, the signed record, and the governed archive movement), and then approved the exact technical commit in direct reply to the exact-commit request: 'approve d0b760b77e9f61cdc84bda60cd202dbcc38ca12a'. The exact-commit request expressly asked for authorization of the governance-record-only direct child for that exact technical commit. The decision therefore authorizes S touching only packages/security-audit-sdk-core/verification-lifecycle.json and binding exact T, with the archive movement authorized only after an identity-preserving merge of exact T and S onto the protected mainline. It does not authorize activation-record replacement, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
+      "signatureDecision": "Owner decision given 2026-08-16 in two recorded acts: the owner authorized the repair cycle after the perimeter defect was diagnosed ('Proceed: T'' perimeter fix + S'' + archive'), and then approved the exact technical commit in direct reply to the exact-commit request: 'approve fcd0bf6b52f3dc5c8df3f4772a65cfe682e54d86'. The exact-commit request expressly asked for authorization of the governance-record-only direct child for that exact technical commit. The decision therefore authorizes S touching only packages/security-audit-sdk-core/verification-lifecycle.json and binding exact T, with the archive movement authorized only after an identity-preserving merge of exact T and S onto the protected mainline. It does not authorize activation-record replacement, publication, deployment, collection, real-user processing, framework integration, or delivery infrastructure.",
       "reviewer": {
         "name": "Fernando Homem da Costa (nandohdc)",
         "role": "Project owner and technical decision-maker",
