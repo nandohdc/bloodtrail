@@ -298,3 +298,24 @@ itself, which cannot exist before archive readiness is proven. The explicit arch
 withheld, canonical capability materialization, production/publication restrictions, immutable archive
 contents, exact changed paths, and byte identity of governed evidence, and does not rely on
 `openspec validate --all --strict` alone.
+
+**Final-cycle repair (2026-08-16, defect 9).** The first governed archive move under active
+enforcement exposed that the association perimeter could not recognise the relocation the contract
+requires: after the move, no active change owns the dated archive path, so every archived file
+reported `openspec-association-unrelated` (R15's byte-identical-relocation scenario and R24's
+mandated archive step were implemented in review freshness but not mirrored in the perimeter; the
+right-size archive predates activation and never exercised it). The repair shares the existing
+byte-identical-relocation rule through a new `archive-relocation.mjs` module consumed by both review
+freshness and the perimeter: a dated archive directory counts only when its assessment.json or
+proposal.json is the exact object history carried at the active change path, and the relocated
+change then owns its archived evidence and the move — nothing else; a planted decoy, drifted
+archived evidence, and post-relocation capability edits all still fail closed. Four association
+regressions pin the behaviour; the complete 196-test governance suite passes.
+
+**Final-cycle repair addendum (defect 10).** The first CI run of the repair technical commit
+surfaced two CodeScene delta findings in the new code: `collectOpenSpecChanges` reached the
+cyclomatic-complexity threshold (10/10) and `carriesRelocatedArtifact` exceeded the argument-count
+maximum (5/4). Both are refactored without behaviour change: the owned-paths assembly moved into an
+`ownedPathsFor` helper, and the relocation verifier takes a context object for the caller-specific
+diagnostic id. The complete governance suite still passes, and the codescene delta gate runs clean
+on the refactored commit.

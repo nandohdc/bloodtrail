@@ -30,13 +30,13 @@ import {
   tryGit,
   splitLines,
 } from "./git.mjs";
+import { carriesRelocatedArtifact } from "./archive-relocation.mjs";
 import { touchesNormativePath } from "./perimeter.mjs";
 import { matchesAny } from "./paths.mjs";
 import { byCodePoint } from "./diagnostics.mjs";
 
 const OBJECT_ID = /^[0-9a-f]{40}$/;
 const HISTORY_UNAVAILABLE = Symbol("history-unavailable");
-const ARCHIVE_ARTIFACTS = Object.freeze(["assessment.json", "proposal.md"]);
 
 /**
  * @param {{ changeIds: Iterable<string>, allChangeIds?: Iterable<string>,
@@ -196,7 +196,7 @@ function archivedChangeIds(repositoryRoot, cwd, sink) {
     // Archive directories carry a leading date: 2026-08-13-right-size-change-governance.
     const id = entry.name.replace(/^\d{4}-\d{2}-\d{2}-/, "");
     if (id.length === 0) continue;
-    if (carriesRelocatedArtifact(entry.name, id, cwd, sink)) ids.add(id);
+    if (carriesRelocatedArtifact(entry.name, id, { cwd, sink })) ids.add(id);
   }
   return ids;
 }
@@ -212,40 +212,6 @@ function archiveDirectoryEntries(repositoryRoot) {
   // rare multi-archive history-failure diagnostic order must not vary by machine.
   entries.sort((left, right) => byCodePoint(left.name, right.name));
   return entries.filter((entry) => entry.isDirectory());
-}
-
-/** Whether an archived artifact is the exact object history carried at the active path. */
-function carriesRelocatedArtifact(archiveName, id, cwd, sink) {
-  const archivedPath = `openspec/changes/archive/${archiveName}`;
-  for (const artifact of ARCHIVE_ARTIFACTS) {
-    const relocated = artifactWasRelocated({ archivedPath, id, artifact, cwd, sink });
-    if (relocated === HISTORY_UNAVAILABLE) return false;
-    if (relocated) return true;
-  }
-  return false;
-}
-
-function artifactWasRelocated({ archivedPath, id, artifact, cwd, sink }) {
-  const archivedObject = objectAtPath("HEAD", `${archivedPath}/${artifact}`, cwd);
-  if (archivedObject === null) return false;
-  const activePath = `openspec/changes/${id}/${artifact}`;
-  const carried = historyCarriesObjectAt(activePath, archivedObject, cwd);
-  if (carried === null) {
-    sink.fail("signed-review-history-unavailable", archivedPath,
-      `cannot enumerate the history of ${activePath}; archive relocation cannot be verified`);
-    return HISTORY_UNAVAILABLE;
-  }
-  return carried;
-}
-
-/** True when some commit reachable from HEAD carried `object` at `path`; null when history is unreadable. */
-function historyCarriesObjectAt(path, object, cwd) {
-  const touched = tryGit(["rev-list", "HEAD", "--", path], { cwd });
-  if (!touched.ok) return null;
-  for (const commit of splitLines(touched.value)) {
-    if (objectAtPath(commit, path, cwd) === object) return true;
-  }
-  return false;
 }
 
 function verifyChange(changeId, source, context) {

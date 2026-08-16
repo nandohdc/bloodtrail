@@ -8,6 +8,8 @@
  */
 
 import { after, describe, it } from "node:test";
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
 
 import { ASSESSMENT, createRepository } from "./support/disposable-repo.mjs";
 import { POLICY_PATH, assertDiagnostic, assertPasses, runChecker } from "./support/harness.mjs";
@@ -219,4 +221,63 @@ describe("R21 emergency records terminate on change state, not on a clock", () =
       assertEmergencyState(scenario);
     });
   }
+});
+
+describe("R15 byte-identical archive relocations are owned by the relocating change", () => {
+  const ARCHIVE = "openspec/changes/archive/2026-08-16-establish-design-pattern-governance";
+  const ACTIVE = "openspec/changes/establish-design-pattern-governance";
+
+  function relocate(repository) {
+    mkdirSync(join(repository.root, "openspec/changes/archive"), { recursive: true });
+    repository.git(["mv", ACTIVE, ARCHIVE]);
+  }
+
+  it("accepts a byte-identical relocation that also carries the final task reconciliation", () => {
+    const repository = fixture();
+    const base = repository.head();
+    relocate(repository);
+    repository.write(`${ARCHIVE}/tasks.md`, "- [x] 10.9 Create the separate governed archive commit\n");
+    repository.commit("docs(openspec): archive the governed change");
+
+    assertPasses(check(repository, base));
+  });
+
+  it("rejects a planted archive directory whose content history never carried", () => {
+    const repository = fixture();
+    const base = repository.head();
+    repository.remove(ACTIVE);
+    repository.writeJson(`${ARCHIVE}/assessment.json`, {
+      change_id: "establish-design-pattern-governance",
+      planted: true,
+    });
+    repository.commit("docs(openspec): plant a decoy archive");
+
+    assertDiagnostic(check(repository, base), "openspec-association-unrelated");
+  });
+
+  it("rejects archived evidence that drifts from the relocated objects", () => {
+    const repository = fixture();
+    const base = repository.head();
+    relocate(repository);
+    repository.commit("docs(openspec): relocate the governed change");
+    repository.mutateJson(`${ARCHIVE}/assessment.json`, (assessment) => {
+      assessment.planted = true;
+      return assessment;
+    });
+    repository.commit("docs(openspec): tamper with the archived evidence");
+
+    assertDiagnostic(check(repository, base), "openspec-association-unrelated");
+  });
+
+  it("does not let a finished relocation keep covering the canonical capability spec", () => {
+    const repository = fixture();
+    relocate(repository);
+    repository.commit("docs(openspec): relocate the governed change");
+    const base = repository.head();
+    repository.write("openspec/specs/software-design-pattern-governance/spec.md",
+      "# software-design-pattern-governance Specification\n\n## Purpose\n\nFixture canonical capability content.\n");
+    repository.commit("docs(openspec): edit the canonical capability after relocation");
+
+    assertDiagnostic(check(repository, base), "openspec-association-absent");
+  });
 });
