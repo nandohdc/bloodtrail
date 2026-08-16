@@ -319,3 +319,13 @@ maximum (5/4). Both are refactored without behaviour change: the owned-paths ass
 `ownedPathsFor` helper, and the relocation verifier takes a context object for the caller-specific
 diagnostic id. The complete governance suite still passes, and the codescene delta gate runs clean
 on the refactored commit.
+
+**Final-cycle repair addendum (defect 11).** Reaching the archive step under active enforcement
+exposed two fixture couplings to this change's own lifecycle state: the SDK archive-movement mutation
+suite deleted `establish-design-pattern-governance/proposal.md` as its "unrelated active change"
+seed, and the governance fixture seeder copied the live active assessment. Both break the moment this
+change archives, for reasons unrelated to the controls they test. The repair makes both
+lifecycle-independent: the deletion fixture uses the grandfathered active change, and the seeder uses
+a fixture-owned copy of the reviewed assessment (`support/fixture-assessment.json`) instead of the
+live active path. The assessment's `owned_paths` declares the SDK mutation-suite file this
+finalization now owns.

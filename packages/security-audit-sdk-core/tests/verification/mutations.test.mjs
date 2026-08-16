@@ -212,7 +212,11 @@ test("archive movement rejects active remnants as a partial movement", () => {
 
 test("archive movement rejects deletion from an unrelated active change", () => {
   const { root } = archivedCaseRepository("archive-movement-unrelated-deletion");
-  rmSync(resolve(root, "openspec/changes/establish-design-pattern-governance/proposal.md"));
+  // The unrelated active change must be one whose lifecycle is independent of
+  // the governance change this suite lives beside: once that change archives,
+  // its active directory is gone from the control snapshot. The grandfathered
+  // active change is the stable fixture for the deletion.
+  rmSync(resolve(root, "openspec/changes/correct-local-instruction-verification-premise/proposal.md"));
   fails(root, "scripts/check-changed-paths.mjs", ["--mode", "archived"], "archive-movement-unrelated-change-deletion");
 });
 

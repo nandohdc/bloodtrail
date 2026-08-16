@@ -27,8 +27,16 @@ const SEEDED_PATHS = Object.freeze([
   "CONTRIBUTING.md",
   ".github/PULL_REQUEST_TEMPLATE.md",
   ".github/workflows/ci.yml",
-  "openspec/changes/establish-design-pattern-governance/assessment.json",
 ]);
+
+/**
+ * The fixture-owned copy of the reviewed assessment. Fixtures must not read
+ * the live active change directory: once the change archives, that path is
+ * gone and a fixture depending on it would fail for a reason unrelated to the
+ * control it is testing. This file is the reviewed assessment content frozen
+ * as fixture input, rebased to the fixture's own history below.
+ */
+const FIXTURE_ASSESSMENT = "openspec/tests/design-pattern-governance/support/fixture-assessment.json";
 
 export const ASSESSMENT = "openspec/changes/establish-design-pattern-governance/assessment.json";
 
@@ -122,6 +130,8 @@ export function createRepository(options = {}) {
     mkdirSync(dirname(destination), { recursive: true });
     cpSync(source, destination, { recursive: true });
   }
+  mkdirSync(dirname(join(root, ASSESSMENT)), { recursive: true });
+  cpSync(resolve(liveRepositoryRoot, FIXTURE_ASSESSMENT), join(root, ASSESSMENT));
   // The live activation record binds the real merge/technical/signed commits,
   // which do not exist in a fixture. Inheriting it would make every fixture
   // fail for that reason alone, so fixtures always build their own records.
