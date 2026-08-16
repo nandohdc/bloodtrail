@@ -272,3 +272,29 @@ Reported independently. Evidence for one is not evidence for another.
    The replacement signed record must bind `AGENTS.md`, `CLAUDE.md`, `.hermes.md`, the generated
    instruction roots, and the cumulative governance evidence at one exact reviewed technical commit;
    no earlier red or intermediate commit is the approval target.
+
+## Final-cycle addendum (2026-08-16)
+
+The lifecycle states above were superseded when the owner authorized the final governed cycle:
+technical finalization T', a governance-record-only signed record S' binding T', the identity-preserving
+merge, and the separate archive commit. The finalization branch is cut from `origin/main` at
+`4348624bf3a5acb5bb33bc2fe6314291485c51d0` (which carries the merged PR #164; the live final-phase
+checker passes at that baseline).
+
+| State | Status at T' |
+| --- | --- |
+| Apply authorization | **granted** — groups 1–8 (historical, `apply-authorization.md`); the final cycle extends it by explicit owner authorization |
+| Technical commit readiness | **yes** — T' carries the materialized canonical capability and reconciled task state; all gates re-run |
+| Signed governance record | **pending** — S' is prepared only after the owner's exact-commit approval of T', binding the exact reviewed content object |
+| Merge readiness | **pending S' and required checks** — M' must be an identity-preserving merge commit |
+| Activation | **historical** — A = `ee6fb3c` remains the one-time activation boundary (R18); not rebuilt |
+| Canonical materialization | **done at T'** — `openspec/specs/software-design-pattern-governance/spec.md` created from the reviewed delta (24 requirements, 129 scenarios) |
+| Archive readiness | **pending** — discharged by the separate archive commit after M', which runs the explicit R24 archive-evidence validation (task 10.8), creates the archive (10.9), and reports final states (10.10) |
+| Production / publication authorization | **withheld** — unchanged by anything in this change |
+
+Tasks 10.8, 10.9, and 10.10 remain unchecked at T' by design: each is discharged by the archive commit
+itself, which cannot exist before archive readiness is proven. The explicit archive-evidence validation
+(R24) covers task completeness, the T'/S' bindings, the signed record's authorizations granted and
+withheld, canonical capability materialization, production/publication restrictions, immutable archive
+contents, exact changed paths, and byte identity of governed evidence, and does not rely on
+`openspec validate --all --strict` alone.
