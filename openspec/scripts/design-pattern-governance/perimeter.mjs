@@ -11,10 +11,13 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { carriesRelocatedArtifact } from "./archive-relocation.mjs";
 import { longestMatch, matchesAny } from "./paths.mjs";
 import { blobAt, changedPaths, commitsBetween, pathsChangedByCommit, untrackedPaths } from "./git.mjs";
 
 export const UNCLASSIFIED = "unclassified";
+
+const DATED_ARCHIVE_PATH = /^openspec\/changes\/archive\/(\d{4}-\d{2}-\d{2}-[^/]+)\//;
 
 /**
  * Path classes are minimum floors. The most specific declared pattern wins, and a
@@ -191,34 +194,74 @@ export function checkOpenSpecAssociation(governedPaths, changes, sink) {
 }
 
 /**
+ * Change ids whose dated archive directory appears in the range, keyed to the
+ * archive-directory prefixes recognised as genuine relocations.
+ *
+ * R15 preserves the signed record across an archive relocation only when the
+ * archived artifacts are the exact objects history carried at the active change
+ * path, and R24 requires the governed archive step to exist. The association
+ * check must recognise what the contract recognises, or no governed change
+ * could ever be archived while enforcement is active: after the move nothing
+ * active owns the dated archive path. The recognition is the same
+ * byte-identical-relocation rule review freshness applies; a planted or decoy
+ * archive directory is not recognised and stays uncovered, failing closed as
+ * unrelated work.
+ */
+export function collectRelocatedChangeIds(paths, cwd, sink) {
+  const relocated = new Map();
+  for (const path of paths) {
+    const match = DATED_ARCHIVE_PATH.exec(path);
+    if (!match) continue;
+    const archiveName = match[1];
+    const id = archiveName.replace(/^\d{4}-\d{2}-\d{2}-/, "");
+    if (!carriesRelocatedArtifact(archiveName, id, cwd, sink, "history-unavailable")) continue;
+    const archiveDir = `openspec/changes/archive/${archiveName}`;
+    if (!relocated.has(id)) relocated.set(id, new Set());
+    relocated.get(id).add(archiveDir);
+  }
+  return relocated;
+}
+
+/**
  * The OpenSpec changes that could cover this range, with what each declares it
  * owns.
  *
  * Both the changes the range touches *and* the active changes on disk count. An
  * implementation commit often touches no change directory at all — the proposal
  * landed earlier — so requiring the change to appear in the range would reject
- * correctly governed work for having tidy commits.
+ * correctly governed work for having tidy commits. A recognised archive
+ * relocation also counts, but only for the relocation itself: the relocated
+ * change owns its archived evidence and the move, while further work on the
+ * capability it used to own requires a new active change — keeping the
+ * association from becoming a formality satisfied by any finished change.
  *
  * `ownedPaths` comes from each change's own assessment. A change that declares
  * nothing owns nothing, which is what keeps the association from being satisfied
  * by merely having some change open.
  */
-export function collectOpenSpecChanges(paths, readAssessment, activeChangeIds = []) {
+export function collectOpenSpecChanges(paths, readAssessment, activeChangeIds = [], relocated = new Map()) {
   const ids = new Set(activeChangeIds);
   for (const path of paths) {
     const match = /^openspec\/changes\/([^/]+)\//.exec(path);
     if (match && match[1] !== "archive") ids.add(match[1]);
   }
+  for (const id of relocated.keys()) ids.add(id);
   return [...ids].sort().map((id) => {
     const assessment = readAssessment(id);
     const capabilities = assessment?.applicability?.capabilities ?? [];
+    const archivedDirs = relocated.get(id);
     return {
       id,
       capabilities,
       ownedPaths: [
         `openspec/changes/${id}/`,
-        ...(assessment?.owned_paths ?? []),
-        ...capabilities.map((capability) => `openspec/specs/${capability}/`),
+        ...[...(archivedDirs ?? [])].map((archiveDir) => `${archiveDir}/`),
+        // A relocated change keeps its archived capability declaration for the
+        // association's capability gate, but the declaration no longer covers
+        // canonical spec paths or its former owned paths: further work on
+        // anything but the relocation itself requires a new active change.
+        ...(archivedDirs ? [] : (assessment?.owned_paths ?? [])),
+        ...(archivedDirs ? [] : capabilities.map((capability) => `openspec/specs/${capability}/`)),
       ],
     };
   });

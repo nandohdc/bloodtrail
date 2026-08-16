@@ -43,6 +43,7 @@ import {
   classifyPaths,
   collectOpenSpecChanges,
   collectRangePaths,
+  collectRelocatedChangeIds,
   isGovernanceCore,
 } from "./design-pattern-governance/perimeter.mjs";
 import { matchesSelection } from "./design-pattern-governance/paths.mjs";
@@ -328,10 +329,12 @@ function checkPerimeter(opts, context, diagnostics) {
   checkHiddenImplementation({ paths: range.paths, byClass, base, head, cwd, sink: diagnostics });
 
   const governed = range.paths.filter((path) => matchesSelection(path, governedPatterns(policy)));
+  const relocated = collectRelocatedChangeIds(range.paths, cwd, diagnostics);
   const changes = collectOpenSpecChanges(
     range.paths,
-    (id) => readAssessmentFor(context.repositoryRoot, id),
+    (id) => readAssessmentFor(context.repositoryRoot, id, [...(relocated.get(id) ?? [])][0]),
     activeChangeIds(context.repositoryRoot),
+    relocated,
   );
   checkOpenSpecAssociation(governed, changes, diagnostics);
   checkGrandfatheredScopes(policy, governed, changes, { context, diagnostics });
@@ -429,11 +432,16 @@ function activeChangeIds(repositoryRoot) {
   }
 }
 
-function readAssessmentFor(repositoryRoot, changeId) {
+function readAssessmentFor(repositoryRoot, changeId, archivedDir) {
   try {
     return JSON.parse(readFileSync(resolve(repositoryRoot, "openspec/changes", changeId, "assessment.json"), "utf8"));
   } catch {
-    return null;
+    if (!archivedDir) return null;
+    try {
+      return JSON.parse(readFileSync(resolve(repositoryRoot, archivedDir, "assessment.json"), "utf8"));
+    } catch {
+      return null;
+    }
   }
 }
 
