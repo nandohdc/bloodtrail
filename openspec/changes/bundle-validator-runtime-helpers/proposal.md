@@ -5,7 +5,7 @@ The packed SDK artifact is not importable from a production-only install: `dist/
 ## What Changes
 
 - The generator (`scripts/generate-contract.mjs`) post-processes the emitted standalone CommonJS validator so the three `require(...)` expressions are replaced by bundled definitions inlined as source text from two new vendored modules, keeping `"use strict";` as the first statement.
-- New vendored modules under `packages/security-audit-sdk-core/vendor/` carry the bundled MIT-licensed code: the ajv `ucs2length` runtime helper and the ajv-formats `date-time` and `uri` validators, transcribed verbatim from the pinned dependency versions.
+- New vendored modules under `packages/security-audit-sdk-core/vendor/` carry the bundled MIT-licensed code: the ajv `ucs2length` runtime helper and the ajv-formats `date-time` and `uri` validators, adapted from the pinned dependency versions with behavior-preserving control-flow restructuring (single-branch conditions; no behavior change, parity-locked).
 - The generated artifact gains an MIT attribution header naming the bundled packages, versions, sources, and the ADR-SDK-011 reference.
 - The generator fails closed: it aborts generation if the emitted code references any require target outside the known set or still contains any `require(` after bundling.
 - `DEPENDENCIES.md` records the bundled code and its attribution; the ajv and ajv-formats rows are updated to state their generation-time role.

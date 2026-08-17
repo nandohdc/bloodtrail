@@ -30,6 +30,23 @@ const DATE_TIME_INPUTS = [
   "2026-08-16T10:30:00",
   "not-a-date",
   "",
+  // Leap-second edges: valid leap second only when the UTC minute is 23:59 or
+  // (via a negative offset) rolls to 00:59; fractional leap seconds allowed.
+  "2026-08-16T23:59:60+00:30",
+  "2026-08-16T00:00:60-00:30",
+  "2026-08-16T22:59:60-01:00",
+  "2026-08-16T00:59:60+01:00",
+  "2026-08-16T10:30:60Z",
+  "2026-08-16T23:59:60.5Z",
+  "2026-08-16T10:30:00.5Z",
+  // Offsets without minutes, and out-of-range offsets.
+  "2026-08-16T10:30:00+02",
+  "2026-08-16T10:30:00+24:00",
+  "2026-08-16T10:30:00+00:60",
+  // Clock-value bounds.
+  "2026-08-16T24:00:00Z",
+  "2026-08-16T23:60:00Z",
+  "2026-08-16T23:59:59Z",
 ];
 
 const URI_INPUTS = [
@@ -41,6 +58,21 @@ const URI_INPUTS = [
   "%zz",
   "a b",
   "",
+  "HTTPS://EXAMPLE.COM",
+  "mailto:a@b.c",
+  "http://[::1]:8080/x",
+  "http://[2001:db8::1]/",
+  "http://1.2.3.4/",
+  "http://999.1.1.1/",
+  "scheme:",
+  "a:b",
+  "/path/only",
+  "?query",
+  "#frag",
+  "http://ex.com/%2F",
+  "x+y-z.1:a@host:80/p?q#f",
+  "\u00e9://x",
+  "http://ex.com\n",
 ];
 
 test("pinned ajv-formats entries keep the shapes the artifact depends on", () => {
@@ -72,7 +104,11 @@ test("bundled uri validator matches ajv-formats fullFormats uri", () => {
 });
 
 test("bundled ucs2length matches the ajv runtime helper", () => {
-  const inputs = ["abc", "a", "", "\u00e9\u00e9", "\u{1F600}", "\u{1F600}a", "\uD83D", "\uD83Da"];
+  const inputs = [
+    "abc", "a", "", "\u00e9\u00e9", "\u{1F600}", "\u{1F600}a", "\uD83D", "\uD83Da",
+    "\uDC00", "a\uDC00b", "\uD83D\uDE00\uD83D\uDE00", "\uD800\uDC00\uD800\uDC00",
+    "\u{1F600}".repeat(80), "z".repeat(80), "z".repeat(81),
+  ];
   for (const input of inputs) {
     assert.equal(
       bundledUcs2length(input),
