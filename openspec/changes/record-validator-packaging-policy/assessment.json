@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.1",
+  "change_id": "record-validator-packaging-policy",
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "The zero-runtime-dependency identity and the shipped validator artifact cannot both remain true; the packaging policy must be decided exactly once.",
+    "The decision must enumerate manifest, lockfile, generator, license, and gate consequences, not just name a preference.",
+    "The decision must be bound to the reproduced S-6 failure so the record cannot drift from the defect it resolves.",
+    "Compatibility claims in compatibility.json must be decided policy, not unreconciled assertions."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "full_trigger_absence_proof": "No public API, integration, lifecycle, concurrency, persistence, or security-sensitive runtime behavior changes; no governance-core path is touched (check-coherence.mjs lives under packages/, not openspec/scripts/); no canonical capability requirement is modified — the change records an owner decision in an ADR and updates two constants in a package verification script.",
+    "material_capability_modification": false,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/adr/011-validator-runtime-packaging-policy.md",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-bundled-standalone-validator",
+      "kind": "direct_implementation",
+      "summary": "Record BUNDLED_STANDALONE_VALIDATOR: keep runtimeDependencyCount 0; the generator emits a self-contained standalone CommonJS validator with ajv runtime helpers bundled and MIT attribution recorded; the package gate proves production-only runtime closure.",
+      "forces_addressed": [
+        "The zero-runtime-dependency identity and the shipped validator artifact cannot both remain true; the packaging policy must be decided exactly once.",
+        "The decision must enumerate manifest, lockfile, generator, license, and gate consequences, not just name a preference.",
+        "The decision must be bound to the reproduced S-6 failure so the record cannot drift from the defect it resolves."
+      ]
+    },
+    {
+      "id": "approach-declared-runtime-dependencies",
+      "kind": "alternative",
+      "summary": "Record DECLARED_RUNTIME_DEPENDENCIES: declare ajv and ajv-formats as real runtime dependencies and retire the zero-runtime-dependency claims across compatibility.json, gates, and documentation.",
+      "forces_addressed": [
+        "The zero-runtime-dependency identity and the shipped validator artifact cannot both remain true; the packaging policy must be decided exactly once."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-bundled-standalone-validator",
+  "rejected_alternative_ids": ["approach-declared-runtime-dependencies"],
+  "rejection_reasons": {
+    "approach-declared-runtime-dependencies": {
+      "forces": [
+        "Compatibility claims in compatibility.json must be decided policy, not unreconciled assertions.",
+        "The decision must enumerate manifest, lockfile, generator, license, and gate consequences, not just name a preference."
+      ],
+      "reason": "Declaring runtime dependencies retires the zero-runtime-dependency identity that ADR-SDK-001, DEPENDENCIES.md, the dependency gate, and compatibility.json jointly enforce, widens the package trust boundary for every consumer, and forces compatibility.json and gate rewrites. Bundling keeps the ratified zero-runtime-dependency claim true and requires only generator, attribution, and package-gate work, which the recorded policy already enumerates."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-single-recorded-policy",
+    "implementation-defect-bound-decision",
+    "implementation-gate-constant-coherence"
+  ],
+  "invariant_evidence": {
+    "implementation-single-recorded-policy": {
+      "task_ids": ["1.1"],
+      "evidence_ids": ["adr/011-validator-runtime-packaging-policy.md Decision section names exactly one policy"]
+    },
+    "implementation-defect-bound-decision": {
+      "task_ids": ["1.1"],
+      "evidence_ids": ["adr/011-validator-runtime-packaging-policy.md Context cites the archived S-6 reproduction"]
+    },
+    "implementation-gate-constant-coherence": {
+      "task_ids": ["1.2", "1.3"],
+      "evidence_ids": ["scripts/check-coherence.mjs adr-count and adr-sequence rules", "npm run test:coherence output"]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No event construction, validation, emission, or ordering path changes; the record states a packaging policy and adjusts two verification-script constants.",
+    "authentication_or_authorization": "No authentication or authorization logic exists in or is touched by an ADR file and two literal constants in a coherence gate.",
+    "authority_provenance": "The authority branding registry in src/context.ts is untouched; no client claim or authoritative value changes representation.",
+    "concurrency": "No asynchronous, scheduling, or shared-state code changes; both touched files are read at build or verification time only.",
+    "confidentiality": "No data is read, transformed, stored, or transmitted; the ADR records a decision and cites already-public archived evidence.",
+    "cryptography": "No cryptographic primitive, key, hash, or signature path is introduced or modified by this decision record.",
+    "error_disclosure": "No error construction or message path changes; the coherence gate's failure text remains bounded to rule identifiers.",
+    "external_security_integration": "No SIEM, collector, exporter, or external security system is added; the authorization boundary is unchanged.",
+    "fail_posture": "The coherence gate keeps failing closed on an ADR count or sequence mismatch; the constant bump preserves exact-match semantics.",
+    "lifecycle": "No SDK lifecycle state, operation handle, or shutdown path changes; the record adds no runtime behavior at all.",
+    "mutation_ownership": "No ownership of any mutable structure moves; the ADR is a new immutable document and the gate edit replaces two literals.",
+    "privacy_transformation": "No field policy, redaction, or prohibited-data scanning behavior changes; no personal data path exists in either file.",
+    "resource_retention": "No buffer, queue, cache, or retention window is introduced; neither file allocates at SDK runtime.",
+    "retry_or_redelivery": "No delivery, retry, or redelivery semantics change; the sink interface and its in-flight tracking are untouched.",
+    "trust_boundary": "No runtime code, dependency surface, or public API changes; the record restates the existing zero-runtime-dependency trust boundary and the S-6 defect it was reconciled against."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "ccc4b1495eb21fc42dac30a37c07bed8702c5ba3"
+  },
+  "verification_task_ids": ["1.3", "1.4", "1.5"]
+}
