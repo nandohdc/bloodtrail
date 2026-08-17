@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.1",
+  "change_id": "bundle-validator-runtime-helpers",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The packed artifact must be importable with production-only dependencies, and source-workspace tests are insufficient proof.",
+    "The bundled validator must preserve the exact validation semantics of the pinned ajv and ajv-formats versions; bundling must not weaken timestamp or URI validation.",
+    "Bundled third-party code requires recorded MIT attribution in the artifact and in DEPENDENCIES.md.",
+    "The generator must fail closed: any unrecognized require target in the emitted code must abort generation rather than ship a broken artifact."
+  ],
+  "applicability": {
+    "triggers_matched": ["canonical_capability_requirement", "security_sensitive_behavior"],
+    "material_capability_modification": true,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/scripts/generate-contract.mjs",
+    "packages/security-audit-sdk-core/vendor/bundled-validator-runtime.mjs",
+    "packages/security-audit-sdk-core/vendor/bundled-validator-formats.mjs",
+    "packages/security-audit-sdk-core/src/generated/schema-validator.generated.cjs",
+    "packages/security-audit-sdk-core/tests/verification/bundled-formats-parity.test.mjs",
+    "packages/security-audit-sdk-core/tests/verification/packed-consumer-closure.test.mjs",
+    "packages/security-audit-sdk-core/DEPENDENCIES.md",
+    "packages/security-audit-sdk-core/verification-lifecycle.json"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-bundled-standalone-validator",
+      "kind": "direct_implementation",
+      "summary": "Post-process the standalone CJS output to replace the three require expressions with bundled definitions inlined as source text from vendored repo modules, add an MIT attribution header, and fail generation on any remaining require. Preserves full format semantics; zero runtime dependencies.",
+      "forces_addressed": [
+        "The packed artifact must be importable with production-only dependencies, and source-workspace tests are insufficient proof.",
+        "The bundled validator must preserve the exact validation semantics of the pinned ajv and ajv-formats versions; bundling must not weaken timestamp or URI validation.",
+        "Bundled third-party code requires recorded MIT attribution in the artifact and in DEPENDENCIES.md.",
+        "The generator must fail closed: any unrecognized require target in the emitted code must abort generation rather than ship a broken artifact."
+      ]
+    },
+    {
+      "id": "approach-declared-runtime-dependencies",
+      "kind": "alternative",
+      "summary": "Declare ajv and ajv-formats as real runtime dependencies so the packed artifact resolves its requires at install time.",
+      "forces_addressed": [
+        "The packed artifact must be importable with production-only dependencies, and source-workspace tests are insufficient proof."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-bundled-standalone-validator",
+  "rejected_alternative_ids": ["approach-declared-runtime-dependencies"],
+  "rejection_reasons": {
+    "approach-declared-runtime-dependencies": {
+      "forces": [
+        "The packed artifact must be importable with production-only dependencies, and source-workspace tests are insufficient proof."
+      ],
+      "reason": "Recorded and rejected by the owner decision in ADR-SDK-011 (#67): declaring runtime dependencies retires the zero-runtime-dependency identity enforced by ADR-SDK-001, DEPENDENCIES.md, and the dependency gate, widens the package trust boundary, and forces compatibility.json and gate rewrites. Bundling keeps the ratified zero-runtime-dependency claim true."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-self-contained-validator",
+    "implementation-format-semantics-preserved",
+    "implementation-bundled-attribution-recorded"
+  ],
+  "invariant_evidence": {
+    "implementation-self-contained-validator": {
+      "task_ids": ["2.2", "2.5"],
+      "evidence_ids": ["generated artifact contains no require( after bundling", "packed-consumer-closure.test.mjs"]
+    },
+    "implementation-format-semantics-preserved": {
+      "task_ids": ["2.1", "2.3"],
+      "evidence_ids": ["bundled-formats-parity.test.mjs matrix against ajv-formats 3.0.1 fullFormats and ajv 8.20.0 ucs2length"]
+    },
+    "implementation-bundled-attribution-recorded": {
+      "task_ids": ["2.2", "2.4"],
+      "evidence_ids": ["generated artifact header", "DEPENDENCIES.md bundled-code section"]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "3003e73663daf0c8392063488b4b59826e9daf9c"
+  },
+  "verification_task_ids": ["2.5", "2.6", "2.7"]
+}
