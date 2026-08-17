@@ -31,7 +31,8 @@
     ".github/PULL_REQUEST_TEMPLATE.md",
     "CONTRIBUTING.md",
     "packages/security-audit-sdk-core/verification-lifecycle.json",
-    "packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs"
+    "packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs",
+    "packages/security-audit-sdk-core/tests/verification/mutations.test.mjs"
   ],
   "candidate_approaches": [
     {
