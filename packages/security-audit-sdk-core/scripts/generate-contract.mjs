@@ -332,7 +332,7 @@ function declaredNames(source) {
 function bundleValidatorRuntime(code, vendored) {
   assert(code.startsWith(STRICT_DIRECTIVE), "generated validator does not open with the strict-mode directive");
   for (const name of declaredNames(vendored)) {
-    assert(!new RegExp(`(?:const|let|var|function)\\s+${name}\\b`).test(code), `bundled name ${name} collides with generated code`);
+    assert(!new RegExp(String.raw`(?:const|let|var|function)\s+${name}\b`).test(code), `bundled name ${name} collides with generated code`);
   }
   let bundled = code.slice(STRICT_DIRECTIVE.length);
   for (const [pattern, replacement] of REPLACEMENTS) {
