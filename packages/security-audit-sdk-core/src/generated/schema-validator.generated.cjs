@@ -24,16 +24,16 @@ function ucs2length(str) {
     while (pos < len) {
         length++;
         value = str.charCodeAt(pos++);
-        if (value >= 0xd800) {
-            if (value <= 0xdbff) {
-                if (pos < len) {
-                    // high surrogate, and there is a next character
-                    value = str.charCodeAt(pos);
-                    if ((value & 0xfc00) === 0xdc00)
-                        pos++; // low surrogate
-                }
-            }
-        }
+        if (value < 0xd800)
+            continue;
+        if (value > 0xdbff)
+            continue;
+        if (pos >= len)
+            continue;
+        // high surrogate, and there is a next character
+        value = str.charCodeAt(pos);
+        if ((value & 0xfc00) === 0xdc00)
+            pos++; // low surrogate
     }
     return length;
 }
@@ -106,21 +106,24 @@ function plainSecond(hr, min, sec) {
         return false;
     return sec < 60;
 }
+function leapSecondMinute(utcMin, sec) {
+    if (utcMin === 59)
+        return sec < 61;
+    if (utcMin !== -1)
+        return false;
+    return sec < 61;
+}
 function leapSecond(clock, offset) {
     // leap second
     const utcMin = clock.min - offset.min * offset.sign;
     let utcHr = clock.hr - offset.hr * offset.sign;
     if (utcMin < 0)
         utcHr -= 1;
-    if (utcHr !== 23) {
-        if (utcHr !== -1)
-            return false;
-    }
-    if (utcMin !== 59) {
-        if (utcMin !== -1)
-            return false;
-    }
-    return clock.sec < 61;
+    if (utcHr === 23)
+        return leapSecondMinute(utcMin, clock.sec);
+    if (utcHr !== -1)
+        return false;
+    return leapSecondMinute(utcMin, clock.sec);
 }
 function getTime(strictTimeZone) {
     return function time(str) {
