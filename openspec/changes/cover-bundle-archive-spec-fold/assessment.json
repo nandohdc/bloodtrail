@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.1",
+  "change_id": "cover-bundle-archive-spec-fold",
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "The spec fold of an archived change is a governed path edit that requires an active change declaring the same capability, and no such active change exists."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "full_trigger_absence_proof": "No public API, integration, lifecycle, concurrency, persistence, or security-sensitive runtime behavior changes; no governance-core path is touched; no canonical capability requirement is modified — the change only holds the capability declaration open so the sibling archive can fold its spec delta.",
+    "material_capability_modification": false,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [],
+  "candidate_approaches": [
+    {
+      "id": "approach-keeper",
+      "kind": "direct_implementation",
+      "summary": "Hold the security-audit-sdk-core capability declaration active in a doc-only change until the bundle-validator-runtime-helpers archive folds its spec delta, then archive this change as a pure relocation.",
+      "forces_addressed": [
+        "The spec fold of an archived change is a governed path edit that requires an active change declaring the same capability, and no such active change exists."
+      ]
+    },
+    {
+      "id": "approach-checker-change",
+      "kind": "alternative",
+      "summary": "Amend the governance perimeter to grant relocated changes canonical-spec coverage during their archive.",
+      "forces_addressed": [
+        "The spec fold of an archived change is a governed path edit that requires an active change declaring the same capability, and no such active change exists."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-keeper",
+  "rejected_alternative_ids": ["approach-checker-change"],
+  "rejection_reasons": {
+    "approach-checker-change": {
+      "forces": [
+        "The spec fold of an archived change is a governed path edit that requires an active change declaring the same capability, and no such active change exists."
+      ],
+      "reason": "Weakening the perimeter to admit one archive trades a regression-pinned rule — post-relocation canonical-spec edits must require a new active change — for convenience. A doc-only keeper change achieves coverage without touching governance machinery, and is archived as a pure relocation immediately afterwards."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": ["implementation-capability-declaration-held"],
+  "invariant_evidence": {
+    "implementation-capability-declaration-held": {
+      "task_ids": ["1.2"],
+      "evidence_ids": [
+        "assessment.json applicability.capabilities contains security-audit-sdk-core while the change is active",
+        "design-pattern governance final phase green at the bundle-validator-runtime-helpers archive head"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No event construction, validation, emission, or ordering path changes; the change adds only planning documents.",
+    "authentication_or_authorization": "No authentication or authorization logic is touched by an OpenSpec proposal directory.",
+    "authority_provenance": "The authority branding registry is untouched; no authoritative value changes representation.",
+    "concurrency": "No asynchronous, scheduling, or shared-state code changes.",
+    "confidentiality": "No data is read, transformed, stored, or transmitted.",
+    "cryptography": "No cryptographic primitive, key, hash, or signature path is introduced or modified.",
+    "error_disclosure": "No error construction or message path changes.",
+    "external_security_integration": "No SIEM, collector, exporter, or external security system is added; the authorization boundary is unchanged.",
+    "fail_posture": "No gate or checker behavior changes; all enforcement stays fail-closed.",
+    "lifecycle": "No SDK lifecycle state, operation handle, or shutdown path changes.",
+    "mutation_ownership": "No ownership of any mutable structure moves.",
+    "privacy_transformation": "No field policy, redaction, or prohibited-data scanning behavior changes.",
+    "resource_retention": "No buffer, queue, cache, or retention window is introduced.",
+    "retry_or_redelivery": "No delivery, retry, or redelivery semantics change.",
+    "trust_boundary": "No runtime code, dependency surface, or public API changes."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "6056ded9bfcf6e945ae21491a5cb71ac85c3e622"
+  },
+  "verification_task_ids": ["1.1"]
+}
