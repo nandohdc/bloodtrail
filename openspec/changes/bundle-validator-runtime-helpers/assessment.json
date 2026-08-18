@@ -22,7 +22,8 @@
     "packages/security-audit-sdk-core/tests/verification/bundled-formats-parity.test.mjs",
     "packages/security-audit-sdk-core/tests/verification/packed-consumer-closure.test.mjs",
     "packages/security-audit-sdk-core/DEPENDENCIES.md",
-    "packages/security-audit-sdk-core/verification-lifecycle.json"
+    "packages/security-audit-sdk-core/verification-lifecycle.json",
+    "packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs"
   ],
   "candidate_approaches": [
     {
