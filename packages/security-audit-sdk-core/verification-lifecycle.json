@@ -540,6 +540,86 @@
         "role": "Project owner and technical decision-maker",
         "signedAt": "2026-08-16"
       }
+    },
+    {
+      "change": "bundle-validator-runtime-helpers",
+      "policy": "Post-merge signing, round T2/S2, owner-approved. The owner merged PR #171 himself (identity-preserving merge 1786eeb7edb5fd7f3efbe6a275485a59e8d6afb6, parents 9f9bbcad3cef9177fd2942f8af22ec04db9a726d + fbfa2ae56109f3fccbd5f5d570477c2f81dba0d5) before any S. A first signing bound the merged tip fbfa2ae (owner-approved), but a record-only child cannot land there: the governance-history mutation suite's independent inventory enumerates the record set and only changes through an explicit, reviewed technical commit. T2 (383f326ad8c684d984a531079bd4ed09aa4fb564) registers the inventory (EXPECTED_RECORD_IDS and MINIMUM_REVIEWED_PATHS for this change) and extends the assessment's owned paths with the mutation-suite file, so this record binds exact T2. The earlier approval of fbfa2ae remains recorded as historical evidence; T2 is the binding reviewed commit because the inventory registration is part of the reviewed scope. The reviewed scope is cumulative: P 60492fe5fb12aa76eb77f1bbe9e853e03e3d67d4, A ffc374ac61c25a1bd153de444a6de8bed61771dd, T 9b336582b2a8b436dc497b9a0726c4de593c1b01, the branch merge 46a9b2b764f209bf2930717756ea054b584ea09f (main had moved with #67's archive), the four gate-repair commits f96cf102ac2c29ffcd17cd0363d3ed7154643a4a (vendor restructure), f3f0c5eda8348bef6e3c34f3672d54fe12ab2e6a (String.raw), 201829c1aa200ad0b24259c7bef1eceabf5c1918 (branch flattening), fbfa2ae56109f3fccbd5f5d570477c2f81dba0d5 (unused import), and T2. The exact merged tip fbfa2ae carries green CI: codescene delta, sonar, sdk, contract, ci, conventional-commits, design-pattern-governance, and DeepScan. At exact T2 the governance final phase is green; the SDK chain is red only by construction at the mutation-suite inventory assertion (the inventory expects the record it registers) and turns green when this record lands. reviewedContent binds the reviewed subtrees of the candidate commit (tree objects only); DEPENDENCIES.md sits at the package root beside this record and cannot receive a non-self-referential tree entry, so the exact technical commit remains its binding — the limitation is stated, not claimed away. The record-only direct child of T2 changes only this file, which the freshness scan permits; it introduces no staleness and produces a green final phase. The record grants storing this record and, after an identity-preserving merge of exact T2 and S2 onto the protected mainline, the governed archive movement (R24); publication, deployment, collection, real-user processing, framework integration, and delivery infrastructure remain withheld.",
+      "reviewedCommit": "383f326ad8c684d984a531079bd4ed09aa4fb564",
+      "reviewedContent": {
+        "kind": "tree",
+        "candidateRoot": "2ef0247b567da36386ccbc01340bb39a921c825b",
+        "entries": [
+          {
+            "path": "packages/security-audit-sdk-core/scripts",
+            "object": "f8eda05618a30e450384e04ea3e24a69871aa5a4"
+          },
+          {
+            "path": "packages/security-audit-sdk-core/vendor",
+            "object": "c8278bac9c94967ddee1efbcf2544a0c40230d10"
+          },
+          {
+            "path": "packages/security-audit-sdk-core/src/generated",
+            "object": "d9ae433b3e0546cdff714b470c8b6b55dddde23d"
+          },
+          {
+            "path": "packages/security-audit-sdk-core/tests/verification",
+            "object": "2f4a2df524ec6f639f99bcd280c602e4512e6f72"
+          },
+          {
+            "path": "openspec/changes/bundle-validator-runtime-helpers",
+            "object": "a62b6ee578ad3920296ed69ac24692bc0a169acb"
+          }
+        ]
+      },
+      "governedCommits": [
+        "60492fe5fb12aa76eb77f1bbe9e853e03e3d67d4",
+        "ffc374ac61c25a1bd153de444a6de8bed61771dd",
+        "9b336582b2a8b436dc497b9a0726c4de593c1b01",
+        "46a9b2b764f209bf2930717756ea054b584ea09f",
+        "f96cf102ac2c29ffcd17cd0363d3ed7154643a4a",
+        "f3f0c5eda8348bef6e3c34f3672d54fe12ab2e6a",
+        "201829c1aa200ad0b24259c7bef1eceabf5c1918",
+        "fbfa2ae56109f3fccbd5f5d570477c2f81dba0d5",
+        "383f326ad8c684d984a531079bd4ed09aa4fb564"
+      ],
+      "boundCommits": [
+        "383f326ad8c684d984a531079bd4ed09aa4fb564"
+      ],
+      "mergeCommits": [
+        {
+          "commit": "46a9b2b764f209bf2930717756ea054b584ea09f",
+          "expectedParents": 2
+        },
+        {
+          "commit": "1786eeb7edb5fd7f3efbe6a275485a59e8d6afb6",
+          "expectedParents": 2
+        }
+      ],
+      "authorizations": {
+        "granted": [
+          "store-governance-record-s-for-exact-technical-commit",
+          "governed-archive-movement-after-identity-preserving-merge"
+        ],
+        "withheld": [
+          "package-publication",
+          "production-deployment",
+          "production-collection",
+          "real-user-processing",
+          "framework-integration",
+          "delivery-infrastructure"
+        ]
+      },
+      "assuranceLimitations": [
+        "Project-owner/implementer governance; not independent security, privacy, legal, or technical assurance.",
+        "AI-produced analysis informed the implementation and is not review, approval, or assurance."
+      ],
+      "signed": true,
+      "signatureDecision": "Owner decision given 2026-08-17 in direct reply to the exact-commit request: 'approve 383f326ad8c684d984a531079bd4ed09aa4fb564'. The request named exact T2 (the inventory-registration technical commit: EXPECTED_RECORD_IDS and MINIMUM_REVIEWED_PATHS for this change plus the assessment owned-path extension) as the reviewed commit for the post-merge signed record, after the owner merged PR #171 himself (identity-preserving merge 1786eeb7) ahead of the S step and separately approved the merged tip fbfa2ae as historical evidence. The decision therefore authorizes the governance-record-only child S2 touching only packages/security-audit-sdk-core/verification-lifecycle.json and binding exact T2, with the archive movement authorized after an identity-preserving merge of exact T2 and S2 onto the protected mainline. It does not authorize package publication, production deployment, production collection, real-user processing, framework integration, or delivery infrastructure.",
+      "reviewer": {
+        "name": "Fernando Homem da Costa (nandohdc)",
+        "role": "Project owner and technical decision-maker",
+        "signedAt": "2026-08-17"
+      }
     }
   ]
 }

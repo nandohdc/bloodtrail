@@ -43,11 +43,19 @@ const OTHER_CANDIDATE_ROOTS = OTHER_RECORDS
 // result. This inventory is what the mutation suite independently requires to
 // exist, and it only changes through an explicit, reviewed edit to this file.
 const EXPECTED_RECORD_IDS = Object.freeze([
+  "bundle-validator-runtime-helpers",
   "implement-security-audit-sdk-core",
   "right-size-change-governance",
   "establish-design-pattern-governance",
 ]);
 const MINIMUM_REVIEWED_PATHS = Object.freeze({
+  "bundle-validator-runtime-helpers": Object.freeze([
+    "packages/security-audit-sdk-core/scripts",
+    "packages/security-audit-sdk-core/vendor",
+    "packages/security-audit-sdk-core/src/generated",
+    "packages/security-audit-sdk-core/tests/verification",
+    "openspec/changes/bundle-validator-runtime-helpers",
+  ]),
   "right-size-change-governance": Object.freeze([
     "packages/security-audit-sdk-core/scripts",
     "packages/security-audit-sdk-core/tests/verification",
