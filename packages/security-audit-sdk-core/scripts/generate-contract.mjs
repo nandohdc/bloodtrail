@@ -28,6 +28,27 @@ const provenancePath = resolve(packageRoot, "contract-provenance.json");
 const generatedRoot = resolve(packageRoot, "src/generated");
 const check = process.argv.includes("--check");
 
+// Bundling machinery for the self-contained validator (ADR-SDK-011). Declared
+// above the first top-level generate call below: a const is not initialised
+// until its own line runs, so these sat in the temporal dead zone at line 61.
+const vendorRoot = resolve(packageRoot, "vendor");
+const EXPORT_STATEMENT = /^export \{[^}]*\};$/m;
+const TOP_LEVEL_DECLARATION = /^(?:const|function)\s+([A-Za-z_$][\w$]*)/gm;
+const STRICT_DIRECTIVE = '"use strict";';
+
+const REPLACEMENTS = Object.freeze([
+  ['require("ajv/dist/runtime/ucs2length").default', "bundledUcs2length"],
+  ['require("ajv-formats/dist/formats").fullFormats["date-time"]', "{ validate: bundledDateTimeValidate }"],
+  ['require("ajv-formats/dist/formats").fullFormats.uri', "bundledUriValidate"],
+]);
+
+const ATTRIBUTION_HEADER = [
+  "/* Bundled runtime code, MIT licensed, inlined by scripts/generate-contract.mjs per ADR-SDK-011:",
+  " * - ajv 8.20.0 runtime helper ucs2length (https://github.com/ajv-validator/ajv)",
+  " * - ajv-formats 3.0.1 date-time and uri validators (https://github.com/ajv-validator/ajv-formats)",
+  " * Sources: vendor/bundled-validator-runtime.mjs, vendor/bundled-validator-formats.mjs. See DEPENDENCIES.md. */",
+].join("\n");
+
 const [source, schema, catalogArtifact, fieldPolicy, registriesArtifact, provenance] = await Promise.all([
   readJson(sourcePath),
   readJson(schemaPath),
@@ -296,11 +317,40 @@ function toPascalCase(value) {
   }).join("");
 }
 
+async function readVendoredSource(name) {
+  const text = await readFile(resolve(vendorRoot, name), "utf8");
+  assert(EXPORT_STATEMENT.test(text), `${name} must carry exactly one export statement`);
+  const body = text.replace(EXPORT_STATEMENT, "").trimEnd();
+  assert(!/\b(?:import|require)\s*[({]/.test(body), `${name} must not reference external modules`);
+  return body;
+}
+
+function declaredNames(source) {
+  return [...source.matchAll(TOP_LEVEL_DECLARATION)].map((match) => match[1]);
+}
+
+function bundleValidatorRuntime(code, vendored) {
+  assert(code.startsWith(STRICT_DIRECTIVE), "generated validator does not open with the strict-mode directive");
+  for (const name of declaredNames(vendored)) {
+    assert(!new RegExp(String.raw`(?:const|let|var|function)\s+${name}\b`).test(code), `bundled name ${name} collides with generated code`);
+  }
+  let bundled = code.slice(STRICT_DIRECTIVE.length);
+  for (const [pattern, replacement] of REPLACEMENTS) {
+    assert(bundled.includes(pattern), `expected generated validator to reference ${pattern}`);
+    bundled = bundled.replaceAll(pattern, replacement);
+  }
+  assert(!/require\s*\(/.test(bundled), "generated validator is not self-contained");
+  return [STRICT_DIRECTIVE, ATTRIBUTION_HEADER, vendored, bundled.trimStart()].join("\n");
+}
+
 async function emitStandaloneValidator(schema) {
   const ajv = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true, code: { source: true }, validateFormats: true });
   addFormats(ajv);
   const validate = ajv.compile(schema);
-  return standaloneCode(ajv, validate);
+  const runtimeBody = await readVendoredSource("bundled-validator-runtime.mjs");
+  const formatsBody = await readVendoredSource("bundled-validator-formats.mjs");
+  const vendored = `${runtimeBody}\n${formatsBody}`;
+  return bundleValidatorRuntime(standaloneCode(ajv, validate), vendored);
 }
 
 function stable(value) {
