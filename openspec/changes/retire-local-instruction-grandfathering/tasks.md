@@ -1,7 +1,7 @@
 ## 1. Retirement
 
 - [x] 1.1 Record the retirement basis and the reproduced failure. — `proposal.md` records both: the disposable-clone dry run at `e176bce9164addbecac863e1491d46e50f6b58bd` reproduced 10 diagnostics (five `grandfathered-scope-expanded` and five `openspec-association-unrelated`, one of each per file under the correction's dated archive directory), and the retirement basis is quoted from `grandfathering_notes.sdk_remediation`.
-- [ ] 1.2 Set `grandfathering` to `[]` in `openspec/governance/design-pattern-policy.json`, retiring the `correct-local-instruction-verification-premise` entry.
+- [x] 1.2 Set `grandfathering` to `[]` in `openspec/governance/design-pattern-policy.json`, retiring the `correct-local-instruction-verification-premise` entry. — done in this commit; the entry's `bounded_scope` prose is preserved by quotation in the correction's `archive-evidence.md` at its archive commit.
 
 ## 2. Landing (human-owned)
 

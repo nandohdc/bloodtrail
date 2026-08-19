@@ -278,22 +278,7 @@
       "grandfathered_entries"
     ]
   },
-  "grandfathering": [
-    {
-      "change": "correct-local-instruction-verification-premise",
-      "class": "mainline_present",
-      "proposal_path": "openspec/changes/correct-local-instruction-verification-premise/proposal.md",
-      "proposal_blob": "1c452d4570295f6193309e6d66679dda1b53999b",
-      "proposal_baseline_commit": "9e356f3",
-      "bounded_paths": [
-        "openspec/changes/correct-local-instruction-verification-premise/",
-        "packages/security-audit-sdk-core/scripts/",
-        "packages/security-audit-sdk-core/tests/verification/",
-        "packages/security-audit-sdk-core/verification-lifecycle.json"
-      ],
-      "bounded_scope": "The local-instruction verification premise correction as recorded in its proposal at proposal_blob. Any new public API, integration, persistence, lifecycle, concurrency, security boundary, governed capability, or path outside bounded_paths requires normal full governance."
-    }
-  ],
+  "grandfathering": [],
   "grandfathering_notes": {
     "sdk_remediation": "remediate-security-audit-sdk-adversarial-review archived on 2026-08-11 and is no longer an active change, so it needs no grandfathering entry. The preferred SDK-first rollout order is therefore already satisfied, and its classification comes from actual mainline tree state rather than asserted provenance.",
     "external_in_flight": "Retained for any change that is still only on a remote branch at activation. None currently applies."
