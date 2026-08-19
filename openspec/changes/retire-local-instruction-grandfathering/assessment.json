@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.1",
+  "change_id": "retire-local-instruction-grandfathering",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Archiving the first grandfathered change fails closed: the dated archive directory is outside the entry's bounded_paths (grandfathered-scope-expanded), and with no assessment the change declares no capabilities, so even its own relocation lacks coverage (openspec-association-unrelated).",
+    "The entry cannot be widened and the correction cannot be given an assessment without editing this governance-core policy, and an honest assessment for a spec-carrying change declares canonical_capability_requirement, which the provenance schema lists under scope_expansion_triggers.",
+    "The policy's own note records the precedented basis: once a change is archived and no longer active, it needs no grandfathering entry.",
+    "The policy file is a governance-core artifact, so the change that edits it must carry a full assessment declaring governance_core_path, and must own the dated archive directory its edit enables."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/governance/design-pattern-policy.json",
+    "openspec/changes/archive/2026-08-19-correct-local-instruction-verification-premise/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-retire-entry",
+      "kind": "direct_implementation",
+      "summary": "Retire the grandfathering entry (set the array to []) under this dedicated change, which owns the policy file and the correction's dated archive directory until the archive lands, then archive the correction, the keeper, and this change in sequence.",
+      "forces_addressed": [
+        "Archiving the first grandfathered change fails closed: the dated archive directory is outside the entry's bounded_paths (grandfathered-scope-expanded), and with no assessment the change declares no capabilities, so even its own relocation lacks coverage (openspec-association-unrelated).",
+        "The policy's own note records the precedented basis: once a change is archived and no longer active, it needs no grandfathering entry.",
+        "The policy file is a governance-core artifact, so the change that edits it must carry a full assessment declaring governance_core_path, and must own the dated archive directory its edit enables."
+      ]
+    },
+    {
+      "id": "approach-widen-bounded-paths",
+      "kind": "alternative",
+      "summary": "Keep the entry and widen its bounded_paths to also cover the correction's dated archive directory.",
+      "forces_addressed": [
+        "Archiving the first grandfathered change fails closed: the dated archive directory is outside the entry's bounded_paths (grandfathered-scope-expanded), and with no assessment the change declares no capabilities, so even its own relocation lacks coverage (openspec-association-unrelated)."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-retire-entry",
+  "rejected_alternative_ids": [
+    "approach-widen-bounded-paths"
+  ],
+  "rejection_reasons": {
+    "approach-widen-bounded-paths": {
+      "forces": [
+        "The entry cannot be widened and the correction cannot be given an assessment without editing this governance-core policy, and an honest assessment for a spec-carrying change declares canonical_capability_requirement, which the provenance schema lists under scope_expansion_triggers.",
+        "The policy's own note records the precedented basis: once a change is archived and no longer active, it needs no grandfathering entry."
+      ],
+      "reason": "bounded_paths records the scope the grandfathered change was permitted to land with; widening it to cover a future archive destination falsifies that provenance record and permanently extends an exemption beyond what landed. Widening also leaves the association failure unsolved: a change with no assessment still declares no capabilities, so its relocation remains uncovered. The policy's own note records retirement as the correct end state for an archived change."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-grandfathering-entry-retired"
+  ],
+  "invariant_evidence": {
+    "implementation-grandfathering-entry-retired": {
+      "task_ids": [
+        "1.2",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "openspec/governance/design-pattern-policy.json carries grandfathering: [] after task 1.2",
+        "design-pattern governance final phase passes with the correction's archive committed, where it fails closed with grandfathered-scope-expanded and openspec-association-unrelated without this change"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No event construction, validation, emission, or ordering path changes; this change edits one governance provenance array and adds planning documents only.",
+    "authentication_or_authorization": "No authentication or authorization logic is touched; the policy edit removes an exemption entry and grants no new authority.",
+    "authority_provenance": "The retired entry's bounded_scope prose is quoted into the correction's archive-evidence.md before removal, so the provenance reasoning survives in the archive; no authoritative value changes representation.",
+    "concurrency": "No asynchronous, scheduling, or shared-state code changes.",
+    "confidentiality": "No data is read, transformed, stored, or transmitted.",
+    "cryptography": "No cryptographic primitive, key, hash, or signature path is introduced or modified; blob pins are compared, not recomputed.",
+    "error_disclosure": "No error construction or message path changes.",
+    "external_security_integration": "No SIEM, collector, exporter, or external security system is added; the authorization boundary is unchanged.",
+    "fail_posture": "No gate or checker behavior changes; all enforcement stays fail-closed. Retiring the entry removes a scope exemption rather than adding one, and every check that ran with the entry still runs without it.",
+    "lifecycle": "No SDK lifecycle state, operation handle, or shutdown path changes.",
+    "mutation_ownership": "No ownership of any mutable runtime structure moves; the only ownership change is this change temporarily owning two governance paths in the perimeter record.",
+    "privacy_transformation": "No field policy, redaction, or prohibited-data scanning behavior changes.",
+    "resource_retention": "No buffer, queue, cache, or retention window is introduced.",
+    "retry_or_redelivery": "No delivery, retry, or redelivery semantics change.",
+    "trust_boundary": "No runtime code, dependency surface, or public API changes; the edit is to a governance policy data file reviewed through the full-assessment path."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "e176bce9164addbecac863e1491d46e50f6b58bd"
+  },
+  "verification_task_ids": [
+    "1.2"
+  ]
+}
