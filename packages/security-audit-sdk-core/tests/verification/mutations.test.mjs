@@ -760,14 +760,6 @@ test("disposable commits use bounded identity and ignore ambient signing and hoo
   assert.equal(disposableGitEnvironment().GIT_CONFIG_SYSTEM, "/dev/null");
 });
 
-test("an ignored local CLAUDE.md is excluded by standard Git semantics", () => {
-  const root = caseRepository("ignored-instruction");
-  append(root, ".git/info/exclude", "\nCLAUDE.md\n");
-  write(root, "CLAUDE.md", "local ignored instructions\n");
-  const result = succeeds(root, "scripts/check-changed-paths.mjs", ["--mode", "active"]);
-  assert.doesNotMatch(result.stdout, /local-instruction-unrelated/);
-});
-
 function governedTaskIdsThrough(phase) {
   const index = taskGroups.findIndex((group) => group.phase === phase);
   assert.notEqual(index, -1, `unknown governed fixture phase ${phase}`);

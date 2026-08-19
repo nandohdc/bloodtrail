@@ -78,6 +78,26 @@ The second mutation is the one that matters most. Without it, a future change co
 suite by deleting the classification rule outright — the corrected control would still pass, because
 zero equals zero. This mirrors the discipline the sibling `M-VP-*` mutations already apply.
 
+**D5 — Land the controls in their own verification file.**
+
+`mutations.test.mjs` is an existing CodeScene hotspot. Adding the corrected control, its
+tracked-case counterpart, and two mutations to it declined the file's code health from 7.91 to 7.22
+on *Lines of Code in a Single File* and *Number of Functions in a Single Module* — a file-level
+finding about the host, not about the new code. The controls therefore live in
+`tests/verification/local-instruction-classification.test.mjs`, and `mutations.test.mjs` loses the
+eight lines the old control occupied.
+
+This follows the convention the directory already uses: `f07`/`f08`/`f10`/`f11-mutations`,
+`vp-reviewed-paths`, and `publication-path-mutations` are each a focused suite with its own small
+disposable-clone harness. The new file's harness is modelled on `vp-reviewed-paths.test.mjs`: it
+clones once into a control repository, clones per case from that, and runs the checker in its
+naturally resolved mode rather than restoring an active-change fixture, which these controls do not
+need.
+
+Alternative considered: split `mutations.test.mjs` itself. Rejected as disproportionate — it would
+move bytes across many controls unrelated to this change, for a finding that a 138-line focused file
+resolves outright.
+
 **D4 — Leave the classification rule untouched.**
 
 The policy is correct: a local instruction file genuinely is unrelated to the governed change
@@ -110,3 +130,35 @@ removes is not urgent: no live defect depends on it, and the present state, `CLA
 and git-ignored, is exactly what the existing control assumes.
 
 Rollback is a revert of the control change; nothing else depends on it.
+
+**Archive-time prerequisites, discovered while applying this change.** Two conditions must hold
+before task 6.4 can archive it, and neither is satisfied by the archive commit itself.
+
+*Spec-fold coverage.* Archiving folds this change's `## ADDED Requirements` delta into
+`openspec/specs/security-audit-sdk-core/spec.md`. The design-pattern governance perimeter grants a
+relocated change ownership of its active-dir and archive-dir prefixes only, and this change is
+grandfathered with no `assessment.json`, so it declares no capability and its `bounded_paths` stop
+short of `openspec/specs/`. The fold must therefore be owned by an *active* change declaring
+`security-audit-sdk-core`, exactly as
+`openspec/changes/archive/2026-08-18-cover-bundle-archive-spec-fold` established for
+`bundle-validator-runtime-helpers`. Archiving without that keeper fails closed with
+`openspec-association-unrelated`.
+
+The same perimeter rule applies to the *implementation* commit, not only the archive: the two control
+files are governed implementation paths and this change owns none of them. Both needs are met by one
+keeper, `cover-local-instruction-control-paths`, created alongside the implementation. It declares
+`security-audit-sdk-core`, names both control files in its `owned_paths`, and is intended to stay
+active until this change archives.
+
+*Fixture decoupling.* `tests/verification/mutations.test.mjs` uses this change's own active directory
+as the fixture for the `archive-movement-unrelated-deletion` control, and it is currently the only
+active change, so archiving it removes the fixture rather than merely moving it. The control must
+first be repointed or made self-sufficient in a separate change, as
+`e5b5814 fix(governance): decouple verification fixtures from the governance change lifecycle` did
+when `establish-design-pattern-governance` archived.
+
+Both are recorded here and in `tasks.md` rather than in `proposal.md`.
+`openspec/governance/design-pattern-policy.json` pins this change's grandfathering to the proposal's
+exact blob, and `openspec/scripts/design-pattern-governance/provenance.mjs` compares that pin against
+`refs/heads/main`, so editing the proposal would turn the required `design-pattern-governance` check
+red after merge, on this and every later pull request.
