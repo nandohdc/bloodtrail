@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.1",
+  "change_id": "self-sufficient-archive-movement-fixture",
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "The archive-movement-unrelated-deletion control borrows its fixture from whatever OpenSpec change is active, so archiving that change removes the fixture and breaks the verification suite.",
+    "The required codescene delta check applies file-level rules against origin/main, and mutations.test.mjs is already over those thresholds, so the control cannot grow in place.",
+    "The correction change that owns the control is grandfathered with a pinned proposal blob and cannot carry the decoupling; its task 6.6 requires a separate change."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "full_trigger_absence_proof": "No public API, event, dependency, transport, lifecycle, concurrency, or persistence surface changes; no governance-core path is touched; no canonical capability requirement is modified. The change relocates one verification control between test suites inside the SDK package and adds no production code, checker, policy, or diagnostic.",
+    "material_capability_modification": false,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/tests/verification/archive-movement-unrelated-change.test.mjs",
+    "packages/security-audit-sdk-core/tests/verification/mutations.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-self-seeding-fixture",
+      "kind": "direct_implementation",
+      "summary": "Relocate the control to a dedicated suite that seeds and commits its own unrelated active change inside the disposable clone, with a same-fixture null arm and a tracked-at-HEAD seed guard.",
+      "forces_addressed": [
+        "The archive-movement-unrelated-deletion control borrows its fixture from whatever OpenSpec change is active, so archiving that change removes the fixture and breaks the verification suite.",
+        "The required codescene delta check applies file-level rules against origin/main, and mutations.test.mjs is already over those thresholds, so the control cannot grow in place."
+      ]
+    },
+    {
+      "id": "approach-repoint-at-keeper",
+      "kind": "alternative",
+      "summary": "Repoint the control at the keeper change's active directory instead of the correction's.",
+      "forces_addressed": [
+        "The archive-movement-unrelated-deletion control borrows its fixture from whatever OpenSpec change is active, so archiving that change removes the fixture and breaks the verification suite."
+      ]
+    },
+    {
+      "id": "approach-grow-in-place",
+      "kind": "alternative",
+      "summary": "Keep the control inside mutations.test.mjs and add a seed helper plus a null arm to the existing file.",
+      "forces_addressed": [
+        "The required codescene delta check applies file-level rules against origin/main, and mutations.test.mjs is already over those thresholds, so the control cannot grow in place."
+      ]
+    },
+    {
+      "id": "approach-let-correction-decouple",
+      "kind": "alternative",
+      "summary": "Let the grandfathered correction change carry the decoupling itself in its own implementation.",
+      "forces_addressed": [
+        "The correction change that owns the control is grandfathered with a pinned proposal blob and cannot carry the decoupling; its task 6.6 requires a separate change."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-self-seeding-fixture",
+  "rejected_alternative_ids": [
+    "approach-repoint-at-keeper",
+    "approach-grow-in-place",
+    "approach-let-correction-decouple"
+  ],
+  "rejection_reasons": {
+    "approach-repoint-at-keeper": {
+      "forces": [
+        "The archive-movement-unrelated-deletion control borrows its fixture from whatever OpenSpec change is active, so archiving that change removes the fixture and breaks the verification suite."
+      ],
+      "reason": "The keeper archives immediately after the correction, so pointing the fixture at the keeper reproduces the same defect one lifecycle later: the control breaks again the moment the keeper's active directory leaves the clone. Only a fixture the suite creates itself is independent of the repository's change lifecycle."
+    },
+    "approach-grow-in-place": {
+      "forces": [
+        "The required codescene delta check applies file-level rules against origin/main, and mutations.test.mjs is already over those thresholds, so the control cannot grow in place."
+      ],
+      "reason": "The exact move failed before: adding roughly sixty-six lines and three helpers to mutations.test.mjs declined its code health 7.91 to 7.22 and failed the required codescene delta on the file-level rules for lines of code in a single file and functions in a single module, which compare the file against origin/main and cannot be cleared by tightening the new functions."
+    },
+    "approach-let-correction-decouple": {
+      "forces": [
+        "The correction change that owns the control is grandfathered with a pinned proposal blob and cannot carry the decoupling; its task 6.6 requires a separate change."
+      ],
+      "reason": "The correction's grandfathered bounded scope does not reach a new verification suite, and its own task 6.6 requires the decoupling to happen in a separate change first. Carrying it inside the correction would expand a grandfathered change's scope from within, which the perimeter rejects by design."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": ["implementation-unrelated-deletion-fixture-self-seeded"],
+  "invariant_evidence": {
+    "implementation-unrelated-deletion-fixture-self-seeded": {
+      "task_ids": ["2.1", "3.1"],
+      "evidence_ids": [
+        "the new suite seeds and commits its own synthetic unrelated active change and guards that it is tracked at HEAD",
+        "the null arm on the same fixture reports no unrelated-change deletion while the deletion arm reports archive-movement-unrelated-change-deletion, attributing the diagnostic to the deletion"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No event construction, validation, emission, or ordering path changes; the change moves a verification control between test suites.",
+    "authentication_or_authorization": "No authentication or authorization logic is introduced or touched.",
+    "authority_provenance": "The authority branding registry is untouched; no authoritative value changes representation.",
+    "concurrency": "No asynchronous, scheduling, or shared-state code changes; the suite writes only inside its own mkdtemp roots.",
+    "confidentiality": "No data is read, transformed, stored, or transmitted.",
+    "cryptography": "No cryptographic primitive, key, hash, or signature path is introduced or modified.",
+    "error_disclosure": "No error construction or message path changes.",
+    "external_security_integration": "No SIEM, collector, exporter, or external security system is added; the authorization boundary is unchanged.",
+    "fail_posture": "No gate or checker behavior changes; all enforcement stays fail-closed. The relocated control keeps its exact checker invocation.",
+    "lifecycle": "No SDK lifecycle state, operation handle, or shutdown path changes.",
+    "mutation_ownership": "No ownership of any mutable structure moves; the fixture is created by the suite and deleted inside its disposable clone.",
+    "privacy_transformation": "No field policy, redaction, or prohibited-data scanning behavior changes.",
+    "resource_retention": "No buffer, queue, cache, or retention window is introduced; suites clean up their mkdtemp roots.",
+    "retry_or_redelivery": "No delivery, retry, or redelivery semantics change.",
+    "trust_boundary": "No runtime code, dependency surface, or public API changes."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "2b9b2297e3665b6f513eb9f85b522f556e61f24b"
+  },
+  "verification_task_ids": ["3.1"]
+}
