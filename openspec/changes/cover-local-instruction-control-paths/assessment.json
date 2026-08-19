@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.1",
+  "change_id": "cover-local-instruction-control-paths",
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "A governed implementation path must be owned by an active OpenSpec change declaring the capability, and the change that specifies this work is grandfathered and carries no assessment.",
+    "That change cannot supply its own assessment: its capability delta forces a scope-expansion trigger, and its proposal blob is pinned by the same grandfathering entry."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "full_trigger_absence_proof": "No public API, integration, lifecycle, concurrency, or persistence behavior changes; no governance-core path is touched; no canonical capability requirement is modified by this change, which only holds a capability declaration open so the sibling correction's verification-control paths are owned while it lands.",
+    "material_capability_modification": false,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/tests/verification/local-instruction-classification.test.mjs",
+    "packages/security-audit-sdk-core/tests/verification/mutations.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-keeper",
+      "kind": "direct_implementation",
+      "summary": "Hold an active capability declaration owning the two verification-control paths while the grandfathered correction lands and archives, then archive this change as a pure relocation.",
+      "forces_addressed": [
+        "A governed implementation path must be owned by an active OpenSpec change declaring the capability, and the change that specifies this work is grandfathered and carries no assessment."
+      ]
+    },
+    {
+      "id": "approach-degrandfather",
+      "kind": "alternative",
+      "summary": "Remove the correction's grandfathering entry from the provenance record and give that change a full assessment declaring its canonical capability requirement.",
+      "forces_addressed": [
+        "That change cannot supply its own assessment: its capability delta forces a scope-expansion trigger, and its proposal blob is pinned by the same grandfathering entry."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-keeper",
+  "rejected_alternative_ids": ["approach-degrandfather"],
+  "rejection_reasons": {
+    "approach-degrandfather": {
+      "forces": [
+        "That change cannot supply its own assessment: its capability delta forces a scope-expansion trigger, and its proposal blob is pinned by the same grandfathering entry."
+      ],
+      "reason": "Editing the provenance record that grandfathers a change, inside that change's own pull request, makes the change the author of its own governance basis, and the perimeter treats governance-core edits as requiring separate authorization for exactly that reason. A keeper change achieves the same ownership without touching a governance-core artifact, and is archived immediately afterwards."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": ["implementation-control-path-ownership-held"],
+  "invariant_evidence": {
+    "implementation-control-path-ownership-held": {
+      "task_ids": ["1.1", "1.2"],
+      "evidence_ids": [
+        "applicability.capabilities declares security-audit-sdk-core and owned_paths names both control files while this change is active",
+        "design-pattern governance final phase passes with the correction applied, where it fails closed with openspec-association-unrelated without this change"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No event construction, validation, emission, or ordering path changes; this change adds planning documents only.",
+    "authentication_or_authorization": "No authentication or authorization logic is touched by an OpenSpec change directory.",
+    "authority_provenance": "The authority branding registry is untouched; no authoritative value changes representation.",
+    "concurrency": "No asynchronous, scheduling, or shared-state code changes.",
+    "confidentiality": "No data is read, transformed, stored, or transmitted.",
+    "cryptography": "No cryptographic primitive, key, hash, or signature path is introduced or modified.",
+    "error_disclosure": "No error construction or message path changes.",
+    "external_security_integration": "No SIEM, collector, exporter, or external security system is added; the authorization boundary is unchanged.",
+    "fail_posture": "No gate or checker behavior changes; all enforcement stays fail-closed. This change adds coverage that a required check demands, and removes no diagnostic.",
+    "lifecycle": "No SDK lifecycle state, operation handle, or shutdown path changes.",
+    "mutation_ownership": "No ownership of any mutable structure moves.",
+    "privacy_transformation": "No field policy, redaction, or prohibited-data scanning behavior changes.",
+    "resource_retention": "No buffer, queue, cache, or retention window is introduced.",
+    "retry_or_redelivery": "No delivery, retry, or redelivery semantics change.",
+    "trust_boundary": "No runtime code, dependency surface, or public API changes."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "72a39e54001079434f3b7ad9f518287d59369ff0"
+  },
+  "verification_task_ids": ["1.1"]
+}
