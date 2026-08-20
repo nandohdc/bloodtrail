@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.1",
+  "change_id": "reject-undeclared-shipped-imports",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The dependency gate asserts zero runtime dependencies from manifests alone and never opens a shipped artifact, so a shipped import that no manifest declares passes unseen.",
+    "Generated output and shipped examples are outside the scope gate's walk, so no existing check constrains what they may import.",
+    "A specifier that is not a literal string cannot be classified, and treating it as absent would make the gate silently incomplete.",
+    "Diagnostics must identify the artifact and the module precisely without emitting artifact source content."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/scripts/shipped-import-policy.mjs",
+    "packages/security-audit-sdk-core/scripts/check-dependencies.mjs",
+    "packages/security-audit-sdk-core/tests/verification/shipped-import-policy.test.mjs",
+    "packages/security-audit-sdk-core/DEPENDENCIES.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-shipped-artifact-import-classification",
+      "kind": "direct_implementation",
+      "summary": "Take the shipped inventory from npm pack --dry-run, parse each JavaScript and TypeScript artifact with the pinned TypeScript parser, and classify every specifier as internal, approved built-in, declared dependency, or verified self-reference; fail closed on anything else, on non-literal specifiers, and on an empty inventory.",
+      "forces_addressed": [
+        "The dependency gate asserts zero runtime dependencies from manifests alone and never opens a shipped artifact, so a shipped import that no manifest declares passes unseen.",
+        "Generated output and shipped examples are outside the scope gate's walk, so no existing check constrains what they may import.",
+        "A specifier that is not a literal string cannot be classified, and treating it as absent would make the gate silently incomplete.",
+        "Diagnostics must identify the artifact and the module precisely without emitting artifact source content."
+      ]
+    },
+    {
+      "id": "approach-extend-scope-gate-to-generated-sources",
+      "kind": "alternative",
+      "summary": "Remove the src/generated exemption from the scope gate and extend its walk to the examples directory, keeping a single source-level import check instead of an artifact-level one.",
+      "forces_addressed": [
+        "Generated output and shipped examples are outside the scope gate's walk, so no existing check constrains what they may import."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-shipped-artifact-import-classification",
+  "rejected_alternative_ids": [
+    "approach-extend-scope-gate-to-generated-sources"
+  ],
+  "rejection_reasons": {
+    "approach-extend-scope-gate-to-generated-sources": {
+      "forces": [
+        "The dependency gate asserts zero runtime dependencies from manifests alone and never opens a shipped artifact, so a shipped import that no manifest declares passes unseen."
+      ],
+      "reason": "A source-level check cannot see what is shipped. The generated validator's requires were emitted by the generator into build output, not written in source, and the packed inventory is produced by npm pack rather than by the source tree; inspecting sources would leave the defect class that motivated this issue outside the gate's reach."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-shipped-imports-classified",
+    "implementation-unclassifiable-imports-fail-closed",
+    "implementation-diagnostics-bounded-and-content-free"
+  ],
+  "invariant_evidence": {
+    "implementation-shipped-imports-classified": {
+      "task_ids": [
+        "2.2",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "shipped-import-policy.test.mjs bundled, declared, and built-in fixtures",
+        "check-dependencies pass line reports artifacts and specifiers inspected"
+      ]
+    },
+    "implementation-unclassifiable-imports-fail-closed": {
+      "task_ids": [
+        "2.1",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "undeclared ajv/dist/runtime/ucs2length mutation exits non-zero",
+        "dynamic-specifier and empty-inventory fixtures"
+      ]
+    },
+    "implementation-diagnostics-bounded-and-content-free": {
+      "task_ids": [
+        "2.3",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "diagnostic assertions naming artifact and module and asserting the absence of surrounding source text"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "c08c45bd32473c767393c40b4a13507598fd3e6b"
+  },
+  "verification_task_ids": [
+    "2.4",
+    "2.6",
+    "2.7"
+  ]
+}

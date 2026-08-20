@@ -26,4 +26,5 @@ Rules:
 - Exact direct versions and all transitive versions/integrities are pinned by `package-lock.json`.
 - `npm audit --audit-level=low` must pass; findings are not waived by this record.
 - Runtime dependency count must remain zero while the generated standalone validator remains correct.
+- Dependency verification inspects every shipped artifact's module specifiers and rejects any specifier that is not relative, an approved Node built-in for that artifact's role, a declared runtime dependency, or a declared self-reference export.
 - Any dependency or license-policy change requires review under ADR-SDK-003 and ADR-SDK-009.
