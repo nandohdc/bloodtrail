@@ -172,10 +172,14 @@ function classifySelfReference(specifier, artifactPath, role, manifest) {
     return { violation: violation(artifactPath, specifier, "unapproved-self-reference") };
   }
   const subpath = specifier === manifest.name ? "." : `./${specifier.slice(manifest.name.length + 1)}`;
-  if (manifest.exports && typeof manifest.exports === "object" && Object.hasOwn(manifest.exports, subpath)) {
-    return { classification: "self-reference" };
-  }
+  if (hasDeclaredExport(manifest.exports, subpath)) return { classification: "self-reference" };
   return { violation: violation(artifactPath, specifier, "undeclared-self-reference") };
+}
+
+function hasDeclaredExport(exportMap, subpath) {
+  if (!exportMap) return false;
+  if (typeof exportMap !== "object") return false;
+  return Object.hasOwn(exportMap, subpath);
 }
 
 function isSelfReference(specifier, packageName) {

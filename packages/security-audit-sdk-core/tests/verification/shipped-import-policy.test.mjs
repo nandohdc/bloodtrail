@@ -280,7 +280,7 @@ function copyPackageStable(source, destination) {
       });
       return;
     } catch (error) {
-      if (error && error.code === "ENOENT" && String(error.path ?? "").endsWith("_vp_dummy.ts")) {
+      if (isTransientCopyError(error)) {
         lastError = error;
         continue;
       }
@@ -288,4 +288,10 @@ function copyPackageStable(source, destination) {
     }
   }
   throw lastError ?? new Error("package copy remained unstable");
+}
+
+function isTransientCopyError(error) {
+  if (!error) return false;
+  if (error.code !== "ENOENT") return false;
+  return String(error.path ?? "").endsWith("_vp_dummy.ts");
 }
