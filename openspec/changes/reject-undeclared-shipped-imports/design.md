@@ -57,13 +57,13 @@ The parser's error-tolerant tree is used only to claim that discoverable module 
 The inspector returns plain violation data for:
 
 1. `import()` or `require()` whose argument is not a string literal, including template literals;
-2. a `require` identifier used outside the direct call position, because aliasing can bypass call inspection;
+2. a `require` identifier used outside the direct call position, or an exact computed `["require"]` access, because aliasing and computed access can bypass direct-call inspection;
 3. any external specifier matching no permitted class;
 4. an empty artifact inspection set;
 5. a file that cannot be read; and
 6. an artifact whose shipped path matches no declared role.
 
-Violations are sorted by code point. Reporting is capped at 50 entries and 240 characters per diagnostic. Only artifact paths, specifiers or unclassifiable-form markers, and violation classes are emitted.
+Violations are sorted by code point. Reporting is capped at 50 entries and 240 characters per diagnostic, with control characters escaped before truncation so one violation remains one output line. Only artifact paths, specifiers or unclassifiable-form markers, and violation classes are emitted.
 
 ### D6 — Relative references are classified but not resolved
 

@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { inspectShippedImports } from "./shipped-import-policy.mjs";
 import { assert, packageRoot, readJson, runChecked } from "./verification-helpers.mjs";
 
 const pkg = await readJson(resolve(packageRoot, "package.json"));
@@ -43,10 +44,53 @@ for (const [path, entry] of Object.entries(lock.packages ?? {})) {
 }
 assert(installedPackages > 0, "no installed development dependency graph was inspected");
 
+const shippedImports = await inspectShippedImports({
+  packageRoot,
+  files: packedFiles(),
+  manifest: pkg,
+});
+assert(shippedImports.inspected > 0, "no shipped JavaScript or TypeScript artifact was inspected");
+if (shippedImports.violations.length > 0) {
+  const diagnostics = shippedImports.violations.slice(0, 50).map(formatViolation);
+  const omitted = shippedImports.violations.length - diagnostics.length;
+  if (omitted > 0) diagnostics.push(`${String(omitted)} additional violations omitted`);
+  throw new Error(`shipped import policy violations:\n${diagnostics.join("\n")}`);
+}
+
 const productionTree = JSON.parse(runChecked("npm", ["ls", "--omit=dev", "--all", "--json"], {
   cwd: packageRoot,
   capture: true,
 }));
 assert(Object.keys(productionTree.dependencies ?? {}).length === 0, "installed production dependency tree is not empty");
 
-process.stdout.write(`dependency policy passed: 0 runtime and ${installedPackages} locked installed development packages with integrity/license metadata\n`);
+process.stdout.write(`dependency policy passed: 0 runtime, ${shippedImports.inspected} shipped artifacts with ${shippedImports.specifiers} module specifiers, and ${installedPackages} locked installed development packages with integrity/license metadata\n`);
+
+function packedFiles() {
+  const output = runChecked("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
+    cwd: packageRoot,
+    capture: true,
+  });
+  let report;
+  try { report = JSON.parse(output); }
+  catch { throw new Error("npm pack --dry-run did not return parseable JSON"); }
+  const pack = Array.isArray(report) ? report[0] : report;
+  assert(pack && Array.isArray(pack.files), "npm pack dry-run file inventory is missing");
+  return pack.files;
+}
+
+function formatViolation({ artifact, specifier, code }) {
+  return `${bounded(artifact, 90)}: ${bounded(specifier, 90)} [${bounded(code, 40)}]`;
+}
+
+function bounded(value, maximum) {
+  const text = String(value).replaceAll(
+    /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g,
+    escapeControlCharacter,
+  );
+  if (text.length <= maximum) return text;
+  return `${text.slice(0, maximum - 3)}...`;
+}
+
+function escapeControlCharacter(character) {
+  return `\\u${character.codePointAt(0).toString(16).padStart(4, "0")}`;
+}
