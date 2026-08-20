@@ -16,46 +16,65 @@ export async function verifyPackedCompleteness({ packageRoot, onPacked, onInstal
   try {
     consumerRoot = await mkdtemp(resolve(tmpdir(), "bloodtrail-consumer-"));
     process.stdout.write(`[packed-completeness:temporary-paths] pack=${packRoot} consumer=${consumerRoot}\n`);
-    const manifest = JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8"));
+    const manifest = await readManifest(packageRoot);
     const pack = packPackage(packageRoot, packRoot);
     tarball = resolve(packRoot, pack.filename);
-    if (onPacked) {
-      try {
-        await onPacked(pack.files);
-      } catch (error) {
-        throw diagnostic("inventory-allowlist", manifest.name, errorMessage(error));
-      }
-    }
-    await writeFile(
-      resolve(consumerRoot, "package.json"),
-      `${JSON.stringify({ name: "packed-completeness-consumer", private: true, type: "module" })}\n`,
-      "utf8",
-    );
+    await runPackedHook({ onPacked, files: pack.files, entryPoint: manifest.name });
+    await writeConsumerManifest(consumerRoot);
     installTarball(consumerRoot, tarball);
 
     const entryPoints = declaredEntryPoints(manifest);
     const installedPackageRoot = resolve(await realpath(consumerRoot), "node_modules", ...manifest.name.split("/"));
-    const namespaces = new Map();
-    for (const entryPoint of entryPoints) {
-      const loaded = await importEntryPoint({ consumerRoot, entryPoint });
-      await assertConsumerResolution({ entryPoint, resolvedUrl: loaded.resolvedUrl, installedPackageRoot });
-      namespaces.set(entryPoint, loaded.namespace);
-    }
+    const namespaces = await loadEntryPointNamespaces({ consumerRoot, entryPoints, installedPackageRoot });
 
     const rootNamespace = namespaces.get(manifest.name);
     await validateCanonicalEvent({ packageRoot, entryPoint: manifest.name, namespace: rootNamespace });
-    if (onInstalled) {
-      const namespace = Object.assign({}, ...namespaces.values());
-      await onInstalled({ consumerRoot, namespace });
-    }
+    await runInstalledHook({ onInstalled, consumerRoot, namespaces });
 
     return { files: pack.files, entryPoints, consumerRoot, tarball };
   } finally {
-    await Promise.all([
-      rm(packRoot, { recursive: true, force: true }),
-      consumerRoot ? rm(consumerRoot, { recursive: true, force: true }) : Promise.resolve(),
-    ]);
+    await removeTemporaryRoots(packRoot, consumerRoot);
   }
+}
+
+async function runPackedHook({ onPacked, files, entryPoint }) {
+  if (!onPacked) return;
+  try {
+    await onPacked(files);
+  } catch (error) {
+    throw diagnostic("inventory-allowlist", entryPoint, errorMessage(error));
+  }
+}
+
+async function runInstalledHook({ onInstalled, consumerRoot, namespaces }) {
+  if (!onInstalled) return;
+  const namespace = Object.assign({}, ...namespaces.values());
+  await onInstalled({ consumerRoot, namespace });
+}
+
+async function removeTemporaryRoots(packRoot, consumerRoot) {
+  const removals = [rm(packRoot, { recursive: true, force: true })];
+  if (consumerRoot) removals.push(rm(consumerRoot, { recursive: true, force: true }));
+  await Promise.all(removals);
+}
+
+async function readManifest(packageRoot) {
+  return JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8"));
+}
+
+async function writeConsumerManifest(consumerRoot) {
+  const manifest = { name: "packed-completeness-consumer", private: true, type: "module" };
+  await writeFile(resolve(consumerRoot, "package.json"), `${JSON.stringify(manifest)}\n`, "utf8");
+}
+
+async function loadEntryPointNamespaces({ consumerRoot, entryPoints, installedPackageRoot }) {
+  const namespaces = new Map();
+  for (const entryPoint of entryPoints) {
+    const loaded = await importEntryPoint({ consumerRoot, entryPoint });
+    await assertConsumerResolution({ entryPoint, resolvedUrl: loaded.resolvedUrl, installedPackageRoot });
+    namespaces.set(entryPoint, loaded.namespace);
+  }
+  return namespaces;
 }
 
 function packPackage(packageRoot, packRoot) {
@@ -75,7 +94,10 @@ function packPackage(packageRoot, packRoot) {
     throw diagnostic("pack-report", PACKAGE_NAME, "npm pack did not return parseable JSON");
   }
   const packs = (Array.isArray(report) ? report : [report]).filter((entry) => entry?.filename?.endsWith(".tgz"));
-  if (packs.length !== 1 || !Array.isArray(packs[0].files)) {
+  if (packs.length !== 1) {
+    throw diagnostic("pack-report", PACKAGE_NAME, "npm pack returned an invalid artifact inventory");
+  }
+  if (!Array.isArray(packs[0].files)) {
     throw diagnostic("pack-report", PACKAGE_NAME, "npm pack returned an invalid artifact inventory");
   }
   return packs[0];
@@ -96,20 +118,38 @@ function installTarball(consumerRoot, tarball) {
 }
 
 function declaredEntryPoints(manifest) {
-  if (typeof manifest.name !== "string" || manifest.name.length === 0 || manifest.exports === null || typeof manifest.exports !== "object") {
-    throw diagnostic("export-map", PACKAGE_NAME, "package name or export map is missing");
-  }
-  const entryPoints = Object.keys(manifest.exports).map((subpath) => {
-    if (subpath === ".") return manifest.name;
-    if (!subpath.startsWith("./") || subpath.includes("*")) {
-      throw diagnostic("export-map", manifest.name, `unsupported declared subpath ${subpath}`);
-    }
-    return `${manifest.name}/${subpath.slice(2)}`;
-  });
+  assertManifestExportMap(manifest);
+  const entryPoints = Object.keys(manifest.exports).map((subpath) => entryPointForSubpath(manifest.name, subpath));
   if (entryPoints.length === 0) {
     throw diagnostic("export-map", manifest.name, "package export map declares no entry points");
   }
   return entryPoints;
+}
+
+function assertManifestExportMap(manifest) {
+  if (typeof manifest.name !== "string") {
+    throw diagnostic("export-map", PACKAGE_NAME, "package name or export map is missing");
+  }
+  if (manifest.name.length === 0) {
+    throw diagnostic("export-map", PACKAGE_NAME, "package name or export map is missing");
+  }
+  if (manifest.exports === null) {
+    throw diagnostic("export-map", PACKAGE_NAME, "package name or export map is missing");
+  }
+  if (typeof manifest.exports !== "object") {
+    throw diagnostic("export-map", PACKAGE_NAME, "package name or export map is missing");
+  }
+}
+
+function entryPointForSubpath(packageName, subpath) {
+  if (subpath === ".") return packageName;
+  if (!subpath.startsWith("./")) {
+    throw diagnostic("export-map", packageName, `unsupported declared subpath ${subpath}`);
+  }
+  if (subpath.includes("*")) {
+    throw diagnostic("export-map", packageName, `unsupported declared subpath ${subpath}`);
+  }
+  return `${packageName}/${subpath.slice(2)}`;
 }
 
 async function importEntryPoint({ consumerRoot, entryPoint }) {
@@ -134,8 +174,13 @@ async function assertConsumerResolution({ entryPoint, resolvedUrl, installedPack
     throw diagnostic("resolution-provenance", entryPoint, `resolution could not be established: ${errorMessage(error)}`);
   }
   const relation = relative(installedPackageRoot, resolvedPath);
-  if (relation === "" || (!relation.startsWith("..") && !isAbsolute(relation))) return;
-  throw diagnostic("resolution-provenance", entryPoint, "resolved outside disposable consumer");
+  if (relation === "") return;
+  if (relation.startsWith("..")) {
+    throw diagnostic("resolution-provenance", entryPoint, "resolved outside disposable consumer");
+  }
+  if (isAbsolute(relation)) {
+    throw diagnostic("resolution-provenance", entryPoint, "resolved outside disposable consumer");
+  }
 }
 
 async function validateCanonicalEvent({ packageRoot, entryPoint, namespace }) {
