@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.1",
+  "change_id": "enforce-archive-relocation-completeness",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Archive relocation completeness is asserted in evidence prose under R24 but nothing verifies it, so a commit can contradict its own archive-evidence file and still pass every gate.",
+    "The inspected range folds working-tree and untracked paths, so a check that reads the filesystem validates the move that was performed rather than the one that was committed.",
+    "A change id that is archived and later re-opened would make a state-based completeness test reject legitimate work, so the invariant must separate a relocation this range introduces from an older archive it merely touches.",
+    "A governance control is only known to work when a mutation test can demand its diagnostic id, and no registry validates those ids against typos."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/scripts/design-pattern-governance/archive-completeness.mjs",
+    "openspec/scripts/check-design-pattern-governance.mjs",
+    "openspec/tests/design-pattern-governance/archive-completeness.test.mjs",
+    "docs/design-pattern-governance.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-checker-completeness-control",
+      "kind": "direct_implementation",
+      "summary": "Add a control to the governance checker that consumes the existing relocation map and fails closed when a range introduces a relocation while the relocated change's active directory still resolves at HEAD, resolving every path through git rather than the filesystem.",
+      "forces_addressed": [
+        "Archive relocation completeness is asserted in evidence prose under R24 but nothing verifies it, so a commit can contradict its own archive-evidence file and still pass every gate.",
+        "The inspected range folds working-tree and untracked paths, so a check that reads the filesystem validates the move that was performed rather than the one that was committed.",
+        "A governance control is only known to work when a mutation test can demand its diagnostic id, and no registry validates those ids against typos."
+      ]
+    },
+    {
+      "id": "approach-state-invariant",
+      "kind": "alternative",
+      "summary": "Enforce a state invariant at HEAD instead of a range-scoped one: no change id may be simultaneously present at its active path and at a recognised dated archive directory, regardless of which range introduced the relocation.",
+      "forces_addressed": [
+        "Archive relocation completeness is asserted in evidence prose under R24 but nothing verifies it, so a commit can contradict its own archive-evidence file and still pass every gate.",
+        "A change id that is archived and later re-opened would make a state-based completeness test reject legitimate work, so the invariant must separate a relocation this range introduces from an older archive it merely touches."
+      ]
+    },
+    {
+      "id": "approach-extend-archive-attestations",
+      "kind": "alternative",
+      "summary": "Extend the SDK's archive-movement attestation mechanism, which already compares archived directories against history, so that it covers every archived change rather than only those whose authors declared an attestation.",
+      "forces_addressed": [
+        "Archive relocation completeness is asserted in evidence prose under R24 but nothing verifies it, so a commit can contradict its own archive-evidence file and still pass every gate.",
+        "The inspected range folds working-tree and untracked paths, so a check that reads the filesystem validates the move that was performed rather than the one that was committed."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-checker-completeness-control",
+  "rejected_alternative_ids": [
+    "approach-state-invariant",
+    "approach-extend-archive-attestations"
+  ],
+  "rejection_reasons": {
+    "approach-state-invariant": {
+      "forces": [
+        "A change id that is archived and later re-opened would make a state-based completeness test reject legitimate work, so the invariant must separate a relocation this range introduces from an older archive it merely touches."
+      ],
+      "reason": "A state invariant cannot distinguish an incomplete relocation from a change id that was archived and later re-opened, so it converts a legitimate workflow into a hard rejection on every pull request. Missing an already-landed defect is recoverable by a one-off sweep; rejecting correct work on a required check is not, and the re-opened-id shape has never occurred here across sixteen archived changes."
+    },
+    "approach-extend-archive-attestations": {
+      "forces": [
+        "Archive relocation completeness is asserted in evidence prose under R24 but nothing verifies it, so a commit can contradict its own archive-evidence file and still pass every gate.",
+        "The inspected range folds working-tree and untracked paths, so a check that reads the filesystem validates the move that was performed rather than the one that was committed."
+      ],
+      "reason": "The attestation mechanism is scoped by declaration, so it protects only archives whose authors remembered to declare one and is silent by construction on the case that motivated this change. It also lives in the SDK workspace, whose gates bind to two named SDK changes and hold no jurisdiction over openspec/changes generally, and it is not reachable by the dual check, so a weakening of it could not be caught by the baseline checker."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-completeness-judged-at-head",
+    "implementation-relocation-scoped-to-range",
+    "implementation-control-reachable-by-diagnostic-id"
+  ],
+  "invariant_evidence": {
+    "implementation-completeness-judged-at-head": {
+      "task_ids": [
+        "1.2",
+        "1.5"
+      ],
+      "evidence_ids": [
+        "the control resolves both the archived directory and the active directory with objectAtPath against base and HEAD, and calls existsSync nowhere",
+        "the replayed 057d457 defect fails with archive-relocation-incomplete even though the working tree of that clone shows a complete move"
+      ]
+    },
+    "implementation-relocation-scoped-to-range": {
+      "task_ids": [
+        "1.1",
+        "1.6",
+        "1.7"
+      ],
+      "evidence_ids": [
+        "test case three archives a change completely, re-creates an active change with the same id in a later commit, touches the old archive directory, and asserts the control stays silent",
+        "the four existing R15 relocation fixtures in association.test.mjs pass unedited, and the candidate checker over each 2026-08-19 archive commit reports no new failure"
+      ]
+    },
+    "implementation-control-reachable-by-diagnostic-id": {
+      "task_ids": [
+        "1.1",
+        "1.4"
+      ],
+      "evidence_ids": [
+        "the mutation case removes the call site and requires the red case to pass, so a control wired to nothing cannot be mistaken for one that holds",
+        "the diagnostic appears under failures in --json output and the process exits non-zero, proving it is a sink.fail and not a warning"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No event construction, validation, emission, or ordering path changes; this change touches only the governance checker and its tests.",
+    "authentication_or_authorization": "No authentication or authorization logic exists in the governance checker, and none is introduced.",
+    "authority_provenance": "The authority branding registry is untouched; no authoritative value changes representation.",
+    "concurrency": "No asynchronous, scheduling, or shared-state code changes; the control is a synchronous read over git objects.",
+    "confidentiality": "No user or event data is read, transformed, stored, or transmitted; the control reads repository tree entries only.",
+    "cryptography": "No cryptographic primitive, key, hash, or signature path is introduced or modified.",
+    "error_disclosure": "The new diagnostic carries a change id and a repository-relative archive path, both already public in the repository tree, and no caller data.",
+    "external_security_integration": "No SIEM, collector, exporter, or external security system is added; the authorization boundary is unchanged.",
+    "fail_posture": "The change strengthens fail-closed posture. It adds one rejection that no correct archive commit can trigger, removes no diagnostic, and weakens no existing control.",
+    "lifecycle": "No SDK lifecycle state, operation handle, or shutdown path changes.",
+    "mutation_ownership": "No ownership of any mutable structure moves; the control allocates nothing the caller retains.",
+    "privacy_transformation": "No field policy, redaction, or prohibited-data scanning behavior changes.",
+    "resource_retention": "No buffer, queue, cache, or retention window is introduced; the control holds only the already-computed relocation map.",
+    "retry_or_redelivery": "No delivery, retry, or redelivery semantics change.",
+    "trust_boundary": "No runtime code, dependency surface, or public API changes; the control uses the existing read-only git module and adds no dependency."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "232376b6ebc76ead6797ddc21470998d4f56a6a6"
+  },
+  "verification_task_ids": [
+    "1.5",
+    "1.6",
+    "1.7",
+    "3.1",
+    "3.2"
+  ]
+}

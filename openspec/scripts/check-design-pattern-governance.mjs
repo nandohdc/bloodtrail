@@ -33,6 +33,7 @@ import {
   loadSchema,
   validateDocument,
 } from "./design-pattern-governance/schema.mjs";
+import { checkRelocationCompleteness } from "./design-pattern-governance/archive-completeness.mjs";
 import { loadCatalog, loadRegistry } from "./design-pattern-governance/catalog.mjs";
 import { applyAssessmentRules } from "./design-pattern-governance/rules.mjs";
 import { checkActorNeutralDocuments, checkCiJob, checkTemplates } from "./design-pattern-governance/documentation.mjs";
@@ -330,6 +331,7 @@ function checkPerimeter(opts, context, diagnostics) {
 
   const governed = range.paths.filter((path) => matchesSelection(path, governedPatterns(policy)));
   const relocated = collectRelocatedChangeIds(range.paths, cwd, diagnostics);
+  checkRelocationCompleteness({ relocated, base, cwd, sink: diagnostics });
   const changes = collectOpenSpecChanges(
     range.paths,
     (id) => readAssessmentFor(context.repositoryRoot, id, [...(relocated.get(id) ?? [])][0]),
