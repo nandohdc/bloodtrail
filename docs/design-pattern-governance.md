@@ -134,6 +134,15 @@ These are distinct states, and evidence for one is never evidence for another.
    at A.
 5. **Archive** — explicitly validated, not assumed from `openspec validate --all --strict`.
 
+An archive is a move, and a range that performs one carries both halves of it. Where a range
+introduces the dated archive directory for a change, the objects it relocated are gone from the
+active path at `HEAD`; a range that adds the archive and leaves the relocated files where they were
+is rejected. Completeness is read from the commit tree and never from the working tree, because a
+run also inspects uncommitted work: a deletion that was performed but never staged reads as a
+finished move while the commits carry only the addition. Only relocations a range introduces are
+examined, and an id that is archived and then re-opened is not one — what marks an unfinished move
+is the relocated object still sitting where it was moved from.
+
 Proposal validation is not apply authorization. AI review, pull-request assignment, authorship,
 passing gates, and merged state are not owner approval. Publication and deployment stay prohibited
 regardless of how many technical checks pass.

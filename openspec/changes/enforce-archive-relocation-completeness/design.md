@@ -39,8 +39,16 @@ The perimeter runs in the `implementation` and `final` phases only, and short-ci
 ### D1 — The invariant is range-scoped, not state-scoped
 
 The control fires only when the relocation is **introduced in this range**: for at least one
-recognised archive directory, no `RELOCATION_ARTIFACTS` entry resolves at `base`, and the directory
-resolves at `HEAD`.
+recognised archive directory, no `RELOCATION_ARTIFACTS` entry resolves at `base`.
+
+Range scoping alone is not sufficient, and review proved it: a range whose `base` predates the
+archive can contain both a *completed* relocation and a legitimate re-opening of the same id, and
+the `base` test cannot separate that from an unfinished move because neither archive existed at
+`base`. So a second condition carries the distinction — a relocated artifact must still resolve to
+**the same object** at the active path at `HEAD`. Directory existence is not the signal; a re-opened
+id is new work that merely shares a name, whereas an unfinished move leaves the very object the
+archive carries where it was moved from. Both conditions must hold, and each rules out a different
+false positive.
 
 *Alternative considered and rejected: a state invariant at `HEAD`* — no change id may be
 simultaneously present at `openspec/changes/<id>/` and at a recognised
