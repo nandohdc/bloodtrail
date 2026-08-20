@@ -15,7 +15,7 @@
 
 ## 3. Landing (human-owned)
 
-- [ ] 3.1 Owner merges the implementation PR
-- [ ] 3.2 Fold the capability requirement into the canonical spec
+- [x] 3.1 Owner merges the implementation PR — done: PR #190 was merged by the project owner as `c98132c89e928f8b59562a1344c342facbde465d`, an identity-preserving two-parent merge of prior main `c08c45bd32473c767393c40b4a13507598fd3e6b` and exact implementation head `d4085cb89290ba3f8cddbd47966494fc337e32e4`; the merge tree equals the implementation-head tree.
+- [x] 3.2 Fold the capability requirement into the canonical spec — done in this commit: `Dependency verification inspects module imports in shipped artifacts` is present once under `openspec/specs/security-audit-sdk-core/spec.md` with all seven scenarios and no delta operation header; the canonical spec now carries 48 requirements.
 - [ ] 3.3 Archive the change as a complete relocation
 - [ ] 3.4 Close #69 with evidence
