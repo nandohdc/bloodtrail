@@ -156,7 +156,9 @@ The AST walk must treat each of these as a violation rather than as silence:
    `test:dependencies`, but a bare `npm run test:dependencies` does not, and a gate that passes on
    an empty inventory is worse than no gate. Follow the "run npm run build first" precedent at
    `packed-consumer-closure.test.mjs:33-35`.
-5. A file the parser cannot read — treat an I/O or parse failure as a violation, never as a skip.
+5. A file cannot be read, or the parser cannot return a syntax tree — treat that failure as a
+   violation, never as a skip. Parser diagnostics attached to an error-tolerant tree remain outside
+   this control's assurance claim.
 
 ### F9 — Fixtures use the package-copy harness, not a disposable git clone
 
@@ -339,8 +341,10 @@ for that artifact's role, a declared runtime dependency of the package, or a sel
 subpath is a declared package export. Every other specifier SHALL fail verification, including a
 specifier that is not a literal string and a Node built-in referenced without its `node:` prefix.
 
-Verification SHALL fail when it inspects no shipped artifact, and SHALL fail when a shipped artifact
-cannot be read or parsed.
+Verification SHALL fail when it inspects no shipped artifact, SHALL fail when a shipped artifact
+cannot be read, and SHALL fail when the parser cannot return a syntax tree. A returned syntax tree is
+error-tolerant and does not establish syntax validity; syntax validation remains the responsibility
+of the build, typecheck, and runtime gates.
 
 Diagnostics SHALL name the artifact path, the module specifier, and the violated class, SHALL be
 bounded in count and length, and SHALL NOT include artifact source content.

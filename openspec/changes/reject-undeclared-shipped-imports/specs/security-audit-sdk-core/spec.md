@@ -6,7 +6,7 @@ Dependency verification SHALL inspect every shipped JavaScript and TypeScript ar
 
 A specifier SHALL be permitted only when it is relative to the artifact, an approved Node built-in for that artifact's role, a declared runtime dependency of the package, or a self-reference whose subpath is a declared package export. Every other specifier SHALL fail verification, including a specifier that is not a literal string and a Node built-in referenced without its `node:` prefix.
 
-Verification SHALL fail when it inspects no shipped artifact, and SHALL fail when a shipped artifact cannot be read or parsed.
+Verification SHALL fail when it inspects no shipped artifact, SHALL fail when a shipped artifact cannot be read, and SHALL fail when the parser cannot return a syntax tree. A returned syntax tree is error-tolerant and does not establish syntax validity; syntax validation remains the responsibility of the build, typecheck, and runtime gates.
 
 Diagnostics SHALL name the artifact path, the module specifier, and the violated class, SHALL be bounded in count and length, and SHALL NOT include artifact source content.
 
