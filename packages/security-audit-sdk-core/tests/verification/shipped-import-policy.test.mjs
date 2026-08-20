@@ -201,7 +201,7 @@ test("current packed artifact inventory is accepted", async () => {
   const { inspectShippedImports } = await import(policyUrl.href);
   const manifest = JSON.parse(readFileSync(resolve(packageRoot, "package.json"), "utf8"));
   const pack = packedInventory(packageRoot);
-  const result = await inspectShippedImports({ packageRoot, files: pack.files, manifest });
+  const result = await inspectShippedImports({ packageRoot, manifest, files: pack.files });
   assert.ok(result.inspected > 0);
   assert.ok(result.specifiers > 0);
   assert.deepEqual(result.violations, []);
