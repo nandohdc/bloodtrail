@@ -92,5 +92,5 @@ function bounded(value, maximum) {
 }
 
 function escapeControlCharacter(character) {
-  return `\\u${character.codePointAt(0).toString(16).padStart(4, "0")}`;
+  return String.raw`\u${character.codePointAt(0).toString(16).padStart(4, "0")}`;
 }
