@@ -24,7 +24,7 @@ The SDK remains an isolated, private, unpublished technical candidate. The imple
 
 ### One real pack serves both checks
 
-`test:package` will replace `npm pack --dry-run --json` with one `npm pack --json --pack-destination <temporary-directory>`. A real pack returns the same `files` inventory, so the existing allowlist consumes that output and the disposable consumer installs that exact tarball. A dry run followed by a real pack was rejected because it checks two independently produced artifacts and adds a second pack to `validate`.
+`test:package` will replace `npm pack --dry-run --json` with one `npm pack --json --pack-destination <temporary-directory>`. A real pack returns the same `files` inventory, so an `onPacked` hook applies the existing allowlist before the disposable consumer installs and imports that exact tarball. A dry run followed by a real pack was rejected because it checks two independently produced artifacts and adds a second pack to `validate`.
 
 ### One shared completeness module serves two callers
 
@@ -32,7 +32,7 @@ A new `scripts/packed-completeness.mjs` module will own pack, install, export-ma
 
 ### Resolution provenance fails closed and remains mutation-proved
 
-The consumer probe will resolve and import every declared export-map entry point from inside the disposable consumer and require each resolved URL to be under that consumer's installed package directory. A decoy package in an ancestor dependency tree, with consumer installation skipped through a test-only execution option, must reach the provenance assertion and fail for provenance rather than for a missing module.
+The consumer probe will resolve and import every declared export-map entry point from inside the disposable consumer and require each resolved URL to be under that consumer's installed package directory. The mutation harness replaces only the disposable install process with a deterministic shim that places a package symlink to a decoy outside the consumer; the probe must reach the provenance assertion and fail for provenance rather than for a missing module.
 
 This decision is conditional only at implementation time: if the decoy construction cannot be deterministic across the supported execution environment, both the provenance assertion and its normative scenario will be removed and PLAN-091 will be refiled. The assertion will not be softened or silently skipped.
 

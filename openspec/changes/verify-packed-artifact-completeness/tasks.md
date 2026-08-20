@@ -1,24 +1,24 @@
 ## 1. Mutation Controls
 
-- [ ] 1.1 Add a stable package-copy harness with an unmutated control that runs the real package gate and passes.
-- [ ] 1.2 Add an incomplete-inventory mutation that omits `dist/validation/`, preserves every individually required path, and fails with a bounded diagnostic naming the entry point and missing module.
-- [ ] 1.3 Add an incomplete-artifact mutation that references an undefined bundled helper and fails with a bounded diagnostic naming the failing entry point.
-- [ ] 1.4 Add a deterministic outside-consumer resolution mutation that reaches and fails the provenance assertion; if it cannot be deterministic, remove provenance from the change and refile PLAN-091 rather than weakening the assertion.
-- [ ] 1.5 Prove passing and failing runs remove the reported tarball and consumer roots, escape control characters, bound total output, and disclose no planted source marker.
+- [x] 1.1 Add a stable package-copy harness with an unmutated control that runs the real package gate and passes — done: the null package copy exits zero through `check-package-contents.mjs` and reports two imported entry points.
+- [x] 1.2 Add an incomplete-inventory mutation that omits `dist/validation/`, preserves every individually required path, and fails with a bounded diagnostic naming the entry point and missing module — done: M-70-A excludes only `dist/validation/` and reports the root entry point plus `dist/validation/index.js`.
+- [x] 1.3 Add an incomplete-artifact mutation that references an undefined bundled helper and fails with a bounded diagnostic naming the failing entry point — done: M-70-B replaces the bundled helper binding and reports the root entry point plus `missingBundledHelper`.
+- [x] 1.4 Add a deterministic outside-consumer resolution mutation that reaches and fails the provenance assertion; if it cannot be deterministic, remove provenance from the change and refile PLAN-091 rather than weakening the assertion — done: M-70-C replaces the disposable install with an external decoy symlink and fails with `resolution-provenance`, so the carve-out was not used.
+- [x] 1.5 Prove passing and failing runs remove the reported tarball and consumer roots, escape control characters, bound total output, and disclose no planted source marker — done: every arm parses the reported roots and finds both absent; failing arms enforce 4 KiB total output, escaped controls, and source-marker absence.
 
 ## 2. Packed Completeness Implementation
 
-- [ ] 2.1 Add one shared packed-completeness module that creates temporary roots outside the package, packs exactly once, installs the exact tarball production-only and offline, and cleans up in a `finally`.
-- [ ] 2.2 Derive every package specifier from the export map, import each from a probe inside the disposable consumer, fail closed on outside-consumer resolution, and validate one canonical event.
-- [ ] 2.3 Route `check-package-contents.mjs` through the shared module while preserving its manifest assertions and inventory allowlist over the returned real-pack inventory.
-- [ ] 2.4 Route `packed-consumer-closure.test.mjs` through the shared installed-consumer hook while preserving all existing export, validation, format, and self-containment assertions.
-- [ ] 2.5 Run the null control and all three mutations against the wired gate and record deterministic pass/fail signals.
+- [x] 2.1 Add one shared packed-completeness module that creates temporary roots outside the package, packs exactly once, installs the exact tarball production-only and offline, and cleans up in a `finally` — done in `scripts/packed-completeness.mjs` with one real pack and unconditional root removal.
+- [x] 2.2 Derive every package specifier from the export map, import each from a probe inside the disposable consumer, fail closed on outside-consumer resolution, and validate one canonical event — done for `.` and `./testing`, with physical-path provenance and canonical positive-fixture validation.
+- [x] 2.3 Route `check-package-contents.mjs` through the shared module while preserving its manifest assertions and inventory allowlist over the returned real-pack inventory — done: the existing 16 required paths and forbidden/allowed path checks consume the shared pack result unchanged.
+- [x] 2.4 Route `packed-consumer-closure.test.mjs` through the shared installed-consumer hook while preserving all existing export, validation, format, and self-containment assertions — done: the hook retains all four export assertions, positive/structural/semantic validation, URI fixture selection, and installed-validator checks.
+- [x] 2.5 Run the null control and all three mutations against the wired gate and record deterministic pass/fail signals — done: the focused run passed 4/4 controls; the same tests against the baseline gate failed 4/4 because the baseline neither executed completeness nor emitted its diagnostics.
 
 ## 3. Documentation and Verification
 
-- [ ] 3.1 Add the SDK package glossary distinguishing complete, self-contained, and legacy closure naming.
-- [ ] 3.2 Record the package-gate install decision in root ADR 0003 and update the README verification description without changing package metadata or npm scripts.
-- [ ] 3.3 Run the full SDK and contract validation chains, strict active and archived OpenSpec validation, governance tests, targeted positive and mutation controls, and a two-axis code review with an empty index.
+- [x] 3.1 Add the SDK package glossary distinguishing complete, self-contained, and legacy closure naming — done in `packages/security-audit-sdk-core/CONTEXT.md`.
+- [x] 3.2 Record the package-gate install decision in root ADR 0003 and update the README verification description without changing package metadata or npm scripts — done in `docs/adr/0003-package-gate-executes-a-production-install.md` and the package README; manifest and lockfile remain unchanged.
+- [x] 3.3 Run the full SDK and contract validation chains, strict active and archived OpenSpec validation, governance tests, targeted positive and mutation controls, and a two-axis code review with an empty index — done: SDK validation passed 19 gates with 228 verification tests, contract validation passed 14 tests, strict validation passed 4 specs, 5 active items, and 18 archives, governance passed 201 tests, focused controls passed 6/6, and both follow-up review axes reported no findings.
 - [ ] 3.4 Commit and push the verified implementation candidate, then require non-vacuous post-commit final-phase and dual governance checks before opening the implementation pull request.
 
 ## 4. Canonical Fold and Archive

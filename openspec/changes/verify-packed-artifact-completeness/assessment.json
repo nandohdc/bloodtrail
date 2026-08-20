@@ -25,7 +25,8 @@
     "packages/security-audit-sdk-core/scripts/check-package-contents.mjs",
     "packages/security-audit-sdk-core/tests/verification/packed-completeness-mutations.test.mjs",
     "packages/security-audit-sdk-core/tests/verification/packed-consumer-closure.test.mjs",
-    "packages/security-audit-sdk-core/CONTEXT.md"
+    "packages/security-audit-sdk-core/CONTEXT.md",
+    "packages/security-audit-sdk-core/README.md"
   ],
   "candidate_approaches": [
     {
