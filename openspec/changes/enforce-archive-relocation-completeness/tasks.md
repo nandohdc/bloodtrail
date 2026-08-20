@@ -1,0 +1,20 @@
+## 1. The control and its tests
+
+- [ ] 1.1 Write `openspec/tests/design-pattern-governance/archive-completeness.test.mjs` first, and watch the red case fail before any implementation exists. Four cases: (a) **red** — seed an active change whose `assessment.json` declares a non-empty capability, record `base`, *copy* the directory to `openspec/changes/archive/<dated>-<id>/` leaving the original in place, commit, and assert `archive-relocation-incomplete` at the archived path; (b) **green** — same fixture but remove the active directory before committing, and assert the run passes with no such diagnostic; (c) **no false positive** — archive completely, commit, then in a later commit re-create an active change with the same id and touch a file in the old archive directory, and assert the control stays silent; (d) **mutation** — with the call site removed, case (a) must pass.
+- [ ] 1.2 Add `openspec/scripts/design-pattern-governance/archive-completeness.mjs` exporting `checkRelocationCompleteness({ relocated, base, cwd, sink })`. For each relocated change id, skip unless the relocation is introduced in this range (no `RELOCATION_ARTIFACTS` entry resolves at `base` for at least one recognised archive directory); then fail with `archive-relocation-incomplete` when `openspec/changes/<id>` resolves at `HEAD`. Resolve every path with `objectAtPath`, never `existsSync`. The doc comment states what the control catches and why reading the filesystem would reproduce the blind spot it closes.
+- [ ] 1.3 Wire one call in `openspec/scripts/check-design-pattern-governance.mjs` immediately after `collectRelocatedChangeIds`, passing the computed map, `base`, `cwd`, and the diagnostics sink; add the import beside the other `design-pattern-governance/` imports.
+- [ ] 1.4 Confirm the diagnostic is a `sink.fail` and not a `sink.warn`: `--json` lists it under `failures` and the process exits non-zero. Read the exit code directly, never through a pipe.
+- [ ] 1.5 Replay the motivating defect. Apply the captured `057d457` patch onto `bfd7422^` in a scratch clone and run the candidate checker: it MUST fail with `archive-relocation-incomplete`. Then stage the active-directory deletion and confirm it passes. Record both outputs. If the patch does not replay cleanly, do not improvise a reconstruction — fall back to case (a) as the proof and say so plainly in the report.
+- [ ] 1.6 Run the whole governance suite and confirm the four existing R15 relocation fixtures in `association.test.mjs` stay green without edits.
+- [ ] 1.7 Run the candidate checker over each of the four `2026-08-19-*` archive commits in a scratch clone and confirm none newly fails.
+
+## 2. Documentation
+
+- [ ] 2.1 Add the completeness rule to `docs/design-pattern-governance.md` as prose in the document's existing voice, with no requirement number — the document uses none. Leave the five claim sentences `checkActorNeutralDocuments` matches undisturbed, and keep the text actor-neutral.
+
+## 3. Verification and landing (human-owned)
+
+- [ ] 3.1 Run the full gate battery in two stages: before `git add`, `check:generated` then `validate` for both workspaces, `openspec validate --all --strict`, `openspec validate --all --archived --strict`, and `git diff --check`; after the commit, the governance checker at `--phase final`, the dual check, and the governance test suite.
+- [ ] 3.2 Verify the commit tree directly, not the working tree: `git show --name-status --no-renames HEAD`, `git ls-tree --name-only HEAD openspec/changes/`, and `git status --porcelain`. A relocation shows both A and D lines.
+- [ ] 3.3 Owner identity-preserving merge of the proposal and implementation PRs. The agent reports readiness and never merges; AI review, green CI, and PR state are not approval.
+- [ ] 3.4 Archive this change as a complete relocation — the first live exercise of the control it adds — with a reconciled `tasks.md` and an `archive-evidence.md` recording the red/green proof, the gate results, and what was not verified.
