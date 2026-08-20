@@ -10,7 +10,7 @@
 - [x] 2.3 Wire the classification into the dependency gate with bounded diagnostics — done: `test:dependencies` consumes the package dry-run inventory before production-tree inspection and caps diagnostics at 50 entries with bounded artifact, specifier, and class components.
 - [x] 2.4 Cover the bundled, declared, built-in, dynamic, and empty-inventory classes — done: 20 focused tests cover approved live output, bundled and declared fixtures, role-specific and unprefixed built-ins in both roles, self-references, static positions, dynamic forms, aliased and computed require, deterministic ordering, unreadable and unknown-role artifacts, empty inventory, and the bounded control-character-safe AJV mutation.
 - [x] 2.5 Record the inspection in the dependency record — done: the Rules section records shipped-artifact module-specifier inspection without changing the dependency table.
-- [x] 2.6 Run the full SDK and contract gate chains — done: the CodeScene-remediated empty-index SDK validation chain passed all 19 gates with 223 verification tests, the contract validation chain passed all 14 tests, and `npm audit --audit-level=low` found no vulnerabilities.
+- [x] 2.6 Run the full SDK and contract gate chains — done: the analyzer-remediated empty-index SDK validation chain passed all 19 gates with 223 verification tests, the contract validation chain passed all 14 tests, and `npm audit --audit-level=low` found no vulnerabilities.
 - [x] 2.7 Run the governance checkers and strict OpenSpec validation — done: final-phase governance inspected 11 paths with no findings, candidate and baseline agreed, the governance suite passed 201 tests, and strict active and archived OpenSpec validation passed 5 and 17 items respectively.
 
 ## 3. Landing (human-owned)

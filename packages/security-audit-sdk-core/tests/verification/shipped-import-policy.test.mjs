@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, resolve } from "node:path";
 import test from "node:test";
 
-import { packageRoot } from "../../scripts/verification-helpers.mjs";
+import { packageRoot, runChecked } from "../../scripts/verification-helpers.mjs";
 
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-shipped-imports-"));
 const policyUrl = new URL("../../scripts/shipped-import-policy.mjs", import.meta.url);
@@ -258,13 +258,11 @@ async function inspectFixture(fixture) {
 }
 
 function packedInventory(root) {
-  const result = spawnSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
+  const output = runChecked("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
     cwd: root,
-    encoding: "utf8",
-    timeout: 60_000,
+    capture: true,
   });
-  assert.equal(result.status, 0, `npm pack --dry-run failed:\n${result.stdout}\n${result.stderr}`);
-  const report = JSON.parse(result.stdout);
+  const report = JSON.parse(output);
   return Array.isArray(report) ? report[0] : report;
 }
 
