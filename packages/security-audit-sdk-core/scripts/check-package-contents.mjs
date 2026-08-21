@@ -10,20 +10,18 @@ assert(pkg.sideEffects === false, "sideEffects must remain false for this side-e
 assert(pkg.types === "./dist/index.d.ts", "root declaration entry drift");
 assert(Object.keys(pkg.dependencies ?? {}).length === 0, "runtime dependencies must remain empty");
 
-let completeness;
 let inventory;
 try {
-  completeness = await verifyPackedCompleteness({
+  const completeness = await verifyPackedCompleteness({
     packageRoot,
     onPacked: async (files) => { inventory = await verifyInventory(files); },
   });
+  assert(inventory, "packed inventory allowlist did not run");
+  process.stdout.write(`packed artifact completeness passed: ${inventory.paths.length} intentional files, ${inventory.totalBytes} bytes, ${completeness.entryPoints.length} entry points imported, no tests/source/scripts/governance/contract copies\n`);
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;
 }
-if (!completeness) process.exit();
-assert(inventory, "packed inventory allowlist did not run");
-process.stdout.write(`packed artifact completeness passed: ${inventory.paths.length} intentional files, ${inventory.totalBytes} bytes, ${completeness.entryPoints.length} entry points imported, no tests/source/scripts/governance/contract copies\n`);
 
 async function verifyInventory(files) {
   const paths = files.map((entry) => entry.path).sort();
