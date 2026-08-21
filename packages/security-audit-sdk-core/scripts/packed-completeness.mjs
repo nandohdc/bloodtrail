@@ -167,20 +167,19 @@ async function importEntryPoint({ consumerRoot, entryPoint }) {
 }
 
 async function assertConsumerResolution({ entryPoint, resolvedUrl, installedPackageRoot }) {
-  let resolvedPath;
-  try {
-    resolvedPath = await realpath(fileURLToPath(resolvedUrl));
-  } catch (error) {
+  const resolvedPath = await realpath(fileURLToPath(resolvedUrl)).catch((error) => {
     throw diagnostic("resolution-provenance", entryPoint, `resolution could not be established: ${errorMessage(error)}`);
-  }
+  });
   const relation = relative(installedPackageRoot, resolvedPath);
   if (relation === "") return;
-  if (relation.startsWith("..")) {
+  if (resolvesOutsideConsumer(relation)) {
     throw diagnostic("resolution-provenance", entryPoint, "resolved outside disposable consumer");
   }
-  if (isAbsolute(relation)) {
-    throw diagnostic("resolution-provenance", entryPoint, "resolved outside disposable consumer");
-  }
+}
+
+function resolvesOutsideConsumer(relation) {
+  if (relation.startsWith("..")) return true;
+  return isAbsolute(relation);
 }
 
 async function validateCanonicalEvent({ packageRoot, entryPoint, namespace }) {
@@ -222,7 +221,7 @@ function errorMessage(error) {
 
 function bounded(value) {
   const escaped = String(value)
-    .replaceAll(/[^\x20-\x7e]/g, (character) => `\\u${character.codePointAt(0).toString(16).padStart(4, "0")}`)
+    .replaceAll(/[^\x20-\x7e]/g, (character) => String.raw`\u${character.codePointAt(0).toString(16).padStart(4, "0")}`)
     .slice(0, MAX_DETAIL_LENGTH);
   return escaped.length === 0 ? "<empty>" : escaped;
 }
