@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.1",
+  "change_id": "verify-packed-artifact-completeness",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A tarball that omits a module its entry points load passes the current package allowlist and fails only when a declared entry point imports.",
+    "A packed artifact referencing an identifier it does not define passes both the package allowlist and shipped-import policy and fails only when a declared entry point imports.",
+    "The existing packed-consumer completeness control rejects both mutations but has no deterministic failing twin, so a regression that made the control insensitive would be silent.",
+    "Nothing establishes that each imported entry point resolved from the disposable consumer's installed dependency tree rather than an ancestor dependency tree.",
+    "The test:package command named by issue #70 does not run the existing completeness proof."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/scripts/packed-completeness.mjs",
+    "packages/security-audit-sdk-core/scripts/check-package-contents.mjs",
+    "packages/security-audit-sdk-core/tests/verification/packed-completeness-mutations.test.mjs",
+    "packages/security-audit-sdk-core/tests/verification/packed-consumer-closure.test.mjs",
+    "packages/security-audit-sdk-core/CONTEXT.md",
+    "packages/security-audit-sdk-core/README.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-execute-shared-packed-completeness-control",
+      "kind": "direct_implementation",
+      "summary": "Extract one pack-install-import completeness procedure, call it from the package gate and existing behavioural verification test, and prove each claimed failure class with package-copy mutations plus an unmutated control.",
+      "forces_addressed": [
+        "A tarball that omits a module its entry points load passes the current package allowlist and fails only when a declared entry point imports.",
+        "A packed artifact referencing an identifier it does not define passes both the package allowlist and shipped-import policy and fails only when a declared entry point imports.",
+        "The existing packed-consumer completeness control rejects both mutations but has no deterministic failing twin, so a regression that made the control insensitive would be silent.",
+        "Nothing establishes that each imported entry point resolved from the disposable consumer's installed dependency tree rather than an ancestor dependency tree.",
+        "The test:package command named by issue #70 does not run the existing completeness proof."
+      ]
+    },
+    {
+      "id": "approach-enumerate-every-packed-module",
+      "kind": "alternative",
+      "summary": "Expand the required-file inventory into an exhaustive list of every module expected in the tarball while leaving package verification as inspection only.",
+      "forces_addressed": [
+        "A tarball that omits a module its entry points load passes the current package allowlist and fails only when a declared entry point imports."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-execute-shared-packed-completeness-control",
+  "rejected_alternative_ids": [
+    "approach-enumerate-every-packed-module"
+  ],
+  "rejection_reasons": {
+    "approach-enumerate-every-packed-module": {
+      "forces": [
+        "A tarball that omits a module its entry points load passes the current package allowlist and fails only when a declared entry point imports.",
+        "A packed artifact referencing an identifier it does not define passes both the package allowlist and shipped-import policy and fails only when a declared entry point imports."
+      ],
+      "reason": "An exhaustive inventory is a second list that can drift from what the declared entry points actually load, and it cannot detect the undefined bundled-helper mutation because that mutation changes no packed path."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-packed-entry-points-complete",
+    "implementation-packed-completeness-fails-closed",
+    "implementation-packed-diagnostics-bounded"
+  ],
+  "invariant_evidence": {
+    "implementation-packed-entry-points-complete": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "2.3",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "test:package real-pack production-only consumer pass",
+        "packed-consumer-closure behavioural assertions"
+      ]
+    },
+    "implementation-packed-completeness-fails-closed": {
+      "task_ids": [
+        "1.1",
+        "1.2",
+        "1.3",
+        "1.4",
+        "2.5"
+      ],
+      "evidence_ids": [
+        "unmutated package-copy control passes",
+        "incomplete inventory mutation fails",
+        "undefined bundled helper mutation fails",
+        "outside-consumer resolution mutation fails"
+      ]
+    },
+    "implementation-packed-diagnostics-bounded": {
+      "task_ids": [
+        "1.2",
+        "1.3",
+        "1.4",
+        "1.5"
+      ],
+      "evidence_ids": [
+        "mutation diagnostics name entry point and missing module or identifier without source disclosure",
+        "mutation output and individual diagnostics remain length-bounded"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "cc41eff686d52c645e5d88203bdc75b4badd288f"
+  },
+  "verification_task_ids": [
+    "2.5",
+    "3.3",
+    "3.4"
+  ]
+}
