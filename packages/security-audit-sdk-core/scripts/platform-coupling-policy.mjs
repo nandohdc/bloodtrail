@@ -261,7 +261,14 @@ class ReferenceCollector {
     this.scopes.push(new Set());
     this.bindFunctionSelfName(node);
     this.walkParameters(node.parameters);
-    this.walkFunctionBody(node.body);
+    if (node.body) {
+      if (ts.isBlock(node.body)) {
+        this.hoistDeclarations(node.body.statements);
+        for (const stmt of node.body.statements) this.walk(stmt);
+      } else {
+        this.walk(node.body);
+      }
+    }
     this.scopes.pop();
   }
 
@@ -278,14 +285,6 @@ class ReferenceCollector {
     }
   }
 
-  walkFunctionBody(body) {
-    if (!body) return;
-    if (ts.isBlock(body)) {
-      this.hoistDeclarations(body.statements);
-    }
-    this.walk(body);
-  }
-
   walkCatch(node) {
     this.scopes.push(new Set());
     if (node.variableDeclaration) {
@@ -293,7 +292,7 @@ class ReferenceCollector {
     }
     if (node.block) {
       this.hoistDeclarations(node.block.statements);
-      this.walk(node.block);
+      for (const stmt of node.block.statements) this.walk(stmt);
     }
     this.scopes.pop();
   }
@@ -301,7 +300,7 @@ class ReferenceCollector {
   walkBlock(node) {
     this.scopes.push(new Set());
     this.hoistDeclarations(node.statements);
-    ts.forEachChild(node, (child) => this.walk(child));
+    for (const stmt of node.statements) this.walk(stmt);
     this.scopes.pop();
   }
 
@@ -310,7 +309,7 @@ class ReferenceCollector {
     if (node.initializer && ts.isVariableDeclarationList(node.initializer)) {
       this.hoistVariables(node.initializer.declarations);
     }
-    ts.forEachChild(node, (child) => this.walk(child));
+    if (node.statement) this.walk(node.statement);
     this.scopes.pop();
   }
 
