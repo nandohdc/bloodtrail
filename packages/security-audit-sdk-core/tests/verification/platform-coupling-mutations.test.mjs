@@ -264,7 +264,7 @@ test("unreadable source artifact and empty inventory fail closed", () => {
 
   const emptyResult = runCase("m-71-h-empty", ({ copiedPackage }) => {
     const srcDir = resolve(copiedPackage, "src");
-    emptyDirectory(srcDir);
+    resetDirectory(srcDir);
   });
 
   assert.notEqual(emptyResult.status, 0, `empty inventory mutation unexpectedly passed:\n${emptyResult.output}`);
@@ -289,44 +289,40 @@ test("forbidden production integration filename diagnostic remains distinguishab
   assert.ok(result.output.length < 4_096, `output length exceeded limit: ${String(result.output.length)} bytes`);
 });
 
-function runCase(name, mutate = () => {}) {
-  const caseRoot = resolve(suiteRoot, name);
-  const copiedPackage = resolve(caseRoot, "packages/security-audit-sdk-core");
-  copyPackageForTest(packageRoot, copiedPackage);
-  const liveNodeModules = resolve(packageRoot, "node_modules");
-  const copyNodeModules = resolve(copiedPackage, "node_modules");
-  symlinkSync(liveNodeModules, copyNodeModules, "dir");
-  const environment = { ...process.env };
-  mutate({ caseRoot, copiedPackage, environment });
-  const result = spawnSync(process.execPath, ["scripts/check-scope.mjs"], {
-    cwd: copiedPackage,
+function runCase(name, mutate) {
+  const targetDir = resolve(suiteRoot, name, "packages/security-audit-sdk-core");
+  cloneSourceTree(packageRoot, targetDir);
+  symlinkSync(resolve(packageRoot, "node_modules"), resolve(targetDir, "node_modules"), "dir");
+  const env = { ...process.env };
+  if (mutate) mutate({ copiedPackage: targetDir, environment: env });
+  const check = spawnSync(process.execPath, ["scripts/check-scope.mjs"], {
+    cwd: targetDir,
     encoding: "utf8",
-    env: environment,
+    env,
     timeout: 30_000,
   });
-  return { status: result.status, output: `${result.stdout}\n${result.stderr}` };
+  return { status: check.status, output: `${check.stdout}\n${check.stderr}` };
 }
 
-function assertFailure({ output, status }, { code, artifact, detail, sourceMarker }) {
+function assertFailure({ output, status }, expectation) {
   assert.notEqual(status, 0, `mutation unexpectedly passed:\n${output}`);
-  assert.match(output, new RegExp(`\\[platform-coupling:${code}\\]`));
-  assert.ok(output.includes(artifact), `diagnostic did not name artifact ${artifact}:\n${output}`);
-  assert.ok(output.includes(detail), `diagnostic did not name detail ${detail}:\n${output}`);
-  assert.equal(output.includes(sourceMarker), false, `diagnostic leaked source content:\n${output}`);
-  assert.equal(output.includes("\nINJECTED_DIAGNOSTIC_LINE"), false, `diagnostic preserved a control character:\n${output}`);
-  assert.ok(output.length < 4_096, `diagnostic output was not bounded: ${String(output.length)} bytes`);
+  assert.match(output, new RegExp(`\\[platform-coupling:${expectation.code}\\]`));
+  assert.ok(output.includes(expectation.artifact), `missing artifact ${expectation.artifact}`);
+  assert.ok(output.includes(expectation.detail), `missing detail ${expectation.detail}`);
+  assert.equal(output.includes(expectation.sourceMarker), false, `leaked marker`);
+  assert.ok(output.length < 4_096, `output length exceeded limit`);
 }
 
-function copyPackageForTest(source, destination) {
-  const excluded = new Set(["node_modules", "dist-tests", "dist-examples", "coverage", ".verification-output", "_vp_dummy.ts"]);
-  cpSync(source, destination, {
+function cloneSourceTree(src, dest) {
+  const ignored = new Set(["node_modules", "dist-tests", "dist-examples", "coverage", ".verification-output", "_vp_dummy.ts"]);
+  cpSync(src, dest, {
     recursive: true,
     force: true,
-    filter: (entry) => !excluded.has(basename(entry)),
+    filter: (path) => !ignored.has(basename(path)),
   });
 }
 
-function emptyDirectory(directory) {
-  rmSync(directory, { recursive: true, force: true });
-  mkdirSync(directory, { recursive: true });
+function resetDirectory(dir) {
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
 }

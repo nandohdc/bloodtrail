@@ -53,6 +53,12 @@ const TYPE_CONTAINER_KINDS = new Set([
   ts.SyntaxKind.TypeParameter,
 ]);
 
+const LABEL_KINDS = new Set([
+  ts.SyntaxKind.BreakStatement,
+  ts.SyntaxKind.ContinueStatement,
+  ts.SyntaxKind.LabeledStatement,
+]);
+
 export const PLATFORM_COUPLING_POLICY = Object.freeze({
   languageGlobals: LANGUAGE_GLOBALS,
   roles: Object.freeze({
@@ -144,22 +150,22 @@ class ReferenceCollector {
   }
 
   hoistStatement(stmt) {
-    if ((ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt)) && stmt.name) {
-      this.bindName(stmt.name.text);
+    if (ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt) || ts.isImportEqualsDeclaration(stmt)) {
+      if (stmt.name) this.bindName(stmt.name.text);
       return;
     }
-    if (ts.isImportDeclaration(stmt) && stmt.importClause) {
-      this.hoistImportClause(stmt.importClause);
-      return;
-    }
-    if (ts.isImportEqualsDeclaration(stmt) && stmt.name) {
-      this.bindName(stmt.name.text);
+    if (ts.isImportDeclaration(stmt)) {
+      if (stmt.importClause) this.hoistImportClause(stmt.importClause);
       return;
     }
     if (ts.isVariableStatement(stmt)) {
-      for (const decl of stmt.declarationList.declarations) {
-        this.bindPattern(decl.name);
-      }
+      this.hoistVariables(stmt.declarationList.declarations);
+    }
+  }
+
+  hoistVariables(declarations) {
+    for (const decl of declarations) {
+      this.bindPattern(decl.name);
     }
   }
 
@@ -214,20 +220,31 @@ class ReferenceCollector {
 
   walkFunction(node) {
     this.scopes.push(new Set());
+    this.bindFunctionSelfName(node);
+    this.walkParameters(node.parameters);
+    this.walkFunctionBody(node.body);
+    this.scopes.pop();
+  }
+
+  bindFunctionSelfName(node) {
     if (ts.isFunctionExpression(node) && node.name) {
       this.bindName(node.name.text);
     }
-    for (const param of node.parameters) {
+  }
+
+  walkParameters(parameters) {
+    for (const param of parameters) {
       this.bindPattern(param.name);
       if (param.initializer) this.walk(param.initializer);
     }
-    if (node.body) {
-      if (ts.isBlock(node.body)) {
-        this.hoistDeclarations(node.body.statements);
-      }
-      this.walk(node.body);
+  }
+
+  walkFunctionBody(body) {
+    if (!body) return;
+    if (ts.isBlock(body)) {
+      this.hoistDeclarations(body.statements);
     }
-    this.scopes.pop();
+    this.walk(body);
   }
 
   walkCatch(node) {
@@ -252,9 +269,7 @@ class ReferenceCollector {
   walkLoop(node) {
     this.scopes.push(new Set());
     if (node.initializer && ts.isVariableDeclarationList(node.initializer)) {
-      for (const decl of node.initializer.declarations) {
-        this.bindPattern(decl.name);
-      }
+      this.hoistVariables(node.initializer.declarations);
     }
     ts.forEachChild(node, (child) => this.walk(child));
     this.scopes.pop();
@@ -459,12 +474,19 @@ function isFunctionLike(node) {
   );
 }
 
-function isExportSpecifierValue(specifier, node) {
+function isReExport(specifier) {
   const exportDecl = specifier.parent?.parent;
-  if (exportDecl && ts.isExportDeclaration(exportDecl) && exportDecl.moduleSpecifier) {
-    return false;
-  }
-  return !(specifier.propertyName && specifier.name === node);
+  return Boolean(exportDecl?.moduleSpecifier);
+}
+
+function isExportAlias(specifier, node) {
+  return Boolean(specifier.propertyName && specifier.name === node);
+}
+
+function isExportSpecifierValue(specifier, node) {
+  if (isReExport(specifier)) return false;
+  if (isExportAlias(specifier, node)) return false;
+  return true;
 }
 
 function isValueIdentifier(node) {
@@ -499,10 +521,8 @@ function isPropertyPosition(parent, node) {
 }
 
 function isLabelReference(parent, node) {
-  if (ts.isBreakStatement(parent) || ts.isContinueStatement(parent) || ts.isLabeledStatement(parent)) {
-    return parent.label === node;
-  }
-  return false;
+  if (!LABEL_KINDS.has(parent.kind)) return false;
+  return parent.label === node;
 }
 
 function roleForArtifact(artifactPath) {
