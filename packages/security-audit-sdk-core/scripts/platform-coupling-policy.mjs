@@ -81,6 +81,13 @@ const LOOP_KINDS = new Set([
   ts.SyntaxKind.ForOfStatement,
 ]);
 
+const TYPE_ONLY_KINDS = new Set([
+  ts.SyntaxKind.ExportDeclaration,
+  ts.SyntaxKind.ExportSpecifier,
+  ts.SyntaxKind.ImportSpecifier,
+  ts.SyntaxKind.ImportClause,
+]);
+
 export const PLATFORM_COUPLING_POLICY = Object.freeze({
   languageGlobals: LANGUAGE_GLOBALS,
   roles: Object.freeze({
@@ -476,7 +483,7 @@ function isHeritageExtends(node) {
 }
 
 function isTypeOnlyDeclaration(node) {
-  if (ts.isExportDeclaration(node) || ts.isExportSpecifier(node) || ts.isImportSpecifier(node) || ts.isImportClause(node)) {
+  if (TYPE_ONLY_KINDS.has(node.kind)) {
     return Boolean(node.isTypeOnly);
   }
   if (ts.isImportDeclaration(node)) {
