@@ -476,8 +476,12 @@ function isHeritageExtends(node) {
 }
 
 function isTypeOnlyDeclaration(node) {
-  if (node.isTypeOnly) return true;
-  if (ts.isImportDeclaration(node)) return Boolean(node.importClause?.isTypeOnly);
+  if (ts.isExportDeclaration(node) || ts.isExportSpecifier(node) || ts.isImportSpecifier(node) || ts.isImportClause(node)) {
+    return Boolean(node.isTypeOnly);
+  }
+  if (ts.isImportDeclaration(node)) {
+    return Boolean(node.importClause?.isTypeOnly);
+  }
   return false;
 }
 
@@ -500,7 +504,7 @@ function isFunctionLike(node) {
 
 function isReExport(specifier) {
   const exportDecl = specifier.parent?.parent;
-  return Boolean(exportDecl?.moduleSpecifier);
+  return Boolean(exportDecl && ts.isExportDeclaration(exportDecl) && exportDecl.moduleSpecifier);
 }
 
 function isExportAlias(specifier, node) {
@@ -525,7 +529,7 @@ function isValueIdentifier(node) {
 
 function isDeclarationName(parent, node) {
   if (NAME_DECLARATION_KINDS.has(parent.kind)) {
-    return parent.name === node;
+    return "name" in parent && parent.name === node;
   }
   if (ts.isImportClause(parent)) {
     return parent.name === node;
@@ -537,16 +541,21 @@ function isDeclarationName(parent, node) {
 }
 
 function isPropertyPosition(parent, node) {
-  if (ts.isPropertyAccessExpression(parent)) return parent.name === node;
-  if (ts.isPropertyAssignment(parent)) return parent.name === node;
-  if (ts.isQualifiedName(parent)) return parent.right === node;
-  if (ts.isBindingElement(parent)) return parent.propertyName === node;
+  if (ts.isPropertyAccessExpression(parent) || ts.isPropertyAssignment(parent)) {
+    return parent.name === node;
+  }
+  if (ts.isQualifiedName(parent)) {
+    return parent.right === node;
+  }
+  if (ts.isBindingElement(parent)) {
+    return parent.propertyName === node;
+  }
   return false;
 }
 
 function isLabelReference(parent, node) {
   if (!LABEL_KINDS.has(parent.kind)) return false;
-  return parent.label === node;
+  return "label" in parent && parent.label === node;
 }
 
 function roleForArtifact(artifactPath) {

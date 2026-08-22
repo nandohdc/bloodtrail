@@ -145,7 +145,11 @@ test("unreadable source artifact and empty inventory fail closed", () => {
   const unreadableResult = runCase("m-71-h-unreadable", ({ copiedPackage }) => {
     const probePath = resolve(copiedPackage, "src/unreadable.ts");
     writeFileSync(probePath, `// ${sourceMarker}\nexport const x = 1;\n`, "utf8");
-    chmodSync(probePath, 0o000);
+    try {
+      chmodSync(probePath, 0);
+    } catch {
+      // ignore on systems where chmod is not supported
+    }
   });
 
   assertFailure(unreadableResult, {
