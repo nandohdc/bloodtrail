@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -55,6 +56,48 @@ const POSITIVE_MUTATIONS = [
     file: "src/probe.ts",
     generate: (marker) => `// ${marker}\nexport class CustomStream extends EventEmitter {}\n`,
     expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "EventEmitter" },
+  },
+  {
+    name: "m-71-j-loop-header-global",
+    file: "src/probe.ts",
+    generate: (marker) => `// ${marker}\nexport function scan(): string[] { const out: string[] = []; for (const value of process.argv) { out.push(value); } return out; }\n`,
+    expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "process" },
+  },
+  {
+    name: "m-71-k-loop-condition-global",
+    file: "src/probe.ts",
+    generate: (marker) => `// ${marker}\nexport function count(): number { let n = 0; for (let i = 0; i < process.pid; i += 1) { n += 1; } return n; }\n`,
+    expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "process" },
+  },
+  {
+    name: "m-71-l-loop-header-specifier",
+    file: "src/probe.ts",
+    generate: (marker) => `// ${marker}\nexport async function load(): Promise<unknown[]> { const out: unknown[] = []; for (const m of [await import("kafkajs")]) { out.push(m); } return out; }\n`,
+    expected: { code: "undeclared-specifier", artifact: "src/probe.ts", detail: "kafkajs" },
+  },
+  {
+    name: "m-71-m-destructuring-default",
+    file: "src/probe.ts",
+    generate: (marker) => `// ${marker}\nexport function home(input: { home?: string }): string | undefined { const { home = process.env.HOME } = input; return home; }\n`,
+    expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "process" },
+  },
+  {
+    name: "m-71-n-computed-method-name",
+    file: "src/probe.ts",
+    generate: (marker) => `// ${marker}\nexport class Probe { [process.pid](): number { return 1; } }\n`,
+    expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "process" },
+  },
+  {
+    name: "m-71-o-dynamic-function-evasion",
+    file: "src/probe.ts",
+    generate: (marker) => `// ${marker}\nexport function evade(): unknown { return Function("return " + "pro" + "cess")(); }\n`,
+    expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "Function" },
+  },
+  {
+    name: "m-71-p-eval-evasion",
+    file: "src/probe.ts",
+    generate: (marker) => `// ${marker}\nexport function evade(): unknown { return eval("process"); }\n`,
+    expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "eval" },
   },
   {
     name: "m-71-g-unparseable",
@@ -133,24 +176,37 @@ test("negative control: class extending language global Error passes", () => {
   assert.match(output, /scope passed:/);
 });
 
-test("unreadable source artifact and empty inventory fail closed", () => {
+test("negative control: destructuring defaults over language globals pass", () => {
+  const { output, status } = runCase("m-71-s-destructuring-language-default", ({ copiedPackage }) => {
+    writeFileSync(
+      resolve(copiedPackage, "src/probe.ts"),
+      "export function limits(input: { size?: number }): number {\n  const { size = Number.MAX_SAFE_INTEGER } = input;\n  for (const key of Object.keys(input)) { if (key === 'size') continue; }\n  return size;\n}\n",
+      "utf8",
+    );
+  });
+  assert.equal(status, 0, `destructuring-default negative control failed:\n${output}`);
+  assert.match(output, /scope passed:/);
+});
+
+test("unreadable source artifact and empty inventory fail closed", (t) => {
   const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
+  let denied = false;
   const unreadableResult = runCase("m-71-h-unreadable", ({ copiedPackage }) => {
     const probePath = resolve(copiedPackage, "src/unreadable.ts");
     writeFileSync(probePath, `// ${sourceMarker}\nexport const x = 1;\n`, "utf8");
-    try {
-      chmodSync(probePath, 0o000);
-    } catch {
-      // ignore on systems where chmod is not supported
-    }
+    denied = denyRead(probePath, (path) => readFileSync(path));
   });
 
-  verifyCouplingFailure(unreadableResult, {
-    code: "read-failure",
-    artifact: "src/unreadable.ts",
-    detail: "unreadable.ts",
-    sourceMarker,
-  });
+  if (denied) {
+    verifyCouplingFailure(unreadableResult, {
+      code: "read-failure",
+      artifact: "src/unreadable.ts",
+      detail: "unreadable.ts",
+      sourceMarker,
+    });
+  } else {
+    t.diagnostic("skipped M-71-H unreadable-file arm: mode bits do not deny this user (root or a mode-less filesystem)");
+  }
 
   const emptyResult = runCase("m-71-h-empty", ({ copiedPackage }) => {
     resetDirectory(resolve(copiedPackage, "src"));
@@ -158,6 +214,55 @@ test("unreadable source artifact and empty inventory fail closed", () => {
 
   assert.notEqual(emptyResult.status, 0, `empty inventory mutation unexpectedly passed:\n${emptyResult.output}`);
   assert.match(emptyResult.output, /\[platform-coupling:empty-inventory\]/);
+});
+
+test("unreadable source directory fails closed instead of dropping its subtree", (t) => {
+  const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
+  let denied = false;
+  let probeDir = "";
+  const result = runCase("m-71-q-unreadable-directory", ({ copiedPackage }) => {
+    probeDir = resolve(copiedPackage, "src/sealed");
+    mkdirSync(probeDir, { recursive: true });
+    writeFileSync(
+      resolve(probeDir, "probe.ts"),
+      `// ${sourceMarker}\nexport const leak = process.env;\n`,
+      "utf8",
+    );
+    denied = denyRead(probeDir, (path) => readdirSync(path));
+  });
+  // A 0o000 directory cannot be traversed, so the suite's rmSync would fail
+  // with ENOTEMPTY. Restore the mode now that the gate has run.
+  restoreMode(probeDir);
+
+  if (!denied) {
+    t.diagnostic("skipped M-71-Q: mode bits do not deny this user (root or a mode-less filesystem)");
+    return;
+  }
+  verifyCouplingFailure(result, {
+    code: "directory-read-failure",
+    artifact: "src/sealed",
+    detail: "sealed",
+    sourceMarker,
+  });
+});
+
+test("symlinked source artifact fails closed rather than going uninspected", () => {
+  const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
+  const result = runCase("m-71-r-symlinked-source", ({ copiedPackage }) => {
+    // The target sits outside src/ so the walk can only reach it through the
+    // link. tsc would follow it into dist/, so leaving it uncounted, unread and
+    // unreported is exactly the gap this arm guards.
+    const outside = resolve(copiedPackage, "linked-probe.ts.txt");
+    writeFileSync(outside, `// ${sourceMarker}\nexport const leak = process.env;\n`, "utf8");
+    symlinkSync(outside, resolve(copiedPackage, "src/linked.ts"), "file");
+  });
+
+  verifyCouplingFailure(result, {
+    code: "unsupported-entry",
+    artifact: "src/linked.ts",
+    detail: "linked.ts",
+    sourceMarker,
+  });
 });
 
 test("forbidden production integration filename diagnostic remains distinguishable", () => {
@@ -176,6 +281,31 @@ test("forbidden production integration filename diagnostic remains distinguishab
   assert.equal(result.output.includes(sourceMarker), false, `diagnostic leaked source content:\n${result.output}`);
   assert.ok(result.output.length < 4_096, `output length exceeded limit: ${String(result.output.length)} bytes`);
 });
+
+// chmod 0o000 is a no-op for root, and CI may run as root on a self-hosted
+// runner. Confirm the mode actually denies *this* process before asserting the
+// gate reacts to it, so the arm skips rather than failing spuriously.
+function denyRead(targetPath, probe) {
+  try {
+    chmodSync(targetPath, 0o000);
+  } catch {
+    return false;
+  }
+  try {
+    probe(targetPath);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+function restoreMode(targetPath) {
+  try {
+    chmodSync(targetPath, 0o755);
+  } catch {
+    // nothing to restore
+  }
+}
 
 function readExisting(filePath) {
   try {

@@ -10,6 +10,10 @@
 - [x] 1.8 Add M-71-G and M-71-H fail-closed mutation arms for unparseable artifact, unreadable artifact, and empty inspection set.
 - [x] 1.9 Add M-71-I distinguishability mutation (`src/transport.ts`) proving existing production-integration diagnostic is emitted without coupling codes.
 - [x] 1.10 Assert bounding, escaping, and source-marker absence across all failing mutation arms.
+- [x] 1.11 Add M-71-J, M-71-K, and M-71-L loop-header arms (for-of expression, for-statement condition, dynamic import inside a header) failing closed, proving the header is inspected and not only the loop body.
+- [x] 1.12 Add M-71-M and M-71-N arms for a destructuring default and a computed method name failing closed, with M-71-S negative control proving defaults built from language globals still pass.
+- [x] 1.13 Add M-71-O and M-71-P dynamic-evaluation evasion arms (`Function("return pro" + "cess")()`, `eval("process")`) failing closed alongside the existing `globalThis` arm.
+- [x] 1.14 Add M-71-Q and M-71-R structural arms for an unreadable source directory and a symlinked source entry, skipping M-71-H/M-71-Q when mode bits do not deny the running user.
 
 ## 2. Platform Coupling Policy and Scope Gate Integration
 
@@ -18,6 +22,9 @@
 - [x] 2.3 Implement `inspectPlatformCoupling` walking all runtime code artifacts, classifying references, and generating sorted violations.
 - [x] 2.4 Integrate coupling inspection into `packages/security-audit-sdk-core/scripts/check-scope.mjs` while preserving legacy rules and reporting coupling inventory.
 - [x] 2.5 Run null control, negative controls, and positive mutations against the wired scope gate and prove deterministic pass/fail signals.
+- [x] 2.6 Harden the reference collector across loop headers, binding-pattern defaults and computed binding keys, computed member names, and decorator expressions, and withdraw `eval`/`Function` from the admitted language globals.
+- [x] 2.7 Fail closed on an unreadable source directory (`directory-read-failure`) and a non-regular source entry (`unsupported-entry`), and walk the source tree once, sharing it between the legacy and coupling stages.
+- [x] 2.8 Prove every added arm fails on the pre-hardening gate and passes on the hardened gate, so no control passes for the wrong reason.
 
 ## 3. Documentation and Verification
 

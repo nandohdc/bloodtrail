@@ -9,8 +9,8 @@ import { packageRoot, readJson } from "./verification-helpers.mjs";
 
 const sourceRoot = resolve(packageRoot, "src");
 const packageJson = await readJson(resolve(packageRoot, "package.json"));
-const allFiles = await walkSourceTree(sourceRoot);
-const files = allFiles.filter((file) => extname(file) === ".ts");
+const sourceTree = await walkSourceTree(sourceRoot);
+const files = sourceTree.files.filter((file) => extname(file) === ".ts");
 const violations = [];
 const FORBIDDEN_NAME_TERMS = [
   "adapter", "instrument(?:ation)?", "transport", "exporter", "collector",
@@ -61,7 +61,7 @@ for (const forbiddenExport of ["transport", "collector", "queue", "outbox", "sto
   }
 }
 
-const coupling = await inspectPlatformCoupling({ packageRoot, sourceRoot });
+const coupling = await inspectPlatformCoupling({ packageRoot, sourceRoot, tree: sourceTree });
 for (const item of coupling.violations) {
   violations.push(formatCouplingViolation(item));
 }

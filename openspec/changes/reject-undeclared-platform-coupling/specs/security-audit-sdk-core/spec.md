@@ -14,9 +14,10 @@ admitted, and the module specifiers declared for that role. Identifiers referenc
 position SHALL NOT be classified as coupling.
 
 Verification SHALL fail when it can assign a reference to no declared boundary, SHALL fail when a
-source artifact cannot be read, SHALL fail when the parser cannot return a syntax tree, and SHALL
-fail when it inspects no artifact. Verification SHALL NOT fail on an identifier that the artifact
-binds in its own lexical scope.
+source artifact or a directory under the source root cannot be read, SHALL fail when an entry under
+the source root is neither a regular file nor a directory, SHALL fail when the parser cannot return
+a syntax tree, and SHALL fail when it inspects no artifact. Verification SHALL NOT fail on an
+identifier that the artifact binds in its own lexical scope.
 
 Diagnostics for coupling SHALL name the artifact, the identifier or specifier, and the violated
 class; SHALL be bounded in count and length; SHALL NOT include artifact source content; and SHALL
@@ -61,6 +62,14 @@ portability.
 #### Scenario: Unreadable or unparseable artifact fails closed
 - **WHEN** a source artifact cannot be read, or the parser cannot return a syntax tree for it
 - **THEN** verification fails rather than skipping that artifact
+
+#### Scenario: Unreadable source directory fails closed
+- **WHEN** a directory under the SDK source root cannot be read
+- **THEN** verification fails rather than reporting a pass over the artifacts it could still reach
+
+#### Scenario: Uninspectable source entry fails closed
+- **WHEN** an entry under the SDK source root is neither a regular file nor a directory
+- **THEN** verification fails and names that entry, rather than omitting it from inspection
 
 #### Scenario: Empty inspection set fails closed
 - **WHEN** scope verification finds no code artifact under the SDK source root

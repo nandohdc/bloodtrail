@@ -7,16 +7,22 @@ import { byCodePoint } from "./verification-helpers.mjs";
 const CODE_ARTIFACT = /\.(?:[cm]?[jt]s)$/;
 const MAX_VIOLATIONS = 50;
 
+// `globalThis`, `eval`, and `Function` are omitted deliberately. Each one
+// resolves a capability from a string at run time, which defeats the static
+// classification this gate performs: `Function("return pro" + "cess")()` reaches
+// the same host object as a bare `process` reference. Admitting them here would
+// leave the ban on `globalThis` cosmetic, so all three are reported as
+// undeclared globals wherever they appear.
 const LANGUAGE_GLOBALS = new Set([
   "Array", "ArrayBuffer", "AsyncFunction", "AsyncGenerator", "AsyncGeneratorFunction",
   "AsyncIterator", "Atomics", "BigInt", "BigInt64Array", "BigUint64Array", "Boolean",
   "DataView", "Date", "Error", "EvalError", "Float16Array", "Float32Array", "Float64Array",
-  "Function", "Generator", "GeneratorFunction", "Int8Array", "Int16Array", "Int32Array",
+  "Generator", "GeneratorFunction", "Int8Array", "Int16Array", "Int32Array",
   "Intl", "Iterator", "JSON", "Map", "Math", "Number", "Object", "Promise", "Proxy",
   "RangeError", "ReferenceError", "Reflect", "RegExp", "Set", "SharedArrayBuffer",
   "String", "Symbol", "SyntaxError", "TypeError", "URIError", "Uint8Array",
   "Uint8ClampedArray", "Uint16Array", "Uint32Array", "WeakMap", "WeakRef", "WeakSet",
-  "decodeURI", "decodeURIComponent", "encodeURI", "encodeURIComponent", "escape", "eval",
+  "decodeURI", "decodeURIComponent", "encodeURI", "encodeURIComponent", "escape",
   "isFinite", "isNaN", "parseFloat", "parseInt", "structuredClone", "unescape", "undefined",
   "setTimeout", "clearTimeout",
 ]);
@@ -261,6 +267,12 @@ function checkCallSpecifiers(node, collector) {
 }
 
 function walkFunction(node, collector) {
+  // A computed method name and a decorator expression are evaluated in the
+  // enclosing scope, so they are walked before the function scope is pushed.
+  // walkFunction never reaches ts.forEachChild, so without this they were
+  // dropped: `class C { [process.pid]() {} }` reported nothing.
+  walkComputedName(node.name, collector);
+  walkDecorators(node.modifiers, collector);
   collector.scopes.push(new Set());
   bindFunctionSelfName(node, collector);
   walkParameters(node.parameters, collector);
@@ -275,6 +287,13 @@ function walkFunction(node, collector) {
   collector.scopes.pop();
 }
 
+function walkDecorators(modifiers, collector) {
+  if (!modifiers) return;
+  for (const modifier of modifiers) {
+    if (ts.isDecorator(modifier)) walkNode(modifier.expression, collector);
+  }
+}
+
 function bindFunctionSelfName(node, collector) {
   if (ts.isFunctionExpression(node) && node.name) {
     collector.bindName(node.name.text);
@@ -284,6 +303,7 @@ function bindFunctionSelfName(node, collector) {
 function walkParameters(parameters, collector) {
   for (const param of parameters) {
     collector.bindPattern(param.name);
+    walkPatternDefaults(param.name, collector);
     if (param.initializer) walkNode(param.initializer, collector);
   }
 }
@@ -292,6 +312,7 @@ function walkCatch(node, collector) {
   collector.scopes.push(new Set());
   if (node.variableDeclaration) {
     collector.bindPattern(node.variableDeclaration.name);
+    walkPatternDefaults(node.variableDeclaration.name, collector);
   }
   if (node.block) {
     hoistDeclarations(node.block.statements, collector);
@@ -309,16 +330,61 @@ function walkBlock(node, collector) {
 
 function walkLoop(node, collector) {
   collector.scopes.push(new Set());
-  if (node.initializer && ts.isVariableDeclarationList(node.initializer)) {
-    hoistVariables(node.initializer.declarations, collector);
-  }
+  walkLoopInitializer(node.initializer, collector);
+  // for-of/for-in carry `expression`; the C-style form carries `condition` and
+  // `incrementor`. Walking only `statement` left every header a blind spot, so
+  // `for (const m of [await import("x")])` reached neither the specifier check
+  // nor the global check.
+  if (node.expression) walkNode(node.expression, collector);
+  if (node.condition) walkNode(node.condition, collector);
+  if (node.incrementor) walkNode(node.incrementor, collector);
   if (node.statement) walkNode(node.statement, collector);
   collector.scopes.pop();
 }
 
+function walkLoopInitializer(initializer, collector) {
+  if (!initializer) return;
+  if (!ts.isVariableDeclarationList(initializer)) {
+    // `for (i = 0; ...)` / `for (existing of xs)` — an assignment target, which
+    // is a value reference rather than a binding.
+    walkNode(initializer, collector);
+    return;
+  }
+  hoistVariables(initializer.declarations, collector);
+  for (const declaration of initializer.declarations) {
+    walkPatternDefaults(declaration.name, collector);
+    if (declaration.initializer) walkNode(declaration.initializer, collector);
+  }
+}
+
 function walkVariable(node, collector) {
   collector.bindPattern(node.name);
+  walkPatternDefaults(node.name, collector);
   if (node.initializer) walkNode(node.initializer, collector);
+}
+
+// bindPattern binds the names a pattern introduces; the expressions *inside* the
+// pattern — `= process.env.HOME` defaults and computed `[process.pid]:` keys —
+// are ordinary value references and have to be walked separately.
+function walkPatternDefaults(node, collector) {
+  if (!node) return;
+  if (ts.isBindingElement(node)) {
+    walkComputedName(node.propertyName, collector);
+    walkPatternDefaults(node.name, collector);
+    if (node.initializer) walkNode(node.initializer, collector);
+    return;
+  }
+  if (ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) {
+    for (const element of node.elements) {
+      if (!ts.isOmittedExpression(element)) walkPatternDefaults(element, collector);
+    }
+  }
+}
+
+function walkComputedName(nameNode, collector) {
+  if (nameNode && ts.isComputedPropertyName(nameNode)) {
+    walkNode(nameNode.expression, collector);
+  }
 }
 
 function walkIdentifier(node, collector) {
@@ -399,10 +465,13 @@ function parseFailureResult(artifactPath) {
   };
 }
 
-export async function inspectPlatformCoupling({ packageRoot, sourceRoot }) {
-  const allFiles = await walkSourceTree(sourceRoot);
-  const artifacts = allFiles
-    .map((file) => relative(packageRoot, file).split(sep).join("/"))
+// `tree` is the already-walked source tree. The caller walks src/ once and
+// passes it through, so the gate reads the same tree both stages saw and does
+// not re-traverse and re-read every artifact.
+export async function inspectPlatformCoupling({ packageRoot, sourceRoot, tree }) {
+  const sourceTree = tree ?? (await walkSourceTree(sourceRoot));
+  const artifacts = sourceTree.files
+    .map((file) => toPackagePath(packageRoot, file))
     .filter((path) => CODE_ARTIFACT.test(path))
     .sort(byCodePoint);
 
@@ -416,13 +485,17 @@ export async function inspectPlatformCoupling({ packageRoot, sourceRoot }) {
     violations: [],
   };
 
-  if (artifacts.length === 0) {
-    result.violations.push(violation("<inventory>", "<none>", "empty-inventory"));
-    return result;
+  for (const failure of sourceTree.failures) {
+    const artifact = toPackagePath(packageRoot, failure.path);
+    result.violations.push(violation(artifact, basename(failure.path), failure.code));
   }
 
-  for (const artifactPath of artifacts) {
-    await inspectArtifact({ packageRoot, artifactPath, result });
+  if (artifacts.length === 0) {
+    result.violations.push(violation("<inventory>", "<none>", "empty-inventory"));
+  } else {
+    for (const artifactPath of artifacts) {
+      await inspectArtifact({ packageRoot, artifactPath, result });
+    }
   }
 
   result.violations.sort(compareViolations);
@@ -430,6 +503,10 @@ export async function inspectPlatformCoupling({ packageRoot, sourceRoot }) {
     result.violations = result.violations.slice(0, MAX_VIOLATIONS);
   }
   return result;
+}
+
+function toPackagePath(packageRoot, absolutePath) {
+  return relative(packageRoot, absolutePath).split(sep).join("/");
 }
 
 async function inspectArtifact({ packageRoot, artifactPath, result }) {
@@ -612,22 +689,34 @@ export function formatCouplingViolation({ artifact, detail, code }) {
   return `[platform-coupling:${bounded(code, 40)}] ${bounded(artifact, 90)}: ${bounded(detail, 120)}`;
 }
 
+// Returns { files, failures }. Anything the walk cannot classify becomes a
+// failure rather than an omission: swallowing a readdir error dropped the whole
+// subtree from inspection while the gate still reported success, and skipping
+// symlinks left a linked source file uncounted, unread, and unreported even
+// though tsc follows it into dist/. src/ holds only real files and directories,
+// so a link is rejected instead of followed — no cycle detection needed.
 export async function walkSourceTree(directory) {
+  const tree = { files: [], failures: [] };
+  await collectTreeEntries(directory, tree);
+  return tree;
+}
+
+async function collectTreeEntries(directory, tree) {
   let entries;
   try {
     entries = await readdir(directory, { withFileTypes: true });
   } catch {
-    return [];
+    tree.failures.push({ path: directory, code: "directory-read-failure" });
+    return;
   }
-  const result = [];
   for (const entry of entries) {
     const entryPath = resolve(directory, entry.name);
     if (entry.isDirectory()) {
-      const nested = await walkSourceTree(entryPath);
-      for (const file of nested) result.push(file);
+      await collectTreeEntries(entryPath, tree);
     } else if (entry.isFile()) {
-      result.push(entryPath);
+      tree.files.push(entryPath);
+    } else {
+      tree.failures.push({ path: entryPath, code: "unsupported-entry" });
     }
   }
-  return result;
 }

@@ -10,9 +10,9 @@ The declared coupling inventory in the SDK is small and enumerable: standard ECM
 
 - Classify every module specifier and free global identifier in SDK runtime source artifacts (`src/`, including `src/generated/` and `.cjs`) against a frozen, role-keyed coupling policy.
 - Use the TypeScript AST parser (`ts.createSourceFile`) to inspect syntactic structure, tracking lexical scopes and distinguishing value identifiers from type positions and property accesses.
-- Fail closed on any undeclared host global or module specifier, unreadable file, unparseable file, or empty inventory.
-- Ban `globalThis` across all roles to defeat dynamic global evasion by construction.
-- Preserve existing filename regex, source-content regexes, import loop, and manifest assertions verbatim.
+- Fail closed on any undeclared host global or module specifier, unreadable file, unreadable directory, entry that is neither a regular file nor a directory, unparseable file, or empty inventory.
+- Ban every dynamic-resolution global (`globalThis`, `eval`, `Function`) across all roles to defeat dynamic global evasion by construction.
+- Retain the behaviour of the existing filename regex, source-content regexes, import loop, and manifest assertions.
 - Distinguish platform coupling diagnostics using a `[platform-coupling:<code>]` prefix.
 - Provide deterministic mutation tests and negative controls in a standalone verification test file.
 
@@ -37,7 +37,7 @@ Sources are partitioned into two roles:
 - `authored`: code under `src/` excluding `src/generated/`. Admitted host globals: `Buffer` (with explicit rationale: byte-length calculations). Admitted specifiers: `node:async_hooks`, `node:crypto`.
 - `generated`: code under `src/generated/`. Admitted host globals: `module` (CommonJS wrapper export). Admitted specifiers: none.
 - Shared `languageGlobals`: standard ECMAScript globals (`Array`, `Object`, `Promise`, etc.) and universal timer globals (`setTimeout`, `clearTimeout`).
-- `globalThis` is admitted in no role, closing dynamic member evasion.
+- `globalThis`, `eval`, and `Function` are admitted in no role, closing dynamic member evasion. Each resolves a capability from a string at run time, so admitting `eval` or `Function` while banning `globalThis` would leave the ban cosmetic: `Function("return pro" + "cess")()` reaches the same host object as a bare `process` reference.
 
 ### Lexical scope tracking and position exclusion
 
@@ -48,12 +48,14 @@ The visitor tracks nested lexical scopes (functions, arrow functions, blocks, ca
 The inspection fails closed if:
 - An identifier or module specifier is not in the declared set for the artifact's role (`undeclared-global`, `undeclared-specifier`).
 - An artifact cannot be read (`read-failure`).
+- A directory under the source root cannot be read (`directory-read-failure`). Returning an empty listing instead would drop that whole subtree from inspection while the gate still reported a pass.
+- An entry under the source root is not a regular file or directory (`unsupported-entry`). A symlink is rejected rather than followed: `tsc` follows it into `dist/`, so leaving it uncounted, unread, and unreported would be an uninspected shipping artifact, while following it would require cycle detection for a case `src/` has no legitimate use for.
 - An artifact cannot be parsed into an AST (`parse-failure`).
 - The inspected artifact set is empty (`empty-inventory`).
 
-### Verbatim legacy stage retention
+### Legacy stage retention
 
-Existing filename checks, source-content regexes, import-specifier checks, and manifest assertions remain unchanged in `scripts/check-scope.mjs`. The legacy `src/generated/` skip at line 30 is preserved for legacy stages because those regexes were not designed for generated output. The new coupling inspection stage inspects all of `src/` including generated files.
+Existing filename checks, source-content regexes, import-specifier checks, and manifest assertions are retained in `scripts/check-scope.mjs`; their coverage is unchanged, though the import regex, the read-failure handling, and the manifest `exports` lookup were tightened in place. The legacy `src/generated/` skip at line 30 is preserved for legacy stages because those regexes were not designed for generated output. The new coupling inspection stage inspects all of `src/` including generated files.
 
 ### Diagnostic prefixing and output bounding
 
