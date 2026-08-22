@@ -139,7 +139,7 @@ test("unreadable source artifact and empty inventory fail closed", () => {
     const probePath = resolve(copiedPackage, "src/unreadable.ts");
     writeFileSync(probePath, `// ${sourceMarker}\nexport const x = 1;\n`, "utf8");
     try {
-      chmodSync(probePath, 0);
+      chmodSync(probePath, 0o000);
     } catch {
       // ignore on systems where chmod is not supported
     }
@@ -203,8 +203,8 @@ function runCase(name, mutate) {
 function verifyCouplingFailure({ output, status }, expected) {
   assert.notEqual(status, 0, "platform coupling mutation should fail");
   assert.match(output, new RegExp(`\\[platform-coupling:${expected.code}\\]`));
-  assert.match(output, new RegExp(expected.artifact.replaceAll(".", "\\.")));
-  assert.match(output, new RegExp(expected.detail.replaceAll(".", "\\.")));
+  assert.ok(output.includes(expected.artifact), `missing artifact: ${expected.artifact}`);
+  assert.ok(output.includes(expected.detail), `missing detail: ${expected.detail}`);
   if (expected.sourceMarker) {
     assert.equal(output.includes(expected.sourceMarker), false, "source marker leaked into error stream");
   }
