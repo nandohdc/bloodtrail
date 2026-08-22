@@ -87,9 +87,13 @@ async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const result = [];
   for (const entry of entries) {
-    const path = resolve(directory, entry.name);
-    if (entry.isDirectory()) result.push(...await walk(path));
-    else if (entry.isFile() && extname(entry.name) === ".ts") result.push(path);
+    const entryPath = resolve(directory, entry.name);
+    if (entry.isDirectory()) {
+      const nested = await walk(entryPath);
+      for (const item of nested) result.push(item);
+    } else if (entry.isFile() && extname(entry.name) === ".ts") {
+      result.push(entryPath);
+    }
   }
   return result;
 }
