@@ -134,9 +134,13 @@ class ReferenceCollector {
     this.scopes = [new Set()];
   }
 
+  currentScope() {
+    return this.scopes[this.scopes.length - 1];
+  }
+
   bindName(name) {
     if (typeof name === "string" && name.length > 0) {
-      this.scopes[this.scopes.length - 1].add(name);
+      this.currentScope().add(name);
     }
   }
 
@@ -165,166 +169,194 @@ class ReferenceCollector {
     }
     return false;
   }
+}
 
-  hoistDeclarations(statements) {
-    if (!statements) return;
-    for (const stmt of statements) {
-      this.hoistStatement(stmt);
+function hoistDeclarations(statements, collector) {
+  if (!statements) return;
+  for (const stmt of statements) {
+    hoistStatement(stmt, collector);
+  }
+}
+
+function hoistStatement(stmt, collector) {
+  if (HOISTED_NAME_KINDS.has(stmt.kind)) {
+    bindDeclaredName(stmt.name, collector);
+    return;
+  }
+  if (ts.isImportDeclaration(stmt)) {
+    hoistImportDeclaration(stmt, collector);
+    return;
+  }
+  if (ts.isVariableStatement(stmt)) {
+    hoistVariables(stmt.declarationList.declarations, collector);
+  }
+}
+
+function bindDeclaredName(nameNode, collector) {
+  if (nameNode && ts.isIdentifier(nameNode)) {
+    collector.bindName(nameNode.text);
+  }
+}
+
+function hoistImportDeclaration(stmt, collector) {
+  if (stmt.importClause) hoistImportClause(stmt.importClause, collector);
+}
+
+function hoistVariables(declarations, collector) {
+  for (const decl of declarations) {
+    collector.bindPattern(decl.name);
+  }
+}
+
+function hoistImportClause(clause, collector) {
+  if (clause.name) collector.bindName(clause.name.text);
+  const bindings = clause.namedBindings;
+  if (!bindings) return;
+  if (ts.isNamespaceImport(bindings)) {
+    collector.bindName(bindings.name.text);
+    return;
+  }
+  if (ts.isNamedImports(bindings)) {
+    for (const element of bindings.elements) {
+      collector.bindName(element.name.text);
     }
   }
+}
 
-  hoistStatement(stmt) {
-    if (HOISTED_NAME_KINDS.has(stmt.kind)) {
-      if (stmt.name && ts.isIdentifier(stmt.name)) this.bindName(stmt.name.text);
-      return;
+function checkSpecifiers(node, collector) {
+  if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+    if (node.moduleSpecifier) {
+      collectLiteralSpecifier(node.moduleSpecifier, "<static-import>", collector);
     }
-    if (ts.isImportDeclaration(stmt) && stmt.importClause) {
-      this.hoistImportClause(stmt.importClause);
-      return;
-    }
-    if (ts.isVariableStatement(stmt)) {
-      this.hoistVariables(stmt.declarationList.declarations);
-    }
+    return;
   }
-
-  hoistVariables(declarations) {
-    for (const decl of declarations) {
-      this.bindPattern(decl.name);
-    }
+  if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
+    collectLiteralSpecifier(node.moduleReference.expression, "<import-equals>", collector);
+    return;
   }
-
-  hoistImportClause(clause) {
-    if (clause.name) this.bindName(clause.name.text);
-    const bindings = clause.namedBindings;
-    if (!bindings) return;
-    if (ts.isNamespaceImport(bindings)) {
-      this.bindName(bindings.name.text);
-      return;
-    }
-    if (ts.isNamedImports(bindings)) {
-      for (const element of bindings.elements) {
-        this.bindName(element.name.text);
-      }
-    }
+  if (ts.isCallExpression(node)) {
+    checkCallSpecifiers(node, collector);
   }
+}
 
-  checkSpecifiers(node) {
-    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
-      if (node.moduleSpecifier) {
-        this.collectLiteralSpecifier(node.moduleSpecifier, "<static-import>");
-      }
-      return;
-    }
-    if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
-      this.collectLiteralSpecifier(node.moduleReference.expression, "<import-equals>");
-      return;
-    }
-    if (ts.isCallExpression(node)) {
-      this.checkCallSpecifiers(node);
-    }
+function collectLiteralSpecifier(node, marker, collector) {
+  if (node && ts.isStringLiteral(node)) {
+    collector.specifiers.push(node.text);
+  } else {
+    collector.failures.push(violation(collector.artifactPath, marker, "dynamic-specifier"));
   }
+}
 
-  collectLiteralSpecifier(node, marker) {
-    if (node && ts.isStringLiteral(node)) {
-      this.specifiers.push(node.text);
+function checkCallSpecifiers(node, collector) {
+  if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+    collectLiteralSpecifier(node.arguments[0], "<dynamic-import>", collector);
+    return;
+  }
+  if (ts.isIdentifier(node.expression) && node.expression.text === "require") {
+    collectLiteralSpecifier(node.arguments[0], "<dynamic-require>", collector);
+  }
+}
+
+function walkFunction(node, collector) {
+  collector.scopes.push(new Set());
+  bindFunctionSelfName(node, collector);
+  walkParameters(node.parameters, collector);
+  if (node.body) {
+    if (ts.isBlock(node.body)) {
+      hoistDeclarations(node.body.statements, collector);
+      for (const stmt of node.body.statements) walkNode(stmt, collector);
     } else {
-      this.failures.push(violation(this.artifactPath, marker, "dynamic-specifier"));
+      walkNode(node.body, collector);
     }
   }
+  collector.scopes.pop();
+}
 
-  checkCallSpecifiers(node) {
-    if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-      this.collectLiteralSpecifier(node.arguments[0], "<dynamic-import>");
-      return;
-    }
-    if (ts.isIdentifier(node.expression) && node.expression.text === "require") {
-      this.collectLiteralSpecifier(node.arguments[0], "<dynamic-require>");
+function bindFunctionSelfName(node, collector) {
+  if (ts.isFunctionExpression(node) && node.name) {
+    collector.bindName(node.name.text);
+  }
+}
+
+function walkParameters(parameters, collector) {
+  for (const param of parameters) {
+    collector.bindPattern(param.name);
+    if (param.initializer) walkNode(param.initializer, collector);
+  }
+}
+
+function walkCatch(node, collector) {
+  collector.scopes.push(new Set());
+  if (node.variableDeclaration) {
+    collector.bindPattern(node.variableDeclaration.name);
+  }
+  if (node.block) {
+    hoistDeclarations(node.block.statements, collector);
+    for (const stmt of node.block.statements) walkNode(stmt, collector);
+  }
+  collector.scopes.pop();
+}
+
+function walkBlock(node, collector) {
+  collector.scopes.push(new Set());
+  hoistDeclarations(node.statements, collector);
+  for (const stmt of node.statements) walkNode(stmt, collector);
+  collector.scopes.pop();
+}
+
+function walkLoop(node, collector) {
+  collector.scopes.push(new Set());
+  if (node.initializer && ts.isVariableDeclarationList(node.initializer)) {
+    hoistVariables(node.initializer.declarations, collector);
+  }
+  if (node.statement) walkNode(node.statement, collector);
+  collector.scopes.pop();
+}
+
+function walkVariable(node, collector) {
+  collector.bindPattern(node.name);
+  if (node.initializer) walkNode(node.initializer, collector);
+}
+
+function walkIdentifier(node, collector) {
+  if (isValueIdentifier(node)) {
+    const name = node.text;
+    if (!collector.isBound(name)) {
+      collector.freeIdentifiers.add(name);
     }
   }
+}
 
-  walkFunction(node) {
-    this.scopes.push(new Set());
-    if (ts.isFunctionExpression(node) && node.name) this.bindName(node.name.text);
-    this.walkParameters(node.parameters);
-    if (node.body) {
-      if (ts.isBlock(node.body)) {
-        this.hoistDeclarations(node.body.statements);
-        for (const stmt of node.body.statements) this.walk(stmt);
-      } else {
-        this.walk(node.body);
-      }
-    }
-    this.scopes.pop();
+function walkNode(node, collector) {
+  if (!node || isTypeNode(node)) return;
+
+  checkSpecifiers(node, collector);
+
+  if (isFunctionLike(node)) {
+    walkFunction(node, collector);
+    return;
+  }
+  if (ts.isCatchClause(node)) {
+    walkCatch(node, collector);
+    return;
+  }
+  if (ts.isBlock(node)) {
+    walkBlock(node, collector);
+    return;
+  }
+  if (isLoopNode(node)) {
+    walkLoop(node, collector);
+    return;
+  }
+  if (ts.isVariableDeclaration(node)) {
+    walkVariable(node, collector);
+    return;
+  }
+  if (ts.isIdentifier(node)) {
+    walkIdentifier(node, collector);
   }
 
-  walkParameters(parameters) {
-    for (const param of parameters) {
-      this.bindPattern(param.name);
-      if (param.initializer) this.walk(param.initializer);
-    }
-  }
-
-  walkCatch(node) {
-    this.scopes.push(new Set());
-    if (node.variableDeclaration) {
-      this.bindPattern(node.variableDeclaration.name);
-    }
-    if (node.block) {
-      this.hoistDeclarations(node.block.statements);
-      for (const stmt of node.block.statements) this.walk(stmt);
-    }
-    this.scopes.pop();
-  }
-
-  walkBlock(node) {
-    this.scopes.push(new Set());
-    this.hoistDeclarations(node.statements);
-    for (const stmt of node.statements) this.walk(stmt);
-    this.scopes.pop();
-  }
-
-  walkLoop(node) {
-    this.scopes.push(new Set());
-    if (node.initializer && ts.isVariableDeclarationList(node.initializer)) {
-      this.hoistVariables(node.initializer.declarations);
-    }
-    if (node.statement) this.walk(node.statement);
-    this.scopes.pop();
-  }
-
-  walk(node) {
-    if (!node || isTypeNode(node)) return;
-
-    this.checkSpecifiers(node);
-
-    if (isFunctionLike(node)) {
-      this.walkFunction(node);
-      return;
-    }
-    if (ts.isCatchClause(node)) {
-      this.walkCatch(node);
-      return;
-    }
-    if (ts.isBlock(node)) {
-      this.walkBlock(node);
-      return;
-    }
-    if (isLoopNode(node)) {
-      this.walkLoop(node);
-      return;
-    }
-    if (ts.isVariableDeclaration(node)) {
-      this.bindPattern(node.name);
-      if (node.initializer) this.walk(node.initializer);
-      return;
-    }
-    if (ts.isIdentifier(node) && isValueIdentifier(node)) {
-      const name = node.text;
-      if (!this.isBound(name)) this.freeIdentifiers.add(name);
-    }
-
-    ts.forEachChild(node, (child) => this.walk(child));
-  }
+  ts.forEachChild(node, (child) => walkNode(child, collector));
 }
 
 export function collectCouplingReferences(artifactPath, sourceText) {
@@ -346,8 +378,8 @@ export function collectCouplingReferences(artifactPath, sourceText) {
   }
 
   const collector = new ReferenceCollector(artifactPath);
-  collector.hoistDeclarations(sourceFile.statements);
-  collector.walk(sourceFile);
+  hoistDeclarations(sourceFile.statements, collector);
+  walkNode(sourceFile, collector);
 
   return {
     specifiers: collector.specifiers,
