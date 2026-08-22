@@ -80,11 +80,14 @@ const LOOP_KINDS = new Set([
   ts.SyntaxKind.ForOfStatement,
 ]);
 
+// ImportClause is absent deliberately: TypeScript 5.9 deprecated its
+// `isTypeOnly` in favour of `phaseModifier`, so it is resolved separately by
+// importClauseIsTypeOnly(). The kinds below still carry a supported
+// `isTypeOnly`.
 const TYPE_ONLY_KINDS = new Set([
   ts.SyntaxKind.ExportDeclaration,
   ts.SyntaxKind.ExportSpecifier,
   ts.SyntaxKind.ImportSpecifier,
-  ts.SyntaxKind.ImportClause,
 ]);
 
 export const PLATFORM_COUPLING_POLICY = Object.freeze({
@@ -135,7 +138,7 @@ class ReferenceCollector {
   }
 
   currentScope() {
-    return this.scopes[this.scopes.length - 1];
+    return this.scopes.at(-1);
   }
 
   bindName(name) {
@@ -480,12 +483,19 @@ function isHeritageExtends(node) {
   return Boolean(parent && ts.isHeritageClause(parent) && parent.token === ts.SyntaxKind.ExtendsKeyword);
 }
 
+function importClauseIsTypeOnly(clause) {
+  return clause?.phaseModifier === ts.SyntaxKind.TypeKeyword;
+}
+
 function isTypeOnlyDeclaration(node) {
-  if (TYPE_ONLY_KINDS.has(node.kind)) {
-    return "isTypeOnly" in node && Boolean(node.isTypeOnly);
+  if (ts.isImportClause(node)) {
+    return importClauseIsTypeOnly(node);
   }
   if (ts.isImportDeclaration(node)) {
-    return Boolean(node.importClause?.isTypeOnly);
+    return importClauseIsTypeOnly(node.importClause);
+  }
+  if (TYPE_ONLY_KINDS.has(node.kind)) {
+    return "isTypeOnly" in node && Boolean(node.isTypeOnly);
   }
   return false;
 }
