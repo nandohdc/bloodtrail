@@ -32,10 +32,10 @@
 - [x] 3.2 Add root ADR `docs/adr/0004-declare-platform-coupling-at-the-scope-gate.md` recording AST inspection, role-keyed policy data, and retention of `Buffer`.
 - [x] 3.3 Update `CLAUDE.md`, `.hermes.md`, and repository `README.md` to reflect platform coupling enforcement in the scope gate.
 - [x] 3.4 Run full verification chains (SDK, contract, OpenSpec strict, governance) and code review with an empty index.
-- [ ] 3.5 Commit and push verified implementation candidate for PR 1.
+- [x] 3.5 Commit and push verified implementation candidate for PR 1 — done: PR #198 exact head `88de99fdefe1a96d953ac6855fb4794f8252a50c` passed all eighteen required and external checks, including `sdk`, `contract`, `sonar`, `conventional-commits`, `codescene delta`, and `design-pattern-governance`, and owner merge `48b8a16d89e6fb60685469858601d4c568dccfa3` preserves that exact head as its second parent and tree.
 
 ## 4. Canonical Spec Fold and Archive
 
-- [ ] 4.1 Fold ADDED requirement into canonical `openspec/specs/security-audit-sdk-core/spec.md` in PR 2 while change is active.
+- [x] 4.1 Fold ADDED requirement into canonical `openspec/specs/security-audit-sdk-core/spec.md` in PR 2 while change is active — done in this commit: the requirement and all eleven scenarios are present once under the canonical SDK specification with no delta operation header, and the active change remains in place for the later archive relocation.
 - [ ] 4.2 Close issue #71 with comprehensive evidence linking PR merges and matrix verification.
 - [ ] 4.3 Relocate active change into dated archive with `archive-evidence.md` in PR 3.
