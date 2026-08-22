@@ -65,6 +65,22 @@ const LABEL_KINDS = new Set([
   ts.SyntaxKind.LabeledStatement,
 ]);
 
+const FUNCTION_LIKE_KINDS = new Set([
+  ts.SyntaxKind.FunctionDeclaration,
+  ts.SyntaxKind.FunctionExpression,
+  ts.SyntaxKind.ArrowFunction,
+  ts.SyntaxKind.MethodDeclaration,
+  ts.SyntaxKind.Constructor,
+  ts.SyntaxKind.GetAccessor,
+  ts.SyntaxKind.SetAccessor,
+]);
+
+const LOOP_KINDS = new Set([
+  ts.SyntaxKind.ForStatement,
+  ts.SyntaxKind.ForInStatement,
+  ts.SyntaxKind.ForOfStatement,
+]);
+
 export const PLATFORM_COUPLING_POLICY = Object.freeze({
   languageGlobals: LANGUAGE_GLOBALS,
   roles: Object.freeze({
@@ -475,19 +491,11 @@ function isTypeNode(node) {
 }
 
 function isLoopNode(node) {
-  return ts.isForStatement(node) || ts.isForInStatement(node) || ts.isForOfStatement(node);
+  return LOOP_KINDS.has(node.kind);
 }
 
 function isFunctionLike(node) {
-  return (
-    ts.isFunctionDeclaration(node) ||
-    ts.isFunctionExpression(node) ||
-    ts.isArrowFunction(node) ||
-    ts.isMethodDeclaration(node) ||
-    ts.isConstructorDeclaration(node) ||
-    ts.isGetAccessor(node) ||
-    ts.isSetAccessor(node)
-  );
+  return FUNCTION_LIKE_KINDS.has(node.kind);
 }
 
 function isReExport(specifier) {
