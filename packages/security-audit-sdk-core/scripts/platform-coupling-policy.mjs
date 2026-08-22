@@ -22,7 +22,7 @@ const LANGUAGE_GLOBALS = Object.freeze(new Set([
   "setTimeout", "clearTimeout",
 ]));
 
-const NAME_DECLARATION_KINDS = Object.freeze(new Set([
+const NAME_DECLARATION_KINDS = new Set([
   ts.SyntaxKind.VariableDeclaration,
   ts.SyntaxKind.FunctionDeclaration,
   ts.SyntaxKind.FunctionExpression,
@@ -44,26 +44,26 @@ const NAME_DECLARATION_KINDS = Object.freeze(new Set([
   ts.SyntaxKind.NamespaceImport,
   ts.SyntaxKind.ImportEqualsDeclaration,
   ts.SyntaxKind.BindingElement,
-]));
+]);
 
-const HOISTED_NAME_KINDS = Object.freeze(new Set([
+const HOISTED_NAME_KINDS = new Set([
   ts.SyntaxKind.FunctionDeclaration,
   ts.SyntaxKind.ClassDeclaration,
   ts.SyntaxKind.ImportEqualsDeclaration,
-]));
+]);
 
-const TYPE_CONTAINER_KINDS = Object.freeze(new Set([
+const TYPE_CONTAINER_KINDS = new Set([
   ts.SyntaxKind.TypeElement,
   ts.SyntaxKind.InterfaceDeclaration,
   ts.SyntaxKind.TypeAliasDeclaration,
   ts.SyntaxKind.TypeParameter,
-]));
+]);
 
-const LABEL_KINDS = Object.freeze(new Set([
+const LABEL_KINDS = new Set([
   ts.SyntaxKind.BreakStatement,
   ts.SyntaxKind.ContinueStatement,
   ts.SyntaxKind.LabeledStatement,
-]));
+]);
 
 export const PLATFORM_COUPLING_POLICY = Object.freeze({
   languageGlobals: LANGUAGE_GLOBALS,
@@ -103,241 +103,6 @@ export const PLATFORM_COUPLING_POLICY = Object.freeze({
   }),
 });
 
-class ReferenceCollector {
-  constructor(artifactPath) {
-    this.artifactPath = artifactPath;
-    this.specifiers = [];
-    this.failures = [];
-    this.freeIdentifiers = new Set();
-    this.scopes = [new Set()];
-  }
-
-  currentScope() {
-    return this.scopes.at(-1);
-  }
-
-  bindName(name) {
-    if (typeof name === "string" && name.length > 0) {
-      this.currentScope().add(name);
-    }
-  }
-
-  bindPattern(node) {
-    if (!node) return;
-    if (ts.isIdentifier(node)) {
-      this.bindName(node.text);
-      return;
-    }
-    if (ts.isBindingElement(node)) {
-      this.bindPattern(node.name);
-      return;
-    }
-    if (ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) {
-      for (const element of node.elements) {
-        if (!ts.isOmittedExpression(element)) {
-          this.bindPattern(element);
-        }
-      }
-    }
-  }
-
-  isBound(name) {
-    for (let i = this.scopes.length - 1; i >= 0; i--) {
-      if (this.scopes[i].has(name)) return true;
-    }
-    return false;
-  }
-
-  hoistDeclarations(statements) {
-    if (!statements) return;
-    for (const stmt of statements) {
-      this.hoistStatement(stmt);
-    }
-  }
-
-  hoistStatement(stmt) {
-    if (HOISTED_NAME_KINDS.has(stmt.kind)) {
-      this.bindDeclaredName(stmt.name);
-      return;
-    }
-    if (ts.isImportDeclaration(stmt)) {
-      this.hoistImportDeclaration(stmt);
-      return;
-    }
-    if (ts.isVariableStatement(stmt)) {
-      this.hoistVariables(stmt.declarationList.declarations);
-    }
-  }
-
-  bindDeclaredName(nameNode) {
-    if (nameNode && ts.isIdentifier(nameNode)) {
-      this.bindName(nameNode.text);
-    }
-  }
-
-  hoistImportDeclaration(stmt) {
-    if (stmt.importClause) this.hoistImportClause(stmt.importClause);
-  }
-
-  hoistVariables(declarations) {
-    for (const decl of declarations) {
-      this.bindPattern(decl.name);
-    }
-  }
-
-  hoistImportClause(clause) {
-    if (clause.name) this.bindName(clause.name.text);
-    const bindings = clause.namedBindings;
-    if (!bindings) return;
-    if (ts.isNamespaceImport(bindings)) {
-      this.bindName(bindings.name.text);
-      return;
-    }
-    if (ts.isNamedImports(bindings)) {
-      for (const element of bindings.elements) {
-        this.bindName(element.name.text);
-      }
-    }
-  }
-
-  checkSpecifiers(node) {
-    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
-      if (node.moduleSpecifier) {
-        this.collectLiteralSpecifier(node.moduleSpecifier, "<static-import>");
-      }
-      return;
-    }
-    if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
-      this.collectLiteralSpecifier(node.moduleReference.expression, "<import-equals>");
-      return;
-    }
-    if (ts.isCallExpression(node)) {
-      this.checkCallSpecifiers(node);
-    }
-  }
-
-  collectLiteralSpecifier(node, marker) {
-    if (node && ts.isStringLiteral(node)) {
-      this.specifiers.push(node.text);
-    } else {
-      this.failures.push(violation(this.artifactPath, marker, "dynamic-specifier"));
-    }
-  }
-
-  checkCallSpecifiers(node) {
-    if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-      this.collectLiteralSpecifier(node.arguments[0], "<dynamic-import>");
-      return;
-    }
-    if (ts.isIdentifier(node.expression) && node.expression.text === "require") {
-      this.collectLiteralSpecifier(node.arguments[0], "<dynamic-require>");
-    }
-  }
-
-  walkFunction(node) {
-    this.scopes.push(new Set());
-    this.bindFunctionSelfName(node);
-    this.walkParameters(node.parameters);
-    this.walkFunctionBody(node.body);
-    this.scopes.pop();
-  }
-
-  bindFunctionSelfName(node) {
-    if (ts.isFunctionExpression(node) && node.name) {
-      this.bindName(node.name.text);
-    }
-  }
-
-  walkParameters(parameters) {
-    for (const param of parameters) {
-      this.bindPattern(param.name);
-      if (param.initializer) this.walk(param.initializer);
-    }
-  }
-
-  walkFunctionBody(body) {
-    if (!body) return;
-    if (ts.isBlock(body)) {
-      this.hoistDeclarations(body.statements);
-    }
-    this.walk(body);
-  }
-
-  walkCatch(node) {
-    this.scopes.push(new Set());
-    if (node.variableDeclaration) {
-      this.bindPattern(node.variableDeclaration.name);
-    }
-    if (node.block) {
-      this.hoistDeclarations(node.block.statements);
-      this.walk(node.block);
-    }
-    this.scopes.pop();
-  }
-
-  walkBlock(node) {
-    this.scopes.push(new Set());
-    this.hoistDeclarations(node.statements);
-    ts.forEachChild(node, (child) => this.walk(child));
-    this.scopes.pop();
-  }
-
-  walkLoop(node) {
-    this.scopes.push(new Set());
-    if (node.initializer && ts.isVariableDeclarationList(node.initializer)) {
-      this.hoistVariables(node.initializer.declarations);
-    }
-    ts.forEachChild(node, (child) => this.walk(child));
-    this.scopes.pop();
-  }
-
-  walkVariable(node) {
-    this.bindPattern(node.name);
-    if (node.initializer) this.walk(node.initializer);
-  }
-
-  walkIdentifier(node) {
-    if (isValueIdentifier(node)) {
-      const name = node.text;
-      if (!this.isBound(name)) {
-        this.freeIdentifiers.add(name);
-      }
-    }
-  }
-
-  walk(node) {
-    if (!node || isTypeNode(node)) return;
-
-    this.checkSpecifiers(node);
-
-    if (isFunctionLike(node)) {
-      this.walkFunction(node);
-      return;
-    }
-    if (ts.isCatchClause(node)) {
-      this.walkCatch(node);
-      return;
-    }
-    if (ts.isBlock(node)) {
-      this.walkBlock(node);
-      return;
-    }
-    if (isLoopNode(node)) {
-      this.walkLoop(node);
-      return;
-    }
-    if (ts.isVariableDeclaration(node)) {
-      this.walkVariable(node);
-      return;
-    }
-    if (ts.isIdentifier(node)) {
-      this.walkIdentifier(node);
-    }
-
-    ts.forEachChild(node, (child) => this.walk(child));
-  }
-}
-
 export function collectCouplingReferences(artifactPath, sourceText) {
   let sourceFile;
   try {
@@ -352,18 +117,23 @@ export function collectCouplingReferences(artifactPath, sourceText) {
     return parseFailureResult(artifactPath);
   }
 
-  if (Boolean(sourceFile.parseDiagnostics && sourceFile.parseDiagnostics.length > 0)) {
+  if (sourceFile.parseDiagnostics && sourceFile.parseDiagnostics.length > 0) {
     return parseFailureResult(artifactPath);
   }
 
-  const collector = new ReferenceCollector(artifactPath);
-  collector.hoistDeclarations(sourceFile.statements);
-  collector.walk(sourceFile);
+  const specifiers = [];
+  const freeIdentifiers = new Set();
+  const failures = [];
+  const scopes = [new Set()];
+
+  const context = { artifactPath, specifiers, freeIdentifiers, failures, scopes };
+  hoistDeclarations(sourceFile.statements, context);
+  walkNode(sourceFile, context);
 
   return {
-    specifiers: collector.specifiers,
-    identifiers: Array.from(collector.freeIdentifiers).sort(byCodePoint),
-    failures: collector.failures,
+    specifiers,
+    identifiers: Array.from(freeIdentifiers).sort(byCodePoint),
+    failures,
   };
 }
 
@@ -373,6 +143,196 @@ function parseFailureResult(artifactPath) {
     identifiers: [],
     failures: [violation(artifactPath, basename(artifactPath), "parse-failure")],
   };
+}
+
+function currentScope(context) {
+  return context.scopes[context.scopes.length - 1];
+}
+
+function bindName(name, context) {
+  if (typeof name === "string" && name.length > 0) {
+    currentScope(context).add(name);
+  }
+}
+
+function bindPattern(node, context) {
+  if (!node) return;
+  if (ts.isIdentifier(node)) {
+    bindName(node.text, context);
+    return;
+  }
+  if (ts.isBindingElement(node)) {
+    bindPattern(node.name, context);
+    return;
+  }
+  if (ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) {
+    for (const element of node.elements) {
+      if (!ts.isOmittedExpression(element)) {
+        bindPattern(element, context);
+      }
+    }
+  }
+}
+
+function isBound(name, context) {
+  for (let i = context.scopes.length - 1; i >= 0; i -= 1) {
+    if (context.scopes[i].has(name)) return true;
+  }
+  return false;
+}
+
+function hoistDeclarations(statements, context) {
+  if (!statements) return;
+  for (const stmt of statements) {
+    hoistStatement(stmt, context);
+  }
+}
+
+function hoistStatement(stmt, context) {
+  if (HOISTED_NAME_KINDS.has(stmt.kind)) {
+    if (stmt.name && ts.isIdentifier(stmt.name)) bindName(stmt.name.text, context);
+    return;
+  }
+  if (ts.isImportDeclaration(stmt)) {
+    if (stmt.importClause) hoistImportClause(stmt.importClause, context);
+    return;
+  }
+  if (ts.isVariableStatement(stmt)) {
+    for (const decl of stmt.declarationList.declarations) {
+      bindPattern(decl.name, context);
+    }
+  }
+}
+
+function hoistImportClause(clause, context) {
+  if (clause.name) bindName(clause.name.text, context);
+  const bindings = clause.namedBindings;
+  if (!bindings) return;
+  if (ts.isNamespaceImport(bindings)) {
+    bindName(bindings.name.text, context);
+    return;
+  }
+  if (ts.isNamedImports(bindings)) {
+    for (const element of bindings.elements) {
+      bindName(element.name.text, context);
+    }
+  }
+}
+
+function checkSpecifiers(node, context) {
+  if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+    if (node.moduleSpecifier) collectLiteralSpecifier(node.moduleSpecifier, "<static-import>", context);
+    return;
+  }
+  if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
+    collectLiteralSpecifier(node.moduleReference.expression, "<import-equals>", context);
+    return;
+  }
+  if (ts.isCallExpression(node)) {
+    checkCallSpecifiers(node, context);
+  }
+}
+
+function collectLiteralSpecifier(node, marker, context) {
+  if (node && ts.isStringLiteral(node)) {
+    context.specifiers.push(node.text);
+  } else {
+    context.failures.push(violation(context.artifactPath, marker, "dynamic-specifier"));
+  }
+}
+
+function checkCallSpecifiers(node, context) {
+  if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+    collectLiteralSpecifier(node.arguments[0], "<dynamic-import>", context);
+    return;
+  }
+  if (ts.isIdentifier(node.expression) && node.expression.text === "require") {
+    collectLiteralSpecifier(node.arguments[0], "<dynamic-require>", context);
+  }
+}
+
+function walkFunction(node, context) {
+  context.scopes.push(new Set());
+  if (ts.isFunctionExpression(node) && node.name) {
+    bindName(node.name.text, context);
+  }
+  for (const param of node.parameters) {
+    bindPattern(param.name, context);
+    if (param.initializer) walkNode(param.initializer, context);
+  }
+  if (node.body) {
+    if (ts.isBlock(node.body)) {
+      hoistDeclarations(node.body.statements, context);
+    }
+    walkNode(node.body, context);
+  }
+  context.scopes.pop();
+}
+
+function walkCatch(node, context) {
+  context.scopes.push(new Set());
+  if (node.variableDeclaration) {
+    bindPattern(node.variableDeclaration.name, context);
+  }
+  if (node.block) {
+    hoistDeclarations(node.block.statements, context);
+    walkNode(node.block, context);
+  }
+  context.scopes.pop();
+}
+
+function walkBlock(node, context) {
+  context.scopes.push(new Set());
+  hoistDeclarations(node.statements, context);
+  ts.forEachChild(node, (child) => walkNode(child, context));
+  context.scopes.pop();
+}
+
+function walkLoop(node, context) {
+  context.scopes.push(new Set());
+  if (node.initializer && ts.isVariableDeclarationList(node.initializer)) {
+    for (const decl of node.initializer.declarations) {
+      bindPattern(decl.name, context);
+    }
+  }
+  ts.forEachChild(node, (child) => walkNode(child, context));
+  context.scopes.pop();
+}
+
+function walkNode(node, context) {
+  if (!node || isTypeNode(node)) return;
+
+  checkSpecifiers(node, context);
+
+  if (isFunctionLike(node)) {
+    walkFunction(node, context);
+    return;
+  }
+  if (ts.isCatchClause(node)) {
+    walkCatch(node, context);
+    return;
+  }
+  if (ts.isBlock(node)) {
+    walkBlock(node, context);
+    return;
+  }
+  if (isLoopNode(node)) {
+    walkLoop(node, context);
+    return;
+  }
+  if (ts.isVariableDeclaration(node)) {
+    bindPattern(node.name, context);
+    if (node.initializer) walkNode(node.initializer, context);
+    return;
+  }
+  if (ts.isIdentifier(node) && isValueIdentifier(node)) {
+    const name = node.text;
+    if (!isBound(name, context)) {
+      context.freeIdentifiers.add(name);
+    }
+  }
+
+  ts.forEachChild(node, (child) => walkNode(child, context));
 }
 
 export async function inspectPlatformCoupling({ packageRoot, sourceRoot }) {
@@ -403,7 +363,7 @@ export async function inspectPlatformCoupling({ packageRoot, sourceRoot }) {
 
   result.violations.sort(compareViolations);
   if (result.violations.length > MAX_VIOLATIONS) {
-    result.violations.splice(MAX_VIOLATIONS);
+    result.violations = result.violations.slice(0, MAX_VIOLATIONS);
   }
   return result;
 }
@@ -460,7 +420,7 @@ function isHeritageExtends(node) {
 }
 
 function isTypeOnlyDeclaration(node) {
-  if (Boolean(node.isTypeOnly)) return true;
+  if (node.isTypeOnly) return true;
   if (ts.isImportDeclaration(node)) return Boolean(node.importClause?.isTypeOnly);
   return false;
 }
