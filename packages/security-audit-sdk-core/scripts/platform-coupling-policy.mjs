@@ -157,17 +157,31 @@ class ReferenceCollector {
 
   hoistStatement(stmt) {
     if (HOISTED_NAME_KINDS.has(stmt.kind)) {
-      if (stmt.name && ts.isIdentifier(stmt.name)) this.bindName(stmt.name.text);
+      this.bindDeclaredName(stmt.name);
       return;
     }
     if (ts.isImportDeclaration(stmt)) {
-      if (stmt.importClause) this.hoistImportClause(stmt.importClause);
+      this.hoistImportDeclaration(stmt);
       return;
     }
     if (ts.isVariableStatement(stmt)) {
-      for (const decl of stmt.declarationList.declarations) {
-        this.bindPattern(decl.name);
-      }
+      this.hoistVariables(stmt.declarationList.declarations);
+    }
+  }
+
+  bindDeclaredName(nameNode) {
+    if (nameNode && ts.isIdentifier(nameNode)) {
+      this.bindName(nameNode.text);
+    }
+  }
+
+  hoistImportDeclaration(stmt) {
+    if (stmt.importClause) this.hoistImportClause(stmt.importClause);
+  }
+
+  hoistVariables(declarations) {
+    for (const decl of declarations) {
+      this.bindPattern(decl.name);
     }
   }
 
@@ -188,11 +202,13 @@ class ReferenceCollector {
 
   checkSpecifiers(node) {
     if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
-      if (node.moduleSpecifier) this.collectLiteral(node.moduleSpecifier, "<static-import>");
+      if (node.moduleSpecifier) {
+        this.collectLiteralSpecifier(node.moduleSpecifier, "<static-import>");
+      }
       return;
     }
     if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
-      this.collectLiteral(node.moduleReference.expression, "<import-equals>");
+      this.collectLiteralSpecifier(node.moduleReference.expression, "<import-equals>");
       return;
     }
     if (ts.isCallExpression(node)) {
@@ -200,7 +216,7 @@ class ReferenceCollector {
     }
   }
 
-  collectLiteral(node, marker) {
+  collectLiteralSpecifier(node, marker) {
     if (node && ts.isStringLiteral(node)) {
       this.specifiers.push(node.text);
     } else {
@@ -210,28 +226,41 @@ class ReferenceCollector {
 
   checkCallSpecifiers(node) {
     if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-      this.collectLiteral(node.arguments[0], "<dynamic-import>");
+      this.collectLiteralSpecifier(node.arguments[0], "<dynamic-import>");
       return;
     }
     if (ts.isIdentifier(node.expression) && node.expression.text === "require") {
-      this.collectLiteral(node.arguments[0], "<dynamic-require>");
+      this.collectLiteralSpecifier(node.arguments[0], "<dynamic-require>");
     }
   }
 
   walkFunction(node) {
     this.scopes.push(new Set());
+    this.bindFunctionSelfName(node);
+    this.walkParameters(node.parameters);
+    this.walkFunctionBody(node.body);
+    this.scopes.pop();
+  }
+
+  bindFunctionSelfName(node) {
     if (ts.isFunctionExpression(node) && node.name) {
       this.bindName(node.name.text);
     }
-    for (const param of node.parameters) {
+  }
+
+  walkParameters(parameters) {
+    for (const param of parameters) {
       this.bindPattern(param.name);
       if (param.initializer) this.walk(param.initializer);
     }
-    if (node.body) {
-      if (ts.isBlock(node.body)) this.hoistDeclarations(node.body.statements);
-      this.walk(node.body);
+  }
+
+  walkFunctionBody(body) {
+    if (!body) return;
+    if (ts.isBlock(body)) {
+      this.hoistDeclarations(body.statements);
     }
-    this.scopes.pop();
+    this.walk(body);
   }
 
   walkCatch(node) {
@@ -256,9 +285,7 @@ class ReferenceCollector {
   walkLoop(node) {
     this.scopes.push(new Set());
     if (node.initializer && ts.isVariableDeclarationList(node.initializer)) {
-      for (const decl of node.initializer.declarations) {
-        this.bindPattern(decl.name);
-      }
+      this.hoistVariables(node.initializer.declarations);
     }
     ts.forEachChild(node, (child) => this.walk(child));
     this.scopes.pop();
