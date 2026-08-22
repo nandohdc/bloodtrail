@@ -22,6 +22,37 @@ const LANGUAGE_GLOBALS = Object.freeze(new Set([
   "setTimeout", "clearTimeout",
 ]));
 
+const NAME_DECLARATION_KINDS = new Set([
+  ts.SyntaxKind.VariableDeclaration,
+  ts.SyntaxKind.FunctionDeclaration,
+  ts.SyntaxKind.FunctionExpression,
+  ts.SyntaxKind.ClassDeclaration,
+  ts.SyntaxKind.ClassExpression,
+  ts.SyntaxKind.Parameter,
+  ts.SyntaxKind.PropertyDeclaration,
+  ts.SyntaxKind.PropertySignature,
+  ts.SyntaxKind.MethodDeclaration,
+  ts.SyntaxKind.MethodSignature,
+  ts.SyntaxKind.GetAccessor,
+  ts.SyntaxKind.SetAccessor,
+  ts.SyntaxKind.EnumDeclaration,
+  ts.SyntaxKind.EnumMember,
+  ts.SyntaxKind.TypeAliasDeclaration,
+  ts.SyntaxKind.InterfaceDeclaration,
+  ts.SyntaxKind.TypeParameter,
+  ts.SyntaxKind.ModuleDeclaration,
+  ts.SyntaxKind.NamespaceImport,
+  ts.SyntaxKind.ImportEqualsDeclaration,
+  ts.SyntaxKind.BindingElement,
+]);
+
+const TYPE_CONTAINER_KINDS = new Set([
+  ts.SyntaxKind.TypeElement,
+  ts.SyntaxKind.InterfaceDeclaration,
+  ts.SyntaxKind.TypeAliasDeclaration,
+  ts.SyntaxKind.TypeParameter,
+]);
+
 export const PLATFORM_COUPLING_POLICY = Object.freeze({
   languageGlobals: LANGUAGE_GLOBALS,
   roles: Object.freeze({
@@ -60,11 +91,223 @@ export const PLATFORM_COUPLING_POLICY = Object.freeze({
   }),
 });
 
-export function collectCouplingReferences(artifactPath, sourceText) {
-  const specifiers = [];
-  const failures = [];
-  const freeIdentifiers = new Set();
+class ReferenceCollector {
+  constructor(artifactPath) {
+    this.artifactPath = artifactPath;
+    this.specifiers = [];
+    this.failures = [];
+    this.freeIdentifiers = new Set();
+    this.scopes = [new Set()];
+  }
 
+  currentScope() {
+    return this.scopes[this.scopes.length - 1];
+  }
+
+  bindName(name) {
+    if (typeof name === "string" && name.length > 0) {
+      this.currentScope().add(name);
+    }
+  }
+
+  bindPattern(node) {
+    if (!node) return;
+    if (ts.isIdentifier(node)) {
+      this.bindName(node.text);
+      return;
+    }
+    if (ts.isBindingElement(node)) {
+      this.bindPattern(node.name);
+      return;
+    }
+    if (ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) {
+      for (const element of node.elements) {
+        if (!ts.isOmittedExpression(element)) {
+          this.bindPattern(element);
+        }
+      }
+    }
+  }
+
+  isBound(name) {
+    for (let i = this.scopes.length - 1; i >= 0; i -= 1) {
+      if (this.scopes[i].has(name)) return true;
+    }
+    return false;
+  }
+
+  hoistDeclarations(statements) {
+    if (!statements) return;
+    for (const stmt of statements) {
+      this.hoistStatement(stmt);
+    }
+  }
+
+  hoistStatement(stmt) {
+    if ((ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt)) && stmt.name) {
+      this.bindName(stmt.name.text);
+      return;
+    }
+    if (ts.isImportDeclaration(stmt) && stmt.importClause) {
+      this.hoistImportClause(stmt.importClause);
+      return;
+    }
+    if (ts.isImportEqualsDeclaration(stmt) && stmt.name) {
+      this.bindName(stmt.name.text);
+      return;
+    }
+    if (ts.isVariableStatement(stmt)) {
+      for (const decl of stmt.declarationList.declarations) {
+        this.bindPattern(decl.name);
+      }
+    }
+  }
+
+  hoistImportClause(clause) {
+    if (clause.name) this.bindName(clause.name.text);
+    const bindings = clause.namedBindings;
+    if (!bindings) return;
+    if (ts.isNamespaceImport(bindings)) {
+      this.bindName(bindings.name.text);
+      return;
+    }
+    if (ts.isNamedImports(bindings)) {
+      for (const element of bindings.elements) {
+        this.bindName(element.name.text);
+      }
+    }
+  }
+
+  checkSpecifiers(node) {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+      if (node.moduleSpecifier) {
+        this.collectLiteralSpecifier(node.moduleSpecifier, "<static-import>");
+      }
+      return;
+    }
+    if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
+      this.collectLiteralSpecifier(node.moduleReference.expression, "<import-equals>");
+      return;
+    }
+    if (ts.isCallExpression(node)) {
+      this.checkCallSpecifiers(node);
+    }
+  }
+
+  collectLiteralSpecifier(node, marker) {
+    if (node && ts.isStringLiteral(node)) {
+      this.specifiers.push(node.text);
+    } else {
+      this.failures.push(violation(this.artifactPath, marker, "dynamic-specifier"));
+    }
+  }
+
+  checkCallSpecifiers(node) {
+    if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      this.collectLiteralSpecifier(node.arguments[0], "<dynamic-import>");
+      return;
+    }
+    if (ts.isIdentifier(node.expression) && node.expression.text === "require") {
+      this.collectLiteralSpecifier(node.arguments[0], "<dynamic-require>");
+    }
+  }
+
+  walkFunction(node) {
+    this.scopes.push(new Set());
+    if (ts.isFunctionExpression(node) && node.name) {
+      this.bindName(node.name.text);
+    }
+    for (const param of node.parameters) {
+      this.bindPattern(param.name);
+      if (param.initializer) this.walk(param.initializer);
+    }
+    if (node.body) {
+      if (ts.isBlock(node.body)) {
+        this.hoistDeclarations(node.body.statements);
+      }
+      this.walk(node.body);
+    }
+    this.scopes.pop();
+  }
+
+  walkCatch(node) {
+    this.scopes.push(new Set());
+    if (node.variableDeclaration) {
+      this.bindPattern(node.variableDeclaration.name);
+    }
+    if (node.block) {
+      this.hoistDeclarations(node.block.statements);
+      this.walk(node.block);
+    }
+    this.scopes.pop();
+  }
+
+  walkBlock(node) {
+    this.scopes.push(new Set());
+    this.hoistDeclarations(node.statements);
+    ts.forEachChild(node, (child) => this.walk(child));
+    this.scopes.pop();
+  }
+
+  walkLoop(node) {
+    this.scopes.push(new Set());
+    if (node.initializer && ts.isVariableDeclarationList(node.initializer)) {
+      for (const decl of node.initializer.declarations) {
+        this.bindPattern(decl.name);
+      }
+    }
+    ts.forEachChild(node, (child) => this.walk(child));
+    this.scopes.pop();
+  }
+
+  walkVariable(node) {
+    this.bindPattern(node.name);
+    if (node.initializer) this.walk(node.initializer);
+  }
+
+  walkIdentifier(node) {
+    if (isValueIdentifier(node)) {
+      const name = node.text;
+      if (!this.isBound(name)) {
+        this.freeIdentifiers.add(name);
+      }
+    }
+  }
+
+  walk(node) {
+    if (!node || isTypeNode(node)) return;
+
+    this.checkSpecifiers(node);
+
+    if (isFunctionLike(node)) {
+      this.walkFunction(node);
+      return;
+    }
+    if (ts.isCatchClause(node)) {
+      this.walkCatch(node);
+      return;
+    }
+    if (ts.isBlock(node)) {
+      this.walkBlock(node);
+      return;
+    }
+    if (isLoopNode(node)) {
+      this.walkLoop(node);
+      return;
+    }
+    if (ts.isVariableDeclaration(node)) {
+      this.walkVariable(node);
+      return;
+    }
+    if (ts.isIdentifier(node)) {
+      this.walkIdentifier(node);
+    }
+
+    ts.forEachChild(node, (child) => this.walk(child));
+  }
+}
+
+export function collectCouplingReferences(artifactPath, sourceText) {
   let sourceFile;
   try {
     sourceFile = ts.createSourceFile(
@@ -75,218 +318,29 @@ export function collectCouplingReferences(artifactPath, sourceText) {
       scriptKindFor(artifactPath),
     );
   } catch {
-    return {
-      specifiers,
-      identifiers: [],
-      failures: [violation(artifactPath, basename(artifactPath), "parse-failure")],
-    };
+    return parseFailureResult(artifactPath);
   }
 
   if (sourceFile.parseDiagnostics && sourceFile.parseDiagnostics.length > 0) {
-    return {
-      specifiers,
-      identifiers: [],
-      failures: [violation(artifactPath, basename(artifactPath), "parse-failure")],
-    };
+    return parseFailureResult(artifactPath);
   }
 
-  const scopes = [new Set()];
-
-  function currentScope() {
-    return scopes[scopes.length - 1];
-  }
-
-  function bindName(name) {
-    if (typeof name === "string" && name.length > 0) {
-      currentScope().add(name);
-    }
-  }
-
-  function bindPattern(node) {
-    if (!node) return;
-    if (ts.isIdentifier(node)) {
-      bindName(node.text);
-      return;
-    }
-    if (ts.isBindingElement(node)) {
-      bindPattern(node.name);
-      return;
-    }
-    if (ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) {
-      for (const element of node.elements) {
-        if (!ts.isOmittedExpression(element)) {
-          bindPattern(element);
-        }
-      }
-    }
-  }
-
-  function isBound(name) {
-    for (let i = scopes.length - 1; i >= 0; i -= 1) {
-      if (scopes[i].has(name)) return true;
-    }
-    return false;
-  }
-
-  function hoistDeclarations(statements) {
-    if (!statements) return;
-    for (const stmt of statements) {
-      hoistStatement(stmt);
-    }
-  }
-
-  function hoistStatement(stmt) {
-    if (ts.isFunctionDeclaration(stmt) && stmt.name) {
-      bindName(stmt.name.text);
-    } else if (ts.isClassDeclaration(stmt) && stmt.name) {
-      bindName(stmt.name.text);
-    } else if (ts.isImportDeclaration(stmt) && stmt.importClause) {
-      hoistImportClause(stmt.importClause);
-    } else if (ts.isImportEqualsDeclaration(stmt) && stmt.name) {
-      bindName(stmt.name.text);
-    } else if (ts.isVariableStatement(stmt)) {
-      for (const decl of stmt.declarationList.declarations) {
-        bindPattern(decl.name);
-      }
-    }
-  }
-
-  function hoistImportClause(clause) {
-    if (clause.name) bindName(clause.name.text);
-    if (!clause.namedBindings) return;
-    if (ts.isNamespaceImport(clause.namedBindings)) {
-      bindName(clause.namedBindings.name.text);
-    } else if (ts.isNamedImports(clause.namedBindings)) {
-      for (const element of clause.namedBindings.elements) {
-        bindName(element.name.text);
-      }
-    }
-  }
-
-  function checkSpecifierNode(node) {
-    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
-      if (node.moduleSpecifier) {
-        collectLiteralSpecifier(node.moduleSpecifier, "<static-import>");
-      }
-    } else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
-      collectLiteralSpecifier(node.moduleReference.expression, "<import-equals>");
-    } else if (ts.isCallExpression(node)) {
-      checkCallSpecifier(node);
-    }
-  }
-
-  function collectLiteralSpecifier(node, marker) {
-    if (node && ts.isStringLiteral(node)) {
-      specifiers.push(node.text);
-    } else {
-      failures.push(violation(artifactPath, marker, "dynamic-specifier"));
-    }
-  }
-
-  function checkCallSpecifier(node) {
-    if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-      collectLiteralSpecifier(node.arguments[0], "<dynamic-import>");
-    } else if (ts.isIdentifier(node.expression) && node.expression.text === "require") {
-      collectLiteralSpecifier(node.arguments[0], "<dynamic-require>");
-    }
-  }
-
-  function walkFunctionLike(node) {
-    scopes.push(new Set());
-    if (ts.isFunctionExpression(node) && node.name) {
-      bindName(node.name.text);
-    }
-    for (const param of node.parameters) {
-      bindPattern(param.name);
-      if (param.initializer) walk(param.initializer);
-    }
-    if (node.body) {
-      if (ts.isBlock(node.body)) {
-        hoistDeclarations(node.body.statements);
-      }
-      walk(node.body);
-    }
-    scopes.pop();
-  }
-
-  function walkCatchClause(node) {
-    scopes.push(new Set());
-    if (node.variableDeclaration) {
-      bindPattern(node.variableDeclaration.name);
-    }
-    if (node.block) {
-      hoistDeclarations(node.block.statements);
-      walk(node.block);
-    }
-    scopes.pop();
-  }
-
-  function walkBlock(node) {
-    scopes.push(new Set());
-    hoistDeclarations(node.statements);
-    ts.forEachChild(node, walk);
-    scopes.pop();
-  }
-
-  function walkLoop(node) {
-    scopes.push(new Set());
-    if (node.initializer && ts.isVariableDeclarationList(node.initializer)) {
-      for (const decl of node.initializer.declarations) {
-        bindPattern(decl.name);
-      }
-    }
-    ts.forEachChild(node, walk);
-    scopes.pop();
-  }
-
-  function walk(node) {
-    if (!node || isTypeNode(node)) return;
-
-    checkSpecifierNode(node);
-
-    if (isFunctionLike(node)) {
-      walkFunctionLike(node);
-      return;
-    }
-
-    if (ts.isCatchClause(node)) {
-      walkCatchClause(node);
-      return;
-    }
-
-    if (ts.isBlock(node)) {
-      walkBlock(node);
-      return;
-    }
-
-    if (ts.isForStatement(node) || ts.isForInStatement(node) || ts.isForOfStatement(node)) {
-      walkLoop(node);
-      return;
-    }
-
-    if (ts.isVariableDeclaration(node)) {
-      bindPattern(node.name);
-      if (node.initializer) walk(node.initializer);
-      return;
-    }
-
-    if (ts.isIdentifier(node) && isValueIdentifier(node)) {
-      const name = node.text;
-      if (!isBound(name)) {
-        freeIdentifiers.add(name);
-      }
-    }
-
-    ts.forEachChild(node, walk);
-  }
-
-  hoistDeclarations(sourceFile.statements);
-  walk(sourceFile);
+  const collector = new ReferenceCollector(artifactPath);
+  collector.hoistDeclarations(sourceFile.statements);
+  collector.walk(sourceFile);
 
   return {
-    specifiers,
-    identifiers: Array.from(freeIdentifiers).sort(byCodePoint),
-    failures,
+    specifiers: collector.specifiers,
+    identifiers: Array.from(collector.freeIdentifiers).sort(byCodePoint),
+    failures: collector.failures,
+  };
+}
+
+function parseFailureResult(artifactPath) {
+  return {
+    specifiers: [],
+    identifiers: [],
+    failures: [violation(artifactPath, basename(artifactPath), "parse-failure")],
   };
 }
 
@@ -344,22 +398,22 @@ async function inspectArtifact({ packageRoot, artifactPath, result }) {
     result.violations.push(fail);
   }
 
+  const context = { artifactPath, role, roleInventory, result };
   for (const specifier of collected.specifiers) {
-    classifySpecifier(specifier, artifactPath, role, result);
+    classifySpecifier(specifier, context);
   }
-
   for (const identifier of collected.identifiers) {
-    classifyIdentifier(identifier, artifactPath, role, roleInventory, result);
+    classifyIdentifier(identifier, context);
   }
 }
 
-function classifySpecifier(specifier, artifactPath, role, result) {
+function classifySpecifier(specifier, { artifactPath, role, result }) {
   if (specifier.startsWith(".")) return;
   if (role.specifiers.includes(specifier)) return;
   result.violations.push(violation(artifactPath, specifier, "undeclared-specifier"));
 }
 
-function classifyIdentifier(identifier, artifactPath, role, roleInventory, result) {
+function classifyIdentifier(identifier, { artifactPath, role, roleInventory, result }) {
   if (LANGUAGE_GLOBALS.has(identifier)) return;
   if (Object.hasOwn(role.hostGlobals, identifier)) {
     const current = roleInventory.hostGlobals.get(identifier) ?? 0;
@@ -369,25 +423,28 @@ function classifyIdentifier(identifier, artifactPath, role, roleInventory, resul
   result.violations.push(violation(artifactPath, identifier, "undeclared-global"));
 }
 
+function isHeritageExtends(node) {
+  const parent = node.parent;
+  return Boolean(parent && ts.isHeritageClause(parent) && parent.token === ts.SyntaxKind.ExtendsKeyword);
+}
+
+function isTypeOnlyDeclaration(node) {
+  if (node.isTypeOnly) return true;
+  if (ts.isImportDeclaration(node)) return Boolean(node.importClause?.isTypeOnly);
+  return false;
+}
+
 function isTypeNode(node) {
   if (!node) return false;
   if (ts.isExpressionWithTypeArguments(node)) {
-    const parent = node.parent;
-    if (parent && ts.isHeritageClause(parent) && parent.token === ts.SyntaxKind.ExtendsKeyword) {
-      return false;
-    }
+    return !isHeritageExtends(node);
   }
-  if (ts.isTypeNode(node)) return true;
-  if (ts.isTypeElement(node)) return true;
-  if (ts.isInterfaceDeclaration(node)) return true;
-  if (ts.isTypeAliasDeclaration(node)) return true;
-  if (ts.isTypeParameterDeclaration(node)) return true;
-  if (ts.isExportDeclaration(node) && node.isTypeOnly) return true;
-  if (ts.isImportDeclaration(node) && node.importClause?.isTypeOnly) return true;
-  if (ts.isImportEqualsDeclaration(node) && node.isTypeOnly) return true;
-  if (ts.isExportSpecifier(node) && node.isTypeOnly) return true;
-  if (ts.isImportSpecifier(node) && node.isTypeOnly) return true;
-  return false;
+  if (ts.isTypeNode(node) || TYPE_CONTAINER_KINDS.has(node.kind)) return true;
+  return isTypeOnlyDeclaration(node);
+}
+
+function isLoopNode(node) {
+  return ts.isForStatement(node) || ts.isForInStatement(node) || ts.isForOfStatement(node);
 }
 
 function isFunctionLike(node) {
@@ -402,65 +459,49 @@ function isFunctionLike(node) {
   );
 }
 
+function isExportSpecifierValue(specifier, node) {
+  const exportDecl = specifier.parent?.parent;
+  if (exportDecl && ts.isExportDeclaration(exportDecl) && exportDecl.moduleSpecifier) {
+    return false;
+  }
+  return !(specifier.propertyName && specifier.name === node);
+}
+
 function isValueIdentifier(node) {
   const parent = node.parent;
   if (!parent) return true;
-
-  if (ts.isExportSpecifier(parent)) {
-    const exportDecl = parent.parent?.parent;
-    if (exportDecl && ts.isExportDeclaration(exportDecl) && exportDecl.moduleSpecifier) {
-      return false;
-    }
-    if (parent.propertyName && parent.name === node) return false;
-    return true;
-  }
-
+  if (ts.isExportSpecifier(parent)) return isExportSpecifierValue(parent, node);
   if (isDeclarationName(parent, node)) return false;
   if (isPropertyPosition(parent, node)) return false;
   if (isLabelReference(parent, node)) return false;
-
   return true;
 }
 
 function isDeclarationName(parent, node) {
-  if (ts.isVariableDeclaration(parent) && parent.name === node) return true;
-  if (ts.isFunctionDeclaration(parent) && parent.name === node) return true;
-  if (ts.isFunctionExpression(parent) && parent.name === node) return true;
-  if (ts.isClassDeclaration(parent) && parent.name === node) return true;
-  if (ts.isClassExpression(parent) && parent.name === node) return true;
-  if (ts.isParameter(parent) && parent.name === node) return true;
-  if (ts.isPropertyDeclaration(parent) && parent.name === node) return true;
-  if (ts.isPropertySignature(parent) && parent.name === node) return true;
-  if (ts.isMethodDeclaration(parent) && parent.name === node) return true;
-  if (ts.isMethodSignature(parent) && parent.name === node) return true;
-  if (ts.isGetAccessor(parent) && parent.name === node) return true;
-  if (ts.isSetAccessor(parent) && parent.name === node) return true;
-  if (ts.isEnumDeclaration(parent) && parent.name === node) return true;
-  if (ts.isEnumMember(parent) && parent.name === node) return true;
-  if (ts.isTypeAliasDeclaration(parent) && parent.name === node) return true;
-  if (ts.isInterfaceDeclaration(parent) && parent.name === node) return true;
-  if (ts.isTypeParameterDeclaration(parent) && parent.name === node) return true;
-  if (ts.isModuleDeclaration(parent) && parent.name === node) return true;
-  if (ts.isImportClause(parent) && parent.name === node) return true;
-  if (ts.isImportSpecifier(parent) && (parent.name === node || parent.propertyName === node)) return true;
-  if (ts.isNamespaceImport(parent) && parent.name === node) return true;
-  if (ts.isImportEqualsDeclaration(parent) && parent.name === node) return true;
-  if (ts.isBindingElement(parent) && parent.name === node) return true;
+  if (NAME_DECLARATION_KINDS.has(parent.kind)) {
+    return parent.name === node;
+  }
+  if (ts.isImportClause(parent)) {
+    return parent.name === node;
+  }
+  if (ts.isImportSpecifier(parent)) {
+    return parent.name === node || parent.propertyName === node;
+  }
   return false;
 }
 
 function isPropertyPosition(parent, node) {
-  if (ts.isPropertyAccessExpression(parent) && parent.name === node) return true;
-  if (ts.isPropertyAssignment(parent) && parent.name === node) return true;
-  if (ts.isQualifiedName(parent) && parent.right === node) return true;
-  if (ts.isBindingElement(parent) && parent.propertyName === node) return true;
+  if (ts.isPropertyAccessExpression(parent)) return parent.name === node;
+  if (ts.isPropertyAssignment(parent)) return parent.name === node;
+  if (ts.isQualifiedName(parent)) return parent.right === node;
+  if (ts.isBindingElement(parent)) return parent.propertyName === node;
   return false;
 }
 
 function isLabelReference(parent, node) {
-  if (ts.isBreakStatement(parent) && parent.label === node) return true;
-  if (ts.isContinueStatement(parent) && parent.label === node) return true;
-  if (ts.isLabeledStatement(parent) && parent.label === node) return true;
+  if (ts.isBreakStatement(parent) || ts.isContinueStatement(parent) || ts.isLabeledStatement(parent)) {
+    return parent.label === node;
+  }
   return false;
 }
 

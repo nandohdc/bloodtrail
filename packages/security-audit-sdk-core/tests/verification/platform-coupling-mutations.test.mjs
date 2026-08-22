@@ -6,10 +6,8 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  readdirSync,
   rmSync,
   symlinkSync,
-  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -266,7 +264,7 @@ test("unreadable source artifact and empty inventory fail closed", () => {
 
   const emptyResult = runCase("m-71-h-empty", ({ copiedPackage }) => {
     const srcDir = resolve(copiedPackage, "src");
-    cleanDirectory(srcDir);
+    emptyDirectory(srcDir);
   });
 
   assert.notEqual(emptyResult.status, 0, `empty inventory mutation unexpectedly passed:\n${emptyResult.output}`);
@@ -294,7 +292,7 @@ test("forbidden production integration filename diagnostic remains distinguishab
 function runCase(name, mutate = () => {}) {
   const caseRoot = resolve(suiteRoot, name);
   const copiedPackage = resolve(caseRoot, "packages/security-audit-sdk-core");
-  copyPackageStable(packageRoot, copiedPackage);
+  copyPackageForTest(packageRoot, copiedPackage);
   const liveNodeModules = resolve(packageRoot, "node_modules");
   const copyNodeModules = resolve(copiedPackage, "node_modules");
   symlinkSync(liveNodeModules, copyNodeModules, "dir");
@@ -319,43 +317,16 @@ function assertFailure({ output, status }, { code, artifact, detail, sourceMarke
   assert.ok(output.length < 4_096, `diagnostic output was not bounded: ${String(output.length)} bytes`);
 }
 
-function copyPackageStable(source, destination) {
-  const excluded = new Set([
-    "node_modules",
-    "dist-tests",
-    "dist-examples",
-    "coverage",
-    ".verification-output",
-    "_vp_dummy.ts",
-  ]);
-  let lastError;
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      cpSync(source, destination, {
-        recursive: true,
-        force: true,
-        filter: (entry) => !excluded.has(basename(entry)),
-      });
-      return;
-    } catch (error) {
-      if (error?.code === "ENOENT" && String(error.path ?? "").endsWith("_vp_dummy.ts")) {
-        lastError = error;
-        continue;
-      }
-      throw error;
-    }
-  }
-  throw lastError ?? new Error("package copy remained unstable");
+function copyPackageForTest(source, destination) {
+  const excluded = new Set(["node_modules", "dist-tests", "dist-examples", "coverage", ".verification-output", "_vp_dummy.ts"]);
+  cpSync(source, destination, {
+    recursive: true,
+    force: true,
+    filter: (entry) => !excluded.has(basename(entry)),
+  });
 }
 
-function cleanDirectory(directory) {
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    const full = resolve(directory, entry.name);
-    if (entry.isDirectory()) {
-      cleanDirectory(full);
-      rmSync(full, { recursive: true, force: true });
-    } else {
-      unlinkSync(full);
-    }
-  }
+function emptyDirectory(directory) {
+  rmSync(directory, { recursive: true, force: true });
+  mkdirSync(directory, { recursive: true });
 }
