@@ -22,49 +22,42 @@ test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
 const POSITIVE_MUTATIONS = [
   {
     name: "m-71-a-authored-global",
-    title: "authored source referencing an undeclared Node global fails closed",
     file: "src/probe.ts",
     generate: (marker) => `// ${marker}\nexport function readEnv(): string | undefined { return process.env.AUDIT_PROBE; }\n`,
     expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "process" },
   },
   {
     name: "m-71-b-evasion",
-    title: "authored source referencing globalThis fails closed and names globalThis",
     file: "src/probe.ts",
     generate: (marker) => `// ${marker}\nexport function evade(u: string): unknown { return globalThis["fe" + "tch"](u); }\n`,
     expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "globalThis" },
   },
   {
     name: "m-71-c-generated-global",
-    title: "generated source referencing a global declared only for authored role fails closed",
     file: "src/generated/schema-validator.generated.cjs",
     generate: (marker, original) => `/* ${marker} */\nconst _probeLength = Buffer.byteLength("probe", "utf8");\n${original}`,
     expected: { code: "undeclared-global", artifact: "src/generated/schema-validator.generated.cjs", detail: "Buffer" },
   },
   {
     name: "m-71-d-generated-specifier",
-    title: "generated source referencing an undeclared module specifier fails closed",
     file: "src/generated/schema-validator.generated.cjs",
     generate: (marker, original) => `/* ${marker} */\nrequire("ajv/dist/runtime/ucs2length");\n${original}`,
     expected: { code: "undeclared-specifier", artifact: "src/generated/schema-validator.generated.cjs", detail: "ajv/dist/runtime/ucs2length" },
   },
   {
     name: "m-71-dynamic-specifier",
-    title: "authored source referencing a dynamic non-literal specifier fails closed",
     file: "src/probe.ts",
     generate: (marker) => `// ${marker}\nconst dynamicName = "crypto";\nexport async function load() { return import(dynamicName); }\n`,
     expected: { code: "dynamic-specifier", artifact: "src/probe.ts", detail: "<dynamic-import>" },
   },
   {
     name: "m-71-class-extends-undeclared",
-    title: "authored class extending an undeclared host global fails closed",
     file: "src/probe.ts",
     generate: (marker) => `// ${marker}\nexport class CustomStream extends EventEmitter {}\n`,
     expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "EventEmitter" },
   },
   {
     name: "m-71-g-unparseable",
-    title: "unparseable source artifact fails closed",
     file: "src/generated/broken.generated.ts",
     generate: (marker) => `// ${marker}\nexport const = { {{{ ;;\n`,
     expected: { code: "parse-failure", artifact: "src/generated/broken.generated.ts", detail: "broken.generated.ts" },
@@ -80,8 +73,8 @@ test("unmutated package copy passes the scope gate and reports declared coupling
   assert.match(output, /generated:/);
 });
 
-for (const scenario of POSITIVE_MUTATIONS) {
-  test(scenario.title, () => {
+test("authored and generated mutations fail closed with expected diagnostics", () => {
+  for (const scenario of POSITIVE_MUTATIONS) {
     const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
     const result = runCase(scenario.name, ({ copiedPackage }) => {
       const targetPath = resolve(copiedPackage, scenario.file);
@@ -89,8 +82,8 @@ for (const scenario of POSITIVE_MUTATIONS) {
       writeFileSync(targetPath, scenario.generate(sourceMarker, original), "utf8");
     });
     assertFailure(result, { ...scenario.expected, sourceMarker });
-  });
-}
+  }
+});
 
 test("negative control: locally bound identifier sharing a global name passes", () => {
   const { output, status } = runCase("m-71-e-lexical-binding", ({ copiedPackage }) => {
