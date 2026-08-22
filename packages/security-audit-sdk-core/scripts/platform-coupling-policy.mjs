@@ -134,13 +134,9 @@ class ReferenceCollector {
     this.scopes = [new Set()];
   }
 
-  currentScope() {
-    return this.scopes[this.scopes.length - 1];
-  }
-
   bindName(name) {
     if (typeof name === "string" && name.length > 0) {
-      this.currentScope().add(name);
+      this.scopes[this.scopes.length - 1].add(name);
     }
   }
 
@@ -179,26 +175,16 @@ class ReferenceCollector {
 
   hoistStatement(stmt) {
     if (HOISTED_NAME_KINDS.has(stmt.kind)) {
-      this.bindDeclaredName(stmt.name);
+      if (stmt.name && ts.isIdentifier(stmt.name)) this.bindName(stmt.name.text);
       return;
     }
-    if (ts.isImportDeclaration(stmt)) {
-      this.hoistImportDeclaration(stmt);
+    if (ts.isImportDeclaration(stmt) && stmt.importClause) {
+      this.hoistImportClause(stmt.importClause);
       return;
     }
     if (ts.isVariableStatement(stmt)) {
       this.hoistVariables(stmt.declarationList.declarations);
     }
-  }
-
-  bindDeclaredName(nameNode) {
-    if (nameNode && ts.isIdentifier(nameNode)) {
-      this.bindName(nameNode.text);
-    }
-  }
-
-  hoistImportDeclaration(stmt) {
-    if (stmt.importClause) this.hoistImportClause(stmt.importClause);
   }
 
   hoistVariables(declarations) {
@@ -258,7 +244,7 @@ class ReferenceCollector {
 
   walkFunction(node) {
     this.scopes.push(new Set());
-    this.bindFunctionSelfName(node);
+    if (ts.isFunctionExpression(node) && node.name) this.bindName(node.name.text);
     this.walkParameters(node.parameters);
     if (node.body) {
       if (ts.isBlock(node.body)) {
@@ -269,12 +255,6 @@ class ReferenceCollector {
       }
     }
     this.scopes.pop();
-  }
-
-  bindFunctionSelfName(node) {
-    if (ts.isFunctionExpression(node) && node.name) {
-      this.bindName(node.name.text);
-    }
   }
 
   walkParameters(parameters) {
@@ -312,20 +292,6 @@ class ReferenceCollector {
     this.scopes.pop();
   }
 
-  walkVariable(node) {
-    this.bindPattern(node.name);
-    if (node.initializer) this.walk(node.initializer);
-  }
-
-  walkIdentifier(node) {
-    if (isValueIdentifier(node)) {
-      const name = node.text;
-      if (!this.isBound(name)) {
-        this.freeIdentifiers.add(name);
-      }
-    }
-  }
-
   walk(node) {
     if (!node || isTypeNode(node)) return;
 
@@ -348,11 +314,13 @@ class ReferenceCollector {
       return;
     }
     if (ts.isVariableDeclaration(node)) {
-      this.walkVariable(node);
+      this.bindPattern(node.name);
+      if (node.initializer) this.walk(node.initializer);
       return;
     }
-    if (ts.isIdentifier(node)) {
-      this.walkIdentifier(node);
+    if (ts.isIdentifier(node) && isValueIdentifier(node)) {
+      const name = node.text;
+      if (!this.isBound(name)) this.freeIdentifiers.add(name);
     }
 
     ts.forEachChild(node, (child) => this.walk(child));
@@ -482,7 +450,7 @@ function isHeritageExtends(node) {
 
 function isTypeOnlyDeclaration(node) {
   if (TYPE_ONLY_KINDS.has(node.kind)) {
-    return Boolean(node.isTypeOnly);
+    return "isTypeOnly" in node && Boolean(node.isTypeOnly);
   }
   if (ts.isImportDeclaration(node)) {
     return Boolean(node.importClause?.isTypeOnly);
@@ -524,7 +492,7 @@ function isExportSpecifierValue(specifier, node) {
 
 function isValueIdentifier(node) {
   const parent = node.parent;
-  if (!parent) return true;
+  if (!parent) return false;
   if (ts.isExportSpecifier(parent)) return isExportSpecifierValue(parent, node);
   if (isDeclarationName(parent, node)) return false;
   if (isPropertyPosition(parent, node)) return false;
