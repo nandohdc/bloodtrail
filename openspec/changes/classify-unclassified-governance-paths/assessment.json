@@ -1,0 +1,142 @@
+{
+  "schema_version": "1.1",
+  "change_id": "classify-unclassified-governance-paths",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Nine tracked paths match no declared classification, so every commit touching one of them fails closed regardless of what it does.",
+    "Release Please rewrites version.txt and .release-please-manifest.json on every release, so the release mechanism cannot produce a landable pull request while those two are unclassified.",
+    "Classification is evaluated over the commit range, so an unclassified path stays invisible until an unrelated change happens to touch it, and then fails that change rather than the change that introduced it.",
+    "R21's emergency classification record is bound to one exact change and ends when that change merges, so it cannot cover a file a release automation rewrites on a schedule.",
+    "The script implementing a required check sits under .github/scripts/, which is unclassified, while the workflow invoking it is governance_core."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/governance/design-pattern-policy.json",
+    "openspec/scripts/design-pattern-governance/classification-completeness.mjs",
+    "openspec/scripts/design-pattern-governance/git.mjs",
+    "openspec/scripts/check-design-pattern-governance.mjs",
+    "openspec/tests/design-pattern-governance/classification-completeness.test.mjs",
+    "docs/adr/0005-classify-every-tracked-repository-path.md",
+    "RELEASING.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-permanent-classification-with-completeness-control",
+      "kind": "direct_implementation",
+      "summary": "Classify all nine paths permanently in path_classes and add a repository-scoped completeness rule that fails closed, naming every tracked path matching no declared classification, so the gap fails the change that introduces it rather than a later unrelated one.",
+      "forces_addressed": [
+        "Nine tracked paths match no declared classification, so every commit touching one of them fails closed regardless of what it does.",
+        "Release Please rewrites version.txt and .release-please-manifest.json on every release, so the release mechanism cannot produce a landable pull request while those two are unclassified.",
+        "Classification is evaluated over the commit range, so an unclassified path stays invisible until an unrelated change happens to touch it, and then fails that change rather than the change that introduced it.",
+        "R21's emergency classification record is bound to one exact change and ends when that change merges, so it cannot cover a file a release automation rewrites on a schedule.",
+        "The script implementing a required check sits under .github/scripts/, which is unclassified, while the workflow invoking it is governance_core."
+      ]
+    },
+    {
+      "id": "approach-emergency-record-per-release",
+      "kind": "alternative",
+      "summary": "Issue an R21 exact-change emergency classification record for each release pull request, binding the release change id, the affected release metadata paths, and a conservative path class.",
+      "forces_addressed": [
+        "Release Please rewrites version.txt and .release-please-manifest.json on every release, so the release mechanism cannot produce a landable pull request while those two are unclassified."
+      ]
+    },
+    {
+      "id": "approach-catch-all-pattern",
+      "kind": "alternative",
+      "summary": "Declare a catch-all pattern that assigns every otherwise unmatched path to a default class, so no path can ever be unclassified.",
+      "forces_addressed": [
+        "Nine tracked paths match no declared classification, so every commit touching one of them fails closed regardless of what it does.",
+        "Classification is evaluated over the commit range, so an unclassified path stays invisible until an unrelated change happens to touch it, and then fails that change rather than the change that introduced it."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-permanent-classification-with-completeness-control",
+  "rejected_alternative_ids": [
+    "approach-emergency-record-per-release",
+    "approach-catch-all-pattern"
+  ],
+  "rejection_reasons": {
+    "approach-emergency-record-per-release": {
+      "forces": [
+        "R21's emergency classification record is bound to one exact change and ends when that change merges, so it cannot cover a file a release automation rewrites on a schedule."
+      ],
+      "reason": "An emergency record binds one exact change and terminates when that change merges or is abandoned, so a permanent file rewritten on every release would need a fresh owner-governance commit and a mandatory follow-up issue each time. That converts a bounded exception into routine process and drains its distinct warning of meaning, while leaving the other seven paths latent."
+    },
+    "approach-catch-all-pattern": {
+      "forces": [
+        "Nine tracked paths match no declared classification, so every commit touching one of them fails closed regardless of what it does."
+      ],
+      "reason": "A catch-all makes the unclassified state unreachable, converting a fail-closed default into a fail-open one: a genuinely novel path would silently inherit a default class instead of demanding a decision. The completeness control achieves the same coverage guarantee while preserving the failure."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-classification-covers-tracked-repository",
+    "implementation-classification-completeness-fails-closed",
+    "implementation-classification-names-every-uncovered-path",
+    "implementation-classification-bounded-to-tracked-paths"
+  ],
+  "invariant_evidence": {
+    "implementation-classification-covers-tracked-repository": {
+      "task_ids": ["1.1", "2.1", "2.2", "2.3", "2.6"],
+      "evidence_ids": [
+        "checker reports classifiedPaths: 485 with no failures, matching git ls-files",
+        "classification diff before and after contains exactly the nine paths, every one unclassified to its new class"
+      ]
+    },
+    "implementation-classification-completeness-fails-closed": {
+      "task_ids": ["1.2", "1.4", "1.7", "1.8", "2.4", "2.5"],
+      "evidence_ids": [
+        "M-CL-A a tracked path matching no pattern fails with path-classification-incomplete",
+        "M-CL-C coverage withdrawn by deleting a pattern fails",
+        "M-CL-F an unreadable repository fails with tracked-paths-unavailable rather than reporting zero classified paths",
+        "M-CL-G an emergency record suppresses path-unclassified and does not satisfy completeness"
+      ]
+    },
+    "implementation-classification-names-every-uncovered-path": {
+      "task_ids": ["1.3", "1.9", "2.5"],
+      "evidence_ids": [
+        "M-CL-B names both uncovered paths in code-point order",
+        "80 uncovered paths stay within the 240-character message bound with no file content echoed"
+      ]
+    },
+    "implementation-classification-bounded-to-tracked-paths": {
+      "task_ids": ["1.5", "1.6", "1.10"],
+      "evidence_ids": [
+        "M-CL-D a path added with its classification in one commit passes at exit 0",
+        "M-CL-E untracked and git-ignored files impose no obligation",
+        "8 of 10 arms fail against the pre-change checker and all 10 pass against the candidate"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "b8a54e8fe8dbdb0902f94f9f7d7d7b2addd9809d"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6",
+    "1.7",
+    "1.8",
+    "1.9",
+    "1.10",
+    "2.3",
+    "2.6",
+    "3.6"
+  ]
+}

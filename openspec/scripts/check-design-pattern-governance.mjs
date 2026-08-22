@@ -64,6 +64,7 @@ import {
   validateGrandfathering,
   validateOptIns,
 } from "./design-pattern-governance/provenance.mjs";
+import { checkClassificationCompleteness } from "./design-pattern-governance/classification-completeness.mjs";
 
 const DEFAULT_POLICY = "openspec/governance/design-pattern-policy.json";
 const PHASES = new Set(["assessment", "implementation", "final", "bootstrap", "activation"]);
@@ -121,6 +122,10 @@ function run(opts, diagnostics) {
   const schemas = loadSchemas(repositoryRoot, policy, diagnostics);
   const state = activationState(repositoryRoot, policy, diagnostics);
   const context = createContext({ repositoryRoot, cwd, policy, registry, catalog, schemas, state });
+
+  // Repository-scoped, so it runs in every phase: a phase that inspects no
+  // commit range still must not pass while the policy fails to cover the tree.
+  context.classifiedPaths = checkClassificationCompleteness({ cwd, policy, sink: diagnostics });
 
   if (opts.phase === "bootstrap") {
     return runBootstrapPhase(opts, context, state, diagnostics);
@@ -491,6 +496,7 @@ function summarise(opts, context, state, diagnostics) {
     rangeBase: context.rangeBase ?? null,
     rangeCommits: context.rangeCommitCount ?? null,
     rangePaths: context.rangePathCount ?? null,
+    classifiedPaths: context.classifiedPaths ?? null,
     failures: diagnostics.failures,
     warnings: diagnostics.warnings,
     truncated: diagnostics.truncated,

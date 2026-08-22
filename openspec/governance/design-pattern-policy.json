@@ -121,7 +121,14 @@
         "docs/design-pattern-governance.md",
         ".github/workflows/",
         ".github/PULL_REQUEST_TEMPLATE.md",
-        "CONTRIBUTING.md"
+        "CONTRIBUTING.md",
+        ".github/scripts/",
+        ".codescene/custom-quality-gates.json",
+        ".gitignore",
+        "codecov.yml",
+        "openspec/config.yaml",
+        "release-please-config.json",
+        "sonar-project.properties"
       ]
     },
     {
@@ -149,7 +156,9 @@
         "RELEASING.md",
         "CHANGELOG.md",
         "docs/",
-        ".hermes/plans/"
+        ".hermes/plans/",
+        ".release-please-manifest.json",
+        "version.txt"
       ]
     }
   ],

@@ -175,6 +175,20 @@ function isNewAgainstEveryParent(path, commit, parents, cwd) {
   return parents.every((parent) => objectAtPath(parent, path, cwd) !== atCommit);
 }
 
+/**
+ * Every path Git tracks, or null when the enumeration cannot be performed.
+ *
+ * Null rather than an empty array, deliberately. An empty tracked set would read
+ * as "the declared classification already covers everything", turning a failed
+ * enumeration into a silent pass — the fail-open this checker exists to prevent.
+ * `untrackedPaths` can return an empty array safely because an unreadable
+ * untracked set only ever withholds obligations it would have added.
+ */
+export function trackedPaths(cwd) {
+  const result = tryGit(["ls-files", "-z"], { cwd });
+  return result.ok ? splitNull(result.value) : null;
+}
+
 export function untrackedPaths(cwd) {
   const result = tryGit(["ls-files", "--others", "--exclude-standard", "-z"], { cwd });
   return result.ok ? splitNull(result.value) : [];
