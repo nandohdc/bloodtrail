@@ -369,15 +369,23 @@ function walkVariable(node, collector) {
 function walkPatternDefaults(node, collector) {
   if (!node) return;
   if (ts.isBindingElement(node)) {
-    walkComputedName(node.propertyName, collector);
-    walkPatternDefaults(node.name, collector);
-    if (node.initializer) walkNode(node.initializer, collector);
+    walkBindingElementDefaults(node, collector);
     return;
   }
   if (ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) {
-    for (const element of node.elements) {
-      if (!ts.isOmittedExpression(element)) walkPatternDefaults(element, collector);
-    }
+    walkBindingPatternElements(node.elements, collector);
+  }
+}
+
+function walkBindingElementDefaults(node, collector) {
+  walkComputedName(node.propertyName, collector);
+  walkPatternDefaults(node.name, collector);
+  if (node.initializer) walkNode(node.initializer, collector);
+}
+
+function walkBindingPatternElements(elements, collector) {
+  for (const element of elements) {
+    if (!ts.isOmittedExpression(element)) walkPatternDefaults(element, collector);
   }
 }
 
