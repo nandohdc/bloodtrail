@@ -11,7 +11,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, resolve } from "node:path";
+import { resolve } from "node:path";
 import test from "node:test";
 
 import { packageRoot } from "../../scripts/verification-helpers.mjs";
@@ -81,7 +81,7 @@ test("authored and generated mutations fail closed with expected diagnostics", (
       const original = readExisting(targetPath);
       writeFileSync(targetPath, scenario.generate(sourceMarker, original), "utf8");
     });
-    assertFailure(result, { ...scenario.expected, sourceMarker });
+    verifyCouplingFailure(result, { ...scenario.expected, sourceMarker });
   }
 });
 
@@ -145,7 +145,7 @@ test("unreadable source artifact and empty inventory fail closed", () => {
     }
   });
 
-  assertFailure(unreadableResult, {
+  verifyCouplingFailure(unreadableResult, {
     code: "read-failure",
     artifact: "src/unreadable.ts",
     detail: "unreadable.ts",
@@ -187,7 +187,7 @@ function readExisting(filePath) {
 
 function runCase(name, mutate) {
   const targetDir = resolve(suiteRoot, name, "packages/security-audit-sdk-core");
-  cloneSourceTree(packageRoot, targetDir);
+  stageIsolatedPackage(packageRoot, targetDir);
   symlinkSync(resolve(packageRoot, "node_modules"), resolve(targetDir, "node_modules"), "dir");
   const env = { ...process.env };
   if (mutate) mutate({ copiedPackage: targetDir, environment: env });
@@ -200,21 +200,22 @@ function runCase(name, mutate) {
   return { status: check.status, output: `${check.stdout}\n${check.stderr}` };
 }
 
-function assertFailure({ output, status }, { code, artifact, detail, sourceMarker }) {
-  assert.notEqual(status, 0, `mutation unexpectedly passed:\n${output}`);
-  assert.match(output, new RegExp(`\\[platform-coupling:${code}\\]`));
-  assert.ok(output.includes(artifact), `missing artifact ${artifact}`);
-  assert.ok(output.includes(detail), `missing detail ${detail}`);
-  assert.equal(output.includes(sourceMarker), false, `leaked marker`);
-  assert.ok(output.length < 4_096, `output length exceeded limit`);
+function verifyCouplingFailure({ output, status }, expected) {
+  assert.notEqual(status, 0, "platform coupling mutation should fail");
+  assert.match(output, new RegExp(`\\[platform-coupling:${expected.code}\\]`));
+  assert.match(output, new RegExp(expected.artifact.replaceAll(".", "\\.")));
+  assert.match(output, new RegExp(expected.detail.replaceAll(".", "\\.")));
+  if (expected.sourceMarker) {
+    assert.equal(output.includes(expected.sourceMarker), false, "source marker leaked into error stream");
+  }
+  assert.ok(output.length < 4_096, "scope diagnostic buffer exceeded 4KB boundary");
 }
 
-function cloneSourceTree(src, dest) {
-  const ignored = new Set(["node_modules", "dist-tests", "dist-examples", "coverage", ".verification-output", "_vp_dummy.ts"]);
-  cpSync(src, dest, {
+function stageIsolatedPackage(sourceDir, targetDir) {
+  cpSync(sourceDir, targetDir, {
     recursive: true,
     force: true,
-    filter: (path) => !ignored.has(basename(path)),
+    filter: (entry) => !entry.includes("node_modules") && !entry.includes("dist-") && !entry.includes("coverage"),
   });
 }
 

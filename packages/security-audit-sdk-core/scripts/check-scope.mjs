@@ -1,11 +1,16 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { extname, relative, resolve, sep } from "node:path";
-import { inspectPlatformCoupling } from "./platform-coupling-policy.mjs";
+import {
+  formatCouplingViolation,
+  inspectPlatformCoupling,
+  walkSourceTree,
+} from "./platform-coupling-policy.mjs";
 import { packageRoot, readJson } from "./verification-helpers.mjs";
 
 const sourceRoot = resolve(packageRoot, "src");
 const packageJson = await readJson(resolve(packageRoot, "package.json"));
-const files = await walk(sourceRoot);
+const allFiles = await walkSourceTree(sourceRoot);
+const files = allFiles.filter((file) => extname(file) === ".ts");
 const violations = [];
 const FORBIDDEN_NAME_TERMS = [
   "adapter", "instrument(?:ation)?", "transport", "exporter", "collector",
@@ -69,10 +74,6 @@ process.stdout.write(
   `scope passed: ${files.length} SDK source files, only node:async_hooks/node:crypto external runtime imports, no production integration or runtime dependency\n${formatInventory(coupling.inventory)}\n`,
 );
 
-function formatCouplingViolation({ artifact, detail, code }) {
-  return `[platform-coupling:${bounded(code, 40)}] ${bounded(artifact, 90)}: ${bounded(detail, 120)}`;
-}
-
 function formatInventory(inventory) {
   const authoredGlobals = formatHostGlobals(inventory.authored.hostGlobals);
   const generatedGlobals = formatHostGlobals(inventory.generated.hostGlobals);
@@ -86,32 +87,4 @@ function formatHostGlobals(map) {
     items.push(`${name} (${count} site${count === 1 ? "" : "s"})`);
   }
   return items.join(", ");
-}
-
-function bounded(value, maximum) {
-  const text = String(value).replaceAll(
-    /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g,
-    escapeControlCharacter,
-  );
-  if (text.length <= maximum) return text;
-  return `${text.slice(0, maximum - 3)}...`;
-}
-
-function escapeControlCharacter(character) {
-  return String.raw`\u${character.codePointAt(0).toString(16).padStart(4, "0")}`;
-}
-
-async function walk(directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const result = [];
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
-    if (entry.isDirectory()) {
-      const nested = await walk(entryPath);
-      for (const item of nested) result.push(item);
-    } else if (entry.isFile() && extname(entry.name) === ".ts") {
-      result.push(entryPath);
-    }
-  }
-  return result;
 }

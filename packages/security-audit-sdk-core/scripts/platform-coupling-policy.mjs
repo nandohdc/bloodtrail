@@ -585,7 +585,24 @@ function compareViolations(left, right) {
   );
 }
 
-async function walkSourceTree(directory) {
+export function escapeControlCharacter(character) {
+  return String.raw`\u${character.codePointAt(0).toString(16).padStart(4, "0")}`;
+}
+
+export function bounded(value, maximum) {
+  const text = String(value).replaceAll(
+    /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g,
+    escapeControlCharacter,
+  );
+  if (text.length <= maximum) return text;
+  return `${text.slice(0, maximum - 3)}...`;
+}
+
+export function formatCouplingViolation({ artifact, detail, code }) {
+  return `[platform-coupling:${bounded(code, 40)}] ${bounded(artifact, 90)}: ${bounded(detail, 120)}`;
+}
+
+export async function walkSourceTree(directory) {
   let entries;
   try {
     entries = await readdir(directory, { withFileTypes: true });
