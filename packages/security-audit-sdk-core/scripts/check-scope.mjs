@@ -49,8 +49,9 @@ for (const file of files) {
 for (const field of ["dependencies", "optionalDependencies", "peerDependencies"]) {
   if (Object.keys(packageJson[field] ?? {}).length > 0) violations.push(`package.json: ${field} must remain empty`);
 }
+const exportsText = JSON.stringify(packageJson.exports ?? "").toLowerCase();
 for (const forbiddenExport of ["transport", "collector", "queue", "outbox", "storage", "browser", "telemetry"]) {
-  if (JSON.stringify(packageJson.exports ?? {}).toLowerCase().includes(forbiddenExport)) {
+  if (exportsText.includes(forbiddenExport)) {
     violations.push(`package.json: forbidden ${forbiddenExport} export`);
   }
 }
