@@ -1,0 +1,160 @@
+{
+  "schema_version": "1.1",
+  "change_id": "reject-undeclared-platform-coupling",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A Buffer call, a process reference, and a globalThis reference each pass the scope gate at exit 0, and no other gate in the repository reports any of them.",
+    "The scope gate source-content regexes are defeated by one string concatenation, and its built-in-module pattern matches the bare word in comments or strings.",
+    "src/generated/ is skipped by path and by extension in the scope gate, so the largest runtime artifact in the package is inspected by no source-level control.",
+    "The set of host couplings the sources actually exercise is not declared in frozen policy data, so reviewers cannot distinguish intentional from accidental coupling.",
+    "The test:scope command named as the verification entry point runs none of the above."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "security_sensitive_behavior",
+      "governance_core_path"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/scripts/platform-coupling-policy.mjs",
+    "packages/security-audit-sdk-core/scripts/check-scope.mjs",
+    "packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs",
+    "packages/security-audit-sdk-core/CONTEXT.md",
+    "CLAUDE.md",
+    ".hermes.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-role-keyed-platform-coupling-policy",
+      "kind": "direct_implementation",
+      "summary": "Implement an AST-based platform coupling analysis stage within test:scope classifying free identifiers and module specifiers against a frozen, role-keyed policy with lexical scope tracking, failing closed on undeclared entries, unreadable files, parse failures, or empty inventories.",
+      "forces_addressed": [
+        "A Buffer call, a process reference, and a globalThis reference each pass the scope gate at exit 0, and no other gate in the repository reports any of them.",
+        "The scope gate source-content regexes are defeated by one string concatenation, and its built-in-module pattern matches the bare word in comments or strings.",
+        "src/generated/ is skipped by path and by extension in the scope gate, so the largest runtime artifact in the package is inspected by no source-level control.",
+        "The set of host couplings the sources actually exercise is not declared in frozen policy data, so reviewers cannot distinguish intentional from accidental coupling.",
+        "The test:scope command named as the verification entry point runs none of the above."
+      ]
+    },
+    {
+      "id": "approach-extend-source-content-regexes",
+      "kind": "alternative",
+      "summary": "Extend the existing check-scope.mjs source-content regexes with patterns for Node host globals and scan all files under src/ including generated files.",
+      "forces_addressed": [
+        "A Buffer call, a process reference, and a globalThis reference each pass the scope gate at exit 0, and no other gate in the repository reports any of them.",
+        "src/generated/ is skipped by path and by extension in the scope gate, so the largest runtime artifact in the package is inspected by no source-level control."
+      ]
+    },
+    {
+      "id": "approach-site-bound-coupling-declarations",
+      "kind": "alternative",
+      "summary": "Declare approved platform couplings by exact file path and line number, requiring scope verification to assert only pre-approved call sites use host globals.",
+      "forces_addressed": [
+        "The set of host couplings the sources actually exercise is not declared in frozen policy data, so reviewers cannot distinguish intentional from accidental coupling."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-role-keyed-platform-coupling-policy",
+  "rejected_alternative_ids": [
+    "approach-extend-source-content-regexes",
+    "approach-site-bound-coupling-declarations"
+  ],
+  "rejection_reasons": {
+    "approach-extend-source-content-regexes": {
+      "forces": [
+        "The scope gate source-content regexes are defeated by one string concatenation, and its built-in-module pattern matches the bare word in comments or strings."
+      ],
+      "reason": "Text-based regexes match occurrences in comments and string literals causing false positives, while dynamic member access such as globalThis indexing easily evades name matching; AST inspection with lexical scope analysis is required for sound classification."
+    },
+    "approach-site-bound-coupling-declarations": {
+      "forces": [
+        "The set of host couplings the sources actually exercise is not declared in frozen policy data, so reviewers cannot distinguish intentional from accidental coupling."
+      ],
+      "reason": "Site-bound enumerations drift on legitimate refactorings and have no precedent in the codebase (where allowedNodeImports is name-bound); role-keyed name declarations establish clear boundaries without fragile location coupling."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-coupling-classified-by-role",
+    "implementation-coupling-fails-closed",
+    "implementation-coupling-no-false-positive",
+    "implementation-coupling-diagnostics-bounded"
+  ],
+  "invariant_evidence": {
+    "implementation-coupling-classified-by-role": {
+      "task_ids": [
+        "1.1",
+        "1.4",
+        "2.1",
+        "2.3",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "check-scope summary line reports declared coupling inventory per role",
+        "M-71-C Buffer in generated source fails while passing in authored source"
+      ]
+    },
+    "implementation-coupling-fails-closed": {
+      "task_ids": [
+        "1.2",
+        "1.3",
+        "1.5",
+        "1.8",
+        "2.5"
+      ],
+      "evidence_ids": [
+        "M-71-A process in authored source fails with undeclared-global",
+        "M-71-B globalThis in authored source fails naming globalThis",
+        "M-71-D require in generated source fails with undeclared-specifier",
+        "M-71-G and M-71-H parse failure, read failure, and empty inventory fail closed"
+      ]
+    },
+    "implementation-coupling-no-false-positive": {
+      "task_ids": [
+        "1.6",
+        "1.7",
+        "2.2",
+        "2.5"
+      ],
+      "evidence_ids": [
+        "M-71-E lexically bound process parameter and Buffer const pass at exit 0",
+        "M-71-F type-position references pass at exit 0"
+      ]
+    },
+    "implementation-coupling-diagnostics-bounded": {
+      "task_ids": [
+        "1.9",
+        "1.10",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "M-71-I produces existing production-integration diagnostic without coupling code",
+        "All mutation arms enforce 4 KiB output bound, control escaping, and source-marker absence"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "39506dbfcd697da4b85f96dfab5e6b30fa06b07c"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6",
+    "1.7",
+    "1.8",
+    "1.9",
+    "1.10",
+    "2.5",
+    "3.4"
+  ]
+}

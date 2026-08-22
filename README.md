@@ -43,7 +43,7 @@ existence does not authorize:
 
 Only a transport-neutral sink interface and non-production test sinks exist. None of the above
 may be added as an incidental part of another change — each requires a separate OpenSpec change
-and explicit authorization. The boundary is mechanically enforced by
+and explicit authorization. The boundary and platform coupling policy are mechanically enforced by
 `npm run test:scope --prefix packages/security-audit-sdk-core`, not merely documented.
 
 Cutting a `vX.Y.Z` tag does **not** lift this boundary, and the package is never published to a
@@ -114,7 +114,7 @@ Targeted gates worth knowing (all `--prefix packages/security-audit-sdk-core`):
 | `check:generated` | `src/generated/` matches the contract; regenerate with `npm run generate` |
 | `test:contract-immutability` | the frozen contract was not mutated |
 | `test:compatibility` | `compatibility.json` still holds, including the pinned toolchain |
-| `test:scope` | no out-of-scope surface crept in (the authorization boundary above) |
+| `test:scope` | no out-of-scope surface crept in (the authorization boundary above, forbidden filenames, imports, exports, and undeclared platform coupling) |
 | `test:publication-path` | nothing in tracked content can publish the package: no manifest script, automation file, local action a workflow references, `.npmrc`, `publishConfig`, or non-private manifest. The gate forbids the capability across the scanned surface rather than tracing shell reachability, and fails closed on referenced content it cannot read |
 | `test:governance-history` | the Git properties a governance record asserts: declared merge commits have their expected parent count, bound commits remain ancestors of `HEAD`, governed commits still resolve, and each reviewed path resolves to exactly the content object the record declares |
 | `test:archive-attestations` | every declared archive-movement attestation, and the archive itself, match the commit history shows introduced that archive — so an archived file rewritten together with its recorded object is detected |
