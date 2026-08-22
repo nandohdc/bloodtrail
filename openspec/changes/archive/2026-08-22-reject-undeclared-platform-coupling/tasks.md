@@ -37,5 +37,5 @@
 ## 4. Canonical Spec Fold and Archive
 
 - [x] 4.1 Fold ADDED requirement into canonical `openspec/specs/security-audit-sdk-core/spec.md` in PR 2 while change is active — done in this commit: the requirement and all eleven scenarios are present once under the canonical SDK specification with no delta operation header, and the active change remains in place for the later archive relocation.
-- [ ] 4.2 Close issue #71 with comprehensive evidence linking PR merges and matrix verification.
-- [ ] 4.3 Relocate active change into dated archive with `archive-evidence.md` in PR 3.
+- [x] 4.2 Close issue #71 with comprehensive evidence linking PR merges and matrix verification — done: issue #71 was closed as `COMPLETED` at `2026-08-22T14:51:21Z`, after a completion-evidence comment binding implementation merge M1 `48b8a16d89e6fb60685469858601d4c568dccfa3` and fold merge M2 `45c6227647007fa32e6974dd34d7800a05b1c80b`, both identity-preserving, reconciling all eleven acceptance criteria of the authoritative agent brief, and recording that no SDK job runs on Node 24.
+- [x] 4.3 Relocate active change into dated archive with `archive-evidence.md` in PR 3 — done in this commit: all six active artifacts moved to `openspec/changes/archive/2026-08-22-reject-undeclared-platform-coupling/`, `archive-evidence.md` added, and `openspec/specs/**` left untouched so the canonical fold is not repeated.
