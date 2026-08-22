@@ -19,6 +19,58 @@ import { packageRoot } from "../../scripts/verification-helpers.mjs";
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-platform-coupling-"));
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
 
+const POSITIVE_MUTATIONS = [
+  {
+    name: "m-71-a-authored-global",
+    title: "authored source referencing an undeclared Node global fails closed",
+    file: "src/probe.ts",
+    generate: (marker) => `// ${marker}\nexport function readEnv(): string | undefined { return process.env.AUDIT_PROBE; }\n`,
+    expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "process" },
+  },
+  {
+    name: "m-71-b-evasion",
+    title: "authored source referencing globalThis fails closed and names globalThis",
+    file: "src/probe.ts",
+    generate: (marker) => `// ${marker}\nexport function evade(u: string): unknown { return globalThis["fe" + "tch"](u); }\n`,
+    expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "globalThis" },
+  },
+  {
+    name: "m-71-c-generated-global",
+    title: "generated source referencing a global declared only for authored role fails closed",
+    file: "src/generated/schema-validator.generated.cjs",
+    generate: (marker, original) => `/* ${marker} */\nconst _probeLength = Buffer.byteLength("probe", "utf8");\n${original}`,
+    expected: { code: "undeclared-global", artifact: "src/generated/schema-validator.generated.cjs", detail: "Buffer" },
+  },
+  {
+    name: "m-71-d-generated-specifier",
+    title: "generated source referencing an undeclared module specifier fails closed",
+    file: "src/generated/schema-validator.generated.cjs",
+    generate: (marker, original) => `/* ${marker} */\nrequire("ajv/dist/runtime/ucs2length");\n${original}`,
+    expected: { code: "undeclared-specifier", artifact: "src/generated/schema-validator.generated.cjs", detail: "ajv/dist/runtime/ucs2length" },
+  },
+  {
+    name: "m-71-dynamic-specifier",
+    title: "authored source referencing a dynamic non-literal specifier fails closed",
+    file: "src/probe.ts",
+    generate: (marker) => `// ${marker}\nconst dynamicName = "crypto";\nexport async function load() { return import(dynamicName); }\n`,
+    expected: { code: "dynamic-specifier", artifact: "src/probe.ts", detail: "<dynamic-import>" },
+  },
+  {
+    name: "m-71-class-extends-undeclared",
+    title: "authored class extending an undeclared host global fails closed",
+    file: "src/probe.ts",
+    generate: (marker) => `// ${marker}\nexport class CustomStream extends EventEmitter {}\n`,
+    expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "EventEmitter" },
+  },
+  {
+    name: "m-71-g-unparseable",
+    title: "unparseable source artifact fails closed",
+    file: "src/generated/broken.generated.ts",
+    generate: (marker) => `// ${marker}\nexport const = { {{{ ;;\n`,
+    expected: { code: "parse-failure", artifact: "src/generated/broken.generated.ts", detail: "broken.generated.ts" },
+  },
+];
+
 test("unmutated package copy passes the scope gate and reports declared coupling inventory", () => {
   const { output, status } = runCase("null");
   assert.equal(status, 0, `unmutated control failed:\n${output}`);
@@ -28,223 +80,64 @@ test("unmutated package copy passes the scope gate and reports declared coupling
   assert.match(output, /generated:/);
 });
 
-test("authored source referencing an undeclared Node global fails closed", () => {
-  const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
-  const result = runCase("m-71-a-authored-global", ({ copiedPackage }) => {
-    const probePath = resolve(copiedPackage, "src/probe.ts");
-    writeFileSync(
-      probePath,
-      `// ${sourceMarker}\nexport function readEnv(): string | undefined { return process.env.AUDIT_PROBE; }\n`,
-      "utf8",
-    );
+for (const scenario of POSITIVE_MUTATIONS) {
+  test(scenario.title, () => {
+    const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
+    const result = runCase(scenario.name, ({ copiedPackage }) => {
+      const targetPath = resolve(copiedPackage, scenario.file);
+      const original = readExisting(targetPath);
+      writeFileSync(targetPath, scenario.generate(sourceMarker, original), "utf8");
+    });
+    assertFailure(result, { ...scenario.expected, sourceMarker });
   });
-
-  assertFailure(result, {
-    code: "undeclared-global",
-    artifact: "src/probe.ts",
-    detail: "process",
-    sourceMarker,
-  });
-});
-
-test("authored source referencing globalThis fails closed and names globalThis", () => {
-  const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
-  const result = runCase("m-71-b-evasion", ({ copiedPackage }) => {
-    const probePath = resolve(copiedPackage, "src/probe.ts");
-    writeFileSync(
-      probePath,
-      `// ${sourceMarker}\nexport function evade(u: string): unknown { return globalThis["fe" + "tch"](u); }\n`,
-      "utf8",
-    );
-  });
-
-  assertFailure(result, {
-    code: "undeclared-global",
-    artifact: "src/probe.ts",
-    detail: "globalThis",
-    sourceMarker,
-  });
-});
-
-test("generated source referencing a global declared only for authored role fails closed", () => {
-  const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
-  const result = runCase("m-71-c-generated-global", ({ copiedPackage }) => {
-    const validatorPath = resolve(copiedPackage, "src/generated/schema-validator.generated.cjs");
-    const original = readFileSync(validatorPath, "utf8");
-    writeFileSync(
-      validatorPath,
-      `/* ${sourceMarker} */\nconst _probeLength = Buffer.byteLength("probe", "utf8");\n${original}`,
-      "utf8",
-    );
-  });
-
-  assertFailure(result, {
-    code: "undeclared-global",
-    artifact: "src/generated/schema-validator.generated.cjs",
-    detail: "Buffer",
-    sourceMarker,
-  });
-});
-
-test("generated source referencing an undeclared module specifier fails closed", () => {
-  const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
-  const result = runCase("m-71-d-generated-specifier", ({ copiedPackage }) => {
-    const validatorPath = resolve(copiedPackage, "src/generated/schema-validator.generated.cjs");
-    const original = readFileSync(validatorPath, "utf8");
-    writeFileSync(
-      validatorPath,
-      `/* ${sourceMarker} */\nrequire("ajv/dist/runtime/ucs2length");\n${original}`,
-      "utf8",
-    );
-  });
-
-  assertFailure(result, {
-    code: "undeclared-specifier",
-    artifact: "src/generated/schema-validator.generated.cjs",
-    detail: "ajv/dist/runtime/ucs2length",
-    sourceMarker,
-  });
-});
-
-test("authored source referencing a dynamic non-literal specifier fails closed", () => {
-  const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
-  const result = runCase("m-71-dynamic-specifier", ({ copiedPackage }) => {
-    const probePath = resolve(copiedPackage, "src/probe.ts");
-    writeFileSync(
-      probePath,
-      `// ${sourceMarker}\nconst dynamicName = "crypto";\nexport async function load() { return import(dynamicName); }\n`,
-      "utf8",
-    );
-  });
-
-  assertFailure(result, {
-    code: "dynamic-specifier",
-    artifact: "src/probe.ts",
-    detail: "<dynamic-import>",
-    sourceMarker,
-  });
-});
+}
 
 test("negative control: locally bound identifier sharing a global name passes", () => {
   const { output, status } = runCase("m-71-e-lexical-binding", ({ copiedPackage }) => {
-    const probePath = resolve(copiedPackage, "src/probe.ts");
     writeFileSync(
-      probePath,
-      [
-        "export function processName(process: string): string {",
-        "  const Buffer = process.length;",
-        "  return `${process}:${String(Buffer)}`;",
-        "}",
-        "",
-      ].join("\n"),
+      resolve(copiedPackage, "src/probe.ts"),
+      "export function processName(process: string): string {\n  const Buffer = process.length;\n  return `${process}:${String(Buffer)}`;\n}\n",
       "utf8",
     );
   });
-
-  assert.equal(status, 0, `negative control M-71-E over-reported and failed:\n${output}`);
+  assert.equal(status, 0, `negative control M-71-E failed:\n${output}`);
   assert.match(output, /scope passed:/);
 });
 
 test("negative control: aliased import property passes without false positive", () => {
   const { output, status } = runCase("m-71-aliased-import", ({ copiedPackage }) => {
-    const probePath = resolve(copiedPackage, "src/probe.ts");
     writeFileSync(
-      probePath,
-      [
-        "import { validateNoProhibitedData as localValidator } from './validation/index.js';",
-        "export function check(data: unknown) {",
-        "  return localValidator(data);",
-        "}",
-        "",
-      ].join("\n"),
+      resolve(copiedPackage, "src/probe.ts"),
+      "import { validateNoProhibitedData as localValidator } from './validation/index.js';\nexport function check(data: unknown) { return localValidator(data); }\n",
       "utf8",
     );
   });
-
   assert.equal(status, 0, `aliased import negative control failed:\n${output}`);
   assert.match(output, /scope passed:/);
 });
 
 test("negative control: type-position references to utility types pass", () => {
   const { output, status } = runCase("m-71-f-type-positions", ({ copiedPackage }) => {
-    const probePath = resolve(copiedPackage, "src/probe.ts");
     writeFileSync(
-      probePath,
-      [
-        "export type ProbeConfig = {",
-        "  payload: Uint8Array;",
-        "  options: Partial<Record<string, unknown>>;",
-        "  omitted: Omit<{ a: string; b: number }, 'b'>;",
-        "  extracted: Extract<'x' | 'y', 'x'>;",
-        "};",
-        "",
-      ].join("\n"),
+      resolve(copiedPackage, "src/probe.ts"),
+      "export type ProbeConfig = { payload: Uint8Array; options: Partial<Record<string, unknown>>; omitted: Omit<{ a: string; b: number }, 'b'>; extracted: Extract<'x' | 'y', 'x'>; };\n",
       "utf8",
     );
   });
-
-  assert.equal(status, 0, `negative control M-71-F over-reported and failed:\n${output}`);
+  assert.equal(status, 0, `negative control M-71-F failed:\n${output}`);
   assert.match(output, /scope passed:/);
 });
 
 test("negative control: class extending language global Error passes", () => {
   const { output, status } = runCase("m-71-class-extends-error", ({ copiedPackage }) => {
-    const probePath = resolve(copiedPackage, "src/probe.ts");
     writeFileSync(
-      probePath,
-      [
-        "export class CustomError extends Error {",
-        "  constructor(message: string) {",
-        "    super(message);",
-        "    this.name = 'CustomError';",
-        "  }",
-        "}",
-        "",
-      ].join("\n"),
+      resolve(copiedPackage, "src/probe.ts"),
+      "export class CustomError extends Error { constructor(message: string) { super(message); this.name = 'CustomError'; } }\n",
       "utf8",
     );
   });
-
   assert.equal(status, 0, `class extends Error negative control failed:\n${output}`);
   assert.match(output, /scope passed:/);
-});
-
-test("authored class extending an undeclared host global fails closed", () => {
-  const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
-  const result = runCase("m-71-class-extends-undeclared", ({ copiedPackage }) => {
-    const probePath = resolve(copiedPackage, "src/probe.ts");
-    writeFileSync(
-      probePath,
-      `// ${sourceMarker}\nexport class CustomStream extends EventEmitter {}\n`,
-      "utf8",
-    );
-  });
-
-  assertFailure(result, {
-    code: "undeclared-global",
-    artifact: "src/probe.ts",
-    detail: "EventEmitter",
-    sourceMarker,
-  });
-});
-
-test("unparseable source artifact fails closed", () => {
-  const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
-  const result = runCase("m-71-g-unparseable", ({ copiedPackage }) => {
-    const brokenPath = resolve(copiedPackage, "src/generated/broken.generated.ts");
-    writeFileSync(
-      brokenPath,
-      `// ${sourceMarker}\nexport const = { {{{ ;;\n`,
-      "utf8",
-    );
-  });
-
-  assertFailure(result, {
-    code: "parse-failure",
-    artifact: "src/generated/broken.generated.ts",
-    detail: "broken.generated.ts",
-    sourceMarker,
-  });
 });
 
 test("unreadable source artifact and empty inventory fail closed", () => {
@@ -263,8 +156,7 @@ test("unreadable source artifact and empty inventory fail closed", () => {
   });
 
   const emptyResult = runCase("m-71-h-empty", ({ copiedPackage }) => {
-    const srcDir = resolve(copiedPackage, "src");
-    resetDirectory(srcDir);
+    resetDirectory(resolve(copiedPackage, "src"));
   });
 
   assert.notEqual(emptyResult.status, 0, `empty inventory mutation unexpectedly passed:\n${emptyResult.output}`);
@@ -274,9 +166,8 @@ test("unreadable source artifact and empty inventory fail closed", () => {
 test("forbidden production integration filename diagnostic remains distinguishable", () => {
   const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
   const result = runCase("m-71-i-filename-distinguishability", ({ copiedPackage }) => {
-    const forbiddenPath = resolve(copiedPackage, "src/transport.ts");
     writeFileSync(
-      forbiddenPath,
+      resolve(copiedPackage, "src/transport.ts"),
       `// ${sourceMarker}\nexport const transportConfig = {};\n`,
       "utf8",
     );
@@ -288,6 +179,14 @@ test("forbidden production integration filename diagnostic remains distinguishab
   assert.equal(result.output.includes(sourceMarker), false, `diagnostic leaked source content:\n${result.output}`);
   assert.ok(result.output.length < 4_096, `output length exceeded limit: ${String(result.output.length)} bytes`);
 });
+
+function readExisting(filePath) {
+  try {
+    return readFileSync(filePath, "utf8");
+  } catch {
+    return "";
+  }
+}
 
 function runCase(name, mutate) {
   const targetDir = resolve(suiteRoot, name, "packages/security-audit-sdk-core");

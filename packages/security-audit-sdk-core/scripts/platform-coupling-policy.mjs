@@ -46,6 +46,12 @@ const NAME_DECLARATION_KINDS = new Set([
   ts.SyntaxKind.BindingElement,
 ]);
 
+const HOISTED_NAME_KINDS = new Set([
+  ts.SyntaxKind.FunctionDeclaration,
+  ts.SyntaxKind.ClassDeclaration,
+  ts.SyntaxKind.ImportEqualsDeclaration,
+]);
+
 const TYPE_CONTAINER_KINDS = new Set([
   ts.SyntaxKind.TypeElement,
   ts.SyntaxKind.InterfaceDeclaration,
@@ -150,17 +156,25 @@ class ReferenceCollector {
   }
 
   hoistStatement(stmt) {
-    if (ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt) || ts.isImportEqualsDeclaration(stmt)) {
-      if (stmt.name) this.bindName(stmt.name.text);
+    if (HOISTED_NAME_KINDS.has(stmt.kind)) {
+      this.bindDeclaredName(stmt.name);
       return;
     }
     if (ts.isImportDeclaration(stmt)) {
-      if (stmt.importClause) this.hoistImportClause(stmt.importClause);
+      this.hoistImportDeclaration(stmt);
       return;
     }
     if (ts.isVariableStatement(stmt)) {
       this.hoistVariables(stmt.declarationList.declarations);
     }
+  }
+
+  bindDeclaredName(nameNode) {
+    if (nameNode?.text) this.bindName(nameNode.text);
+  }
+
+  hoistImportDeclaration(stmt) {
+    if (stmt.importClause) this.hoistImportClause(stmt.importClause);
   }
 
   hoistVariables(declarations) {
