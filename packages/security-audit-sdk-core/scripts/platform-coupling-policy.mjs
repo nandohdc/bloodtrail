@@ -582,11 +582,12 @@ async function walkSourceTree(directory) {
   }
   const result = [];
   for (const entry of entries) {
-    const path = resolve(directory, entry.name);
+    const entryPath = resolve(directory, entry.name);
     if (entry.isDirectory()) {
-      result.push(...await walkSourceTree(path));
+      const nested = await walkSourceTree(entryPath);
+      for (const file of nested) result.push(file);
     } else if (entry.isFile()) {
-      result.push(path);
+      result.push(entryPath);
     }
   }
   return result;

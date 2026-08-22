@@ -205,7 +205,7 @@ function runCase(name, mutate) {
 
 function assertFailure({ output, status }, expectation) {
   assert.notEqual(status, 0, `mutation unexpectedly passed:\n${output}`);
-  assert.match(output, new RegExp(`\\[platform-coupling:${expectation.code}\\]`));
+  assert.match(output, new RegExp(String.raw`\[platform-coupling:${expectation.code}\]`));
   assert.ok(output.includes(expectation.artifact), `missing artifact ${expectation.artifact}`);
   assert.ok(output.includes(expectation.detail), `missing detail ${expectation.detail}`);
   assert.equal(output.includes(expectation.sourceMarker), false, `leaked marker`);
