@@ -8,7 +8,7 @@ const CODE_ARTIFACT = /\.(?:[cm]?[jt]s)$/;
 const MAX_VIOLATIONS = 50;
 const MAX_DETAIL_LENGTH = 120;
 
-const LANGUAGE_GLOBALS = Object.freeze(new Set([
+const LANGUAGE_GLOBALS = new Set([
   "Array", "ArrayBuffer", "AsyncFunction", "AsyncGenerator", "AsyncGeneratorFunction",
   "AsyncIterator", "Atomics", "BigInt", "BigInt64Array", "BigUint64Array", "Boolean",
   "DataView", "Date", "Error", "EvalError", "Float16Array", "Float32Array", "Float64Array",
@@ -20,7 +20,7 @@ const LANGUAGE_GLOBALS = Object.freeze(new Set([
   "decodeURI", "decodeURIComponent", "encodeURI", "encodeURIComponent", "escape", "eval",
   "isFinite", "isNaN", "parseFloat", "parseInt", "structuredClone", "unescape", "undefined",
   "setTimeout", "clearTimeout",
-]));
+]);
 
 const NAME_DECLARATION_KINDS = new Set([
   ts.SyntaxKind.VariableDeclaration,

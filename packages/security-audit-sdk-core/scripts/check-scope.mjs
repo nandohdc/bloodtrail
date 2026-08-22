@@ -39,7 +39,7 @@ for (const file of files) {
   for (const pattern of forbiddenSource) {
     if (pattern.test(source)) violations.push(`${relativePath}: ${pattern}`);
   }
-  for (const match of source.matchAll(/(?:from\s+|import\s*)["']([^"']+)["']/g)) {
+  for (const match of source.matchAll(/(?:from|import)\s*["']([^"']+)["']/g)) {
     const specifier = match[1];
     if (specifier.startsWith(".") || allowedNodeImports.has(specifier)) continue;
     violations.push(`${relativePath}: non-core production import ${specifier}`);
