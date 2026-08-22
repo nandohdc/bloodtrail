@@ -77,9 +77,11 @@ function formatInventory(inventory) {
 
 function formatHostGlobals(map) {
   if (map.size === 0) return "none";
-  return Array.from(map.entries())
-    .map(([name, count]) => `${name} (${count} site${count === 1 ? "" : "s"})`)
-    .join(", ");
+  const items = [];
+  for (const [name, count] of map) {
+    items.push(`${name} (${count} site${count === 1 ? "" : "s"})`);
+  }
+  return items.join(", ");
 }
 
 async function walk(directory) {

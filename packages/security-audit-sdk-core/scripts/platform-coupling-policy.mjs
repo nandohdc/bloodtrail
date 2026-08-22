@@ -170,7 +170,9 @@ class ReferenceCollector {
   }
 
   bindDeclaredName(nameNode) {
-    if (nameNode?.text) this.bindName(nameNode.text);
+    if (nameNode && ts.isIdentifier(nameNode)) {
+      this.bindName(nameNode.text);
+    }
   }
 
   hoistImportDeclaration(stmt) {
@@ -350,7 +352,7 @@ export function collectCouplingReferences(artifactPath, sourceText) {
     return parseFailureResult(artifactPath);
   }
 
-  if (sourceFile.parseDiagnostics && sourceFile.parseDiagnostics.length > 0) {
+  if (sourceFile.parseDiagnostics?.length > 0) {
     return parseFailureResult(artifactPath);
   }
 
@@ -559,9 +561,9 @@ function violation(artifact, detail, code) {
 }
 
 function escapeDiagnostic(value) {
-  if (typeof value !== "string") return String(value);
-  const truncated = value.length > MAX_DETAIL_LENGTH ? `${value.slice(0, MAX_DETAIL_LENGTH)}...` : value;
-  return truncated.replace(/[\u0000-\u001f\u007f-\u009f]/g, (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`);
+  const stringValue = typeof value === "string" ? value : String(value);
+  const truncated = stringValue.length > MAX_DETAIL_LENGTH ? `${stringValue.slice(0, MAX_DETAIL_LENGTH)}...` : stringValue;
+  return truncated.replaceAll(/[^\x20-\x7e]/g, (char) => String.raw`\u${char.codePointAt(0).toString(16).padStart(4, "0")}`);
 }
 
 function compareViolations(left, right) {
