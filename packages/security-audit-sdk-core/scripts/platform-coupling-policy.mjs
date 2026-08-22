@@ -6,7 +6,6 @@ import { byCodePoint } from "./verification-helpers.mjs";
 
 const CODE_ARTIFACT = /\.(?:[cm]?[jt]s)$/;
 const MAX_VIOLATIONS = 50;
-const MAX_DETAIL_LENGTH = 120;
 
 const LANGUAGE_GLOBALS = new Set([
   "Array", "ArrayBuffer", "AsyncFunction", "AsyncGenerator", "AsyncGeneratorFunction",
@@ -576,24 +575,7 @@ function scriptKindFor(artifactPath) {
 }
 
 function violation(artifact, detail, code) {
-  return {
-    artifact: bounded(artifact, MAX_DETAIL_LENGTH),
-    detail: bounded(detail, MAX_DETAIL_LENGTH),
-    code: bounded(code, MAX_DETAIL_LENGTH),
-  };
-}
-
-function bounded(value, maximum) {
-  const text = String(value).replaceAll(
-    /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g,
-    escapeControlCharacter,
-  );
-  if (text.length <= maximum) return text;
-  return `${text.slice(0, maximum - 3)}...`;
-}
-
-function escapeControlCharacter(character) {
-  return String.raw`\u${character.codePointAt(0).toString(16).padStart(4, "0")}`;
+  return { artifact, detail, code };
 }
 
 function compareViolations(left, right) {
