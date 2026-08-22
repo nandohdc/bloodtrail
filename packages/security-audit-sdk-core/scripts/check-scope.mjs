@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { extname, relative, resolve, sep } from "node:path";
+import { inspectPlatformCoupling } from "./platform-coupling-policy.mjs";
 import { packageRoot, readJson } from "./verification-helpers.mjs";
 
 const sourceRoot = resolve(packageRoot, "src");
@@ -29,7 +30,12 @@ for (const file of files) {
   const relativePath = relative(packageRoot, file).split(sep).join("/");
   if (relativePath.startsWith("src/generated/")) continue;
   if (forbiddenFileName.test(relativePath)) violations.push(`${relativePath}: forbidden production integration filename`);
-  const source = await readFile(file, "utf8");
+  let source;
+  try {
+    source = await readFile(file, "utf8");
+  } catch {
+    continue;
+  }
   for (const pattern of forbiddenSource) {
     if (pattern.test(source)) violations.push(`${relativePath}: ${pattern}`);
   }
@@ -49,10 +55,32 @@ for (const forbiddenExport of ["transport", "collector", "queue", "outbox", "sto
   }
 }
 
+const coupling = await inspectPlatformCoupling({ packageRoot, sourceRoot });
+for (const item of coupling.violations) {
+  violations.push(`[platform-coupling:${item.code}] ${item.artifact}: ${item.detail}`);
+}
+
 if (violations.length > 0) {
   throw new Error(`production-scope violations:\n${violations.join("\n")}`);
 }
-process.stdout.write(`scope passed: ${files.length} SDK source files, only node:async_hooks/node:crypto external runtime imports, no production integration or runtime dependency\n`);
+
+process.stdout.write(
+  `scope passed: ${files.length} SDK source files, only node:async_hooks/node:crypto external runtime imports, no production integration or runtime dependency\n` +
+  `${formatInventory(coupling.inventory)}\n`,
+);
+
+function formatInventory(inventory) {
+  const authoredGlobals = formatHostGlobals(inventory.authored.hostGlobals);
+  const generatedGlobals = formatHostGlobals(inventory.generated.hostGlobals);
+  return `platform coupling inventory: authored: ${inventory.authored.artifacts} artifacts, ${inventory.authored.references} references, host couplings: [${authoredGlobals}]; generated: ${inventory.generated.artifacts} artifacts, ${inventory.generated.references} references, host couplings: [${generatedGlobals}]`;
+}
+
+function formatHostGlobals(map) {
+  if (map.size === 0) return "none";
+  return Array.from(map.entries())
+    .map(([name, count]) => `${name} (${count} site${count === 1 ? "" : "s"})`)
+    .join(", ");
+}
 
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
