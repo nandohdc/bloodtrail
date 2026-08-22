@@ -147,6 +147,17 @@ Confirm that it:
 - moves generated release notes into the top released `CHANGELOG.md` entry;
 - uses the expected `vX.Y.Z` version.
 
+Every path a release PR writes carries a declared governance classification, so
+`design-pattern-governance` treats the PR as a documentation-only change:
+`version.txt`, `.release-please-manifest.json`, and `CHANGELOG.md` are all
+`documentation_only` in `openspec/governance/design-pattern-policy.json`. The
+mechanism that configures the release — `release-please-config.json` and
+`.github/workflows/release-please.yml` — is `governance_core` instead, so
+changing *how* releases are produced needs a governance-core cycle while
+producing one does not. A release PR that fails with `[path-unclassified]` or
+`[path-classification-incomplete]` means a new path escaped classification; the
+fix belongs in the policy, never in the release PR.
+
 ### 3. Merge the Release PR
 
 Merge through the protected-branch flow once every required check is green. Because the PR is
