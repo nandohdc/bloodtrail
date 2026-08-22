@@ -58,7 +58,7 @@ for (const forbiddenExport of ["transport", "collector", "queue", "outbox", "sto
 
 const coupling = await inspectPlatformCoupling({ packageRoot, sourceRoot });
 for (const item of coupling.violations) {
-  violations.push(`[platform-coupling:${item.code}] ${item.artifact}: ${item.detail}`);
+  violations.push(formatCouplingViolation(item));
 }
 
 if (violations.length > 0) {
@@ -68,6 +68,10 @@ if (violations.length > 0) {
 process.stdout.write(
   `scope passed: ${files.length} SDK source files, only node:async_hooks/node:crypto external runtime imports, no production integration or runtime dependency\n${formatInventory(coupling.inventory)}\n`,
 );
+
+function formatCouplingViolation({ artifact, detail, code }) {
+  return `[platform-coupling:${bounded(code, 40)}] ${bounded(artifact, 90)}: ${bounded(detail, 120)}`;
+}
 
 function formatInventory(inventory) {
   const authoredGlobals = formatHostGlobals(inventory.authored.hostGlobals);
@@ -82,6 +86,19 @@ function formatHostGlobals(map) {
     items.push(`${name} (${count} site${count === 1 ? "" : "s"})`);
   }
   return items.join(", ");
+}
+
+function bounded(value, maximum) {
+  const text = String(value).replaceAll(
+    /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g,
+    escapeControlCharacter,
+  );
+  if (text.length <= maximum) return text;
+  return `${text.slice(0, maximum - 3)}...`;
+}
+
+function escapeControlCharacter(character) {
+  return String.raw`\u${character.codePointAt(0).toString(16).padStart(4, "0")}`;
 }
 
 async function walk(directory) {

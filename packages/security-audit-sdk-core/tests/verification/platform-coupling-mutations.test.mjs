@@ -207,12 +207,12 @@ function runCase(name, mutate) {
   return { status: check.status, output: `${check.stdout}\n${check.stderr}` };
 }
 
-function assertFailure({ output, status }, expectation) {
+function assertFailure({ output, status }, { code, artifact, detail, sourceMarker }) {
   assert.notEqual(status, 0, `mutation unexpectedly passed:\n${output}`);
-  assert.match(output, new RegExp(String.raw`\[platform-coupling:${expectation.code}\]`));
-  assert.ok(output.includes(expectation.artifact), `missing artifact ${expectation.artifact}`);
-  assert.ok(output.includes(expectation.detail), `missing detail ${expectation.detail}`);
-  assert.equal(output.includes(expectation.sourceMarker), false, `leaked marker`);
+  assert.match(output, new RegExp(`\\[platform-coupling:${code}\\]`));
+  assert.ok(output.includes(artifact), `missing artifact ${artifact}`);
+  assert.ok(output.includes(detail), `missing detail ${detail}`);
+  assert.equal(output.includes(sourceMarker), false, `leaked marker`);
   assert.ok(output.length < 4_096, `output length exceeded limit`);
 }
 
