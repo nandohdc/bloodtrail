@@ -22,7 +22,7 @@ const LANGUAGE_GLOBALS = Object.freeze(new Set([
   "setTimeout", "clearTimeout",
 ]));
 
-const NAME_DECLARATION_KINDS = new Set([
+const NAME_DECLARATION_KINDS = Object.freeze(new Set([
   ts.SyntaxKind.VariableDeclaration,
   ts.SyntaxKind.FunctionDeclaration,
   ts.SyntaxKind.FunctionExpression,
@@ -44,26 +44,26 @@ const NAME_DECLARATION_KINDS = new Set([
   ts.SyntaxKind.NamespaceImport,
   ts.SyntaxKind.ImportEqualsDeclaration,
   ts.SyntaxKind.BindingElement,
-]);
+]));
 
-const HOISTED_NAME_KINDS = new Set([
+const HOISTED_NAME_KINDS = Object.freeze(new Set([
   ts.SyntaxKind.FunctionDeclaration,
   ts.SyntaxKind.ClassDeclaration,
   ts.SyntaxKind.ImportEqualsDeclaration,
-]);
+]));
 
-const TYPE_CONTAINER_KINDS = new Set([
+const TYPE_CONTAINER_KINDS = Object.freeze(new Set([
   ts.SyntaxKind.TypeElement,
   ts.SyntaxKind.InterfaceDeclaration,
   ts.SyntaxKind.TypeAliasDeclaration,
   ts.SyntaxKind.TypeParameter,
-]);
+]));
 
-const LABEL_KINDS = new Set([
+const LABEL_KINDS = Object.freeze(new Set([
   ts.SyntaxKind.BreakStatement,
   ts.SyntaxKind.ContinueStatement,
   ts.SyntaxKind.LabeledStatement,
-]);
+]));
 
 export const PLATFORM_COUPLING_POLICY = Object.freeze({
   languageGlobals: LANGUAGE_GLOBALS,
@@ -113,7 +113,7 @@ class ReferenceCollector {
   }
 
   currentScope() {
-    return this.scopes[this.scopes.length - 1];
+    return this.scopes.at(-1);
   }
 
   bindName(name) {
@@ -142,7 +142,7 @@ class ReferenceCollector {
   }
 
   isBound(name) {
-    for (let i = this.scopes.length - 1; i >= 0; i -= 1) {
+    for (let i = this.scopes.length - 1; i >= 0; i--) {
       if (this.scopes[i].has(name)) return true;
     }
     return false;
@@ -352,7 +352,7 @@ export function collectCouplingReferences(artifactPath, sourceText) {
     return parseFailureResult(artifactPath);
   }
 
-  if (sourceFile.parseDiagnostics?.length > 0) {
+  if (Boolean(sourceFile.parseDiagnostics && sourceFile.parseDiagnostics.length > 0)) {
     return parseFailureResult(artifactPath);
   }
 
@@ -403,7 +403,7 @@ export async function inspectPlatformCoupling({ packageRoot, sourceRoot }) {
 
   result.violations.sort(compareViolations);
   if (result.violations.length > MAX_VIOLATIONS) {
-    result.violations = result.violations.slice(0, MAX_VIOLATIONS);
+    result.violations.splice(MAX_VIOLATIONS);
   }
   return result;
 }
@@ -460,7 +460,7 @@ function isHeritageExtends(node) {
 }
 
 function isTypeOnlyDeclaration(node) {
-  if (node.isTypeOnly) return true;
+  if (Boolean(node.isTypeOnly)) return true;
   if (ts.isImportDeclaration(node)) return Boolean(node.importClause?.isTypeOnly);
   return false;
 }
@@ -561,9 +561,10 @@ function violation(artifact, detail, code) {
 }
 
 function escapeDiagnostic(value) {
-  const stringValue = typeof value === "string" ? value : String(value);
-  const truncated = stringValue.length > MAX_DETAIL_LENGTH ? `${stringValue.slice(0, MAX_DETAIL_LENGTH)}...` : stringValue;
-  return truncated.replaceAll(/[^\x20-\x7e]/g, (char) => String.raw`\u${char.codePointAt(0).toString(16).padStart(4, "0")}`);
+  const escaped = String(value)
+    .replaceAll(/[^\x20-\x7e]/g, (char) => String.raw`\u${char.codePointAt(0).toString(16).padStart(4, "0")}`)
+    .slice(0, MAX_DETAIL_LENGTH);
+  return escaped.length === 0 ? "<empty>" : escaped;
 }
 
 function compareViolations(left, right) {

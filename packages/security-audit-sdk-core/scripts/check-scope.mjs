@@ -49,8 +49,8 @@ for (const file of files) {
 for (const field of ["dependencies", "optionalDependencies", "peerDependencies"]) {
   if (Object.keys(packageJson[field] ?? {}).length > 0) violations.push(`package.json: ${field} must remain empty`);
 }
-for (const forbiddenExport of ["transport", "collector", "queue", "outbox", "storage", "browser", "telemetry"] ) {
-  if (JSON.stringify(packageJson.exports).toLowerCase().includes(forbiddenExport)) {
+for (const forbiddenExport of ["transport", "collector", "queue", "outbox", "storage", "browser", "telemetry"]) {
+  if (JSON.stringify(packageJson.exports ?? {}).toLowerCase().includes(forbiddenExport)) {
     violations.push(`package.json: forbidden ${forbiddenExport} export`);
   }
 }
@@ -65,8 +65,7 @@ if (violations.length > 0) {
 }
 
 process.stdout.write(
-  `scope passed: ${files.length} SDK source files, only node:async_hooks/node:crypto external runtime imports, no production integration or runtime dependency\n` +
-  `${formatInventory(coupling.inventory)}\n`,
+  `scope passed: ${files.length} SDK source files, only node:async_hooks/node:crypto external runtime imports, no production integration or runtime dependency\n${formatInventory(coupling.inventory)}\n`,
 );
 
 function formatInventory(inventory) {
