@@ -1,6 +1,6 @@
 ## Why
 
-The design-pattern governance checker treats an explicit `--base` that resolves to `HEAD` as a successful empty range, but returns before it records any range summary. A consumer cannot distinguish that valid, inspected-zero-range result from a perimeter check that never established a baseline or ran. The reproduced #191 defect therefore weakens auditability without changing the intended success verdict.
+The design-pattern governance checker treats an explicit full-SHA `--base` equal to resolved `HEAD` as a successful empty range, but returns before it records any range summary. A consumer cannot distinguish that valid, inspected-zero-range result from a perimeter check that never established a baseline or ran. The reproduced #191 defect therefore weakens auditability without changing the intended success verdict.
 
 ## What Changes
 

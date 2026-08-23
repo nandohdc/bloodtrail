@@ -5,7 +5,7 @@
 
 ## 2. Regression-first implementation
 
-- [ ] 2.1 Add a focused perimeter regression test for an explicit baseline resolving to the fixture `HEAD`; verify the test asserts a successful result, resolved baseline, and exactly zero inspected commits and paths.
+- [ ] 2.1 Add a focused perimeter regression test for an explicit full-SHA baseline equal to the fixture `HEAD`; verify the test asserts a successful result, that baseline, and exactly zero inspected commits and paths.
 - [ ] 2.2 Run the new regression test against the unmodified checker and verify it fails because the empty-range summary is absent rather than because of test setup or an unrelated diagnostic.
 - [ ] 2.3 Materialize the resolved baseline and zero inspected commit/path counts in the existing semantic-empty-range branch; verify the focused regression test passes without removing the successful short-circuit.
 - [ ] 2.4 Preserve a separate untracked-path null control for the non-identical-ref spelling; verify it still fails closed with `path-unclassified` and reports an inspected path rather than treating that arm as empty.

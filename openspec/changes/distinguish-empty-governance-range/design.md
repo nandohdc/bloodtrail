@@ -22,7 +22,7 @@ The checker, policy, and perimeter tests are governance-core paths. This change 
 
 ### Preserve the short-circuit and materialize an explicit zero-range summary
 
-Before returning for a baseline that resolves to `HEAD`, record the resolved baseline and set inspected commit and path counts to zero. Existing summary formatting will then expose the result in both JSON and the successful text output without inventing a failure or a new checker phase.
+Before returning for an explicit full-SHA baseline equal to resolved `HEAD`, record that baseline and set inspected commit and path counts to zero. Existing summary formatting will then expose the result in both JSON and the successful text output without inventing a failure or a new checker phase.
 
 **Alternative considered: remove the short-circuit.** This would make an empty committed range inspect the working tree and could turn an existing success into an unclassified-path failure. That changes the perimeter's scope, contradicts the approved Option A boundary, and remains deferred.
 

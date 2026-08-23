@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: R11 — The governance perimeter is actor-neutral and capability-bound
-After activation, any change touching a governed implementation path SHALL be associated with an applicable OpenSpec change for the modified capability and design-pattern governance evidence. The policy SHALL inspect the material commit range and behavior in tests, build files, scripts, and configuration. It SHALL apply equally to humans, Hermes, Claude Code, other agents, direct commits, pull requests, and scripts. A successful perimeter check whose selected baseline resolves to the current `HEAD` SHALL report that resolved baseline, zero inspected commits, and zero inspected paths; it SHALL NOT omit range-result fields merely because no material commit is present.
+After activation, any change touching a governed implementation path SHALL be associated with an applicable OpenSpec change for the modified capability and design-pattern governance evidence. The policy SHALL inspect the material commit range and behavior in tests, build files, scripts, and configuration. It SHALL apply equally to humans, Hermes, Claude Code, other agents, direct commits, pull requests, and scripts. A successful perimeter check whose explicitly supplied full-SHA baseline equals the resolved current `HEAD` SHALL report that baseline, zero inspected commits, and zero inspected paths; it SHALL NOT omit range-result fields merely because no material commit is present.
 
 #### Scenario: Code changes without OpenSpec
 - **WHEN** a governed implementation path changes without an applicable OpenSpec change
@@ -23,9 +23,9 @@ After activation, any change touching a governed implementation path SHALL be as
 - **WHEN** one material change is divided across commits to evade classification
 - **THEN** range-level perimeter verification SHALL evaluate and reject the evasion
 
-#### Scenario: Explicit baseline resolves to an empty range
-- **WHEN** a perimeter check receives a baseline that resolves to the current `HEAD`
-- **THEN** it SHALL retain its successful verdict and report the resolved baseline with exactly zero inspected commits and zero inspected paths
+#### Scenario: Explicit full-SHA baseline is an empty range
+- **WHEN** a perimeter check receives an explicit full-SHA baseline equal to the current resolved `HEAD`
+- **THEN** it SHALL retain its successful verdict and report that baseline with exactly zero inspected commits and zero inspected paths
 
 #### Scenario: Public API is called internal
 - **WHEN** a public API change is labeled internal-only
