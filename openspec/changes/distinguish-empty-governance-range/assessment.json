@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.1",
+  "change_id": "distinguish-empty-governance-range",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A successful empty range without a resolved baseline or zero counts is indistinguishable from a perimeter step that never established range evidence.",
+    "The checker is governance core, so a local observability repair must preserve fail-closed classification and avoid making the candidate its own sole judge.",
+    "An empty committed range and an untracked working-tree probe are different perimeter states whose distinction must remain testable.",
+    "Removing the short-circuit would broaden what an existing successful empty-range invocation inspects, outside the approved bounded repair."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/scripts/check-design-pattern-governance.mjs",
+    "openspec/tests/design-pattern-governance/perimeter.test.mjs",
+    "openspec/specs/software-design-pattern-governance/spec.md",
+    "openspec/changes/distinguish-empty-governance-range/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-explicit-zero-summary",
+      "kind": "direct_implementation",
+      "summary": "Preserve the semantic-empty-range early success path while recording its resolved baseline and explicit zero commit and path counts for the existing result emitters.",
+      "forces_addressed": [
+        "A successful empty range without a resolved baseline or zero counts is indistinguishable from a perimeter step that never established range evidence.",
+        "An empty committed range and an untracked working-tree probe are different perimeter states whose distinction must remain testable.",
+        "Removing the short-circuit would broaden what an existing successful empty-range invocation inspects, outside the approved bounded repair."
+      ]
+    },
+    {
+      "id": "approach-run-empty-range-through-perimeter",
+      "kind": "alternative",
+      "summary": "Remove the semantic-empty-range return and run the normal perimeter collection and classification path even when the selected baseline resolves to current HEAD.",
+      "forces_addressed": [
+        "An empty committed range and an untracked working-tree probe are different perimeter states whose distinction must remain testable.",
+        "Removing the short-circuit would broaden what an existing successful empty-range invocation inspects, outside the approved bounded repair."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-explicit-zero-summary",
+  "rejected_alternative_ids": [
+    "approach-run-empty-range-through-perimeter"
+  ],
+  "rejection_reasons": {
+    "approach-run-empty-range-through-perimeter": {
+      "forces": [
+        "An empty committed range and an untracked working-tree probe are different perimeter states whose distinction must remain testable.",
+        "Removing the short-circuit would broaden what an existing successful empty-range invocation inspects, outside the approved bounded repair."
+      ],
+      "reason": "Running the normal collection path would inspect working-tree paths where the established semantic-empty contract currently returns success. That alters the governed perimeter rather than repairing the missing range evidence and would re-open the deliberately deferred scope-expansion option."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-empty-range-baseline-resolved",
+    "implementation-empty-range-counts-explicit",
+    "implementation-empty-range-success-preserved",
+    "implementation-untracked-null-control-fails-closed"
+  ],
+  "invariant_evidence": {
+    "implementation-empty-range-baseline-resolved": {
+      "task_ids": ["2.1", "2.3"],
+      "evidence_ids": [
+        "focused fixture assertion compares rangeBase to the resolved fixture head"
+      ]
+    },
+    "implementation-empty-range-counts-explicit": {
+      "task_ids": ["2.1", "2.3"],
+      "evidence_ids": [
+        "focused fixture assertion requires exactly zero range commits and paths"
+      ]
+    },
+    "implementation-empty-range-success-preserved": {
+      "task_ids": ["2.2", "2.3", "3.2"],
+      "evidence_ids": [
+        "red-to-green focused test and disposable-worktree explicit-SHA arm preserve exit status zero"
+      ]
+    },
+    "implementation-untracked-null-control-fails-closed": {
+      "task_ids": ["2.4", "3.2"],
+      "evidence_ids": [
+        "non-identical-ref untracked probe retains path-unclassified failure and one inspected path"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "The change preserves an auditable distinction between a successful empty governance range and an absent range summary, so review evidence cannot silently omit inspected scope.",
+    "authentication_or_authorization": "No authentication or authorization mechanism, identity input, privilege decision, or authority grant is added or changed by this result-summary repair.",
+    "authority_provenance": "The resolved baseline is derived only from local Git commit resolution; it neither creates authority nor treats a ref spelling or ambient execution context as authorization.",
+    "concurrency": "The checker remains a synchronous, single-process command whose empty-range metadata assignment introduces no concurrent shared state or ordering behavior.",
+    "confidentiality": "The summary contains only repository commit identifiers and numeric counts already available to the checker; it introduces no event, credential, or user-data collection.",
+    "cryptography": "No cryptographic primitive, signature verification, hashing policy, key material, or cryptographic trust assumption changes in this bounded checker path.",
+    "error_disclosure": "The successful empty-range message becomes more explicit without exposing file contents, secrets, or diagnostic details beyond the baseline identifier and zero counts.",
+    "external_security_integration": "The checker remains dependency-free and local; it adds no service call, exporter, collector, SIEM connection, browser telemetry, or external security integration.",
+    "fail_posture": "The untracked null control remains fail-closed while the already-valid semantic-empty range remains successful with explicit evidence, preventing a silent change in failure posture.",
+    "lifecycle": "No lifecycle state machine or activation transition changes; the patch only materializes metadata before an existing return in final and implementation perimeter checks.",
+    "mutation_ownership": "Only the checker context owns the range summary fields, and the proposed direct assignment occurs before return without changing policy, repository history, or user artifacts.",
+    "privacy_transformation": "No personal, client, device, browser, or real-user information is processed, transformed, retained, or added to any repository result.",
+    "resource_retention": "The direct assignments are bounded primitive values within one command invocation and create no cache, queue, file, background process, or retained resource.",
+    "retry_or_redelivery": "The command has no retry, delivery, queue, or redelivery behavior; reporting zero range counts does not create delivery semantics.",
+    "trust_boundary": "The repair does not widen trusted inputs: commit resolution and the existing local checkout remain the only boundary, while path classification still fails closed for untracked probes."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "d9ff9aaa6f6cd7185dbe62767ae8457e14d515e4"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "2.2",
+    "2.3",
+    "2.4",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4"
+  ]
+}
