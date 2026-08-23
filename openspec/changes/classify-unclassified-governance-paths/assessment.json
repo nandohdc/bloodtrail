@@ -8,7 +8,8 @@
     "Release Please rewrites version.txt and .release-please-manifest.json on every release, so the release mechanism cannot produce a landable pull request while those two are unclassified.",
     "Classification is evaluated over the commit range, so an unclassified path stays invisible until an unrelated change happens to touch it, and then fails that change rather than the change that introduced it.",
     "R21's emergency classification record is bound to one exact change and ends when that change merges, so it cannot cover a file a release automation rewrites on a schedule.",
-    "The script implementing a required check sits under .github/scripts/, which is unclassified, while the workflow invoking it is governance_core."
+    "The script implementing a required check sits under .github/scripts/, which is unclassified, while the workflow invoking it is governance_core.",
+    "R14 rejects broadening an exempt or benign path class without acknowledgement, and moving version.txt and .release-please-manifest.json into documentation_only is that broadening; no gate implements that scenario, so the acknowledgement is procedural."
   ],
   "applicability": {
     "triggers_matched": [
