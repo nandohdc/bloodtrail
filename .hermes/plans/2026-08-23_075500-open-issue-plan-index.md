@@ -7,6 +7,21 @@
 
 **Scope:** 57 open issues, 57 plans, plus this index.
 
+> **Revision — 2026-08-23, later the same day.** The table below is a snapshot against
+> `1948f9f5` and is left intact; four things have changed since, and where they contradict the snapshot,
+> this note wins:
+>
+> - **Three of the four owner decisions are answered** — #75 EXACT_ONE, #77 option C (bounded module-copy
+>   scope with a single-copy Core), #80 ratify standalone against a declared four-package target. #117 is
+>   still open and cannot be closed by a recommendation. See C2.
+> - **#77's answer is not the one its packet recommended.** The packet said instance scope; the resolved
+>   measurement showed that would break 35 exported constructors, and that #86's split forces a
+>   single-copy Core rather than instance scope. #77, #78, #79 and #86 are all revised.
+> - **#98 and #202 are CLOSED.** #191's implementation is merged (`main@9085dde`); its change is still
+>   active and awaits archiving.
+> - **#102 is startable now** despite sitting at position 11 — its own plan says READY, and it reads the
+>   frozen contract rather than writing it.
+
 ---
 
 ## How the order was derived
@@ -140,18 +155,36 @@ issue-tracker doc returns everything and cannot be used to pick work; and #132's
 document an intention rather than a constraint. **Every plan's Task 0 is therefore a manual gate.**
 Materializing the edges natively is proposed in the #132 plan and needs the owner's answer first.
 
-### C2 — Four owner decisions block roughly two-thirds of the backlog
+### C2 — Four owner decisions blocked roughly two-thirds of the backlog; three are now answered
 
-| Decision | Position | Unblocks | Brief posted | State |
-| --- | --- | --- | --- | --- |
-| **#75** contract-version support policy | 1 | 36 | 2026-08-16 | unanswered |
-| **#77** sdk-core authority scope | 2 | 20 | 2026-08-16 | unanswered |
-| **#80** multi-package topology | 3 | 20 | 2026-08-16 | unanswered |
-| **#117** client-evidence purpose | 4 | 14 | never | not started |
+| Decision | Position | Unblocks | State (2026-08-23) |
+| --- | --- | --- | --- |
+| **#75** contract-version support policy | 1 | 36 | **DECIDED — EXACT_ONE** |
+| **#77** sdk-core authority scope | 2 | 20 | **DECIDED — option C**, bounded module-copy scope + single-copy Core |
+| **#80** multi-package topology | 3 | 20 | **DECIDED — ratify standalone**, four-package target |
+| **#117** client-evidence purpose | 4 | 14 | **OPEN** — surface posted, owner record outstanding |
 
-Plus **#114** (position 33) and **#129** (position 54) further out. Three of the four have a recommendation
-in their plan — #75 → EXACT_ONE, #77 → instance scope, #80 → ratify standalone. #117 deliberately has none:
-it was retyped from `RESEARCH` to `GOVERNANCE` precisely because a recommendation is the wrong artefact.
+Plus **#114** (position 33) and **#129** (position 54) further out, both still open.
+
+**Recording the three answers is now the critical path**, not taking them. Each needs an OpenSpec change
+plus ADRs before its dependants may start: `ratify-contract-version-support-policy`,
+`ratify-sdk-core-authority-scope`, `ratify-repository-topology`. All three hit the same trap — the SDK ADR
+sequence is pinned at exactly 11 by `check-coherence.mjs:190`, so extend an existing SDK ADR and put the
+options analysis in the unpinned root `docs/adr/` sequence.
+
+**#77 did not go the way its packet recommended, and the reason generalises.** The packet said instance
+scope, sized as "the registry moves into the instance". The registry does move — but the brand
+constructors are **35 exported functions of the public API**, so instance scope is a break across the
+whole authority surface. Once that was measured, the forcing function (#86's split) turned out to force a
+*single-copy Core*, which module-copy scope satisfies for free. The general lesson: **a packet's
+recommendation is only as good as the measurement it skipped.** #77's own Task 0.4 was the skipped
+measurement, and it inverted the answer.
+
+**#117 remains the one that cannot be shortcut.** It was retyped from `RESEARCH` to `GOVERNANCE` precisely
+because a recommendation is the wrong artefact: only a named owner record, in the shape of
+`research/browser-telemetry/reviews/final-project-owner-outcome.md`, can supersede the 2026-07-31
+no-adoption decision. Adopting an agent recommendation here would reproduce the exact defect the
+2026-08-10 correction fixed. NO-GO remains a clean outcome that closes fourteen issues.
 
 ### C3 — Two roadmap holes: authorization gates that exist in Wave 5 and not in Wave 4
 

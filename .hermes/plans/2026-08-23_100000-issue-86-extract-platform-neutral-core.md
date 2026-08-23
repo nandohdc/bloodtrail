@@ -6,9 +6,11 @@
 > `npm run test:scope` prints the declared coupling inventory on every passing run. Read that inventory
 > before designing an SPI. Two things the issue does not say: `src/providers.ts` **already exists** and is
 > the first two-sevenths of the PlatformProvider SPI (clock + identifiers), and it is also the file that
-> imports `node:crypto` — so the seam is already half-cut. And the authority-scope decision (#77/#78) is
-> not a formality here: Core extraction creates a second module copy by construction, which is precisely
-> the condition today's accidental module-copy branding rejects.
+> imports `node:crypto` — so the seam is already half-cut. **Authority scope was decided on 2026-08-23
+> (#77, option C) and it lands two new obligations directly on this issue:** Core must resolve to exactly
+> one module instance in any supported consumer graph, proved by a duplicate-Core fixture that fails
+> closed; and the zero-runtime-dependency gate must be rescoped to "no *third-party* runtime dependencies"
+> so the Node binding may declare Core. See F5.
 
 **Goal:** A Core with no Node imports, no Node globals, no Node engines constraint and no undeclared
 runtime dependencies, retaining audit semantics and ambient-context abstraction behind SPIs, validated
@@ -94,10 +96,30 @@ Core keeps ambient context **behind a `ContextProvider` SPI**; Node supplies `As
 bindings use explicit context. That is PLAN-016 verbatim. So `src/context.ts` splits: the brand registry,
 the 19 brand kinds and the validation logic stay in Core; the ALS frame becomes a provider.
 
-**This is where #78 bites.** The brand registry's scope decides whether a value branded in Core and read
-in the Node binding is foreign. Under instance scope it is not; under module-copy scope it is. Extraction
-under module-copy scope requires designing a cross-package brand mechanism, which is exactly the
-"module-resolution accident" #78's summary says Core cannot rely on.
+**This is where #78 bites — and the 2026-08-23 decision changes the answer.** The earlier version of this
+finding said extraction under module-copy scope would require a cross-package brand mechanism that nobody
+had scoped. It does not, provided the split is done one specific way.
+
+Option C's mechanism: **the Node binding depends on Core and re-exports it; it never duplicates
+`context.ts`.** One resolved copy means one registry, so a value branded in Core and read through the Node
+binding is the *same* copy's value and is not foreign. No cross-package brand mechanism is needed, and no
+public API changes.
+
+That makes the property load-bearing, so #86 must prove it rather than assume it:
+
+- **New acceptance criterion.** Core resolves to exactly one module instance in any supported consumer
+  graph.
+- **New fixture.** A deliberately duplicated Core must fail closed with a diagnostic that names
+  deduplication as the remediation — wording aligned with #79, which stays in scope under option C.
+- **Null control.** The same fixture without duplication must pass. A duplicate-Core arm that could never
+  have been red proves nothing.
+
+**And the dependency gate must be rescoped in this change.** `check-dependencies.mjs` and
+`check-coherence.mjs`'s `lock-runtime-dependencies` rule both assert an **empty** `dependencies` object.
+That rule was written for a single package. The Node binding needs Core as a first-party runtime
+dependency, so the gate becomes "no third-party runtime dependencies" implemented as an allowlist of
+exactly one first-party specifier — not as a relaxed check. **Prove the rescoped gate still fails on a
+third-party dependency before trusting it.**
 
 ### F6 — "Neutrality mutations fail" needs a gate, and #88 is that gate
 
@@ -205,8 +227,12 @@ the code, which the issue forbids.
 
 - **The schema runtime (F4) is where this change can double in size.** If the SPI turns out to force an
   ESM generator mode, re-scope before proceeding — that is a contract-pipeline change with its own gates.
-- **Module-copy branding breaks the split (F5).** If #78 selected module-copy scope, #86 needs a designed
-  cross-package brand mechanism that nobody has scoped.
+- **The single-copy Core invariant is the load-bearing assumption of the whole authority decision (F5).**
+  If a supported consumer graph is found in which Core cannot be deduplicated, #77's option C fails and
+  the authority scope reopens. Surface that immediately rather than working around it locally.
+- **Rescoping the dependency gate is where a real weakening could slip in (F5).** An allowlist of one
+  first-party specifier is the requirement; a check that merely stops asserting emptiness is a silent
+  regression of the repository's core discipline.
 - **`unref` has no portable equivalent.** Core must not silently retain the process on a host that lacks
   it; degradation must be explicit and observable.
 - **The paper consumer can be made to pass by weakening Core's types.** Guard against it: the consumer is

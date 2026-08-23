@@ -10,7 +10,9 @@
 **Goal:** Land the archive, confirm the release PR is unblocked, and close #202 with a closing comment
 that names the exact commits and the residual it does not cover.
 
-**Status at this baseline:** CLOSURE — implementation complete, lifecycle tail open.
+**Status at this baseline:** **DONE — #202 is CLOSED.** The archive landed in PR #206
+(`9019d2f docs(openspec): archive classify-unclassified-governance-paths`). The lifecycle tail this plan
+tracked is complete. **#203 is now unblocked** and is the open successor.
 
 **Architecture:** Nothing to design. The change
 `openspec/changes/archive/2026-08-23-classify-unclassified-governance-paths` is the whole artefact; the

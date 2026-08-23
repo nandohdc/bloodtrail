@@ -14,7 +14,10 @@
 Assessment is required, which paths it covers, and what positive and negative enforcement will look like —
 with the schema (#99), checker (#100) and CI (#101) preserved as separate downstream phases.
 
-**Status at this baseline:** READY — start now.
+**Status at this baseline:** **DONE — #98 is CLOSED.** The proposal landed in PR #208
+(`771385f docs(openspec): propose contract reuse assessment`) and the change
+`openspec/changes/contract-reuse-assessment/` is active on `main`. The open successor is **#99**, which
+defines the assessment schema; nothing in this plan is outstanding.
 
 **Architecture:** Four artifacts under `openspec/changes/contract-reuse-assessment/` and nothing else.
 The change's *content* is a governance capability: a record that says whether a piece of work reuses an

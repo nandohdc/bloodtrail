@@ -1,12 +1,11 @@
 # Issue #79 — Diagnose Duplicate sdk-core Copies Without Reporting an Attack — Plan
 
-> **For Hermes:** #79 declares dependencies on #77 and #78, but read F1 before accepting that: **if #77
-> selects instance scope, this issue as written stops making sense** — a duplicate installed copy ceases
-> to be a distinguishable condition, because foreignness would be by instance rather than by copy. So the
-> first action is not implementation and not waiting; it is a **triage correction on the issue itself**,
-> stating that #79's content is conditional on #77's answer and naming what it becomes under each. #132's
-> last sync calls #79 "the only Wave 2 item not gated by a decision" — that is true of its *subject* and
-> false of its *shape*, and the difference is worth writing down.
+> **For Hermes:** **Resolved 2026-08-23. #77 selected option C — bounded module-copy scope with a
+> single-copy Core — so #79 stands exactly as written.** A duplicate installed copy remains a real,
+> distinguishable condition, and the diagnostic this issue asks for is the right one. The conditional
+> triage correction this packet used to open with is no longer needed: do not rewrite the issue body.
+> #132's last sync calls #79 "the only Wave 2 item not gated by a decision" — that is now true of both its
+> subject and its shape. The remaining gate is #78, which must land first.
 
 **Goal:** A dependency-tree condition — a value from another installed copy of the package — returns a
 distinct, bounded diagnostic instead of `AUTHORITY_ESCALATION`, with genuine escalation attempts keeping
@@ -33,16 +32,20 @@ the security diagnostic.
 
 ## Proven findings
 
-### F1 — The issue's subject is conditional on #77, and nobody has said so
+### F1 — The conditionality is resolved: #79's subject is real (2026-08-23)
 
-Under **module-copy scope**, "value from another installed copy" is a real, detectable category and #79 is
-exactly right: add a diagnostic that distinguishes a dependency-tree fault from an attack.
+Under **module-copy scope** — the adopted option C — "value from another installed copy" is a real,
+detectable category and #79 is exactly right: add a diagnostic that distinguishes a dependency-tree fault
+from an attack. That is the case that now holds.
 
-Under **instance scope**, the registry belongs to the instance. A second installed copy is then no
-different from a second instance in the same copy — both foreign, both rejected for the same reason. The
-useful diagnostic becomes "this value was branded by a different SDK instance", which is a *different*
-message with a *different* remediation ("pass the same instance" rather than "deduplicate your dependency
-tree").
+One thing option C adds: after the #86 split, Core carries the invariant that it **resolves to exactly one
+module instance in any supported consumer graph**. A duplicate Core is therefore not merely a poor
+diagnostic experience — it is a violated invariant, and #79's message should say so and point at
+deduplication as the fix. Coordinate the wording with #86's duplicate-Core fixture so the two agree.
+
+*(Retained for the record: under instance scope the registry would have belonged to the instance, a second
+installed copy would have been indistinguishable from a second instance, and the useful diagnostic would
+have become "branded by a different SDK instance" with a different remediation. That branch is moot.)*
 
 **Both are worth having. They are not the same issue.** Record this on #79 now, before either #77 or #78
 resolves, so the answer arrives with the consequence already understood.
@@ -117,9 +120,11 @@ works.
 
 ## Task 1: The gate
 
-- [ ] 1.1 **Read #77's and #78's resolutions.** If either is open, stop.
-- [ ] 1.2 If instance scope was selected: **rewrite #79's body** to the foreign-instance diagnostic before
-      implementing anything.
+- [x] 1.1 **#77 resolved 2026-08-23 — option C, module-copy scope.** #79's body stands. Still confirm
+      #78 has landed before implementing; if it is open, stop.
+- [x] 1.2 No rewrite needed. The instance-scope branch is moot.
+- [ ] 1.3 Align the diagnostic's wording with #86's single-copy Core invariant and its duplicate-Core
+      fixture, so the message names deduplication as the remediation (F1).
 
 ## Task 2: RED — four fixtures, before any code
 
@@ -164,8 +169,11 @@ works.
 
 ## Risks and open questions
 
-- **Implementing the current body under instance scope** produces a diagnostic for a condition that no
-  longer exists. F1 exists to prevent that.
+- **Superseded risk (kept for the record):** implementing the current body under instance scope would
+  have produced a diagnostic for a condition that no longer existed. Option C removes that risk entirely.
+- **The diagnostic must not drift from #86's invariant.** If #86's duplicate-Core fixture and #79's
+  message describe the same fault in different words, the second one written will be the one nobody
+  trusts. Write them together.
 - **A forgeable hint could be read as a security control.** Say in the code comment, the ADR, the docs and
   the closing comment that it is not.
 - **`globalThis` is the tempting shortcut** and it is the one option that actually weakens the model.

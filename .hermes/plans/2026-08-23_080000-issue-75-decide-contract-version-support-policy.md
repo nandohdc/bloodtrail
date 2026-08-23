@@ -13,7 +13,9 @@
 contract minor documented and the collector's multi-version migration support recorded as deliberately
 asymmetric.
 
-**Status at this baseline:** BLOCKED ON OWNER. Nothing an agent can decide.
+**Status at this baseline:** **DECIDED — EXACT_ONE**, adopted by the owner on 2026-08-23. Task 0 stands
+as the re-verification checklist (re-verified 2026-08-23, all four pins hold); Task 1 is superseded by the
+decision comment; Task 2 is the open work.
 
 **Blast radius if unanswered:** #76 cannot start. #83, #86 and #95 declare #76 as a dependency; #102 and
 #122 declare #75 directly; #107 declares #76. **Six issues wait on this one word.**
@@ -105,13 +107,18 @@ SDK would accept if a new version existed**, not about creating one.
 | Cost today | zero | high, for a package that is private and unpublished |
 | Cost deferred | version churn once published | none |
 
-**Recommendation: EXACT_ONE.** The package is unpublished, so the churn EXACT_ONE trades away is currently
-free, while EXPLICIT_SET's cost is immediate and lands in the generation pipeline — the one part of this
-repository where a mistake is hardest to detect. EXPLICIT_SET can be revisited when a second contract
-version and a collector both exist; neither does.
+**Decision: EXACT_ONE.** Adopted by the owner on 2026-08-23.
 
-**If the owner picks EXPLICIT_SET**, this plan is wrong about #76 and that issue becomes the largest open
-piece of Wave 2. Re-scope it before starting.
+The package is unpublished, so the churn EXACT_ONE trades away is currently free, while EXPLICIT_SET's
+cost is immediate and lands in the generation pipeline — the one part of this repository where a mistake
+is hardest to detect. Four gates already enforce EXACT_ONE (F1), so the decision writes down what the
+repository already guarantees rather than changing behaviour.
+
+**Revisit condition:** a second contract version and a collector both exist. Neither does today. Record
+that trigger in the ADR so a future reader knows what would reopen the choice.
+
+**Consequence for #76:** it closes as already-implemented once its acceptance criteria are re-verified
+against the ratified policy. The EXPLICIT_SET branch of this plan is now moot.
 
 ---
 
@@ -168,9 +175,12 @@ piece of Wave 2. Re-scope it before starting.
   than re-posting the same brief.
 - **Ratifying the status quo can feel like a non-decision** and get deferred forever. Frame it as what it
   is: writing down what the gates already enforce, so the next person cannot change it by accident.
-- **Open question:** does ratification imply that a future contract `1.1.0` *must* ship as SDK `1.0.0`
-  major, or may the private unpublished candidate keep moving at `0.x`? The `semverClassification` block
-  says major; `0.x` semver conventionally exempts. Resolve it in the ADR, or #76 inherits the ambiguity.
+- **Resolved 2026-08-23 — the `0.x` question.** Ratification does **not** force a `1.0.0` release. While
+  the package is `0.x`, private and unpublished, an additive contract minor is classified `major` in
+  `semverClassification` terms but is expressed as a `0.x` minor bump, per the standard `0.x` exemption.
+  The obligation the ADR must state is the *classification*, not a specific version number: the first
+  published release inherits the major classification, and from `1.0.0` onward an additive contract minor
+  is an SDK major. Write it that way so #76 does not inherit the ambiguity.
 
 ## What this does not authorize
 
