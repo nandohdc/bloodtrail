@@ -1,0 +1,149 @@
+{
+  "schema_version": "1.1",
+  "change_id": "retire-superseded-scope-regexes",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The raw source-content regexes reject comments and string literals without determining whether a forbidden integration is actually referenced.",
+    "The legacy text import scan misses dynamic import syntax while the AST platform-coupling stage already classifies static and dynamic specifiers with bounded diagnostics.",
+    "The current .ts filter and generated-source skip hide source-tree filenames from the retained forbidden-filename control even though that control is independent of source text.",
+    "Removing checks from an authorization-boundary gate is security-sensitive unless deterministic controls prove the retained AST and filename stages preserve the required rejection behavior.",
+    "The existing fetch mutation can remain green after retirement for a different diagnostic, so it must assert the replacement diagnostic rather than a substring alone."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/scripts/check-scope.mjs",
+    "packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs",
+    "packages/security-audit-sdk-core/tests/verification/mutations.test.mjs",
+    "openspec/changes/retire-superseded-scope-regexes/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-retire-redundant-source-scans",
+      "kind": "direct_implementation",
+      "summary": "Delete the raw source-text and import regex stages, retain filename and manifest checks, and rely on the existing AST platform-coupling stage with differential mutation controls for the retired rejection classes.",
+      "forces_addressed": [
+        "The raw source-content regexes reject comments and string literals without determining whether a forbidden integration is actually referenced.",
+        "The legacy text import scan misses dynamic import syntax while the AST platform-coupling stage already classifies static and dynamic specifiers with bounded diagnostics.",
+        "Removing checks from an authorization-boundary gate is security-sensitive unless deterministic controls prove the retained AST and filename stages preserve the required rejection behavior.",
+        "The existing fetch mutation can remain green after retirement for a different diagnostic, so it must assert the replacement diagnostic rather than a substring alone."
+      ]
+    },
+    {
+      "id": "approach-retain-and-refine-source-regexes",
+      "kind": "alternative",
+      "summary": "Keep the raw source-content and text import matchers, then add more patterns and exclusions for the newly identified false positives and dynamic import forms.",
+      "forces_addressed": [
+        "The raw source-content regexes reject comments and string literals without determining whether a forbidden integration is actually referenced.",
+        "The legacy text import scan misses dynamic import syntax while the AST platform-coupling stage already classifies static and dynamic specifiers with bounded diagnostics."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-retire-redundant-source-scans",
+  "rejected_alternative_ids": [
+    "approach-retain-and-refine-source-regexes"
+  ],
+  "rejection_reasons": {
+    "approach-retain-and-refine-source-regexes": {
+      "forces": [
+        "The raw source-content regexes reject comments and string literals without determining whether a forbidden integration is actually referenced.",
+        "The legacy text import scan misses dynamic import syntax while the AST platform-coupling stage already classifies static and dynamic specifiers with bounded diagnostics."
+      ],
+      "reason": "Adding more text patterns preserves a second, unsound rejection authority that cannot distinguish syntax from prose or reliably cover import forms. The existing AST stage is the semantic control and can be proven directly by bounded disposable-copy mutations."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-ast-controls-replace-legacy-patterns",
+    "implementation-precision-controls-pass",
+    "implementation-filename-widening-is-explicit",
+    "implementation-null-control-inventory-stable",
+    "implementation-scope-boundary-preserved",
+    "implementation-folded-cleanup-is-dead-only"
+  ],
+  "invariant_evidence": {
+    "implementation-ast-controls-replace-legacy-patterns": {
+      "task_ids": ["2.1", "3.2"],
+      "evidence_ids": [
+        "R1 through R6 each name the AST diagnostic class, artifact, and offending global or specifier before and after source-scan retirement"
+      ]
+    },
+    "implementation-precision-controls-pass": {
+      "task_ids": ["2.2", "3.2"],
+      "evidence_ids": [
+        "comment and string-literal controls pass only after raw text matching is removed"
+      ]
+    },
+    "implementation-filename-widening-is-explicit": {
+      "task_ids": ["2.3", "3.2", "3.3"],
+      "evidence_ids": [
+        "generated transport.generated.cjs passes before and fails after the complete-tree filename check with no platform-coupling diagnostic"
+      ]
+    },
+    "implementation-null-control-inventory-stable": {
+      "task_ids": ["1.2", "2.5", "3.2"],
+      "evidence_ids": [
+        "unmutated disposable package passes and preserves the authored and generated coupling inventory"
+      ]
+    },
+    "implementation-scope-boundary-preserved": {
+      "task_ids": ["3.1", "4.1", "4.2"],
+      "evidence_ids": [
+        "canonical scope, verification, generated-drift, package, contract, and matrix gates pass without policy, dependency, contract, or public API changes"
+      ]
+    },
+    "implementation-folded-cleanup-is-dead-only": {
+      "task_ids": ["3.4"],
+      "evidence_ids": [
+        "the #169 command helper has no caller before deletion and the complete verification suite passes after its removal"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "The change preserves explicit scope-boundary rejection for executable host coupling while eliminating raw-text false positives that make verification evidence misleading.",
+    "authentication_or_authorization": "No identity input, authentication mechanism, privilege decision, or authorization grant changes; the affected checker remains a repository verification boundary.",
+    "authority_provenance": "The AST policy remains the sole authority for classifying authored and generated runtime couplings; no ambient source text is treated as proof of a forbidden integration.",
+    "concurrency": "The scope command remains a single-process static inspection with no shared mutable state, asynchronous scheduling, or ordering behavior added.",
+    "confidentiality": "The checker continues to emit bounded artifact and identifier diagnostics and the controls assert that source markers do not leak into failures.",
+    "cryptography": "No cryptographic primitive, hash, signature, key material, or trust assumption is added or changed.",
+    "error_disclosure": "Replacement controls assert stable diagnostic class, artifact, and detail while keeping source content and absolute fixture paths out of output.",
+    "external_security_integration": "The patch adds no network call, exporter, collector, SIEM, telemetry, browser integration, or external security service.",
+    "fail_posture": "Executable forbidden globals and specifiers continue to fail closed through the AST stage; unreadable artifacts remain fail-closed; only comments and string literals become permitted.",
+    "lifecycle": "No SDK lifecycle, initialization, shutdown, delivery, queueing, retry, or persistence behavior changes.",
+    "mutation_ownership": "Only the scope checker and its disposable verification fixtures change; the #169 rider removes a sole dead helper without changing fixture ownership or runtime behavior.",
+    "privacy_transformation": "No event, client, browser, device, real-user, or personal data is collected, transformed, retained, or exposed.",
+    "resource_retention": "The command retains no data beyond its bounded in-process source-tree and diagnostic collections, and this deletion adds no cache or durable resource.",
+    "retry_or_redelivery": "The scope checker has no retry, redelivery, transport, queue, or delivery semantics, and none are introduced.",
+    "trust_boundary": "The change narrows an unsound text-based trust signal to the established AST and filename controls without admitting a new trusted input or runtime dependency."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "9085dde9824e30fc5f2d69e54fe287aafe490e3a"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "2.5",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4"
+  ]
+}
