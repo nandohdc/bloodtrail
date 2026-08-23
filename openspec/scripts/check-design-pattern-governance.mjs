@@ -324,7 +324,12 @@ function checkPerimeter(opts, context, diagnostics) {
     diagnostics.fail("history-unavailable", ".", "HEAD does not resolve to a commit");
     return;
   }
-  if (base === head) return;
+  if (base === head) {
+    context.rangeBase = head;
+    context.rangeCommitCount = 0;
+    context.rangePathCount = 0;
+    return;
+  }
 
   const range = collectRangePaths(base, head, cwd, diagnostics);
   if (range === null) return;

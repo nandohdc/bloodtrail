@@ -90,6 +90,31 @@ describe("R11 the material commit range is inspected as a whole", () => {
   });
 });
 
+describe("R11 an explicitly empty material range remains auditable", () => {
+  it("reports the resolved baseline and zero inspected commits and paths", () => {
+    const repository = fixture();
+    const base = repository.head();
+
+    const result = check(repository, base);
+
+    assertPasses(result);
+    assert.equal(result.report.rangeBase, base);
+    assert.equal(result.report.rangeCommits, 0);
+    assert.equal(result.report.rangePaths, 0);
+  });
+
+  it("continues to inspect an untracked probe when the ref spelling differs", () => {
+    const repository = fixture();
+    repository.write("unclassified-territory/probe.mjs", "export const probe = 1;\n");
+
+    const result = check(repository, "HEAD");
+
+    assertDiagnostic(result, "path-unclassified");
+    assert.equal(result.report.rangeCommits, 0);
+    assert.equal(result.report.rangePaths, 1);
+  });
+});
+
 describe("R11 the perimeter is actor-neutral", () => {
   it("returns the identical verdict regardless of who authored the commit", () => {
     const verdicts = ["Human Contributor <human@example.invalid>", "Some Agent <agent@example.invalid>"].map((author) => {
