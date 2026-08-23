@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.1",
+  "change_id": "contract-reuse-assessment",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Changes to contract sources and generated projections can otherwise duplicate existing mechanisms without a reviewable reuse decision.",
+    "The existing design-pattern assessment has a different subject and cannot represent a contract-reuse disposition.",
+    "A checker based on author intent, labels, or record presence can silently skip a qualifying contract change.",
+    "Unresolved contract paths and unauthorized exemptions must not permit a qualifying change to proceed.",
+    "Future bounded client evidence must distinguish an extension of the audit contract from a separate envelope boundary."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "contract-reuse-assessment"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/contract-reuse-assessment/proposal.md",
+    "openspec/changes/contract-reuse-assessment/design.md",
+    "openspec/changes/contract-reuse-assessment/specs/contract-reuse-assessment/spec.md",
+    "openspec/changes/contract-reuse-assessment/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-closed-change-range-record",
+      "kind": "direct_implementation",
+      "summary": "Define one distinct author-written record with a closed changed-path trigger, closed dispositions, canonical mechanism resolution, bounded diagnostics, and controlled positive and negative evidence.",
+      "forces_addressed": [
+        "Changes to contract sources and generated projections can otherwise duplicate existing mechanisms without a reviewable reuse decision.",
+        "The existing design-pattern assessment has a different subject and cannot represent a contract-reuse disposition.",
+        "A checker based on author intent, labels, or record presence can silently skip a qualifying contract change.",
+        "Unresolved contract paths and unauthorized exemptions must not permit a qualifying change to proceed.",
+        "Future bounded client evidence must distinguish an extension of the audit contract from a separate envelope boundary."
+      ]
+    },
+    {
+      "id": "approach-reuse-design-pattern-assessment",
+      "kind": "alternative",
+      "summary": "Reuse the existing assessment.json as the sole evidence for contract reuse, adding no separate record or contract-specific checker semantics.",
+      "forces_addressed": [
+        "The existing design-pattern assessment has a different subject and cannot represent a contract-reuse disposition.",
+        "Changes to contract sources and generated projections can otherwise duplicate existing mechanisms without a reviewable reuse decision."
+      ]
+    },
+    {
+      "id": "approach-freeform-pr-rationale",
+      "kind": "alternative",
+      "summary": "Ask authors to explain contract reuse in pull-request prose and rely on reviewers to decide whether an assessment was needed.",
+      "forces_addressed": [
+        "A checker based on author intent, labels, or record presence can silently skip a qualifying contract change.",
+        "Unresolved contract paths and unauthorized exemptions must not permit a qualifying change to proceed."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-closed-change-range-record",
+  "rejected_alternative_ids": [
+    "approach-reuse-design-pattern-assessment",
+    "approach-freeform-pr-rationale"
+  ],
+  "rejection_reasons": {
+    "approach-reuse-design-pattern-assessment": {
+      "forces": [
+        "The existing design-pattern assessment has a different subject and cannot represent a contract-reuse disposition."
+      ],
+      "reason": "The existing assessment records a design-pattern comparison for an OpenSpec change. It has no closed contract disposition, resolved mechanism references, owner-bound exemption, or distinguishable skip semantics, so extending its meaning would conflate two independently governed artifacts and still leave the checker contract undefined."
+    },
+    "approach-freeform-pr-rationale": {
+      "forces": [
+        "A checker based on author intent, labels, or record presence can silently skip a qualifying contract change.",
+        "Unresolved contract paths and unauthorized exemptions must not permit a qualifying change to proceed."
+      ],
+      "reason": "Pull-request prose is not a deterministic input to a repository range checker, cannot resolve a declared mechanism against the frozen source, and cannot fail closed on missing or unauthorized exemptions. It also makes an unaffected skip indistinguishable from an unenforced required assessment."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-contract-reuse-trigger-deterministic",
+    "implementation-contract-reuse-record-distinct",
+    "implementation-contract-reuse-fails-closed",
+    "implementation-contract-reuse-proves-negative-controls"
+  ],
+  "invariant_evidence": {
+    "implementation-contract-reuse-trigger-deterministic": {
+      "task_ids": ["2.1", "2.5"],
+      "evidence_ids": [
+        "trigger fixtures prove each closed path class requires a CRA",
+        "unaffected fixture prints a distinguishable approved skip"
+      ]
+    },
+    "implementation-contract-reuse-record-distinct": {
+      "task_ids": ["1.1", "1.2", "1.3"],
+      "evidence_ids": [
+        "closed schema defines a separate contract-reuse record",
+        "fixtures reject an assessment-style substitute and invalid disposition"
+      ]
+    },
+    "implementation-contract-reuse-fails-closed": {
+      "task_ids": ["2.2", "2.3", "2.4"],
+      "evidence_ids": [
+        "absent malformed unresolved and unauthorized record cases emit distinct diagnostics",
+        "mechanism resolution rejects the trust_levelz mutation"
+      ]
+    },
+    "implementation-contract-reuse-proves-negative-controls": {
+      "task_ids": ["2.5", "2.6", "3.2", "3.3", "3.4"],
+      "evidence_ids": [
+        "all disposable fixture arms include a passing null control",
+        "trusted baseline and candidate governance verdicts are recorded",
+        "CI logs prove valid missing and skip outcomes separately"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "9ce97de436590a830e8972a756b14a0c9be4fac5"
+  },
+  "verification_task_ids": [
+    "1.4",
+    "2.5",
+    "2.6",
+    "3.2",
+    "3.3",
+    "3.4",
+    "4.1",
+    "4.2"
+  ]
+}
