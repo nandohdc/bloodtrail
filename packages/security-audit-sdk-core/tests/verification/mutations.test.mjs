@@ -636,10 +636,10 @@ test("scope matcher permits boundary-free benign substrings", () => {
   succeeds(root, "scripts/check-scope.mjs", []);
 });
 
-test("scope matcher retains source-content and runtime-dependency controls", () => {
+test("scope matcher retains filename and platform-coupling runtime-dependency controls", () => {
   const contentRoot = caseRepository("scope-forbidden-content");
   write(contentRoot, "packages/security-audit-sdk-core/src/network-probe.ts", "fetch('https://example.invalid');\n");
-  fails(contentRoot, "scripts/check-scope.mjs", [], "fetch");
+  fails(contentRoot, "scripts/check-scope.mjs", [], "[platform-coupling:");
 
   const dependencyRoot = caseRepository("scope-runtime-dependency");
   replace(dependencyRoot, "packages/security-audit-sdk-core/package.json", '"dependencies": {}', '"dependencies": { "left-pad": "1.0.0" }');
@@ -1100,12 +1100,6 @@ function fails(root, scriptPath, args, expected, extraEnv = {}) {
 function git(root, args) {
   const result = runDisposableGit(root, args);
   assert.equal(result.status, 0, `git ${args.join(" ")} failed:\n${result.stdout}\n${result.stderr}`);
-  return result;
-}
-
-function command(cwd, executable, args) {
-  const result = spawnSync(executable, args, { cwd, encoding: "utf8" });
-  assert.equal(result.status, 0, `${executable} ${args.join(" ")} failed:\n${result.stdout}\n${result.stderr}`);
   return result;
 }
 

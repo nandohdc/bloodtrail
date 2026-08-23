@@ -19,6 +19,7 @@ import { packageRoot } from "../../scripts/verification-helpers.mjs";
 
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-platform-coupling-"));
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
+const BASELINE_INVENTORY = "platform coupling inventory: authored: 16 artifacts, 110 references, host couplings: [Buffer (2 sites)]; generated: 3 artifacts, 7 references, host couplings: [module (1 site)]";
 
 const POSITIVE_MUTATIONS = [
   {
@@ -107,13 +108,96 @@ const POSITIVE_MUTATIONS = [
   },
 ];
 
+const RETIRED_SOURCE_SCAN_MUTATIONS = [
+  {
+    name: "retirement-fetch",
+    source: "export async function load(url: string): Promise<Response> { return fetch(url); }\n",
+    expected: { code: "undeclared-global", artifact: "src/retirement-probe.ts", detail: "fetch" },
+  },
+  {
+    name: "retirement-node-fs-promises",
+    source: "import { readFile } from \"node:fs/promises\";\nexport { readFile };\n",
+    expected: { code: "undeclared-specifier", artifact: "src/retirement-probe.ts", detail: "node:fs/promises" },
+  },
+  {
+    name: "retirement-redis",
+    source: "import Redis from \"redis\";\nexport { Redis };\n",
+    expected: { code: "undeclared-specifier", artifact: "src/retirement-probe.ts", detail: "redis" },
+  },
+  {
+    name: "retirement-window",
+    source: "export const href = window.location.href;\n",
+    expected: { code: "undeclared-global", artifact: "src/retirement-probe.ts", detail: "window" },
+  },
+  {
+    name: "retirement-console",
+    source: "console.log(\"scope\");\nexport const probe = 1;\n",
+    expected: { code: "undeclared-global", artifact: "src/retirement-probe.ts", detail: "console" },
+  },
+  {
+    name: "retirement-dynamic-child-process",
+    // The text specifier matcher misses this dynamic form, but the broad raw
+    // source regex still catches child_process before retirement.
+    source: "export async function load(): Promise<unknown> { return await import(\"node:child_process\"); }\n",
+    expected: { code: "undeclared-specifier", artifact: "src/retirement-probe.ts", detail: "node:child_process" },
+  },
+];
+
 test("unmutated package copy passes the scope gate and reports declared coupling inventory", () => {
   const { output, status } = runCase("null");
   assert.equal(status, 0, `unmutated control failed:\n${output}`);
   assert.match(output, /scope passed:/);
-  assert.match(output, /platform coupling inventory:/);
-  assert.match(output, /authored:/);
-  assert.match(output, /generated:/);
+  assert.equal(inventoryLine(output), BASELINE_INVENTORY, `null control inventory changed:\n${output}`);
+});
+
+for (const scenario of RETIRED_SOURCE_SCAN_MUTATIONS) {
+  test(`retired source scan control: ${scenario.name} retains only the AST diagnostic`, () => {
+    const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
+    const result = runCase(scenario.name, ({ copiedPackage }) => {
+      writeFileSync(
+        resolve(copiedPackage, scenario.expected.artifact),
+        `// ${sourceMarker}\n${scenario.source}`,
+        "utf8",
+      );
+    });
+    verifyCouplingFailure(result, { ...scenario.expected, sourceMarker });
+    assertNoRetiredSourceDiagnostics(result.output, scenario.expected.artifact);
+  });
+}
+
+test("retired source scan control: comments naming legacy terms pass", () => {
+  const result = runCase("retirement-comment", ({ copiedPackage }) => {
+    writeFileSync(
+      resolve(copiedPackage, "src/retirement-probe.ts"),
+      "// fs window redis\nexport const probe = 1;\n",
+      "utf8",
+    );
+  });
+  assert.equal(result.status, 0, `comment control unexpectedly failed:\n${result.output}`);
+});
+
+test("retired source scan control: string literals naming legacy terms pass", () => {
+  const result = runCase("retirement-string", ({ copiedPackage }) => {
+    writeFileSync(
+      resolve(copiedPackage, "src/retirement-probe.ts"),
+      "export const message = \"redis\";\n",
+      "utf8",
+    );
+  });
+  assert.equal(result.status, 0, `string-literal control unexpectedly failed:\n${result.output}`);
+});
+
+test("complete source-tree filename scan rejects generated cjs transport artifacts", () => {
+  const result = runCase("retirement-generated-filename", ({ copiedPackage }) => {
+    writeFileSync(
+      resolve(copiedPackage, "src/generated/transport.generated.cjs"),
+      "module.exports = {};\n",
+      "utf8",
+    );
+  });
+  assert.notEqual(result.status, 0, `generated filename mutation unexpectedly passed:\n${result.output}`);
+  assert.match(result.output, /src\/generated\/transport\.generated\.cjs: forbidden production integration filename/);
+  assert.equal(result.output.includes("[platform-coupling:"), false, `filename mutation leaked coupling diagnostic:\n${result.output}`);
 });
 
 test("authored and generated mutations fail closed with expected diagnostics", () => {
@@ -339,6 +423,15 @@ function verifyCouplingFailure({ output, status }, expected) {
     assert.equal(output.includes(expected.sourceMarker), false, "source marker leaked into error stream");
   }
   assert.ok(output.length < 4_096, "scope diagnostic buffer exceeded 4KB boundary");
+}
+
+function assertNoRetiredSourceDiagnostics(output, artifact) {
+  const legacy = output.split(/\r?\n/).filter((line) => line.startsWith(`${artifact}: `));
+  assert.deepEqual(legacy, [], `retired source diagnostic remained for ${artifact}:\n${legacy.join("\n")}`);
+}
+
+function inventoryLine(output) {
+  return output.split(/\r?\n/).find((line) => line.startsWith("platform coupling inventory:"));
 }
 
 function stageIsolatedPackage(sourceDir, targetDir) {
