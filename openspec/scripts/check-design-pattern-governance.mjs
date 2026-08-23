@@ -326,6 +326,7 @@ function checkPerimeter(opts, context, diagnostics) {
   }
   if (base === head) {
     context.rangeBase = head;
+    context.rangeHead = head;
     context.rangeCommitCount = 0;
     context.rangePathCount = 0;
     return;

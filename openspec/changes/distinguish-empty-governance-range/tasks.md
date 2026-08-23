@@ -16,6 +16,9 @@
 - [x] 3.2 Reproduce both #191 arms in a disposable worktree at the proposal baseline plus candidate overlay; verify `--base <HEAD SHA>` succeeds with the resolved baseline and `0`/`0` counts while `--base origin/main` with one probe fails closed.
 - [x] 3.3 Run strict OpenSpec validation and both trusted-baseline and candidate governance checks; verify the candidate is not its own sole judge and no scope/authorization boundary changed.
 - [x] 3.4 Inspect the final changed-path set and package scope; verify the patch is limited to the checker, perimeter test, active change artifacts, and capability delta with no SDK transport, storage, telemetry, browser, or production integration surface.
+- [x] 3.5 Record the RED/GREEN regression proof and the five-phase differential matrix in `verification-evidence.md`; verify only implementation/final empty-range output gains the zero-count suffix.
+- [x] 3.6 Run the trusted-baseline and candidate checkers as separate evidence sources; verify both pass with no baseline disagreement.
+- [x] 3.7 Run the package, contract, OpenSpec, and design-pattern-governance matrices from an isolated exact technical checkout; rerun the exact immutable-candidate matrix after every subsequent normative reconciliation.
 
 ## 4. Review and delivery
 
