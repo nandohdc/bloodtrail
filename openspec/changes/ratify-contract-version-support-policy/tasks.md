@@ -1,14 +1,14 @@
 ## 1. Authored policy documentation
 
-- [ ] 1.1 Sharpen `packages/security-audit-sdk-core/CONTEXT.md` so exact-one package support is explicitly many-to-one and exact-version instance binding is explicitly a construction invariant; verify both definitions match the delta requirement without implementation mechanics.
-- [ ] 1.2 Extend `packages/security-audit-sdk-core/adr/009-package-contract-compatibility.md` with the complete exact-one support surface, construction binding, support-baseline SemVer consequence, `0.x` treatment, collector `MAY` asymmetry, no-authorization boundary, and conjunctive revisit condition; verify no twelfth SDK ADR or ADR-count change exists.
-- [ ] 1.3 Add `docs/adr/0007-contract-version-support-policy.md` recording `EXACT_ONE` versus `EXPLICIT_SET`, the many-to-one cardinality, selected-policy consequences, rejected-alternative rationale, no-authorization boundaries, and the second-version-plus-authorized-collector revisit condition; verify root ADR numbering remains unique.
-- [ ] 1.4 Replace the decision-reopening instruction in `packages/security-audit-sdk-core/MIGRATION.md` with an exact-one adaptation procedure that preserves separate contract-minor and SDK compatibility-major classifications without authorizing a release or version bump; verify no migration step permits multi-version producer support.
+- [x] 1.1 Sharpen `packages/security-audit-sdk-core/CONTEXT.md` so exact-one package support is explicitly many-to-one and exact-version instance binding is explicitly a construction invariant; verify both definitions match the delta requirement without implementation mechanics.
+- [x] 1.2 Extend `packages/security-audit-sdk-core/adr/009-package-contract-compatibility.md` with the complete exact-one support surface, construction binding, support-baseline SemVer consequence, `0.x` treatment, collector `MAY` asymmetry, no-authorization boundary, and conjunctive revisit condition; verify no twelfth SDK ADR or ADR-count change exists.
+- [x] 1.3 Add `docs/adr/0007-contract-version-support-policy.md` recording `EXACT_ONE` versus `EXPLICIT_SET`, the many-to-one cardinality, selected-policy consequences, rejected-alternative rationale, no-authorization boundaries, and the second-version-plus-authorized-collector revisit condition; verify root ADR numbering remains unique.
+- [x] 1.4 Replace the decision-reopening instruction in `packages/security-audit-sdk-core/MIGRATION.md` with an exact-one adaptation procedure that preserves separate contract-minor and SDK compatibility-major classifications without authorizing a release or version bump; verify no migration step permits multi-version producer support.
 
 ## 2. Documentation candidate verification and commit
 
-- [ ] 2.1 Verify cross-artifact semantics across the delta, glossary, ADR-SDK-009, root ADR 0007, and migration guide, including complete-surface cardinality, construction-time failure, SemVer axes, `0.x` treatment, collector nonauthorization, and the conjunctive revisit condition.
-- [ ] 2.2 Run strict validation for `ratify-contract-version-support-policy`, both repository validation chains, `git diff --check`, and explicit protected-path assertions; verify runtime source, generated output, contract source, package metadata/version, dependencies, and collector/transport/publication surfaces are unchanged.
+- [x] 2.1 Verify cross-artifact semantics across the delta, glossary, ADR-SDK-009, root ADR 0007, and migration guide, including complete-surface cardinality, construction-time failure, SemVer axes, `0.x` treatment, collector nonauthorization, and the conjunctive revisit condition.
+- [x] 2.2 Run strict validation for `ratify-contract-version-support-policy`, both repository validation chains, `git diff --check`, and explicit protected-path assertions; verify runtime source, generated output, contract source, package metadata/version, dependencies, and collector/transport/publication surfaces are unchanged.
 
 ## 3. Canonical capability fold
 
