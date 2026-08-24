@@ -142,15 +142,20 @@ No migration is required for callers that omit `retention`, because both default
 
 ## Contract-version upgrades
 
-A contract semantic change requires the `security-audit-event-contract` governance lifecycle before SDK work. After a new contract version is approved, SDK adaptation must use a separate reviewed change that:
+A contract semantic change requires the `security-audit-event-contract` governance lifecycle before SDK work. An additive contract-minor version remains contract-minor on that independent version axis. After a new contract version is approved, SDK adaptation must use a separate reviewed change that preserves `EXACT_ONE`:
 
-1. records the exact normative contract commit and supported version range;
-2. regenerates types and validator from the new approved artifacts;
-3. adds positive, negative, semantic, compatibility, and migration fixtures;
-4. decides whether one SDK version can support both contract versions without ambiguity;
-5. updates `compatibility.json`, provenance, exports if needed, and migration documentation;
-6. rejects unsupported versions safely;
-7. receives exact-commit SDK review without inferring contract or production approval.
+1. record the exact normative contract commit and the one canonical contract version the adapting SDK package version will support;
+2. classify replacement of the package's sole supported-contract baseline and public contract-version literal as SDK compatibility-major, without reclassifying the canonical contract change;
+3. while the private unpublished package remains in `0.x`, express that classification through the project's `0.x` policy only if a release is separately authorized; the first published release inherits the classification, and from `1.0.0` onward baseline replacement requires an SDK major;
+4. regenerate the public types and validator as one exact projection of the newly approved artifacts;
+5. add positive, negative, semantic, compatibility, and migration fixtures for the new sole baseline;
+6. update `compatibility.json`, provenance, exports if needed, and migration documentation so the complete package compatibility surface names that same one version;
+7. reject every other contract version safely before readiness, without negotiation, coercion, downgrade, fallback, best-effort interpretation, or live switching; and
+8. receive exact-commit SDK review without inferring contract, release, collector, or production approval.
+
+The adapting producer package does not retain the previous contract version alongside the new one. Several SDK package versions may continue to support the same contract version, but each package version supports exactly one. A separately authorized collector MAY bridge migration using an explicitly enumerated finite version set; that collector policy neither broadens producer support nor authorizes a collector or any production integration. Reconsidering multi-version producer support requires both a second canonical contract version and an authorized collector, through a new governed change.
+
+The compatibility-major classification does not itself create a package release, select a concrete version number, or change the current candidate version.
 
 SDK migration and schema/contract migration are distinct. Changing an SDK call site does not migrate stored or in-flight canonical events, and changing a schema does not automatically migrate application integration.
 

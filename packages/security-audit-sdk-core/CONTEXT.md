@@ -9,3 +9,5 @@
 - **Declared coupling:** a platform coupling the policy names for that artifact's role, with a recorded reason.
 - **Undeclared coupling:** any platform coupling or module reference not named in the declared policy for that role, which fails closed.
 - **Scope vs. lexical scope:** "scope" in the gate name refers to the authorization boundary and production-integration isolation; the classifier also analyzes scope in the lexical sense. "Allowed" and "forbidden" remain bound to the production-integration surface, whereas coupling admission states are "declared" and "undeclared".
+- **Exact-one package support:** the many-to-one compatibility relation in which each SDK package version supports exactly one canonical Security Audit Event Contract version, while several SDK package versions may support the same contract version.
+- **Exact-version instance binding:** the construction invariant that a producer SDK instance can be created only for the contract version supported by its package version.
