@@ -13,7 +13,9 @@
 evaluated option — with lockfile and package ownership, root-package presence, and migration/rollback
 documented.
 
-**Status at this baseline:** BLOCKED ON OWNER. Preconditions met.
+**Status at this baseline:** **DECIDED — ratify standalone**, adopted by the owner on 2026-08-23, against
+a declared target set of **four packages** (see the decision section). Task 0.3's prototype is still owed
+as ADR evidence; Task 1 is superseded; Task 2 is the open work.
 
 **Blast radius if unanswered:** #81 and #82 are gated directly; #83, #84, #85, #86, #87, #88 follow.
 **Eight issues — the entire remainder of Wave 2.**
@@ -115,16 +117,35 @@ benefit (strict `node_modules` isolation, the best undeclared-import visibility 
 | New tool required | no | no | **yes** |
 | CI change | none | every job | every job |
 
-**Recommendation: ratify standalone**, and revisit only when the package count actually grows. The
-argument is not inertia: the repository's core discipline is that undeclared runtime dependencies must be
-impossible to hide, the SDK has **zero** runtime dependencies by policy, and standalone is the only option
-where that property needs no defending. The coordination pain that workspaces solve does not exist yet —
-there are three packages, two of which are not shipping code.
+**Decision: ratify standalone.** Adopted by the owner on 2026-08-23.
 
-**The counter-argument the owner should weigh:** #83, #86 and #87 are about to add packages (Core, the
-Node binding, later a client-evidence package). If the target state is five or six packages, deciding
-standalone now means deciding it again at package five. If the owner already knows the target count,
-decide for the target, not for today.
+**The target set is declared, and the decision is made against it — not against today's three:**
+
+| Package | Status | Source |
+| --- | --- | --- |
+| `contracts/security-audit` | exists | — |
+| `packages/security-audit-sdk-core` (Core, after the split) | exists; becomes Core | #86 |
+| Node binding | planned | #87 |
+| `research/browser-telemetry` | **stays in this repository** | resolved 2026-08-23 |
+
+**Four packages.** Browser (#124) and React Native (#131) evidence packages are *not* in the target set:
+they are contingent on #117, which is undecided and whose NO-GO branch closes them. If #117 returns GO,
+the topology decision is re-opened at that point with a declared target of six — that is the revisit
+condition, and it is a deliberate one rather than a surprise at package five.
+
+The argument is not inertia: the repository's core discipline is that undeclared runtime dependencies must
+be impossible to hide, and standalone is the only option where that property needs no defending. At four
+packages the coordination pain that workspaces solve is still smaller than the visibility they cost.
+
+**Two consequences that must be written into the ADR:**
+
+1. **The packed-install control must keep running outside any workspace root** (F2). Under standalone this
+   is free, but stating it is what makes a future migration safe rather than silently defeating #70.
+2. **Per-workspace engines stay per-workspace** (F4). No root manifest means no reconciliation, so the
+   SDK keeps `>=24 <25 || >=26 <27` and `test:matrix` keeps Node 24.
+
+**Revisit condition:** #117 returns GO (target becomes six), or any workspace acquires a third-party
+runtime dependency that another workspace also needs.
 
 ---
 
@@ -179,9 +200,11 @@ decide for the target, not for today.
   repository.
 - **Ratifying standalone can look like avoidance.** It is not, if the ADR carries the measurement. Without
   the measurement it is exactly that — so do Task 0.3 even if the answer looks obvious.
-- **Open question for the owner:** is `research/browser-telemetry` intended to stay in this repository at
-  all? It is explicitly not shipping code, it has its own Node range, and it is the only workspace with a
-  `lint` script. If it leaves, the topology question gets simpler by one third.
+- **Resolved 2026-08-23 — research workspace residency.** `research/browser-telemetry` **stays**. It is
+  the evidentiary basis for the 2026-07-31 no-adoption outcome that #117 must supersede or uphold;
+  removing it while #117 is undecided would detach that decision from its evidence. Its separate Node
+  range and its `lint` script cost nothing under standalone, which is a further point in standalone's
+  favour — under a root manifest both would need reconciling (F4).
 
 ## What this does not authorize
 

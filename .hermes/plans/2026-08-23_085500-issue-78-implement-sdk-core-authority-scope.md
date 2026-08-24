@@ -1,13 +1,15 @@
 # Issue #78 — Implement the Approved sdk-core Authority Scope — Plan
 
-> **For Hermes:** Blocked on #77, an unanswered owner decision. Like #76, this issue's shape depends on
-> the answer — but unlike #76, **neither answer makes it a no-op**. Under "explicit module-copy scope" it
-> is mostly formalization plus #79's diagnostic; under "instance scope" the brand registry moves from
-> module scope into the instance, which is a real refactor of `src/context.ts` touching every one of the
-> 19 brand kinds. The invariant that must survive both is one sentence long and is the reason the file
-> exists: *a TypeScript cast or a hand-written plain object can claim the `Brand<...>` type but can never
-> appear in the registry, because only the constructors in this file can insert entries.* Everything else
-> is negotiable; that is not.
+> **For Hermes:** **#77 was decided on 2026-08-23 — option C, bounded module-copy scope with a
+> single-copy Core.** That collapses this issue to its smaller branch: **formalization plus #79's
+> diagnostic, with no registry relocation and no public API change.** The instance-scope branch below is
+> retained for the record and is now moot; do not implement it. Two corrections to the earlier framing:
+> the brand constructors are **35 exported functions**, not 19 (19 is the count of brand *kinds*), and
+> the `foreign` arm's expected result is now settled rather than pending a measurement (see F7).
+> The invariant that must survive is one sentence long and is the reason the file exists: *a TypeScript
+> cast or a hand-written plain object can claim the `Brand<...>` type but can never appear in the
+> registry, because only the constructors in this file can insert entries.* Everything else is
+> negotiable; that is not.
 
 **Goal:** Brand storage and the authority APIs enforce the scope selected in #77, with same-scope brands
 passing, forged/copied/foreign brands failing before the sink, and nested/concurrent contexts isolated and
@@ -43,9 +45,14 @@ a cast cannot forge membership, and `structuredClone` cannot carry it (which is 
 was abandoned — and why the SDK's normalization step, which does a `structuredClone` + JSON round trip,
 does not accidentally launder a brand). Any relocation of the registry must preserve **both**.
 
-Under instance scope the registry moves to a per-instance `WeakMap` held in a module-private field. That
-keeps identity-keying and module-privacy; it changes only *which* registry a lookup consults. State that
-as the design's core sentence.
+**Under the adopted option C the registry does not move at all.** It stays a module-level `WeakMap`, and
+the work is to state that as a chosen invariant rather than an accident, and to add the single-copy Core
+obligation that #86 must satisfy. State that as the design's core sentence.
+
+*(Retained for the record: under instance scope the registry would have moved to a per-instance `WeakMap`
+held in a module-private field, preserving identity-keying and module-privacy and changing only which
+registry a lookup consults. That branch is moot — and it was under-sized: it would also have required
+changing all 35 exported brand constructors, which are public API. See #77's F3.)*
 
 ### F2 — `AsyncLocalStorage` is orthogonal to the scope question and must not be conflated
 
@@ -73,11 +80,22 @@ Errors are safe by construction: code, category, and a bounded path only, never 
 that starts including the offending value's shape in a diagnostic breaks that. #78's own criterion "no
 payload/raw-error/secret path leaks" is really #79's; keep it true here too.
 
-### F6 — Under instance scope, #79 changes shape and should be re-scoped before it is implemented
+### F6 — #79 stands as written under the adopted scope
 
-If brands belong to instances, a duplicate installed copy stops being a distinguishable condition —
-foreignness is by instance either way. #79 then narrows to "diagnose a foreign *instance* clearly", which
-is smaller and more honest. Do not implement #79's current body under instance scope.
+The earlier version of this finding said instance scope would collapse #79 into a foreign-*instance*
+diagnostic and that its body should be rewritten first. **Option C keeps duplicate installed copies a
+real, distinguishable condition**, so #79's current body is correct and needs no rewrite. Implement it as
+written, after this issue.
+
+*(Retained for the record: had instance scope been selected, foreignness would have been by instance
+either way and #79 would have narrowed accordingly.)*
+
+### F7 — The `foreign` arm's expected result is settled, not pending
+
+`isBranded` reads a module-scoped `WeakMap` and takes no instance; `SecurityAuditSdk` never touches it.
+Two instances in one copy therefore **accept** each other's brands today, and under option C they continue
+to. Task 0.3 no longer chooses between two outcomes — it confirms one. Keep the arm and keep its null
+control; a green arm that could never have been red is the repository's recurring defect class.
 
 ---
 
@@ -103,7 +121,7 @@ is smaller and more honest. Do not implement #79's current body under instance s
 | Arm | Fixture | Expected under the selected scope |
 | --- | --- | --- |
 | same | one instance, one copy | brand accepted |
-| foreign | two instances, one copy | **module-copy: accepted · instance: rejected** |
+| foreign | two instances, one copy | **accepted** — settled under the adopted module-copy scope (F7) |
 | copy | two genuine installed copies | rejected under both |
 | duplicate | nested dependency producing two copies | rejected; diagnostic per #79 |
 | nested | nested ALS scopes | isolation preserved, unchanged |
@@ -157,13 +175,17 @@ is smaller and more honest. Do not implement #79's current body under instance s
 
 ## Risks and open questions
 
-- **Instance scope is a breaking source-level change** for any consumer holding two instances. The package
-  is private, unpublished and at `0.1.0`, so the cost is zero today and non-zero the day it publishes.
-  Classify it in `compatibility.json` honestly.
-- **The `foreign` measurement (Task 0.3) may show the SDK is already instance-scoped in effect**, which
-  would collapse this issue to a formalization under either answer. Measure first.
-- **Refactoring 19 brand constructors is exactly the kind of change where one is missed.** Enumerate them
-  from the `AuditBrandKind` union and assert the count in a test, so a forgotten kind fails loudly.
+- **The single-copy Core invariant is inherited from #77 and is not provable here.** #78 states it; #86
+  proves it with a duplicate-Core fixture. Do not let this issue claim the invariant holds.
+- **Formalization is where a control can be written that never fires.** Every arm in the Task 2 matrix
+  needs a null control, and the `foreign` arm especially: its expected result is now known (F7), so a
+  passing test proves nothing unless the mutation that should break it is shown to break it.
+- **35 exported brand constructors, 19 brand kinds.** If any enumeration is added, enumerate the
+  constructors from the export list *and* the kinds from the `AuditBrandKind` union, and assert both
+  counts, so a forgotten one fails loudly. Conflating the two numbers is what under-sized instance scope.
+
+*(Retained for the record: instance scope would have been a breaking source-level change for any consumer
+holding two instances, and a breaking change to 35 public constructors. Moot under option C.)*
 
 ## What this does not authorize
 

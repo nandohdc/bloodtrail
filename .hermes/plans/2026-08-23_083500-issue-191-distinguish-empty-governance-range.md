@@ -14,8 +14,14 @@
 actually inspected paths — without turning an empty range into a failure and without changing what the
 perimeter checks when it does run.
 
-**Status at this baseline:** READY — no blocker, no owner decision required beyond mechanism selection,
-which this plan resolves with a recommendation.
+**Status at this baseline:** **IMPLEMENTED, NOT YET ARCHIVED.** The fix merged in PR #209 and is on
+`main@9085dde` (`bb68fdd` proposal, `e0cb2a2`, `c3377d4`, `f720e89`). The change
+`openspec/changes/distinguish-empty-governance-range/` is still **active**, so #191 stays open until it is
+archived and its delta folded into
+`openspec/specs/software-design-pattern-governance/spec.md`. The remaining work is the archive cycle only.
+
+*(Original status at the `1948f9f5` baseline, retained for the record: READY — no blocker, no owner
+decision required beyond mechanism selection, which this plan resolves with a recommendation.)*
 
 **Architecture:** One surgical edit inside
 `openspec/scripts/check-design-pattern-governance.mjs`. The short-circuit at `:327` leaves
