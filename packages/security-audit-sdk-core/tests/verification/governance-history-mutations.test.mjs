@@ -47,6 +47,7 @@ const EXPECTED_RECORD_IDS = Object.freeze([
   "implement-security-audit-sdk-core",
   "right-size-change-governance",
   "establish-design-pattern-governance",
+  "ratify-contract-version-support-policy",
 ]);
 const MINIMUM_REVIEWED_PATHS = Object.freeze({
   "bundle-validator-runtime-helpers": Object.freeze([
@@ -65,6 +66,12 @@ const MINIMUM_REVIEWED_PATHS = Object.freeze({
     "openspec/governance",
     "openspec/scripts",
     "openspec/tests/design-pattern-governance",
+  ]),
+  "ratify-contract-version-support-policy": Object.freeze([
+    "openspec/changes/ratify-contract-version-support-policy",
+    "openspec/specs/security-audit-sdk-core",
+    "packages/security-audit-sdk-core/adr",
+    "packages/security-audit-sdk-core/tests/verification",
   ]),
 });
 

@@ -620,6 +620,80 @@
         "role": "Project owner and technical decision-maker",
         "signedAt": "2026-08-17"
       }
+    },
+    {
+      "change": "ratify-contract-version-support-policy",
+      "policy": "Pre-merge signing of the contract-version support policy ratification (#75), rounds T/T2/S. check-governance-history.mjs resolves and enforces this record; check-design-pattern-governance.mjs --phase final enforces R15 signed-review freshness over it. The reviewed scope is cumulative: P a984ff6b541e700ca54cae5b920babd8f764dc75 (proposal, Full assessment, capability delta, design, tasks), A afa0acc976469b3cb869eb543f66c44111d860e0 (glossary terms, ADR-SDK-009 extension, root ADR 0007, MIGRATION.md correction), their identity-preserving mainline merge 22647aefef17e889bcf106fa1f9b0a58bd154f7a (PR #212, two parents), T 83a19020d4d1e255c573acc32f083c36c86dcf94 (the canonical capability fold: the delta's single ADDED requirement and all seven scenarios appear once in openspec/specs/security-audit-sdk-core/spec.md with no delta operation header, byte-identical to the delta body from its first '### Requirement:' line onward, so a second semantic application is a no-op), and T2 a7473d4e8041c58797279415dc6bc08930d40be9. T2 registers this change in the governance-history mutation suite's independent record inventory (EXPECTED_RECORD_IDS and MINIMUM_REVIEWED_PATHS) and extends the assessment's owned paths with the mutation-suite file and this manifest. That inventory is deliberately not derived from the manifest and only changes through an explicit reviewed edit, so a record cannot be stored without it: this was proved empirically by adding a record without registration and observing the suite fail. T2 is therefore the binding reviewed commit, because the inventory registration is part of the reviewed scope. At exact T2 the governance final phase and the dual checker are green while the SDK chain is red by construction at the inventory assertion (the inventory expects the record it registers); it turns green when this record lands. This record-only direct child of T2 changes only packages/security-audit-sdk-core/verification-lifecycle.json, which the R15 freshness scan permits, so it introduces no staleness. Design-pattern addenda: assessment openspec/changes/ratify-contract-version-support-policy/assessment.json, digest sha256:3f39d0f8fc91359ee6979ab496f3acc0be9abb2a453530b26949234d16c733c7, assessment commit a984ff6b541e700ca54cae5b920babd8f764dc75 as extended by T2; assessment_level full, decision direct_implementation, material_capability_modification true, security_sensitive true; selected_pattern_ids is empty and the five implementation invariants (exact-one-complete-surface, exact-version-construction-binding, semver-axes-remain-distinct, collector-asymmetry-nonauthorizing, runtime-and-contract-byte-stability) carry the evidence; candidate comparison reviewed — direct implementation was compared against approach-adr-only-ratification and approach-explicit-set-support, both rejected with recorded reasons. Baseline checker: source ref 22647aefef17e889bcf106fa1f9b0a58bd154f7a, checker blob 298613975b15454b40c71bec5ee27a0c7c3e859d, exit code 0, no diagnostics. Candidate checker: source ref the T2 working tree, checker blob 298613975b15454b40c71bec5ee27a0c7c3e859d, exit code 0, no diagnostics; the two results are recorded separately and neither substitutes for the other. No divergence from the design is accepted or outstanding. reviewedContent binds tree objects only, as check-governance-history.mjs requires. packages/security-audit-sdk-core/CONTEXT.md and packages/security-audit-sdk-core/MIGRATION.md sit at the package root beside this record, so no non-self-referential tree entry can cover them; their binding remains the exact technical commit afa0acc976469b3cb869eb543f66c44111d860e0 named in governedCommits. The limitation is stated, not claimed away. The record grants storing itself for exact T2 and, after an identity-preserving merge of exact T, T2 and S onto the protected mainline, the governed archive movement (R24). It changes no runtime source, generated artifact, contract source, package manifest or version, dependency, collector, transport, or publication path.",
+      "reviewedCommit": "a7473d4e8041c58797279415dc6bc08930d40be9",
+      "reviewedContent": {
+        "kind": "tree",
+        "candidateRoot": "a36c7bf6c7849f66d8bf84c2177e02e7e804d26a",
+        "entries": [
+          {
+            "path": "openspec/changes/ratify-contract-version-support-policy",
+            "object": "72c43099f49649b7da6aee5b219fff8a63c8617b"
+          },
+          {
+            "path": "openspec/specs/security-audit-sdk-core",
+            "object": "9f02fa077e9435a0bfee9429470f777b9e387653"
+          },
+          {
+            "path": "packages/security-audit-sdk-core/adr",
+            "object": "557e2f73f7fb6f29b40f8a43a10cd1b81603bf61"
+          },
+          {
+            "path": "packages/security-audit-sdk-core/tests/verification",
+            "object": "96c873765e9d33bdc9a4a8258b4f0a54fc0e0ab4"
+          },
+          {
+            "path": "docs/adr",
+            "object": "cb6b289efd5f29488f1ae711e8936ca06667c957"
+          }
+        ]
+      },
+      "governedCommits": [
+        "a984ff6b541e700ca54cae5b920babd8f764dc75",
+        "afa0acc976469b3cb869eb543f66c44111d860e0",
+        "22647aefef17e889bcf106fa1f9b0a58bd154f7a",
+        "83a19020d4d1e255c573acc32f083c36c86dcf94",
+        "a7473d4e8041c58797279415dc6bc08930d40be9"
+      ],
+      "boundCommits": [
+        "a7473d4e8041c58797279415dc6bc08930d40be9"
+      ],
+      "mergeCommits": [
+        {
+          "commit": "22647aefef17e889bcf106fa1f9b0a58bd154f7a",
+          "expectedParents": 2
+        }
+      ],
+      "authorizations": {
+        "granted": [
+          "store-governance-record-s-for-exact-technical-commit",
+          "governed-archive-movement-after-identity-preserving-merge"
+        ],
+        "withheld": [
+          "package-publication",
+          "production-deployment",
+          "production-collection",
+          "real-user-processing",
+          "framework-integration",
+          "delivery-infrastructure"
+        ]
+      },
+      "assuranceLimitations": [
+        "Project-owner/implementer governance; not independent security, privacy, legal, or technical assurance.",
+        "AI-produced analysis informed the implementation and is not review, approval, or assurance; approval is not inferred from passing tests, checked tasks, issue state, pull-request state, or merged state.",
+        "The owner instruction named exact fold commit 83a19020d4d1e255c573acc32f083c36c86dcf94, while this record binds the later commit a7473d4e8041c58797279415dc6bc08930d40be9 that made the record storable. The owner has not separately quoted the T2 identifier; confirmation of that binding rests on their merge of the pull request carrying both.",
+        "packages/security-audit-sdk-core/CONTEXT.md and packages/security-audit-sdk-core/MIGRATION.md cannot receive a non-self-referential tree entry because they share the package root with this record; they are bound by exact technical commit only."
+      ],
+      "signed": true,
+      "signatureDecision": "Owner instruction given 2026-08-29 in direct reply to the implementation report that named exact fold commit 83a19020d4d1e255c573acc32f083c36c86dcf94: 'sign, push it and open a pr.' Recorded verbatim rather than paraphrased. The instruction named the fold commit T. It could not name T2, because T2 did not exist when the instruction was given: storing any record requires the governance-history inventory registration that T2 performs, so the act of making this record storable necessarily created a later normative commit. This record therefore binds exact T2 a7473d4e8041c58797279415dc6bc08930d40be9, which contains T's canonical fold unchanged plus the inventory registration and the assessment owned-path extension. The owner retains the decision at the merge gate: nothing reaches the protected mainline without their admin merge of the pull request carrying exact T, T2 and S, and they should confirm the T2 binding there. The instruction authorizes storing this record and, after an identity-preserving merge, the governed archive movement. It does not authorize package publication, production deployment, production collection, real-user processing, framework integration, or delivery infrastructure.",
+      "reviewer": {
+        "name": "Fernando Homem da Costa (nandohdc)",
+        "role": "Project owner and technical decision-maker",
+        "signedAt": "2026-08-29"
+      }
     }
   ]
 }
