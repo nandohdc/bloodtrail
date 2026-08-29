@@ -30,7 +30,9 @@
     "packages/security-audit-sdk-core/MIGRATION.md",
     "docs/adr/0007-contract-version-support-policy.md",
     "openspec/specs/security-audit-sdk-core/spec.md",
-    ".hermes/plans/2026-08-23_080000-issue-75-decide-contract-version-support-policy.md"
+    ".hermes/plans/2026-08-23_080000-issue-75-decide-contract-version-support-policy.md",
+    "packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs",
+    "packages/security-audit-sdk-core/verification-lifecycle.json"
   ],
   "candidate_approaches": [
     {
