@@ -4,7 +4,7 @@ A completed `authenticationSucceeded` operation currently rejects a caller-suppl
 
 ## What Changes
 
-- Admit a positive input-level `retry.retry_attempt` to the existing pre-construction terminal-success decision, ahead of correlation values inherited from input or context.
+- Admit a positive safe-integer input-level `retry.retry_attempt` to the existing pre-construction terminal-success decision, ahead of correlation values inherited from input or context.
 - Add an F-11 public-behavior regression that proves a completed operation permits one explicit named re-execution with a new event ID and preserved causal links.
 - Prove that a subsequent ordinary terminal success for the same operation remains rejected with `SDK_DUPLICATE_SUCCESS`.
 - Preserve the existing validation and operation authority model: malformed, missing, zero, or non-positive retry attempts remain ordinary terminal attempts; canonical causality validation still owns relationship validity.

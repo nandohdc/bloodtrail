@@ -6,15 +6,15 @@
 
 ## 2. Minimal terminal-retry correction
 
-- [ ] 2.1 Extend the narrow untrusted precheck input shape with `retry.retry_attempt`, prioritize it ahead of input correlation and inherited context, and run the focused F-11 test to verify the explicit retry emits a distinct event with retry/original-event/operation links.
-- [ ] 2.2 Extend the same F-11 control to verify a later terminal success with no positive retry relationship remains `SDK_DUPLICATE_SUCCESS` at `/operation/state`; verify existing named retry, redelivery, causality, failure-release, and completion-reservation tests stay green.
+- [ ] 2.1 Extend the narrow untrusted precheck input shape with `retry.retry_attempt`, prioritize a positive safe integer ahead of input correlation and inherited context, and run the focused F-11 test to verify the explicit retry emits a distinct event with retry/original-event/operation links.
+- [ ] 2.2 Extend the same F-11 controls to verify a later terminal success with no positive retry relationship and zero, negative, non-numeric, non-finite, or non-integer retry attempts remain `SDK_DUPLICATE_SUCCESS` at `/operation/state`; verify existing named retry, redelivery, causality, failure-release, and completion-reservation tests stay green.
 - [ ] 2.3 Verify the precheck adds no causality parsing, identifier allocation, timestamp resolution, transformation, sink retry, operation-state reset, public API, package, contract, or dependency change by inspecting the exact changed paths and existing F-11 controls.
 
 ## 3. Technical verification and frozen candidate evidence
 
 - [ ] 3.1 Run `npm run test:runtime --prefix packages/security-audit-sdk-core`, `npm run test:verification --prefix packages/security-audit-sdk-core`, and `npm run check:generated --prefix packages/security-audit-sdk-core`; verify the focused correction and all runtime/mutation controls pass.
 - [ ] 3.2 Run `npm run test:matrix --prefix packages/security-audit-sdk-core`, `npm run validate --prefix contracts/security-audit`, `openspec validate fix-terminal-named-retry --strict`, `openspec validate --all --strict`, and implementation-phase design-pattern governance; verify no contract drift, generated drift, scope violation, or unrelated change is introduced.
-- [ ] 3.3 Reconstruct the exact unstaged candidate in an isolated disposable clone and run `npm run validate --prefix packages/security-audit-sdk-core`; record the full 19-gate result, exact candidate tree/hash, empty-index proof, and required CodeScene CI status without re-running write-mode commands after the candidate is frozen.
+- [ ] 3.3 Reconstruct the exact unstaged candidate in an isolated disposable clone and run `npm run validate --prefix packages/security-audit-sdk-core`; record the full 19-gate result, exact candidate tree/hash, and empty-index proof, while retaining exact-head CodeScene CI as a merge prerequisite rather than local evidence.
 
 ## 4. Governed delivery and lifecycle completion
 
