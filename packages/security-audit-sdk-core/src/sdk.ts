@@ -18,6 +18,10 @@ export type SecurityAuditSdkState = "ready" | "shutting_down" | "shut_down";
 
 type RetryContext = { readonly correlation?: { readonly retry_attempt?: number } };
 
+// Contract 1.0.0 bounds.retry_attempt_max. This precheck must not let an
+// out-of-range attempt bypass a completed operation before schema validation.
+const MAX_RETRY_ATTEMPT = 1_000;
+
 export interface SdkRetentionStateForTesting {
   readonly generatedEventIds: { readonly size: number; readonly capacity: number };
   readonly issuedOperationIds: { readonly size: number; readonly capacity: number };
@@ -432,13 +436,20 @@ function terminalSuccessAttemptEvent(
   const candidate = input as {
     readonly redelivery?: { readonly event?: unknown };
     readonly event?: { readonly lifecycle_phase?: string; readonly outcome?: string };
+    readonly retry?: { readonly retry_attempt?: number };
     readonly correlation?: { readonly retry_attempt?: number };
   };
   if (candidate.redelivery?.event) return undefined;
-  const retryAttempt = candidate.correlation?.retry_attempt
+  const retryAttempt = candidate.retry?.retry_attempt
+    ?? candidate.correlation?.retry_attempt
     ?? activeContext?.correlation?.retry_attempt
     ?? authoritativeContext.correlation?.retry_attempt;
-  if (retryAttempt) return undefined;
+  if (
+    retryAttempt !== undefined
+    && Number.isSafeInteger(retryAttempt)
+    && retryAttempt > 0
+    && retryAttempt <= MAX_RETRY_ATTEMPT
+  ) return undefined;
   const definition = eventDefinitionByMethod.get(method);
   if (!definition) return undefined;
   const phases = definition.phase as readonly SecurityAuditEvent["event"]["lifecycle_phase"][];

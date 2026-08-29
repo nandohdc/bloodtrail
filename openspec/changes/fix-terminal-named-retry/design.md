@@ -8,7 +8,7 @@ The existing canonical requirement already distinguishes re-execution from pure 
 
 **Goals:**
 
-- Let the existing pre-construction terminal-success decision recognize a positive safe-integer caller-supplied `input.retry.retry_attempt`.
+- Let the existing pre-construction terminal-success decision recognize a positive safe-integer caller-supplied `input.retry.retry_attempt` no greater than the frozen contract 1.0.0 maximum.
 - Preserve the stricter normal path: a completed operation still rejects a later terminal success with no positive retry relationship.
 - Prove the behavior through the named SDK method and captured event output rather than a private helper test.
 - Keep causality shape/content validation in the existing event-building and semantic-validation stages.
@@ -30,7 +30,7 @@ The existing canonical requirement already distinguishes re-execution from pure 
 3. active context correlation retry attempt;
 4. authoritative context correlation retry attempt.
 
-A positive safe integer retains the existing meaning: this named invocation is an explicit re-attempt and therefore does not reserve or reject through the completed-operation duplicate path. Missing, zero, negative, non-numeric, non-finite, and non-integer values remain ordinary terminal attempts and are rejected through the completed-operation duplicate path. The later builder still constructs canonical correlation and the semantic validator still owns canonical range and causality validation.
+A positive safe integer no greater than the contract 1.0.0 `retry_attempt_max` (1000) retains the existing meaning: this named invocation is an explicit re-attempt and therefore does not reserve or reject through the completed-operation duplicate path. Missing, zero, negative, non-numeric, non-finite, non-integer, and over-bound values remain ordinary terminal attempts and are rejected through the completed-operation duplicate path. The later builder still constructs canonical correlation and the semantic validator still owns canonical causality validation.
 
 **Alternative considered: build the full event before deciding terminal duplicate state.** Rejected because it would move identity allocation, timestamps, transformations, and validation before a rejection currently designed to happen at the operation boundary, changing more lifecycle behavior than this correction needs.
 
@@ -50,7 +50,7 @@ The precheck only recognizes whether an attempt is positive. It will not validat
 
 ## Risks / Trade-offs
 
-- [A retry bypass accidentally admits an ordinary duplicate or malformed retry] → The regressions prove a third non-retry completion and zero, negative, non-numeric, non-finite, and non-integer attempts remain `SDK_DUPLICATE_SUCCESS`; existing F-11 reservation tests remain in the focused suite.
+- [A retry bypass accidentally admits an ordinary duplicate or malformed retry] → The regressions prove a third non-retry completion and zero, negative, non-numeric, non-finite, non-integer, and over-bound attempts remain `SDK_DUPLICATE_SUCCESS`; existing F-11 reservation tests remain in the focused suite.
 - [Input retry and input correlation precedence changes a caller-visible result] → The explicit documented input retry is placed first, while the remaining existing fallback order is unchanged; focused tests cover the new precedence only.
 - [The safe-integer classifier adds one standard-language global reference] → Update the platform-coupling null control from 110 to 111 authored references while retaining the same 16 authored artifacts and unchanged `[Buffer (2 sites)]` host-coupling inventory.
 - [The change is mistaken for delivery retry] → Proposal, task, test, and PR wording state it is caller-supplied causality for a new named event and add no sink retry.

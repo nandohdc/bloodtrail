@@ -29,7 +29,7 @@
     {
       "id": "approach-recognize-input-retry-before-reservation",
       "kind": "direct_implementation",
-      "summary": "Recognize a positive safe-integer input.retry.retry_attempt in the existing pre-construction terminal-success decision, then retain canonical construction and causality validation in their current stages.",
+      "summary": "Recognize a positive safe-integer input.retry.retry_attempt within the frozen contract 1.0.0 maximum in the existing pre-construction terminal-success decision, then retain canonical construction and causality validation in their current stages.",
       "forces_addressed": [
         "A completed operation currently rejects a documented positive input.retry relationship before canonical correlation.retry_attempt is constructed.",
         "The correction must preserve same-instance operation authority and reject ordinary repeated terminal success after the operation has completed.",
@@ -123,7 +123,7 @@
     "cryptography": "No cryptographic primitive, key material, signature, or trust assumption changes.",
     "error_disclosure": "Malformed retry relationship validation remains in the existing bounded validators, avoiding new unbounded input disclosure at the precheck.",
     "external_security_integration": "The change adds no network call, exporter, collector, SIEM, telemetry, browser integration, or external security service.",
-    "fail_posture": "Missing, zero, negative, non-numeric, non-finite, or non-integer retry input does not bypass ordinary terminal duplicate protection; canonical range and causality failures remain fail-closed.",
+    "fail_posture": "Missing, zero, negative, non-numeric, non-finite, non-integer, or over-bound retry input does not bypass ordinary terminal duplicate protection; canonical causality failures remain fail-closed.",
     "lifecycle": "No SDK initialization, shutdown, sink delivery, reservation release, queueing, retry scheduling, or persistence behavior changes.",
     "mutation_ownership": "Only the SDK precheck, its F-11 public behavior controls, and the resulting platform-coupling null-control inventory assertion are changed; no caller-owned sink or handle is mutated.",
     "privacy_transformation": "No event field policy, transformation hook, client data, browser data, or personal data handling changes.",
