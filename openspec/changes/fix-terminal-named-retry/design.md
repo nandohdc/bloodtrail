@@ -52,6 +52,7 @@ The precheck only recognizes whether an attempt is positive. It will not validat
 
 - [A retry bypass accidentally admits an ordinary duplicate or malformed retry] → The regressions prove a third non-retry completion and zero, negative, non-numeric, non-finite, and non-integer attempts remain `SDK_DUPLICATE_SUCCESS`; existing F-11 reservation tests remain in the focused suite.
 - [Input retry and input correlation precedence changes a caller-visible result] → The explicit documented input retry is placed first, while the remaining existing fallback order is unchanged; focused tests cover the new precedence only.
+- [The safe-integer classifier adds one standard-language global reference] → Update the platform-coupling null control from 110 to 111 authored references while retaining the same 16 authored artifacts and unchanged `[Buffer (2 sites)]` host-coupling inventory.
 - [The change is mistaken for delivery retry] → Proposal, task, test, and PR wording state it is caller-supplied causality for a new named event and add no sink retry.
 - [A policy or contract change is accidentally bundled] → Exact changed-path allowlist excludes contract source, generated output, package metadata, sink types, and `src/events.ts`.
 

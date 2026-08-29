@@ -21,6 +21,6 @@ None. The canonical SDK requirement already defines retry/re-execution as a new 
 
 ## Impact
 
-The technical implementation is confined to `packages/security-audit-sdk-core/src/sdk.ts` and `packages/security-audit-sdk-core/tests/f11-delivery-intent.test.ts`. It changes no contract source, generated artifact, SDK public method, package metadata, dependency, sink interface, transport, collector, queue, storage, telemetry, browser integration, production authorization, or automatic delivery retry behavior.
+The technical implementation is confined to `packages/security-audit-sdk-core/src/sdk.ts`, `packages/security-audit-sdk-core/tests/f11-delivery-intent.test.ts`, and the platform-coupling null-control inventory assertion updated for the new standard-language `Number` reference. It changes no contract source, generated artifact, SDK public method, package metadata, dependency, sink interface, transport, collector, queue, storage, telemetry, browser integration, production authorization, or automatic delivery retry behavior.
 
 Refs #215

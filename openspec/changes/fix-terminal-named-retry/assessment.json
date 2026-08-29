@@ -7,7 +7,8 @@
     "A completed operation currently rejects a documented positive input.retry relationship before canonical correlation.retry_attempt is constructed.",
     "The correction must preserve same-instance operation authority and reject ordinary repeated terminal success after the operation has completed.",
     "Retry/re-execution is security-sensitive causality behavior but does not authorize sink retry, transport, queueing, durability, or production delivery behavior.",
-    "The precheck must not duplicate existing causality validation or alter error ownership for malformed retry relationships."
+    "The precheck must not duplicate existing causality validation or alter error ownership for malformed retry relationships.",
+    "Recognizing a safe integer through Number.isSafeInteger adds one standard-language identifier reference, so the platform-coupling null inventory must be reconciled without changing host coupling policy or inventory."
   ],
   "applicability": {
     "triggers_matched": [
@@ -21,6 +22,7 @@
   "owned_paths": [
     "packages/security-audit-sdk-core/src/sdk.ts",
     "packages/security-audit-sdk-core/tests/f11-delivery-intent.test.ts",
+    "packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs",
     "openspec/changes/fix-terminal-named-retry/"
   ],
   "candidate_approaches": [
@@ -76,6 +78,7 @@
     "implementation-positive-input-retry-is-reexecution",
     "implementation-normal-completion-remains-duplicate-protected",
     "implementation-causality-validation-ownership-preserved",
+    "implementation-scope-inventory-baseline-preserved",
     "implementation-no-delivery-scope-expansion"
   ],
   "invariant_evidence": {
@@ -97,6 +100,12 @@
         "existing F-11 missing-original, excessive-attempt, and self-causation controls remain green without precheck validation additions"
       ]
     },
+    "implementation-scope-inventory-baseline-preserved": {
+      "task_ids": ["2.3", "3.1"],
+      "evidence_ids": [
+        "the platform-coupling null control records 111 authored references after the intentional Number.isSafeInteger use, while authored artifacts and host-coupling inventory remain unchanged"
+      ]
+    },
     "implementation-no-delivery-scope-expansion": {
       "task_ids": ["2.2", "3.1"],
       "evidence_ids": [
@@ -116,7 +125,7 @@
     "external_security_integration": "The change adds no network call, exporter, collector, SIEM, telemetry, browser integration, or external security service.",
     "fail_posture": "Missing, zero, negative, non-numeric, non-finite, or non-integer retry input does not bypass ordinary terminal duplicate protection; canonical range and causality failures remain fail-closed.",
     "lifecycle": "No SDK initialization, shutdown, sink delivery, reservation release, queueing, retry scheduling, or persistence behavior changes.",
-    "mutation_ownership": "Only the SDK precheck and its F-11 public behavior control are changed; no caller-owned sink or handle is mutated.",
+    "mutation_ownership": "Only the SDK precheck, its F-11 public behavior controls, and the resulting platform-coupling null-control inventory assertion are changed; no caller-owned sink or handle is mutated.",
     "privacy_transformation": "No event field policy, transformation hook, client data, browser data, or personal data handling changes.",
     "resource_retention": "The correction adds no retained state, cache, timer, registry, or durable resource.",
     "retry_or_redelivery": "The change recognizes an already documented caller-supplied retry relationship for a new named occurrence; it does not retry sink delivery, redeliver bytes automatically, queue work, or claim durability.",

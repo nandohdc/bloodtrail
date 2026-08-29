@@ -8,7 +8,7 @@
 
 - [ ] 2.1 Extend the narrow untrusted precheck input shape with `retry.retry_attempt`, prioritize a positive safe integer ahead of input correlation and inherited context, and run the focused F-11 test to verify the explicit retry emits a distinct event with retry/original-event/operation links.
 - [ ] 2.2 Extend the same F-11 controls to verify a later terminal success with no positive retry relationship and zero, negative, non-numeric, non-finite, or non-integer retry attempts remain `SDK_DUPLICATE_SUCCESS` at `/operation/state`; verify existing named retry, redelivery, causality, failure-release, and completion-reservation tests stay green.
-- [ ] 2.3 Verify the precheck adds no causality parsing, identifier allocation, timestamp resolution, transformation, sink retry, operation-state reset, public API, package, contract, or dependency change by inspecting the exact changed paths and existing F-11 controls.
+- [ ] 2.3 Verify the precheck adds no causality parsing, identifier allocation, timestamp resolution, transformation, sink retry, operation-state reset, public API, package, contract, or dependency change; reconcile the platform-coupling null control for the intentional standard-language `Number` reference while preserving its authored-artifact and host-coupling inventory.
 
 ## 3. Technical verification and frozen candidate evidence
 
