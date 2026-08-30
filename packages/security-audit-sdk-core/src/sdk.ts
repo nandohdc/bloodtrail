@@ -420,9 +420,12 @@ function terminalSuccessEvent(event: SecurityAuditEvent): EventName | undefined 
   return event.event.name;
 }
 
-const eventDefinitionByMethod = new Map<EventMethodName, EventDefinition>(EVENT_METHODS.flatMap((entry) => {
-  const definition = EVENT_CATALOG.find((candidate) => candidate.name === entry.name);
-  return definition ? [[entry.method, definition]] : [];
+// EVENT_METHODS and EVENT_CATALOG are generated from the same contract source, so
+// every method event name has a catalog definition by construction; a missing entry
+// reads back as undefined and is handled like any method without a definition.
+const eventDefinitionByMethod = new Map<EventMethodName, EventDefinition>(EVENT_METHODS.map((entry): [EventMethodName, EventDefinition] => {
+  const definition = EVENT_CATALOG.find((candidate) => candidate.name === entry.name) as EventDefinition;
+  return [entry.method, definition];
 }));
 
 type RetryAttemptInput = {
