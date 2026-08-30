@@ -425,6 +425,29 @@ const eventDefinitionByMethod = new Map<EventMethodName, EventDefinition>(EVENT_
   return definition ? [[entry.method, definition]] : [];
 }));
 
+type RetryAttemptInput = {
+  readonly retry?: { readonly retry_attempt?: number };
+  readonly correlation?: { readonly retry_attempt?: number };
+};
+
+// Contract 1.0.0 bounds.retry_attempt_max: only a positive safe-integer attempt
+// within the bound marks an explicit re-attempt; anything else remains an
+// ordinary terminal attempt subject to the completed-operation duplicate path.
+function isBoundedRetryAttempt(retryAttempt: number | undefined): boolean {
+  if (retryAttempt === undefined) return false;
+  if (!Number.isSafeInteger(retryAttempt)) return false;
+  if (retryAttempt <= 0) return false;
+  return retryAttempt <= MAX_RETRY_ATTEMPT;
+}
+
+function inputRetryAttempt(candidate: RetryAttemptInput): number | undefined {
+  return candidate.retry?.retry_attempt ?? candidate.correlation?.retry_attempt;
+}
+
+function contextRetryAttempt(activeContext: RetryContext | undefined, authoritativeContext: RetryContext): number | undefined {
+  return activeContext?.correlation?.retry_attempt ?? authoritativeContext.correlation?.retry_attempt;
+}
+
 function terminalSuccessAttemptEvent(
   method: EventMethodName,
   operation: AuditOperationSnapshot | undefined,
@@ -436,20 +459,10 @@ function terminalSuccessAttemptEvent(
   const candidate = input as {
     readonly redelivery?: { readonly event?: unknown };
     readonly event?: { readonly lifecycle_phase?: string; readonly outcome?: string };
-    readonly retry?: { readonly retry_attempt?: number };
-    readonly correlation?: { readonly retry_attempt?: number };
-  };
+  } & RetryAttemptInput;
   if (candidate.redelivery?.event) return undefined;
-  const retryAttempt = candidate.retry?.retry_attempt
-    ?? candidate.correlation?.retry_attempt
-    ?? activeContext?.correlation?.retry_attempt
-    ?? authoritativeContext.correlation?.retry_attempt;
-  if (
-    retryAttempt !== undefined
-    && Number.isSafeInteger(retryAttempt)
-    && retryAttempt > 0
-    && retryAttempt <= MAX_RETRY_ATTEMPT
-  ) return undefined;
+  const retryAttempt = inputRetryAttempt(candidate) ?? contextRetryAttempt(activeContext, authoritativeContext);
+  if (isBoundedRetryAttempt(retryAttempt)) return undefined;
   const definition = eventDefinitionByMethod.get(method);
   if (!definition) return undefined;
   const phases = definition.phase as readonly SecurityAuditEvent["event"]["lifecycle_phase"][];
