@@ -100,6 +100,8 @@ sdk.passwordResetRequested({ actor, request: { id: "request" }, source, correlat
 sdk.passwordResetCompleted({ actor, subject: { type: "credential", id: "credential" }, tenant, authentication, session, correlation, resource, operation });
 sdk.authorizationAllowed({ actor, tenant, resource, authorization, request: { id: "request" } });
 sdk.authorizationDenied({ actor, tenant, resource, authorization: { ...authorization, decision: "deny" }, source });
+// @ts-expect-error role assignment requires the cataloged reason context
+sdk.roleAssigned({ actor, subject: { type: "role", id: "role" }, tenant, resource, authorization, operation });
 sdk.roleAssigned({ actor, subject: { type: "role", id: "role" }, tenant, resource, authorization, event: { outcome_reason: { code: "accepted" } }, operation });
 sdk.roleRemoved({ actor, subject: { type: "role", id: "role" }, tenant, resource, authorization, event: { outcome_reason: { code: "accepted" } }, operation });
 sdk.privilegeElevated({ actor, subject: { type: "privilege_grant", id: "grant" }, delegation: { mode: "delegated", principal_id: "principal", expires_at: "2026-07-31T13:00:00.000Z" }, tenant, authorization, event: { outcome_reason: { code: "break_glass" } }, resource, operation });

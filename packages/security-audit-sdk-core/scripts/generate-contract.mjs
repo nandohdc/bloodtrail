@@ -288,6 +288,7 @@ type RequiredContextProperty<C extends string> =
   C extends "authentication" ? { readonly authentication: SecurityAuditEvent["authentication"] } :
   C extends "session" ? { readonly session: SecurityAuditEvent["session"] } :
   C extends "credential" ? { readonly credential: SecurityAuditEvent["credential"] } :
+  C extends "reason" ? { readonly event: { readonly outcome_reason: NonNullable<SecurityAuditEvent["event"]["outcome_reason"]> } } :
   C extends "source" | "request_source" ? { readonly source: SecurityAuditEvent["source"] } :
   C extends "request" ? { readonly request: SecurityAuditEvent["request"] } :
   C extends "correlation" | "original_start" ? { readonly correlation: Partial<SecurityAuditEvent["correlation"]> } :
