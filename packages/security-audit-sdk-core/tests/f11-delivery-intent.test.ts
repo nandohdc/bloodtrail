@@ -12,6 +12,7 @@ import {
   observedSource,
   sessionEvidence,
   type AuditFieldTransformationHook,
+  type AuditContextFrameInput,
   type AuditResult,
   type SecurityAuditEvent,
   type SecurityAuditSdk,
@@ -64,6 +65,7 @@ function namedInput(): Record<string, unknown> {
 function createHarness(options: {
   readonly sink?: AuditEventSink;
   readonly transformations?: readonly AuditFieldTransformationHook[];
+  readonly authoritativeContext?: AuditContextFrameInput;
   readonly capacity?: number;
   readonly start?: number;
 } = {}): Harness {
@@ -103,6 +105,7 @@ function createHarness(options: {
     producer: { name: "f11-test", version: "1.0.0" },
     service: { name: "f11-test", version: "1.0.0" },
     environment: { name: "test" },
+    ...(options.authoritativeContext === undefined ? {} : { authoritativeContext: options.authoritativeContext }),
     sink: options.sink ?? defaultSink,
     clock: { now() { counters.clocks += 1; return new Date("2026-08-04T00:00:00.000Z"); } },
     identifiers,
@@ -400,6 +403,65 @@ test("F-11 terminal named retry re-executes after accepted completion", async ()
 
   expectFailure(await harness.sdk.authenticationSucceeded({ ...namedInput(), operation: operation.value } as never), "SDK_DUPLICATE_SUCCESS", "/operation/state");
   assert.equal(harness.counters.sinks, 2);
+});
+
+test("F-11 terminal named retry reads active and authoritative context when input has no retry", async () => {
+  const activeHarness = createHarness({ start: 90_000 });
+  const activeOperation = activeHarness.sdk.beginOperation({
+    operationId: "operation-f11-active-context-retry",
+    transactionId: "transaction-f11-active-context-retry",
+    correlationId: "correlation-f11-active-context-retry",
+    boundEvent: "authenticationSucceeded",
+    transactional: false,
+  });
+  assert.equal(activeOperation.ok, true);
+  if (!activeOperation.ok) return;
+
+  assert.equal((await activeHarness.sdk.authenticationSucceeded({ ...namedInput(), operation: activeOperation.value } as never)).ok, true);
+  const activeOriginal = activeHarness.events.at(-1);
+  assert.ok(activeOriginal);
+  const activeRetry = await activeHarness.sdk.runWithContext({
+    correlation: { retry_attempt: 1, original_event_id: activeOriginal.event.id, causation_id: activeOriginal.event.id },
+  }, () => activeHarness.sdk.authenticationSucceeded({ ...namedInput(), operation: activeOperation.value } as never));
+  assert.equal(activeRetry.ok, true, JSON.stringify(activeRetry));
+  const activeRetryEvent = activeHarness.events.at(-1);
+  assert.ok(activeRetryEvent);
+  assert.equal(activeRetryEvent.correlation.retry_attempt, 1);
+  assert.equal(activeRetryEvent.correlation.original_event_id, activeOriginal.event.id);
+  assert.equal(activeRetryEvent.correlation.causation_id, activeOriginal.event.id);
+
+  const authoritativeOriginalId = uuid(95_000);
+  const authoritativeHarness = createHarness({
+    start: 91_000,
+    authoritativeContext: {
+      correlation: { retry_attempt: 1, original_event_id: authoritativeOriginalId, causation_id: authoritativeOriginalId },
+    },
+  });
+  const authoritativeOperation = authoritativeHarness.sdk.beginOperation({
+    operationId: "operation-f11-authoritative-context-retry",
+    transactionId: "transaction-f11-authoritative-context-retry",
+    correlationId: "correlation-f11-authoritative-context-retry",
+    boundEvent: "authenticationSucceeded",
+    transactional: false,
+  });
+  assert.equal(authoritativeOperation.ok, true);
+  if (!authoritativeOperation.ok) return;
+
+  assert.equal((await authoritativeHarness.sdk.authenticationSucceeded({
+    ...namedInput(),
+    operation: authoritativeOperation.value,
+    retry: { retry_attempt: 0 },
+  } as never)).ok, true);
+  const authoritativeRetry = await authoritativeHarness.sdk.authenticationSucceeded({
+    ...namedInput(),
+    operation: authoritativeOperation.value,
+  } as never);
+  assert.equal(authoritativeRetry.ok, true, JSON.stringify(authoritativeRetry));
+  const authoritativeRetryEvent = authoritativeHarness.events.at(-1);
+  assert.ok(authoritativeRetryEvent);
+  assert.equal(authoritativeRetryEvent.correlation.retry_attempt, 1);
+  assert.equal(authoritativeRetryEvent.correlation.original_event_id, authoritativeOriginalId);
+  assert.equal(authoritativeRetryEvent.correlation.causation_id, authoritativeOriginalId);
 });
 
 test("F-11 terminal named retry does not let an invalid attempt bypass duplicate protection", async () => {
