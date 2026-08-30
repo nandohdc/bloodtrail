@@ -22,7 +22,7 @@
 
 ## 4. Review and delivery
 
-- [ ] 4.1 Complete read-only technical verification against the exact final technical commit and prepare the required governance record without fabricating human approval; verify the record binds the reviewed commit and content object.
-- [ ] 4.2 Obtain an explicit owner decision and required review bound to that exact reviewed commit; verify the evidence is authored by the named owner/reviewer and does not claim independent assurance for self-review.
-- [ ] 4.3 Create and verify a focused pull request for #191 after the approved technical/governance commits are pushed; verify its head SHA, changed paths, and all required CI checks are green before any merge action.
-- [ ] 4.4 Archive only after identity-preserving merge and authoritative spec fold; verify archive relocation is byte-preserving and does not repeat the canonical spec synchronization.
+- [x] 4.1 Complete read-only technical verification against the exact final technical commit and prepare the required governance record without fabricating human approval; verify the record binds the reviewed commit and content object.
+- [x] 4.2 Obtain an explicit owner decision and required review bound to that exact reviewed commit; verify the evidence is authored by the named owner/reviewer and does not claim independent assurance for self-review.
+- [x] 4.3 Create and verify a focused pull request for #191 after the approved technical/governance commits are pushed; verify its head SHA, changed paths, and all required CI checks are green before any merge action.
+- [x] 4.4 Archive only after identity-preserving merge and authoritative spec fold; verify archive relocation is byte-preserving and does not repeat the canonical spec synchronization.
