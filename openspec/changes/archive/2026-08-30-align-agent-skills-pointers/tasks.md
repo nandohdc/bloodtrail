@@ -24,5 +24,5 @@
 ## 4. Review and delivery
 
 - [x] 4.1 Complete read-only verification against the exact final commit without fabricating human approval; verify the recorded evidence binds that commit hash.
-- [ ] 4.2 Create a focused pull request after the approved commit is pushed; verify its head SHA, changed paths, and all required CI checks are green before any merge action.
-- [ ] 4.3 Archive only after an identity-preserving merge; verify the archive relocation is byte-preserving.
+- [x] 4.2 Create a focused pull request after the approved commit is pushed; verify its head SHA, changed paths, and all required CI checks are green before any merge action.
+- [x] 4.3 Archive only after an identity-preserving merge; verify the archive relocation is byte-preserving.
