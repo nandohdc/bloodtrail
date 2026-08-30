@@ -19,6 +19,6 @@
 ## 4. Governed delivery and lifecycle completion
 
 - [x] 4.1 Commit the proposal artifact allowlist separately after proposal-only strict validation; verify its parent, staged paths, and working-tree/index blob equality.
-- [ ] 4.2 Commit the verified technical allowlist separately; bind any subsequent human review and governance record to that exact technical commit, without treating AI review, CI, issue state, or this task list as approval.
-- [ ] 4.3 Open a focused #215 PR, verify the live head/path set and all required checks, then obtain the required exact-commit owner/reviewer decision before any identity-preserving merge.
-- [ ] 4.4 After merge, confirm the technical and decision commits are reachable from `main`; archive the `skip_specs` change with byte-preserving relocation only when every implementation/governance task is genuinely complete, and close #215 only after archive evidence is recorded.
+- [x] 4.2 Commit the verified technical allowlist separately; bind any subsequent human review and governance record to that exact technical commit, without treating AI review, CI, issue state, or this task list as approval.
+- [x] 4.3 Open a focused #215 PR, verify the live head/path set and all required checks, then obtain the required exact-commit owner/reviewer decision before any identity-preserving merge.
+- [x] 4.4 After merge, confirm the technical and decision commits are reachable from `main`; archive the `skip_specs` change with byte-preserving relocation only when every implementation/governance task is genuinely complete, and close #215 only after archive evidence is recorded.
