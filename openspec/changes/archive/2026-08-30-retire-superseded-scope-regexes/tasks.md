@@ -28,8 +28,8 @@
 
 ## 5. Governed delivery and lifecycle completion
 
-- [ ] 5.1 Commit the proposal and implementation as separate commits with explicit path allowlists after their respective read-only verification; verify the implementation candidate is frozen before exact-commit review.
-- [ ] 5.2 Open a focused #201 PR that documents every replacement control, the false-positive precision correction, generated-filename widening, host-object-member residual, and #169 rider; verify the live PR head, changed paths, and all mandatory checks are green before any merge action.
-- [ ] 5.3 Obtain and record any required exact-commit owner/reviewer decisions without treating AI review, PR state, or CI success as approval; verify review records bind the exact reviewed content.
-- [ ] 5.4 After identity-preserving merge, fold or archive only if the active change still has a canonical delta to fold; otherwise archive the `skip_specs` change with byte-preserving relocation and strict OpenSpec validation.
+- [x] 5.1 Commit the proposal and implementation as separate commits with explicit path allowlists after their respective read-only verification; verify the implementation candidate is frozen before exact-commit review.
+- [x] 5.2 Open a focused #201 PR that documents every replacement control, the false-positive precision correction, generated-filename widening, host-object-member residual, and #169 rider; verify the live PR head, changed paths, and all mandatory checks are green before any merge action.
+- [x] 5.3 Obtain and record any required exact-commit owner/reviewer decisions without treating AI review, PR state, or CI success as approval; verify review records bind the exact reviewed content.
+- [x] 5.4 After identity-preserving merge, fold or archive only if the active change still has a canonical delta to fold; otherwise archive the `skip_specs` change with byte-preserving relocation and strict OpenSpec validation.
 - [ ] 5.5 Close #201 only after its archive and all required evidence are complete; post the seven positive arms, two precision controls, null control, filename widening, renamed test rationale, #169 landing reference, and the residual that host-object member access remains undetected by construction.
