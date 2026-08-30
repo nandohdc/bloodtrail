@@ -66,11 +66,36 @@ checks: `main` has no `required_pull_request_reviews` block and the repository
 has no CODEOWNERS file, so `reviewDecision` is empty on every PR and nothing on
 the GitHub side will catch a premature merge.
 
-For the same reason the binding review verdict is the reviewer profile's
-completed run on the Kanban task, not a GitHub approval. Every PR is authored
-by the account the agents run as, and GitHub refuses self-approval, so a GitHub
-approval is unobtainable by design here. Do not "fix" the gate script by
-relaxing it to accept an empty `reviewDecision`.
+For the same reason the binding review verdict comes from the Kanban task, not
+from a GitHub approval. Every PR is authored by the account the agents run as,
+and GitHub refuses self-approval, so a GitHub approval is unobtainable by
+design here. Do not "fix" the gate script by relaxing it to accept an empty
+`reviewDecision`.
+
+**A completed run is not an approval.** A reviewer that requests changes
+completes its run too, so run completion cannot tell the two apart. The verdict
+is carried in the reviewer run's metadata:
+
+    .metadata.technical_review     "approved" | "changes_requested"
+    .metadata.reviewed_commit      the exact SHA the verdict is bound to
+    .metadata.blocking_findings[]  {path, finding}
+
+The gate requires `technical_review == "approved"` on a run whose
+`reviewed_commit` equals the PR head, and refuses when that metadata is absent.
+Binding to the head also expires a stale verdict: a review of an earlier head
+does not survive a force-push.
+
+This paragraph previously called the completed run itself the binding verdict,
+and the gate script implemented that literally. On 2026-08-30 the script
+reported "All gates passed" for PR #225 at `0b7e051` while the reviewer had
+recorded `changes_requested` on that exact head, with all nine required checks
+green. Do not restate the rule in terms of run completion.
+
+A review task claimed as an ordinary running task cannot be transitioned with
+`kanban_request_changes` — it is refused as "not claimed from the review
+column" — and the verdict then survives only in the run metadata and a comment,
+never in task status. That is a further reason the gate reads metadata rather
+than task status.
 
 ## Repository preflight
 
