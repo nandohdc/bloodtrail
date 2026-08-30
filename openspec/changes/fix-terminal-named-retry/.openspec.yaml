@@ -1,0 +1,5 @@
+schema: spec-driven
+skip_specs: true
+created: 2026-08-29
+goal: Make positive caller-supplied retry relationships bypass only the
+  pre-construction terminal duplicate reservation

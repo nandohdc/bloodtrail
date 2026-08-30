@@ -1,0 +1,148 @@
+{
+  "schema_version": "1.1",
+  "change_id": "fix-terminal-named-retry",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A completed operation currently rejects a documented positive input.retry relationship before canonical correlation.retry_attempt is constructed.",
+    "The correction must preserve same-instance operation authority and reject ordinary repeated terminal success after the operation has completed.",
+    "Retry/re-execution is security-sensitive causality behavior but does not authorize sink retry, transport, queueing, durability, or production delivery behavior.",
+    "The precheck must not duplicate existing causality validation or alter error ownership for malformed retry relationships.",
+    "Recognizing a safe integer through Number.isSafeInteger adds one standard-language identifier reference, so the platform-coupling null inventory must be reconciled without changing host coupling policy or inventory."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/src/sdk.ts",
+    "packages/security-audit-sdk-core/tests/f11-delivery-intent.test.ts",
+    "packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs",
+    "openspec/changes/fix-terminal-named-retry/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-recognize-input-retry-before-reservation",
+      "kind": "direct_implementation",
+      "summary": "Recognize a positive safe-integer input.retry.retry_attempt within the frozen contract 1.0.0 maximum in the existing pre-construction terminal-success decision, then retain canonical construction and causality validation in their current stages.",
+      "forces_addressed": [
+        "A completed operation currently rejects a documented positive input.retry relationship before canonical correlation.retry_attempt is constructed.",
+        "The correction must preserve same-instance operation authority and reject ordinary repeated terminal success after the operation has completed.",
+        "The precheck must not duplicate existing causality validation or alter error ownership for malformed retry relationships."
+      ]
+    },
+    {
+      "id": "approach-build-before-terminal-decision",
+      "kind": "alternative",
+      "summary": "Build and validate the full named event before deciding whether terminal completion is a duplicate, then use its canonical correlation.retry_attempt.",
+      "forces_addressed": [
+        "A completed operation currently rejects a documented positive input.retry relationship before canonical correlation.retry_attempt is constructed."
+      ]
+    },
+    {
+      "id": "approach-reset-completion-for-retry",
+      "kind": "alternative",
+      "summary": "Reset or replace the operation completion record when a retry is supplied so that a new named success can reserve it again.",
+      "forces_addressed": [
+        "A completed operation currently rejects a documented positive input.retry relationship before canonical correlation.retry_attempt is constructed."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-recognize-input-retry-before-reservation",
+  "rejected_alternative_ids": [
+    "approach-build-before-terminal-decision",
+    "approach-reset-completion-for-retry"
+  ],
+  "rejection_reasons": {
+    "approach-build-before-terminal-decision": {
+      "forces": [
+        "The correction must preserve same-instance operation authority and reject ordinary repeated terminal success after the operation has completed.",
+        "The precheck must not duplicate existing causality validation or alter error ownership for malformed retry relationships."
+      ],
+      "reason": "Building first would allocate identifiers, resolve timestamps, run transformations, and potentially change validation/error ordering before an operation-bound rejection. The narrow precheck correction preserves existing lifecycle locality."
+    },
+    "approach-reset-completion-for-retry": {
+      "forces": [
+        "The correction must preserve same-instance operation authority and reject ordinary repeated terminal success after the operation has completed."
+      ],
+      "reason": "Operation completion remains the authority for ordinary terminal success. Resetting it would broaden the state machine and risk admitting an unbounded sequence of non-retry completions."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-positive-input-retry-is-reexecution",
+    "implementation-normal-completion-remains-duplicate-protected",
+    "implementation-causality-validation-ownership-preserved",
+    "implementation-scope-inventory-baseline-preserved",
+    "implementation-no-delivery-scope-expansion"
+  ],
+  "invariant_evidence": {
+    "implementation-positive-input-retry-is-reexecution": {
+      "task_ids": ["2.1", "2.2"],
+      "evidence_ids": [
+        "F-11 public named-method control accepts a positive retry after accepted terminal completion and emits a distinct event ID with retry/original-event/operation links"
+      ]
+    },
+    "implementation-normal-completion-remains-duplicate-protected": {
+      "task_ids": ["2.1", "2.2"],
+      "evidence_ids": [
+        "the same F-11 control proves a subsequent no-retry terminal success remains SDK_DUPLICATE_SUCCESS at /operation/state"
+      ]
+    },
+    "implementation-causality-validation-ownership-preserved": {
+      "task_ids": ["2.3", "3.1"],
+      "evidence_ids": [
+        "existing F-11 missing-original, excessive-attempt, and self-causation controls remain green without precheck validation additions"
+      ]
+    },
+    "implementation-scope-inventory-baseline-preserved": {
+      "task_ids": ["2.3", "3.1"],
+      "evidence_ids": [
+        "the platform-coupling null control records 111 authored references after the intentional Number.isSafeInteger use, while authored artifacts and host-coupling inventory remain unchanged"
+      ]
+    },
+    "implementation-no-delivery-scope-expansion": {
+      "task_ids": ["2.2", "3.1"],
+      "evidence_ids": [
+        "changed-path and scope checks show only sdk precheck, F-11 test, and change artifacts; no sink, transport, package, contract, or dependency path changes"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "The correction preserves a distinct audit event for explicit business re-execution while retaining duplicate protection for ordinary repeated terminal success.",
+    "authentication_or_authorization": "No identity input, authentication mechanism, privilege decision, or authorization grant changes.",
+    "authority_provenance": "Only an exact same-instance operation handle remains authoritative for operation-bound named calls; input retry does not manufacture handle authority.",
+    "concurrency": "The existing synchronous reservation and completed-state behavior is unchanged; the correction only classifies a documented explicit retry before reservation.",
+    "confidentiality": "No new data is collected, logged, retained, or exposed; failure output remains the existing bounded code/path form.",
+    "cryptography": "No cryptographic primitive, key material, signature, or trust assumption changes.",
+    "error_disclosure": "Malformed retry relationship validation remains in the existing bounded validators, avoiding new unbounded input disclosure at the precheck.",
+    "external_security_integration": "The change adds no network call, exporter, collector, SIEM, telemetry, browser integration, or external security service.",
+    "fail_posture": "Missing, zero, negative, non-numeric, non-finite, non-integer, or over-bound retry input does not bypass ordinary terminal duplicate protection; canonical causality failures remain fail-closed.",
+    "lifecycle": "No SDK initialization, shutdown, sink delivery, reservation release, queueing, retry scheduling, or persistence behavior changes.",
+    "mutation_ownership": "Only the SDK precheck, its F-11 public behavior controls, and the resulting platform-coupling null-control inventory assertion are changed; no caller-owned sink or handle is mutated.",
+    "privacy_transformation": "No event field policy, transformation hook, client data, browser data, or personal data handling changes.",
+    "resource_retention": "The correction adds no retained state, cache, timer, registry, or durable resource.",
+    "retry_or_redelivery": "The change recognizes an already documented caller-supplied retry relationship for a new named occurrence; it does not retry sink delivery, redeliver bytes automatically, queue work, or claim durability.",
+    "trust_boundary": "Canonical event construction and semantic causality validation remain the trust boundary for retry fields; the precheck receives only the minimal classification signal required to avoid a false duplicate."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "07aa0f177d12de8bb05cd14fe99a43c77e43eda5"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3"
+  ]
+}
