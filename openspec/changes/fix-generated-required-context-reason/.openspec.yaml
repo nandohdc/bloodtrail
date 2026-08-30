@@ -1,0 +1,4 @@
+schema: spec-driven
+skip_specs: true
+created: 2026-08-29
+goal: Project catalog-required reason context into generated named input types
