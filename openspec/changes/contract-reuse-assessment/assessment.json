@@ -21,6 +21,9 @@
     ]
   },
   "owned_paths": [
+    "CONTEXT-MAP.md",
+    "docs/adr/0008-contract-reuse-assessment-enforcement-boundaries.md",
+    "openspec/CONTEXT.md",
     "openspec/changes/contract-reuse-assessment/proposal.md",
     "openspec/changes/contract-reuse-assessment/design.md",
     "openspec/changes/contract-reuse-assessment/specs/contract-reuse-assessment/spec.md",

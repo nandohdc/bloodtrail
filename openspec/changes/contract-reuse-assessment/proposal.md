@@ -23,4 +23,4 @@ The project owner is Fernando Homem da Costa (`nandohdc`). The governed CRA scop
 
 ## Impact
 
-This proposal adds only OpenSpec planning artifacts under `openspec/changes/contract-reuse-assessment/`. The intended downstream enforcement surface is limited to the contract-reuse record schema and governance checking for qualifying repository changes. It does not authorize changes to the frozen contract, generated SDK projections, implementation code, CI, browser telemetry, production transports, collection, storage, or publication.
+This proposal adds the OpenSpec planning artifacts under `openspec/changes/contract-reuse-assessment/` and the bounded domain/decision documentation that defines this capability's execution and enforcement boundaries. The intended downstream enforcement surface is limited to the contract-reuse record schema and governance checking for qualifying repository changes. It does not authorize changes to the frozen contract, generated SDK projections, implementation code, CI, browser telemetry, production transports, collection, storage, or publication.
