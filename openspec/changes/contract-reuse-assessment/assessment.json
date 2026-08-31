@@ -13,7 +13,8 @@
   "applicability": {
     "triggers_matched": [
       "security_sensitive_behavior",
-      "canonical_capability_requirement"
+      "canonical_capability_requirement",
+      "governance_core_path"
     ],
     "material_capability_modification": true,
     "capabilities": [
@@ -27,7 +28,9 @@
     "openspec/changes/contract-reuse-assessment/proposal.md",
     "openspec/changes/contract-reuse-assessment/design.md",
     "openspec/changes/contract-reuse-assessment/specs/contract-reuse-assessment/spec.md",
-    "openspec/changes/contract-reuse-assessment/tasks.md"
+    "openspec/changes/contract-reuse-assessment/tasks.md",
+    "openspec/governance/design-pattern-policy.json",
+    "openspec/tests/design-pattern-governance/classification-completeness.test.mjs"
   ],
   "candidate_approaches": [
     {
