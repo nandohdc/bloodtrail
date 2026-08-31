@@ -1,0 +1,4 @@
+schema: spec-driven
+skip_specs: true
+created: 2026-08-31
+goal: Correct the required CI check list in CLAUDE.md and README.md to match branch protection

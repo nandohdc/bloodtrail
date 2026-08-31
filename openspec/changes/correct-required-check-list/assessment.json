@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.1",
+  "change_id": "correct-required-check-list",
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "The documented required-check list must match branch protection exactly, because an agent reading a short list concludes a missing check is non-blocking.",
+    "A table that enumerates checks reads as complete, so an omitted row misleads more than an incomplete sentence does.",
+    "The correction must not modify branch protection: the documents are wrong, the configuration is right."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "full_trigger_absence_proof": "No trigger applies. There is no public API, integration, lifecycle or state, concurrency, or persistence surface in a documentation sentence and a table row. Nothing security-sensitive changes: the branch-protection configuration is read, never modified, and no gate, policy, checker, schema, or workflow is touched. No canonical capability requirement changes, so the change declares skip_specs. governance_core_path is not matched either: that trigger is about changing how governance operates, and CLAUDE.md is edited here only to describe the existing configuration accurately.",
+    "material_capability_modification": false,
+    "capabilities": [
+      "change-governance"
+    ]
+  },
+  "owned_paths": [
+    "CLAUDE.md",
+    "README.md",
+    "openspec/changes/correct-required-check-list/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-correct-both-documents",
+      "kind": "direct_implementation",
+      "summary": "Correct both documents to match branch protection, verifying each list against the API as a set rather than by eye, and state the count in CLAUDE.md so completeness stays checkable.",
+      "forces_addressed": [
+        "The documented required-check list must match branch protection exactly, because an agent reading a short list concludes a missing check is non-blocking.",
+        "A table that enumerates checks reads as complete, so an omitted row misleads more than an incomplete sentence does.",
+        "The correction must not modify branch protection: the documents are wrong, the configuration is right."
+      ]
+    },
+    {
+      "id": "approach-remove-the-lists",
+      "kind": "alternative",
+      "summary": "Delete both enumerations and point readers at branch protection as the single source of truth, so no copy can drift.",
+      "forces_addressed": [
+        "The documented required-check list must match branch protection exactly, because an agent reading a short list concludes a missing check is non-blocking."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-correct-both-documents",
+  "rejected_alternative_ids": [
+    "approach-remove-the-lists"
+  ],
+  "rejection_reasons": {
+    "approach-remove-the-lists": {
+      "forces": [
+        "A table that enumerates checks reads as complete, so an omitted row misleads more than an incomplete sentence does.",
+        "The correction must not modify branch protection: the documents are wrong, the configuration is right."
+      ],
+      "reason": "Removing the lists would end drift by ending the documentation, and both files exist to let an agent orient without network access to the protection API. The README table also carries what each check covers, which branch protection does not record anywhere. The drift risk is real but is better answered by stating the count, so a stale copy is detectable rather than merely wrong."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-documented-list-matches-branch-protection",
+    "implementation-branch-protection-unmodified"
+  ],
+  "invariant_evidence": {
+    "implementation-documented-list-matches-branch-protection": {
+      "task_ids": ["1.1", "1.2"],
+      "evidence_ids": [
+        "Set comparison of each document's backquoted check names against required_status_checks.contexts reports nothing missing and nothing extra"
+      ]
+    },
+    "implementation-branch-protection-unmodified": {
+      "task_ids": ["1.3", "2.3"],
+      "evidence_ids": [
+        "The changed-path set is two documents and this change packet; no workflow, policy, or protection configuration is touched"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "trust_boundary": "No trust boundary is defined, moved, or crossed: two documentation files are edited and nothing executable changes.",
+    "authority_provenance": "No authority is granted, derived, or represented. The branch-protection configuration that carries the real authority is read, never written.",
+    "authentication_or_authorization": "No authentication or authorization path exists in a documentation sentence or a table row.",
+    "audit_integrity": "No audit event, record, or evidence artifact is produced, consumed, or altered.",
+    "confidentiality": "Nothing confidential is disclosed; the required-check list is already public in branch protection and in CONTRIBUTING.md.",
+    "mutation_ownership": "No ownership of any mutable state changes. Both files remain owned by the same documents policy as before.",
+    "fail_posture": "No failure path is introduced or altered. If these documents were wrong again, gates would still fail closed on their own terms.",
+    "error_disclosure": "No error message, diagnostic, or failure output changes.",
+    "concurrency": "No concurrent execution is introduced, removed, or reordered.",
+    "lifecycle": "No lifecycle or state machine is involved; the correction is inert text.",
+    "resource_retention": "No resource is acquired, retained, or released.",
+    "retry_or_redelivery": "No retry, redelivery, or idempotency behaviour exists in scope.",
+    "cryptography": "No cryptographic material, primitive, or protocol is involved.",
+    "privacy_transformation": "No personal or user data is read, transformed, or emitted.",
+    "external_security_integration": "No external security system is integrated or reconfigured. SonarQube and CodeScene are described more accurately, not wired differently."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "280f9c5650ac5ddfab029ab554982ffdc8052433"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "2.2",
+    "2.3"
+  ]
+}

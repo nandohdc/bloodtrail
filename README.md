@@ -140,6 +140,7 @@ block.
 | `conventional-commits` | yes | the PR title and **every** commit subject in the PR |
 | `coverage` | no | line coverage for both code workspaces, uploaded for the Sonar scan |
 | `codescene delta` | yes | behavioral code health delta — `cs delta --error-on-warnings` against the PR target. Fails on newly introduced code health issues **in the functions its TypeScript analyser can parse** (see the caveat below); a CodeScene outage or licence problem warns instead of failing |
+| `design-pattern-governance` | yes | the governance checker at `--phase final`, the trusted-baseline and candidate dual check, and `openspec/tests/design-pattern-governance/` — a candidate checker is never the sole judge of whether it weakened itself |
 
 CodeScene additionally posts a `CodeScene Code Health Review (<base branch>)` Check Run from its own GitHub App, with line-level annotations and per-path quality profiles from
 [`.codescene/custom-quality-gates.json`](.codescene/custom-quality-gates.json). It is **not** required to merge — its context name varies by base branch, and a required check that fails to post would block merges with no override.
