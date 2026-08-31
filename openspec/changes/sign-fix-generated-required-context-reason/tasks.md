@@ -5,15 +5,15 @@
 
 ## 2. Signed governance record
 
-- [ ] 2.1 Resolve the binding inputs from history: `reviewedCommit`, the `candidateRoot` root tree, the four reviewed tree objects, `governedCommits` for the whole #217 lifecycle, `boundCommits`, and `mergeCommits`; verify every object resolves with `git cat-file -t`, every reviewed object equals `git rev-parse 877d77f:<path>`, and each declared merge's parent count matches `git rev-list --parents -n 1`.
-- [ ] 2.2 Add the record to `governanceRecords` in `packages/security-audit-sdk-core/verification-lifecycle.json` with `signed: true`, the reviewer block, the owner instruction quoted verbatim in `signatureDecision`, the six mandatory withheld authorizations, and assurance limitations covering the post-merge decision, the inapplicable R15 scan, the out-of-scope `64af271`, and the uncovered registration commit; verify `npm run test:governance-history --prefix packages/security-audit-sdk-core` passes and its output count rises by one record.
-- [ ] 2.3 Run `node --test tests/verification/governance-history-mutations.test.mjs` from the package root and verify the whole suite is green, including the G-01 and G-02 bypass controls that now cover the added record.
+- [x] 2.1 Resolve the binding inputs from history: `reviewedCommit`, the `candidateRoot` root tree, the four reviewed tree objects, `governedCommits` for the whole #217 lifecycle, `boundCommits`, and `mergeCommits`; verify every object resolves with `git cat-file -t`, every reviewed object equals `git rev-parse 877d77f:<path>`, and each declared merge's parent count matches `git rev-list --parents -n 1`.
+- [x] 2.2 Add the record to `governanceRecords` in `packages/security-audit-sdk-core/verification-lifecycle.json` with `signed: true`, the reviewer block, the owner instruction quoted verbatim in `signatureDecision`, the six mandatory withheld authorizations, and assurance limitations covering the post-merge decision, the inapplicable R15 scan, the out-of-scope `64af271`, and the uncovered registration commit; verify `npm run test:governance-history --prefix packages/security-audit-sdk-core` passes and its output count rises by one record.
+- [x] 2.3 Run `node --test tests/verification/governance-history-mutations.test.mjs` from the package root and verify the whole suite is green, including the G-01 and G-02 bypass controls that now cover the added record.
 
 ## 3. Verification
 
-- [ ] 3.1 Run `npm run check:generated --prefix packages/security-audit-sdk-core` before any generate step and verify no committed generated drift exists; then run `npm run validate --prefix packages/security-audit-sdk-core` and `npm run validate --prefix contracts/security-audit` and verify both chains pass on the final state.
-- [ ] 3.2 Run `openspec validate sign-fix-generated-required-context-reason --strict`, `openspec validate --all --strict`, and the design-pattern governance dual check; verify the assessment validates, the association covers `packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs`, and no path is reported unclassified.
-- [ ] 3.3 Verify the archived change is untouched: `git diff --stat main -- openspec/changes/archive/2026-08-30-fix-generated-required-context-reason` reports no change, and tasks 4.3 and 4.4 there remain unchecked with their original wording.
+- [x] 3.1 Run `npm run check:generated --prefix packages/security-audit-sdk-core` before any generate step and verify no committed generated drift exists; then run `npm run validate --prefix packages/security-audit-sdk-core` and `npm run validate --prefix contracts/security-audit` and verify both chains pass on the final state.
+- [x] 3.2 Run `openspec validate sign-fix-generated-required-context-reason --strict`, `openspec validate --all --strict`, and the design-pattern governance dual check; verify the assessment validates, the association covers `packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs`, and no path is reported unclassified.
+- [x] 3.3 Verify the archived change is untouched: `git diff --stat main -- openspec/changes/archive/2026-08-30-fix-generated-required-context-reason` reports no change, and tasks 4.3 and 4.4 there remain unchecked with their original wording.
 
 ## 4. Delivery
 

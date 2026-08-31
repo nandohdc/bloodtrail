@@ -694,6 +694,85 @@
         "role": "Project owner and technical decision-maker",
         "signedAt": "2026-08-29"
       }
+    },
+    {
+      "change": "fix-generated-required-context-reason",
+      "policy": "Post-merge signing of the generated required-context reason fix (#217). check-governance-history.mjs resolves and enforces this record. The reviewed scope is the changed-path set of technical commit T 877d77f1b3fef8dcbbf292cb91c495ea3a179547 and nothing else: the change packet as it stood at T, the generator, its regenerated projection, and the type-level regression. candidateRoot be81965b9f66c61d6c07b3d6a4edf879a163f420 is T's own root tree, so every declared object is the object T carried at that path. packages/security-audit-sdk-core/scripts, src/generated and tests/types are byte-identical at main; the change packet's tree differs only because 968978e9f8089ebd72341aa588bb495c11e5e032 added the task-state reconciliation note after T and aea29819a758386f5d04a330617ae42f399cf779 relocated the directory unchanged. governedCommits names the whole lifecycle: P 34a7be2f9617c5ca3090905d4f2179c888992b1a, its newline repair a0b1c1c7682f4729f210c9356661cfc7ad5af597, T, 64af27169110a12b314aebcec19eb0b8f3e6090b (an unrelated docs/agents commit the same branch carried), M1 c8c6e9f98755f645b0ece45dc617de86d57815dc (PR #218, two parents), the reconciliation commit, the archive relocation, and M2 53874394f4f6e7e9d762e7c35f12636d7052104c (PR #225, two parents). boundCommits names T alone. Unlike ratify-contract-version-support-policy, this record does not bind the commit that registers it in the governance-history mutation suite's independent inventory. That registration belongs to a separate change, sign-fix-generated-required-context-reason, and binding it would make this record cite a commit #217 never contained. The registration is still required — the inventory is deliberately not derived from this manifest, so no record is storable until EXPECTED_RECORD_IDS and MINIMUM_REVIEWED_PATHS name it — and it ships in the same pull request as this record. R15 signed-review freshness does not order this record: verifySignedReviewFreshness runs verifyBinding only over active changes, and fix-generated-required-context-reason is archived. Its dangling-record check does run and passes, because the archive directory carries the exact objects history carried at the active change path. This record grants storing itself and closing #217 once it is reachable from main. It changes no runtime source, generated artifact, contract source, package manifest or version, dependency, collector, transport, or publication path.",
+      "reviewedCommit": "877d77f1b3fef8dcbbf292cb91c495ea3a179547",
+      "reviewedContent": {
+        "kind": "tree",
+        "candidateRoot": "be81965b9f66c61d6c07b3d6a4edf879a163f420",
+        "entries": [
+          {
+            "path": "openspec/changes/fix-generated-required-context-reason",
+            "object": "5ad6b14b449e517e837f5cfed0446351a59821db"
+          },
+          {
+            "path": "packages/security-audit-sdk-core/scripts",
+            "object": "cf49ec3bffbfc69f2a95ff8ae67ecd8874c4f64c"
+          },
+          {
+            "path": "packages/security-audit-sdk-core/src/generated",
+            "object": "5db1e274feb3e544ce3c6514cb9f006a0e9570cb"
+          },
+          {
+            "path": "packages/security-audit-sdk-core/tests/types",
+            "object": "1216c29611dc151abf2406a43bbdc39e31e99701"
+          }
+        ]
+      },
+      "governedCommits": [
+        "34a7be2f9617c5ca3090905d4f2179c888992b1a",
+        "a0b1c1c7682f4729f210c9356661cfc7ad5af597",
+        "877d77f1b3fef8dcbbf292cb91c495ea3a179547",
+        "64af27169110a12b314aebcec19eb0b8f3e6090b",
+        "c8c6e9f98755f645b0ece45dc617de86d57815dc",
+        "968978e9f8089ebd72341aa588bb495c11e5e032",
+        "aea29819a758386f5d04a330617ae42f399cf779",
+        "53874394f4f6e7e9d762e7c35f12636d7052104c"
+      ],
+      "boundCommits": [
+        "877d77f1b3fef8dcbbf292cb91c495ea3a179547"
+      ],
+      "mergeCommits": [
+        {
+          "commit": "c8c6e9f98755f645b0ece45dc617de86d57815dc",
+          "expectedParents": 2
+        },
+        {
+          "commit": "53874394f4f6e7e9d762e7c35f12636d7052104c",
+          "expectedParents": 2
+        }
+      ],
+      "authorizations": {
+        "granted": [
+          "store-governance-record-for-exact-technical-commit",
+          "close-issue-217-after-record-reaches-mainline"
+        ],
+        "withheld": [
+          "package-publication",
+          "production-deployment",
+          "production-collection",
+          "real-user-processing",
+          "framework-integration",
+          "delivery-infrastructure"
+        ]
+      },
+      "assuranceLimitations": [
+        "Project-owner/implementer governance; not independent security, privacy, legal, or technical assurance.",
+        "AI-produced analysis informed the implementation and is not review, approval, or assurance; approval is not inferred from passing tests, checked tasks, issue state, pull-request state, or merged state.",
+        "The decision followed the merge and the archive rather than gating either. Tasks 4.3 and 4.4 of the archived change made an exact-commit owner decision a precondition for both. They were not satisfied as written, they remain unchecked, and this record does not retroactively satisfy them.",
+        "R15 signed-review freshness does not scan this record: verifySignedReviewFreshness verifies bindings only for active changes, and this change is archived. No mechanical check orders the record against the commits that followed 877d77f1b3fef8dcbbf292cb91c495ea3a179547. The three reviewed implementation subtrees were measured byte-identical between that commit and main instead, which is evidence rather than an equivalent control.",
+        "Merge commit c8c6e9f98755f645b0ece45dc617de86d57815dc also carried 64af27169110a12b314aebcec19eb0b8f3e6090b, the docs/agents orchestration contract, which is outside #217's scope. It is named in governedCommits so the merge's real content stays visible, and excluded from reviewedContent so this binding does not claim it.",
+        "The owner instruction names #217. It does not separately name the inventory-registration commit that makes this record storable; that commit is governed by sign-fix-generated-required-context-reason, and confirmation of it rests on the owner's merge of the pull request carrying both."
+      ],
+      "signed": true,
+      "signatureDecision": "Owner instruction given 2026-08-30 in direct reply to a report that named #217 as the outstanding item and offered to close it: 'I authorized #217, open the PR.' Recorded verbatim rather than paraphrased. The report it answered stated that #217's work was fully landed at 877d77f1b3fef8dcbbf292cb91c495ea3a179547, merged in c8c6e9f98755f645b0ece45dc617de86d57815dc and archived by 53874394f4f6e7e9d762e7c35f12636d7052104c, and that no governance record existed for the change. Because the instruction could equally have authorized only closing the issue, the reading was put back to the owner rather than assumed; they selected storing a signed governance record binding technical commit 877d77f, together with the inventory registration that makes it storable, and closing #217 afterwards. The instruction does not authorize package publication, production deployment, production collection, real-user processing, framework integration, or delivery infrastructure. The owner retains the decision at the merge gate: nothing reaches the protected mainline without their merge of the pull request carrying both the registration and this record.",
+      "reviewer": {
+        "name": "Fernando Homem da Costa (nandohdc)",
+        "role": "Project owner and technical decision-maker",
+        "signedAt": "2026-08-30"
+      }
     }
   ]
 }
