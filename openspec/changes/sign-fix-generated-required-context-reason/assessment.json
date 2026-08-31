@@ -1,0 +1,125 @@
+{
+  "schema_version": "1.1",
+  "change_id": "sign-fix-generated-required-context-reason",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The owner decision must bind content objects that survive squash, rebase, and archive relocation, because a commit cannot record its own identifier and can be orphaned.",
+    "The stored record must cover exactly what the technical commit changed, so its reviewed scope and that commit's changed-path set are the same set.",
+    "A record cannot be stored until the independent mutation-suite inventory names it, so the registration must be a separate, explicitly reviewed edit.",
+    "The record must state what it does not establish, because the decision followed the merge and R15 freshness does not scan an archived change.",
+    "The archived change must stay untouched, so the over-scope its reconciliation note records is not disguised by a later edit."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "change-governance",
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs",
+    "packages/security-audit-sdk-core/verification-lifecycle.json",
+    "openspec/changes/sign-fix-generated-required-context-reason/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-bind-technical-commit-content",
+      "kind": "direct_implementation",
+      "summary": "Register the record id in the independent inventory, then store a signed record binding technical commit 877d77f and the four subtrees that commit changed, with the residual limitations named in the record itself.",
+      "forces_addressed": [
+        "The owner decision must bind content objects that survive squash, rebase, and archive relocation, because a commit cannot record its own identifier and can be orphaned.",
+        "The stored record must cover exactly what the technical commit changed, so its reviewed scope and that commit's changed-path set are the same set.",
+        "A record cannot be stored until the independent mutation-suite inventory names it, so the registration must be a separate, explicitly reviewed edit.",
+        "The record must state what it does not establish, because the decision followed the merge and R15 freshness does not scan an archived change."
+      ]
+    },
+    {
+      "id": "approach-bind-registration-commit",
+      "kind": "alternative",
+      "summary": "Bind the record to this change's inventory-registration commit, following the ratify-contract-version-support-policy precedent that treats the registration as part of the reviewed scope.",
+      "forces_addressed": [
+        "A record cannot be stored until the independent mutation-suite inventory names it, so the registration must be a separate, explicitly reviewed edit.",
+        "The owner decision must bind content objects that survive squash, rebase, and archive relocation, because a commit cannot record its own identifier and can be orphaned."
+      ]
+    },
+    {
+      "id": "approach-amend-archived-tasks",
+      "kind": "alternative",
+      "summary": "Check tasks 4.3 and 4.4 in the archived change and rewrite its reconciliation note to say the owner decision was obtained, instead of storing a separate record.",
+      "forces_addressed": [
+        "The record must state what it does not establish, because the decision followed the merge and R15 freshness does not scan an archived change."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-bind-technical-commit-content",
+  "rejected_alternative_ids": [
+    "approach-bind-registration-commit",
+    "approach-amend-archived-tasks"
+  ],
+  "rejection_reasons": {
+    "approach-bind-registration-commit": {
+      "forces": [
+        "The stored record must cover exactly what the technical commit changed, so its reviewed scope and that commit's changed-path set are the same set."
+      ],
+      "reason": "The precedent bound its own registration commit because that commit belonged to the change being signed. Here the registration belongs to a different change, so binding it would make the record for fix-generated-required-context-reason cite a commit that change never contained. The residual, that the owner instruction does not itself cover the registration edit, is disclosed in the record rather than resolved by widening the binding."
+    },
+    "approach-amend-archived-tasks": {
+      "forces": [
+        "The archived change must stay untouched, so the over-scope its reconciliation note records is not disguised by a later edit.",
+        "The owner decision must bind content objects that survive squash, rebase, and archive relocation, because a commit cannot record its own identifier and can be orphaned."
+      ],
+      "reason": "The archived note already argues that amending those tasks to match the outcome would disguise the defect rather than record it, and the tasks were not satisfied as written regardless of a later decision. Editing archived artifacts would also break the byte-identical relocation property that review freshness and archive movement validation both derive from."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-record-binds-technical-commit-scope",
+    "implementation-inventory-registration-precedes-record",
+    "implementation-archived-change-unmodified",
+    "implementation-limitations-stated-in-record"
+  ],
+  "invariant_evidence": {
+    "implementation-record-binds-technical-commit-scope": {
+      "task_ids": ["1.2", "2.1"],
+      "evidence_ids": [
+        "Each reviewed object equals git rev-parse 877d77f:<path> and the four paths equal the technical commit's changed-path set"
+      ]
+    },
+    "implementation-inventory-registration-precedes-record": {
+      "task_ids": ["1.1", "2.3"],
+      "evidence_ids": [
+        "G-00 fails at the inventory assertion after registration and before the record, then passes once the record is stored"
+      ]
+    },
+    "implementation-archived-change-unmodified": {
+      "task_ids": ["3.3"],
+      "evidence_ids": [
+        "git diff against main reports no change under openspec/changes/archive/2026-08-30-fix-generated-required-context-reason"
+      ]
+    },
+    "implementation-limitations-stated-in-record": {
+      "task_ids": ["2.2", "3.2"],
+      "evidence_ids": [
+        "assuranceLimitations names the post-merge decision, the inapplicable R15 scan, the out-of-scope 64af271, and the uncovered registration commit"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "53874394f4f6e7e9d762e7c35f12636d7052104c"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3"
+  ]
+}
