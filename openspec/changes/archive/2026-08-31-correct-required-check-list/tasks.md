@@ -13,4 +13,4 @@
 ## 3. Delivery
 
 - [x] 3.1 Commit the proposal artifacts and the document correction as two separate allowlisted commits, proposal first; verify the assessment precedes the earliest governed implementation commit.
-- [ ] 3.2 Open the pull request, verify every context required by branch protection reports and passes, and confirm no required check is missing rather than merely not failing; leave this task unchecked while the change is active.
+- [x] 3.2 Open the pull request, verify every context required by branch protection reports and passes, and confirm no required check is missing rather than merely not failing; leave this task unchecked while the change is active.
