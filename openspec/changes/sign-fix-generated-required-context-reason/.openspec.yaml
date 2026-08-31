@@ -1,0 +1,4 @@
+schema: spec-driven
+skip_specs: true
+created: 2026-08-30
+goal: Store the owner's signed governance record for the archived fix-generated-required-context-reason change
