@@ -16,6 +16,36 @@
 ## 4. Governed delivery and lifecycle completion
 
 - [x] 4.1 Commit the proposal artifact allowlist separately after strict OpenSpec and assessment validation; verify its parent, staged paths, and working-tree/index blob equality.
-- [ ] 4.2 Commit the verified technical allowlist separately; bind any subsequent human review and governance record to that exact final technical commit, without treating AI review, CI, issue state, or this task list as approval.
+- [x] 4.2 Commit the verified technical allowlist separately; bind any subsequent human review and governance record to that exact final technical commit, without treating AI review, CI, issue state, or this task list as approval.
 - [ ] 4.3 Open a focused #217 PR, verify its live head/path set and required checks, then obtain the required exact-commit owner/reviewer decision before any identity-preserving merge.
 - [ ] 4.4 After merge, confirm the technical and decision commits are reachable from `main`; archive the `skip_specs` change with byte-preserving relocation only when every implementation/governance task is genuinely complete, and close #217 only after archive evidence is recorded.
+
+### Why 4.3 and 4.4 remain unchecked
+
+This note records a scoping defect in tasks 4.3 and 4.4. It is not a governance record,
+it binds no reviewed content, and it authorizes nothing.
+
+No owner or reviewer disposition exists for this change. None was obtained before the
+merge, and none has been obtained since.
+
+None is required in order to land or archive it. `CONTRIBUTING.md`, under "How much
+governance a change needs", scales governance weight to what a change can actually
+affect: while every workspace a change touches is unpublished, undeployed, and processing
+no real-user data, that change needs "one signed governance record, the passing gates, and
+archive validation — and nothing else. No separate review, owner-decision,
+restriction-restatement, or revalidation task group", and owner attestation "is not
+required merely to land or archive a change". That section also conditions the path on a
+mechanically established state rather than a claimed one, and names `test:scope`,
+`test:package`, `test:dependencies`, and `test:publication-path` as what establishes it.
+This note therefore cites those gates instead of restating what they already enforce, and
+asserts no repository state of its own.
+
+This change declares no entry under `governanceRecords` in `verification-lifecycle.json`.
+`check-governance-history.mjs` verifies the bindings that are declared rather than
+requiring one per change, and the comparable `skip_specs` archive
+`2026-08-30-retire-superseded-scope-regexes` landed on the same basis.
+
+Tasks 4.3 and 4.4 made an exact-commit owner decision a precondition for merge and for
+archive. Measured against the standard above, they over-scoped this change. They are left
+unchecked with their original wording intact: they were not satisfied as written, and
+amending them to match the outcome would disguise the defect rather than record it.
