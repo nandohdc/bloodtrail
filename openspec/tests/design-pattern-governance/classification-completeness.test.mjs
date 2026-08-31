@@ -143,6 +143,22 @@ describe("R26 path classification covers the tracked repository", () => {
     assertNoDiagnostic(result, INCOMPLETE);
   });
 
+  it("classifies the tracked context-map documents the live gate rejected", () => {
+    // CONTEXT-MAP.md and openspec/CONTEXT.md reached main's PR gate unclassified
+    // once (PR #231). The fixture policy is a copy of the live one, so this
+    // passes only while the live classification keeps covering both exact paths.
+    const repository = fixture();
+    const base = repository.head();
+    repository.write("CONTEXT-MAP.md", "# Context Map\n");
+    repository.write("openspec/CONTEXT.md", "# OpenSpec Governance Context\n");
+    repository.commit("docs: add context map documents");
+
+    const result = check(repository, { base });
+    assertPasses(result);
+    assertNoDiagnostic(result, INCOMPLETE);
+    assertNoDiagnostic(result, UNCLASSIFIED);
+  });
+
   it("M-CL-E disregards untracked and ignored files", () => {
     const repository = fixture();
     const base = repository.head();

@@ -155,7 +155,9 @@
         "SECURITY.md",
         "RELEASING.md",
         "CHANGELOG.md",
+        "CONTEXT-MAP.md",
         "docs/",
+        "openspec/CONTEXT.md",
         ".hermes/plans/",
         ".release-please-manifest.json",
         "version.txt"
