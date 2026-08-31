@@ -1,7 +1,7 @@
 ## 1. Independent inventory registration
 
-- [ ] 1.1 Add `fix-generated-required-context-reason` to `EXPECTED_RECORD_IDS` in `packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs`; run `node --test tests/verification/governance-history-mutations.test.mjs` from the package root and verify G-00 fails at the inventory assertion naming that id, proving the inventory rejects a record the manifest does not yet hold.
-- [ ] 1.2 Add the `MINIMUM_REVIEWED_PATHS` entry naming `openspec/changes/fix-generated-required-context-reason`, `packages/security-audit-sdk-core/scripts`, `packages/security-audit-sdk-core/src/generated`, and `packages/security-audit-sdk-core/tests/types`; verify that set equals the changed-path set of `877d77f` by comparing it against `git show --stat --format= 877d77f`, and that no entry contains `packages/security-audit-sdk-core/verification-lifecycle.json`.
+- [x] 1.1 Add `fix-generated-required-context-reason` to `EXPECTED_RECORD_IDS` in `packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs`; run `node --test tests/verification/governance-history-mutations.test.mjs` from the package root and verify G-00 fails at the inventory assertion naming that id, proving the inventory rejects a record the manifest does not yet hold.
+- [x] 1.2 Add the `MINIMUM_REVIEWED_PATHS` entry naming `openspec/changes/fix-generated-required-context-reason`, `packages/security-audit-sdk-core/scripts`, `packages/security-audit-sdk-core/src/generated`, and `packages/security-audit-sdk-core/tests/types`; verify that set equals the changed-path set of `877d77f` by comparing it against `git show --stat --format= 877d77f`, and that no entry contains `packages/security-audit-sdk-core/verification-lifecycle.json`.
 
 ## 2. Signed governance record
 

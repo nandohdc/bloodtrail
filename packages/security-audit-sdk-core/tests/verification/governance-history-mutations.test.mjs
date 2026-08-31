@@ -48,6 +48,7 @@ const EXPECTED_RECORD_IDS = Object.freeze([
   "right-size-change-governance",
   "establish-design-pattern-governance",
   "ratify-contract-version-support-policy",
+  "fix-generated-required-context-reason",
 ]);
 const MINIMUM_REVIEWED_PATHS = Object.freeze({
   "bundle-validator-runtime-helpers": Object.freeze([
@@ -72,6 +73,15 @@ const MINIMUM_REVIEWED_PATHS = Object.freeze({
     "openspec/specs/security-audit-sdk-core",
     "packages/security-audit-sdk-core/adr",
     "packages/security-audit-sdk-core/tests/verification",
+  ]),
+  // The pre-archive change path, because that is what resolves under the
+  // candidate root the record names. The archive relocation was byte-identical,
+  // so the object here is the object the archive carries.
+  "fix-generated-required-context-reason": Object.freeze([
+    "openspec/changes/fix-generated-required-context-reason",
+    "packages/security-audit-sdk-core/scripts",
+    "packages/security-audit-sdk-core/src/generated",
+    "packages/security-audit-sdk-core/tests/types",
   ]),
 });
 
