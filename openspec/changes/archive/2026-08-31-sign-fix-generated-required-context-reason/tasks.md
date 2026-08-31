@@ -17,6 +17,6 @@
 
 ## 4. Delivery
 
-- [ ] 4.1 Commit the proposal artifacts, the inventory registration, and the signed record as three separate allowlisted commits in that order; verify each commit's staged path set matches its scope and that `npm run test:git --prefix packages/security-audit-sdk-core` reports an empty index afterwards.
-- [ ] 4.2 Open the pull request against `main`, verify its head is the record commit and its changed-path set is the three scopes above, and confirm every required check passes without treating CI, AI review, issue state, or pull-request state as approval.
-- [ ] 4.3 After an identity-preserving merge, confirm the record is reachable from `main` and close #217 citing the record commit; leave this task unchecked while the change is active.
+- [x] 4.1 Commit the proposal artifacts, the inventory registration, and the signed record as three separate allowlisted commits in that order; verify each commit's staged path set matches its scope and that `npm run test:git --prefix packages/security-audit-sdk-core` reports an empty index afterwards.
+- [x] 4.2 Open the pull request against `main`, verify its head is the record commit and its changed-path set is the three scopes above, and confirm every required check passes without treating CI, AI review, issue state, or pull-request state as approval.
+- [x] 4.3 After an identity-preserving merge, confirm the record is reachable from `main` and close #217 citing the record commit; leave this task unchecked while the change is active.
