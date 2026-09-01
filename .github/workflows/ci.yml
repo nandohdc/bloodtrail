@@ -114,6 +114,21 @@ jobs:
       - name: Baseline and candidate checkers
         run: node openspec/scripts/run-governance-dual-check.mjs --base "${{ github.event.pull_request.base.sha || github.event.before }}"
 
+      # One contract-reuse evaluation per active change, against the same
+      # reviewed base as the dual check. Each evaluation fails closed on an
+      # unattributable trigger path; unaffected changes report the
+      # distinguishable approved skip instead of a false CRA-validated pass.
+      - name: Contract reuse assessment
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          for change in $(find openspec/changes -mindepth 1 -maxdepth 1 -type d ! -name archive -exec basename {} \; | sort); do
+            node openspec/scripts/contract-reuse/check.mjs --change "$change" --base "$base"
+          done
+
+      - name: Contract reuse assessment test suite
+        run: node --test openspec/tests/contract-reuse/*.test.mjs
+
       - name: Governance test suite
         run: node --test openspec/tests/design-pattern-governance/*.test.mjs
 
