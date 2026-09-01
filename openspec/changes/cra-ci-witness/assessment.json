@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.1",
+  "change_id": "cra-ci-witness",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The live CI witness must exercise a real CRA trigger rather than infer execution from unit tests.",
+    "The witness must remain isolated under one never-merged change root so no canonical or production surface is altered.",
+    "Every governance step preceding the CRA loop must accept the carrier or the intended witness will never execute."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "governance_core_path"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-event-contract"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/cra-ci-witness/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-change-local-ci-carrier",
+      "kind": "direct_implementation",
+      "summary": "Use a complete never-merged OpenSpec change whose local security-audit contract delta triggers CRA evaluation and whose record references a resolvable canonical mechanism.",
+      "forces_addressed": [
+        "The live CI witness must exercise a real CRA trigger rather than infer execution from unit tests.",
+        "The witness must remain isolated under one never-merged change root so no canonical or production surface is altered.",
+        "Every governance step preceding the CRA loop must accept the carrier or the intended witness will never execute."
+      ]
+    },
+    {
+      "id": "approach-contract-source-carrier",
+      "kind": "alternative",
+      "summary": "Modify the authored canonical contract source to activate the CRA trigger and revert it after collecting the workflow result.",
+      "forces_addressed": [
+        "The live CI witness must exercise a real CRA trigger rather than infer execution from unit tests.",
+        "The witness must remain isolated under one never-merged change root so no canonical or production surface is altered."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-change-local-ci-carrier",
+  "rejected_alternative_ids": [
+    "approach-contract-source-carrier"
+  ],
+  "rejection_reasons": {
+    "approach-contract-source-carrier": {
+      "forces": [
+        "The witness must remain isolated under one never-merged change root so no canonical or production surface is altered."
+      ],
+      "reason": "Changing the canonical source would create unnecessary protected-path and generated-projection obligations, while the selected change-local delta exercises the same closed trigger with uniquely attributable disposable scope."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-witness-remains-change-local",
+    "implementation-cra-positive-preflight-passes"
+  ],
+  "invariant_evidence": {
+    "implementation-witness-remains-change-local": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "The committed witness path set is rooted only at openspec/changes/cra-ci-witness"
+      ]
+    },
+    "implementation-cra-positive-preflight-passes": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "Local preflight reaches CRA evaluation and reports CRA-validated pass for cra-ci-witness"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "739bcc47573009615f1171e57ca6bfd3257adfa8"
+  },
+  "verification_task_ids": [
+    "1.1"
+  ]
+}

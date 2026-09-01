@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@1.0.0",
+  "mode": "assessment",
+  "disposition": "reuse",
+  "mechanism_references": ["registries.trust_levels"],
+  "rationale": "This disposable CI witness reuses the canonical trust-level registry so the live workflow proves semantic mechanism resolution rather than merely structural record acceptance.",
+  "trust_boundary": "The witness changes only an unmerged OpenSpec delta and introduces no runtime, authority, identity, processing, collection, delivery, or storage boundary.",
+  "transformation_ownership": "No event transformation occurs; the witness author owns only the repository fixture used to exercise the existing CRA checker in pull-request CI.",
+  "alternatives": [
+    {
+      "approach": "extend",
+      "rejection_reason": "The witness introduces no contract semantics and therefore has no basis for extending the canonical registry or declaring a compatibility classification."
+    }
+  ],
+  "author": { "name": "Fernando Homem da Costa (nandohdc)", "handle": "nandohdc" },
+  "evidence_references": ["openspec/changes/cra-ci-witness/design.md"],
+  "assurance_limitations": [
+    "This never-merged fixture proves only that the existing CI path executes the CRA checker with distinguishable positive and negative outcomes."
+  ]
+}
