@@ -34,6 +34,7 @@
     "openspec/scripts/contract-reuse/",
     "openspec/tests/contract-reuse/",
     "openspec/tests/design-pattern-governance/classification-completeness.test.mjs",
+    ".github/workflows/ci.yml",
     "docs/design-pattern-governance.md"
   ],
   "candidate_approaches": [
