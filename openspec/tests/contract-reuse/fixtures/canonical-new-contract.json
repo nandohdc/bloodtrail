@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@1.0.0",
+  "mode": "assessment",
+  "disposition": "new_contract",
+  "proposed_contract_id": "client-evidence-envelope",
+  "rationale": "The change introduces an independently versioned evidence envelope whose lifecycle, producers, and consumers are deliberately separate from the security-audit event contract, so no audit-contract mechanism can carry it.",
+  "trust_boundary": "Envelope producers sit outside the audit pipeline's trust boundary and their claims never enter the audit event stream; conflating the two would let unattested client evidence inherit audit-event authority.",
+  "transformation_ownership": "Envelope transformation is owned by the producing client layer end to end; the audit contract's privacy-transformation ownership does not extend across that boundary and is not asked to.",
+  "alternatives": [
+    {
+      "approach": "reuse",
+      "rejection_reason": "No audit-event mechanism models an independent envelope lifecycle; reusing one would silently attach audit semantics and delivery claims the envelope is not designed to honour."
+    },
+    {
+      "approach": "extend",
+      "rejection_reason": "Extending the audit contract would force envelope versioning, delivery, and ownership semantics into a contract that deliberately excludes them, weakening both boundaries at once."
+    }
+  ],
+  "author": { "name": "Fernando Homem da Costa (nandohdc)", "handle": "nandohdc" },
+  "evidence_references": ["openspec/changes/contract-reuse-assessment/design.md"],
+  "assurance_limitations": [
+    "The proposed contract identifier is a declared boundary, not an authorized contract; this record does not authorize implementing, publishing, or deploying the new contract."
+  ]
+}

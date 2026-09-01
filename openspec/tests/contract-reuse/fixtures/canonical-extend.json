@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@1.0.0",
+  "mode": "assessment",
+  "disposition": "extend",
+  "mechanism_references": ["registries.trust_levels"],
+  "compatibility_classification": "minor",
+  "rationale": "The change adds one registered trust level for a newly introduced evidence class; the registry mechanism already governs such additions, so the change extends it rather than inventing a parallel vocabulary.",
+  "trust_boundary": "The added identifier is emitted only after the producer's existing attestation step, so the boundary at which trust claims enter the event stream is unchanged in location and ownership.",
+  "transformation_ownership": "The producing component keeps ownership of mapping internal evidence states onto the extended registry; no consumer-side transformation is introduced and no ownership moves across the boundary.",
+  "alternatives": [
+    {
+      "approach": "reuse",
+      "rejection_reason": "None of the registered trust levels describes the new evidence class; reusing an existing entry would mislabel the claim and mislead every downstream consumer of the registry."
+    },
+    {
+      "approach": "new_contract",
+      "rejection_reason": "The addition is one registry entry within the existing contract's semantics and version policy, not an independently versioned boundary; a separate contract would fragment the trust vocabulary."
+    }
+  ],
+  "author": { "name": "Fernando Homem da Costa (nandohdc)", "handle": "nandohdc" },
+  "evidence_references": ["openspec/changes/contract-reuse-assessment/design.md"],
+  "assurance_limitations": [
+    "The compatibility classification records the author's declared contract-semantics impact; it is not a compatibility proof and does not replace contract governance review."
+  ]
+}

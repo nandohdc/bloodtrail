@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@1.0.0",
+  "mode": "not_applicable",
+  "disposition": "reuse",
+  "mechanism_references": ["registries.trust_levels"],
+  "rationale": "This intentionally invalid fixture proves that the adapter selects no record shape for an unrecognized mode and therefore cannot silently infer an assessment form.",
+  "trust_boundary": "No boundary is asserted by this negative fixture because an unknown mode is invalid before structural evidence can be interpreted as a CRA record.",
+  "transformation_ownership": "No transformation ownership is asserted by this negative fixture because unrecognized mode values must fail before any assessment reasoning is accepted.",
+  "alternatives": [
+    {
+      "approach": "extend",
+      "rejection_reason": "This rejection text exists only to keep the fixture otherwise shaped like an assessment record while mode dispatch is the single intended invalid relation."
+    }
+  ],
+  "author": { "name": "Fernando Homem da Costa (nandohdc)", "handle": "nandohdc" },
+  "evidence_references": ["openspec/changes/contract-reuse-assessment/design.md"],
+  "assurance_limitations": [
+    "This fixture is invalid by mode only and establishes neither contract resolution nor an implementation authorization."
+  ]
+}
