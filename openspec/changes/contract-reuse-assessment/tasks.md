@@ -17,15 +17,15 @@
 ## 3. CI integration — #101
 
 - [x] 3.1 Add the documented CRA checker command to the existing `design-pattern-governance` CI job without a workflow `paths:` filter or secrets; enumerate every relevant active change root and invoke one CRA evaluation per root, failing closed for an unattributable trigger path; verify the checkout provides the merge-base history the checker needs.
-- [ ] 3.2 Verify CI with a valid CRA-triggered fixture change; confirm the job log shows the checker ran and reports a CRA-validated pass.
-- [ ] 3.3 Verify CI with a missing CRA on a trigger path; confirm the job fails with the stable missing-record diagnostic in its log.
-- [ ] 3.4 Verify CI with an unaffected change; confirm the job passes while its log shows the distinguishable approved-skip outcome rather than a false CRA-validated pass.
-- [ ] 3.5 Record whether the CRA execution remains inside the existing required governance status or creates a new status; verify any separate required-status configuration is completed by the project owner before calling that status an enforcement gate.
+- [x] 3.2 Verify CI with a valid CRA-triggered fixture change; confirm the job log shows the checker ran and reports a CRA-validated pass.
+- [x] 3.3 Verify CI with a missing CRA on a trigger path; confirm the job fails with the stable missing-record diagnostic in its log.
+- [x] 3.4 Verify CI with an unaffected change; confirm the job passes while its log shows the distinguishable approved-skip outcome rather than a false CRA-validated pass.
+- [x] 3.5 Record whether the CRA execution remains inside the existing required governance status or creates a new status; verify any separate required-status configuration is completed by the project owner before calling that status an enforcement gate.
 
 ## 4. Verification and governance
 
-- [ ] 4.1 Run `node --test openspec/tests/design-pattern-governance/*.test.mjs`, `npm run validate --prefix contracts/security-audit`, and `npm run check:generated --prefix packages/security-audit-sdk-core` before the full SDK validation chain; verify the index is empty before the read-only candidate verification pass.
-- [ ] 4.2 Run `openspec validate --strict contract-reuse-assessment` and a semantic verification of every CRA requirement, scenario, task, diagnostic, trigger prefix, and artifact boundary; verify the implementation has not modified the frozen contract, generated projections, unrelated design-pattern-governance artifacts, or production-scope surfaces.
+- [x] 4.1 Run `node --test openspec/tests/design-pattern-governance/*.test.mjs`, `npm run validate --prefix contracts/security-audit`, and `npm run check:generated --prefix packages/security-audit-sdk-core` before the full SDK validation chain; verify the index is empty before the read-only candidate verification pass.
+- [x] 4.2 Run `openspec validate --strict contract-reuse-assessment` and a semantic verification of every CRA requirement, scenario, task, diagnostic, trigger prefix, and artifact boundary; verify the implementation has not modified the frozen contract, generated projections, unrelated design-pattern-governance artifacts, or production-scope surfaces.
 - [ ] 4.3 Prepare an exact-commit technical review packet and obtain an explicit review/owner decision bound to the reviewed content object; verify that author-written CRA records are not represented as review, approval, or assurance.
 - [ ] 4.4 Complete the lifecycle-status sweep and live PR/CI verification; verify the exact reviewed commit remains the PR head, all required CI checks have passed, and no required check is bypassed or failing before merge readiness is reported.
 
