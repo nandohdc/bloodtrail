@@ -43,24 +43,39 @@ export function loadCraSchema(repositoryRoot, sink) {
   const schema = loadSchema(repositoryRoot, CRA_SCHEMA_PATH, sink);
   if (schema === null) return null;
   const records = schema.records ?? {};
-  for (const name of ["assessment", "exemption"]) {
-    if (!Object.hasOwn(records, name)) {
-      sink.fail("schema-incomplete", CRA_SCHEMA_PATH, `CRA schema lacks the ${name} record shape`);
-      return null;
-    }
-  }
-  for (const name of Object.keys(records)) {
-    if (name === "assessment" || name === "exemption") continue;
-    sink.fail("schema-incomplete", CRA_SCHEMA_PATH,
-      `CRA schema declares unexpected record shape ${name}; the dialect defines exactly assessment and exemption`);
-    return null;
-  }
-  if ((records.exemption.rules ?? []).length !== 0) {
-    sink.fail("schema-incomplete", CRA_SCHEMA_PATH,
-      "the exemption record shape must declare an empty relation set; its closed field table fully expresses its form");
-    return null;
-  }
+  if (!hasRequiredCraRecordShapes(records, sink)) return null;
+  if (!hasOnlyCraRecordShapes(records, sink)) return null;
+  if (!hasEmptyCraExemptionRules(records, sink)) return null;
   return schema;
+}
+
+function hasRequiredCraRecordShapes(records, sink) {
+  return ["assessment", "exemption"].every((name) => hasCraRecordShape(records, name, sink));
+}
+
+function hasCraRecordShape(records, name, sink) {
+  if (Object.hasOwn(records, name)) return true;
+  sink.fail("schema-incomplete", CRA_SCHEMA_PATH, `CRA schema lacks the ${name} record shape`);
+  return false;
+}
+
+function hasOnlyCraRecordShapes(records, sink) {
+  const unexpected = Object.keys(records).find((name) => !isCraRecordShapeName(name));
+  if (unexpected === undefined) return true;
+  sink.fail("schema-incomplete", CRA_SCHEMA_PATH,
+    `CRA schema declares unexpected record shape ${unexpected}; the dialect defines exactly assessment and exemption`);
+  return false;
+}
+
+function isCraRecordShapeName(name) {
+  return name === "assessment" || name === "exemption";
+}
+
+function hasEmptyCraExemptionRules(records, sink) {
+  if ((records.exemption.rules ?? []).length === 0) return true;
+  sink.fail("schema-incomplete", CRA_SCHEMA_PATH,
+    "the exemption record shape must declare an empty relation set; its closed field table fully expresses its form");
+  return false;
 }
 
 /**
@@ -111,18 +126,33 @@ export function checkCraRecord(repositoryRoot, document, { documentPath = "contr
  */
 function applyCraAssessmentRules(record, definition, { documentPath, sink }) {
   const declared = (definition.rules ?? []).map((rule) => rule.id);
+  applyDeclaredCraAssessmentRules(declared, record, documentPath, sink);
+  reportUndeclaredCraAssessmentRules(declared, documentPath, sink);
+}
+
+function applyDeclaredCraAssessmentRules(declared, record, documentPath, sink) {
   for (const id of declared) {
-    const rule = CRA_ASSESSMENT_RULES[id];
-    if (rule === undefined) {
-      sink.fail("rule-unimplemented", documentPath, `schema declares rule ${id} which the CRA adapter does not implement`);
-      continue;
-    }
-    rule(record, documentPath, sink);
+    applyDeclaredCraAssessmentRule(id, record, documentPath, sink);
   }
-  for (const id of Object.keys(CRA_ASSESSMENT_RULES)) {
-    if (declared.includes(id)) continue;
+}
+
+function applyDeclaredCraAssessmentRule(id, record, documentPath, sink) {
+  const rule = CRA_ASSESSMENT_RULES[id];
+  if (rule === undefined) {
+    sink.fail("rule-unimplemented", documentPath, `schema declares rule ${id} which the CRA adapter does not implement`);
+    return;
+  }
+  rule(record, documentPath, sink);
+}
+
+function reportUndeclaredCraAssessmentRules(declared, documentPath, sink) {
+  for (const id of undeclaredCraAssessmentRuleIds(declared)) {
     sink.fail("rule-undeclared", documentPath, `the CRA adapter implements rule ${id} which the schema does not declare`);
   }
+}
+
+function undeclaredCraAssessmentRuleIds(declared) {
+  return Object.keys(CRA_ASSESSMENT_RULES).filter((id) => !declared.includes(id));
 }
 
 /**
@@ -203,26 +233,49 @@ const CRA_ASSESSMENT_RULES = Object.freeze({
   "cra-alternatives-rejected-and-unique"(record, documentPath, sink) {
     const alternatives = record.alternatives;
     if (!Array.isArray(alternatives)) return; // the field table reports the type failure
-    const approaches = [];
-    for (const entry of alternatives) {
-      if (!isRecord(entry) || typeof entry.approach !== "string") continue; // the field table reports it
-      approaches.push(entry.approach);
-    }
-    if (typeof record.disposition === "string" && ASSESSMENT_DISPOSITIONS.includes(record.disposition)
-      && approaches.includes(record.disposition)) {
-      sink.fail("cra-alternative-selected", documentPath,
-        `alternatives must not contain the selected disposition ${JSON.stringify(record.disposition)}`);
-    }
-    const seen = new Set();
-    for (const approach of approaches) {
-      if (seen.has(approach)) {
-        sink.fail("cra-alternative-duplicate", documentPath,
-          `alternatives must be unique; approach ${describeApproach(approach)} is repeated`);
-      }
-      seen.add(approach);
-    }
+    const approaches = collectAlternativeApproaches(alternatives);
+    reportSelectedAlternative(approaches, record.disposition, documentPath, sink);
+    reportRepeatedAlternatives(approaches, documentPath, sink);
   },
 });
+
+function collectAlternativeApproaches(alternatives) {
+  return alternatives.map(alternativeApproach).filter((approach) => approach !== undefined);
+}
+
+function alternativeApproach(entry) {
+  if (!isRecord(entry)) return undefined;
+  if (typeof entry.approach !== "string") return undefined;
+  return entry.approach;
+}
+
+function reportSelectedAlternative(approaches, disposition, documentPath, sink) {
+  if (!isAssessmentDisposition(disposition)) return;
+  if (!approaches.includes(disposition)) return;
+  sink.fail("cra-alternative-selected", documentPath,
+    `alternatives must not contain the selected disposition ${JSON.stringify(disposition)}`);
+}
+
+function isAssessmentDisposition(value) {
+  if (typeof value !== "string") return false;
+  return ASSESSMENT_DISPOSITIONS.includes(value);
+}
+
+function reportRepeatedAlternatives(approaches, documentPath, sink) {
+  for (const approach of repeatedAlternativeApproaches(approaches)) {
+    sink.fail("cra-alternative-duplicate", documentPath,
+      `alternatives must be unique; approach ${describeApproach(approach)} is repeated`);
+  }
+}
+
+function repeatedAlternativeApproaches(approaches) {
+  const seen = new Set();
+  return approaches.filter((approach) => {
+    const repeated = seen.has(approach);
+    seen.add(approach);
+    return repeated;
+  });
+}
 
 export const craAssessmentRuleIds = Object.freeze(Object.keys(CRA_ASSESSMENT_RULES).sort());
 
