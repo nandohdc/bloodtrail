@@ -35,7 +35,9 @@
     "openspec/tests/contract-reuse/",
     "openspec/tests/design-pattern-governance/classification-completeness.test.mjs",
     ".github/workflows/ci.yml",
-    "docs/design-pattern-governance.md"
+    "docs/design-pattern-governance.md",
+    "packages/security-audit-sdk-core/tests/verification/governance-history-mutations.test.mjs",
+    "packages/security-audit-sdk-core/verification-lifecycle.json"
   ],
   "candidate_approaches": [
     {

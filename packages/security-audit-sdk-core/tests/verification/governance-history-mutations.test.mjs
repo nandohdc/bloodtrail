@@ -49,6 +49,7 @@ const EXPECTED_RECORD_IDS = Object.freeze([
   "establish-design-pattern-governance",
   "ratify-contract-version-support-policy",
   "fix-generated-required-context-reason",
+  "contract-reuse-assessment",
 ]);
 const MINIMUM_REVIEWED_PATHS = Object.freeze({
   "bundle-validator-runtime-helpers": Object.freeze([
@@ -82,6 +83,15 @@ const MINIMUM_REVIEWED_PATHS = Object.freeze({
     "packages/security-audit-sdk-core/scripts",
     "packages/security-audit-sdk-core/src/generated",
     "packages/security-audit-sdk-core/tests/types",
+  ]),
+  // Signed while the change is still active: the entry names the live change
+  // path, and R15 freshness orders every post-signing commit until the archive.
+  "contract-reuse-assessment": Object.freeze([
+    "openspec/changes/contract-reuse-assessment",
+    "openspec/scripts/contract-reuse",
+    "openspec/tests/contract-reuse",
+    ".github/workflows",
+    "packages/security-audit-sdk-core/tests/verification",
   ]),
 });
 

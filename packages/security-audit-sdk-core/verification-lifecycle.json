@@ -773,6 +773,108 @@
         "role": "Project owner and technical decision-maker",
         "signedAt": "2026-08-30"
       }
+    },
+    {
+      "change": "contract-reuse-assessment",
+      "policy": "Post-merge first-signing recovery for the contract reuse assessment change. The implementation reached main through PR #233 as merge 739bcc47573009615f1171e57ca6bfd3257adfa8 (identity-preserving: second parent b0ccbdb88c892790ba0e94cdcff69cf6731ed036, merge tree equals head tree) before any exact-commit decision existed. This record stores the owner's signed decision bound to technical commit T2 286aba802186a88aef182997211318a51b514a35, the inventory-registration commit that makes the record storable; the record commit S2 is its direct child and changes nothing else. candidateRoot 249350c5a328e85a3e6295dae9743f4ce3517aec is T2's own root tree. reviewedContent binds the seven subtrees carrying the change's normative content at T2. governedCommits names the whole lifecycle through T2: proposal commits 81d0fe1fea80342b4b63e94f9d16547cc7c97c10 and f697ccc30edb75b98d0b09bfae91ebb359cf8f69 and merge 6b04d56fe417fe864d5cd098c39f306b66d517b8 (PR #231); schema commits fa30bb9fef08dbe421217669b6b9a0875e300fb3 and 966f76246c542e6c99f66ff41a00329cf592cf11 and merge 67882a1c34bd4348e11b0e6aaa3c507d5a896442 (PR #232); checker and CI commits 8c28a6e2dd881a1f8cca94bb2edfd49881d5c70c, 8b8ccad6042987508d51f3b2ae2d3cc5312f28ef, 7afddf3b4d85ac3b9238cf77606970f69c667342, and b0ccbdb88c892790ba0e94cdcff69cf6731ed036 and merge 739bcc47573009615f1171e57ca6bfd3257adfa8 (PR #233); and T2. S2 and the future recovery merge are not named here: a record cannot name the commit that stores it, and the merge did not exist when the record was written; Git history identifies both. boundCommits names T2 alone. Unlike the archived fix-generated-required-context-reason precedent, this change is still active, so R15 signed-review freshness orders this record: only commits whose complete changed-path set is governance-record-only may follow T2 until the archive, the canonical fold requires its own governed cycle with a fresh exact-commit decision, and the archive is a separate byte-identical relocation.",
+      "reviewedCommit": "286aba802186a88aef182997211318a51b514a35",
+      "reviewedContent": {
+        "kind": "tree",
+        "candidateRoot": "249350c5a328e85a3e6295dae9743f4ce3517aec",
+        "entries": [
+          {
+            "path": "openspec/changes/contract-reuse-assessment",
+            "object": "a987f5a84a49505ad096e43db09b20364bf7e744"
+          },
+          {
+            "path": "openspec/scripts/contract-reuse",
+            "object": "17507f5776574bc6facec7a0e236974a2f3db41c"
+          },
+          {
+            "path": "openspec/tests/contract-reuse",
+            "object": "3b3f37428fda0e41962200aef4acd2aa403ec945"
+          },
+          {
+            "path": "openspec/governance",
+            "object": "7813dc1ec280b30788896782099316252ae65f92"
+          },
+          {
+            "path": "openspec/tests/design-pattern-governance",
+            "object": "38c1df31f1107c03a3c08291697475075cbb329e"
+          },
+          {
+            "path": ".github/workflows",
+            "object": "12500d9e0b00eab5d3b2e887e4eb76667a2d29b1"
+          },
+          {
+            "path": "packages/security-audit-sdk-core/tests/verification",
+            "object": "39fad38b1d75449d9dacf9b9c1db41a1b73f83db"
+          }
+        ]
+      },
+      "governedCommits": [
+        "81d0fe1fea80342b4b63e94f9d16547cc7c97c10",
+        "f697ccc30edb75b98d0b09bfae91ebb359cf8f69",
+        "6b04d56fe417fe864d5cd098c39f306b66d517b8",
+        "fa30bb9fef08dbe421217669b6b9a0875e300fb3",
+        "966f76246c542e6c99f66ff41a00329cf592cf11",
+        "67882a1c34bd4348e11b0e6aaa3c507d5a896442",
+        "8c28a6e2dd881a1f8cca94bb2edfd49881d5c70c",
+        "8b8ccad6042987508d51f3b2ae2d3cc5312f28ef",
+        "7afddf3b4d85ac3b9238cf77606970f69c667342",
+        "b0ccbdb88c892790ba0e94cdcff69cf6731ed036",
+        "739bcc47573009615f1171e57ca6bfd3257adfa8",
+        "286aba802186a88aef182997211318a51b514a35"
+      ],
+      "boundCommits": [
+        "286aba802186a88aef182997211318a51b514a35"
+      ],
+      "mergeCommits": [
+        {
+          "commit": "6b04d56fe417fe864d5cd098c39f306b66d517b8",
+          "expectedParents": 2
+        },
+        {
+          "commit": "67882a1c34bd4348e11b0e6aaa3c507d5a896442",
+          "expectedParents": 2
+        },
+        {
+          "commit": "739bcc47573009615f1171e57ca6bfd3257adfa8",
+          "expectedParents": 2
+        }
+      ],
+      "authorizations": {
+        "granted": [
+          "store-governance-record-for-exact-technical-commit",
+          "identity-preserving-recovery-merge",
+          "corrected-three-pr-fold-and-archive-geometry",
+          "close-issues-100-and-101-only-after-archive-merge"
+        ],
+        "withheld": [
+          "package-publication",
+          "production-deployment",
+          "production-collection",
+          "real-user-processing",
+          "framework-integration",
+          "delivery-infrastructure"
+        ]
+      },
+      "assuranceLimitations": [
+        "Project-owner/implementer governance; not independent security, privacy, legal, or technical assurance.",
+        "AI-produced analysis informed the implementation and is not review, approval, or assurance; approval is not inferred from passing tests, checked tasks, issue state, pull-request state, or merged state.",
+        "This is a post-merge signing: the CRA implementation itself reached main in PR #233's merge 739bcc47573009615f1171e57ca6bfd3257adfa8 before any exact-commit decision existed. The decision followed that merge rather than gating it. Tasks 4.3 and 4.4 of the active change were not satisfied as written at that merge, they remain unchecked, and this record does not retroactively satisfy them.",
+        "Author-written CRA records are not review, approval, or assurance, and approval is not inferred from passing tests, checked tasks, issue state, pull-request state, or merged state.",
+        "Unlike the archived fix-generated-required-context-reason precedent, R15 signed-review freshness DOES order this record because the change is active: any commit after T2 whose changed paths touch normative content outside the governance-record-only allowlist stales the signed review. Only record-only commits may therefore follow T2 until the archive. The canonical fold requires its own governed cycle with a fresh technical commit, a fresh exact-commit decision, and a superseding signed record; the archive must be a separate byte-identical relocation. The fold PR's content is not authorized by this record's decision.",
+        "The two CI witnesses were produced on the never-merged witness PR #234: the green run https://github.com/nandohdc/bloodtrail/actions/runs/33545845849 (job 99983009835) printed 'contract reuse assessment approved skip for contract-reuse-assessment' and 'contract reuse assessment CRA-validated pass for cra-ci-witness'; the missing-record run https://github.com/nandohdc/bloodtrail/actions/runs/33547296291 (job 99987861966) failed with '[cra-record-missing] openspec/changes/cra-ci-witness/contract-reuse.json: a CRA-triggered change requires a contract-reuse.json record'. Task 3.4's approved-skip evidence is PR #233's own governance run https://github.com/nandohdc/bloodtrail/actions/runs/33528078164 (job 99923929768). Task 3.5's evidence is the branch-protection configuration: design-pattern-governance is one of the nine required contexts and the CRA loop runs inside that job (.github/workflows/ci.yml). Nothing from the witness PR reached main.",
+        "governedCommits cannot name S2, the commit that stores this record, because a commit cannot embed its own identifier; the recovery merge is likewise unnamed because it did not exist when this record was written. Git history identifies both."
+      ],
+      "signed": true,
+      "signatureDecision": "Owner instruction given 2026-09-01 in direct reply to the recovery readiness report, recorded verbatim: 'I approve, bound to exact technical commit 286aba802186a88aef182997211318a51b514a35 (tree 249350c5a328e85a3e6295dae9743f4ce3517aec, parent 739bcc4). Granted: write the signed governance record as a direct child of that commit, and merge the recovery PR whose head is that record commit, identity-preserving. I am aware the CRA implementation itself reached main in PR #233 before any exact-commit decision existed — this is a post-merge signing and the record must state that in assuranceLimitations; 4.3 and 4.4 stay unchecked. I authorize the corrected three-PR geometry as the plan but not the fold's content: bring me a fresh exact-commit packet for the fold PR and its superseding record before merging it. Closing #100 and #101 is authorized only after the archive PR merges. Withheld: package publication, production deployment, production collection, real-user processing, framework integration, delivery infrastructure.' The instruction names exact T2 and authorizes the record commit and the identity-preserving merge of the recovery PR whose head is that record commit. The fold PR's content is not authorized; it requires a fresh exact-commit decision bound to the fold's technical commit. Issue closure for #100 and #101 is authorized only after the archive PR merges. The instruction does not authorize package publication, production deployment, production collection, real-user processing, framework integration, or delivery infrastructure.",
+      "reviewer": {
+        "name": "Fernando Homem da Costa (nandohdc)",
+        "role": "Project owner and technical decision-maker",
+        "signedAt": "2026-09-01"
+      }
     }
   ]
 }
