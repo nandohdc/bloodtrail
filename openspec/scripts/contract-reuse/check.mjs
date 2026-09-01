@@ -69,7 +69,7 @@ function run(opts, sink) {
   const selectedChange = selectActiveChange(repositoryRoot, opts.change, sink);
   if (selectedChange === null) return summary({ repositoryRoot, selectedChange: null });
 
-  const range = resolveRange(repositoryRoot, selectedChange, opts.base, sink);
+  const range = resolveRange(repositoryRoot, opts.base, sink);
   if (range === null) return summary({ repositoryRoot, selectedChange });
 
   const context = { repositoryRoot, selectedChange, range, triggeringPaths: [], sink };
@@ -84,7 +84,7 @@ function run(opts, sink) {
 }
 
 /** The complete-history, base, head, and range stages of the pipeline. */
-function resolveRange(repositoryRoot, selectedChange, baseOption, sink) {
+function resolveRange(repositoryRoot, baseOption, sink) {
   if (!historyIsComplete(repositoryRoot)) {
     sink.fail("cra-range-unavailable", ".",
       "the CRA checker requires complete local Git history to establish its merge-base range");
