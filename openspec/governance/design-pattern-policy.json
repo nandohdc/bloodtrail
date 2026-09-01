@@ -118,6 +118,7 @@
         "openspec/scripts/",
         "openspec/governance/",
         "openspec/tests/design-pattern-governance/",
+        "openspec/tests/contract-reuse/",
         "docs/design-pattern-governance.md",
         ".github/workflows/",
         ".github/PULL_REQUEST_TEMPLATE.md",

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@1.0.0",
+  "mode": "assessment",
+  "disposition": "reuse",
+  "mechanism_references": ["registries.trust_levels"],
+  "rationale": "This intentionally invalid fixture selects reuse while also listing reuse as a rejected alternative, proving the adapter rejects contradictory assessment reasoning.",
+  "trust_boundary": "The canonical registry trust boundary is retained only so the selected-and-rejected alternative relation is the fixture's sole invalid relationship.",
+  "transformation_ownership": "The producing component retains mapping ownership in the otherwise valid form; this fixture fails only because it contradicts its selected disposition.",
+  "alternatives": [
+    {
+      "approach": "reuse",
+      "rejection_reason": "This intentionally contradictory alternative proves that a selected disposition cannot be represented as a rejected alternative in the same CRA record."
+    }
+  ],
+  "author": { "name": "Fernando Homem da Costa (nandohdc)", "handle": "nandohdc" },
+  "evidence_references": ["openspec/changes/contract-reuse-assessment/design.md"],
+  "assurance_limitations": [
+    "This fixture proves only the structural alternative diagnostic and does not establish an approved contract reuse outcome."
+  ]
+}

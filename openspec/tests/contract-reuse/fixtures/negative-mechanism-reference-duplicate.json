@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@1.0.0",
+  "mode": "assessment",
+  "disposition": "reuse",
+  "mechanism_references": ["registries.trust_levels", "registries.trust_levels"],
+  "rationale": "This intentionally invalid fixture repeats one otherwise safe mechanism reference, proving that repeated evidence is rejected rather than accepted as an unreviewable redundant set.",
+  "trust_boundary": "The fixture makes no new authority claim; it preserves the canonical reuse boundary only so duplicate mechanism evidence is the sole invalid relationship.",
+  "transformation_ownership": "The producing component would retain transformation ownership in a valid record, but this fixture is structurally invalid because the reference set repeats an entry.",
+  "alternatives": [
+    {
+      "approach": "extend",
+      "rejection_reason": "This rejection text keeps the fixture otherwise valid while the duplicate mechanism reference remains the single intentionally invalid relation."
+    }
+  ],
+  "author": { "name": "Fernando Homem da Costa (nandohdc)", "handle": "nandohdc" },
+  "evidence_references": ["openspec/changes/contract-reuse-assessment/design.md"],
+  "assurance_limitations": [
+    "This fixture proves only the structural duplicate diagnostic and does not resolve any contract mechanism reference."
+  ]
+}

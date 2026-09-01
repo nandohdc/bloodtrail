@@ -30,7 +30,11 @@
     "openspec/changes/contract-reuse-assessment/specs/contract-reuse-assessment/spec.md",
     "openspec/changes/contract-reuse-assessment/tasks.md",
     "openspec/governance/design-pattern-policy.json",
-    "openspec/tests/design-pattern-governance/classification-completeness.test.mjs"
+    "openspec/governance/schemas/contract-reuse.schema.json",
+    "openspec/scripts/contract-reuse/",
+    "openspec/tests/contract-reuse/",
+    "openspec/tests/design-pattern-governance/classification-completeness.test.mjs",
+    "docs/design-pattern-governance.md"
   ],
   "candidate_approaches": [
     {

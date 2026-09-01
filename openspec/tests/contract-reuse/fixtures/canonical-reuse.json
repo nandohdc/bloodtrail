@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@1.0.0",
+  "mode": "assessment",
+  "disposition": "reuse",
+  "mechanism_references": ["registries.trust_levels"],
+  "rationale": "The change emits audit events whose trust-level vocabulary is already defined by the contract's trust-level registry, so it reuses that registry instead of declaring a parallel enumeration.",
+  "trust_boundary": "Events crossing the process boundary carry only registered trust-level identifiers; no new authority or identity claim is introduced beyond the registry's existing semantics.",
+  "transformation_ownership": "The producing component remains responsible for mapping internal states to registered trust levels before emission; the contract's privacy-transformation ownership is unchanged.",
+  "alternatives": [
+    {
+      "approach": "extend",
+      "rejection_reason": "No new trust level or structural change is required; extending the registry would add a compatibility classification and review burden without changing the semantics this change relies on."
+    }
+  ],
+  "author": { "name": "Fernando Homem da Costa (nandohdc)", "handle": "nandohdc" },
+  "evidence_references": ["openspec/changes/contract-reuse-assessment/design.md"],
+  "assurance_limitations": [
+    "Structural acceptance does not prove the referenced mechanism resolves against the canonical contract source; resolution remains checker-phase work."
+  ]
+}

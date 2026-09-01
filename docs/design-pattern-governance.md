@@ -191,7 +191,13 @@ clock**.
 node openspec/scripts/check-design-pattern-governance.mjs --phase final
 node openspec/scripts/run-governance-dual-check.mjs        # governance-core changes
 node --test openspec/tests/design-pattern-governance/*.test.mjs
+node --test openspec/tests/contract-reuse/*.test.mjs       # CRA structural schema and adapter
 ```
 
 The checker is read-only, dependency-free, and deterministic: identical committed bytes, history, and
 arguments produce identical classification and diagnostics.
+
+The CRA suite validates only the closed author-written record shapes and the
+CRA-local structural relations. It does not resolve contract mechanism references,
+inspect Git history, or validate external governance evidence; those are later
+CRA checker responsibilities.
