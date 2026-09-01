@@ -59,99 +59,85 @@ const report = run(options, sink);
 emit({ ...report, failures: sink.failures, warnings: sink.warnings, truncated: sink.truncated }, sink, options);
 process.exit(sink.ok ? 0 : 1);
 
+/**
+ * The evaluation pipeline. Each stage is one named step with a single early
+ * return, so a failure in any stage is a distinguishable rejected outcome
+ * rather than a partial pass.
+ */
 function run(opts, sink) {
   const repositoryRoot = opts.repoRoot ?? discoverRepositoryRoot();
   const selectedChange = selectActiveChange(repositoryRoot, opts.change, sink);
   if (selectedChange === null) return summary({ repositoryRoot, selectedChange: null });
 
-  if (!historyIsComplete(repositoryRoot)) {
-    sink.fail("cra-range-unavailable", ".", "the CRA checker requires complete local Git history to establish its merge-base range");
-    return summary({ repositoryRoot, selectedChange });
-  }
+  const range = resolveRange(repositoryRoot, selectedChange, opts.base, sink);
+  if (range === null) return summary({ repositoryRoot, selectedChange });
 
-  const base = resolveBase(opts.base, repositoryRoot, sink);
-  const head = resolveCommit("HEAD", repositoryRoot);
-  if (base === null || head === null) {
+  const triggeringPaths = range.range.paths.filter((path) => isTriggerPath(path, selectedChange));
+  if (triggeringPaths.length === 0) return skipSummary(repositoryRoot, selectedChange, range);
+
+  if (!attributedToSelectedChange(triggeringPaths, range.range.paths, repositoryRoot, selectedChange, sink)) {
+    return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
+  }
+  return evaluateRecord(repositoryRoot, selectedChange, range, triggeringPaths, sink);
+}
+
+/** The complete-history, base, head, and range stages of the pipeline. */
+function resolveRange(repositoryRoot, selectedChange, baseOption, sink) {
+  if (!historyIsComplete(repositoryRoot)) {
+    sink.fail("cra-range-unavailable", ".",
+      "the CRA checker requires complete local Git history to establish its merge-base range");
+    return null;
+  }
+  const base = resolveBase(baseOption, repositoryRoot, sink);
+  if (base === null) {
     sink.fail("cra-range-unavailable", ".", "the selected change range cannot be resolved from complete local Git history");
-    return summary({ repositoryRoot, selectedChange, base, head });
+    return null;
+  }
+  const head = resolveCommit("HEAD", repositoryRoot);
+  if (head === null) {
+    sink.fail("cra-range-unavailable", ".", "the selected change range cannot be resolved from complete local Git history");
+    return null;
   }
   if (!isAncestor(base, head, repositoryRoot)) {
     sink.fail("cra-range-unavailable", ".", "the CRA range base is not an ancestor of the evaluated change head");
-    return summary({ repositoryRoot, selectedChange, base, head });
+    return null;
   }
-
   const range = collectRangePaths(base, head, repositoryRoot, sink);
   if (range === null) {
     sink.fail("cra-range-unavailable", ".", "the selected change range cannot be enumerated");
-    return summary({ repositoryRoot, selectedChange, base, head });
+    return null;
   }
+  return { base, head, range };
+}
 
-  const triggeringPaths = range.paths.filter((path) => isTriggerPath(path, selectedChange));
-  if (triggeringPaths.length === 0) {
-    return summary({
-      repositoryRoot,
-      selectedChange,
-      base,
-      head,
-      range,
-      triggeringPaths,
-      outcome: "approved-skip",
-    });
-  }
-
+/** Fail-closed attribution of every triggering path to exactly the selected change. */
+function attributedToSelectedChange(triggeringPaths, rangePaths, repositoryRoot, selectedChange, sink) {
   const changes = collectOpenSpecChanges(
-    range.paths,
+    rangePaths,
     (changeId) => readAssessment(repositoryRoot, changeId),
     activeChangeIds(repositoryRoot),
   );
-  if (!attributesEveryTrigger(triggeringPaths, changes, selectedChange, sink)) {
-    return summary({ repositoryRoot, selectedChange, base, head, range, triggeringPaths, outcome: "rejected" });
-  }
+  return attributesEveryTrigger(triggeringPaths, changes, selectedChange, sink);
+}
 
+/** Record loading, identity, structural, and mode stages of the pipeline. */
+function evaluateRecord(repositoryRoot, selectedChange, range, triggeringPaths, sink) {
   const recordPath = changeRecordPath(selectedChange);
   const record = readCraRecord(repositoryRoot, recordPath, sink);
-  if (record === null) {
-    return summary({ repositoryRoot, selectedChange, base, head, range, triggeringPaths, outcome: "rejected" });
-  }
-
+  if (record === null) return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
   if (!hasSupportedContract(record, recordPath, sink)) {
-    return summary({ repositoryRoot, selectedChange, base, head, range, triggeringPaths, outcome: "rejected" });
+    return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
   }
-
-  const structuralStart = sink.count;
-  const schema = loadCraSchema(repositoryRoot, sink);
-  if (schema !== null) validateCraRecord(schema, record, { documentPath: recordPath, sink });
-  if (sink.count !== structuralStart) {
-    sink.fail("cra-record-invalid", recordPath,
-      "the required Contract Reuse Assessment does not satisfy its closed structural record shape");
-    if (record.mode === "exemption") {
-      sink.fail("cra-exemption-unauthorized", recordPath,
-        "an exemption must first satisfy the closed exemption record shape before external evidence can be recognized");
-    }
-    return summary({ repositoryRoot, selectedChange, base, head, range, triggeringPaths, outcome: "rejected" });
+  if (!isStructurallyValid(record, recordPath, repositoryRoot, sink)) {
+    return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
   }
-
-  if (record.mode === "assessment") {
-    if (!resolveAssessmentReferences(record, repositoryRoot, recordPath, sink)) {
-      return summary({ repositoryRoot, selectedChange, base, head, range, triggeringPaths, outcome: "rejected" });
-    }
-    return summary({ repositoryRoot, selectedChange, base, head, range, triggeringPaths, outcome: "cra-validated" });
-  }
-
-  if (record.mode === "exemption") {
-    if (!validateExemption(record, { repositoryRoot, selectedChange, recordPath, head, sink })) {
-      return summary({ repositoryRoot, selectedChange, base, head, range, triggeringPaths, outcome: "rejected" });
-    }
-    return summary({ repositoryRoot, selectedChange, base, head, range, triggeringPaths, outcome: "approved-exemption" });
-  }
-
-  sink.fail("cra-record-invalid", recordPath, "the required Contract Reuse Assessment selects no supported record mode");
-  return summary({ repositoryRoot, selectedChange, base, head, range, triggeringPaths, outcome: "rejected" });
+  return evaluateMode(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink);
 }
 
 function selectActiveChange(repositoryRoot, change, sink) {
-  if (typeof change !== "string" || !CHANGE_ID.test(change)) {
-    sink.fail("cra-change-invalid", "--change", "a CRA evaluation requires one safe selected active OpenSpec change id");
+  if (!isValidChangeId(change)) {
+    sink.fail("cra-change-invalid", "--change",
+      "a CRA evaluation requires one safe selected active OpenSpec change id");
     return null;
   }
   if (!activeChangeIds(repositoryRoot).includes(change)) {
@@ -162,18 +148,32 @@ function selectActiveChange(repositoryRoot, change, sink) {
   return change;
 }
 
+function isValidChangeId(change) {
+  if (typeof change !== "string") return false;
+  return CHANGE_ID.test(change);
+}
+
 function resolveBase(requestedBase, cwd, sink) {
-  if (requestedBase) {
-    if (typeof requestedBase !== "string" || requestedBase.length === 0 || requestedBase.length > 1000
-      || requestedBase.startsWith("-")) {
-      sink.fail("cra-range-unavailable", ".", "the supplied CRA range base must be one safe Git revision string");
-      return null;
-    }
-    const resolved = resolveCommit(requestedBase, cwd);
-    if (resolved !== null) return resolved;
-    sink.fail("cra-range-unavailable", ".", "the supplied CRA range base does not resolve to a commit");
+  if (!requestedBase) return defaultBase(cwd, sink);
+  if (!isSafeRevision(requestedBase)) {
+    sink.fail("cra-range-unavailable", ".", "the supplied CRA range base must be one safe Git revision string");
     return null;
   }
+  const resolved = resolveCommit(requestedBase, cwd);
+  if (resolved !== null) return resolved;
+  sink.fail("cra-range-unavailable", ".", "the supplied CRA range base does not resolve to a commit");
+  return null;
+}
+
+function isSafeRevision(value) {
+  if (typeof value !== "string") return false;
+  if (value.length === 0) return false;
+  if (value.length > 1000) return false;
+  if (value.startsWith("-")) return false;
+  return true;
+}
+
+function defaultBase(cwd, sink) {
   for (const mainline of ["refs/remotes/origin/main", "refs/heads/main"]) {
     const result = tryGit(["merge-base", mainline, "HEAD"], { cwd });
     if (result.ok) return result.value.trim();
@@ -212,11 +212,16 @@ function attributesEveryTrigger(triggeringPaths, changes, selectedChange, sink) 
   let attributed = true;
   for (const path of triggeringPaths) {
     const matches = changes.filter((change) => matchesSelection(path, change.ownedPaths));
-    if (matches.length === 1 && matches[0].id === selectedChange) continue;
+    if (isSelectedAttribution(matches, selectedChange)) continue;
     sink.fail("cra-trigger-unattributable", path, attributionMessage(matches, selectedChange));
     attributed = false;
   }
   return attributed;
+}
+
+function isSelectedAttribution(matches, selectedChange) {
+  if (matches.length !== 1) return false;
+  return matches[0].id === selectedChange;
 }
 
 function attributionMessage(matches, selectedChange) {
@@ -246,20 +251,69 @@ function readCraRecord(repositoryRoot, recordPath, sink) {
   try {
     return JSON.parse(text);
   } catch {
-    sink.fail("cra-record-malformed", recordPath, "the required contract-reuse.json record does not contain valid JSON");
+    sink.fail("cra-record-malformed", recordPath,
+      "the required contract-reuse.json record does not contain valid JSON");
     return null;
   }
 }
 
 function hasSupportedContract(record, recordPath, sink) {
-  if (isRecord(record) && record.contract === REQUIRED_CONTRACT) return true;
+  if (!isRecord(record)) return rejectUnsupportedContract(recordPath, sink);
+  if (record.contract !== REQUIRED_CONTRACT) return rejectUnsupportedContract(recordPath, sink);
+  return true;
+}
+
+function rejectUnsupportedContract(recordPath, sink) {
   sink.fail("cra-contract-unsupported", recordPath,
-    "the CRA checker supports exactly security-audit@1.0.0 and does not select another contract source");
+    "the CRA checker supports exactly security-audit@1.0.0 and selects no other contract source");
   return false;
 }
 
+function isStructurallyValid(record, recordPath, repositoryRoot, sink) {
+  const structuralStart = sink.count;
+  const schema = loadCraSchema(repositoryRoot, sink);
+  if (schema !== null) validateCraRecord(schema, record, { documentPath: recordPath, sink });
+  if (sink.count === structuralStart) return true;
+  sink.fail("cra-record-invalid", recordPath,
+    "the required Contract Reuse Assessment does not satisfy its closed structural record shape");
+  rejectExemptionStructure(record, recordPath, sink);
+  return false;
+}
+
+function rejectExemptionStructure(record, recordPath, sink) {
+  if (record.mode !== "exemption") return;
+  sink.fail("cra-exemption-unauthorized", recordPath,
+    "an exemption must first satisfy the closed exemption record shape before external evidence can be recognized");
+}
+
+function evaluateMode(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink) {
+  if (record.mode === "assessment") {
+    return evaluateAssessment(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink);
+  }
+  if (record.mode === "exemption") {
+    return evaluateExemption(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink);
+  }
+  sink.fail("cra-record-invalid", recordPath, "the required Contract Reuse Assessment selects no supported record mode");
+  return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
+}
+
+function evaluateAssessment(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink) {
+  if (!resolveAssessmentReferences(record, repositoryRoot, recordPath, sink)) {
+    return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
+  }
+  return outcomeSummary(repositoryRoot, selectedChange, range, triggeringPaths, "cra-validated");
+}
+
+function evaluateExemption(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink) {
+  const context = { repositoryRoot, selectedChange, recordPath, head: range.head, sink };
+  if (!validateExemption(record, context)) {
+    return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
+  }
+  return outcomeSummary(repositoryRoot, selectedChange, range, triggeringPaths, "approved-exemption");
+}
+
 function resolveAssessmentReferences(record, repositoryRoot, recordPath, sink) {
-  if (record.disposition !== "reuse" && record.disposition !== "extend") return true;
+  if (!requiresMechanismResolution(record.disposition)) return true;
   const source = readCanonicalContract(repositoryRoot, sink);
   if (source === null) return false;
   let resolved = true;
@@ -270,6 +324,12 @@ function resolveAssessmentReferences(record, repositoryRoot, recordPath, sink) {
     resolved = false;
   }
   return resolved;
+}
+
+function requiresMechanismResolution(disposition) {
+  if (disposition === "reuse") return true;
+  if (disposition === "extend") return true;
+  return false;
 }
 
 function readCanonicalContract(repositoryRoot, sink) {
@@ -283,11 +343,8 @@ function readCanonicalContract(repositoryRoot, sink) {
   }
   try {
     const source = JSON.parse(text);
-    if (source?.authoritative_source !== true || source?.metadata?.schema_version !== "1.0.0") {
-      sink.fail("cra-contract-source-unavailable", CANONICAL_CONTRACT_PATH,
-        "the supported canonical source is not the authoritative security-audit source at schema version 1.0.0");
-      return null;
-    }
+    if (source?.authoritative_source !== true) return rejectCanonicalSource(sink);
+    if (source?.metadata?.schema_version !== "1.0.0") return rejectCanonicalSource(sink);
     return source;
   } catch {
     sink.fail("cra-contract-source-unavailable", CANONICAL_CONTRACT_PATH,
@@ -296,46 +353,56 @@ function readCanonicalContract(repositoryRoot, sink) {
   }
 }
 
+function rejectCanonicalSource(sink) {
+  sink.fail("cra-contract-source-unavailable", CANONICAL_CONTRACT_PATH,
+    "the supported canonical source is not the authoritative security-audit source at schema version 1.0.0");
+  return null;
+}
+
 function resolvesReference(source, reference) {
-  if (typeof reference !== "string" || !SAFE_REFERENCE.test(reference)) return false;
+  if (typeof reference !== "string") return false;
+  if (!SAFE_REFERENCE.test(reference)) return false;
   let value = source;
   for (const segment of reference.split(".")) {
-    if (!isRecord(value) || !Object.hasOwn(value, segment)) return false;
+    if (!isRecord(value)) return false;
+    if (!Object.hasOwn(value, segment)) return false;
     value = value[segment];
   }
   return true;
 }
 
 function describeSafeReference(reference) {
-  if (typeof reference === "string" && reference.length <= 200 && SAFE_REFERENCE.test(reference)) {
-    return JSON.stringify(reference);
-  }
+  if (isSafeReferenceText(reference)) return JSON.stringify(reference);
   return "a structurally invalid reference";
+}
+
+function isSafeReferenceText(reference) {
+  if (typeof reference !== "string") return false;
+  if (reference.length > 200) return false;
+  return SAFE_REFERENCE.test(reference);
 }
 
 function validateExemption(record, context) {
   if (record.governance_locator?.change !== context.selectedChange) {
     return rejectExemption(context, "an exemption locator must name the selected CRA change");
   }
-  const manifest = readGovernanceManifest(context.repositoryRoot, context.sink);
-  if (manifest === null) return false;
-  const matches = manifest.governanceRecords.filter((entry) => entry?.change === context.selectedChange);
-  if (matches.length !== 1) {
-    return rejectExemption(context,
-      "the fixed governance-record source must contain exactly one record for the selected exemption change");
-  }
-  const recordEvidence = matches[0];
-  if (!hasRequiredExemptionFields(recordEvidence, context)) return false;
+  const evidence = selectedGovernanceEvidence(context);
+  if (evidence === null) return false;
+  if (!hasRequiredExemptionFields(evidence, context)) return false;
+  const technical = resolvesTechnicalCandidate(evidence, context);
+  if (technical === null) return false;
+  if (!hasExactReviewedContent(evidence, technical, context)) return false;
+  return hasDirectSignedRecord(evidence, technical, context);
+}
 
-  const technical = resolveCommit(recordEvidence.reviewedCommit, context.repositoryRoot);
-  if (technical === null || technical !== recordEvidence.reviewedCommit) {
-    return rejectExemption(context, "the exemption reviewed technical commit is unavailable or not an exact commit object");
-  }
-  if (!isAncestor(technical, context.head, context.repositoryRoot)) {
-    return rejectExemption(context, "the exemption reviewed technical commit is not an ancestor of the evaluated change head");
-  }
-  if (!hasExactReviewedContent(recordEvidence, technical, context)) return false;
-  return hasDirectSignedRecord(recordEvidence, technical, context);
+function selectedGovernanceEvidence(context) {
+  const manifest = readGovernanceManifest(context.repositoryRoot, context.sink);
+  if (manifest === null) return null;
+  const matches = manifest.governanceRecords.filter((entry) => entry?.change === context.selectedChange);
+  if (matches.length === 1) return matches[0];
+  rejectExemption(context,
+    "the fixed governance-record source must contain exactly one record for the selected exemption change");
+  return null;
 }
 
 function readGovernanceManifest(repositoryRoot, sink) {
@@ -349,7 +416,7 @@ function readGovernanceManifest(repositoryRoot, sink) {
   }
   try {
     const manifest = JSON.parse(text);
-    if (isRecord(manifest) && Array.isArray(manifest.governanceRecords)) return manifest;
+    if (hasRecordsArray(manifest)) return manifest;
   } catch {
     // The bounded diagnostic deliberately does not expose parser details from an external evidence source.
   }
@@ -358,38 +425,118 @@ function readGovernanceManifest(repositoryRoot, sink) {
   return null;
 }
 
+function hasRecordsArray(manifest) {
+  if (!isRecord(manifest)) return false;
+  return Array.isArray(manifest.governanceRecords);
+}
+
 function hasRequiredExemptionFields(record, context) {
-  if (!isRecord(record) || record.signed !== true) {
+  if (!isSignedOwnerRecord(record, context)) return false;
+  if (!grantsExemptionToken(record, context)) return false;
+  if (!namesExactTechnicalCommit(record, context)) return false;
+  return true;
+}
+
+function isSignedOwnerRecord(record, context) {
+  if (!isRecord(record)) {
+    return rejectExemption(context, "the selected governance evidence is not a signed record");
+  }
+  if (record.signed !== true) {
     return rejectExemption(context, "the selected governance evidence is not a signed record");
   }
   if (record.reviewer?.name !== PROJECT_OWNER) {
     return rejectExemption(context, "the selected governance evidence is not signed by the project owner");
   }
+  return true;
+}
+
+function grantsExemptionToken(record, context) {
   const token = `contract-reuse-exemption:${context.selectedChange}`;
-  if (!Array.isArray(record.authorizations?.granted) || !record.authorizations.granted.includes(token)) {
+  if (!Array.isArray(record.authorizations?.granted)) {
     return rejectExemption(context, "the selected governance evidence grants no exact CRA exemption token");
   }
-  if (typeof record.reviewedCommit !== "string" || !OBJECT_ID.test(record.reviewedCommit)) {
+  if (!record.authorizations.granted.includes(token)) {
+    return rejectExemption(context, "the selected governance evidence grants no exact CRA exemption token");
+  }
+  return true;
+}
+
+function namesExactTechnicalCommit(record, context) {
+  if (typeof record.reviewedCommit !== "string") {
+    return rejectExemption(context, "the selected governance evidence names no exact reviewed technical commit");
+  }
+  if (!OBJECT_ID.test(record.reviewedCommit)) {
     return rejectExemption(context, "the selected governance evidence names no exact reviewed technical commit");
   }
   return true;
 }
 
-function hasExactReviewedContent(record, technical, context) {
-  const candidateRoot = treeOf(technical, context.repositoryRoot);
-  if (candidateRoot === null || record.reviewedContent?.candidateRoot !== candidateRoot) {
-    return rejectExemption(context, "the selected governance evidence does not bind the reviewed technical tree");
+function resolvesTechnicalCandidate(evidence, context) {
+  const technical = resolveCommit(evidence.reviewedCommit, context.repositoryRoot);
+  if (technical === null) {
+    rejectExemption(context, "the exemption reviewed technical commit is unavailable or not an exact commit object");
+    return null;
   }
-  const changeRoot = `openspec/changes/${context.selectedChange}`;
-  const expectedObject = objectAtPath(technical, changeRoot, context.repositoryRoot);
-  const entries = record.reviewedContent?.entries;
-  const bindings = Array.isArray(entries)
-    ? entries.filter((entry) => entry?.path === changeRoot && entry?.object === expectedObject)
-    : [];
-  if (expectedObject === null || bindings.length !== 1) {
+  if (technical !== evidence.reviewedCommit) {
+    rejectExemption(context, "the exemption reviewed technical commit is unavailable or not an exact commit object");
+    return null;
+  }
+  if (!isAncestor(technical, context.head, context.repositoryRoot)) {
+    rejectExemption(context, "the exemption reviewed technical commit is not an ancestor of the evaluated change head");
+    return null;
+  }
+  return technical;
+}
+
+function hasExactReviewedContent(record, technical, context) {
+  if (!bindsCandidateTree(record, technical, context)) return false;
+  const expectedObject = expectedChangeRootObject(technical, context);
+  if (expectedObject === null) {
     return rejectExemption(context, "the selected governance evidence does not bind the exact selected change-root tree");
   }
-  if (objectAtPath(context.head, changeRoot, context.repositoryRoot) !== expectedObject) {
+  if (!bindsChangeRootEntry(record, context, expectedObject)) return false;
+  if (!matchesCurrentChangeRoot(context, expectedObject)) return false;
+  return true;
+}
+
+function bindsCandidateTree(record, technical, context) {
+  const candidateRoot = treeOf(technical, context.repositoryRoot);
+  if (candidateRoot === null) {
+    return rejectExemption(context, "the selected governance evidence does not bind the reviewed technical tree");
+  }
+  if (record.reviewedContent?.candidateRoot !== candidateRoot) {
+    return rejectExemption(context, "the selected governance evidence does not bind the reviewed technical tree");
+  }
+  return true;
+}
+
+function expectedChangeRootObject(technical, context) {
+  const changeRoot = `openspec/changes/${context.selectedChange}`;
+  return objectAtPath(technical, changeRoot, context.repositoryRoot);
+}
+
+function bindsChangeRootEntry(record, context, expectedObject) {
+  const entries = record.reviewedContent?.entries;
+  if (!Array.isArray(entries)) {
+    return rejectExemption(context, "the selected governance evidence does not bind the exact selected change-root tree");
+  }
+  const changeRoot = `openspec/changes/${context.selectedChange}`;
+  const bindings = entries.filter((entry) => bindsExpectedEntry(entry, changeRoot, expectedObject));
+  if (bindings.length !== 1) {
+    return rejectExemption(context, "the selected governance evidence does not bind the exact selected change-root tree");
+  }
+  return true;
+}
+
+function bindsExpectedEntry(entry, changeRoot, expectedObject) {
+  if (entry?.path !== changeRoot) return false;
+  return entry?.object === expectedObject;
+}
+
+function matchesCurrentChangeRoot(context, expectedObject) {
+  const changeRoot = `openspec/changes/${context.selectedChange}`;
+  const current = objectAtPath(context.head, changeRoot, context.repositoryRoot);
+  if (current !== expectedObject) {
     return rejectExemption(context,
       "the selected change root differs from the reviewed technical candidate tree; the exemption is stale");
   }
@@ -398,11 +545,9 @@ function hasExactReviewedContent(record, technical, context) {
 
 function hasDirectSignedRecord(recordEvidence, technical, context) {
   const candidates = signedRecordCommits(recordEvidence, technical, context);
-  if (candidates.length !== 1) {
-    return rejectExemption(context,
-      "the selected governance evidence was not introduced exactly once by a record-only direct child of its technical commit");
-  }
-  return true;
+  if (candidates.length === 1) return true;
+  return rejectExemption(context,
+    "the selected governance evidence was not introduced exactly once by a record-only direct child of its technical commit");
 }
 
 function signedRecordCommits(recordEvidence, technical, context) {
@@ -415,10 +560,26 @@ function signedRecordCommits(recordEvidence, technical, context) {
 }
 
 function isDirectRecordCommit(commit, technical, recordEvidence, cwd) {
+  if (!isDirectChild(commit, technical, cwd)) return false;
+  if (!touchesOnlyGovernanceRecord(commit, cwd)) return false;
+  return carriesRecordEvidence(commit, recordEvidence, cwd);
+}
+
+function isDirectChild(commit, technical, cwd) {
   const parents = parentsOf(commit, cwd);
-  if (!Array.isArray(parents) || parents.length !== 1 || parents[0] !== technical) return false;
+  if (!Array.isArray(parents)) return false;
+  if (parents.length !== 1) return false;
+  return parents[0] === technical;
+}
+
+function touchesOnlyGovernanceRecord(commit, cwd) {
   const paths = pathsChangedByCommit(commit, cwd);
-  if (!Array.isArray(paths) || paths.length !== 1 || paths[0] !== GOVERNANCE_RECORD_PATH) return false;
+  if (!Array.isArray(paths)) return false;
+  if (paths.length !== 1) return false;
+  return paths[0] === GOVERNANCE_RECORD_PATH;
+}
+
+function carriesRecordEvidence(commit, recordEvidence, cwd) {
   const manifest = manifestAtCommit(commit, cwd);
   if (manifest === null) return false;
   return manifest.governanceRecords.some((entry) => stableValue(entry) === stableValue(recordEvidence));
@@ -429,7 +590,7 @@ function manifestAtCommit(commit, cwd) {
   if (text === null) return null;
   try {
     const parsed = JSON.parse(text);
-    return isRecord(parsed) && Array.isArray(parsed.governanceRecords) ? parsed : null;
+    return hasRecordsArray(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -465,6 +626,26 @@ function summary(values) {
   };
 }
 
+function outcomeSummary(repositoryRoot, selectedChange, range, triggeringPaths, outcome) {
+  return summary({
+    repositoryRoot,
+    selectedChange,
+    base: range.base,
+    head: range.head,
+    range: range.range,
+    triggeringPaths,
+    outcome,
+  });
+}
+
+function skipSummary(repositoryRoot, selectedChange, range) {
+  return outcomeSummary(repositoryRoot, selectedChange, range, [], "approved-skip");
+}
+
+function rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths) {
+  return outcomeSummary(repositoryRoot, selectedChange, range, triggeringPaths, "rejected");
+}
+
 function emit(result, sink, opts) {
   if (opts.json) {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
@@ -491,7 +672,12 @@ function parseArguments(argv) {
     const [flag, inlineValue] = argument.includes("=") ? splitOnce(argument, "=") : [argument, null];
     const option = ARGUMENT_OPTIONS[flag];
     if (!option) rejectArgument(argument);
-    const value = option.takesValue ? (inlineValue ?? argv[++index]) : null;
+    if (!option.takesValue) {
+      option.apply(parsed, null);
+      continue;
+    }
+    const value = inlineValue ?? argv[++index];
+    if (value === undefined) rejectArgument(`${flag} requires a value`);
     option.apply(parsed, value);
   }
   return parsed;
