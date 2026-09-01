@@ -72,13 +72,15 @@ function run(opts, sink) {
   const range = resolveRange(repositoryRoot, selectedChange, opts.base, sink);
   if (range === null) return summary({ repositoryRoot, selectedChange });
 
+  const context = { repositoryRoot, selectedChange, range, triggeringPaths: [], sink };
   const triggeringPaths = range.range.paths.filter((path) => isTriggerPath(path, selectedChange));
-  if (triggeringPaths.length === 0) return skipSummary(repositoryRoot, selectedChange, range);
+  if (triggeringPaths.length === 0) return skipSummary(context);
 
-  if (!attributedToSelectedChange(triggeringPaths, range.range.paths, repositoryRoot, selectedChange, sink)) {
-    return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
+  context.triggeringPaths = triggeringPaths;
+  if (!attributedToSelectedChange(context)) {
+    return rejectedSummary(context);
   }
-  return evaluateRecord(repositoryRoot, selectedChange, range, triggeringPaths, sink);
+  return evaluateRecord(context);
 }
 
 /** The complete-history, base, head, and range stages of the pipeline. */
@@ -111,27 +113,23 @@ function resolveRange(repositoryRoot, selectedChange, baseOption, sink) {
 }
 
 /** Fail-closed attribution of every triggering path to exactly the selected change. */
-function attributedToSelectedChange(triggeringPaths, rangePaths, repositoryRoot, selectedChange, sink) {
+function attributedToSelectedChange(context) {
   const changes = collectOpenSpecChanges(
-    rangePaths,
-    (changeId) => readAssessment(repositoryRoot, changeId),
-    activeChangeIds(repositoryRoot),
+    context.range.range.paths,
+    (changeId) => readAssessment(context.repositoryRoot, changeId),
+    activeChangeIds(context.repositoryRoot),
   );
-  return attributesEveryTrigger(triggeringPaths, changes, selectedChange, sink);
+  return attributesEveryTrigger(context.triggeringPaths, changes, context.selectedChange, context.sink);
 }
 
 /** Record loading, identity, structural, and mode stages of the pipeline. */
-function evaluateRecord(repositoryRoot, selectedChange, range, triggeringPaths, sink) {
-  const recordPath = changeRecordPath(selectedChange);
-  const record = readCraRecord(repositoryRoot, recordPath, sink);
-  if (record === null) return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
-  if (!hasSupportedContract(record, recordPath, sink)) {
-    return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
-  }
-  if (!isStructurallyValid(record, recordPath, repositoryRoot, sink)) {
-    return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
-  }
-  return evaluateMode(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink);
+function evaluateRecord(context) {
+  const recordPath = changeRecordPath(context.selectedChange);
+  const record = readCraRecord(context.repositoryRoot, recordPath, context.sink);
+  if (record === null) return rejectedSummary(context);
+  if (!hasSupportedContract(record, recordPath, context.sink)) return rejectedSummary(context);
+  if (!isStructurallyValid(record, recordPath, context.repositoryRoot, context.sink)) return rejectedSummary(context);
+  return evaluateMode(record, recordPath, context);
 }
 
 function selectActiveChange(repositoryRoot, change, sink) {
@@ -286,30 +284,24 @@ function rejectExemptionStructure(record, recordPath, sink) {
     "an exemption must first satisfy the closed exemption record shape before external evidence can be recognized");
 }
 
-function evaluateMode(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink) {
-  if (record.mode === "assessment") {
-    return evaluateAssessment(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink);
-  }
-  if (record.mode === "exemption") {
-    return evaluateExemption(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink);
-  }
-  sink.fail("cra-record-invalid", recordPath, "the required Contract Reuse Assessment selects no supported record mode");
-  return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
+function evaluateMode(record, recordPath, context) {
+  if (record.mode === "assessment") return evaluateAssessment(record, recordPath, context);
+  if (record.mode === "exemption") return evaluateExemption(record, recordPath, context);
+  context.sink.fail("cra-record-invalid", recordPath, "the required Contract Reuse Assessment selects no supported record mode");
+  return rejectedSummary(context);
 }
 
-function evaluateAssessment(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink) {
-  if (!resolveAssessmentReferences(record, repositoryRoot, recordPath, sink)) {
-    return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
+function evaluateAssessment(record, recordPath, context) {
+  if (!resolveAssessmentReferences(record, context.repositoryRoot, recordPath, context.sink)) {
+    return rejectedSummary(context);
   }
-  return outcomeSummary(repositoryRoot, selectedChange, range, triggeringPaths, "cra-validated");
+  return outcomeSummary(context, "cra-validated");
 }
 
-function evaluateExemption(record, recordPath, repositoryRoot, selectedChange, range, triggeringPaths, sink) {
-  const context = { repositoryRoot, selectedChange, recordPath, head: range.head, sink };
-  if (!validateExemption(record, context)) {
-    return rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths);
-  }
-  return outcomeSummary(repositoryRoot, selectedChange, range, triggeringPaths, "approved-exemption");
+function evaluateExemption(record, recordPath, context) {
+  const exemption = { ...context, recordPath, head: context.range.head };
+  if (!validateExemption(record, exemption)) return rejectedSummary(context);
+  return outcomeSummary(context, "approved-exemption");
 }
 
 function resolveAssessmentReferences(record, repositoryRoot, recordPath, sink) {
@@ -626,24 +618,24 @@ function summary(values) {
   };
 }
 
-function outcomeSummary(repositoryRoot, selectedChange, range, triggeringPaths, outcome) {
+function outcomeSummary(context, outcome) {
   return summary({
-    repositoryRoot,
-    selectedChange,
-    base: range.base,
-    head: range.head,
-    range: range.range,
-    triggeringPaths,
+    repositoryRoot: context.repositoryRoot,
+    selectedChange: context.selectedChange,
+    base: context.range.base,
+    head: context.range.head,
+    range: context.range.range,
+    triggeringPaths: context.triggeringPaths,
     outcome,
   });
 }
 
-function skipSummary(repositoryRoot, selectedChange, range) {
-  return outcomeSummary(repositoryRoot, selectedChange, range, [], "approved-skip");
+function skipSummary(context) {
+  return outcomeSummary(context, "approved-skip");
 }
 
-function rejectedSummary(repositoryRoot, selectedChange, range, triggeringPaths) {
-  return outcomeSummary(repositoryRoot, selectedChange, range, triggeringPaths, "rejected");
+function rejectedSummary(context) {
+  return outcomeSummary(context, "rejected");
 }
 
 function emit(result, sink, opts) {
