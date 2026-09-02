@@ -12,3 +12,35 @@ The SDK cannot prove producer truthfulness. Documentation identifies configured 
 ## Alternatives
 
 A flat context object was rejected because it conflates claims with authority. Global mutable context was rejected because it leaks across asynchronous work.
+
+## Scope selection (2026-08-23)
+
+On 2026-08-23 the project owner selected **option C — bounded module-copy scope with a single-copy Core** (issue #77, recorded by OpenSpec change `ratify-sdk-core-authority-scope`). This section records the selected authority scope and its invariants. It changes no runtime behavior, no public API, and no registry ownership; it makes the existing scope explicit.
+
+Brands are scoped to the `context.ts` module copy that mints them. `brandRegistry` is a module-level `WeakMap`; `brand()` writes to it and `isBranded()` reads it, and neither takes an SDK instance. `SecurityAuditSdk` holds only its configuration and never touches the registry. The unit of authority is therefore the module copy and nothing else — chosen, not accidental.
+
+## Invariants
+
+1. **Forge resistance.** A TypeScript cast, a structurally equivalent plain object, a copied object, or ambient process state cannot add a value to the registry. Registry insertion remains module-private: only the brand constructors within the resolved `context.ts` module copy may insert entries.
+
+2. **Module-copy scope.** A value is recognized as authoritative only by the registry private to the `context.ts` module copy that minted it.
+
+3. **Same-copy cross-instance acceptance.** Values branded through the same module copy remain acceptable across SDK instances; instance identity is not an authority discriminator. This is current behavior and does not change.
+
+4. **Cross-copy fail-closed behavior.** A value branded by a different module copy is foreign and is never accepted as authority. Cross-copy values fail closed with `AUTHORITY_ESCALATION`, and no global registry, acceptance fallback, or auto-sharing mechanism may be introduced. The distinct bounded duplicate-Core diagnostic for the genuine duplicate-installation category is owned by issue #79, which stays in scope unchanged and is not rewritten.
+
+5. **Single-copy Core.** Every supported consumer graph produced by the future Core split SHALL resolve Core to exactly one module instance. The Node binding SHALL depend on and re-export Core rather than duplicating `context.ts`. Issue #86 owns proving this with a deliberately duplicated-Core fixture that fails closed with bounded deduplication remediation and an otherwise identical non-duplicate null control that passes.
+
+6. **Dependency allowance.** The zero-runtime-dependency gate is rescoped as part of #86 to "no third-party runtime dependencies": `check-dependencies.mjs` and `check-coherence.mjs`'s `lock-runtime-dependencies` rule SHALL be updated together, permitting only an exact allowlisted first-party Core runtime dependency, and every third-party runtime dependency SHALL still fail both controls.
+
+7. **Global-singleton rejection.** A `globalThis`-anchored registry is explicitly rejected: any code in the process could reach and mutate it, weakening the constructor-only insertion boundary.
+
+8. **Revisit condition.** If a supported consumer graph is found in which Core cannot be deduplicated, C's invariant fails and the choice reopens between A-with-a-mechanism and B. No local global, registry-sharing, or auto-hoisting workaround may be introduced instead.
+
+## Consequences
+
+This ADR gains the scope selection without a twelfth SDK ADR: the SDK ADR inventory remains exactly ADR-SDK-001 through ADR-SDK-011. #78 becomes formalization plus #79's diagnostic, with no registry relocation. #86 carries the single-copy-Core fixture, the null control, and the dependency-gate rescoping obligations; none of that work is performed by this ADR. The frozen canonical contract, generated artifacts, package surface, and current runtime behavior are unchanged.
+
+## Boundary
+
+This ADR records decisions and proof obligations only. It implements none of #78, #79, or #86, and it authorizes no production integration, transport, exporter, collector, storage, SIEM integration, analytics, detection, browser telemetry, audit-log chaining, publication, or real-user processing.
