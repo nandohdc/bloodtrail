@@ -7,6 +7,9 @@
       "contracts/security-audit/",
       "openspec/specs/security-audit-event-contract/",
       "openspec/changes/archive/2026-07-31-define-security-audit-event-contract/"
+    ],
+    "toolchainExemptions": [
+      "contracts/security-audit/package-lock.json"
     ]
   },
   "originalSdkChange": {

@@ -61,6 +61,7 @@ const archiveMovement = lifecycle.mode === "archived" && lifecycle.change === re
   ? validateArchiveMovement(lifecycle)
   : Object.freeze({ activeSources: new Set(), archivePaths: new Set() });
 const reviewedNewPaths = validateReviewedNewSdkSourcePaths(metadata);
+const contractToolchainExemptions = validateContractToolchainExemptions(metadata);
 
 const tracked = trackedChanges(base);
 const untracked = splitNull(git(["ls-files", "--others", "--exclude-standard", "-z"]));
@@ -86,7 +87,8 @@ for (const record of records) {
   for (const path of paths) {
     const classification = classify(path);
     classified.set(path, classification);
-    if (metadata.contract.protectedPrefixes.some((prefix) => path.startsWith(prefix))) {
+    if (metadata.contract.protectedPrefixes.some((prefix) => path.startsWith(prefix))
+      && !contractToolchainExemptions.has(path)) {
       violations.push(`${record.status} ${path} (canonical event contract or contract governance drift)`);
       continue;
     }
@@ -510,6 +512,50 @@ function assertReviewedPathShape(rawPath, ownership) {
   if (!ownership.sdkSourcePrefixes.some((prefix) => rawPath.startsWith(prefix))) {
     throw new Error(`reviewedNewSdkSourcePaths entry is outside configured SDK source prefixes: ${rawPath}`);
   }
+}
+
+/**
+ * Build-toolchain files inside a protected contract prefix that may still change.
+ *
+ * The prefix freezes the canonical event contract, but it is only a proxy for
+ * that invariant: the precise gate is check-contract-immutability.mjs, which
+ * diffs the file list declared in contract-provenance.json against the
+ * contract's own baseline. A dependency lockfile is not on that list and is not
+ * contract content — yet the prefix swallowed it, which left the contract
+ * workspace unable to accept a security patch by any route and put the
+ * `contract` job (npm audit must be clean) in direct contradiction with this
+ * gate.
+ *
+ * An entry is accepted only when it provably cannot reach normative content: an
+ * exact file path, inside a protected prefix, and absent from every path
+ * contract-provenance.json declares. That last rule is what keeps the hole
+ * safe, and it is enforced here rather than left to review.
+ */
+function validateContractToolchainExemptions(metadata) {
+  const configured = metadata.contract.toolchainExemptions ?? [];
+  assert(Array.isArray(configured), "contract.toolchainExemptions must be an array when present");
+  const normative = declaredContractPaths();
+  for (const rawPath of configured) assertToolchainExemptionShape(rawPath, metadata, normative);
+  return new Set(configured);
+}
+
+function assertToolchainExemptionShape(rawPath, metadata, normative) {
+  for (const [violates, message] of REVIEWED_PATH_RULES) {
+    if (violates(rawPath)) throw new Error(`toolchainExemptions entry ${message(rawPath)}`);
+  }
+  if (!metadata.contract.protectedPrefixes.some((prefix) => rawPath.startsWith(prefix))) {
+    throw new Error(`toolchainExemptions entry is outside every protected contract prefix: ${rawPath}`);
+  }
+  if (normative.some((declared) => rawPath === declared || rawPath.startsWith(`${declared}/`))) {
+    throw new Error(`toolchainExemptions entry is declared contract content and may never be exempt: ${rawPath}`);
+  }
+}
+
+function declaredContractPaths() {
+  const provenancePath = resolve(repositoryRoot, "packages/security-audit-sdk-core/contract-provenance.json");
+  const provenance = JSON.parse(readFileSync(provenancePath, "utf8"));
+  return [provenance.canonicalCapability, provenance.archivedChange, ...Object.values(provenance.sources)]
+    .filter((value) => typeof value === "string");
 }
 
 function isAbsolutePath(path) {
