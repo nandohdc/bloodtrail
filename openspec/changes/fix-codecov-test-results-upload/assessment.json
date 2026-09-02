@@ -1,0 +1,130 @@
+{
+  "schema_version": "1.1",
+  "change_id": "fix-codecov-test-results-upload",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The resolved codecov/codecov-action@v5 contract accepts report_type and maps it to CC_REPORT_TYPE; GitHub does not normalize the unsupported report-type key.",
+    "The action adds explicit files to automatically discovered reports unless disable_search is true, so the current second invocation also selects both LCOV files.",
+    "The existing unified action already handles token redaction, uploader integrity verification, commit metadata, workspace flags, and the repository's advisory failure policy.",
+    "The correction must remain limited to Test Analytics classification and must not alter report generation, coverage ingestion, authentication, or merge-gate policy."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    ".github/workflows/ci.yml",
+    "openspec/changes/fix-codecov-test-results-upload/.openspec.yaml",
+    "openspec/changes/fix-codecov-test-results-upload/assessment.json",
+    "openspec/changes/fix-codecov-test-results-upload/design.md",
+    "openspec/changes/fix-codecov-test-results-upload/proposal.md",
+    "openspec/changes/fix-codecov-test-results-upload/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-correct-unified-action-input",
+      "kind": "direct_implementation",
+      "summary": "Correct the unified action input to report_type and disable automatic search only for the explicit JUnit upload, preserving every unrelated workflow setting.",
+      "forces_addressed": [
+        "The resolved codecov/codecov-action@v5 contract accepts report_type and maps it to CC_REPORT_TYPE; GitHub does not normalize the unsupported report-type key.",
+        "The action adds explicit files to automatically discovered reports unless disable_search is true, so the current second invocation also selects both LCOV files.",
+        "The existing unified action already handles token redaction, uploader integrity verification, commit metadata, workspace flags, and the repository's advisory failure policy.",
+        "The correction must remain limited to Test Analytics classification and must not alter report generation, coverage ingestion, authentication, or merge-gate policy."
+      ]
+    },
+    {
+      "id": "approach-dedicated-test-results-action",
+      "kind": "alternative",
+      "summary": "Replace the second unified action invocation with Codecov's separate test-results action while retaining the same JUnit files and flags.",
+      "forces_addressed": [
+        "The resolved codecov/codecov-action@v5 contract accepts report_type and maps it to CC_REPORT_TYPE; GitHub does not normalize the unsupported report-type key.",
+        "The action adds explicit files to automatically discovered reports unless disable_search is true, so the current second invocation also selects both LCOV files."
+      ]
+    },
+    {
+      "id": "approach-call-codecov-cli-directly",
+      "kind": "alternative",
+      "summary": "Install and invoke the Codecov CLI directly with a test_results report type and the two explicit JUnit paths.",
+      "forces_addressed": [
+        "The existing unified action already handles token redaction, uploader integrity verification, commit metadata, workspace flags, and the repository's advisory failure policy.",
+        "The correction must remain limited to Test Analytics classification and must not alter report generation, coverage ingestion, authentication, or merge-gate policy."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-correct-unified-action-input",
+  "rejected_alternative_ids": [
+    "approach-dedicated-test-results-action",
+    "approach-call-codecov-cli-directly"
+  ],
+  "rejection_reasons": {
+    "approach-dedicated-test-results-action": {
+      "forces": [
+        "The existing unified action already handles token redaction, uploader integrity verification, commit metadata, workspace flags, and the repository's advisory failure policy.",
+        "The correction must remain limited to Test Analytics classification and must not alter report generation, coverage ingestion, authentication, or merge-gate policy."
+      ],
+      "reason": "Codecov has deprecated the separate test-results action in favor of the unified action. Migrating actions expands the integration surface and changes wrapper behavior when the existing action already exposes the exact report type needed for this bounded correction."
+    },
+    "approach-call-codecov-cli-directly": {
+      "forces": [
+        "The existing unified action already handles token redaction, uploader integrity verification, commit metadata, workspace flags, and the repository's advisory failure policy."
+      ],
+      "reason": "A direct CLI step would need to reproduce authentication, binary download and verification, GitHub commit metadata, flag handling, and failure semantics. That duplication creates more security-sensitive workflow code than correcting the supported action input."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-codecov-test-report-type-selected",
+    "implementation-codecov-test-files-isolated",
+    "implementation-codecov-existing-policy-preserved"
+  ],
+  "invariant_evidence": {
+    "implementation-codecov-test-report-type-selected": {
+      "task_ids": [
+        "1.1",
+        "2.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "focused workflow diff contains report_type test_results and no report-type key",
+        "live Actions log reports CC_REPORT_TYPE test_results and passes --report-type test_results"
+      ]
+    },
+    "implementation-codecov-test-files-isolated": {
+      "task_ids": [
+        "1.1",
+        "2.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "focused workflow diff enables disable_search only on the JUnit invocation",
+        "live Actions log selects exactly the SDK and research JUnit XML paths"
+      ]
+    },
+    "implementation-codecov-existing-policy-preserved": {
+      "task_ids": [
+        "1.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "focused workflow diff leaves token flags fail_ci_if_error and coverage invocation unchanged",
+        "trusted-baseline and candidate governance checks pass separately"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "ce6e85c1b2862200b7aeb1633f3170ba422e878b"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "3.2"
+  ]
+}

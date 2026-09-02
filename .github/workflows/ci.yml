@@ -199,9 +199,10 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          report-type: test_results
+          report_type: test_results
           files: packages/security-audit-sdk-core/coverage/junit.xml,research/browser-telemetry/coverage/junit.xml
           flags: sdk,research
+          disable_search: true
           fail_ci_if_error: false
 
   # Scans the whole repository, configured by the root sonar-project.properties.
