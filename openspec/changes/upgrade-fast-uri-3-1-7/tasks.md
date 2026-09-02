@@ -1,6 +1,6 @@
 ## 1. Establish the governed implementation baseline
 
-- [ ] 1.1 Record the design-pattern assessment and run the trusted-baseline
+- [x] 1.1 Record the design-pattern assessment and run the trusted-baseline
   governance check before editing the lockfile; verify the security-sensitive,
   skip-specs change is associated and the assessment precedes implementation.
 
