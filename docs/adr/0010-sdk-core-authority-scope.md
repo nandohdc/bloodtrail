@@ -1,4 +1,4 @@
-# ADR 0009: SDK-core authority scope is bounded module-copy scope with a single-copy Core
+# ADR 0010: SDK-core authority scope is bounded module-copy scope with a single-copy Core
 
 - Status: Accepted
 - Date: 2026-08-23

@@ -9,7 +9,7 @@ The canonical audit contract is frozen and unaffected. The SDK remains an isolat
 **Goals:**
 
 - Make option C's authority boundary and falsifiable consumer-graph invariant normative without changing current brand ownership.
-- Preserve a complete decision record by extending ADR-SDK-004 and using root ADR 0009 for the A/B/C comparison and revisit trigger.
+- Preserve a complete decision record by extending ADR-SDK-004 and using root ADR 0010 for the A/B/C comparison and revisit trigger.
 - Give #86 exact proof obligations for Core uniqueness and the first-party-only runtime-dependency allowance.
 - Keep #79 intact while identifying its future diagnostic ownership.
 
@@ -48,14 +48,14 @@ The rejected alternative is changing an empty-dependency assertion into a genera
 
 ### D5 — Decision records use existing ADR locations and preserve numbering
 
-ADR-SDK-004 is the existing authority-context decision record and must be extended rather than creating ADR-SDK-012. `docs/adr/` is the established repository-wide ADR location; root ADR 0009 is therefore the correct non-SDK record and must preserve the A/B/C table, F3's 35-constructor sizing, F4's single-copy-Core reasoning, global-singleton rejection, and the exact revisit condition.
+ADR-SDK-004 is the existing authority-context decision record and must be extended rather than creating ADR-SDK-012. `docs/adr/` is the established repository-wide ADR location; root ADR 0010 is therefore the correct non-SDK record and must preserve the A/B/C table, F3's 35-constructor sizing, F4's single-copy-Core reasoning, global-singleton rejection, and the exact revisit condition.
 
 The rejected alternative is a new SDK ADR. It violates the 11-ADR inventory constraint and separates the selected scope from the ADR that already defines authority context.
 
 ## Migration Plan
 
 1. Land the proposal, full assessment, delta, design, and all-unchecked tasks as a proposal-only commit.
-2. After the required exact-commit owner authorization, update ADR-SDK-004 and root ADR 0009, and add only the documentation/specification/task material authorized by that later phase; do not implement #78 or #79.
+2. After the required exact-commit owner authorization, update ADR-SDK-004 and root ADR 0010, and add only the documentation/specification/task material authorized by that later phase; do not implement #78 or #79.
 3. Fold the capability delta into `openspec/specs/security-audit-sdk-core/spec.md` in a separate active-change canonical-fold commit, prove a second semantic application is a no-op, then obtain the later exact-commit governance record required for merge.
 4. After identity-preserving merge and all required approval evidence, archive in a separate pure-relocation commit.
 
@@ -67,7 +67,7 @@ Before merge, rollback is removal of the unmerged proposal/documentation candida
 - [The first-party dependency exception broadens silently] → Require an exact allowlist and third-party mutation failures from both named controls.
 - [A fixture only proves failure] → Require the identical non-duplicate null control to pass.
 - [Duplicate-copy rejection is called an attack] → Preserve #79's separate diagnostic ownership and align later #79/#86 wording.
-- [ADR duplication or numbering drift] → Inventory ADR locations and numbers before edits; extend ADR-SDK-004 and allocate only root ADR 0009.
+- [ADR duplication or numbering drift] → Inventory ADR locations and numbers before edits; extend ADR-SDK-004 and allocate only root ADR 0010.
 - [Prose is mistaken for implementation approval] → Keep implementation, owner approval, merge, and archive tasks unchecked and state their exact-commit gates.
 
 ## Open Questions
