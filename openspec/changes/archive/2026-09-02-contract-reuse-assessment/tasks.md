@@ -26,11 +26,11 @@
 
 - [x] 4.1 Run `node --test openspec/tests/design-pattern-governance/*.test.mjs`, `npm run validate --prefix contracts/security-audit`, and `npm run check:generated --prefix packages/security-audit-sdk-core` before the full SDK validation chain; verify the index is empty before the read-only candidate verification pass.
 - [x] 4.2 Run `openspec validate --strict contract-reuse-assessment` and a semantic verification of every CRA requirement, scenario, task, diagnostic, trigger prefix, and artifact boundary; verify the implementation has not modified the frozen contract, generated projections, unrelated design-pattern-governance artifacts, or production-scope surfaces.
-- [ ] 4.3 Prepare an exact-commit technical review packet and obtain an explicit review/owner decision bound to the reviewed content object; verify that author-written CRA records are not represented as review, approval, or assurance.
-- [ ] 4.4 Complete the lifecycle-status sweep and live PR/CI verification; verify the exact reviewed commit remains the PR head, all required CI checks have passed, and no required check is bypassed or failing before merge readiness is reported.
+- [x] 4.3 Prepare an exact-commit technical review packet and obtain an explicit review/owner decision bound to the reviewed content object; verify that author-written CRA records are not represented as review, approval, or assurance.
+- [x] 4.4 Complete the lifecycle-status sweep and live PR/CI verification; verify the exact reviewed commit remains the PR head, all required CI checks have passed, and no required check is bypassed or failing before merge readiness is reported.
 
 ## 5. Canonicalization and archive
 
-- [ ] 5.1 After an approved identity-preserving merge, fold this change's `contract-reuse-assessment` delta into `openspec/specs/contract-reuse-assessment/spec.md` in a dedicated commit and verify a second semantic application would be a no-op.
-- [ ] 5.2 Archive the active change in a separate archive-relocation commit with byte identity for proposal, design, delta spec, and metadata; verify strict OpenSpec validation, archive attestations, explicit staged scope, and historical review bindings.
+- [x] 5.1 After an approved identity-preserving merge, fold this change's `contract-reuse-assessment` delta into `openspec/specs/contract-reuse-assessment/spec.md` in a dedicated commit and verify a second semantic application would be a no-op.
+- [x] 5.2 Archive the active change in a separate archive-relocation commit with byte identity for proposal, design, delta spec, and metadata; verify strict OpenSpec validation, archive attestations, explicit staged scope, and historical review bindings.
 - [ ] 5.3 Close #99, #100, and #101 only after their respective task groups and live CI evidence are complete; close #98 only after the proposal artifacts are merged, comment the downstream issue links, and update #132's Wave 3 checklist with the recorded lifecycle state.
