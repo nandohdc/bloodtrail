@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.1",
+  "change_id": "specify-delivery-conformance-contract",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Eleven downstream issues consume one delivery conformance reference; duplicated or per-issue delivery semantics would diverge immediately.",
+    "The four delivery classes are frozen in delivery_class_contracts; the specification must make them observable without redefining or weakening a single row.",
+    "Every delivery state and transition needs a deterministic externally observable outcome or downstream conformance testing cannot exist.",
+    "Exactly-once claims are forbidden by the frozen contract; at-most-once and at-least-once classifications must stay per class.",
+    "The platform-neutral semantic contract must not name or require any transport, queue, outbox, collector, or storage runtime mechanism.",
+    "Attacker-controlled payloads and retry pressure must not create ambiguous acceptance, unbounded resource use, or fail-open validation.",
+    "The version dimension is already settled by the exact-one package support policy and must be consumed rather than re-decided.",
+    "policy_critical behavior requires policy-owner approval before production, so the contract must specify the blocked-pending hole rather than fill it."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "lifecycle_or_state",
+      "concurrency",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "delivery-conformance-contract"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/specify-delivery-conformance-contract/.openspec.yaml",
+    "openspec/changes/specify-delivery-conformance-contract/proposal.md",
+    "openspec/changes/specify-delivery-conformance-contract/design.md",
+    "openspec/changes/specify-delivery-conformance-contract/specs/delivery-conformance-contract/spec.md",
+    "openspec/changes/specify-delivery-conformance-contract/tasks.md",
+    "openspec/changes/specify-delivery-conformance-contract/assessment.json"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-specify-conformance-from-frozen-rows",
+      "kind": "direct_implementation",
+      "summary": "Author a new delivery-conformance-contract capability whose requirements derive exclusively from the frozen delivery_class_contracts rows: a nine-state observable state model, class-scoped single-outcome scenarios for the six canonical families, explicit at-most-once and at-least-once classification with an exactly-once prohibition, a platform-neutral boundary with no transport runtime dependency, bounded security behavior under attacker-controlled pressure, and consumption of the settled exact-one version policy.",
+      "forces_addressed": [
+        "Eleven downstream issues consume one delivery conformance reference; duplicated or per-issue delivery semantics would diverge immediately.",
+        "The four delivery classes are frozen in delivery_class_contracts; the specification must make them observable without redefining or weakening a single row.",
+        "Every delivery state and transition needs a deterministic externally observable outcome or downstream conformance testing cannot exist.",
+        "Exactly-once claims are forbidden by the frozen contract; at-most-once and at-least-once classifications must stay per class.",
+        "The platform-neutral semantic contract must not name or require any transport, queue, outbox, collector, or storage runtime mechanism.",
+        "Attacker-controlled payloads and retry pressure must not create ambiguous acceptance, unbounded resource use, or fail-open validation.",
+        "The version dimension is already settled by the exact-one package support policy and must be consumed rather than re-decided.",
+        "policy_critical behavior requires policy-owner approval before production, so the contract must specify the blocked-pending hole rather than fill it."
+      ]
+    },
+    {
+      "id": "approach-extend-event-contract-capability",
+      "kind": "alternative",
+      "summary": "Fold the conformance requirements into the existing security-audit-event-contract capability as additional delivery requirements instead of introducing a new capability.",
+      "forces_addressed": [
+        "Eleven downstream issues consume one delivery conformance reference; duplicated or per-issue delivery semantics would diverge immediately.",
+        "The four delivery classes are frozen in delivery_class_contracts; the specification must make them observable without redefining or weakening a single row.",
+        "Exactly-once claims are forbidden by the frozen contract; at-most-once and at-least-once classifications must stay per class."
+      ]
+    },
+    {
+      "id": "approach-specify-security-significant-only",
+      "kind": "alternative",
+      "summary": "Specify only security_significant conformance now and defer the other three classes to separate later changes, following PLAN-051's depth priority to its literal extreme.",
+      "forces_addressed": [
+        "The four delivery classes are frozen in delivery_class_contracts; the specification must make them observable without redefining or weakening a single row.",
+        "policy_critical behavior requires policy-owner approval before production, so the contract must specify the blocked-pending hole rather than fill it."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-specify-conformance-from-frozen-rows",
+  "rejected_alternative_ids": [
+    "approach-extend-event-contract-capability",
+    "approach-specify-security-significant-only"
+  ],
+  "rejection_reasons": {
+    "approach-extend-event-contract-capability": {
+      "forces": [
+        "Eleven downstream issues consume one delivery conformance reference; duplicated or per-issue delivery semantics would diverge immediately.",
+        "The four delivery classes are frozen in delivery_class_contracts; the specification must make them observable without redefining or weakening a single row.",
+        "The platform-neutral semantic contract must not name or require any transport, queue, outbox, collector, or storage runtime mechanism."
+      ],
+      "reason": "A delivery conformance contract is a distinct reusable surface consumed by delivery implementations and their conformance tests, not another clause of the event contract's own content. Folding it into security-audit-event-contract would also make the delta a contract-reuse trigger path, and the delivery dimension the issue needs is observable delivery behavior above the event contract rather than a change to the frozen contract itself. Keeping the capabilities separate preserves the frozen event contract untouched and gives the downstream wave one stable reference path."
+    },
+    "approach-specify-security-significant-only": {
+      "forces": [
+        "Eleven downstream issues consume one delivery conformance reference; duplicated or per-issue delivery semantics would diverge immediately.",
+        "The four delivery classes are frozen in delivery_class_contracts; the specification must make them observable without redefining or weakening a single row.",
+        "Exactly-once claims are forbidden by the frozen contract; at-most-once and at-least-once classifications must stay per class.",
+        "policy_critical behavior requires policy-owner approval before production, so the contract must specify the blocked-pending hole rather than fill it."
+      ],
+      "reason": "The issue requires one common conformance contract whose at-most-once and at-least-once classification covers all four classes; security_significant receives primary depth, but the classification, the exactly-once prohibition, and the policy_critical blocked-pending hole are only coherent as one closed surface. Deferring three classes would leave the downstream issues without the per-class classification they consume and would re-open the boundary the orchestrator already decided."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-conformance-vocabulary-exact",
+    "implementation-state-model-observable",
+    "implementation-scenario-single-outcome",
+    "implementation-exactly-once-prohibited",
+    "implementation-boundary-platform-neutral"
+  ],
+  "invariant_evidence": {
+    "implementation-conformance-vocabulary-exact": {
+      "task_ids": [
+        "1.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "the delta quotes the frozen delivery_class_contracts wording per dimension without redefinition",
+        "the canonical fold preserves every class statement byte-identically"
+      ]
+    },
+    "implementation-state-model-observable": {
+      "task_ids": [
+        "1.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "nine states each carry one recorded observable in the delta and design transition table",
+        "the folded canonical spec enumerates the same nine states"
+      ]
+    },
+    "implementation-scenario-single-outcome": {
+      "task_ids": [
+        "1.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "each scenario is preconditioned and single-outcome with WHEN and THEN",
+        "the six canonical families each map to at least one scenario in the coverage table"
+      ]
+    },
+    "implementation-exactly-once-prohibited": {
+      "task_ids": [
+        "1.3",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "the dedicated scenario asserts no exactly-once claim exists",
+        "deduplication appears only as an idempotency mechanism"
+      ]
+    },
+    "implementation-boundary-platform-neutral": {
+      "task_ids": [
+        "1.3",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "no requirement names or requires a transport, queue, outbox, collector, or storage runtime mechanism",
+        "no file or export under this change carries a forbidden scope name"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "1c55a9c408ca4e2bf48c4d5a06a629201b7bf918"
+  },
+  "verification_task_ids": [
+    "1.4",
+    "2.2",
+    "3.2",
+    "4.2"
+  ]
+}
