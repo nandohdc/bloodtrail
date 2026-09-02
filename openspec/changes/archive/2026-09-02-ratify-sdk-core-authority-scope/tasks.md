@@ -14,11 +14,11 @@
 ## 3. Proposal materialization verification and canonical fold
 
 - [x] 3.1 Before staging documentation materialization, run `openspec validate ratify-sdk-core-authority-scope --strict`, perform the full 15-dimension assessment and cross-artifact semantic review, run `git diff --check`, and verify the changed-path allowlist excludes runtime source, generated artifacts, contract source, manifests, dependencies, production integrations, and #79's issue body.
-- [ ] 3.2 After the documentation materialization is authorized and merged, fold the delta into `openspec/specs/security-audit-sdk-core/spec.md` while this change is active; verify the added requirement and all six scenarios occur exactly once, no delta header reaches the canonical spec, and a second semantic application is a no-op.
+- [x] 3.2 After the documentation materialization is authorized and merged, fold the delta into `openspec/specs/security-audit-sdk-core/spec.md` while this change is active; verify the added requirement and all six scenarios occur exactly once, no delta header reaches the canonical spec, and a second semantic application is a no-op.
 - [ ] 3.3 Before each proposal, materialization, and fold commit, use an explicit staged allowlist, verify staged blobs match the verified candidate, and keep implementation, #79 diagnostic, and generated/contract paths absent.
 
 ## 4. Governance, review, merge, and archive
 
 - [ ] 4.1 Obtain a technical review and the project owner's explicit exact-commit decision only after the final normative technical commit; verify the record states that technical/AI review is not independent assurance or owner approval and retains every production and real-user exclusion.
 - [ ] 4.2 Merge only after the exact reviewed commit, required formal owner approval, and required CI are satisfied through the repository merge process; verify the identity-preserving merge contains the reviewed technical and signed-record commits.
-- [ ] 4.3 Archive only after the approved merge and canonical fold, using a separate byte-preserving relocation commit; verify the archive does not repeat the fold and that proposal, assessment, design, delta, and metadata retain the required historical evidence.
+- [x] 4.3 Archive only after the approved merge and canonical fold, using a separate byte-preserving relocation commit; verify the archive does not repeat the fold and that proposal, assessment, design, delta, and metadata retain the required historical evidence.
