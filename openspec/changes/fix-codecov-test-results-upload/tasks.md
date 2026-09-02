@@ -17,7 +17,7 @@
 
 ## 3. Deliver and observe
 
-- [ ] 3.1 Commit the assessment before the workflow implementation, push the
+- [x] 3.1 Commit the assessment before the workflow implementation, push the
   focused branch, and open a pull request using every section of the repository
   template; verify the remote branch and PR head match the local branch head.
 - [ ] 3.2 In the first Actions run containing the correction, verify the
