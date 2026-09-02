@@ -1,0 +1,123 @@
+{
+  "schema_version": "1.1",
+  "change_id": "ratify-sdk-core-authority-scope",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Authority-brand scope is security-sensitive because registry membership determines whether values can satisfy trusted-context validation.",
+    "Current module-copy scope is accidental; the owner-selected model must state same-copy, cross-copy, and duplicate-Core behavior without changing authority acceptance.",
+    "Instance scope would break 35 exported authority constructors, while global sharing would weaken module-private registry insertion.",
+    "The planned Core split needs a falsifiable one-Core consumer-graph invariant and a duplicate fixture with a passing null control.",
+    "Allowing a first-party Core dependency must not silently weaken the empty-runtime-dependency controls into permission for third-party dependencies."
+  ],
+  "applicability": {
+    "triggers_matched": ["security_sensitive_behavior", "canonical_capability_requirement"],
+    "material_capability_modification": true,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [
+    "openspec/changes/ratify-sdk-core-authority-scope/proposal.md",
+    "openspec/changes/ratify-sdk-core-authority-scope/assessment.json",
+    "openspec/changes/ratify-sdk-core-authority-scope/design.md",
+    "openspec/changes/ratify-sdk-core-authority-scope/specs/security-audit-sdk-core/spec.md",
+    "openspec/changes/ratify-sdk-core-authority-scope/tasks.md",
+    "packages/security-audit-sdk-core/adr/004-authority-context.md",
+    "docs/adr/0009-sdk-core-authority-scope.md",
+    "openspec/specs/security-audit-sdk-core/spec.md",
+    "packages/security-audit-sdk-core/verification-lifecycle.json"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-bounded-module-copy-single-core",
+      "kind": "direct_implementation",
+      "summary": "Ratify module-copy-scoped authority with unchanged same-copy cross-instance acceptance, fail-closed cross-copy behavior, and one resolved Core module instance in each supported consumer graph.",
+      "forces_addressed": [
+        "Current module-copy scope is accidental; the owner-selected model must state same-copy, cross-copy, and duplicate-Core behavior without changing authority acceptance.",
+        "The planned Core split needs a falsifiable one-Core consumer-graph invariant and a duplicate fixture with a passing null control.",
+        "Allowing a first-party Core dependency must not silently weaken the empty-runtime-dependency controls into permission for third-party dependencies."
+      ]
+    },
+    {
+      "id": "approach-instance-scoped-authority",
+      "kind": "alternative",
+      "summary": "Move authority registry ownership to SDK instances so any cross-instance or cross-copy value is foreign by definition.",
+      "forces_addressed": [
+        "Current module-copy scope is accidental; the owner-selected model must state same-copy, cross-copy, and duplicate-Core behavior without changing authority acceptance.",
+        "Instance scope would break 35 exported authority constructors, while global sharing would weaken module-private registry insertion."
+      ]
+    },
+    {
+      "id": "approach-global-registry-singleton",
+      "kind": "alternative",
+      "summary": "Anchor authority registry membership on process-global state so independently resolved copies share brand recognition.",
+      "forces_addressed": [
+        "Authority-brand scope is security-sensitive because registry membership determines whether values can satisfy trusted-context validation.",
+        "Current module-copy scope is accidental; the owner-selected model must state same-copy, cross-copy, and duplicate-Core behavior without changing authority acceptance."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-bounded-module-copy-single-core",
+  "rejected_alternative_ids": ["approach-instance-scoped-authority", "approach-global-registry-singleton"],
+  "rejection_reasons": {
+    "approach-instance-scoped-authority": {
+      "forces": ["Instance scope would break 35 exported authority constructors, while global sharing would weaken module-private registry insertion."],
+      "reason": "The present registry has no instance identity, so instance scope would change same-copy cross-instance behavior and require every one of 35 public constructors to become instance-bound, factory-returned, or instance-parameterized. Option C preserves the existing forge boundary and gets split safety structurally through one resolved Core copy."
+    },
+    "approach-global-registry-singleton": {
+      "forces": ["Authority-brand scope is security-sensitive because registry membership determines whether values can satisfy trusted-context validation.", "Instance scope would break 35 exported authority constructors, while global sharing would weaken module-private registry insertion."],
+      "reason": "A `globalThis`-anchored registry is reachable and mutable by arbitrary process code, replacing the constructor-only insertion boundary with ambient process reachability. It would accept cross-copy values by weakening authority provenance instead of proving Core resolution, so it is explicitly rejected."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-module-copy-forge-resistance",
+    "implementation-same-copy-cross-instance-acceptance",
+    "implementation-cross-copy-fail-closed-diagnostic-ownership",
+    "implementation-single-core-supported-graph",
+    "implementation-first-party-dependency-allowlist"
+  ],
+  "invariant_evidence": {
+    "implementation-module-copy-forge-resistance": {
+      "task_ids": ["1.1", "3.1"],
+      "evidence_ids": ["ADR-SDK-004 and delta state casts and plain objects cannot enter the module-private registry", "scope review excludes global registry alternatives"]
+    },
+    "implementation-same-copy-cross-instance-acceptance": {
+      "task_ids": ["1.1", "3.1"],
+      "evidence_ids": ["delta scenario fixes same-copy cross-instance acceptance", "ADR-SDK-004 records that registry membership is not instance-bound"]
+    },
+    "implementation-cross-copy-fail-closed-diagnostic-ownership": {
+      "task_ids": ["1.1", "2.3"],
+      "evidence_ids": ["delta preserves fail-closed foreign-copy behavior", "#79 remains unchanged and owns the distinct bounded diagnostic"]
+    },
+    "implementation-single-core-supported-graph": {
+      "task_ids": ["1.2", "2.1", "2.4"],
+      "evidence_ids": ["root ADR preserves F4 binding-depends-on-and-re-exports-Core reasoning", "duplicate-Core failure and non-duplicate null-control fixture are required"]
+    },
+    "implementation-first-party-dependency-allowlist": {
+      "task_ids": ["2.2", "3.1"],
+      "evidence_ids": ["both named dependency controls accept only the exact first-party Core allowlist", "third-party mutation failures prove no broad runtime-dependency permission"]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "The change makes trusted context-brand recognition explicit while preserving fail-closed rejection before event construction or sink handoff.",
+    "authentication_or_authorization": "Brand membership distinguishes authoritative values from claims; the proposal changes no authentication flow or authorization grant but protects that distinction.",
+    "authority_provenance": "Only constructors in one `context.ts` module copy may add registry entries; casts, plain objects, and ambient state remain unable to establish provenance.",
+    "concurrency": "Same-copy cross-instance behavior is specified without new mutable shared state; duplicate-Core fixtures are consumer-graph controls, not concurrent coordination.",
+    "confidentiality": "No caller data, event payload, secret, or diagnostic content is added; future duplicate diagnostics must remain bounded.",
+    "cryptography": "No cryptographic primitive, key material, hash, signature, or cryptographic trust assumption changes.",
+    "error_disclosure": "Cross-copy failures remain safe and #79 is explicitly responsible for a bounded distinct diagnostic that does not disclose payload or raw runtime errors.",
+    "external_security_integration": "No exporter, collector, SIEM, transport, browser telemetry, analytics, detection, or external security service is introduced or authorized.",
+    "fail_posture": "Foreign module-copy values and duplicate-Core fixture arms fail closed; the proposal forbids global sharing, auto-hoisting, or acceptance fallbacks.",
+    "lifecycle": "No initialization, shutdown, delivery, queue, retry, or persistence behavior changes; the consumer-graph invariant is verified separately from SDK lifecycle.",
+    "mutation_ownership": "This proposal owns decision artifacts and requirements; #78 owns authority implementation, #79 owns the diagnostic, and #86 owns Core-split controls.",
+    "privacy_transformation": "No personal, browser, client, event, or derived data is collected, transformed, retained, or exposed.",
+    "resource_retention": "The module-private WeakMap ownership model remains unchanged; no new cache, global store, durable resource, or retention policy is created.",
+    "retry_or_redelivery": "The change adds no delivery, retry, redelivery, queue, buffering, or durability behavior.",
+    "trust_boundary": "The selected model retains module-private authority and proves a supported graph has one Core copy rather than broadening trust through global process state."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "1c55a9c408ca4e2bf48c4d5a06a629201b7bf918"
+  },
+  "verification_task_ids": ["1.1", "1.2", "1.3", "2.1", "2.2", "2.3", "2.4", "3.1", "3.2", "3.3", "4.1", "4.2", "4.3"]
+}
