@@ -1,8 +1,8 @@
 ## 1. Ratify the decision records
 
 - [x] 1.1 Extend `packages/security-audit-sdk-core/adr/004-authority-context.md` with option C and the explicit forge-resistance, module-copy, same-copy cross-instance, cross-copy fail-closed, #79 diagnostic-ownership, single-copy-Core, dependency-allowance, global-singleton-rejection, and revisit invariants; verify the SDK ADR inventory remains exactly ADR-SDK-001 through ADR-SDK-011 and no ADR-SDK-012 exists.
-- [x] 1.2 Add `docs/adr/0009-sdk-core-authority-scope.md` as the repository decision record; verify it preserves the A/B/C table, F3's 35 exported constructors, F4's binding-depends-on-and-re-exports-Core reasoning without `context.ts` duplication, explicit global-singleton rejection, and the exact revisit condition.
-- [x] 1.3 Verify ADR-SDK-004, root ADR 0009, this delta, and the canonical SDK capability use identical authority terms and preserve the frozen contract, current runtime behavior, and #79 issue body.
+- [x] 1.2 Add `docs/adr/0010-sdk-core-authority-scope.md` as the repository decision record; verify it preserves the A/B/C table, F3's 35 exported constructors, F4's binding-depends-on-and-re-exports-Core reasoning without `context.ts` duplication, explicit global-singleton rejection, and the exact revisit condition.
+- [x] 1.3 Verify ADR-SDK-004, root ADR 0010, this delta, and the canonical SDK capability use identical authority terms and preserve the frozen contract, current runtime behavior, and #79 issue body.
 
 ## 2. Bind future Core-extraction obligations to #86
 

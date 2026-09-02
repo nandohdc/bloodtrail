@@ -22,7 +22,7 @@
     "openspec/changes/ratify-sdk-core-authority-scope/specs/security-audit-sdk-core/spec.md",
     "openspec/changes/ratify-sdk-core-authority-scope/tasks.md",
     "packages/security-audit-sdk-core/adr/004-authority-context.md",
-    "docs/adr/0009-sdk-core-authority-scope.md",
+    "docs/adr/0010-sdk-core-authority-scope.md",
     "openspec/specs/security-audit-sdk-core/spec.md",
     "packages/security-audit-sdk-core/verification-lifecycle.json"
   ],
