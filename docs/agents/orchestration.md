@@ -206,6 +206,24 @@ Nine checks are required on `main`:
 to `main` puts the remaining open PRs out of date; they must be rebased, and
 their checks rerun, before they can merge in turn.
 
+Count the checks you see against those nine. `gh pr checks --required` lists
+only contexts that have **reported**, so a check that never started is absent
+from its output rather than pending in it, and "nothing is failing" can settle
+on an incomplete set. `sonar` is the one this bites, because it declares
+`needs: [ci, sdk, contract, coverage]` and never gets created at all when an
+upstream job is cancelled or evicted. PR #245 read as eight contexts, all
+passing, zero failing, while `sonar` had not run.
+
+Read the required contexts from branch protection and require each one to be
+present as well as passing:
+
+    gh api repos/nandohdc/bloodtrail/branches/main/protection \
+      --jq '.required_status_checks.contexts[]'
+
+`hermes-merge-pr.sh` does this at its CI gate and fails closed when a context
+is missing, so the sanctioned merge path is safe; the trap is reporting a PR
+green from `--required` alone before you get there.
+
 A red `sonar` is more often the self-hosted server than the code. The job
 already retries once after a 30s wait, and its "Explain quality gate failure"
 step prints the failing conditions.
