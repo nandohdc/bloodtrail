@@ -1,8 +1,8 @@
 ## 1. Ratify the decision records
 
-- [ ] 1.1 Extend `packages/security-audit-sdk-core/adr/004-authority-context.md` with option C and the explicit forge-resistance, module-copy, same-copy cross-instance, cross-copy fail-closed, #79 diagnostic-ownership, single-copy-Core, dependency-allowance, global-singleton-rejection, and revisit invariants; verify the SDK ADR inventory remains exactly ADR-SDK-001 through ADR-SDK-011 and no ADR-SDK-012 exists.
-- [ ] 1.2 Add `docs/adr/0009-sdk-core-authority-scope.md` as the repository decision record; verify it preserves the A/B/C table, F3's 35 exported constructors, F4's binding-depends-on-and-re-exports-Core reasoning without `context.ts` duplication, explicit global-singleton rejection, and the exact revisit condition.
-- [ ] 1.3 Verify ADR-SDK-004, root ADR 0009, this delta, and the canonical SDK capability use identical authority terms and preserve the frozen contract, current runtime behavior, and #79 issue body.
+- [x] 1.1 Extend `packages/security-audit-sdk-core/adr/004-authority-context.md` with option C and the explicit forge-resistance, module-copy, same-copy cross-instance, cross-copy fail-closed, #79 diagnostic-ownership, single-copy-Core, dependency-allowance, global-singleton-rejection, and revisit invariants; verify the SDK ADR inventory remains exactly ADR-SDK-001 through ADR-SDK-011 and no ADR-SDK-012 exists.
+- [x] 1.2 Add `docs/adr/0009-sdk-core-authority-scope.md` as the repository decision record; verify it preserves the A/B/C table, F3's 35 exported constructors, F4's binding-depends-on-and-re-exports-Core reasoning without `context.ts` duplication, explicit global-singleton rejection, and the exact revisit condition.
+- [x] 1.3 Verify ADR-SDK-004, root ADR 0009, this delta, and the canonical SDK capability use identical authority terms and preserve the frozen contract, current runtime behavior, and #79 issue body.
 
 ## 2. Bind future Core-extraction obligations to #86
 
@@ -13,7 +13,7 @@
 
 ## 3. Proposal materialization verification and canonical fold
 
-- [ ] 3.1 Before staging documentation materialization, run `openspec validate ratify-sdk-core-authority-scope --strict`, perform the full 15-dimension assessment and cross-artifact semantic review, run `git diff --check`, and verify the changed-path allowlist excludes runtime source, generated artifacts, contract source, manifests, dependencies, production integrations, and #79's issue body.
+- [x] 3.1 Before staging documentation materialization, run `openspec validate ratify-sdk-core-authority-scope --strict`, perform the full 15-dimension assessment and cross-artifact semantic review, run `git diff --check`, and verify the changed-path allowlist excludes runtime source, generated artifacts, contract source, manifests, dependencies, production integrations, and #79's issue body.
 - [ ] 3.2 After the documentation materialization is authorized and merged, fold the delta into `openspec/specs/security-audit-sdk-core/spec.md` while this change is active; verify the added requirement and all six scenarios occur exactly once, no delta header reaches the canonical spec, and a second semantic application is a no-op.
 - [ ] 3.3 Before each proposal, materialization, and fold commit, use an explicit staged allowlist, verify staged blobs match the verified candidate, and keep implementation, #79 diagnostic, and generated/contract paths absent.
 
