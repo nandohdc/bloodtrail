@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.1",
+  "change_id": "exempt-contract-toolchain-lockfile",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The protected-prefix rule covers the contract workspace's dev toolchain lockfile, which is not contract content, so the workspace cannot accept a dependency security patch by any route.",
+    "Two required checks are mutually unsatisfiable while the advisory stands: `contract` requires npm audit clean, and `sdk` requires nothing under the prefix to differ from baseline.",
+    "The gate diffs against a fixed baseline commit, so an unexempted remediation would fail every later pull request rather than only the one introducing it.",
+    "The canonical event contract must stay immutable, and a mechanism that can be widened by configuration alone would put that immutability at the mercy of review rather than enforcement.",
+    "Relaxing a contract-protection rule while that rule blocks delivery is exactly the pressure pattern governance exists to resist, so the narrowing must be bounded by the checker and evidenced.",
+    "Raising an audit threshold would silence a live high-severity advisory instead of remediating it, and would leave the workspace running vulnerable code."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior",
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/exempt-contract-toolchain-lockfile/.openspec.yaml",
+    "openspec/changes/exempt-contract-toolchain-lockfile/proposal.md",
+    "openspec/changes/exempt-contract-toolchain-lockfile/design.md",
+    "openspec/changes/exempt-contract-toolchain-lockfile/tasks.md",
+    "openspec/changes/exempt-contract-toolchain-lockfile/assessment.json",
+    "openspec/changes/exempt-contract-toolchain-lockfile/specs/security-audit-sdk-core/spec.md",
+    "packages/security-audit-sdk-core/scripts/check-changed-paths.mjs",
+    "packages/security-audit-sdk-core/verification-lifecycle.json",
+    "packages/security-audit-sdk-core/package-lock.json",
+    "contracts/security-audit/package-lock.json",
+    "packages/security-audit-sdk-core/tests/verification/contract-toolchain-exemption.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-declared-exemption-list",
+      "kind": "direct_implementation",
+      "summary": "Add contract.toolchainExemptions to verification-lifecycle.json and honour it at the protected-prefix rule, validating each entry as an exact file path inside a protected prefix and absent from every path contract-provenance.json declares.",
+      "forces_addressed": [
+        "The protected-prefix rule covers the contract workspace's dev toolchain lockfile, which is not contract content, so the workspace cannot accept a dependency security patch by any route.",
+        "Two required checks are mutually unsatisfiable while the advisory stands: `contract` requires npm audit clean, and `sdk` requires nothing under the prefix to differ from baseline.",
+        "The gate diffs against a fixed baseline commit, so an unexempted remediation would fail every later pull request rather than only the one introducing it.",
+        "The canonical event contract must stay immutable, and a mechanism that can be widened by configuration alone would put that immutability at the mercy of review rather than enforcement.",
+        "Relaxing a contract-protection rule while that rule blocks delivery is exactly the pressure pattern governance exists to resist, so the narrowing must be bounded by the checker and evidenced.",
+        "Raising an audit threshold would silence a live high-severity advisory instead of remediating it, and would leave the workspace running vulnerable code."
+      ]
+    },
+    {
+      "id": "approach-enumerate-normative-subdirectories",
+      "kind": "alternative",
+      "summary": "Replace the bare contracts/security-audit/ prefix with the enumerated normative subdirectories, leaving package-lock.json the only unlisted path and requiring no checker change.",
+      "forces_addressed": [
+        "The protected-prefix rule covers the contract workspace's dev toolchain lockfile, which is not contract content, so the workspace cannot accept a dependency security patch by any route.",
+        "Two required checks are mutually unsatisfiable while the advisory stands: `contract` requires npm audit clean, and `sdk` requires nothing under the prefix to differ from baseline."
+      ]
+    },
+    {
+      "id": "approach-advance-remediation-baseline",
+      "kind": "alternative",
+      "summary": "Advance remediation.proposalBaseline past the commit carrying the lockfile bump so the modified path no longer appears in the diff.",
+      "forces_addressed": [
+        "The gate diffs against a fixed baseline commit, so an unexempted remediation would fail every later pull request rather than only the one introducing it."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-declared-exemption-list",
+  "rejected_alternative_ids": [
+    "approach-enumerate-normative-subdirectories",
+    "approach-advance-remediation-baseline"
+  ],
+  "rejection_reasons": {
+    "approach-enumerate-normative-subdirectories": {
+      "forces": [
+        "Enumeration inverts the default from closed to open: a path added to the contract workspace later, such as a new top-level file or directory, would be unprotected by omission and nothing in the gate would report the gap.",
+        "The protection then depends on every future author remembering to extend the list, which is the failure mode the exemption list avoids by naming the single hole instead of the whole surface."
+      ],
+      "reason": "It removes the checker change at the cost of making omission the way protection is lost, which is strictly less safe than naming one exempted file."
+    },
+    "approach-advance-remediation-baseline": {
+      "forces": [
+        "Advancing the baseline clears this violation and simultaneously forgives every other drift accumulated between the old and new baseline, none of which has been assessed.",
+        "The mechanism would have to be repeated for every future toolchain patch, each time re-forgiving whatever else had accumulated."
+      ],
+      "reason": "It trades one named exemption for a blanket amnesty over an unreviewed range, and has to be repeated indefinitely."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-exemption-cannot-name-declared-contract-content",
+    "implementation-exempted-path-stays-classified",
+    "implementation-unexempted-contract-path-still-fails"
+  ],
+  "invariant_evidence": {
+    "implementation-exemption-cannot-name-declared-contract-content": {
+      "task_ids": [
+        "1.3",
+        "3.2",
+        "3.3",
+        "3.4"
+      ],
+      "evidence_ids": [
+        "an exemption naming a path contract-provenance.json declares is rejected, including a path beneath a declared directory",
+        "an exemption that is a directory, a glob, a traversal or an absolute path is rejected by the shared path rules",
+        "an exemption outside every protected contract prefix is rejected"
+      ]
+    },
+    "implementation-exempted-path-stays-classified": {
+      "task_ids": [
+        "1.1",
+        "1.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "a modified contracts/security-audit/package-lock.json passes changed-path verification and is still reported under the event-contract classification rather than disappearing from the record set"
+      ]
+    },
+    "implementation-unexempted-contract-path-still-fails": {
+      "task_ids": [
+        "3.5"
+      ],
+      "evidence_ids": [
+        "a modified contract path that is not on the exemption list still fails changed-path verification and is named in the diagnostic, so the rule is known to bite"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "c6a4b74c2d66ac8799b923c28a84dc90d6dddf42"
+  },
+  "verification_task_ids": [
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4",
+    "3.5",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4"
+  ]
+}
