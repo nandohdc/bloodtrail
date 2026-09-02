@@ -6,13 +6,13 @@
 
 ## 2. Refresh the vulnerable transitive dependency
 
-- [ ] 2.1 Update only the `node_modules/fast-uri` lockfile resolution from
+- [x] 2.1 Update only the `node_modules/fast-uri` lockfile resolution from
   3.1.5 to 3.1.7 and verify the focused diff contains the expected version,
   registry URL, and integrity changes with no direct dependency edit.
 
 ## 3. Verify installation, SDK behavior, and governance
 
-- [ ] 3.1 Run `npm ci`, the complete SDK `validate` chain, and
+- [x] 3.1 Run `npm ci`, the complete SDK `validate` chain, and
   `npm audit --audit-level=low` in `packages/security-audit-sdk-core`; verify
   installation and validation pass and the audit reports zero vulnerabilities.
 - [ ] 3.2 Run strict OpenSpec validation, final design-pattern governance, and
