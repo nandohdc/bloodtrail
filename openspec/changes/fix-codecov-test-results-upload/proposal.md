@@ -22,7 +22,10 @@ behavior; the change opts out of specification deltas.
 
 ### Modified Capabilities
 
-None.
+None. The assessment declares `software-design-pattern-governance` solely so
+the governance perimeter associates this governance-core workflow edit with
+its owning change. That declaration does not claim a requirement modification,
+and `.openspec.yaml` therefore continues to declare `skip_specs: true`.
 
 ## Impact
 

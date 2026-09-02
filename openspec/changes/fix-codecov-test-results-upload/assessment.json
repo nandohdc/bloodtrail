@@ -14,7 +14,9 @@
       "governance_core_path"
     ],
     "material_capability_modification": false,
-    "capabilities": []
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
   },
   "owned_paths": [
     ".github/workflows/ci.yml",
