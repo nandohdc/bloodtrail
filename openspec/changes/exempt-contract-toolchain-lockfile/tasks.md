@@ -35,3 +35,17 @@
 - [x] 4.3 `npm run validate` and `npm audit --audit-level=high` pass in
       `contracts/security-audit`.
 - [x] 4.4 The design-pattern-governance checker and both governance test suites pass.
+
+## 5. Canonical capability fold
+
+- [x] 5.1 Fold the delta's added requirement into
+      `openspec/specs/security-audit-sdk-core/spec.md` while the change remains active,
+      so the archive relocation carries no canonical write of its own — done in this
+      commit: the requirement heading and all five scenario headings each occur exactly
+      once in the canonical capability, the canonical file carries no
+      `## ADDED Requirements` or other delta operation header, and the active change
+      directory remains in place for the later archive relocation.
+- [x] 5.2 Declare `openspec/specs/security-audit-sdk-core/spec.md` in `owned_paths` so the
+      canonical write is associated with the change that produces it — done in this
+      commit: the proposal declared every delta and implementation path but omitted the
+      canonical capability the delta folds into, which left the fold unassociated.

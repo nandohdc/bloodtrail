@@ -34,7 +34,8 @@
     "packages/security-audit-sdk-core/verification-lifecycle.json",
     "packages/security-audit-sdk-core/package-lock.json",
     "contracts/security-audit/package-lock.json",
-    "packages/security-audit-sdk-core/tests/verification/contract-toolchain-exemption.test.mjs"
+    "packages/security-audit-sdk-core/tests/verification/contract-toolchain-exemption.test.mjs",
+    "openspec/specs/security-audit-sdk-core/spec.md"
   ],
   "candidate_approaches": [
     {
