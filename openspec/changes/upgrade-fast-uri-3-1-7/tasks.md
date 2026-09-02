@@ -15,7 +15,7 @@
 - [x] 3.1 Run `npm ci`, the complete SDK `validate` chain, and
   `npm audit --audit-level=low` in `packages/security-audit-sdk-core`; verify
   installation and validation pass and the audit reports zero vulnerabilities.
-- [ ] 3.2 Run strict OpenSpec validation, final design-pattern governance, and
+- [x] 3.2 Run strict OpenSpec validation, final design-pattern governance, and
   `git diff --check`; verify the security refresh, skip-specs classification,
   assessment ordering, and patch whitespace all pass.
 
