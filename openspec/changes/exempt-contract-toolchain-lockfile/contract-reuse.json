@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@1.0.0",
+  "mode": "assessment",
+  "disposition": "reuse",
+  "mechanism_references": [
+    "metadata.contract",
+    "metadata.schema_version",
+    "compatibility_policy"
+  ],
+  "rationale": "The change touches the contract workspace only at contracts/security-audit/package-lock.json, which is the workspace's dev toolchain (ajv, ajv-formats, and fast-uri transitively) and is not contract content. metadata.contract and metadata.schema_version are consumed unchanged, and compatibility_policy is not engaged because no event, field, policy, registry, schema or fixture is redefined or extended. The contract is reused exactly as frozen: reinstalling the workspace on fast-uri 3.1.7 and re-running the generator reproduces every generated contract artifact byte-identically.",
+  "trust_boundary": "No trust boundary moves. The change is confined to build-time verification tooling and a dev dependency lockfile; nothing crosses a process, network or tenancy boundary at runtime, and no shipped artifact is affected because dependencies, peerDependencies and optionalDependencies stay empty and fast-uri remains dev: true. The governance boundary the change does touch is narrowed by exactly one named file, and the checker refuses any exemption naming a path the contract provenance manifest declares.",
+  "transformation_ownership": "No transformation is added, removed or relocated. The canonical event contract keeps sole ownership of event identity and shape, and check-contract-immutability.mjs keeps sole ownership of proving that ownership has not drifted, binding every path contract-provenance.json declares against baseline 94dc6e3 without consulting the new exemption list.",
+  "alternatives": [
+    {
+      "approach": "extend",
+      "rejection_reason": "Extending security-audit@1.0.0 would require changing contract content to remediate a dev dependency advisory, which is unrelated to the contract's semantics and would break the freeze the change exists to preserve. The advisory is in the build toolchain, not in the contract."
+    },
+    {
+      "approach": "new_contract",
+      "rejection_reason": "A new contract would duplicate a frozen and correct 1.0.0 to work around a path-classification defect in a verification gate. Nothing about the event contract is wrong; the prefix rule that guards it over-captures the workspace's lockfile."
+    }
+  ],
+  "author": {
+    "name": "Fernando Homem da Costa",
+    "handle": "nandohdc"
+  },
+  "evidence_references": [
+    "openspec/changes/exempt-contract-toolchain-lockfile/design.md",
+    "openspec/changes/exempt-contract-toolchain-lockfile/proposal.md",
+    "packages/security-audit-sdk-core/tests/verification/contract-toolchain-exemption.test.mjs",
+    "packages/security-audit-sdk-core/contract-provenance.json"
+  ],
+  "assurance_limitations": [
+    "Structural acceptance of this record is not signed review, not project-owner approval, and not authorization to land the change; the pull request is deliberately a draft pending that decision.",
+    "The byte-identical regeneration claim was established by reinstalling the contract workspace on fast-uri 3.1.7 and re-running its generator on 2026-09-02; it is evidence for this bump only and does not generalise to future toolchain moves.",
+    "This record was drafted by an autonomous agent session and attributes authorship to the repository owner, who has not yet reviewed it; the author field records the account the work is committed under, not a confirmed human assessment."
+  ]
+}

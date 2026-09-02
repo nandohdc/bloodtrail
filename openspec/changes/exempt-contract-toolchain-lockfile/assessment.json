@@ -28,6 +28,7 @@
     "openspec/changes/exempt-contract-toolchain-lockfile/design.md",
     "openspec/changes/exempt-contract-toolchain-lockfile/tasks.md",
     "openspec/changes/exempt-contract-toolchain-lockfile/assessment.json",
+    "openspec/changes/exempt-contract-toolchain-lockfile/contract-reuse.json",
     "openspec/changes/exempt-contract-toolchain-lockfile/specs/security-audit-sdk-core/spec.md",
     "packages/security-audit-sdk-core/scripts/check-changed-paths.mjs",
     "packages/security-audit-sdk-core/verification-lifecycle.json",
