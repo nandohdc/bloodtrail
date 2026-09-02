@@ -1,0 +1,153 @@
+{
+  "schema_version": "1.1",
+  "change_id": "ratify-repository-topology",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Undeclared runtime dependencies must stay detectable, and hoisting can mask them during development.",
+    "Lockfile and package ownership plus root-package presence have never been recorded, so the topology obligation cannot be verified.",
+    "A single root engines field must either be omitted or intersect the divergent per-workspace ranges, which loses the SDK Node 24 matrix.",
+    "A workspace root consolidates lockfiles and changes install coordination at the cost of a root manifest and CI/install workflow changes.",
+    "pnpm would add a required tool to a repository that deliberately keeps its tool inventory minimal.",
+    "The decision record must cite measured evidence with passing null controls rather than structural reasoning alone."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "repository-topology"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/ratify-repository-topology/proposal.md",
+    "openspec/changes/ratify-repository-topology/design.md",
+    "openspec/changes/ratify-repository-topology/specs/repository-topology/spec.md",
+    "openspec/changes/ratify-repository-topology/tasks.md",
+    "openspec/changes/ratify-repository-topology/assessment.json",
+    "docs/adr/0009-repository-and-package-manager-topology.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-ratify-standalone",
+      "kind": "direct_implementation",
+      "summary": "Record the owner's standalone ratification as a capability and ADR 0009: no root manifest, per-package manifests and lockfiles, a declared four-package target, the measured undeclared-import evidence with its null controls, per-workspace engine ranges, plan-only migration/rollback, and revisit conditions.",
+      "forces_addressed": [
+        "Undeclared runtime dependencies must stay detectable, and hoisting can mask them during development.",
+        "Lockfile and package ownership plus root-package presence have never been recorded, so the topology obligation cannot be verified.",
+        "A single root engines field must either be omitted or intersect the divergent per-workspace ranges, which loses the SDK Node 24 matrix.",
+        "A workspace root consolidates lockfiles and changes install coordination at the cost of a root manifest and CI/install workflow changes.",
+        "pnpm would add a required tool to a repository that deliberately keeps its tool inventory minimal.",
+        "The decision record must cite measured evidence with passing null controls rather than structural reasoning alone."
+      ]
+    },
+    {
+      "id": "approach-adopt-npm-workspaces",
+      "kind": "alternative",
+      "summary": "Adopt npm workspaces with a root package.json declaring membership and a root-owned consolidated lockfile, accepting hoisted development resolution and reconciling engine ranges at the root.",
+      "forces_addressed": [
+        "Undeclared runtime dependencies must stay detectable, and hoisting can mask them during development.",
+        "Lockfile and package ownership plus root-package presence have never been recorded, so the topology obligation cannot be verified.",
+        "A single root engines field must either be omitted or intersect the divergent per-workspace ranges, which loses the SDK Node 24 matrix.",
+        "A workspace root consolidates lockfiles and changes install coordination at the cost of a root manifest and CI/install workflow changes."
+      ]
+    },
+    {
+      "id": "approach-adopt-pnpm-workspaces",
+      "kind": "alternative",
+      "summary": "Adopt pnpm workspaces with pnpm-workspace.yaml, a root manifest and consolidated pnpm lockfile, and the pnpm binary as a required tool, relying on its default strict node_modules isolation for dependency visibility.",
+      "forces_addressed": [
+        "Undeclared runtime dependencies must stay detectable, and hoisting can mask them during development.",
+        "Lockfile and package ownership plus root-package presence have never been recorded, so the topology obligation cannot be verified.",
+        "A single root engines field must either be omitted or intersect the divergent per-workspace ranges, which loses the SDK Node 24 matrix.",
+        "A workspace root consolidates lockfiles and changes install coordination at the cost of a root manifest and CI/install workflow changes.",
+        "pnpm would add a required tool to a repository that deliberately keeps its tool inventory minimal."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-ratify-standalone",
+  "rejected_alternative_ids": [
+    "approach-adopt-npm-workspaces",
+    "approach-adopt-pnpm-workspaces"
+  ],
+  "rejection_reasons": {
+    "approach-adopt-npm-workspaces": {
+      "forces": [
+        "Undeclared runtime dependencies must stay detectable, and hoisting can mask them during development.",
+        "A single root engines field must either be omitted or intersect the divergent per-workspace ranges, which loses the SDK Node 24 matrix.",
+        "A workspace root consolidates lockfiles and changes install coordination at the cost of a root manifest and CI/install workflow changes."
+      ],
+      "reason": "npm workspaces hoists by default, making development the weakest point for the dependency visibility the repository's gates protect; the measurement shows development resolves an undeclared import while only the outside-the-root packed consumer detects it. Its root manifest and consolidated lockfile change ownership and install workflow, and a root engines field must be omitted or intersected to >=26.5.0 <27, which drops the SDK Node 24 matrix that per-workspace ranges preserve."
+    },
+    "approach-adopt-pnpm-workspaces": {
+      "forces": [
+        "Undeclared runtime dependencies must stay detectable, and hoisting can mask them during development.",
+        "A single root engines field must either be omitted or intersect the divergent per-workspace ranges, which loses the SDK Node 24 matrix.",
+        "A workspace root consolidates lockfiles and changes install coordination at the cost of a root manifest and CI/install workflow changes.",
+        "pnpm would add a required tool to a repository that deliberately keeps its tool inventory minimal."
+      ],
+      "reason": "The measured pnpm hoisted mode reproduces npm's development masking, so pnpm does not remove the visibility risk; its strict default isolation is real but the topology still requires root membership, a consolidated lockfile, and engines reconciliation. It adds the pnpm binary and pnpm-workspace.yaml as required tooling to a repository that deliberately keeps its tool inventory minimal, a cost not justified at four packages."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-topology-root-manifest-absent",
+    "implementation-topology-packed-control-outside-root",
+    "implementation-topology-engines-per-workspace",
+    "implementation-topology-scope-boundary"
+  ],
+  "invariant_evidence": {
+    "implementation-topology-root-manifest-absent": {
+      "task_ids": [
+        "1.1",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "ADR 0009 records no root manifest and per-package lockfile ownership",
+        "the folded capability spec preserves the no-root-manifest requirement"
+      ]
+    },
+    "implementation-topology-packed-control-outside-root": {
+      "task_ids": [
+        "1.1",
+        "1.2"
+      ],
+      "evidence_ids": [
+        "ADR 0009 records the packed-install control running outside any workspace root",
+        "ADR 0009 cites the measured table values exactly"
+      ]
+    },
+    "implementation-topology-engines-per-workspace": {
+      "task_ids": [
+        "1.1",
+        "1.2"
+      ],
+      "evidence_ids": [
+        "ADR 0009 records the SDK range >=24 <25 || >=26 <27 and the >=26.5.0 contract/research ranges",
+        "no root engines field is introduced"
+      ]
+    },
+    "implementation-topology-scope-boundary": {
+      "task_ids": [
+        "1.3",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "the materialization allowlist excludes check-coherence.mjs and compatibility.json",
+        "the archive relocation changes no implementation path"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "1c55a9c408ca4e2bf48c4d5a06a629201b7bf918"
+  },
+  "verification_task_ids": [
+    "1.2",
+    "2.1",
+    "4.1",
+    "4.2"
+  ]
+}
