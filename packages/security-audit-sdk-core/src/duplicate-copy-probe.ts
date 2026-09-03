@@ -26,9 +26,7 @@
 // acceptance.
 const COPY_PROBE_KEY = Symbol.for("bloodtrail.security-audit-sdk-core.copy-probe.v1");
 
-export interface DuplicateCopyPredicate {
-  (value: unknown): boolean;
-}
+export type DuplicateCopyPredicate = (value: unknown) => boolean;
 
 interface CopyProbeRegistration {
   readonly predicate: DuplicateCopyPredicate;
@@ -62,7 +60,7 @@ function copyProbeChannel(): CopyProbeRegistration[] {
 export function registerCopyProbe(predicate: DuplicateCopyPredicate): void {
   const registration: CopyProbeRegistration = { predicate };
   copyProbeChannel().push(registration);
-  if (localRegistration === undefined) localRegistration = registration;
+  localRegistration ??= registration;
 }
 
 /**
@@ -80,7 +78,7 @@ export function probeForeignCopy(value: unknown): boolean {
     } catch {
       continue;
     }
-    if (Boolean(answer)) return true;
+    if (answer) return true;
   }
   return false;
 }
