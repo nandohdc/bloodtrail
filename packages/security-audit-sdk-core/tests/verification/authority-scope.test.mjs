@@ -30,7 +30,6 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writ
 import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 import test from "node:test";
 
 import { packageRoot, repositoryRoot } from "../../scripts/verification-helpers.mjs";
@@ -96,7 +95,13 @@ function createInstance(sink) {
 // second copy, which must flip the arm from accepted to rejected.
 const FOREIGN_BRANDING_SOURCE = sdk;
 
-function runSameArm() {
+// Every arm below is declared `async` and returns its recorded result string.
+// The null arm drives all nine through one `await run()` over a matrix, so they
+// share a single contract; three of them are genuinely asynchronous. Dropping
+// `async` from the synchronous ones would make that shared `await` operate on a
+// bare string for some arms and a promise for others.
+
+async function runSameArm() {
   const instance = createInstance(createCapturingAuditSink());
   const actor = sdk.authoritativeActor({ type: "administrator", id: "arm-same" });
   let observed;
@@ -107,7 +112,7 @@ function runSameArm() {
   return "accepted";
 }
 
-function runForeignArm() {
+async function runForeignArm() {
   const instanceA = createInstance(createCapturingAuditSink());
   const instanceB = createInstance(createCapturingAuditSink());
   const actor = FOREIGN_BRANDING_SOURCE.authoritativeActor({ type: "administrator", id: "arm-foreign" });
@@ -124,7 +129,7 @@ function runForeignArm() {
   return "accepted";
 }
 
-function runForgedArm() {
+async function runForgedArm() {
   const forgedValue = { type: "administrator", id: "arm-forged" };
   assert.throws(
     () => sdk.runWithAuditContext({ actor: forgedValue }, () => {}),
@@ -139,7 +144,7 @@ function runForgedArm() {
   return "rejected";
 }
 
-function runClonedArm() {
+async function runClonedArm() {
   const brandedValue = sdk.authoritativeActor({ type: "administrator", id: "arm-cloned" });
   const clonedValue = structuredClone(brandedValue);
   assert.notEqual(clonedValue, brandedValue);
@@ -154,7 +159,7 @@ function runClonedArm() {
 }
 
 async function runCopyArm() {
-  const fixture = await disposableFixture();
+  const fixture = disposableFixture();
   const record = runProbeRecord(fixture.caseRoot, writeCopyProbe(fixture));
   assert.equal(record.distinctCopies, true, "the two-copy fixture resolved a single module copy");
   assert.equal(record.sameCopyAccepted, true, "same-copy control was rejected: the fixture's machinery is broken");
@@ -164,7 +169,7 @@ async function runCopyArm() {
 }
 
 async function runDuplicateArm() {
-  const fixture = await disposableFixture();
+  const fixture = disposableFixture();
   const record = runProbeRecord(fixture.caseRoot, writeDuplicateProbe(fixture));
   assert.equal(record.nestedCopiesDistinct, true, "the nested duplicate fixture resolved a single module copy");
   assert.equal(record.sameCopyAccepted, true, "same-copy control was rejected: the fixture's machinery is broken");
@@ -172,7 +177,7 @@ async function runDuplicateArm() {
   return "rejected";
 }
 
-function runNestedArm() {
+async function runNestedArm() {
   const outer = sdk.authoritativeActor({ type: "administrator", id: "arm-nested-outer" });
   const inner = sdk.authoritativeActor({ type: "service_account", id: "arm-nested-inner" });
   const tenant = sdk.authoritativeTenant({
@@ -221,7 +226,7 @@ async function runConcurrentArm() {
   return "no leakage";
 }
 
-function runCleanupArm() {
+async function runCleanupArm() {
   const actor = sdk.authoritativeActor({ type: "administrator", id: "arm-cleanup" });
   let inside;
   sdk.runWithAuditContext({ actor }, () => {
@@ -496,7 +501,14 @@ const MUTATION_CASES = [
   {
     name: "authority-scope null control: foreign arm fails under a cross-copy fixture mutation",
     oldText: "const FOREIGN_BRANDING_SOURCE = " + "sdk;",
-    newText: "const FOREIGN_BRANDING_SOURCE = " + 'await import(pathToFileURL(resolve(packageRoot, "dist/foreign-context.js")).href);',
+    // Self-contained: the injected line imports `node:url` itself rather than
+    // relying on a top-level binding in this file. A binding used only by the
+    // mutated variant reads as an unused import in the file as committed, and
+    // deleting it would break this null control with a ReferenceError instead
+    // of the AUTHORITY_ESCALATION the arm is asserting.
+    newText: "const FOREIGN_BRANDING_SOURCE = "
+      + 'await import((await import("node:url")).pathToFileURL('
+      + 'resolve(packageRoot, "dist/foreign-context.js")).href);',
     pattern: "^authority-scope arm foreign",
     expectedFailure: /AUTHORITY_ESCALATION/i,
     prepare: (cloneRoot) => {
