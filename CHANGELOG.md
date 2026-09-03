@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.5.0](https://github.com/nandohdc/bloodtrail/compare/v0.4.0...v0.5.0) (2026-09-03)
+
+
+### Added
+
+* **security-audit-sdk-core:** land duplicate-core diagnostic ([#79](https://github.com/nandohdc/bloodtrail/issues/79)) ([84ddce7](https://github.com/nandohdc/bloodtrail/commit/84ddce7db58cc7d3aa6d01f8697d7e28a98f581b))
+* **security-audit-sdk-core:** land duplicate-core diagnostic ([#79](https://github.com/nandohdc/bloodtrail/issues/79)) ([069630c](https://github.com/nandohdc/bloodtrail/commit/069630c981300896034f310793efdde5e65d53a8))
+
+
+### Fixed
+
+* **security-audit-sdk-core:** resolve sonar and codescene findings ([#79](https://github.com/nandohdc/bloodtrail/issues/79)) ([cb04f90](https://github.com/nandohdc/bloodtrail/commit/cb04f901066627e72501f1785cd124064fee4abe))
+
+
+### Documentation
+
+* **adr:** record multi-package CI topology decision ([286927e](https://github.com/nandohdc/bloodtrail/commit/286927ed14873de2a9a6520e59be6510e05ed4a3))
+* **adr:** record multi-package CI topology decision ([777952a](https://github.com/nandohdc/bloodtrail/commit/777952a2e5e2f4957ca7a16dc95f7077ba707092))
+* **openspec:** archive implement-duplicate-core-diagnostic ([231f9e1](https://github.com/nandohdc/bloodtrail/commit/231f9e1626fa96334dd2427724f5b4e930e8b598))
+* **openspec:** archive implement-duplicate-core-diagnostic ([b26c363](https://github.com/nandohdc/bloodtrail/commit/b26c363e6a699c9a97249c927bede37b2eef084c))
+* **openspec:** archive ratify-ci-topology ([6b94ee6](https://github.com/nandohdc/bloodtrail/commit/6b94ee6f8d92193ae73e4df61223dc22c425a371))
+* **openspec:** archive ratify-ci-topology ([f107155](https://github.com/nandohdc/bloodtrail/commit/f107155d41a90e27ffe2dd11af7e286df084a1af))
+* **openspec:** fold ci-topology delta into canonical spec ([d5024f2](https://github.com/nandohdc/bloodtrail/commit/d5024f29e5266083194a2c3fccab323d7621be9f))
+* **openspec:** fold ci-topology delta into canonical spec ([a3a541e](https://github.com/nandohdc/bloodtrail/commit/a3a541e3a50c688b1760e29b92ab16f46bf97934))
+* **openspec:** fold implement-duplicate-core-diagnostic into security-audit-sdk-core ([3be942c](https://github.com/nandohdc/bloodtrail/commit/3be942c4197323885442ee1fa4ddeaefb9b3a0dc))
+* **openspec:** fold implement-duplicate-core-diagnostic into security-audit-sdk-core ([60f717c](https://github.com/nandohdc/bloodtrail/commit/60f717ca1ee0f57b283a82f0fcc19774f2c3848e))
+* **openspec:** propose ratify-ci-topology ([e35e3e9](https://github.com/nandohdc/bloodtrail/commit/e35e3e9381067e16d182c56aa686c404c5019d4d))
+* **openspec:** propose ratify-ci-topology ([2736ad9](https://github.com/nandohdc/bloodtrail/commit/2736ad9e79fc1f24fb76504a5f85f264cb3bbf73))
+
 ## [0.4.0](https://github.com/nandohdc/bloodtrail/compare/v0.3.0...v0.4.0) (2026-09-03)
 
 
