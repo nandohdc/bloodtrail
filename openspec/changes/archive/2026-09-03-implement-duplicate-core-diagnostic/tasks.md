@@ -28,6 +28,6 @@
 
 ## 5. Fold, governance, archive
 
-- [ ] 5.1 Fold the delta into `openspec/specs/security-audit-sdk-core/spec.md` in a separate commit and PR while this change is active; verify each requirement and scenario occurs exactly once, no delta header reaches the canonical spec, and a second semantic application is a no-op.
+- [x] 5.1 Fold the delta into `openspec/specs/security-audit-sdk-core/spec.md` in a separate commit and PR while this change is active; verify each requirement and scenario occurs exactly once, no delta header reaches the canonical spec, and a second semantic application is a no-op.
 - [ ] 5.2 Obtain a technical review and the project owner's exact-commit decision after the final technical commit; merge identity-preservingly with all nine required CI contexts green.
-- [ ] 5.3 Archive after merge in a separate byte-preserving relocation commit that does not repeat the fold.
+- [x] 5.3 Archive after merge in a separate byte-preserving relocation commit that does not repeat the fold.
