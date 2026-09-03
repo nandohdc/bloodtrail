@@ -1,0 +1,182 @@
+{
+  "schema_version": "1.1",
+  "change_id": "ratify-release-versioning-tag-model",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Release metadata cannot imply publication authority: the governance boundary depends on release artifacts never asserting a releasability nothing here has.",
+    "Two version namespaces already exist (repository series versus SDK package version) and nothing recorded whether their independence is deliberate.",
+    "Component tags and per-package manifest entries exist to coordinate publication, and nothing in the repository is publishable: every workspace is private, the SDK is UNLICENSED, and no workflow runs npm publish.",
+    "A per-package release model would manufacture the metadata of a publishing repository without the authority to publish, creating a false release story a future reviewer might believe.",
+    "The SDK version is pinned by check-coherence.mjs to compatibility.json package.version, so coupling the namespaces would let a documentation commit bump the SDK version while the candidate is unchanged.",
+    "The SDK is unpublished, so its version has no external consumer whose expectations coupling would serve; its only consumer is the internal coherence check.",
+    "The contract version is owned by the separate security-audit-event-contract governance process under a protected prefix, so no release model may claim or move it.",
+    "A release PR must never have its configuration edited beneath it: release-please derives the series from its own manifest and changelog, and a rebase or config edit beneath an open PR corrupts that baseline.",
+    "Per-artifact version ownership must be explicit, so no release or incidental edit can move a package version without a decision."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "release-versioning-tag-model"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/ratify-release-versioning-tag-model/proposal.md",
+    "openspec/changes/ratify-release-versioning-tag-model/assessment.json",
+    "openspec/changes/ratify-release-versioning-tag-model/design.md",
+    "openspec/changes/ratify-release-versioning-tag-model/specs/release-versioning-tag-model/spec.md",
+    "openspec/changes/ratify-release-versioning-tag-model/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-record-repo-scoped-model",
+      "kind": "direct_implementation",
+      "summary": "Record the delegated #81 decision as the release-versioning-tag-model capability: a repo-scoped repository series (version.txt plus a single vX.Y.Z tag, release-please simple target, no component tags), explicit per-artifact version ownership, independent version namespaces with their reasoning, explicit private status, non-authorizing tag semantics, the release-PR sequencing rule, the decision provenance and scope boundary verbatim, and the revisit conditions.",
+      "forces_addressed": [
+        "Release metadata cannot imply publication authority: the governance boundary depends on release artifacts never asserting a releasability nothing here has.",
+        "Two version namespaces already exist (repository series versus SDK package version) and nothing recorded whether their independence is deliberate.",
+        "Component tags and per-package manifest entries exist to coordinate publication, and nothing in the repository is publishable: every workspace is private, the SDK is UNLICENSED, and no workflow runs npm publish.",
+        "A per-package release model would manufacture the metadata of a publishing repository without the authority to publish, creating a false release story a future reviewer might believe.",
+        "The SDK version is pinned by check-coherence.mjs to compatibility.json package.version, so coupling the namespaces would let a documentation commit bump the SDK version while the candidate is unchanged.",
+        "The SDK is unpublished, so its version has no external consumer whose expectations coupling would serve; its only consumer is the internal coherence check.",
+        "The contract version is owned by the separate security-audit-event-contract governance process under a protected prefix, so no release model may claim or move it.",
+        "A release PR must never have its configuration edited beneath it: release-please derives the series from its own manifest and changelog, and a rebase or config edit beneath an open PR corrupts that baseline.",
+        "Per-artifact version ownership must be explicit, so no release or incidental edit can move a package version without a decision."
+      ]
+    },
+    {
+      "id": "approach-per-package-component-tags",
+      "kind": "alternative",
+      "summary": "Adopt a per-package release model with component tags named <pkg>-vX.Y.Z and per-package entries in the release manifest, so each package carries its own release series and its own tag namespace.",
+      "forces_addressed": [
+        "Release metadata cannot imply publication authority: the governance boundary depends on release artifacts never asserting a releasability nothing here has.",
+        "Component tags and per-package manifest entries exist to coordinate publication, and nothing in the repository is publishable: every workspace is private, the SDK is UNLICENSED, and no workflow runs npm publish.",
+        "A per-package release model would manufacture the metadata of a publishing repository without the authority to publish, creating a false release story a future reviewer might believe."
+      ]
+    },
+    {
+      "id": "approach-couple-version-namespaces",
+      "kind": "alternative",
+      "summary": "Couple the repository series to the SDK package version so a repository release also bumps the SDK's package.json version, keeping the two namespaces numerically aligned at every release.",
+      "forces_addressed": [
+        "Two version namespaces already exist (repository series versus SDK package version) and nothing recorded whether their independence is deliberate.",
+        "The SDK version is pinned by check-coherence.mjs to compatibility.json package.version, so coupling the namespaces would let a documentation commit bump the SDK version while the candidate is unchanged.",
+        "The SDK is unpublished, so its version has no external consumer whose expectations coupling would serve; its only consumer is the internal coherence check."
+      ]
+    },
+    {
+      "id": "approach-implicit-ownership-prose",
+      "kind": "alternative",
+      "summary": "Leave per-artifact version ownership implicit in RELEASING.md prose rather than recording it as a normative capability requirement with deterministic scenarios.",
+      "forces_addressed": [
+        "Per-artifact version ownership must be explicit, so no release or incidental edit can move a package version without a decision.",
+        "The contract version is owned by the separate security-audit-event-contract governance process under a protected prefix, so no release model may claim or move it."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-record-repo-scoped-model",
+  "rejected_alternative_ids": [
+    "approach-per-package-component-tags",
+    "approach-couple-version-namespaces",
+    "approach-implicit-ownership-prose"
+  ],
+  "rejection_reasons": {
+    "approach-per-package-component-tags": {
+      "forces": [
+        "Component tags and per-package manifest entries exist to coordinate publication, and nothing in the repository is publishable: every workspace is private, the SDK is UNLICENSED, and no workflow runs npm publish.",
+        "A per-package release model would manufacture the metadata of a publishing repository without the authority to publish, creating a false release story a future reviewer might believe."
+      ],
+      "reason": "Component tags and per-package manifest entries exist to coordinate publication, and nothing in this repository is publishable: every workspace is private, the SDK is UNLICENSED, no workflow runs npm publish, and check-publication-path.mjs exists to keep it that way. A per-package model manufactures the metadata of a publishing repository without the authority to publish, and a future reviewer could believe the per-package release story that is not true. It also requires a config change, a tag-collision surface, and per-package restatement of private status, which the repo-scoped model needs none of."
+    },
+    "approach-couple-version-namespaces": {
+      "forces": [
+        "The SDK version is pinned by check-coherence.mjs to compatibility.json package.version, so coupling the namespaces would let a documentation commit bump the SDK version while the candidate is unchanged.",
+        "The SDK is unpublished, so its version has no external consumer whose expectations coupling would serve; its only consumer is the internal coherence check."
+      ],
+      "reason": "Coupling would actively destroy the candidate-identity meaning of the SDK version: the coherence pin exists so the version answers which contract and toolchain the candidate speaks, and a documentation commit would bump it while the candidate is unchanged, turning a meaningful pin into noise. Because the SDK is unpublished, its version has no external consumer whose expectations coupling would serve, so coupling pre-builds a revisit condition for no current benefit."
+    },
+    "approach-implicit-ownership-prose": {
+      "forces": [
+        "Per-artifact version ownership must be explicit, so no release or incidental edit can move a package version without a decision.",
+        "The contract version is owned by the separate security-audit-event-contract governance process under a protected prefix, so no release model may claim or move it."
+      ],
+      "reason": "Prose alone is not a conformance target: RELEASING.md records the ownership table, but nothing gives it normative force, so a future release or incidental edit could move a package version without any gate failing. The issue's acceptance criteria demand that version ownership be explicit, and only a capability requirement with deterministic scenarios makes each artifact's owner and each frozen version an asserted, testable invariant."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-repo-scoped-series",
+    "implementation-per-artifact-ownership",
+    "implementation-namespace-independence",
+    "implementation-private-status-explicit",
+    "implementation-non-authorizing-tags",
+    "implementation-release-pr-sequencing",
+    "implementation-records-only-provenance-boundary",
+    "implementation-revisit-conditions"
+  ],
+  "invariant_evidence": {
+    "implementation-repo-scoped-series": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins the repo-scoped model with the release-moves-only-series-artifacts, no-component-tags, and no-per-package-manifest-entries scenarios"
+      ]
+    },
+    "implementation-per-artifact-ownership": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins version ownership per artifact with the release-does-not-move-SDK, governed-SDK-movement, contract-and-research-not-release-managed, and coherence-failure scenarios"
+      ]
+    },
+    "implementation-namespace-independence": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins namespace independence with the documentation-only-no-SDK-bump, no-coupling-mechanism, and coupling-is-a-revisit-condition scenarios"
+      ]
+    },
+    "implementation-private-status-explicit": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins explicit private status with the SDK-identity-checks-hold, every-workspace-private, and no-workflow-publishes scenarios"
+      ]
+    },
+    "implementation-non-authorizing-tags": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins the non-authorizing tag semantics with the documentation-states-non-authorizing and a-tag-grants-nothing scenarios"
+      ]
+    },
+    "implementation-release-pr-sequencing": {
+      "task_ids": ["1.1", "3.2"],
+      "evidence_ids": [
+        "the delta pins the no-release-config-edit-while-a-release-PR-is-open rule with the release-PR-blocks-config-edits and downstream-implementation-waits scenarios; task 3.2 records the live #182 state"
+      ]
+    },
+    "implementation-records-only-provenance-boundary": {
+      "task_ids": ["1.1", "1.2"],
+      "evidence_ids": [
+        "changed-path verification shows only openspec/changes/ratify-release-versioning-tag-model/** modified",
+        "the provenance string appears verbatim in proposal, design, and delta"
+      ]
+    },
+    "implementation-revisit-conditions": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins the two revisit conditions with the publication-authorization, multiple-shipping-packages, and no-revisit-condition-holds scenarios"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "6b94ee6f8d92193ae73e4df61223dc22c425a371"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "4.1",
+    "4.2"
+  ]
+}
