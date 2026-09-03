@@ -1,0 +1,225 @@
+{
+  "schema_version": "1.1",
+  "change_id": "ratify-ci-topology",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Nine required contexts are pinned in branch protection by hand; adding a job does not make it required, so a per-package job model silently degrades as packages are added.",
+    "Context names that move cannot be gates: the CodeScene App renames its check run per base branch, proving an unstable name silently stops blocking merges.",
+    "An explicit package list has its own silent-failure mode: a package added without a list entry is uncovered and nothing fails, so the list must be provably complete.",
+    "Packages sit under three different roots, so a single filesystem glob cannot discover them and only a declared list with an assertion is both explicit and complete.",
+    "The SDK runs Node 24.2.0 and 26.5.0 while the contract and research declare >=26.5.0, so the Node matrix must belong to the package.",
+    "Repository-level gates assert facts about the repository, not about a runtime; running them once per matrix leg multiplies cost and proves nothing new.",
+    "The packed-install control must keep performing a real production-only install outside any workspace root, or a future topology change could silently mask undeclared runtime imports.",
+    "Fork and Dependabot PRs must receive no restricted secrets, and a skipped token-gated analysis must never render as a pass-shaped green.",
+    "gh pr checks --required lists only contexts that have reported, so merge gates must count against branch protection's declared context list, never the reported set.",
+    "Runner labels are repository-scoped, and a wrong literal queues a job until timeout instead of failing fast, so labels need one declared constant.",
+    "The capability ratifies a delegated decision and authorizes nothing: no workflow edit, no branch-protection change, no runner, no secret, and no package implementation.",
+    "Every declared package must carry build, typecheck, runtime tests, the production-only packed install, and at least one deterministic mutation control, or CI fails closed."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "ci-topology"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/ratify-ci-topology/proposal.md",
+    "openspec/changes/ratify-ci-topology/assessment.json",
+    "openspec/changes/ratify-ci-topology/design.md",
+    "openspec/changes/ratify-ci-topology/specs/ci-topology/spec.md",
+    "openspec/changes/ratify-ci-topology/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-ratify-delegated-ci-topology",
+      "kind": "direct_implementation",
+      "summary": "Record the delegated #82 decision as the ci-topology capability: one job per concern with stable per-concern context names, an explicit declared package list with a mechanical completeness assertion failing closed in both directions, a per-package Node matrix, runtime gates per matrix leg with repository-level gates once, the three binding rules, the mandatory per-package check set, and fail-closed failure semantics, with the decision's provenance and scope boundary recorded verbatim.",
+      "forces_addressed": [
+        "Nine required contexts are pinned in branch protection by hand; adding a job does not make it required, so a per-package job model silently degrades as packages are added.",
+        "Context names that move cannot be gates: the CodeScene App renames its check run per base branch, proving an unstable name silently stops blocking merges.",
+        "An explicit package list has its own silent-failure mode: a package added without a list entry is uncovered and nothing fails, so the list must be provably complete.",
+        "Packages sit under three different roots, so a single filesystem glob cannot discover them and only a declared list with an assertion is both explicit and complete.",
+        "The SDK runs Node 24.2.0 and 26.5.0 while the contract and research declare >=26.5.0, so the Node matrix must belong to the package.",
+        "Repository-level gates assert facts about the repository, not about a runtime; running them once per matrix leg multiplies cost and proves nothing new.",
+        "The packed-install control must keep performing a real production-only install outside any workspace root, or a future topology change could silently mask undeclared runtime imports.",
+        "Fork and Dependabot PRs must receive no restricted secrets, and a skipped token-gated analysis must never render as a pass-shaped green.",
+        "gh pr checks --required lists only contexts that have reported, so merge gates must count against branch protection's declared context list, never the reported set.",
+        "Runner labels are repository-scoped, and a wrong literal queues a job until timeout instead of failing fast, so labels need one declared constant.",
+        "The capability ratifies a delegated decision and authorizes nothing: no workflow edit, no branch-protection change, no runner, no secret, and no package implementation.",
+        "Every declared package must carry build, typecheck, runtime tests, the production-only packed install, and at least one deterministic mutation control, or CI fails closed."
+      ]
+    },
+    {
+      "id": "approach-per-package-job-model",
+      "kind": "alternative",
+      "summary": "Model CI as one job per package with per-package context names, adding each new package's jobs and contexts to branch protection by hand as packages arrive.",
+      "forces_addressed": [
+        "Nine required contexts are pinned in branch protection by hand; adding a job does not make it required, so a per-package job model silently degrades as packages are added.",
+        "Context names that move cannot be gates: the CodeScene App renames its check run per base branch, proving an unstable name silently stops blocking merges."
+      ]
+    },
+    {
+      "id": "approach-explicit-list-unasserted",
+      "kind": "alternative",
+      "summary": "Adopt the brief's explicit declared list without the mechanical completeness assertion, relying on merge conflicts to expose a missing list entry.",
+      "forces_addressed": [
+        "An explicit package list has its own silent-failure mode: a package added without a list entry is uncovered and nothing fails, so the list must be provably complete.",
+        "Packages sit under three different roots, so a single filesystem glob cannot discover them and only a declared list with an assertion is both explicit and complete."
+      ]
+    },
+    {
+      "id": "approach-filesystem-discovery",
+      "kind": "alternative",
+      "summary": "Discover packages from the filesystem with globs instead of a declared list, so any package under a scanned root is picked up automatically.",
+      "forces_addressed": [
+        "An explicit package list has its own silent-failure mode: a package added without a list entry is uncovered and nothing fails, so the list must be provably complete.",
+        "Packages sit under three different roots, so a single filesystem glob cannot discover them and only a declared list with an assertion is both explicit and complete."
+      ]
+    },
+    {
+      "id": "approach-repository-wide-node-matrix",
+      "kind": "alternative",
+      "summary": "Run one repository-wide Node matrix, accepting either the contract below its declared range or the loss of the SDK Node 24 matrix.",
+      "forces_addressed": [
+        "The SDK runs Node 24.2.0 and 26.5.0 while the contract and research declare >=26.5.0, so the Node matrix must belong to the package."
+      ]
+    },
+    {
+      "id": "approach-skip-shaped-as-pass",
+      "kind": "alternative",
+      "summary": "Render token-gated skips for untrusted PRs as pass-shaped greens and count merge readiness from the contexts that have reported.",
+      "forces_addressed": [
+        "Fork and Dependabot PRs must receive no restricted secrets, and a skipped token-gated analysis must never render as a pass-shaped green.",
+        "gh pr checks --required lists only contexts that have reported, so merge gates must count against branch protection's declared context list, never the reported set."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-ratify-delegated-ci-topology",
+  "rejected_alternative_ids": [
+    "approach-per-package-job-model",
+    "approach-explicit-list-unasserted",
+    "approach-filesystem-discovery",
+    "approach-repository-wide-node-matrix",
+    "approach-skip-shaped-as-pass"
+  ],
+  "rejection_reasons": {
+    "approach-per-package-job-model": {
+      "forces": [
+        "Nine required contexts are pinned in branch protection by hand; adding a job does not make it required, so a per-package job model silently degrades as packages are added.",
+        "Context names that move cannot be gates: the CodeScene App renames its check run per base branch, proving an unstable name silently stops blocking merges."
+      ],
+      "reason": "A per-package job model makes branch protection grow by hand for every package and produces exactly the silent degradation F1 identifies: the job runs, it is not required, and a red one cannot block a merge. Its context names also move as packages are added, and the CodeScene App evidence proves a renamed context silently stops being the thing that was pinned, so per-package names cannot serve as gates."
+    },
+    "approach-explicit-list-unasserted": {
+      "forces": [
+        "An explicit package list has its own silent-failure mode: a package added without a list entry is uncovered and nothing fails, so the list must be provably complete.",
+        "Packages sit under three different roots, so a single filesystem glob cannot discover them and only a declared list with an assertion is both explicit and complete."
+      ],
+      "reason": "The unasserted list does not remove the silent-coverage failure; it relocates it. A package added without a list entry is uncovered and nothing fails, which is the likelier failure mode because nothing forces the list edit. The completeness assertion makes the enumeration fail closed in both directions, which is the repository's existing idiom (check-coherence.mjs pins counts; check-scope.mjs classifies every path) rather than a new invention."
+    },
+    "approach-filesystem-discovery": {
+      "forces": [
+        "An explicit package list has its own silent-failure mode: a package added without a list entry is uncovered and nothing fails, so the list must be provably complete.",
+        "Packages sit under three different roots, so a single filesystem glob cannot discover them and only a declared list with an assertion is both explicit and complete."
+      ],
+      "reason": "The packages sit under three different roots (contracts/, packages/, research/), so no single glob can discover them, which independently rules out pure filesystem discovery. Glob discovery also makes coverage silent in the other direction: a scanned directory that misses a root yields a quietly uncovered package, exactly the failure the completeness assertion is designed to surface."
+    },
+    "approach-repository-wide-node-matrix": {
+      "forces": [
+        "The SDK runs Node 24.2.0 and 26.5.0 while the contract and research declare >=26.5.0, so the Node matrix must belong to the package."
+      ],
+      "reason": "A repository-wide matrix has no third option: it must run the contract below its declared >=26.5.0 range or drop Node 24 from the SDK's >=24 <25 || >=26 <27 range. Both outcomes violate a declared engine range, and the per-package matrix preserves each package's recorded range without reconciliation."
+    },
+    "approach-skip-shaped-as-pass": {
+      "forces": [
+        "Fork and Dependabot PRs must receive no restricted secrets, and a skipped token-gated analysis must never render as a pass-shaped green.",
+        "gh pr checks --required lists only contexts that have reported, so merge gates must count against branch protection's declared context list, never the reported set."
+      ],
+      "reason": "A pass-shaped skip produces a green board that has verified nothing, which is the #191 defect class and the single most dangerous failure mode in the recorded decision. Counting merge readiness from the reported set compounds it: gh pr checks --required lists only contexts that have reported, so a check that never started is invisible there and a declared required context can silently drop out."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-per-concern-stable-contexts",
+    "implementation-explicit-list-completeness-assertion",
+    "implementation-per-package-node-matrix",
+    "implementation-runtime-per-leg-repository-once",
+    "implementation-packed-install-outside-root",
+    "implementation-untrusted-skip-visibility",
+    "implementation-runner-label-constant",
+    "implementation-mandatory-check-set-fail-closed",
+    "implementation-records-only-provenance-boundary"
+  ],
+  "invariant_evidence": {
+    "implementation-per-concern-stable-contexts": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins one stable required context per concern with a moving-context-name scenario naming the CodeScene App evidence"
+      ]
+    },
+    "implementation-explicit-list-completeness-assertion": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins the both-directions completeness assertion with the exact three-package enumeration and the #87 fourth entry"
+      ]
+    },
+    "implementation-per-package-node-matrix": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins SDK legs 24.2.0 and 26.5.0 and contract/research legs >=26.5.0 with a rejected repository-wide scenario"
+      ]
+    },
+    "implementation-runtime-per-leg-repository-once": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins the test:matrix omission precedent as the gate-split model and a scenario that extra legs do not multiply repository-level gates"
+      ]
+    },
+    "implementation-packed-install-outside-root": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins the outside-any-workspace-root production-only consumer per ADR 0003 and ADR 0009 with a non-substitute scenario"
+      ]
+    },
+    "implementation-untrusted-skip-visibility": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins no-restricted-secrets for fork and Dependabot PRs, skip-not-green rendering, and declared-context merge counting"
+      ]
+    },
+    "implementation-runner-label-constant": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins one declared runner-label constant with a rejected per-job-literal scenario"
+      ]
+    },
+    "implementation-mandatory-check-set-fail-closed": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "the delta pins the five-member mandatory check set and the failure-not-skip, never-green failure semantics"
+      ]
+    },
+    "implementation-records-only-provenance-boundary": {
+      "task_ids": ["1.1", "1.2"],
+      "evidence_ids": [
+        "changed-path verification shows only openspec/changes/ratify-ci-topology/** modified",
+        "the provenance string appears verbatim in proposal, design, and delta"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "29ab7e7f0f75da8cf945055069092dcc58065e4b"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "4.1",
+    "4.2"
+  ]
+}
