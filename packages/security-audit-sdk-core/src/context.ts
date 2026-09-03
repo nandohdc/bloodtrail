@@ -38,6 +38,15 @@ export type AuditBrandKind =
 declare const AUDIT_BRAND: unique symbol;
 type Brand<T, Kind extends AuditBrandKind> = Readonly<T> & { readonly [AUDIT_BRAND]: Kind };
 
+// The authority scope is bounded module-copy scope — a CHOSEN invariant,
+// recorded by ADR-SDK-004's scope selection and root ADR 0010, not an
+// accident of module resolution. This registry is private to THIS module
+// instance: a value branded by a different installed copy of this file is
+// foreign to it and fails closed. `SecurityAuditSdk` never touches this
+// registry, and `brand()` / `isBranded()` take no SDK instance, so instance
+// identity is not an authority discriminator. The distinct duplicate-Core
+// diagnostic is issue #79's obligation and the single-copy Core proof is
+// issue #86's; neither is implemented here.
 const brandRegistry = new WeakMap<object, AuditBrandKind>();
 
 export type AuthoritativeActorContext = Brand<ContextValue<"actor">, "authoritative_actor">;
@@ -391,6 +400,14 @@ function normalizeFrameUnsafe(input: AuditContextFrameInput): AuditResult<AuditC
   return { ok: true, value: deepFreeze(frame) };
 }
 
+// The only registry insertion surface. `brand()` is module-private and is
+// callable only from the exported brand constructors in this file: a
+// TypeScript cast or a hand-written plain object can claim the `Brand<...>`
+// type but can never appear in the registry, because membership is keyed on
+// object identity in `brandRegistry` — and `structuredClone` cannot carry it
+// (the reason the previous non-enumerable-symbol approach was abandoned; see
+// the header comment). The exported constructor surface is pinned by the
+// authority-scope enumeration control in the verification suite.
 function brand<T extends object, Kind extends AuditBrandKind>(input: T, kind: Kind): Brand<T, Kind> {
   const copy = normalizeCanonicalInputOrThrow(input, brandPath(kind)) as T;
   brandRegistry.set(copy, kind);

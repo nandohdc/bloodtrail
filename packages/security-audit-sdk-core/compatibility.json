@@ -143,7 +143,8 @@
       "bug fix preserving contract 1.0.0 interpretation",
       "safe diagnostic bound tightening",
       "caller-owned collaborator freeze and receiver correction",
-      "shutdown timeout process-retention and lifecycle ownership correction"
+      "shutdown timeout process-retention and lifecycle ownership correction",
+      "authority-scope formalization: comments and verification-only, no public API change, no runtime behavior change, no new SDK error code; chosen bounded module-copy scope per ADR-SDK-004 scope selection and root ADR 0010; settled same-copy cross-instance acceptance; distinct duplicate-Core diagnostic remains issue #79's and single-copy Core proof remains issue #86's"
     ],
     "minor": [
       "additive optional public API",
