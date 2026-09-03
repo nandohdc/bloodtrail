@@ -37,6 +37,10 @@ Brands are scoped to the `context.ts` module copy that mints them. `brandRegistr
 
 8. **Revisit condition.** If a supported consumer graph is found in which Core cannot be deduplicated, C's invariant fails and the choice reopens between A-with-a-mechanism and B. No local global, registry-sharing, or auto-hoisting workaround may be introduced instead.
 
+## Amendment (2026-09-03) — duplicate-Core diagnostic (#79)
+
+The decision above is unchanged. Issue #79's distinct bounded duplicate-Core diagnostic landed as `DUPLICATE_AUTHORITY`: a value branded by another installed copy — a sibling two-copy install or a genuine nested duplicate — now fails closed with `DUPLICATE_AUTHORITY` at every brand-miss rejection site, while forged, cast, and cloned values keep `AUTHORITY_ESCALATION`. The thrown diagnostic's canonical wording — "Core resolves to exactly one module instance in any supported consumer graph. A duplicate installed copy branded this value: deduplicate the @bloodtrail/security-audit-sdk-core dependency so a single copy resolves before continuing." — is the single coordinated #79/#86 wording for the single-copy invariant and the deduplication remediation. The distinction is diagnostic-only: a diagnostic-only sibling probe (append-only boolean predicates under `Symbol.for("bloodtrail.security-audit-sdk-core.copy-probe.v1")` on `globalThis`) observes which copy recognizes the value; the rejection itself is unchanged, and no global registry, brand sharing, or foreign-authority acceptance is introduced (invariant 7 stands). Issue #86's single-copy Core proof and dependency-gate rescoping remain #86's.
+
 ## Consequences
 
 This ADR gains the scope selection without a twelfth SDK ADR: the SDK ADR inventory remains exactly ADR-SDK-001 through ADR-SDK-011. #78 becomes formalization plus #79's diagnostic, with no registry relocation. #86 carries the single-copy-Core fixture, the null control, and the dependency-gate rescoping obligations; none of that work is performed by this ADR. The frozen canonical contract, generated artifacts, package surface, and current runtime behavior are unchanged.

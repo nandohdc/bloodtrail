@@ -131,6 +131,19 @@ export const PLATFORM_COUPLING_POLICY = Object.freeze({
       specifiers: Object.freeze([]),
       uninspectedCouplings: Object.freeze([]),
     }),
+    duplicateCopyProbe: Object.freeze({
+      name: "duplicateCopyProbe",
+      prefix: "src/duplicate-copy-probe.ts",
+      hostGlobals: Object.freeze({
+        globalThis: Object.freeze({
+          name: "globalThis",
+          reason: "Anchors the diagnostic-only duplicate-copy sibling probe channel under a Symbol.for key (issue #79). The channel carries boolean answers only — never registry membership, brands, values, or authority. The total globalThis ban stays in force for every other artifact.",
+          boundary: "duplicate-copy sibling probe channel",
+        }),
+      }),
+      specifiers: Object.freeze([]),
+      uninspectedCouplings: Object.freeze([]),
+    }),
   }),
 });
 
@@ -488,6 +501,7 @@ export async function inspectPlatformCoupling({ packageRoot, sourceRoot, tree })
     references: 0,
     inventory: {
       authored: { artifacts: 0, references: 0, hostGlobals: new Map() },
+      duplicateCopyProbe: { artifacts: 0, references: 0, hostGlobals: new Map() },
       generated: { artifacts: 0, references: 0, hostGlobals: new Map() },
     },
     violations: [],
@@ -661,6 +675,9 @@ function isLabelReference(parent, node) {
 function roleForArtifact(artifactPath) {
   if (artifactPath.startsWith(PLATFORM_COUPLING_POLICY.roles.generated.prefix)) {
     return PLATFORM_COUPLING_POLICY.roles.generated;
+  }
+  if (artifactPath.startsWith(PLATFORM_COUPLING_POLICY.roles.duplicateCopyProbe.prefix)) {
+    return PLATFORM_COUPLING_POLICY.roles.duplicateCopyProbe;
   }
   return PLATFORM_COUPLING_POLICY.roles.authored;
 }

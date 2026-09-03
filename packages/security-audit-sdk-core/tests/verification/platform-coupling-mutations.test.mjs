@@ -19,7 +19,7 @@ import { packageRoot } from "../../scripts/verification-helpers.mjs";
 
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-platform-coupling-"));
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
-const BASELINE_INVENTORY = "platform coupling inventory: authored: 16 artifacts, 111 references, host couplings: [Buffer (2 sites)]; generated: 3 artifacts, 7 references, host couplings: [module (1 site)]";
+const BASELINE_INVENTORY = "platform coupling inventory: authored: 16 artifacts, 113 references, host couplings: [Buffer (2 sites)]; duplicateCopyProbe: 1 artifacts, 5 references, host couplings: [globalThis (1 site)]; generated: 3 artifacts, 7 references, host couplings: [module (1 site)]";
 
 const POSITIVE_MUTATIONS = [
   {

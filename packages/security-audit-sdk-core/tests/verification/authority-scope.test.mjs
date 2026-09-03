@@ -9,8 +9,8 @@
 //   foreign   — two SDK instances, one module copy .................... accepted (settled, F7)
 //   forged    — plain object/cast claiming a brand .................... rejected
 //   cloned    — structuredClone of a branded value .................... rejected
-//   copy      — two genuine installed copies .......................... rejected with AUTHORITY_ESCALATION before the sink
-//   duplicate — genuine nested duplicate copy ......................... rejected (wording is #79's, not asserted)
+//   copy      — two genuine installed copies .......................... rejected with DUPLICATE_AUTHORITY before the sink
+//   duplicate — genuine nested duplicate copy ......................... rejected with DUPLICATE_AUTHORITY (dedicated #79 diagnostic)
 //   nested    — nested AsyncLocalStorage scopes ....................... isolation preserved
 //   concurrent— concurrent AsyncLocalStorage scopes ................... no leakage
 //   cleanup   — scope exit ............................................ no retention
@@ -163,9 +163,10 @@ async function runCopyArm() {
   const record = runProbeRecord(fixture.caseRoot, writeCopyProbe(fixture));
   assert.equal(record.distinctCopies, true, "the two-copy fixture resolved a single module copy");
   assert.equal(record.sameCopyAccepted, true, "same-copy control was rejected: the fixture's machinery is broken");
-  assert.equal(record.crossCopyRejected, "AUTHORITY_ESCALATION", "cross-copy value was not rejected with AUTHORITY_ESCALATION");
+  assert.equal(record.crossCopyRejected, "DUPLICATE_AUTHORITY", "cross-copy value was not rejected with DUPLICATE_AUTHORITY");
   assert.equal(record.boundedShape, true, "cross-copy rejection was not bounded to code, category, and path");
-  return "rejected (AUTHORITY_ESCALATION before the sink)";
+  assert.equal(record.canonicalMessage, true, "cross-copy rejection message must name the invariant and the deduplication remediation");
+  return "rejected (DUPLICATE_AUTHORITY before the sink)";
 }
 
 async function runDuplicateArm() {
@@ -173,8 +174,10 @@ async function runDuplicateArm() {
   const record = runProbeRecord(fixture.caseRoot, writeDuplicateProbe(fixture));
   assert.equal(record.nestedCopiesDistinct, true, "the nested duplicate fixture resolved a single module copy");
   assert.equal(record.sameCopyAccepted, true, "same-copy control was rejected: the fixture's machinery is broken");
-  assert.equal(record.duplicateRejectedCategory, "authority", "nested duplicate copy was not rejected");
-  return "rejected";
+  assert.equal(record.duplicateRejectedCode, "DUPLICATE_AUTHORITY", "nested duplicate copy was not rejected with DUPLICATE_AUTHORITY");
+  assert.equal(record.boundedShape, true, "duplicate rejection was not bounded to code, category, and path");
+  assert.equal(record.canonicalMessage, true, "duplicate rejection message must name the invariant and the deduplication remediation");
+  return "rejected (DUPLICATE_AUTHORITY)";
 }
 
 async function runNestedArm() {
@@ -257,12 +260,12 @@ test("authority-scope arm cloned: a structuredClone of a branded value is reject
   assert.equal(await runClonedArm(), "rejected");
 });
 
-test("authority-scope arm copy: two genuinely installed copies reject a cross-copy value with AUTHORITY_ESCALATION before the sink", async () => {
-  assert.equal(await runCopyArm(), "rejected (AUTHORITY_ESCALATION before the sink)");
+test("authority-scope arm copy: two genuinely installed copies reject a cross-copy value with DUPLICATE_AUTHORITY before the sink", async () => {
+  assert.equal(await runCopyArm(), "rejected (DUPLICATE_AUTHORITY before the sink)");
 });
 
-test("authority-scope arm duplicate: a genuine nested duplicate copy is rejected", async () => {
-  assert.equal(await runDuplicateArm(), "rejected");
+test("authority-scope arm duplicate: a genuine nested duplicate copy is rejected with DUPLICATE_AUTHORITY", async () => {
+  assert.equal(await runDuplicateArm(), "rejected (DUPLICATE_AUTHORITY)");
 });
 
 test("authority-scope arm nested: nested AsyncLocalStorage scopes preserve isolation", async () => {
@@ -283,8 +286,8 @@ test("authority-scope arm null: the unmutated package satisfies every recorded a
     ["foreign", "accepted", runForeignArm],
     ["forged", "rejected", runForgedArm],
     ["cloned", "rejected", runClonedArm],
-    ["copy", "rejected (AUTHORITY_ESCALATION before the sink)", runCopyArm],
-    ["duplicate", "rejected", runDuplicateArm],
+    ["copy", "rejected (DUPLICATE_AUTHORITY before the sink)", runCopyArm],
+    ["duplicate", "rejected (DUPLICATE_AUTHORITY)", runDuplicateArm],
     ["nested", "isolation preserved", runNestedArm],
     ["concurrent", "no leakage", runConcurrentArm],
     ["cleanup", "no retention", runCleanupArm],
@@ -417,13 +420,16 @@ function copyProbeSource(consumerA, consumerB) {
     `assert.equal(reached, false, "cross-copy value reached the callback");`,
     `assert.equal(sinkB.events.length, 0, "cross-copy value reached the sink");`,
     `assert.ok(rejection && rejection.name === "SecurityAuditSdkError", "cross-copy rejection is not a SecurityAuditSdkError");`,
-    `assert.equal(rejection.code, "AUTHORITY_ESCALATION");`,
+    `assert.equal(rejection.code, "DUPLICATE_AUTHORITY");`,
     `assert.equal(rejection.category, "authority");`,
     `assert.equal(rejection.path, "/actor");`,
     `const serialized = JSON.stringify(rejection.toJSON());`,
     `assert.ok(!serialized.includes("copy-cross"), "bounded diagnostic must never carry caller data");`,
     `assert.ok(serialized.length < 512, "bounded diagnostic must stay bounded");`,
-    `console.log("AUTHORITY_SCOPE_RESULT " + JSON.stringify({ distinctCopies: true, sameCopyAccepted, crossCopyRejected: rejection.code, boundedShape: true }));`,
+    `assert.ok(rejection.message.includes("Core resolves to exactly one module instance in any supported consumer graph"), "duplicate diagnostic must name the single-copy invariant");`,
+    `assert.match(rejection.message, /deduplicate/i, "duplicate diagnostic must name the deduplication remediation");`,
+    `const canonicalMessage = rejection.message.includes("Core resolves to exactly one module instance in any supported consumer graph") && /deduplicate/i.test(rejection.message);`,
+    `console.log("AUTHORITY_SCOPE_RESULT " + JSON.stringify({ distinctCopies: true, sameCopyAccepted, crossCopyRejected: rejection.code, boundedShape: true, canonicalMessage }));`,
     ``,
   ].join("\n");
 }
@@ -460,8 +466,16 @@ function duplicateProbeSource(topIndex, nestedIndex) {
     `assert.equal(reached, false, "nested duplicate value reached the callback");`,
     `assert.equal(sinkNested.events.length, 0, "nested duplicate value reached the sink");`,
     `assert.ok(rejection && rejection.name === "SecurityAuditSdkError", "nested duplicate rejection is not a SecurityAuditSdkError");`,
+    `assert.equal(rejection.code, "DUPLICATE_AUTHORITY");`,
     `assert.equal(rejection.category, "authority");`,
-    `console.log("AUTHORITY_SCOPE_RESULT " + JSON.stringify({ nestedCopiesDistinct: true, sameCopyAccepted, duplicateRejectedCategory: rejection.category }));`,
+    `assert.equal(rejection.path, "/actor");`,
+    `const serialized = JSON.stringify(rejection.toJSON());`,
+    `assert.ok(!serialized.includes("duplicate-cross"), "bounded diagnostic must never carry caller data");`,
+    `assert.ok(serialized.length < 512, "bounded diagnostic must stay bounded");`,
+    `assert.ok(rejection.message.includes("Core resolves to exactly one module instance in any supported consumer graph"), "duplicate diagnostic must name the single-copy invariant");`,
+    `assert.match(rejection.message, /deduplicate/i, "duplicate diagnostic must name the deduplication remediation");`,
+    `const canonicalMessage = rejection.message.includes("Core resolves to exactly one module instance in any supported consumer graph") && /deduplicate/i.test(rejection.message);`,
+    `console.log("AUTHORITY_SCOPE_RESULT " + JSON.stringify({ nestedCopiesDistinct: true, sameCopyAccepted, duplicateRejectedCode: rejection.code, boundedShape: true, canonicalMessage }));`,
     ``,
   ].join("\n");
 }
@@ -505,12 +519,12 @@ const MUTATION_CASES = [
     // relying on a top-level binding in this file. A binding used only by the
     // mutated variant reads as an unused import in the file as committed, and
     // deleting it would break this null control with a ReferenceError instead
-    // of the AUTHORITY_ESCALATION the arm is asserting.
+    // of the DUPLICATE_AUTHORITY rejection this control expects.
     newText: "const FOREIGN_BRANDING_SOURCE = "
       + 'await import((await import("node:url")).pathToFileURL('
       + 'resolve(packageRoot, "dist/foreign-context.js")).href);',
     pattern: "^authority-scope arm foreign",
-    expectedFailure: /AUTHORITY_ESCALATION/i,
+    expectedFailure: /DUPLICATE_AUTHORITY/i,
     prepare: (cloneRoot) => {
       cpSync(resolve(cloneRoot, "dist/context.js"), resolve(cloneRoot, "dist/foreign-context.js"));
     },

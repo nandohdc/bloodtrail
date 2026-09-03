@@ -50,8 +50,9 @@ process.stdout.write(
 
 function formatInventory(inventory) {
   const authoredGlobals = formatHostGlobals(inventory.authored.hostGlobals);
+  const probeGlobals = formatHostGlobals(inventory.duplicateCopyProbe.hostGlobals);
   const generatedGlobals = formatHostGlobals(inventory.generated.hostGlobals);
-  return `platform coupling inventory: authored: ${inventory.authored.artifacts} artifacts, ${inventory.authored.references} references, host couplings: [${authoredGlobals}]; generated: ${inventory.generated.artifacts} artifacts, ${inventory.generated.references} references, host couplings: [${generatedGlobals}]`;
+  return `platform coupling inventory: authored: ${inventory.authored.artifacts} artifacts, ${inventory.authored.references} references, host couplings: [${authoredGlobals}]; duplicateCopyProbe: ${inventory.duplicateCopyProbe.artifacts} artifacts, ${inventory.duplicateCopyProbe.references} references, host couplings: [${probeGlobals}]; generated: ${inventory.generated.artifacts} artifacts, ${inventory.generated.references} references, host couplings: [${generatedGlobals}]`;
 }
 
 function formatHostGlobals(map) {

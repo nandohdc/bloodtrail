@@ -2,6 +2,7 @@ import { CONTRACT_SCHEMA_NAME, CONTRACT_VERSION, EVENT_CATALOG, EXTENSION_NAMESP
 import type { EventDefinition, EventSemantic, SecurityAuditEvent } from "../generated/contract.generated.js";
 import type { AuditResult } from "../errors.js";
 import { failure, normalizeCanonicalInput } from "../errors.js";
+import { duplicateAuthorityCode } from "../duplicate-copy-probe.js";
 
 const byName = new Map(EVENT_CATALOG.map((entry) => [entry.name, entry]));
 const extensionsByNamespace = new Map(EXTENSION_NAMESPACES.map((entry) => [entry.namespace, entry]));
@@ -215,10 +216,10 @@ function validateCausality(event: SecurityAuditEvent, definition: EventDefinitio
 function validateAuthority(event: SecurityAuditEvent, definition: EventDefinition): AuditResult<void> {
   const actorTrust = event.actor.provenance?.trust_level;
   if (event.actor.type !== "anonymous" && (actorTrust === "client_claim" || actorTrust === "observed_transport" || actorTrust === "unknown")) {
-    return failure("AUTHORITY_ESCALATION", "authority", "/actor/provenance/trust_level");
+    return failure(duplicateAuthorityCode(event.actor), "authority", "/actor/provenance/trust_level");
   }
   if (event.actor.type === "anonymous" && event.authenticated_principal && definition.semantic !== "tenant_context_violation_detected") {
-    return failure("AUTHORITY_ESCALATION", "authority", "/authenticated_principal");
+    return failure(duplicateAuthorityCode(event.authenticated_principal), "authority", "/authenticated_principal");
   }
   if (event.authorization?.decision && event.authorization.decision !== "not_applicable") {
     if (!event.authorization.policy_id || !event.authorization.enforcement_point) {
@@ -226,7 +227,7 @@ function validateAuthority(event: SecurityAuditEvent, definition: EventDefinitio
     }
   }
   if (event.source?.client_reported && event.actor.provenance?.trust_level === "client_claim" && event.actor.type !== "anonymous") {
-    return failure("AUTHORITY_ESCALATION", "authority", "/source/client_reported");
+    return failure(duplicateAuthorityCode(event.source), "authority", "/source/client_reported");
   }
   return { ok: true, value: undefined };
 }
