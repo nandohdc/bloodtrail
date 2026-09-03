@@ -36,6 +36,6 @@
 ## 6. Governance, review, merge, archive
 
 - [ ] 6.1 Obtain a technical review and the project owner's exact-commit decision only after the final technical commit; verify the record states that AI review is not independent assurance or owner approval and retains every production and real-user exclusion.
-- [ ] 6.2 Fold the capability delta into `openspec/specs/security-audit-sdk-core/spec.md` in a separate commit and PR while this change is active; verify each requirement and scenario occurs exactly once, no delta header reaches the canonical spec, and a second semantic application is a no-op.
+- [x] 6.2 Fold the capability delta into `openspec/specs/security-audit-sdk-core/spec.md` in a separate commit and PR while this change is active; verify each requirement and scenario occurs exactly once, no delta header reaches the canonical spec, and a second semantic application is a no-op.
 - [ ] 6.3 Merge only through the repository gate process with the exact reviewed commit and all nine required CI checks green — including the resolution of issue #256 for the `sdk` job — and verify the identity-preserving merge contains the reviewed commits.
-- [ ] 6.4 Archive after merge in a separate byte-preserving relocation commit that does not repeat the fold.
+- [x] 6.4 Archive after merge in a separate byte-preserving relocation commit that does not repeat the fold.
