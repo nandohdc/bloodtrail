@@ -1,0 +1,142 @@
+{
+  "schema_version": "1.1",
+  "change_id": "materialize-repository-topology",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The standalone ratification in ADR 0009 is recorded but not materialized: package-local commands, per-workspace engine ranges, and the migration/rollback plan exist only implicitly, and #83's four acceptance criteria are unproduced evidence.",
+    "The issue's 'Add selected root/package-manager metadata' bullet is stale relative to the accepted ADR 0009; a root manifest or workspace manifest would contradict the owner's recorded decision and must not be introduced.",
+    "A single root engines field must be omitted or intersect the divergent per-workspace ranges to >=26.5.0 <27, which loses the SDK Node 24 matrix that test:coherence pins per workspace.",
+    "The packed-install control is the surviving gate for undeclared runtime imports and must keep running in a clean consumer directory outside any workspace root; any evidence arm that relocates it would silently defeat the gate.",
+    "The frozen contract and the governance_core files are off-limits: no writes under contracts/security-audit, no new files under packages/*/src, no CLAUDE.md/.hermes.md/AGENTS.md/CONTRIBUTING.md edits, or the change fails changed-paths closed.",
+    "ADR 0009's 'moving a pinned constant belongs to #83' clause is vacuous because the ratified topology performs no move, so check-coherence.mjs and compatibility.json stay untouched and the vacuity must be recorded explicitly."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "repository-topology"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/materialize-repository-topology/proposal.md",
+    "openspec/changes/materialize-repository-topology/assessment.json",
+    "openspec/changes/materialize-repository-topology/design.md",
+    "openspec/changes/materialize-repository-topology/specs/repository-topology/spec.md",
+    "openspec/changes/materialize-repository-topology/tasks.md",
+    "docs/topology-materialization.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-document-and-produce-evidence",
+      "kind": "direct_implementation",
+      "summary": "Materialize the ratified standalone topology as documentation plus recorded evidence: one new docs/topology-materialization.md naming each workspace with package-local --prefix commands and exact engines ranges, the ADR 0009-deferred migration/rollback plan with the packed-install control outside any workspace root, the no-restructuring boundary with the vacuous pinned-constant statement, and the four named acceptance arms each recorded with exact head SHA, tool versions, exit codes, and key output lines.",
+      "forces_addressed": [
+        "The standalone ratification in ADR 0009 is recorded but not materialized: package-local commands, per-workspace engine ranges, and the migration/rollback plan exist only implicitly, and #83's four acceptance criteria are unproduced evidence.",
+        "The issue's 'Add selected root/package-manager metadata' bullet is stale relative to the accepted ADR 0009; a root manifest or workspace manifest would contradict the owner's recorded decision and must not be introduced.",
+        "A single root engines field must be omitted or intersect the divergent per-workspace ranges to >=26.5.0 <27, which loses the SDK Node 24 matrix that test:coherence pins per workspace.",
+        "The packed-install control is the surviving gate for undeclared runtime imports and must keep running in a clean consumer directory outside any workspace root; any evidence arm that relocates it would silently defeat the gate.",
+        "The frozen contract and the governance_core files are off-limits: no writes under contracts/security-audit, no new files under packages/*/src, no CLAUDE.md/.hermes.md/AGENTS.md/CONTRIBUTING.md edits, or the change fails changed-paths closed.",
+        "ADR 0009's 'moving a pinned constant belongs to #83' clause is vacuous because the ratified topology performs no move, so check-coherence.mjs and compatibility.json stay untouched and the vacuity must be recorded explicitly."
+      ]
+    },
+    {
+      "id": "approach-introduce-root-metadata",
+      "kind": "alternative",
+      "summary": "Read the issue's 'Add selected root/package-manager metadata' bullet literally: introduce a root package.json with a workspaces field (or pnpm-workspace.yaml), a root-owned lockfile, and a root engines field that reconciles the divergent per-workspace ranges.",
+      "forces_addressed": [
+        "The standalone ratification in ADR 0009 is recorded but not materialized: package-local commands, per-workspace engine ranges, and the migration/rollback plan exist only implicitly, and #83's four acceptance criteria are unproduced evidence.",
+        "The issue's 'Add selected root/package-manager metadata' bullet is stale relative to the accepted ADR 0009; a root manifest or workspace manifest would contradict the owner's recorded decision and must not be introduced.",
+        "A single root engines field must be omitted or intersect the divergent per-workspace ranges to >=26.5.0 <27, which loses the SDK Node 24 matrix that test:coherence pins per workspace."
+      ]
+    },
+    {
+      "id": "approach-document-without-evidence",
+      "kind": "alternative",
+      "summary": "Materialize the documentation only — the workspace inventory and the migration/rollback plan — without producing or recording the four acceptance-criteria evidence arms at a pinned head, leaving hoisting visibility and validation-green claims asserted rather than measured.",
+      "forces_addressed": [
+        "The standalone ratification in ADR 0009 is recorded but not materialized: package-local commands, per-workspace engine ranges, and the migration/rollback plan exist only implicitly, and #83's four acceptance criteria are unproduced evidence.",
+        "The packed-install control is the surviving gate for undeclared runtime imports and must keep running in a clean consumer directory outside any workspace root; any evidence arm that relocates it would silently defeat the gate."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-document-and-produce-evidence",
+  "rejected_alternative_ids": [
+    "approach-introduce-root-metadata",
+    "approach-document-without-evidence"
+  ],
+  "rejection_reasons": {
+    "approach-introduce-root-metadata": {
+      "forces": [
+        "The issue's 'Add selected root/package-manager metadata' bullet is stale relative to the accepted ADR 0009; a root manifest or workspace manifest would contradict the owner's recorded decision and must not be introduced.",
+        "A single root engines field must be omitted or intersect the divergent per-workspace ranges to >=26.5.0 <27, which loses the SDK Node 24 matrix that test:coherence pins per workspace."
+      ],
+      "reason": "The accepted ADR 0009 is the owner's recorded decision and wins over stale issue text: it ratifies the standalone topology with no root manifest, no workspace manifest, no root lockfile, and no root engines. A root engines field also intersects the divergent per-workspace ranges to >=26.5.0 <27, silently dropping the SDK's Node 24 matrix that test:coherence pins, and a root manifest relocates lockfile ownership away from the packages the ratification assigned it to."
+    },
+    "approach-document-without-evidence": {
+      "forces": [
+        "The standalone ratification in ADR 0009 is recorded but not materialized: package-local commands, per-workspace engine ranges, and the migration/rollback plan exist only implicitly, and #83's four acceptance criteria are unproduced evidence.",
+        "The packed-install control is the surviving gate for undeclared runtime imports and must keep running in a clean consumer directory outside any workspace root; any evidence arm that relocates it would silently defeat the gate."
+      ],
+      "reason": "#83's acceptance criteria are evidence obligations: without the produced and recorded arms, the materialization is unverifiable and the hoisting-visibility invariant rests on assertion rather than a re-measured null-controlled arm at the materialization head. The packed-install control's outside-any-workspace-root position is the surviving gate, and only a recorded arm proves it still holds."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-doc-only-materialization",
+    "implementation-command-and-engine-documentation",
+    "implementation-migration-rollback-recorded",
+    "implementation-four-arm-evidence-recorded",
+    "implementation-packed-install-outside-root"
+  ],
+  "invariant_evidence": {
+    "implementation-doc-only-materialization": {
+      "task_ids": ["2.1", "2.6"],
+      "evidence_ids": [
+        "changed-path verification shows only docs/topology-materialization.md added",
+        "delta requirement Materialization performs no restructuring"
+      ]
+    },
+    "implementation-command-and-engine-documentation": {
+      "task_ids": ["2.1"],
+      "evidence_ids": [
+        "delta requirement Materialization documentation names each workspace, its package-local commands, and its engine range with exact engines strings"
+      ]
+    },
+    "implementation-migration-rollback-recorded": {
+      "task_ids": ["2.1"],
+      "evidence_ids": [
+        "delta requirement Materialization records the migration and rollback plan deferred by ADR 0009"
+      ]
+    },
+    "implementation-four-arm-evidence-recorded": {
+      "task_ids": ["2.2", "2.3", "2.4", "2.5"],
+      "evidence_ids": [
+        "each arm recorded with name, exact head SHA, tool versions, exit codes, and key output lines",
+        "validation arm records the output diff against the pre-change head"
+      ]
+    },
+    "implementation-packed-install-outside-root": {
+      "task_ids": ["2.4"],
+      "evidence_ids": [
+        "arm (c) runs the packed-install control in a clean consumer directory outside any workspace root"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "101f4e941e264a8535a83896efe7ef1c5c608a49"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "2.5"
+  ]
+}
