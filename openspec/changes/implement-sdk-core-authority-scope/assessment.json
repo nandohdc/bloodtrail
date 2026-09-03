@@ -32,7 +32,7 @@
     {
       "id": "approach-module-copy-formalization",
       "kind": "direct_implementation",
-      "summary": "State module-copy scope as a chosen invariant in comments only, regression-guard it with a null-controlled nine-arm authority matrix, assert the 35/19 insertion-surface enumeration, prove cross-copy rejection with a genuine second installed copy in a disposable clone, and classify the no-op formalization in compatibility.json.",
+      "summary": "State module-copy scope as a chosen invariant in comments only, regression-guard it with a null-controlled nine-arm authority matrix, assert the 35/19 insertion-surface enumeration, prove cross-copy rejection with a genuine second installed copy in an isolated mkdtemp fixture, and classify the no-op formalization in compatibility.json.",
       "forces_addressed": [
         "The registry insertion boundary must stay forge-resistant while module-copy scope changes from an implementation accident into a chosen invariant.",
         "A green regression arm proves nothing without a null control; an arm that could never go red conceals drift.",
@@ -119,7 +119,7 @@
     },
     "implementation-genuine-two-copy-fixture": {
       "task_ids": ["2.4"],
-      "evidence_ids": ["copy arm runs two independently installed copies in a disposable clone via disposable-git.mjs", "distinct-resolved-copy assertion precedes rejection evidence"]
+      "evidence_ids": ["copy arm runs two independently installed copies in an isolated mkdtemp fixture built by copyPackageStable, with no fixture Git commands", "distinct-resolved-copy assertion precedes rejection evidence"]
     },
     "implementation-compatibility-classification": {
       "task_ids": ["4.1", "4.2"],

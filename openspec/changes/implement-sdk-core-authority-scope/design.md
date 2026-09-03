@@ -11,7 +11,7 @@ The canonical audit contract is frozen and unaffected. The SDK remains an isolat
 - Turn module-copy scope into a chosen, named invariant in `src/context.ts` — comments only, no runtime change.
 - Regression-guard the ratified authority invariants with a mutation-sensitive arm matrix in the SDK verification suite.
 - Pin the insertion surface with an enumeration control that asserts both the 35 exported brand constructors and the 19 `AuditBrandKind` members.
-- Prove cross-copy rejection with a genuine second installed copy in a disposable clone.
+- Prove cross-copy rejection with a genuine second installed copy in an isolated `mkdtemp` fixture.
 - Classify the formalization in `compatibility.json` so a future reader cannot mistake it for a behavioral tightening.
 
 **Non-Goals:**
@@ -58,9 +58,9 @@ The insertion surface is enumerated from `src/context.ts` itself: the `export fu
 
 The rejected alternative is asserting a single derived count. It would reproduce the exact conflation the owner corrected on 2026-08-23.
 
-### D4 — The copy arm uses a genuine two-copy fixture in a disposable clone
+### D4 — The copy arm uses a genuine two-copy fixture in an isolated `mkdtemp` fixture
 
-The `copy` arm is built with **two genuinely, independently installed copies** of the package — each resolved from its own installation, never one module imported twice through aliased resolution. The fixture uses the existing `tests/verification/disposable-git.mjs` helpers to run in a disposable clone, never the live tree, because sibling verification tests snapshot the live package in parallel. The fixture asserts the two resolved module copies are distinct before it records rejection evidence, and verifies the rejection carries the bounded `AUTHORITY_ESCALATION` shape.
+The `copy` arm is built with **two genuinely, independently installed copies** of the package — each resolved from its own installation, never one module imported twice through aliased resolution. The fixture is isolated in its own `mkdtemp` root, built by the test-local `copyPackageStable` helper, never the live tree, because sibling verification tests snapshot the live package in parallel. `tests/verification/disposable-git.mjs` supplies Git identity/environment helpers only; this fixture invokes no Git commands. The fixture asserts the two resolved module copies are distinct before it records rejection evidence, and verifies the rejection carries the bounded `AUTHORITY_ESCALATION` shape.
 
 The rejected alternative is importing the built package twice under two paths and calling that "two copies". Module resolution would collapse that to one instance and the arm would silently stop exercising the cross-copy boundary.
 
@@ -91,4 +91,4 @@ Rollback before implementation is removal of the unmerged proposal. After the de
 
 ## Open Questions
 
-None. The owner-selected model (option C), the settled `foreign` result (F7), the 35/19 correction, and the #79/#86 ownership boundaries are all settled by the 2026-08-23 decision and its recorded corrections. Test file placement and fixture mechanics within the disposable clone are left to the implementer under the constraints above.
+None. The owner-selected model (option C), the settled `foreign` result (F7), the 35/19 correction, and the #79/#86 ownership boundaries are all settled by the 2026-08-23 decision and its recorded corrections. Test file placement and fixture mechanics within the isolated `mkdtemp` fixture are left to the implementer under the constraints above.
