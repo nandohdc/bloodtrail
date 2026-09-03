@@ -9,7 +9,7 @@ The project owner selected **option C — bounded module-copy scope with a singl
 - Name the module-copy scope in `src/context.ts` comments as a chosen invariant: the registry stays a module-level `WeakMap`, only the exported brand constructors in that file insert entries, and `structuredClone` cannot carry a brand (identity-keyed WeakMap). Comment-only — no runtime change, no registry relocation, no public API change.
 - Add a nine-arm authority-scope regression matrix (`same`, `foreign`, `forged`, `cloned`, `copy`, `nested`, `concurrent`, `cleanup`, `null`) to the SDK verification suite, each arm with a null control and demonstrable mutation sensitivity so a green arm can never hide drift.
 - Add the insertion-surface enumeration control asserting **both** counts: 35 exported brand constructors and 19 `AuditBrandKind` members, derived from `src/context.ts` itself so a forgotten constructor or kind fails loudly.
-- Add a genuine two-copy fixture for the `copy` arm: two independently installed copies of the package in a disposable clone (via `tests/verification/disposable-git.mjs`), never one module imported twice.
+- Add a genuine two-copy fixture for the `copy` arm: two independently installed copies of the package in an isolated `mkdtemp` fixture built by the test-local `copyPackageStable` helper, never one module imported twice.
 - Classify the chosen scope in `compatibility.json` against `semverClassification`: no public API change, no runtime behavior change, no new error code, while recording the decision and the future obligations.
 - Preserve the bounded `AUTHORITY_ESCALATION` shape (code, category, bounded path only — never caller data). No duplicate-Core diagnostic is added here.
 

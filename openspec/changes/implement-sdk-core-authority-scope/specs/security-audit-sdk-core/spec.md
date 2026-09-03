@@ -34,7 +34,7 @@ When the authority-scope verification enumerates the insertion surface, it SHALL
 
 ### Requirement: Cross-copy rejection is proven with a genuine second installed copy
 
-The `copy` arm SHALL be exercised with two genuinely, independently installed copies of the SDK package — never one module imported twice through aliased resolution — constructed in a disposable clone so sibling verification snapshots of the live package are unaffected. A value branded by one installed copy and supplied to the other copy SHALL fail closed with `AUTHORITY_ESCALATION` before sink handoff, and the fixture SHALL assert that the two resolved module copies are distinct before claiming rejection evidence.
+The `copy` arm SHALL be exercised with two genuinely, independently installed copies of the SDK package — never one module imported twice through aliased resolution — constructed in an isolated `mkdtemp` fixture so sibling verification snapshots of the live package are unaffected. A value branded by one installed copy and supplied to the other copy SHALL fail closed with `AUTHORITY_ESCALATION` before sink handoff, and the fixture SHALL assert that the two resolved module copies are distinct before claiming rejection evidence.
 
 #### Scenario: Two genuine copies exchange a branded value
 - **WHEN** a value branded by one genuinely installed package copy is supplied to a second genuinely installed package copy
