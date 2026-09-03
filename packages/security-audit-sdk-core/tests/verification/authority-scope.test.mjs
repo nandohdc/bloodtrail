@@ -538,13 +538,13 @@ for (const mutation of MUTATION_CASES) {
 function copyPackageStable(source, destination, { includeDist }) {
   const excluded = new Set([
     "node_modules",
-    ...(includeDist ? [] : ["dist"]),
     "dist-tests",
     "dist-examples",
     ".verification-output",
     "coverage",
     "_vp_dummy.ts",
   ]);
+  if (!includeDist) excluded.add("dist");
   let lastError;
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
@@ -555,7 +555,7 @@ function copyPackageStable(source, destination, { includeDist }) {
       });
       return;
     } catch (error) {
-      if (error && error.code === "ENOENT" && String(error.path ?? "").endsWith("_vp_dummy.ts")) {
+      if (isTransientDummyRace(error)) {
         lastError = error;
         continue;
       }
@@ -563,6 +563,11 @@ function copyPackageStable(source, destination, { includeDist }) {
     }
   }
   throw lastError ?? new Error("package copy remained unstable");
+}
+
+function isTransientDummyRace(error) {
+  if (error?.code !== "ENOENT") return false;
+  return String(error?.path ?? "").endsWith("_vp_dummy.ts");
 }
 
 function replace(path, oldText, newText) {
