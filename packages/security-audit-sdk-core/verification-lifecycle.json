@@ -163,7 +163,8 @@
     ],
     "canonicalSdkCapabilityPrefix": "openspec/specs/security-audit-sdk-core/",
     "reviewedNewSdkSourcePaths": [
-      "packages/security-audit-sdk-core/src/bounded-fifo.ts"
+      "packages/security-audit-sdk-core/src/bounded-fifo.ts",
+      "packages/security-audit-sdk-core/src/duplicate-copy-probe.ts"
     ]
   },
   "localIgnoredFiles": {

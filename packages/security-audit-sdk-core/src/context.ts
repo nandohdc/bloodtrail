@@ -1,7 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { GeneratedOperationContext, SecurityAuditEvent } from "./generated/contract.generated.js";
 import { deepFreeze, omitUndefined } from "./internal.js";
-import { failure, normalizeCanonicalInputOrThrow, SecurityAuditSdkError, type AuditResult } from "./errors.js";
+import { failure, normalizeCanonicalInputOrThrow, SecurityAuditSdkError, type AuditResult, type SafeAuditError } from "./errors.js";
+import { DUPLICATE_AUTHORITY_MESSAGE, duplicateAuthorityCode, registerCopyProbe } from "./duplicate-copy-probe.js";
 
 type ContextValue<K extends keyof SecurityAuditEvent> = NonNullable<SecurityAuditEvent[K]>;
 
@@ -44,10 +45,14 @@ type Brand<T, Kind extends AuditBrandKind> = Readonly<T> & { readonly [AUDIT_BRA
 // instance: a value branded by a different installed copy of this file is
 // foreign to it and fails closed. `SecurityAuditSdk` never touches this
 // registry, and `brand()` / `isBranded()` take no SDK instance, so instance
-// identity is not an authority discriminator. The distinct duplicate-Core
-// diagnostic is issue #79's obligation and the single-copy Core proof is
-// issue #86's; neither is implemented here.
+// identity is not an authority discriminator. On a brand miss the
+// diagnostic-only sibling probe (issue #79; `duplicate-copy-probe.ts`)
+// distinguishes a value branded by another installed copy — rejected with
+// the dedicated `DUPLICATE_AUTHORITY` diagnostic — from a forged, cast, or
+// cloned value, which keeps `AUTHORITY_ESCALATION`. The single-copy Core
+// proof remains issue #86's; it is not implemented here.
 const brandRegistry = new WeakMap<object, AuditBrandKind>();
+registerCopyProbe((value) => (typeof value === "object" && value !== null ? brandRegistry.has(value) : false));
 
 export type AuthoritativeActorContext = Brand<ContextValue<"actor">, "authoritative_actor">;
 export type ClaimedActorContext = Brand<ContextValue<"actor">, "claimed_actor">;
@@ -326,7 +331,7 @@ export function registeredEnrichmentExtension(input: NonNullable<SecurityAuditEv
 
 export function createAuditContextFrame(input: AuditContextFrameInput): AuditContextFrame {
   const result = normalizeFrame(input);
-  if (!result.ok) throw new SecurityAuditSdkError(result.error.code, result.error.category, result.error.path);
+  if (!result.ok) throw frameFailureError(result.error);
   return result.value;
 }
 
@@ -336,7 +341,7 @@ export function currentAuditContext(): AuditContextFrame | undefined {
 
 export function runWithAuditContext<T>(frame: AuditContextFrameInput, callback: () => T): T {
   const merged = mergeAuditContextFrames(storage.getStore(), frame);
-  if (!merged.ok) throw new SecurityAuditSdkError(merged.error.code, merged.error.category, merged.error.path);
+  if (!merged.ok) throw frameFailureError(merged.error);
   return storage.run(merged.value, callback);
 }
 
@@ -369,7 +374,7 @@ function normalizeFrameUnsafe(input: AuditContextFrameInput): AuditResult<AuditC
   for (const [field, kinds] of FRAME_BRAND_FIELDS) {
     const value = input[field];
     if (value === undefined) continue;
-    if (!isBranded(value, ...kinds)) return failure("AUTHORITY_ESCALATION", "authority", `/${String(field)}`);
+    if (!isBranded(value, ...kinds)) return failure(duplicateAuthorityCode(value), "authority", `/${String(field)}`);
   }
   const frame = omitUndefined({
     actor: input.actor,
@@ -421,7 +426,19 @@ function isBranded(value: unknown, ...kinds: readonly AuditBrandKind[]): boolean
 }
 
 function requireBranded(value: unknown, kinds: readonly AuditBrandKind[], path: string): void {
-  if (!isBranded(value, ...kinds)) throw new SecurityAuditSdkError("AUTHORITY_ESCALATION", "authority", path);
+  if (!isBranded(value, ...kinds)) throw authorityRejectionError(duplicateAuthorityCode(value), path);
+}
+
+function authorityRejectionError(code: "DUPLICATE_AUTHORITY" | "AUTHORITY_ESCALATION", path: string): SecurityAuditSdkError {
+  const error = new SecurityAuditSdkError(code, "authority", path);
+  if (code === "DUPLICATE_AUTHORITY") error.message = DUPLICATE_AUTHORITY_MESSAGE;
+  return error;
+}
+
+function frameFailureError(error: SafeAuditError): SecurityAuditSdkError {
+  const thrown = new SecurityAuditSdkError(error.code, error.category, error.path);
+  if (error.code === "DUPLICATE_AUTHORITY") thrown.message = DUPLICATE_AUTHORITY_MESSAGE;
+  return thrown;
 }
 
 function requireNonEmptyString(value: unknown, path: string): asserts value is string {

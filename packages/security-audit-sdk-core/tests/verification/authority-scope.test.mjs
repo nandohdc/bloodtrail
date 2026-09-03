@@ -9,8 +9,8 @@
 //   foreign   — two SDK instances, one module copy .................... accepted (settled, F7)
 //   forged    — plain object/cast claiming a brand .................... rejected
 //   cloned    — structuredClone of a branded value .................... rejected
-//   copy      — two genuine installed copies .......................... rejected with AUTHORITY_ESCALATION before the sink
-//   duplicate — genuine nested duplicate copy ......................... rejected (wording is #79's, not asserted)
+//   copy      — two genuine installed copies .......................... rejected with DUPLICATE_AUTHORITY before the sink
+//   duplicate — genuine nested duplicate copy ......................... rejected with DUPLICATE_AUTHORITY (dedicated #79 diagnostic)
 //   nested    — nested AsyncLocalStorage scopes ....................... isolation preserved
 //   concurrent— concurrent AsyncLocalStorage scopes ................... no leakage
 //   cleanup   — scope exit ............................................ no retention
@@ -158,23 +158,44 @@ async function runClonedArm() {
   return "rejected";
 }
 
-async function runCopyArm() {
-  const fixture = disposableFixture();
-  const record = runProbeRecord(fixture.caseRoot, writeCopyProbe(fixture));
-  assert.equal(record.distinctCopies, true, "the two-copy fixture resolved a single module copy");
-  assert.equal(record.sameCopyAccepted, true, "same-copy control was rejected: the fixture's machinery is broken");
-  assert.equal(record.crossCopyRejected, "AUTHORITY_ESCALATION", "cross-copy value was not rejected with AUTHORITY_ESCALATION");
-  assert.equal(record.boundedShape, true, "cross-copy rejection was not bounded to code, category, and path");
-  return "rejected (AUTHORITY_ESCALATION before the sink)";
-}
+// The copy and duplicate arms share one parameterized runner. #79 made both
+// fixtures produce the SAME diagnostic, which converged two distinct arm
+// tests into one test over two fixtures — a semantic convergence that reads
+// as structural duplication. The arms differ only in which copy validates
+// (validator), which copy supplies the foreign value (foreign), and which
+// recorded result string they return. Each arm keeps its own test
+// registration, its own null-arm matrix entry, and its own per-fixture
+// assertions inside the shared runner.
+const PROBE_ARMS = {
+  copy: {
+    label: "copy",
+    result: "rejected (DUPLICATE_AUTHORITY before the sink)",
+    validatorIndex: (fixture) => installedCopyPath(fixture.consumerB),
+    foreignIndex: (fixture) => installedCopyPath(fixture.consumerA),
+    idPrefix: "copy",
+  },
+  duplicate: {
+    label: "duplicate",
+    result: "rejected (DUPLICATE_AUTHORITY)",
+    validatorIndex: (fixture) => nestedCopyIndex(fixture.consumerA),
+    foreignIndex: (fixture) => installedCopyPath(fixture.consumerA),
+    idPrefix: "duplicate",
+  },
+};
 
-async function runDuplicateArm() {
+async function runProbeArm(arm) {
   const fixture = disposableFixture();
-  const record = runProbeRecord(fixture.caseRoot, writeDuplicateProbe(fixture));
-  assert.equal(record.nestedCopiesDistinct, true, "the nested duplicate fixture resolved a single module copy");
+  const record = runProbeRecord(fixture.caseRoot, writeProbe(fixture, {
+    validatorIndex: arm.validatorIndex(fixture),
+    foreignIndex: arm.foreignIndex(fixture),
+    idPrefix: arm.idPrefix,
+  }));
+  assert.equal(record.copiesDistinct, true, `the ${arm.label} fixture resolved a single module copy`);
   assert.equal(record.sameCopyAccepted, true, "same-copy control was rejected: the fixture's machinery is broken");
-  assert.equal(record.duplicateRejectedCategory, "authority", "nested duplicate copy was not rejected");
-  return "rejected";
+  assert.equal(record.rejectedCode, "DUPLICATE_AUTHORITY", `${arm.label} value was not rejected with DUPLICATE_AUTHORITY`);
+  assert.equal(record.boundedShape, true, `${arm.label} rejection was not bounded to code, category, and path`);
+  assert.equal(record.canonicalMessage, true, `${arm.label} rejection message must name the invariant and the deduplication remediation`);
+  return arm.result;
 }
 
 async function runNestedArm() {
@@ -257,12 +278,12 @@ test("authority-scope arm cloned: a structuredClone of a branded value is reject
   assert.equal(await runClonedArm(), "rejected");
 });
 
-test("authority-scope arm copy: two genuinely installed copies reject a cross-copy value with AUTHORITY_ESCALATION before the sink", async () => {
-  assert.equal(await runCopyArm(), "rejected (AUTHORITY_ESCALATION before the sink)");
+test("authority-scope arm copy: two genuinely installed copies reject a cross-copy value with DUPLICATE_AUTHORITY before the sink", async () => {
+  assert.equal(await runProbeArm(PROBE_ARMS.copy), PROBE_ARMS.copy.result);
 });
 
-test("authority-scope arm duplicate: a genuine nested duplicate copy is rejected", async () => {
-  assert.equal(await runDuplicateArm(), "rejected");
+test("authority-scope arm duplicate: a genuine nested duplicate copy is rejected with DUPLICATE_AUTHORITY", async () => {
+  assert.equal(await runProbeArm(PROBE_ARMS.duplicate), PROBE_ARMS.duplicate.result);
 });
 
 test("authority-scope arm nested: nested AsyncLocalStorage scopes preserve isolation", async () => {
@@ -283,8 +304,8 @@ test("authority-scope arm null: the unmutated package satisfies every recorded a
     ["foreign", "accepted", runForeignArm],
     ["forged", "rejected", runForgedArm],
     ["cloned", "rejected", runClonedArm],
-    ["copy", "rejected (AUTHORITY_ESCALATION before the sink)", runCopyArm],
-    ["duplicate", "rejected", runDuplicateArm],
+    ["copy", PROBE_ARMS.copy.result, () => runProbeArm(PROBE_ARMS.copy)],
+    ["duplicate", PROBE_ARMS.duplicate.result, () => runProbeArm(PROBE_ARMS.duplicate)],
     ["nested", "isolation preserved", runNestedArm],
     ["concurrent", "no leakage", runConcurrentArm],
     ["cleanup", "no retention", runCleanupArm],
@@ -367,101 +388,65 @@ function installedCopyPath(consumerRoot) {
   return resolve(consumerRoot, "node_modules", PACKAGE_INSTALL_PREFIX, "dist/index.js");
 }
 
-function writeCopyProbe(fixture) {
-  const probePath = resolve(fixture.caseRoot, "probe-copy.mjs");
-  writeFileSync(probePath, copyProbeSource(fixture.consumerA, fixture.consumerB), "utf8");
+// One probe writer and one probe source shared by the copy and duplicate
+// arms. The generated probe imports both installed copies BY ABSOLUTE FILE
+// URL in one process and asserts the resolved context modules are distinct
+// before any rejection evidence is recorded; the validator copy then rejects
+// a value branded by the foreign copy. The copy arm validates with consumer
+// B and takes the foreign value from consumer A; the duplicate arm validates
+// with the nested copy and takes the foreign value from the top install.
+function writeProbe(fixture, { validatorIndex, foreignIndex, idPrefix }) {
+  const probePath = resolve(fixture.caseRoot, `probe-${idPrefix}.mjs`);
+  writeFileSync(probePath, probeSource({ validatorIndex, foreignIndex, idPrefix }), "utf8");
   return probePath;
 }
 
-function writeDuplicateProbe(fixture) {
-  const probePath = resolve(fixture.caseRoot, "probe-duplicate.mjs");
-  const nestedCopy = resolve(fixture.consumerA, "node_modules/duplicate-wrapper/node_modules", PACKAGE_INSTALL_PREFIX, "dist/index.js");
-  writeFileSync(probePath, duplicateProbeSource(installedCopyPath(fixture.consumerA), nestedCopy), "utf8");
-  return probePath;
+function nestedCopyIndex(consumerA) {
+  return resolve(consumerA, "node_modules/duplicate-wrapper/node_modules", PACKAGE_INSTALL_PREFIX, "dist/index.js");
 }
 
-// The two probe sources import both installed copies BY ABSOLUTE FILE URL in
-// one process and assert the resolved context modules are distinct before any
-// rejection evidence is recorded.
-function copyProbeSource(consumerA, consumerB) {
+function probeSource({ validatorIndex, foreignIndex, idPrefix }) {
   return [
     `import assert from "node:assert/strict";`,
     `import { realpathSync } from "node:fs";`,
     `import { pathToFileURL } from "node:url";`,
-    `const indexA = ${JSON.stringify(installedCopyPath(consumerA))};`,
-    `const indexB = ${JSON.stringify(installedCopyPath(consumerB))};`,
-    `const copyA = await import(pathToFileURL(indexA).href);`,
-    `const copyB = await import(pathToFileURL(indexB).href);`,
-    `const testingB = await import(pathToFileURL(${JSON.stringify(resolve(consumerB, "node_modules", PACKAGE_INSTALL_PREFIX, "dist/testing.js"))}).href);`,
-    `const contextA = realpathSync(${JSON.stringify(resolve(consumerA, "node_modules", PACKAGE_INSTALL_PREFIX, "dist/context.js"))});`,
-    `const contextB = realpathSync(${JSON.stringify(resolve(consumerB, "node_modules", PACKAGE_INSTALL_PREFIX, "dist/context.js"))});`,
-    `assert.notEqual(contextA, contextB, "two-copy fixture resolved a single module copy");`,
-    `const sinkB = testingB.createCapturingAuditSink();`,
-    `const instanceB = copyB.createSecurityAuditSdk({`,
+    `const validator = await import(pathToFileURL(${JSON.stringify(validatorIndex)}).href);`,
+    `const foreign = await import(pathToFileURL(${JSON.stringify(foreignIndex)}).href);`,
+    `const testingValidator = await import(pathToFileURL(${JSON.stringify(resolve(validatorIndex, "../testing.js"))}).href);`,
+    `const contextValidator = realpathSync(${JSON.stringify(resolve(validatorIndex, "../context.js"))});`,
+    `const contextForeign = realpathSync(${JSON.stringify(resolve(foreignIndex, "../context.js"))});`,
+    `assert.notEqual(contextValidator, contextForeign, "${idPrefix} fixture resolved a single module copy");`,
+    `const sinkValidator = testingValidator.createCapturingAuditSink();`,
+    `const instanceValidator = validator.createSecurityAuditSdk({`,
     `  contractVersion: "1.0.0",`,
-    `  producer: { name: "authority-scope-copy-b", version: "1.0.0" },`,
-    `  service: { name: "copy-b" },`,
+    `  producer: { name: "authority-scope-${idPrefix}", version: "1.0.0" },`,
+    `  service: { name: "${idPrefix}" },`,
     `  environment: { name: "verification" },`,
-    `  sink: sinkB,`,
+    `  sink: sinkValidator,`,
     `});`,
     `let sameCopyAccepted = false;`,
-    `const ownBrand = copyB.authoritativeActor({ type: "administrator", id: "copy-own" });`,
-    `instanceB.runWithContext({ actor: ownBrand }, () => { sameCopyAccepted = true; });`,
+    `const ownBrand = validator.authoritativeActor({ type: "administrator", id: "${idPrefix}-own" });`,
+    `instanceValidator.runWithContext({ actor: ownBrand }, () => { sameCopyAccepted = true; });`,
     `assert.equal(sameCopyAccepted, true, "same-copy control failed: fixture machinery is broken");`,
-    `const foreignBrand = copyA.authoritativeActor({ type: "administrator", id: "copy-cross" });`,
+    `const foreignBrand = foreign.authoritativeActor({ type: "administrator", id: "${idPrefix}-cross" });`,
     `let reached = false;`,
     `let rejection;`,
     `try {`,
-    `  instanceB.runWithContext({ actor: foreignBrand }, () => { reached = true; });`,
+    `  instanceValidator.runWithContext({ actor: foreignBrand }, () => { reached = true; });`,
     `} catch (error) { rejection = error; }`,
-    `assert.equal(reached, false, "cross-copy value reached the callback");`,
-    `assert.equal(sinkB.events.length, 0, "cross-copy value reached the sink");`,
-    `assert.ok(rejection && rejection.name === "SecurityAuditSdkError", "cross-copy rejection is not a SecurityAuditSdkError");`,
-    `assert.equal(rejection.code, "AUTHORITY_ESCALATION");`,
+    `assert.equal(reached, false, "${idPrefix} value reached the callback");`,
+    `assert.equal(sinkValidator.events.length, 0, "${idPrefix} value reached the sink");`,
+    `assert.ok(rejection && rejection.name === "SecurityAuditSdkError", "${idPrefix} rejection is not a SecurityAuditSdkError");`,
+    `assert.equal(rejection.code, "DUPLICATE_AUTHORITY");`,
     `assert.equal(rejection.category, "authority");`,
     `assert.equal(rejection.path, "/actor");`,
     `const serialized = JSON.stringify(rejection.toJSON());`,
-    `assert.ok(!serialized.includes("copy-cross"), "bounded diagnostic must never carry caller data");`,
+    `assert.ok(!serialized.includes("${idPrefix}-cross"), "bounded diagnostic must never carry caller data");`,
     `assert.ok(serialized.length < 512, "bounded diagnostic must stay bounded");`,
-    `console.log("AUTHORITY_SCOPE_RESULT " + JSON.stringify({ distinctCopies: true, sameCopyAccepted, crossCopyRejected: rejection.code, boundedShape: true }));`,
-    ``,
-  ].join("\n");
-}
-
-function duplicateProbeSource(topIndex, nestedIndex) {
-  return [
-    `import assert from "node:assert/strict";`,
-    `import { realpathSync } from "node:fs";`,
-    `import { pathToFileURL } from "node:url";`,
-    `const top = await import(pathToFileURL(${JSON.stringify(topIndex)}).href);`,
-    `const nested = await import(pathToFileURL(${JSON.stringify(nestedIndex)}).href);`,
-    `const testingNested = await import(pathToFileURL(${JSON.stringify(resolve(nestedIndex, "../testing.js"))}).href);`,
-    `const contextTop = realpathSync(${JSON.stringify(resolve(topIndex, "../context.js"))});`,
-    `const contextNested = realpathSync(${JSON.stringify(resolve(nestedIndex, "../context.js"))});`,
-    `assert.notEqual(contextTop, contextNested, "nested duplicate fixture resolved a single module copy");`,
-    `const sinkNested = testingNested.createCapturingAuditSink();`,
-    `const instanceNested = nested.createSecurityAuditSdk({`,
-    `  contractVersion: "1.0.0",`,
-    `  producer: { name: "authority-scope-nested", version: "1.0.0" },`,
-    `  service: { name: "nested" },`,
-    `  environment: { name: "verification" },`,
-    `  sink: sinkNested,`,
-    `});`,
-    `let sameCopyAccepted = false;`,
-    `const ownBrand = nested.authoritativeActor({ type: "administrator", id: "duplicate-own" });`,
-    `instanceNested.runWithContext({ actor: ownBrand }, () => { sameCopyAccepted = true; });`,
-    `assert.equal(sameCopyAccepted, true, "same-copy control failed: fixture machinery is broken");`,
-    `const foreignBrand = top.authoritativeActor({ type: "administrator", id: "duplicate-cross" });`,
-    `let reached = false;`,
-    `let rejection;`,
-    `try {`,
-    `  instanceNested.runWithContext({ actor: foreignBrand }, () => { reached = true; });`,
-    `} catch (error) { rejection = error; }`,
-    `assert.equal(reached, false, "nested duplicate value reached the callback");`,
-    `assert.equal(sinkNested.events.length, 0, "nested duplicate value reached the sink");`,
-    `assert.ok(rejection && rejection.name === "SecurityAuditSdkError", "nested duplicate rejection is not a SecurityAuditSdkError");`,
-    `assert.equal(rejection.category, "authority");`,
-    `console.log("AUTHORITY_SCOPE_RESULT " + JSON.stringify({ nestedCopiesDistinct: true, sameCopyAccepted, duplicateRejectedCategory: rejection.category }));`,
+    `assert.ok(rejection.message.includes("Core resolves to exactly one module instance in any supported consumer graph"), "duplicate diagnostic must name the single-copy invariant");`,
+    `assert.match(rejection.message, /deduplicate/i, "duplicate diagnostic must name the deduplication remediation");`,
+    `const canonicalMessage = rejection.message.includes("Core resolves to exactly one module instance in any supported consumer graph") && /deduplicate/i.test(rejection.message);`,
+    `console.log("AUTHORITY_SCOPE_RESULT " + JSON.stringify({ copiesDistinct: true, sameCopyAccepted, rejectedCode: rejection.code, boundedShape: true, canonicalMessage }));`,
     ``,
   ].join("\n");
 }
@@ -505,12 +490,12 @@ const MUTATION_CASES = [
     // relying on a top-level binding in this file. A binding used only by the
     // mutated variant reads as an unused import in the file as committed, and
     // deleting it would break this null control with a ReferenceError instead
-    // of the AUTHORITY_ESCALATION the arm is asserting.
+    // of the DUPLICATE_AUTHORITY rejection this control expects.
     newText: "const FOREIGN_BRANDING_SOURCE = "
       + 'await import((await import("node:url")).pathToFileURL('
       + 'resolve(packageRoot, "dist/foreign-context.js")).href);',
     pattern: "^authority-scope arm foreign",
-    expectedFailure: /AUTHORITY_ESCALATION/i,
+    expectedFailure: /DUPLICATE_AUTHORITY/i,
     prepare: (cloneRoot) => {
       cpSync(resolve(cloneRoot, "dist/context.js"), resolve(cloneRoot, "dist/foreign-context.js"));
     },
