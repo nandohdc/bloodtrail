@@ -1,7 +1,7 @@
 ## 1. Planning and Governance Assessment
 
 - [x] 1.1 Create OpenSpec change `clarify-fold-and-archive-sequence` with proposal, design, and tasks.
-- [ ] 1.2 Formulate design-pattern governance assessment for `clarify-fold-and-archive-sequence`.
+- [x] 1.2 Formulate design-pattern governance assessment for `clarify-fold-and-archive-sequence`.
 
 ## 2. Documentation Updates
 
