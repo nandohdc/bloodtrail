@@ -35,6 +35,10 @@ Use Conventional Commits: `type(scope): description`, for example `fix(sdk): rej
 
 Changes begin with an owning OpenSpec change. Complete every section of `.github/PULL_REQUEST_TEMPLATE.md`, link the issue/change, describe behavior and governance classification, and list exact verification results. Include screenshots only when visual or browser-research output changes. Required CI checks must pass before merge.
 
+### Batching Routine Documentation Updates
+
+`AGENTS.md`, `CLAUDE.md`, `.hermes.md`, and `CONTRIBUTING.md` are classified as `governance_core`. Touching any of them triggers `governance_core_path` and forces a full OpenSpec assessment with 15-dimension security justifications. Never touch these paths incidentally alongside an unrelated bounded change (such as an SDK bugfix or test helper). Routine documentation corrections must be deferred and batched into periodic documentation-only changes to keep bounded changes on the lightweight/abbreviated assessment path.
+
 ## Agent skills
 
 ### Issue tracker

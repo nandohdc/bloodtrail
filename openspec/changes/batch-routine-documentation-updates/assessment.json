@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.1",
+  "change_id": "batch-routine-documentation-updates",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A one-line documentation edit in governance_core paths currently forces full assessment and ~130 lines of assessment prose (#301).",
+    "Incidental documentation updates should not penalize bounded implementation or verification changes.",
+    "Critical agent instructions in CLAUDE.md and AGENTS.md must retain governance_core status to prevent unassessed policy drift.",
+    "Autonomous agents and contributors must have clear preflight guidance to batch documentation updates into dedicated changes.",
+    "Fail-closed governance verification must remain strictly enforced across all repository gates."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "change-governance"
+    ]
+  },
+  "owned_paths": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "docs/agents/orchestration.md",
+    ".hermes.md",
+    "openspec/changes/batch-routine-documentation-updates/proposal.md",
+    "openspec/changes/batch-routine-documentation-updates/design.md",
+    "openspec/changes/batch-routine-documentation-updates/tasks.md",
+    "openspec/changes/batch-routine-documentation-updates/assessment.json",
+    "openspec/changes/batch-routine-documentation-updates/.openspec.yaml",
+    "openspec/changes/batch-routine-documentation-updates/specs/change-governance/spec.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-batch-documentation-convention",
+      "kind": "direct_implementation",
+      "summary": "Record an explicit convention in AGENTS.md, CLAUDE.md, and orchestration.md requiring routine governance_core documentation updates to be decoupled and batched into periodic documentation changes.",
+      "forces_addressed": [
+        "A one-line documentation edit in governance_core paths currently forces full assessment and ~130 lines of assessment prose (#301).",
+        "Incidental documentation updates should not penalize bounded implementation or verification changes.",
+        "Critical agent instructions in CLAUDE.md and AGENTS.md must retain governance_core status to prevent unassessed policy drift.",
+        "Autonomous agents and contributors must have clear preflight guidance to batch documentation updates into dedicated changes.",
+        "Fail-closed governance verification must remain strictly enforced across all repository gates."
+      ]
+    },
+    {
+      "id": "approach-reclassify-claude-md",
+      "kind": "alternative",
+      "summary": "Reclassify CLAUDE.md and AGENTS.md as documentation_only in design-pattern-policy.json to avoid triggering governance_core_path on routine edits.",
+      "forces_addressed": [
+        "A one-line documentation edit in governance_core paths currently forces full assessment and ~130 lines of assessment prose (#301).",
+        "Incidental documentation updates should not penalize bounded implementation or verification changes."
+      ]
+    },
+    {
+      "id": "approach-ad-hoc-exemptions",
+      "kind": "alternative",
+      "summary": "Introduce heuristic AST or diff-based exemptions into check-design-pattern-governance.mjs for minor modifications to governance_core paths.",
+      "forces_addressed": [
+        "A one-line documentation edit in governance_core paths currently forces full assessment and ~130 lines of assessment prose (#301).",
+        "Incidental documentation updates should not penalize bounded implementation or verification changes."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-batch-documentation-convention",
+  "rejected_alternative_ids": [
+    "approach-reclassify-claude-md",
+    "approach-ad-hoc-exemptions"
+  ],
+  "rejection_reasons": {
+    "approach-reclassify-claude-md": {
+      "forces": [
+        "Critical agent instructions in CLAUDE.md and AGENTS.md must retain governance_core status to prevent unassessed policy drift.",
+        "Fail-closed governance verification must remain strictly enforced across all repository gates."
+      ],
+      "reason": "Reclassifying core agent instruction files to documentation_only weakens repository governance by permitting unassessed alterations to agent boundaries and verification rules."
+    },
+    "approach-ad-hoc-exemptions": {
+      "forces": [
+        "Fail-closed governance verification must remain strictly enforced across all repository gates."
+      ],
+      "reason": "Adding diff-inspection heuristics into the fail-closed governance checker compromises determinism, introduces parser brittleness, and creates governance evasion paths."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-batch-documentation-convention"
+  ],
+  "invariant_evidence": {
+    "implementation-batch-documentation-convention": {
+      "task_ids": [
+        "1.1",
+        "1.2",
+        "1.3",
+        "1.4",
+        "2.1",
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "AGENTS.md records the routine documentation batching convention",
+        "CLAUDE.md records the routine documentation batching convention",
+        "docs/agents/orchestration.md documents the routine documentation batching convention",
+        ".hermes.md harmonizes with the routine documentation batching convention",
+        "design-pattern-governance verification and dual-check pass cleanly"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "Modifies documentation and procedural convention only; does not alter audit log generation, schema validation, or immutability.",
+    "authentication_or_authorization": "Does not alter authentication or authorization mechanisms or policy checks.",
+    "authority_provenance": "Does not alter authority provenance validation or actor resolution.",
+    "concurrency": "Does not introduce or modify concurrency behavior or asynchronous execution patterns.",
+    "confidentiality": "Does not affect data confidentiality, secret handling, or token exposure.",
+    "cryptography": "Does not introduce or modify cryptographic operations or hashing algorithms.",
+    "error_disclosure": "Does not alter error handling, sanitization, or error disclosures.",
+    "external_security_integration": "Does not alter external security integrations or transports.",
+    "fail_posture": "Preserves fail-closed posture; does not alter runtime or governance fail posture.",
+    "lifecycle": "Does not alter SDK or contract lifecycle states or state machines.",
+    "mutation_ownership": "Does not alter mutation ownership rules or object freezing.",
+    "privacy_transformation": "Does not alter privacy transformation behavior or data redaction.",
+    "resource_retention": "Does not alter resource retention behavior or object disposal.",
+    "retry_or_redelivery": "Does not alter retry or redelivery mechanics in SDK sink emission.",
+    "trust_boundary": "Does not alter architectural trust boundaries or runtime process boundaries."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "05ddf6b79adc76cef4ccaa28129f4e16bc832cd2"
+  },
+  "verification_task_ids": [
+    "2.1",
+    "2.2",
+    "2.3"
+  ]
+}
