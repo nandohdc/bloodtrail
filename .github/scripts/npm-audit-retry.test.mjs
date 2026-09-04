@@ -4,7 +4,6 @@ import test from "node:test";
 import {
   classifyAuditResult,
   runAuditWithRetry,
-  TRANSPORT_ERROR_PATTERNS,
 } from "./npm-audit-retry.mjs";
 
 test("classifyAuditResult: status 0 is always a pass", () => {
@@ -40,6 +39,7 @@ test("classifyAuditResult: detects ECONNRESET, ENOTFOUND, and HTTP 5xx as transp
     "npm error code ECONNRESET",
     "npm error code ENOTFOUND",
     "npm error code EAI_AGAIN",
+    "npm error 500 Internal Server Error",
     "npm error 502 Bad Gateway",
     "npm error 503 Service Unavailable",
     "npm error 504 Gateway Timeout",

@@ -24,7 +24,10 @@ export const TRANSPORT_ERROR_PATTERNS = [
   /ETIMEDOUT/i,
   /ENOTFOUND/i,
   /EAI_AGAIN/i,
-  /50[0234] (?:Bad Gateway|Service Unavailable|Gateway Timeout)/i,
+  /500 Internal Server Error/i,
+  /502 Bad Gateway/i,
+  /503 Service Unavailable/i,
+  /504 Gateway Timeout/i,
   /status (?:500|502|503|504)/i,
   /fetch failed/i,
   /request to .* failed, reason:/i,
@@ -50,8 +53,9 @@ export function classifyAuditResult({ status, stdout = "", stderr = "" }) {
     }
   }
 
+  const isVulnerability = /audit report|vulnerabilit(?:y|ies)/i.test(combined);
   return {
-    disposition: "vulnerability_finding",
+    disposition: isVulnerability ? "vulnerability_finding" : "execution_error",
   };
 }
 
@@ -62,7 +66,7 @@ export async function runAuditWithRetry({
   executor,
   auditLevel = "high",
   maxRetries = 2,
-  retryDelayMs = 15000,
+  retryDelayMs = 10000,
   fetchTimeout = 30000,
   extraArgs = [],
 }) {
@@ -95,14 +99,21 @@ export async function runAuditWithRetry({
       return { status: result.status ?? 1, disposition: "vulnerability_finding", ...result };
     }
 
+    if (classification.disposition === "execution_error") {
+      process.stderr.write("npm audit failed with non-transport error; failing immediately without retry.\n");
+      return { status: result.status ?? 1, disposition: "execution_error", ...result };
+    }
+
     // Transport error encountered.
     process.stderr.write(
       `npm audit transport error on attempt ${attempt + 1}/${maxRetries + 1}: ${classification.reason}\n`,
     );
 
     if (attempt < maxRetries) {
-      process.stderr.write(`Waiting ${retryDelayMs / 1000}s before retrying npm audit...\n`);
-      await sleep(retryDelayMs);
+      // Backoff delay per retry attempt
+      const backoffDelay = retryDelayMs * (attempt + 1);
+      process.stderr.write(`Waiting ${backoffDelay / 1000}s before retrying npm audit...\n`);
+      await sleep(backoffDelay);
     } else {
       process.stderr.write(`npm audit transport errors persisted after ${maxRetries + 1} attempts.\n`);
     }
