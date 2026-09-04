@@ -1,0 +1,131 @@
+{
+  "schema_version": "1.1",
+  "change_id": "clarify-fold-and-archive-sequence",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Contributing documentation must accurately reflect the required two-PR sequence for changes carrying specification deltas.",
+    "The governance perimeter must continue to fail closed on relocated changes that attempt to write canonical specifications.",
+    "Contributors must be informed of the requirement to declare canonical capability paths in assessment.json owned_paths.",
+    "The post-fold idempotence check using openspec archive must be documented to provide verification certainty before archiving."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "change-governance"
+    ]
+  },
+  "owned_paths": [
+    "CONTRIBUTING.md",
+    "openspec/changes/clarify-fold-and-archive-sequence/.openspec.yaml",
+    "openspec/changes/clarify-fold-and-archive-sequence/assessment.json",
+    "openspec/changes/clarify-fold-and-archive-sequence/design.md",
+    "openspec/changes/clarify-fold-and-archive-sequence/proposal.md",
+    "openspec/changes/clarify-fold-and-archive-sequence/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-document-two-pr-sequence",
+      "kind": "direct_implementation",
+      "summary": "Document the mandatory two-PR sequence in CONTRIBUTING.md line 26 and add a detailed subsection under Archive PRs explaining perimeter gating, owned_paths declarations, and the idempotence check.",
+      "forces_addressed": [
+        "Contributing documentation must accurately reflect the required two-PR sequence for changes carrying specification deltas.",
+        "The governance perimeter must continue to fail closed on relocated changes that attempt to write canonical specifications.",
+        "Contributors must be informed of the requirement to declare canonical capability paths in assessment.json owned_paths.",
+        "The post-fold idempotence check using openspec archive must be documented to provide verification certainty before archiving."
+      ]
+    },
+    {
+      "id": "approach-relax-perimeter-rule",
+      "kind": "alternative",
+      "summary": "Modify perimeter.mjs to relax ownedPathsFor so that relocated changes can simultaneously own canonical specifications in the same commit range.",
+      "forces_addressed": [
+        "Contributing documentation must accurately reflect the required two-PR sequence for changes carrying specification deltas."
+      ]
+    },
+    {
+      "id": "approach-omit-workflow-documentation",
+      "kind": "alternative",
+      "summary": "Leave CONTRIBUTING.md unchanged and rely entirely on git history and commit messages for precedent.",
+      "forces_addressed": [
+        "The governance perimeter must continue to fail closed on relocated changes that attempt to write canonical specifications."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-document-two-pr-sequence",
+  "rejected_alternative_ids": [
+    "approach-relax-perimeter-rule",
+    "approach-omit-workflow-documentation"
+  ],
+  "rejection_reasons": {
+    "approach-relax-perimeter-rule": {
+      "forces": [
+        "The governance perimeter must continue to fail closed on relocated changes that attempt to write canonical specifications."
+      ],
+      "reason": "Relaxing perimeter.mjs would weaken the security boundary that prevents finished changes from being reused as cover to wave through further unassessed capability work."
+    },
+    "approach-omit-workflow-documentation": {
+      "forces": [
+        "Contributing documentation must accurately reflect the required two-PR sequence for changes carrying specification deltas.",
+        "Contributors must be informed of the requirement to declare canonical capability paths in assessment.json owned_paths.",
+        "The post-fold idempotence check using openspec archive must be documented to provide verification certainty before archiving."
+      ],
+      "reason": "Omitting explicit documentation forces future contributors and agents to repeatedly encounter governance failures when attempting single-PR archive operations."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-two-pr-sequence-documented",
+    "implementation-owned-paths-rule-documented"
+  ],
+  "invariant_evidence": {
+    "implementation-two-pr-sequence-documented": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "CONTRIBUTING.md line 26 and Archive PRs section explicitly describe the fold-then-archive two-PR sequence"
+      ]
+    },
+    "implementation-owned-paths-rule-documented": {
+      "task_ids": [
+        "2.2"
+      ],
+      "evidence_ids": [
+        "CONTRIBUTING.md documents the assessment.json owned_paths requirement and post-fold idempotence verification"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "trust_boundary": "No trust boundary is defined, modified, or crossed; documentation in CONTRIBUTING.md is updated without altering runtime code or enforcement logic.",
+    "authority_provenance": "No authority is granted, delegated, or represented.",
+    "authentication_or_authorization": "No authentication or authorization mechanisms are modified.",
+    "audit_integrity": "Audit event generation, hashing, freezing, and schema validation are unmodified.",
+    "confidentiality": "No secret or confidential data is read, stored, or exposed.",
+    "mutation_ownership": "No mutable state ownership is changed; documentation describes existing governance requirements.",
+    "fail_posture": "The governance checker fail-closed posture remains fully intact and unchanged.",
+    "error_disclosure": "No error diagnostics or logging configurations are altered.",
+    "concurrency": "No concurrent execution logic is introduced or changed.",
+    "lifecycle": "No lifecycle state machines are modified.",
+    "resource_retention": "No system resources are acquired, retained, or leaked.",
+    "retry_or_redelivery": "No retry or redelivery behavior is modified.",
+    "cryptography": "No cryptographic primitives, keys, or protocols are involved.",
+    "privacy_transformation": "No personal or sensitive user data is handled.",
+    "external_security_integration": "No external security integrations are altered."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "25e0bc28a1d45bf40947160fb6a43e7f5c943566"
+  },
+  "verification_task_ids": [
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "3.3"
+  ]
+}

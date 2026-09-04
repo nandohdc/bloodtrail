@@ -23,7 +23,8 @@ diff. Use the `openspec-*` skills rather than editing change directories by hand
 - `openspec-propose` / `openspec-new-change` — start a change (proposal, specs delta, design, tasks)
 - `openspec-continue-change` / `openspec-update-change` / `openspec-apply-change` — work it
 - `openspec-verify-change` — check it before commit
-- `openspec-archive-change` / `openspec-sync-specs` — land it and fold deltas into `specs/`
+- `openspec-sync-specs` — fold deltas into canonical `specs/` (first PR, while change remains active)
+- `openspec-archive-change` — archive the change into `archive/` (second PR, carrying no canonical writes)
 - `openspec-explore` / `openspec-onboard` — orient in the repo
 
 Specs under `openspec/specs/<capability>/spec.md` describe what the system must do. A change's
@@ -261,3 +262,36 @@ force-push, and by a rewrite invalidating every recorded commit identifier at or
 
 **The attestation is the safety net, not a reason to squash** — a merge commit keeps the stronger
 re-derivation available.
+
+### Changes with specification deltas: the two-PR sequence
+
+When an OpenSpec change carries specification deltas under `specs/<capability>/spec.md`, folding those deltas into canonical specifications and archiving the change **cannot share a single pull request**. They must land across two separate PRs:
+
+1. **Fold PR** — apply the deltas from `openspec/changes/<id>/specs/` into canonical `openspec/specs/<capability>/spec.md` while the change directory remains active. Merge this PR to `main`.
+2. **Archive PR** — relocate the change directory from `openspec/changes/<id>/` into `openspec/changes/archive/<date>-<id>/`. This PR carries **no canonical writes**.
+
+#### Why two commits in one PR fails
+
+The design-pattern governance check evaluates the union of all paths changed across the entire pull request range. In `openspec/scripts/design-pattern-governance/perimeter.mjs`, `ownedPathsFor` deliberately narrows a relocated change strictly to its archive directories once an archive path appears in the change:
+
+```javascript
+if (archivedDirs) return paths; // covers only openspec/changes/<id>/ + archive/
+paths.push(...(assessment?.owned_paths ?? []));
+paths.push(...capabilities.map((c) => `openspec/specs/${c}/`));
+```
+
+The moment the archive relocation appears anywhere in the PR range, the change ceases to own the canonical specification. If the canonical spec write is bundled into the same PR—even as an earlier commit—it has no active owning change in the range and fails closed with `[openspec-association-unrelated]`. This rule is intentional: it prevents a finished change from being reused to wave through further unassessed capability work.
+
+#### Declaring canonical capability paths in `assessment.json`
+
+During the change's active phase, `assessment.json` must declare the **canonical** capability path (`openspec/specs/<capability>/spec.md`) in `owned_paths`, not merely the delta path (`openspec/changes/<id>/specs/<capability>/spec.md`). Declaring only the delta path will fail `checkOpenSpecAssociation` when folding into `openspec/specs/`.
+
+#### Post-fold idempotence check
+
+Before opening the archive PR, verify that the fold PR is fully synchronized with canonical specifications. Re-running `openspec archive <change>` against the updated `main` branch should print:
+
+```
+Specs already in sync; no files changed
+```
+
+and leave the canonical specification blob hash unchanged. Once verified, relocate the change directory and open the archive PR.
