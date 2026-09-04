@@ -64,8 +64,9 @@ jobs:
 
       # DEPENDENCIES.md: "npm audit --audit-level=low must pass; findings are
       # not waived by this record." The other jobs stay at high — neither of
-      # those packages documents a stricter policy.
-      - run: npm audit --audit-level=low
+      # those packages documents a stricter policy. Retries on transport blips
+      # (#286) without retrying genuine advisories.
+      - run: node ../../.github/scripts/npm-audit-retry.mjs --audit-level=low
 
   # contracts/security-audit — the canonical contract.
   contract:
@@ -87,7 +88,7 @@ jobs:
 
       - run: npm run validate
 
-      - run: npm audit --audit-level=high
+      - run: node ../../.github/scripts/npm-audit-retry.mjs --audit-level=high
 
   # Repository-level design-pattern governance. Deliberately has no npm install
   # step: the checker is dependency-free and the tests are plain .mjs run by
@@ -206,10 +207,10 @@ jobs:
           fail_ci_if_error: false
 
   # Scans the whole repository, configured by the root sonar-project.properties.
-  # Waits on sdk and contract as well as ci so a scan is not spent on code that
-  # does not build.
+  # Depends only on the artifact-producing coverage job so Sonar runs in parallel
+  # with the longer SDK/contract jobs while preserving build and test gating.
   sonar:
-    needs: [ci, sdk, contract, coverage]
+    needs: [coverage]
     runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
     permissions:
       contents: read

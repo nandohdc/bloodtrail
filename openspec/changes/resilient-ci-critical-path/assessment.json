@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.1",
+  "change_id": "resilient-ci-critical-path",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Sonar only requires generated LCOV coverage reports and source files; waiting for SDK and contract jobs introduces unnecessary critical-path latency.",
+    "External npm advisory endpoint degradation can cause unretried audit calls to timeout after five minutes, blocking CI runs across the repository (#286).",
+    "Vulnerability detection must fail closed: genuine advisories at or above the target audit level must never be retried into an accidental pass.",
+    "Transport resilience must use bounded retries and fast timeouts to avoid runner resource exhaustion during network outages."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    ".github/workflows/ci.yml",
+    ".github/scripts/npm-audit-retry.mjs",
+    ".github/scripts/npm-audit-retry.test.mjs",
+    "openspec/changes/resilient-ci-critical-path/.openspec.yaml",
+    "openspec/changes/resilient-ci-critical-path/assessment.json",
+    "openspec/changes/resilient-ci-critical-path/design.md",
+    "openspec/changes/resilient-ci-critical-path/proposal.md",
+    "openspec/changes/resilient-ci-critical-path/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-script-and-workflow-optimization",
+      "kind": "direct_implementation",
+      "summary": "Implement a shared, unit-tested Node script for bounded transport-only audit retries with 30s timeouts, and update ci.yml to decouple Sonar dependencies and route audits through the retry wrapper.",
+      "forces_addressed": [
+        "Sonar only requires generated LCOV coverage reports and source files; waiting for SDK and contract jobs introduces unnecessary critical-path latency.",
+        "External npm advisory endpoint degradation can cause unretried audit calls to timeout after five minutes, blocking CI runs across the repository (#286).",
+        "Vulnerability detection must fail closed: genuine advisories at or above the target audit level must never be retried into an accidental pass.",
+        "Transport resilience must use bounded retries and fast timeouts to avoid runner resource exhaustion during network outages."
+      ]
+    },
+    {
+      "id": "approach-inline-shell-loop",
+      "kind": "alternative",
+      "summary": "Embed inline bash loops and sleep commands directly in ci.yml job steps to retry npm audit on failure.",
+      "forces_addressed": [
+        "External npm advisory endpoint degradation can cause unretried audit calls to timeout after five minutes, blocking CI runs across the repository (#286).",
+        "Transport resilience must use bounded retries and fast timeouts to avoid runner resource exhaustion during network outages."
+      ]
+    },
+    {
+      "id": "approach-disable-audit-or-continue-on-error",
+      "kind": "alternative",
+      "summary": "Configure continue-on-error or remove the audit step from the required CI jobs to prevent external endpoint outages from blocking PR merges.",
+      "forces_addressed": [
+        "External npm advisory endpoint degradation can cause unretried audit calls to timeout after five minutes, blocking CI runs across the repository (#286)."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-script-and-workflow-optimization",
+  "rejected_alternative_ids": [
+    "approach-inline-shell-loop",
+    "approach-disable-audit-or-continue-on-error"
+  ],
+  "rejection_reasons": {
+    "approach-inline-shell-loop": {
+      "forces": [
+        "Transport resilience must use bounded retries and fast timeouts to avoid runner resource exhaustion during network outages.",
+        "Vulnerability detection must fail closed: genuine advisories at or above the target audit level must never be retried into an accidental pass."
+      ],
+      "reason": "Inline shell scripting in YAML workflows lacks deterministic unit testability, leads to copy-paste divergence across jobs, and complicates robust regex extraction of transport error signatures."
+    },
+    "approach-disable-audit-or-continue-on-error": {
+      "forces": [
+        "Vulnerability detection must fail closed: genuine advisories at or above the target audit level must never be retried into an accidental pass."
+      ],
+      "reason": "Disabling audit checks or setting continue-on-error degrades repository security posture by masking genuine vulnerability advisories, violating the required fail-closed security guarantee."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-sonar-coverage-dependency-isolated",
+    "implementation-audit-transport-retry-bounded",
+    "implementation-audit-null-control-failing-closed"
+  ],
+  "invariant_evidence": {
+    "implementation-sonar-coverage-dependency-isolated": {
+      "task_ids": [
+        "3.1"
+      ],
+      "evidence_ids": [
+        "ci.yml sonar job declares needs: [coverage]"
+      ]
+    },
+    "implementation-audit-transport-retry-bounded": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "2.3",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "npm-audit-retry.test.mjs proves bounded retry on transport failure"
+      ]
+    },
+    "implementation-audit-null-control-failing-closed": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "2.3",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "npm-audit-retry.test.mjs proves immediate exit 1 on vulnerability findings"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "d0e9e7dd847f67966c5dbf23ba798cd94ccdc0c9"
+  },
+  "verification_task_ids": [
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "4.1",
+    "4.2",
+    "4.3"
+  ]
+}
