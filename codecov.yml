@@ -1,6 +1,7 @@
 # Codecov configuration for Bloodtrail.
-# Start permissive — status checks are informational so they don't block PRs
-# while the team tunes thresholds.
+# Status checks are informational so third-party outages do not block PR merges;
+# coverage thresholds are enforced deterministically in local package test scripts
+# and by the required CI coverage job.
 
 coverage:
   status:

@@ -136,7 +136,7 @@ enforce here. **AI review is not approval**; bind formal reviews to the exact re
 
 ## CI
 
-`.github/workflows/ci.yml` runs on pushes to `main` and on every PR. Branch protection requires **nine** contexts to merge: `ci / lint`, `ci / test`, `ci / audit` (research), `sdk`, `contract`, `sonar`, `conventional-commits`, `codescene delta`, and `design-pattern-governance`. Not required: `coverage`, the CodeScene App's own Check Run (its context name varies by base branch), and `release-please`. Count the reported contexts against that nine rather than trusting an empty pending list: `gh pr checks --required` lists only contexts that have reported, so a check that never started is invisible there.
+`.github/workflows/ci.yml` runs on pushes to `main` and on every PR. Branch protection requires **ten** contexts to merge: `ci / lint`, `ci / test`, `ci / audit` (research), `sdk`, `contract`, `coverage`, `sonar`, `conventional-commits`, `codescene delta`, and `design-pattern-governance`. Not required: the CodeScene App's own Check Run (its context name varies by base branch) and `release-please`. Count the reported contexts against that ten rather than trusting an empty pending list: `gh pr checks --required` lists only contexts that have reported, so a check that never started is invisible there.
 
 A red `sonar` is more often the self-hosted server than the code — the job already retries once after a 30s wait, and its "Explain quality gate failure" step prints the failing conditions so triage does not need the dashboard.
 
