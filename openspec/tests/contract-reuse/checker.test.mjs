@@ -165,11 +165,30 @@ describe("CRA trigger attribution fails closed", () => {
     assertDiagnostic(runCraChecker(repository), "cra-trigger-unattributable");
   });
 
-  it("rejects a trigger uniquely attributed to another active change", () => {
+  it("reports an approved skip when trigger is uniquely attributed to another active change", () => {
     const repository = technicalReuseFixture("contract", {
       ownedPaths: ["packages/example/"],
       extraChanges: [{ id: "other-contract-change", ownedPaths: ["contracts/"] }],
     });
+    assertPasses(runCraChecker(repository), "approved-skip");
+  });
+
+  it("evaluates a required CRA for the active change that uniquely owns the trigger", () => {
+    const repository = technicalReuseFixture("contract", {
+      ownedPaths: ["packages/example/"],
+      extraChanges: [{ id: "other-contract-change", ownedPaths: ["contracts/"] }],
+    });
+    assertDiagnostic(runCraChecker(repository, { change: "other-contract-change" }), "cra-record-missing");
+  });
+
+  it("fails closed when the range contains both a foreign trigger and an unowned trigger", () => {
+    const repository = technicalReuseFixture("contract", {
+      ownedPaths: ["packages/example/"],
+      extraChanges: [{ id: "other-contract-change", ownedPaths: ["contracts/"] }],
+    });
+    repository.write("packages/security-audit-sdk-core/src/generated/unowned.ts", "export const x = 1;\n");
+    repository.commit("feat: add unowned generated trigger");
+
     assertDiagnostic(runCraChecker(repository), "cra-trigger-unattributable");
   });
 

@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.1",
+  "change_id": "cra-skip-unowned-triggers",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "When multiple active OpenSpec changes exist, a contract trigger path changed in the range fails closed for non-owning active changes.",
+    "Mutual blocking between concurrent PRs touching contract paths prevents independent development and clean integration.",
+    "Unattributable triggers (unowned or ambiguously owned paths) must continue to fail closed to prevent ungoverned contract changes.",
+    "An active change that owns none of the range's trigger paths should report an approved skip rather than failing attribution.",
+    "The CRA checker evaluation must remain deterministic and dependency-free without altering perimeter resolution."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "contract-reuse-assessment"
+    ]
+  },
+  "owned_paths": [
+    "openspec/scripts/contract-reuse/check.mjs",
+    "openspec/tests/contract-reuse/checker.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-skip-when-all-triggers-foreign",
+      "kind": "direct_implementation",
+      "summary": "Partition trigger paths into selected, foreign, and unattributable sets. When an active change owns none of the range's trigger paths and all triggers are uniquely owned by other active changes, report an approved skip; fail closed on unowned or ambiguous triggers.",
+      "forces_addressed": [
+        "When multiple active OpenSpec changes exist, a contract trigger path changed in the range fails closed for non-owning active changes.",
+        "Mutual blocking between concurrent PRs touching contract paths prevents independent development and clean integration.",
+        "Unattributable triggers (unowned or ambiguously owned paths) must continue to fail closed to prevent ungoverned contract changes.",
+        "An active change that owns none of the range's trigger paths should report an approved skip rather than failing attribution.",
+        "The CRA checker evaluation must remain deterministic and dependency-free without altering perimeter resolution."
+      ]
+    },
+    {
+      "id": "approach-filter-range-by-owned-paths",
+      "kind": "alternative",
+      "summary": "Filter the range paths to only paths owned by the evaluated change before identifying CRA triggers.",
+      "forces_addressed": [
+        "When multiple active OpenSpec changes exist, a contract trigger path changed in the range fails closed for non-owning active changes.",
+        "Mutual blocking between concurrent PRs touching contract paths prevents independent development and clean integration."
+      ]
+    },
+    {
+      "id": "approach-suppress-checker-in-ci-loop",
+      "kind": "alternative",
+      "summary": "Modify the CI loop in .github/workflows/ci.yml to only invoke check.mjs for changes whose owned_paths match a trigger path.",
+      "forces_addressed": [
+        "When multiple active OpenSpec changes exist, a contract trigger path changed in the range fails closed for non-owning active changes.",
+        "Mutual blocking between concurrent PRs touching contract paths prevents independent development and clean integration."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-skip-when-all-triggers-foreign",
+  "rejected_alternative_ids": [
+    "approach-filter-range-by-owned-paths",
+    "approach-suppress-checker-in-ci-loop"
+  ],
+  "rejection_reasons": {
+    "approach-filter-range-by-owned-paths": {
+      "forces": [
+        "Unattributable triggers (unowned or ambiguously owned paths) must continue to fail closed to prevent ungoverned contract changes."
+      ],
+      "reason": "Filtering paths by owned paths before trigger identification ignores unowned contract changes in the range, allowing ungoverned modifications to pass silently without attribution failure."
+    },
+    "approach-suppress-checker-in-ci-loop": {
+      "forces": [
+        "The CRA checker evaluation must remain deterministic and dependency-free without altering perimeter resolution."
+      ],
+      "reason": "Moving attribution logic from the self-contained checker script into shell workflow loops weakens offline and local verification, creating disparate behavior between CI and local governance checks."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-cra-skip-unowned-triggers-deterministic",
+    "implementation-cra-unattributable-triggers-fail-closed"
+  ],
+  "invariant_evidence": {
+    "implementation-cra-skip-unowned-triggers-deterministic": {
+      "task_ids": [
+        "2.1",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "checker test suite proves approved skip when trigger uniquely owned by other change",
+        "check.mjs returns approved-skip summary for unaffected active change"
+      ]
+    },
+    "implementation-cra-unattributable-triggers-fail-closed": {
+      "task_ids": [
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "checker test suite proves cra-trigger-unattributable for unowned trigger paths",
+        "checker test suite proves cra-trigger-unattributable for ambiguous trigger paths"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "70c9813760a3a6f959e9e314a886d57d4197a8e1"
+  },
+  "verification_task_ids": [
+    "2.3",
+    "2.4"
+  ]
+}
