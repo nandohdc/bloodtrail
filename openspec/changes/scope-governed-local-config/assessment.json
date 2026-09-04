@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.1",
+  "change_id": "scope-governed-local-config",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "mutations.test.mjs must verify that the SDK verification suite does not leak Git configuration mutations into the local repository.",
+    "Concurrent branch writes (such as git push -u or branch deletion in sibling worktrees) must not trip the post-suite configuration equality check.",
+    "Detection of configuration leaks within the suite blast radius (such as commit.gpgsign) must remain strictly enforced.",
+    "Repository workflow documentation must instruct agents and workers to avoid writing upstream branch configuration during concurrent runs."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-sdk-core",
+      "change-governance"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/tests/verification/mutations.test.mjs",
+    "CLAUDE.md",
+    "openspec/changes/scope-governed-local-config/.openspec.yaml",
+    "openspec/changes/scope-governed-local-config/assessment.json",
+    "openspec/changes/scope-governed-local-config/design.md",
+    "openspec/changes/scope-governed-local-config/proposal.md",
+    "openspec/changes/scope-governed-local-config/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-filter-branch-keys-and-sort",
+      "kind": "direct_implementation",
+      "summary": "Update governedLocalConfig() to parse null-delimited entries, filter out keys prefixed with branch., and sort deterministically before asserting equality in test.after().",
+      "forces_addressed": [
+        "mutations.test.mjs must verify that the SDK verification suite does not leak Git configuration mutations into the local repository.",
+        "Concurrent branch writes (such as git push -u or branch deletion in sibling worktrees) must not trip the post-suite configuration equality check.",
+        "Detection of configuration leaks within the suite blast radius (such as commit.gpgsign) must remain strictly enforced."
+      ]
+    },
+    {
+      "id": "approach-remove-governed-local-config-assertion",
+      "kind": "alternative",
+      "summary": "Remove the post-test governedLocalConfig assertion entirely from mutations.test.mjs test.after().",
+      "forces_addressed": [
+        "Concurrent branch writes (such as git push -u or branch deletion in sibling worktrees) must not trip the post-suite configuration equality check."
+      ]
+    },
+    {
+      "id": "approach-strict-allowlist-only",
+      "kind": "alternative",
+      "summary": "Replace whole-config comparison with an allowlist restricted only to commit.gpgsign.",
+      "forces_addressed": [
+        "Concurrent branch writes (such as git push -u or branch deletion in sibling worktrees) must not trip the post-suite configuration equality check."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-filter-branch-keys-and-sort",
+  "rejected_alternative_ids": [
+    "approach-remove-governed-local-config-assertion",
+    "approach-strict-allowlist-only"
+  ],
+  "rejection_reasons": {
+    "approach-remove-governed-local-config-assertion": {
+      "forces": [
+        "mutations.test.mjs must verify that the SDK verification suite does not leak Git configuration mutations into the local repository.",
+        "Detection of configuration leaks within the suite blast radius (such as commit.gpgsign) must remain strictly enforced."
+      ],
+      "reason": "Removing the configuration assertion weakens regression protection by permitting mid-test configuration mutations to leak into developer environments and persistent CI runners unnoticed."
+    },
+    "approach-strict-allowlist-only": {
+      "forces": [
+        "mutations.test.mjs must verify that the SDK verification suite does not leak Git configuration mutations into the local repository.",
+        "Detection of configuration leaks within the suite blast radius (such as commit.gpgsign) must remain strictly enforced."
+      ],
+      "reason": "An allowlist restricted solely to commit.gpgsign would fail to detect unintended mutations across other repository Git configuration keys that a future verification test might touch."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-branch-keys-ignored",
+    "implementation-governed-config-leaks-detected"
+  ],
+  "invariant_evidence": {
+    "implementation-branch-keys-ignored": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "Unit test verifying governedLocalConfig ignores branch.* writes"
+      ]
+    },
+    "implementation-governed-config-leaks-detected": {
+      "task_ids": [
+        "2.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "mutations.test.mjs test.after() asserts non-branch config equality"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "trust_boundary": "No trust boundary is defined, modified, or crossed: test verification helper and developer documentation are updated without runtime SDK impact.",
+    "authority_provenance": "No authority is granted, delegated, or represented.",
+    "authentication_or_authorization": "No authentication or authorization mechanisms are modified.",
+    "audit_integrity": "Audit event generation, hashing, freezing, and schema validation are unmodified.",
+    "confidentiality": "No secret or confidential data is read, stored, or exposed.",
+    "mutation_ownership": "No production mutable state ownership is changed; test harness configuration comparison scope is made resilient against concurrent worktrees.",
+    "fail_posture": "The post-suite configuration assertion remains fail-closed against any unexpected non-branch configuration mutations.",
+    "error_disclosure": "No sensitive error diagnostics or internal details are exposed.",
+    "concurrency": "Removes concurrency interference between sibling worktrees/runners and the local Git configuration check.",
+    "lifecycle": "No lifecycle state machines are introduced or altered.",
+    "resource_retention": "No system resources are retained or leaked.",
+    "retry_or_redelivery": "No retry or redelivery logic is added.",
+    "cryptography": "No cryptographic algorithms, keys, or primitives are involved.",
+    "privacy_transformation": "No personal data is collected, transformed, or retained.",
+    "external_security_integration": "No external security integrations are altered."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "c28c30cfb22fa73d6c464c3915f4d618194792b9"
+  },
+  "verification_task_ids": [
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3"
+  ]
+}

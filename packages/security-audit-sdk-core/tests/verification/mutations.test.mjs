@@ -750,6 +750,18 @@ test("disposable commits use bounded identity and ignore ambient signing and hoo
   assert.equal(disposableGitEnvironment().GIT_CONFIG_SYSTEM, "/dev/null");
 });
 
+test("governed repository local Git configuration assertion ignores concurrent branch tracking keys", () => {
+  const current = governedLocalConfig();
+  git(repositoryRoot, ["config", "--local", "branch.temporary-test-concurrent-write.remote", "origin"]);
+  git(repositoryRoot, ["config", "--local", "branch.temporary-test-concurrent-write.merge", "refs/heads/main"]);
+  try {
+    assert.equal(governedLocalConfig(), current, "branch keys should be excluded from governedLocalConfig");
+  } finally {
+    git(repositoryRoot, ["config", "--local", "--unset-all", "branch.temporary-test-concurrent-write.remote"]);
+    git(repositoryRoot, ["config", "--local", "--unset-all", "branch.temporary-test-concurrent-write.merge"]);
+  }
+});
+
 function governedTaskIdsThrough(phase) {
   const index = taskGroups.findIndex((group) => group.phase === phase);
   assert.notEqual(index, -1, `unknown governed fixture phase ${phase}`);
@@ -1153,5 +1165,9 @@ function governedLocalConfig() {
     encoding: "utf8",
   });
   assert.equal(result.status, 0, `unable to read governed repository local Git configuration: ${result.stderr}`);
-  return result.stdout;
+  return result.stdout
+    .split("\0")
+    .filter((entry) => entry && !entry.split("\n")[0].startsWith("branch."))
+    .sort()
+    .join("\0");
 }
