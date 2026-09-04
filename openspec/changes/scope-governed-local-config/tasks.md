@@ -1,7 +1,7 @@
 ## 1. Planning and Governance Assessment
 
 - [x] 1.1 Create OpenSpec change `scope-governed-local-config` with proposal, design, and tasks.
-- [ ] 1.2 Formulate design-pattern governance assessment for `scope-governed-local-config`.
+- [x] 1.2 Formulate design-pattern governance assessment for `scope-governed-local-config`.
 
 ## 2. Implementation and Documentation Updates
 
