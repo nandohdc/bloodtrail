@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.1",
+  "change_id": "exercise-abbreviated-assessment-path",
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "The abbreviated assessment path is ratified governance policy that has never been exercised in active development (#302).",
+    "An unexercised assessment path represents untested governance risk; its behavior and compatibility with required repository gates must be proven.",
+    "Bounded test hardening in governed packages must be able to land without the ~130-line governance overhead of full assessments."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "full_trigger_absence_proof": "No full assessment trigger applies. The change touches only test assertions in packages/security-audit-sdk-core/tests/pass1.test.ts with skip_specs: true. It introduces no public API, integration, lifecycle or state machine, concurrency, or persistence behavior. No security-sensitive code is altered. No governance-core path is modified and no canonical capability requirement changes.",
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/tests/pass1.test.ts",
+    "openspec/changes/exercise-abbreviated-assessment-path/proposal.md",
+    "openspec/changes/exercise-abbreviated-assessment-path/design.md",
+    "openspec/changes/exercise-abbreviated-assessment-path/tasks.md",
+    "openspec/changes/exercise-abbreviated-assessment-path/assessment.json",
+    "openspec/changes/exercise-abbreviated-assessment-path/.openspec.yaml"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-exercise-abbreviated-path",
+      "kind": "direct_implementation",
+      "summary": "Exercise the ratified abbreviated assessment path end to end on a bounded test assertion enhancement in packages/security-audit-sdk-core/tests/pass1.test.ts without touching governance_core or public API surfaces.",
+      "forces_addressed": [
+        "The abbreviated assessment path is ratified governance policy that has never been exercised in active development (#302).",
+        "An unexercised assessment path represents untested governance risk; its behavior and compatibility with required repository gates must be proven.",
+        "Bounded test hardening in governed packages must be able to land without the ~130-line governance overhead of full assessments."
+      ]
+    },
+    {
+      "id": "approach-remain-full-path-only",
+      "kind": "alternative",
+      "summary": "Continue paying full assessment overhead on all changes and treat the abbreviated path as dead policy without testing.",
+      "forces_addressed": [
+        "The abbreviated assessment path is ratified governance policy that has never been exercised in active development (#302)."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-exercise-abbreviated-path",
+  "rejected_alternative_ids": [
+    "approach-remain-full-path-only"
+  ],
+  "rejection_reasons": {
+    "approach-remain-full-path-only": {
+      "forces": [
+        "An unexercised assessment path represents untested governance risk; its behavior and compatibility with required repository gates must be proven.",
+        "Bounded test hardening in governed packages must be able to land without the ~130-line governance overhead of full assessments."
+      ],
+      "reason": "Leaving the abbreviated path unexercised leaves a core branch of repository governance untested while imposing artificial friction on bounded changes."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-in-memory-sink-capacity-boundary-coverage"
+  ],
+  "invariant_evidence": {
+    "implementation-in-memory-sink-capacity-boundary-coverage": {
+      "task_ids": [
+        "1.1",
+        "1.2",
+        "2.1",
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "packages/security-audit-sdk-core/tests/pass1.test.ts verifies in-memory sink capacity boundaries",
+        "npm run test:matrix passes in packages/security-audit-sdk-core",
+        "check-design-pattern-governance passes with assessment_level abbreviated"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "trust_boundary": "No trust boundary is defined, moved, or crossed: only SDK test suite assertions are updated.",
+    "authority_provenance": "No authority is granted, derived, or represented.",
+    "authentication_or_authorization": "No authentication or authorization mechanisms are altered.",
+    "audit_integrity": "Does not alter audit event structure, generation, hashing, or immutability.",
+    "confidentiality": "No secret handling or confidential information exposure is changed.",
+    "mutation_ownership": "No mutation ownership or object freezing behavior is changed.",
+    "fail_posture": "Preserves fail-closed posture; test sink continues throwing SDK_INVALID_CONFIGURATION on invalid bounds.",
+    "error_disclosure": "No error disclosure or diagnostic sanitization logic is changed.",
+    "concurrency": "No concurrent execution or asynchronous coordination is introduced or changed.",
+    "lifecycle": "No lifecycle state machine or sink lifecycle transitions are changed.",
+    "resource_retention": "No resource acquisition or retention policies are changed.",
+    "retry_or_redelivery": "No retry or redelivery mechanics are changed.",
+    "cryptography": "No cryptographic operations or algorithms are changed.",
+    "privacy_transformation": "No data transformation or redaction hooks are changed.",
+    "external_security_integration": "No external security system is integrated or configured."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "fbf152ed344c4eb08e40e279c69bc36caa1275cc"
+  },
+  "verification_task_ids": [
+    "2.1",
+    "2.2",
+    "2.3"
+  ]
+}
