@@ -5,11 +5,11 @@
 
 ## 2. Documentation Updates
 
-- [ ] 2.1 Update line 26 of `CONTRIBUTING.md` to split folding deltas and archiving into two separate steps.
-- [ ] 2.2 Add detailed explanation of the two-PR sequence, `owned_paths` rule, and idempotence check in `CONTRIBUTING.md`.
+- [x] 2.1 Update line 26 of `CONTRIBUTING.md` to split folding deltas and archiving into two separate steps.
+- [x] 2.2 Add detailed explanation of the two-PR sequence, `owned_paths` rule, and idempotence check in `CONTRIBUTING.md`.
 
 ## 3. Verification and Governance Checks
 
-- [ ] 3.1 Validate OpenSpec changes with `npx --yes @fission-ai/openspec@latest validate --all --strict`.
-- [ ] 3.2 Run design-pattern governance checker and verify zero policy violations.
-- [ ] 3.3 Verify git cleanliness and formatting via `git diff --check`.
+- [x] 3.1 Validate OpenSpec changes with `npx --yes @fission-ai/openspec@latest validate --all --strict`.
+- [x] 3.2 Run design-pattern governance checker and verify zero policy violations.
+- [x] 3.3 Verify git cleanliness and formatting via `git diff --check`.
