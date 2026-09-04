@@ -1,0 +1,88 @@
+{
+  "decision": "direct_implementation",
+  "forces": [
+    "Assessment evidence scaffolding must reduce transcription burden for derivable metadata while preserving human judgment for decisions.",
+    "Generated assessment scaffolding must satisfy closed assessment schema 1.1 and fail closed under existing governance checks.",
+    "Emitted assessment artifacts must match generator projections byte-for-byte to prevent silent divergence and unreviewed manual mutations.",
+    "Generation and drift verification must remain lightweight and dependency-free within the governance toolchain."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true
+  },
+  "owned_paths": [
+    "openspec/scripts/generate-assessment.mjs",
+    "openspec/scripts/design-pattern-governance/assessment-generation.mjs",
+    "openspec/scripts/check-design-pattern-governance.mjs",
+    "openspec/tests/design-pattern-governance/assessment-generation.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-generation",
+      "kind": "direct_implementation",
+      "summary": "Direct Node.js script in openspec/scripts/generate-assessment.mjs supporting --scaffold, assessment generation, and --check byte-for-byte drift assertion.",
+      "forces_addressed": [
+        "Assessment evidence scaffolding must reduce transcription burden for derivable metadata while preserving human judgment for decisions.",
+        "Generated assessment scaffolding must satisfy closed assessment schema 1.1 and fail closed under existing governance checks.",
+        "Emitted assessment artifacts must match generator projections byte-for-byte to prevent silent divergence and unreviewed manual mutations.",
+        "Generation and drift verification must remain lightweight and dependency-free within the governance toolchain."
+      ]
+    },
+    {
+      "id": "approach-external-template-engine",
+      "kind": "alternative",
+      "summary": "Introduce an external template engine (e.g. Handlebars or Mustache) or CLI framework to render assessment artifacts from configuration files.",
+      "forces_addressed": [
+        "Assessment evidence scaffolding must reduce transcription burden for derivable metadata while preserving human judgment for decisions."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-generation",
+  "rejected_alternative_ids": [
+    "approach-external-template-engine"
+  ],
+  "rejection_reasons": {
+    "approach-external-template-engine": {
+      "forces": [
+        "Generation and drift verification must remain lightweight and dependency-free within the governance toolchain.",
+        "Generated assessment scaffolding must satisfy closed assessment schema 1.1 and fail closed under existing governance checks."
+      ],
+      "reason": "Introducing external templating libraries or framework dependencies violates the repository requirement of zero runtime dependencies in governance scripts and adds unneeded abstraction over deterministic JSON emission."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-deterministic-derivation",
+    "implementation-drift-rejection"
+  ],
+  "invariant_evidence": {
+    "implementation-deterministic-derivation": {
+      "task_ids": [
+        "1.1",
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "assessment-generation.test.mjs validates deterministic emission of all mechanical fields"
+      ]
+    },
+    "implementation-drift-rejection": {
+      "task_ids": [
+        "1.1",
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "assessment-generation.test.mjs validates byte-for-byte drift check and rejects mutated output"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "verification_task_ids": [
+    "2.1",
+    "2.2",
+    "2.3"
+  ]
+}

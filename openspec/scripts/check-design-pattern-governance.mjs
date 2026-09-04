@@ -37,6 +37,7 @@ import { checkRelocationCompleteness } from "./design-pattern-governance/archive
 import { loadCatalog, loadRegistry } from "./design-pattern-governance/catalog.mjs";
 import { applyAssessmentRules } from "./design-pattern-governance/rules.mjs";
 import { checkActorNeutralDocuments, checkCiJob, checkTemplates } from "./design-pattern-governance/documentation.mjs";
+import { checkAssessmentSourceDrift } from "./design-pattern-governance/assessment-generation.mjs";
 import {
   checkHiddenImplementation,
   checkOpenSpecAssociation,
@@ -267,7 +268,9 @@ function discoverAssessments(repositoryRoot, only, diagnostics) {
       continue;
     }
     try {
-      found.push({ changeId: entry.name, path: relativePath, document: JSON.parse(readFileSync(absolute, "utf8")) });
+      const doc = JSON.parse(readFileSync(absolute, "utf8"));
+      found.push({ changeId: entry.name, path: relativePath, document: doc });
+      checkAssessmentSourceDrift(repositoryRoot, entry.name, diagnostics);
     } catch (error) {
       diagnostics.fail("assessment-invalid-json", relativePath,
         `assessment JSON did not parse: ${String(error?.message ?? error).slice(0, 160)}`);

@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.1",
+  "change_id": "generate-assessment-scaffolding",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Assessment evidence scaffolding must reduce transcription burden for derivable metadata while preserving human judgment for decisions.",
+    "Generated assessment scaffolding must satisfy closed assessment schema 1.1 and fail closed under existing governance checks.",
+    "Emitted assessment artifacts must match generator projections byte-for-byte to prevent silent divergence and unreviewed manual mutations.",
+    "Generation and drift verification must remain lightweight and dependency-free within the governance toolchain."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/scripts/generate-assessment.mjs",
+    "openspec/scripts/design-pattern-governance/assessment-generation.mjs",
+    "openspec/scripts/check-design-pattern-governance.mjs",
+    "openspec/tests/design-pattern-governance/assessment-generation.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-generation",
+      "kind": "direct_implementation",
+      "summary": "Direct Node.js script in openspec/scripts/generate-assessment.mjs supporting --scaffold, assessment generation, and --check byte-for-byte drift assertion.",
+      "forces_addressed": [
+        "Assessment evidence scaffolding must reduce transcription burden for derivable metadata while preserving human judgment for decisions.",
+        "Generated assessment scaffolding must satisfy closed assessment schema 1.1 and fail closed under existing governance checks.",
+        "Emitted assessment artifacts must match generator projections byte-for-byte to prevent silent divergence and unreviewed manual mutations.",
+        "Generation and drift verification must remain lightweight and dependency-free within the governance toolchain."
+      ]
+    },
+    {
+      "id": "approach-external-template-engine",
+      "kind": "alternative",
+      "summary": "Introduce an external template engine (e.g. Handlebars or Mustache) or CLI framework to render assessment artifacts from configuration files.",
+      "forces_addressed": [
+        "Assessment evidence scaffolding must reduce transcription burden for derivable metadata while preserving human judgment for decisions."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-generation",
+  "rejected_alternative_ids": [
+    "approach-external-template-engine"
+  ],
+  "rejection_reasons": {
+    "approach-external-template-engine": {
+      "forces": [
+        "Generation and drift verification must remain lightweight and dependency-free within the governance toolchain.",
+        "Generated assessment scaffolding must satisfy closed assessment schema 1.1 and fail closed under existing governance checks."
+      ],
+      "reason": "Introducing external templating libraries or framework dependencies violates the repository requirement of zero runtime dependencies in governance scripts and adds unneeded abstraction over deterministic JSON emission."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-deterministic-derivation",
+    "implementation-drift-rejection"
+  ],
+  "invariant_evidence": {
+    "implementation-deterministic-derivation": {
+      "task_ids": [
+        "1.1",
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "assessment-generation.test.mjs validates deterministic emission of all mechanical fields"
+      ]
+    },
+    "implementation-drift-rejection": {
+      "task_ids": [
+        "1.1",
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "assessment-generation.test.mjs validates byte-for-byte drift check and rejects mutated output"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "Generated assessment artifacts preserve all required governance assertions and audit trail records without omission.",
+    "authentication_or_authorization": "Does not modify, bypass, or interact with any authentication or authorization mechanisms.",
+    "authority_provenance": "Derives public change metadata only; no cryptographic signing or identity authority logic is altered.",
+    "concurrency": "Purely synchronous file I/O operations with no shared memory, concurrent workers, or race conditions.",
+    "confidentiality": "Operates solely on public change planning metadata and repository commit hashes; handles no sensitive data.",
+    "cryptography": "Does not introduce, alter, or rely upon cryptographic operations or secret management.",
+    "error_disclosure": "Reports descriptive file diff and schema mismatch diagnostics without disclosing system secrets or credentials.",
+    "external_security_integration": "Operates independently without external network connections, APIs, or third-party security services.",
+    "fail_posture": "Fails closed upon syntax errors, missing source files, invalid schema structures, or byte-for-byte drift.",
+    "lifecycle": "Bounded to one-shot CLI execution during change planning or CI verification phases.",
+    "mutation_ownership": "Emits assessment artifacts strictly within the targeted change directory; enforces read-only verification in check mode.",
+    "privacy_transformation": "Does not process user telemetry, personal data, or sensitive operational payloads.",
+    "resource_retention": "Retains no in-memory buffers, persistent file handles, or network sockets beyond script termination.",
+    "retry_or_redelivery": "Deterministic idempotency; re-running generator produces identical bytes with no side effects.",
+    "trust_boundary": "Tool operates strictly within local developer and CI environments; modifies no trust boundary or security perimeter."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "5f33ddf07ff93093e960fccfec333c2ee78b40b8"
+  },
+  "verification_task_ids": [
+    "2.1",
+    "2.2",
+    "2.3"
+  ]
+}
