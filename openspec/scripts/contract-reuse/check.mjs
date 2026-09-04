@@ -77,9 +77,9 @@ function run(opts, sink) {
   if (triggeringPaths.length === 0) return skipSummary(context);
 
   context.triggeringPaths = triggeringPaths;
-  if (!attributedToSelectedChange(context)) {
-    return rejectedSummary(context);
-  }
+  const attribution = evaluateAttribution(context);
+  if (attribution === "skip") return skipSummary(context);
+  if (attribution === "rejected") return rejectedSummary(context);
   return evaluateRecord(context);
 }
 
@@ -112,14 +112,34 @@ function resolveRange(repositoryRoot, baseOption, sink) {
   return { base, head, range };
 }
 
-/** Fail-closed attribution of every triggering path to exactly the selected change. */
-function attributedToSelectedChange(context) {
+/** Fail-closed attribution of triggering paths to the active changes that own them. */
+function evaluateAttribution(context) {
   const changes = collectOpenSpecChanges(
     context.range.range.paths,
     (changeId) => readAssessment(context.repositoryRoot, changeId),
     activeChangeIds(context.repositoryRoot),
   );
-  return attributesEveryTrigger(context.triggeringPaths, changes, context.selectedChange, context.sink);
+  return checkTriggerAttribution(context, changes);
+}
+
+function checkTriggerAttribution(context, changes) {
+  let hasUnattributable = false;
+  for (const path of context.triggeringPaths) {
+    const matches = changes.filter((change) => matchesSelection(path, change.ownedPaths));
+    if (matches.length === 1) continue;
+    context.sink.fail("cra-trigger-unattributable", path, attributionMessage(matches, context.selectedChange));
+    hasUnattributable = true;
+  }
+  if (hasUnattributable) return "rejected";
+
+  const selectedTriggers = context.triggeringPaths.filter((path) => {
+    const matches = changes.filter((change) => matchesSelection(path, change.ownedPaths));
+    return isSelectedAttribution(matches, context.selectedChange);
+  });
+
+  if (selectedTriggers.length === 0) return "skip";
+  context.triggeringPaths = selectedTriggers;
+  return "pass";
 }
 
 /** Record loading, identity, structural, and mode stages of the pipeline. */
@@ -204,17 +224,6 @@ function isTriggerPath(path, changeId) {
     || path.startsWith("packages/security-audit-sdk-core/src/generated/")
     || path.startsWith("openspec/specs/security-audit-event-contract/")
     || path.startsWith(`openspec/changes/${changeId}/specs/security-audit-event-contract/`);
-}
-
-function attributesEveryTrigger(triggeringPaths, changes, selectedChange, sink) {
-  let attributed = true;
-  for (const path of triggeringPaths) {
-    const matches = changes.filter((change) => matchesSelection(path, change.ownedPaths));
-    if (isSelectedAttribution(matches, selectedChange)) continue;
-    sink.fail("cra-trigger-unattributable", path, attributionMessage(matches, selectedChange));
-    attributed = false;
-  }
-  return attributed;
 }
 
 function isSelectedAttribution(matches, selectedChange) {
