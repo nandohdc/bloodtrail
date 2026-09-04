@@ -13,6 +13,8 @@ import {
   type AuditEventSink,
   type SecurityAuditEvent,
 } from "../dist/index.js";
+import { createInMemoryAuditSink } from "../dist/testing.js";
+
 
 const contractRoot = resolve(process.cwd(), "../../contracts/security-audit");
 
@@ -117,4 +119,16 @@ test("invalid initialization returns a bounded safe structured error without inp
       return true;
     },
   );
+});
+
+test("in-memory test sink validates capacity bounds strictly", () => {
+  assert.throws(() => createInMemoryAuditSink({ capacity: 0 }), /SDK_INVALID_CONFIGURATION/);
+  assert.throws(() => createInMemoryAuditSink({ capacity: -1 }), /SDK_INVALID_CONFIGURATION/);
+  assert.throws(() => createInMemoryAuditSink({ capacity: 10_001 }), /SDK_INVALID_CONFIGURATION/);
+  assert.throws(() => createInMemoryAuditSink({ capacity: 1.5 }), /SDK_INVALID_CONFIGURATION/);
+  assert.throws(() => createInMemoryAuditSink({ capacity: Number.NaN }), /SDK_INVALID_CONFIGURATION/);
+
+  const sink = createInMemoryAuditSink({ capacity: 10 });
+  assert.equal(sink.capacity, 10);
+  assert.equal(sink.events.length, 0);
 });
