@@ -40,6 +40,10 @@ coupled.
 
 Do not create giant PRs when the work can safely be separated.
 
+### Routine documentation batching rule
+
+Do not include incidental edits to `governance_core` documentation files (`AGENTS.md`, `CLAUDE.md`, `.hermes.md`, `CONTRIBUTING.md`) in bounded implementation, bugfix, or verification PRs. Doing so triggers `governance_core_path` and forces a full OpenSpec assessment. Defer routine documentation updates and batch them into dedicated periodic documentation changes.
+
 ## Task linkage and promotion rule
 
 When a card is created that will produce a PR, create its integrator card in the same orchestration step, and make the next normative stage a child of the integrator, not of the producing card:
@@ -184,7 +188,9 @@ path matching no pattern is unclassified and fails closed against the required
 `governance_core_path` is a full assessment trigger. Touching any of those
 paths — even for a one-line documentation edit — requires a full OpenSpec
 assessment with all fifteen dimension justifications. Never touch them
-incidentally alongside another change.
+incidentally alongside another change. Routine documentation corrections to
+governance_core paths must be deferred and batched into periodic documentation
+changes so that bounded changes retain eligibility for the abbreviated path.
 
 Operator tooling that is not part of the product belongs outside the
 repository, in `~/.hermes/scripts/`, not in a root `scripts/` directory.
