@@ -6,31 +6,37 @@ import {
   runAuditWithRetry,
 } from "./npm-audit-retry.mjs";
 
+function classify(stdout = "", stderr = "", status = 1) {
+  return classifyAuditResult({ status, stdout, stderr });
+}
+
+function createScenarioExecutor(steps) {
+  const calls = [];
+  let attempt = 0;
+  const executor = (args) => {
+    attempt += 1;
+    calls.push({ attempt, args });
+    return steps[attempt - 1] ?? steps[steps.length - 1];
+  };
+  return { calls, executor };
+}
+
 test("classifyAuditResult: status 0 is always a pass", () => {
-  const result = classifyAuditResult({
-    status: 0,
-    stdout: "found 0 vulnerabilities\n",
-    stderr: "",
-  });
+  const result = classify("found 0 vulnerabilities\n", "", 0);
   assert.equal(result.disposition, "pass");
 });
 
 test("classifyAuditResult: detects npm audit endpoint returned an error as transport error", () => {
-  const result = classifyAuditResult({
-    status: 1,
-    stdout: "",
-    stderr: "npm error audit endpoint returned an error\n",
-  });
+  const result = classify("", "npm error audit endpoint returned an error\n");
   assert.equal(result.disposition, "transport_error");
   assert.match(result.reason, /audit endpoint returned an error/i);
 });
 
 test("classifyAuditResult: detects network timeout warning and error as transport error", () => {
-  const result = classifyAuditResult({
-    status: 1,
-    stdout: "npm warn audit network timeout at: https://registry.npmjs.org/-/npm/v1/security/advisories/bulk\n",
-    stderr: "npm error code ETIMEDOUT\n",
-  });
+  const result = classify(
+    "npm warn audit network timeout at: https://registry.npmjs.org/-/npm/v1/security/advisories/bulk\n",
+    "npm error code ETIMEDOUT\n",
+  );
   assert.equal(result.disposition, "transport_error");
 });
 
@@ -45,11 +51,7 @@ test("classifyAuditResult: detects ECONNRESET, ENOTFOUND, and HTTP 5xx as transp
     "npm error 504 Gateway Timeout",
     "TypeError: fetch failed",
   ]) {
-    const result = classifyAuditResult({
-      status: 1,
-      stdout: "",
-      stderr: `${sample}\n`,
-    });
+    const result = classify("", `${sample}\n`);
     assert.equal(
       result.disposition,
       "transport_error",
@@ -68,23 +70,17 @@ test("classifyAuditResult: NULL CONTROL - genuine vulnerability findings fail im
     "1 high severity vulnerability",
   ].join("\n");
 
-  const result = classifyAuditResult({
-    status: 1,
-    stdout: vulnerabilityOutput,
-    stderr: "",
-  });
+  const result = classify(vulnerabilityOutput, "");
   assert.equal(result.disposition, "vulnerability_finding");
 });
 
 test("runAuditWithRetry: passes without retry on immediate success", async () => {
-  const calls = [];
-  const fakeExecutor = (args) => {
-    calls.push(args);
-    return { status: 0, stdout: "found 0 vulnerabilities", stderr: "" };
-  };
+  const { calls, executor } = createScenarioExecutor([
+    { status: 0, stdout: "found 0 vulnerabilities", stderr: "" },
+  ]);
 
   const outcome = await runAuditWithRetry({
-    executor: fakeExecutor,
+    executor,
     auditLevel: "low",
     maxRetries: 2,
     retryDelayMs: 1,
@@ -95,23 +91,13 @@ test("runAuditWithRetry: passes without retry on immediate success", async () =>
 });
 
 test("runAuditWithRetry: recovers after transient transport failure", async () => {
-  const calls = [];
-  let attempt = 0;
-  const fakeExecutor = (args) => {
-    attempt += 1;
-    calls.push({ attempt, args });
-    if (attempt === 1) {
-      return {
-        status: 1,
-        stdout: "",
-        stderr: "npm error audit endpoint returned an error\n",
-      };
-    }
-    return { status: 0, stdout: "found 0 vulnerabilities", stderr: "" };
-  };
+  const { calls, executor } = createScenarioExecutor([
+    { status: 1, stdout: "", stderr: "npm error audit endpoint returned an error\n" },
+    { status: 0, stdout: "found 0 vulnerabilities", stderr: "" },
+  ]);
 
   const outcome = await runAuditWithRetry({
-    executor: fakeExecutor,
+    executor,
     auditLevel: "high",
     maxRetries: 2,
     retryDelayMs: 1,
@@ -124,20 +110,12 @@ test("runAuditWithRetry: recovers after transient transport failure", async () =
 });
 
 test("runAuditWithRetry: NULL CONTROL - never retries on genuine vulnerability finding", async () => {
-  const calls = [];
-  let attempt = 0;
-  const fakeExecutor = (args) => {
-    attempt += 1;
-    calls.push({ attempt, args });
-    return {
-      status: 1,
-      stdout: "1 high severity vulnerability\n# npm audit report",
-      stderr: "",
-    };
-  };
+  const { calls, executor } = createScenarioExecutor([
+    { status: 1, stdout: "1 high severity vulnerability\n# npm audit report", stderr: "" },
+  ]);
 
   const outcome = await runAuditWithRetry({
-    executor: fakeExecutor,
+    executor,
     auditLevel: "high",
     maxRetries: 2,
     retryDelayMs: 1,
@@ -150,20 +128,12 @@ test("runAuditWithRetry: NULL CONTROL - never retries on genuine vulnerability f
 });
 
 test("runAuditWithRetry: exhausts maxRetries on persistent transport outage", async () => {
-  const calls = [];
-  let attempt = 0;
-  const fakeExecutor = (args) => {
-    attempt += 1;
-    calls.push({ attempt, args });
-    return {
-      status: 1,
-      stdout: "",
-      stderr: "npm error audit endpoint returned an error\n",
-    };
-  };
+  const { calls, executor } = createScenarioExecutor([
+    { status: 1, stdout: "", stderr: "npm error audit endpoint returned an error\n" },
+  ]);
 
   const outcome = await runAuditWithRetry({
-    executor: fakeExecutor,
+    executor,
     auditLevel: "low",
     maxRetries: 2,
     retryDelayMs: 1,
