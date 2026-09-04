@@ -40,6 +40,18 @@ coupled.
 
 Do not create giant PRs when the work can safely be separated.
 
+## Task linkage and promotion rule
+
+When a card is created that will produce a PR, create its integrator card in the same orchestration step, and make the next normative stage a child of the integrator, not of the producing card:
+
+    producer ──► integrator ──► next stage
+
+Never link the next normative stage directly as a child of the producing card:
+
+    producer ──► next stage          (FORBIDDEN: integrator missing or added late)
+
+Card completion is the promotion trigger. Because separation of duties prevents an author from merging their own PR, a card producing a PR completes upon review acceptance while the PR is still unmerged. Linking the next stage directly to the producer causes that successor stage to start prematurely against an unmerged base. For any mid-chain corrective or preparatory card, successor stages must hang off the integrator card that merges the PR.
+
 ## Merge rule
 
 Never merge while a required CI check is pending, failing, cancelled,
