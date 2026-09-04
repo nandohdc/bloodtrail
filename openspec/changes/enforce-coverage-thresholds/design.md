@@ -24,8 +24,8 @@ Node's built-in test runner (`node --test --experimental-test-coverage`) nativel
 ### 1. Enforce locally with native Node test coverage thresholds
 Node 24 and Node 26 support `--test-coverage-lines` and `--test-coverage-branches`. Adding these flags to `test:coverage` ensures that any coverage regression fails immediately on a developer's machine as well as in CI.
 - SDK Core thresholds: `--test-coverage-lines=95 --test-coverage-branches=65`
-- Browser Telemetry thresholds: `--test-coverage-lines=90 --test-coverage-branches=65`
-These ratchets sit safely below current measured baselines (97.8% / 68.8% for SDK, 93.2% / 72.5% for research), preventing coverage collapse while avoiding sensitivity to minor compiler branch artifact variance.
+- Browser Telemetry thresholds: `--test-coverage-lines=80 --test-coverage-branches=65`
+These ratchets sit safely below current measured baselines (97.8% / 68.8% for SDK, 83.3% / 76.1% for headless research; 93.2% / 72.5% for local browser-enabled research), preventing coverage collapse while avoiding sensitivity to headless environment skipping and minor compiler branch artifact variance.
 
 ### 2. Promote `coverage` to required branch-protection context
 GitHub branch protection currently requires nine contexts. The `coverage` job in `.github/workflows/ci.yml` executes both package `test:coverage` scripts and reports status as `coverage`. Adding `coverage` to GitHub branch protection ensures that any regression blocking `test:coverage` prevents merging into `main`.
