@@ -77,27 +77,21 @@ export interface PlatformProvider {
   readonly contextProvider?: ContextProvider;
 }
 
+function charByteLength(code: number, next: number): number {
+  if (code < 0x80) return 1;
+  if (code < 0x800) return 2;
+  if (code >= 0xd800 && code <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) return 4;
+  return 3;
+}
+
 export function utf8ByteLength(value: string): number {
   let bytes = 0;
   for (let i = 0; i < value.length; i += 1) {
     const code = value.charCodeAt(i);
-    if (code < 0x80) {
-      bytes += 1;
-    } else if (code < 0x800) {
-      bytes += 2;
-    } else if (code >= 0xd800 && code <= 0xdbff) {
-      if (i + 1 < value.length) {
-        const next = value.charCodeAt(i + 1);
-        if (next >= 0xdc00 && next <= 0xdfff) {
-          bytes += 4;
-          i += 1;
-          continue;
-        }
-      }
-      bytes += 3;
-    } else {
-      bytes += 3;
-    }
+    const next = i + 1 < value.length ? value.charCodeAt(i + 1) : 0;
+    const len = charByteLength(code, next);
+    bytes += len;
+    if (len === 4) i += 1;
   }
   return bytes;
 }

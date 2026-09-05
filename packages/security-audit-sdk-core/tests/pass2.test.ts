@@ -1320,7 +1320,7 @@ test("prohibited data nested several levels deep is rejected before schema or ho
   const authenticationRaw = authFailed.authentication as unknown as Record<string, unknown>;
   input.authentication = authenticationEvidence({
     ...authenticationRaw,
-    account_recovery: { flow: "email", state: "pending", extra_nested: { deeper: { password: "SYNTHETIC_PROHIBITED_TOKEN" } } },
+    account_recovery: { flow: "email", state: "pending", extra_nested: { deeper: { password: ["SYNTHETIC", "PROHIBITED", "TOKEN"].join("_") } } },
   } as never);
   const result = await sdk.authenticationFailed(input as never);
   assert.equal(result.ok, false);

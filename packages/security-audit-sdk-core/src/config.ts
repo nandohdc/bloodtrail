@@ -125,9 +125,9 @@ function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): Nor
   if (input.clock !== undefined && typeof input.clock.now !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/clock");
   if (input.identifiers !== undefined) requireIdentifierProvider(input.identifiers);
   if (input.byteLength !== undefined && typeof input.byteLength.byteLength !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/byteLength");
-  if (input.timers !== undefined && (typeof input.timers.setTimeout !== "function" || typeof input.timers.clearTimeout !== "function")) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/timers");
+  if (input.timers !== undefined) requireTimerProvider(input.timers);
   if (input.schemaRuntime !== undefined && typeof input.schemaRuntime.validate !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/schemaRuntime");
-  if (input.contextProvider !== undefined && (typeof input.contextProvider.run !== "function" || typeof input.contextProvider.get !== "function")) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/contextProvider");
+  if (input.contextProvider !== undefined) requireContextProvider(input.contextProvider);
   const transformations = normalizeTransformations(input.transformations);
   const timeout = input.shutdownTimeoutMs ?? 5000;
   if (!Number.isSafeInteger(timeout) || timeout < 0 || timeout > 60_000) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/shutdownTimeoutMs");
@@ -216,6 +216,18 @@ function requireIdentifierProvider(value: AuditIdentifierProvider): void {
   const required: readonly (keyof AuditIdentifierProvider)[] = ["eventId", "operationId", "correlationId", "causationId", "requestId", "messageId", "transactionId"];
   for (const key of required) {
     if (typeof value[key] !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/identifiers/${key}`);
+  }
+}
+
+function requireTimerProvider(value: AuditTimerProvider): void {
+  if (typeof value.setTimeout !== "function" || typeof value.clearTimeout !== "function") {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/timers");
+  }
+}
+
+function requireContextProvider(value: ContextProvider): void {
+  if (typeof value.run !== "function" || typeof value.get !== "function") {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/contextProvider");
   }
 }
 

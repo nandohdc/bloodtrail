@@ -8,9 +8,10 @@ export const cjsSchemaRuntime: AuditSchemaRuntime = Object.freeze({
   validate(value: unknown): AuditResult<void> {
     if (validateSchema(value)) return { ok: true, value: undefined };
     const first = validateSchema.errors?.[0];
+    const code = mapSchemaError(first);
     return failure(
-      mapSchemaError(first),
-      categoryForSchemaCode(mapSchemaError(first)),
+      code,
+      categoryForSchemaCode(code),
       first?.instancePath || pathFromMissingProperty(first) || "/",
     );
   },
@@ -41,6 +42,19 @@ interface StandaloneValidationError {
   readonly params: Readonly<Record<string, unknown>>;
 }
 
+function mapRequiredError(instancePath: string, missing: string): string {
+  if (missing === "actor" || (instancePath === "/actor" && missing === "type")) return "MISSING_REQUIRED_ACTOR";
+  if (missing === "tenant") return "MISSING_TENANT_CONTEXT";
+  if (isProhibitedProperty(missing)) return "PROHIBITED_DATA";
+  return "SDK_MISSING_EVENT_FIELD";
+}
+
+function mapAdditionalPropertiesError(path: string, extra: string): string {
+  if (path === "/extensions" || path.startsWith("/extensions/")) return "UNKNOWN_EXTENSION";
+  if (isProhibitedProperty(extra)) return "PROHIBITED_DATA";
+  return "SDK_SCHEMA_VALIDATION_FAILED";
+}
+
 function mapSchemaError(error: StandaloneValidationError | undefined): string {
   if (!error) return "SDK_SCHEMA_VALIDATION_FAILED";
   const path = error.instancePath || pathFromMissingProperty(error) || "/";
@@ -50,15 +64,11 @@ function mapSchemaError(error: StandaloneValidationError | undefined): string {
   if (error.keyword === "maxLength" || error.keyword === "maximum" || error.keyword === "maxItems") return "FIELD_LIMIT_EXCEEDED";
   if (error.keyword === "required") {
     const missing = typeof error.params.missingProperty === "string" ? error.params.missingProperty : "";
-    if (missing === "actor" || (error.instancePath === "/actor" && missing === "type")) return "MISSING_REQUIRED_ACTOR";
-    if (missing === "tenant") return "MISSING_TENANT_CONTEXT";
-    if (isProhibitedProperty(missing)) return "PROHIBITED_DATA";
-    return "SDK_MISSING_EVENT_FIELD";
+    return mapRequiredError(error.instancePath, missing);
   }
   if (error.keyword === "additionalProperties") {
     const extra = typeof error.params.additionalProperty === "string" ? error.params.additionalProperty : "";
-    if (path === "/extensions" || path.startsWith("/extensions/")) return "UNKNOWN_EXTENSION";
-    if (isProhibitedProperty(extra)) return "PROHIBITED_DATA";
+    return mapAdditionalPropertiesError(path, extra);
   }
   return "SDK_SCHEMA_VALIDATION_FAILED";
 }
@@ -72,14 +82,8 @@ function pathFromMissingProperty(error: StandaloneValidationError | undefined): 
   return `${error.instancePath}/${error.params.missingProperty}`.replace(/\/+/g, "/");
 }
 
+const PROHIBITED_PROPERTY_PATTERN = /token|secret|cookie|private_key|raw_body|full_request|request_body|response_body/i;
+
 function isProhibitedProperty(key: string): boolean {
-  const normalized = key.toLowerCase();
-  return normalized.includes("token")
-    || normalized.includes("secret")
-    || normalized.includes("cookie")
-    || normalized.includes("private_key")
-    || normalized.includes("raw_body")
-    || normalized.includes("full_request")
-    || normalized.includes("request_body")
-    || normalized.includes("response_body");
+  return PROHIBITED_PROPERTY_PATTERN.test(key);
 }

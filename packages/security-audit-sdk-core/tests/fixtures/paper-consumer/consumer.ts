@@ -56,20 +56,14 @@ export class WebAuditByteLengthProvider implements AuditByteLengthProvider {
 
 export class WebAuditTimerProvider implements AuditTimerProvider {
   setTimeout(callback: () => void, ms: number): AuditTimerHandle {
-    const id = setTimeout(callback, ms);
-    // Standard web timer: handle is numeric ID, lacks unref()
-    return {
-      // unref is intentionally undefined on web hosts
-    };
+    setTimeout(callback, ms);
+    return {};
   }
-  clearTimeout(handle: AuditTimerHandle): void {
-    void handle;
-  }
+  clearTimeout(_handle: AuditTimerHandle): void {}
 }
 
 export class WebAuditSchemaRuntime implements AuditSchemaRuntime {
-  validate(event: unknown): AuditResult<void> {
-    void event;
+  validate(_event: unknown): AuditResult<void> {
     return { ok: true, value: undefined };
   }
 }
