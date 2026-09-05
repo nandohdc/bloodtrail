@@ -43,7 +43,7 @@ export class StackContextProvider implements ContextProvider {
   private readonly stack: AuditContextFrame[] = [];
 
   get(): AuditContextFrame | undefined {
-    return this.stack.length > 0 ? this.stack[this.stack.length - 1] : undefined;
+    return this.stack.at(-1);
   }
 
   run<R>(context: AuditContextFrame, fn: () => R): R {
@@ -79,28 +79,23 @@ export interface PlatformProvider {
   readonly contextProvider?: ContextProvider;
 }
 
-function isSurrogatePair(code: number, next: number): boolean {
-  if (code < 0xd800) return false;
-  if (code > 0xdbff) return false;
-  if (next < 0xdc00) return false;
-  return next <= 0xdfff;
-}
-
-function charByteLength(code: number, next: number): number {
-  if (code < 0x80) return 1;
-  if (code < 0x800) return 2;
-  if (isSurrogatePair(code, next)) return 4;
-  return 3;
+function charByteLength(codePoint: number): number {
+  if (codePoint < 0x80) return 1;
+  if (codePoint < 0x800) return 2;
+  if (codePoint < 0x10000) return 3;
+  return 4;
 }
 
 export function utf8ByteLength(value: string): number {
   let bytes = 0;
   for (let i = 0; i < value.length; i += 1) {
-    const code = value.charCodeAt(i);
-    const next = i + 1 < value.length ? value.charCodeAt(i + 1) : 0;
-    const len = charByteLength(code, next);
-    bytes += len;
-    if (len === 4) i += 1;
+    // codePointAt combines a surrogate pair into a single code point. A lone
+    // surrogate comes back as its own code unit and so counts as three bytes,
+    // which is what a UTF-8 encoder spends on the replacement character it
+    // substitutes for an unpaired surrogate.
+    const codePoint = value.codePointAt(i) ?? 0;
+    bytes += charByteLength(codePoint);
+    if (codePoint > 0xffff) i += 1;
   }
   return bytes;
 }
@@ -124,7 +119,7 @@ export const systemAuditClock: AuditClock = Object.freeze({ now: () => new Date(
 let uuidSeed = 0x9e3779b9;
 
 function nextRandomNibble(): number {
-  uuidSeed = (uuidSeed + 0x6d2b79f5) | 0;
+  uuidSeed = (uuidSeed + 0x6d2b79f5) >>> 0;
   let t = Math.imul(uuidSeed ^ (uuidSeed >>> 15), 1 | uuidSeed);
   t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
   return ((t ^ (t >>> 14)) >>> 0) & 0xf;
