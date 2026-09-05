@@ -30,5 +30,5 @@
 
 ## 5. Fold and archive
 
-- [ ] 5.1 Fold `security-audit-sdk-node` delta spec into canonical `openspec/specs/security-audit-sdk-node/spec.md`.
-- [ ] 5.2 Archive `add-provisional-node-binding` in a byte-preserving relocation commit and close issue #87.
+- [x] 5.1 Fold `security-audit-sdk-node` delta spec into canonical `openspec/specs/security-audit-sdk-node/spec.md`.
+- [x] 5.2 Archive `add-provisional-node-binding` in a byte-preserving relocation commit and close issue #87.
