@@ -46,14 +46,16 @@ const SCHEMA_VERSION_PATHS = new Set(["/schema/version", "/schema/name"]);
 const CATALOG_PATHS = new Set(["/event/name", "/event/category", "/event/action", "/event/delivery_class"]);
 const FIELD_LIMIT_KEYWORDS = new Set(["maxLength", "maximum", "maxItems"]);
 
-function mapRequiredError(instancePath: string, missing: string): string {
-  if (missing === "actor" || (instancePath === "/actor" && missing === "type")) return "MISSING_REQUIRED_ACTOR";
+function mapRequiredError(error: StandaloneValidationError): string {
+  const missing = typeof error.params.missingProperty === "string" ? error.params.missingProperty : "";
+  if (missing === "actor" || (error.instancePath === "/actor" && missing === "type")) return "MISSING_REQUIRED_ACTOR";
   if (missing === "tenant") return "MISSING_TENANT_CONTEXT";
   if (isProhibitedProperty(missing)) return "PROHIBITED_DATA";
   return "SDK_MISSING_EVENT_FIELD";
 }
 
-function mapAdditionalPropertiesError(path: string, extra: string): string {
+function mapAdditionalPropertiesError(error: StandaloneValidationError, path: string): string {
+  const extra = typeof error.params.additionalProperty === "string" ? error.params.additionalProperty : "";
   if (path === "/extensions" || path.startsWith("/extensions/")) return "UNKNOWN_EXTENSION";
   if (isProhibitedProperty(extra)) return "PROHIBITED_DATA";
   return "SDK_SCHEMA_VALIDATION_FAILED";
@@ -68,14 +70,8 @@ function matchPathCode(path: string): string | undefined {
 
 function matchKeywordCode(error: StandaloneValidationError, path: string): string {
   if (FIELD_LIMIT_KEYWORDS.has(error.keyword)) return "FIELD_LIMIT_EXCEEDED";
-  if (error.keyword === "required") {
-    const missing = typeof error.params.missingProperty === "string" ? error.params.missingProperty : "";
-    return mapRequiredError(error.instancePath, missing);
-  }
-  if (error.keyword === "additionalProperties") {
-    const extra = typeof error.params.additionalProperty === "string" ? error.params.additionalProperty : "";
-    return mapAdditionalPropertiesError(path, extra);
-  }
+  if (error.keyword === "required") return mapRequiredError(error);
+  if (error.keyword === "additionalProperties") return mapAdditionalPropertiesError(error, path);
   return "SDK_SCHEMA_VALIDATION_FAILED";
 }
 

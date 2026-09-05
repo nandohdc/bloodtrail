@@ -38,18 +38,18 @@ export interface ContextProvider {
 }
 
 export class StackContextProvider implements ContextProvider {
-  #stack: AuditContextFrame[] = [];
+  private readonly stack: AuditContextFrame[] = [];
 
   get(): AuditContextFrame | undefined {
-    return this.#stack.length > 0 ? this.#stack[this.#stack.length - 1] : undefined;
+    return this.stack.length > 0 ? this.stack[this.stack.length - 1] : undefined;
   }
 
   run<R>(context: AuditContextFrame, fn: () => R): R {
-    this.#stack.push(context);
+    this.stack.push(context);
     try {
       return fn();
     } finally {
-      this.#stack.pop();
+      this.stack.pop();
     }
   }
 }

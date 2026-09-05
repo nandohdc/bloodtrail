@@ -133,11 +133,14 @@ function resolveCoreProviders(input: SecurityAuditSdkConfiguration) {
   };
 }
 
-function resolvePlatformProviders(input: SecurityAuditSdkConfiguration) {
+function validatePlatformProviders(input: SecurityAuditSdkConfiguration): void {
   if (input.byteLength !== undefined && typeof input.byteLength.byteLength !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/byteLength");
   if (input.timers !== undefined) requireTimerProvider(input.timers);
   if (input.schemaRuntime !== undefined && typeof input.schemaRuntime.validate !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/schemaRuntime");
   if (input.contextProvider !== undefined) requireContextProvider(input.contextProvider);
+}
+
+function resolvePlatformProviders(input: SecurityAuditSdkConfiguration) {
   return {
     byteLength: input.byteLength ?? defaultByteLengthProvider,
     timers: input.timers ?? defaultTimerProvider,
@@ -155,6 +158,7 @@ function resolveTimeout(input: SecurityAuditSdkConfiguration): number {
 function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): NormalizedSdkConfiguration {
   if (input.contractVersion !== CONTRACT_VERSION) throw new SecurityAuditSdkError("SDK_UNSUPPORTED_CONTRACT_VERSION", "configuration", "/contractVersion");
   validateServiceIdentity(input);
+  validatePlatformProviders(input);
   const core = resolveCoreProviders(input);
   const platform = resolvePlatformProviders(input);
   const timeout = resolveTimeout(input);
