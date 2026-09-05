@@ -1,0 +1,211 @@
+{
+  "schema_version": "1.1",
+  "change_id": "extract-platform-neutral-core",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Core must decouple from Node built-ins, Node host globals, and Node engine constraints to enable non-Node host execution without runtime assumptions.",
+    "Audit semantics, catalog requirements, and authority validation must remain in Core and must not weaken or drift during extraction.",
+    "The 35 exported brand constructors and 19 AuditBrandKind members must remain in Core without moving to instances or global state.",
+    "Ambient context must be abstracted behind an SPI while preserving isolation, nesting restoration, and cleanup.",
+    "Under settled Option C, Core must resolve to exactly one module instance in any consumer graph, and duplicate-Core instances must fail closed.",
+    "Zero-runtime-dependency enforcement must be rescoped to strictly allow first-party bindings while continuing to prohibit third-party dependencies.",
+    "Neutrality must be demonstrated by compiling against a non-Node paper second consumer without loosening Core type safety.",
+    "The 24 catalog events and 24 named event APIs must be preserved with exact count equality before and after extraction."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "integration",
+      "lifecycle_or_state",
+      "concurrency",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/extract-platform-neutral-core/proposal.md",
+    "openspec/changes/extract-platform-neutral-core/assessment.json",
+    "openspec/changes/extract-platform-neutral-core/design.md",
+    "openspec/changes/extract-platform-neutral-core/specs/security-audit-sdk-core/spec.md",
+    "openspec/changes/extract-platform-neutral-core/tasks.md",
+    "packages/security-audit-sdk-core/src/providers.ts",
+    "packages/security-audit-sdk-core/src/context.ts",
+    "packages/security-audit-sdk-core/src/errors.ts",
+    "packages/security-audit-sdk-core/src/validation/prohibited.ts",
+    "packages/security-audit-sdk-core/src/sdk.ts",
+    "packages/security-audit-sdk-core/src/config.ts",
+    "packages/security-audit-sdk-core/scripts/platform-coupling-policy.mjs",
+    "packages/security-audit-sdk-core/scripts/check-dependencies.mjs",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-core/compatibility.json",
+    "packages/security-audit-sdk-core/tests/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-spi-extraction",
+      "kind": "direct_implementation",
+      "summary": "Extract platform capabilities into PlatformProvider and ContextProvider SPIs, retain authority and catalog in Core, prove single-copy Core invariant with automated duplicate-Core fixture, and validate neutrality against a paper second consumer.",
+      "forces_addressed": [
+        "Core must decouple from Node built-ins, Node host globals, and Node engine constraints to enable non-Node host execution without runtime assumptions.",
+        "Audit semantics, catalog requirements, and authority validation must remain in Core and must not weaken or drift during extraction.",
+        "The 35 exported brand constructors and 19 AuditBrandKind members must remain in Core without moving to instances or global state.",
+        "Ambient context must be abstracted behind an SPI while preserving isolation, nesting restoration, and cleanup.",
+        "Under settled Option C, Core must resolve to exactly one module instance in any consumer graph, and duplicate-Core instances must fail closed.",
+        "Zero-runtime-dependency enforcement must be rescoped to strictly allow first-party bindings while continuing to prohibit third-party dependencies.",
+        "Neutrality must be demonstrated by compiling against a non-Node paper second consumer without loosening Core type safety.",
+        "The 24 catalog events and 24 named event APIs must be preserved with exact count equality before and after extraction."
+      ]
+    },
+    {
+      "id": "approach-esm-generator-rewrite",
+      "kind": "alternative",
+      "summary": "Rewrite the contract code generator to emit ESM modules for the 248 KB standalone validator instead of abstracting schema validation behind an SPI.",
+      "forces_addressed": [
+        "Core must decouple from Node built-ins, Node host globals, and Node engine constraints to enable non-Node host execution without runtime assumptions."
+      ]
+    },
+    {
+      "id": "approach-global-brand-registry",
+      "kind": "alternative",
+      "summary": "Anchor brand registry in globalThis so that duplicate Core instances share state across package copies without failing closed.",
+      "forces_addressed": [
+        "Under settled Option C, Core must resolve to exactly one module instance in any consumer graph, and duplicate-Core instances must fail closed."
+      ]
+    },
+    {
+      "id": "approach-drop-ambient-context",
+      "kind": "alternative",
+      "summary": "Eliminate ambient execution context entirely, requiring callers to explicitly pass an AuditContext object to every builder and API call.",
+      "forces_addressed": [
+        "Ambient context must be abstracted behind an SPI while preserving isolation, nesting restoration, and cleanup."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-spi-extraction",
+  "rejected_alternative_ids": [
+    "approach-esm-generator-rewrite",
+    "approach-global-brand-registry",
+    "approach-drop-ambient-context"
+  ],
+  "rejection_reasons": {
+    "approach-esm-generator-rewrite": {
+      "forces": [
+        "Core must decouple from Node built-ins, Node host globals, and Node engine constraints to enable non-Node host execution without runtime assumptions."
+      ],
+      "reason": "Rewriting the validator generator alters the frozen contract generator pipeline in contracts/security-audit, expanding blast radius and violating the bounded package split plan (PLAN-045 specifically specifies the schema runtime as a provider SPI)."
+    },
+    "approach-global-brand-registry": {
+      "forces": [
+        "The 35 exported brand constructors and 19 AuditBrandKind members must remain in Core without moving to instances or global state.",
+        "Under settled Option C, Core must resolve to exactly one module instance in any consumer graph, and duplicate-Core instances must fail closed."
+      ],
+      "reason": "A globalThis registry creates an ambient reachability vector that defeats module-copy forge resistance, violates Option C adopted under ADR 0010, and was explicitly rejected by the project owner."
+    },
+    "approach-drop-ambient-context": {
+      "forces": [
+        "The 24 catalog events and 24 named event APIs must be preserved with exact count equality before and after extraction.",
+        "Ambient context must be abstracted behind an SPI while preserving isolation, nesting restoration, and cleanup."
+      ],
+      "reason": "Eliminating ambient context breaks all 24 named event APIs and public ergonomics, forcing breaking signatures across the entire surface instead of preserving existing semantics behind the ContextProvider SPI mandated by PLAN-016."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-platform-provider-spis",
+    "implementation-context-provider-spi",
+    "implementation-single-copy-core-invariant",
+    "implementation-zero-host-coupling",
+    "implementation-paper-second-consumer",
+    "implementation-pinned-counts-preserved"
+  ],
+  "invariant_evidence": {
+    "implementation-platform-provider-spis": {
+      "task_ids": ["4.1", "4.3", "4.4", "4.5"],
+      "evidence_ids": [
+        "PlatformProvider SPI interfaces defined in src/providers.ts for clock, ids, byteLength, timer, and schemaRuntime",
+        "Buffer.byteLength replaced with byteLength SPI and TextEncoder fallback",
+        "unref timer handles treated as optional capability with graceful degradation"
+      ]
+    },
+    "implementation-context-provider-spi": {
+      "task_ids": ["4.2"],
+      "evidence_ids": [
+        "ContextProvider SPI interface defined in src/context.ts",
+        "Brand registry, 35 brand constructors, and 19 brand kinds retained in Core",
+        "AsyncLocalStorage import removed from Core src/context.ts"
+      ]
+    },
+    "implementation-single-copy-core-invariant": {
+      "task_ids": ["4.6"],
+      "evidence_ids": [
+        "Automated duplicate-Core fixture proves cross-copy rejection with AUTHORITY_ESCALATION",
+        "Null control proves single deduplicated Core succeeds"
+      ]
+    },
+    "implementation-zero-host-coupling": {
+      "task_ids": ["4.7", "5.1"],
+      "evidence_ids": [
+        "platform-coupling-policy reports zero Node built-in imports and zero host globals in Core",
+        "check-dependencies verifies no third-party runtime dependencies"
+      ]
+    },
+    "implementation-paper-second-consumer": {
+      "task_ids": ["3.2", "5.1"],
+      "evidence_ids": [
+        "Paper second consumer provider types compile cleanly under test:types",
+        "Typecheck passes without loosening any Core type definition"
+      ]
+    },
+    "implementation-pinned-counts-preserved": {
+      "task_ids": ["5.2"],
+      "evidence_ids": [
+        "Verification asserts exactly 24 catalog events and 24 named event APIs",
+        "Verification asserts exactly 35 brand constructors and 19 AuditBrandKind members"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Preserves all 24 canonical event structures, validation constraints, and required fields while mediating host time and identity through verified provider SPIs.",
+    "authentication_or_authorization": "Retains all 35 brand constructors and 19 brand kinds in Core, ensuring caller-claimed attributes cannot bypass authority validation.",
+    "authority_provenance": "The module-copy WeakMap registry invariant is preserved; duplicate-Core instances fail closed before sink handoff under Option C.",
+    "concurrency": "The ContextProvider SPI enforces isolated asynchronous context scopes; nested and concurrent operations cannot leak context data.",
+    "confidentiality": "No secret tokens, payloads, or sensitive diagnostics are retained or disclosed across provider interfaces.",
+    "cryptography": "Identifier generation requires cryptographically random UUIDs via the AuditIdentifierProvider interface without hardcoding Node crypto.",
+    "error_disclosure": "Safe error categories and bounded paths are preserved; provider rejections cannot leak raw host exceptions or memory dumps.",
+    "external_security_integration": "No external security exporters, transports, collectors, or SIEM sinks are authorized or introduced.",
+    "fail_posture": "Missing context, duplicate Core copies, and invalid schema data fail closed before event emission or sink handoff.",
+    "lifecycle": "Timer provider manages shutdown drain cleanly; handles without unref() degrade gracefully without hanging host processes.",
+    "mutation_ownership": "Core maintains immutable configuration snapshots and read-only event structures; provider results are validated before use.",
+    "privacy_transformation": "Prohibited-data detection and privacy-transformation hooks remain strictly inside Core and execute identically across all hosts.",
+    "resource_retention": "Context cleanup on scope exit and timer disposal prevent memory leaks or process retention.",
+    "retry_or_redelivery": "No network delivery, retry, redelivery, queue, or buffering mechanisms are introduced.",
+    "trust_boundary": "The boundary between host platform capabilities and semantic audit logic is formalized through explicit SPI contracts."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "69235a04847a96d23204dd68e710b5a62baa52ea"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "3.3",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4",
+    "4.5",
+    "4.6",
+    "4.7",
+    "5.1",
+    "5.2",
+    "5.3"
+  ]
+}
