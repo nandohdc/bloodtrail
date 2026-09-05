@@ -13,8 +13,12 @@
     "openspec/changes/distinguish-product-loop-and-governance-chains/assessment.json",
     "openspec/changes/distinguish-product-loop-and-governance-chains/assessment.source.json",
     "openspec/changes/distinguish-product-loop-and-governance-chains/.openspec.yaml",
-    "openspec/changes/distinguish-product-loop-and-governance-chains/specs/ci-topology/spec.md"
+    "openspec/changes/distinguish-product-loop-and-governance-chains/specs/ci-topology/spec.md",
+    "openspec/specs/ci-topology/spec.md"
   ],
+  "ordering": {
+    "proposal_baseline_commit": "5d776877a1a918d62825a9c7b058e43894d9e2bf"
+  },
   "forces": [
     "clear-feedback-latency",
     "factual-governance-consistency"
