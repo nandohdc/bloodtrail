@@ -29,7 +29,8 @@
     "openspec/changes/ratify-release-versioning-tag-model/assessment.json",
     "openspec/changes/ratify-release-versioning-tag-model/design.md",
     "openspec/changes/ratify-release-versioning-tag-model/specs/release-versioning-tag-model/spec.md",
-    "openspec/changes/ratify-release-versioning-tag-model/tasks.md"
+    "openspec/changes/ratify-release-versioning-tag-model/tasks.md",
+    "openspec/specs/release-versioning-tag-model/spec.md"
   ],
   "candidate_approaches": [
     {
@@ -171,7 +172,7 @@
   },
   "security_sensitive": true,
   "ordering": {
-    "proposal_baseline_commit": "6b94ee6f8d92193ae73e4df61223dc22c425a371"
+    "proposal_baseline_commit": "a6f66a10e37b6d8a8a617273dc3c7cce1fbf9991"
   },
   "verification_task_ids": [
     "1.1",
