@@ -67,3 +67,21 @@ _Avoid_: CRA-validated pass
 **Approved skip**:
 The distinguishable outcome that no CRA-triggering path exists in an evaluation. It is not a CRA-validated pass.
 _Avoid_: passing CRA
+
+## Verification Gates and Command Surface
+
+**Runtime gates**:
+The subset of checks that assert facts about a runtime rather than a repository state (behavioral tests, types, syntax, package exports, engine compatibility, scoped dependencies). Runtime gates execute per matrix leg and form the fast local development loop.
+_Avoid_: repository-level gates, whole-chain checks
+
+**Repository-level gates**:
+The checks that assert facts about the repository rather than about a specific runtime (Git status, clean commits, package contents closure, cross-artifact coherence, contract immutability, publication paths, governance history, archive attestations, and fail-closed gate mutation verifications). Repository-level gates execute once per change rather than once per matrix leg.
+_Avoid_: per-leg gates, runtime checks
+
+**Product test loop**:
+The fast, matrix-safe verification loop (~18s across all three workspaces) executed during active development (`npm run test:matrix` in the SDK, `validate` in contracts, `lint` and `test` in research).
+_Avoid_: full governance-gate chain, slow validate
+
+**Governance-gate chain**:
+The complete validation chain (~291s across workspaces) that enforces fail-closed gate mutation testing (`test:verification`, ~254s dominant cost) and full contract/SDK validation, required before pushing to mainline or opening PRs.
+_Avoid_: fast test loop, product loop

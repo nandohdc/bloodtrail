@@ -126,6 +126,7 @@
         ".github/scripts/",
         ".codescene/custom-quality-gates.json",
         ".gitignore",
+        "Makefile",
         "codecov.yml",
         "openspec/config.yaml",
         "release-please-config.json",

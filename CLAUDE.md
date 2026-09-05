@@ -13,7 +13,7 @@ The contract is the product; the SDK is a projection of it. Two boundaries gover
 
 ## Workspaces and commands
 
-**There is no root `package.json`.** Every workspace is standalone — always use `--prefix` or `cd` into the package.
+**There is no root `package.json`.** Every workspace is standalone — use the root `Makefile` (`make` runs the fast product loop), or run npm commands with `--prefix`.
 
 | Workspace | Node engines | Purpose |
 |---|---|---|
@@ -23,11 +23,15 @@ The contract is the product; the SDK is a projection of it. Two boundaries gover
 
 ```bash
 # Fast product development loop (~18s across workspaces) — use during active development
+make                                                            # Bare invocation runs the product loop across all three workspaces
+# or via direct workspace commands:
 npm run test:matrix --prefix packages/security-audit-sdk-core  # SDK product loop (~14.6s cold, ~9.2s runtime warm)
 npm run validate --prefix contracts/security-audit             # Contract validation (~1.5s)
 npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry  # Research harness (~15s)
 
 # Full gate chains — run before pushing
+make governance-gates                                           # Runs full validation across workspaces (states cost upfront)
+# or via direct workspace commands:
 # SDK validate (~291s): dominant cost (~254s) is test:verification (governance gate mutation testing, proving gates fail closed, not product test assertions)
 npm run validate --prefix packages/security-audit-sdk-core
 npm run validate --prefix contracts/security-audit

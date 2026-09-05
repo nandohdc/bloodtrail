@@ -13,10 +13,12 @@ This repository has no root `package.json`; run npm commands within a workspace 
 ## Build, Test, and Development Commands
 
 - **Product test loop (~18s across all three workspaces — use during active development):**
-  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: fast SDK product test loop (~14.6s cold, ~9.2s runtime warm) across its matrix-safe checks.
-  - `npm run validate --prefix contracts/security-audit`: validate generated contract artifacts and contract tests (~1.5s).
-  - `npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry`: check the research harness (~15s).
+  - `make` (or `make test` / `make runtime-gates`): bare root entry point running the loop across all three workspaces.
+  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: fast SDK product test loop (~14.6s cold, ~9.2s runtime warm) across its matrix-safe checks (or `make sdk`).
+  - `npm run validate --prefix contracts/security-audit`: validate generated contract artifacts and contract tests (~1.5s) (or `make contract`).
+  - `npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry`: check the research harness (~15s) (or `make research`).
 - **Full governance-gate chains (~291s — run before pushing):**
+  - `make governance-gates`: runs full validation across workspaces (states cost upfront before executing).
   - `npm run validate --prefix packages/security-audit-sdk-core`: complete SDK validation chain. Dominant cost (~254s) is `test:verification` (mutation testing proving governance gates fail closed, not product test assertions).
   - `npm run validate --prefix contracts/security-audit`: validate generated contract artifacts and contract tests.
 - `npx --yes @fission-ai/openspec@latest validate --all --strict`: validate OpenSpec changes and specs.
