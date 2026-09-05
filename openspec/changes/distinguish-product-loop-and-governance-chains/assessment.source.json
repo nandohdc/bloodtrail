@@ -1,0 +1,72 @@
+{
+  "decision": "direct_implementation",
+  "triggers_matched": [
+    "governance_core_path"
+  ],
+  "owned_paths": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "docs/adr/0011-ci-topology.md",
+    "openspec/changes/distinguish-product-loop-and-governance-chains/proposal.md",
+    "openspec/changes/distinguish-product-loop-and-governance-chains/design.md",
+    "openspec/changes/distinguish-product-loop-and-governance-chains/tasks.md",
+    "openspec/changes/distinguish-product-loop-and-governance-chains/assessment.json",
+    "openspec/changes/distinguish-product-loop-and-governance-chains/assessment.source.json",
+    "openspec/changes/distinguish-product-loop-and-governance-chains/.openspec.yaml",
+    "openspec/changes/distinguish-product-loop-and-governance-chains/specs/ci-topology/spec.md"
+  ],
+  "forces": [
+    "clear-feedback-latency",
+    "factual-governance-consistency"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-distinguish-product-loop-and-governance-chains",
+      "kind": "direct_implementation",
+      "summary": "Document the 18s product loop alongside the 291s validate chain with measured costs in CLAUDE.md and AGENTS.md, and reconcile ADR 0011 context count to ten",
+      "forces_addressed": [
+        "clear-feedback-latency",
+        "factual-governance-consistency"
+      ]
+    },
+    {
+      "id": "approach-split-separate-changes",
+      "kind": "alternative",
+      "summary": "Split instruction updates and ADR 0011 context reconciliation into two separate changes",
+      "forces_addressed": [
+        "clear-feedback-latency"
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-distinguish-product-loop-and-governance-chains",
+  "rejected_alternative_ids": [
+    "approach-split-separate-changes"
+  ],
+  "rejection_reasons": {
+    "approach-split-separate-changes": {
+      "forces": [
+        "factual-governance-consistency"
+      ],
+      "reason": "Splitting these routine documentation corrections into two separate pull requests would violate the documentation batching convention established under #301 and pay two full governance cycles for one documentation outcome."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-distinguish-product-loop-and-governance-chains"
+  ],
+  "invariant_evidence": {
+    "implementation-distinguish-product-loop-and-governance-chains": {
+      "task_ids": [
+        "1.1",
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "CLAUDE.md",
+        "AGENTS.md",
+        "docs/adr/0011-ci-topology.md",
+        "openspec validate distinguish-product-loop-and-governance-chains --strict"
+      ]
+    }
+  },
+  "security_sensitive": false
+}
