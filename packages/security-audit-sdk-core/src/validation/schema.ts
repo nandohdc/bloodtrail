@@ -48,7 +48,10 @@ const FIELD_LIMIT_KEYWORDS = new Set(["maxLength", "maximum", "maxItems"]);
 
 function mapRequiredError(error: StandaloneValidationError): string {
   const missing = typeof error.params.missingProperty === "string" ? error.params.missingProperty : "";
-  if (missing === "actor" || (error.instancePath === "/actor" && missing === "type")) return "MISSING_REQUIRED_ACTOR";
+  if (missing === "actor") return "MISSING_REQUIRED_ACTOR";
+  if (error.instancePath === "/actor") {
+    if (missing === "type") return "MISSING_REQUIRED_ACTOR";
+  }
   if (missing === "tenant") return "MISSING_TENANT_CONTEXT";
   if (isProhibitedProperty(missing)) return "PROHIBITED_DATA";
   return "SDK_MISSING_EVENT_FIELD";
@@ -56,7 +59,8 @@ function mapRequiredError(error: StandaloneValidationError): string {
 
 function mapAdditionalPropertiesError(error: StandaloneValidationError, path: string): string {
   const extra = typeof error.params.additionalProperty === "string" ? error.params.additionalProperty : "";
-  if (path === "/extensions" || path.startsWith("/extensions/")) return "UNKNOWN_EXTENSION";
+  if (path === "/extensions") return "UNKNOWN_EXTENSION";
+  if (path.startsWith("/extensions/")) return "UNKNOWN_EXTENSION";
   if (isProhibitedProperty(extra)) return "PROHIBITED_DATA";
   return "SDK_SCHEMA_VALIDATION_FAILED";
 }

@@ -167,11 +167,16 @@ function requirePlainRetentionObject(value: unknown): asserts value is object {
 const ALLOWED_RETENTION_KEYS = new Set(["recentGeneratedEventIds", "recentIssuedOperationIds"]);
 
 function isAccessor(item: PropertyDescriptor | undefined): boolean {
-  return !item || item.get !== undefined || item.set !== undefined;
+  if (!item) return true;
+  if (item.get !== undefined) return true;
+  return item.set !== undefined;
 }
 
 function validateRetentionKey(value: object, key: string | symbol): void {
-  if (typeof key !== "string" || !ALLOWED_RETENTION_KEYS.has(key)) {
+  if (typeof key !== "string") {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
+  }
+  if (!ALLOWED_RETENTION_KEYS.has(key)) {
     throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
   }
   if (isAccessor(Object.getOwnPropertyDescriptor(value, key))) {
@@ -206,7 +211,10 @@ function normalizeRetentionConfiguration(input: SecurityAuditSdkConfiguration): 
 }
 
 function isValidCapacity(capacity: unknown): capacity is number {
-  return typeof capacity === "number" && Number.isSafeInteger(capacity) && capacity > 0 && capacity <= MAX_RETENTION_CAPACITY;
+  if (typeof capacity !== "number") return false;
+  if (!Number.isSafeInteger(capacity)) return false;
+  if (capacity <= 0) return false;
+  return capacity <= MAX_RETENTION_CAPACITY;
 }
 
 function retentionCapacity(value: object, key: keyof AuditRetentionConfiguration): number {
@@ -220,7 +228,13 @@ function retentionCapacity(value: object, key: keyof AuditRetentionConfiguration
 }
 
 function requireEntry(path: string, key: string, item: unknown): void {
-  if (!key || typeof item !== "string" || item.length === 0) {
+  if (!key) {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `${path}/${key}`);
+  }
+  if (typeof item !== "string") {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `${path}/${key}`);
+  }
+  if (item.length === 0) {
     throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `${path}/${key}`);
   }
 }
@@ -241,12 +255,11 @@ function cloneRecord<T extends object>(value: T): Readonly<T> {
 }
 
 function isValidHookShape(hook: unknown): hook is AuditFieldTransformationHook {
-  return (
-    typeof hook === "object" &&
-    hook !== null &&
-    typeof (hook as AuditFieldTransformationHook).path === "string" &&
-    typeof (hook as AuditFieldTransformationHook).transform === "function"
-  );
+  if (typeof hook !== "object") return false;
+  if (hook === null) return false;
+  const candidate = hook as AuditFieldTransformationHook;
+  if (typeof candidate.path !== "string") return false;
+  return typeof candidate.transform === "function";
 }
 
 function normalizeTransformationHook(hook: unknown, index: number, seen: Set<string>): NormalizedAuditFieldTransformation {
@@ -254,7 +267,10 @@ function normalizeTransformationHook(hook: unknown, index: number, seen: Set<str
     throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}`);
   }
   const path = hook.path;
-  if (!isTransformableFieldPath(path) || seen.has(path)) {
+  if (!isTransformableFieldPath(path)) {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}/path`);
+  }
+  if (seen.has(path)) {
     throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}/path`);
   }
   seen.add(path);
@@ -263,7 +279,8 @@ function normalizeTransformationHook(hook: unknown, index: number, seen: Set<str
 
 function normalizeTransformations(input: readonly AuditFieldTransformationHook[] | undefined): readonly NormalizedAuditFieldTransformation[] {
   if (input === undefined) return Object.freeze([]);
-  if (!Array.isArray(input) || input.length > 32) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/transformations");
+  if (!Array.isArray(input)) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/transformations");
+  if (input.length > 32) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/transformations");
   const seen = new Set<string>();
   const hooks = input.map((hook, index) => normalizeTransformationHook(hook, index, seen));
   return Object.freeze(hooks);
