@@ -30,6 +30,7 @@
     "openspec/changes/add-provisional-node-binding/design.md",
     "openspec/changes/add-provisional-node-binding/specs/security-audit-sdk-node/spec.md",
     "openspec/changes/add-provisional-node-binding/tasks.md",
+    "packages/security-audit-sdk-core/tests/verification/publication-path-mutations.test.mjs",
     "packages/security-audit-sdk-node/"
   ],
   "candidate_approaches": [
