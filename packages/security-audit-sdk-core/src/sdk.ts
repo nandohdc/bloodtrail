@@ -1,7 +1,7 @@
 import type { NormalizedSdkConfiguration, SecurityAuditSdkConfiguration } from "./config.js";
 import { normalizeConfiguration } from "./config.js";
 import type { AuditContextFrameInput } from "./context.js";
-import { currentAuditContext, runWithAuditContext } from "./context.js";
+import { runWithAuditContext } from "./context.js";
 import { buildNamedAuditEvent } from "./events.js";
 import { failure, normalizeCanonicalInput } from "./errors.js";
 import type { AuditResult } from "./errors.js";
