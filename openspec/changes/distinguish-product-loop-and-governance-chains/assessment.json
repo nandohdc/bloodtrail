@@ -26,7 +26,8 @@
     "openspec/changes/distinguish-product-loop-and-governance-chains/assessment.json",
     "openspec/changes/distinguish-product-loop-and-governance-chains/assessment.source.json",
     "openspec/changes/distinguish-product-loop-and-governance-chains/.openspec.yaml",
-    "openspec/changes/distinguish-product-loop-and-governance-chains/specs/ci-topology/spec.md"
+    "openspec/changes/distinguish-product-loop-and-governance-chains/specs/ci-topology/spec.md",
+    "openspec/specs/ci-topology/spec.md"
   ],
   "candidate_approaches": [
     {
