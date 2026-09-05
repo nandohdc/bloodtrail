@@ -48,7 +48,8 @@
     "packages/security-audit-sdk-core/scripts/check-dependencies.mjs",
     "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
     "packages/security-audit-sdk-core/compatibility.json",
-    "packages/security-audit-sdk-core/tests/"
+    "packages/security-audit-sdk-core/tests/",
+    "openspec/specs/security-audit-sdk-core/spec.md"
   ],
   "candidate_approaches": [
     {
@@ -193,7 +194,7 @@
     "trust_boundary": "The boundary between host platform capabilities and semantic audit logic is formalized through explicit SPI contracts."
   },
   "ordering": {
-    "proposal_baseline_commit": "69235a04847a96d23204dd68e710b5a62baa52ea"
+    "proposal_baseline_commit": "c01588ffc67f99ded461347ceeec4b9b303410f5"
   },
   "verification_task_ids": [
     "1.1",
