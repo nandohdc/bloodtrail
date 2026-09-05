@@ -136,3 +136,27 @@ export const systemAuditIdentifiers: AuditIdentifierProvider = Object.freeze({
   messageId: generateUuidV4,
   transactionId: generateUuidV4,
 });
+
+export function requireByteLengthProvider(value: AuditByteLengthProvider): void {
+  if (typeof value.byteLength !== "function") {
+    throw new Error("/byteLength");
+  }
+}
+
+export function requireTimerProvider(value: AuditTimerProvider): void {
+  if (typeof value.setTimeout !== "function" || typeof value.clearTimeout !== "function") {
+    throw new Error("/timers");
+  }
+}
+
+export function requireSchemaRuntime(value: AuditSchemaRuntime): void {
+  if (typeof value.validate !== "function") {
+    throw new Error("/schemaRuntime");
+  }
+}
+
+export function requireContextProvider(value: ContextProvider): void {
+  if (typeof value.run !== "function" || typeof value.get !== "function") {
+    throw new Error("/contextProvider");
+  }
+}
