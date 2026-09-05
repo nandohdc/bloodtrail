@@ -28,7 +28,8 @@
     "openspec/changes/provide-root-command-surface/specs/ci-topology/spec.md",
     "openspec/changes/provide-root-command-surface/tasks.md",
     "openspec/changes/provide-root-command-surface/assessment.json",
-    "openspec/changes/provide-root-command-surface/assessment.source.json"
+    "openspec/changes/provide-root-command-surface/assessment.source.json",
+    "openspec/specs/ci-topology/spec.md"
   ],
   "candidate_approaches": [
     {
@@ -134,7 +135,7 @@
   },
   "security_sensitive": true,
   "ordering": {
-    "proposal_baseline_commit": "3b8ca18407b85ed6c7b7a4cf848bd0b4548a9a49"
+    "proposal_baseline_commit": "7e62f64adc9d57bfa54adf2ea20a1c0dd866429d"
   },
   "verification_task_ids": [
     "1.1",
