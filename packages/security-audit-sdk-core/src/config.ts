@@ -134,9 +134,9 @@ function resolveCoreProviders(input: SecurityAuditSdkConfiguration) {
 }
 
 function validatePlatformProviders(input: SecurityAuditSdkConfiguration): void {
-  if (input.byteLength !== undefined && typeof input.byteLength.byteLength !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/byteLength");
+  if (input.byteLength !== undefined) requireByteLengthProvider(input.byteLength);
   if (input.timers !== undefined) requireTimerProvider(input.timers);
-  if (input.schemaRuntime !== undefined && typeof input.schemaRuntime.validate !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/schemaRuntime");
+  if (input.schemaRuntime !== undefined) requireSchemaRuntime(input.schemaRuntime);
   if (input.contextProvider !== undefined) requireContextProvider(input.contextProvider);
 }
 
@@ -251,9 +251,21 @@ function requireIdentifierProvider(value: AuditIdentifierProvider): void {
   }
 }
 
+function requireByteLengthProvider(value: AuditByteLengthProvider): void {
+  if (typeof value.byteLength !== "function") {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/byteLength");
+  }
+}
+
 function requireTimerProvider(value: AuditTimerProvider): void {
   if (typeof value.setTimeout !== "function" || typeof value.clearTimeout !== "function") {
     throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/timers");
+  }
+}
+
+function requireSchemaRuntime(value: AuditSchemaRuntime): void {
+  if (typeof value.validate !== "function") {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/schemaRuntime");
   }
 }
 

@@ -137,3 +137,7 @@ void contractCode;
 void sdkCode;
 void invalidInputCode;
 void serializationFailureCode;
+
+import { createPaperConsumerSdk } from "../fixtures/paper-consumer/consumer.js";
+const paperConsumerSdk = createPaperConsumerSdk(sink);
+void paperConsumerSdk;

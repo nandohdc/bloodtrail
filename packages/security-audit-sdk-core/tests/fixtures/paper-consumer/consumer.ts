@@ -17,13 +17,13 @@ import { createSecurityAuditSdk } from "../../../src/index.js";
 // Paper second consumer representing a hypothetical non-Node (e.g. Web/Browser/Worker) host.
 // Proves that SDK Core compiles cleanly against pure Web/ECMAScript primitives without Node couplings.
 
-export class WebAuditClock implements AuditClock {
+class WebAuditClock implements AuditClock {
   now(): Date {
     return new Date();
   }
 }
 
-export class WebAuditIdentifiers implements AuditIdentifierProvider {
+class WebAuditIdentifiers implements AuditIdentifierProvider {
   eventId(): string {
     return "00000000-0000-4000-8000-000000000001";
   }
@@ -47,26 +47,26 @@ export class WebAuditIdentifiers implements AuditIdentifierProvider {
   }
 }
 
-export class WebAuditByteLengthProvider implements AuditByteLengthProvider {
+class WebAuditByteLengthProvider implements AuditByteLengthProvider {
   byteLength(value: string): number {
     return new TextEncoder().encode(value).length;
   }
 }
 
-export class WebAuditTimerProvider implements AuditTimerProvider {
+class WebAuditTimerProvider implements AuditTimerProvider {
   setTimeout(): AuditTimerHandle {
     return {};
   }
   clearTimeout(): void {}
 }
 
-export class WebAuditSchemaRuntime implements AuditSchemaRuntime {
+class WebAuditSchemaRuntime implements AuditSchemaRuntime {
   validate(): AuditResult<void> {
     return { ok: true, value: undefined };
   }
 }
 
-export class WebContextProvider implements ContextProvider {
+class WebContextProvider implements ContextProvider {
   private readonly stack: AuditContextFrame[] = [];
 
   get(): AuditContextFrame | undefined {
@@ -83,7 +83,7 @@ export class WebContextProvider implements ContextProvider {
   }
 }
 
-export class WebPlatformProvider implements PlatformProvider {
+class WebPlatformProvider implements PlatformProvider {
   readonly clock = new WebAuditClock();
   readonly identifiers = new WebAuditIdentifiers();
   readonly byteLength = new WebAuditByteLengthProvider();
