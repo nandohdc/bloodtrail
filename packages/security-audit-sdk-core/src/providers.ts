@@ -1,5 +1,7 @@
-import type { AuditResult } from "./errors.js";
+import { SecurityAuditSdkError, type AuditResult } from "./errors.js";
 import type { AuditContextFrame } from "./context.js";
+import type { AuditEventSink } from "./sink.js";
+import { cjsSchemaRuntime } from "./validation/schema.js";
 
 export interface AuditClock {
   now(): Date;
@@ -137,26 +139,102 @@ export const systemAuditIdentifiers: AuditIdentifierProvider = Object.freeze({
   transactionId: generateUuidV4,
 });
 
+const IDENTIFIER_KEYS: readonly (keyof AuditIdentifierProvider)[] = [
+  "eventId",
+  "operationId",
+  "correlationId",
+  "causationId",
+  "requestId",
+  "messageId",
+  "transactionId",
+];
+
+export function requireIdentifierProvider(value: AuditIdentifierProvider): void {
+  for (const key of IDENTIFIER_KEYS) {
+    if (typeof value[key] !== "function") {
+      throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/identifiers/${key}`);
+    }
+  }
+}
+
 export function requireByteLengthProvider(value: AuditByteLengthProvider): void {
   if (typeof value.byteLength !== "function") {
-    throw new Error("/byteLength");
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/byteLength");
   }
 }
 
 export function requireTimerProvider(value: AuditTimerProvider): void {
   if (typeof value.setTimeout !== "function" || typeof value.clearTimeout !== "function") {
-    throw new Error("/timers");
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/timers");
   }
 }
 
 export function requireSchemaRuntime(value: AuditSchemaRuntime): void {
   if (typeof value.validate !== "function") {
-    throw new Error("/schemaRuntime");
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/schemaRuntime");
   }
 }
 
 export function requireContextProvider(value: ContextProvider): void {
   if (typeof value.run !== "function" || typeof value.get !== "function") {
-    throw new Error("/contextProvider");
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/contextProvider");
   }
+}
+
+export interface ResolvedProviders {
+  readonly sink: AuditEventSink;
+  readonly clock: AuditClock;
+  readonly identifiers: AuditIdentifierProvider;
+  readonly byteLength: AuditByteLengthProvider;
+  readonly timers: AuditTimerProvider;
+  readonly schemaRuntime: AuditSchemaRuntime;
+  readonly contextProvider: ContextProvider;
+}
+
+export interface ProviderConfigurationInput {
+  readonly sink: AuditEventSink;
+  readonly clock?: AuditClock;
+  readonly identifiers?: AuditIdentifierProvider;
+  readonly byteLength?: AuditByteLengthProvider;
+  readonly timers?: AuditTimerProvider;
+  readonly schemaRuntime?: AuditSchemaRuntime;
+  readonly contextProvider?: ContextProvider;
+}
+
+function validateSink(sink: AuditEventSink): void {
+  if (!sink || typeof sink.emit !== "function") {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/sink");
+  }
+}
+
+function validateClock(clock?: AuditClock): AuditClock {
+  if (clock === undefined) return systemAuditClock;
+  if (typeof clock.now !== "function") {
+    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/clock");
+  }
+  return clock;
+}
+
+function validateOptionalProviders(input: ProviderConfigurationInput): void {
+  if (input.identifiers !== undefined) requireIdentifierProvider(input.identifiers);
+  if (input.byteLength !== undefined) requireByteLengthProvider(input.byteLength);
+  if (input.timers !== undefined) requireTimerProvider(input.timers);
+  if (input.schemaRuntime !== undefined) requireSchemaRuntime(input.schemaRuntime);
+  if (input.contextProvider !== undefined) requireContextProvider(input.contextProvider);
+}
+
+export function resolveProviders(input: ProviderConfigurationInput): ResolvedProviders {
+  validateSink(input.sink);
+  const clock = validateClock(input.clock);
+  validateOptionalProviders(input);
+
+  return {
+    sink: input.sink,
+    clock,
+    identifiers: input.identifiers ?? systemAuditIdentifiers,
+    byteLength: input.byteLength ?? defaultByteLengthProvider,
+    timers: input.timers ?? defaultTimerProvider,
+    schemaRuntime: input.schemaRuntime ?? cjsSchemaRuntime,
+    contextProvider: input.contextProvider ?? getContextProvider(),
+  };
 }
