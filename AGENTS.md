@@ -12,10 +12,13 @@ This repository has no root `package.json`; run npm commands within a workspace 
 
 ## Build, Test, and Development Commands
 
-- `npm run validate --prefix packages/security-audit-sdk-core`: run the complete SDK validation chain.
-- `npm run test:matrix --prefix packages/security-audit-sdk-core`: build and test the SDK across its matrix-safe checks.
-- `npm run validate --prefix contracts/security-audit`: validate generated contract artifacts and contract tests.
-- `npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry`: check the research harness.
+- **Product test loop (~18s across all three workspaces — use during active development):**
+  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: fast SDK product test loop (~14.6s cold, ~9.2s runtime warm) across its matrix-safe checks.
+  - `npm run validate --prefix contracts/security-audit`: validate generated contract artifacts and contract tests (~1.5s).
+  - `npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry`: check the research harness (~15s).
+- **Full governance-gate chains (~291s — run before pushing):**
+  - `npm run validate --prefix packages/security-audit-sdk-core`: complete SDK validation chain. Dominant cost (~254s) is `test:verification` (mutation testing proving governance gates fail closed, not product test assertions).
+  - `npm run validate --prefix contracts/security-audit`: validate generated contract artifacts and contract tests.
 - `npx --yes @fission-ai/openspec@latest validate --all --strict`: validate OpenSpec changes and specs.
 - `git diff --check`: catch trailing whitespace and malformed patch whitespace before committing.
 

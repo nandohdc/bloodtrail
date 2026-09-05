@@ -68,13 +68,13 @@ Each declared package carries the mandatory check set: build, typecheck, runtime
 
 ### Status naming and required-context acquisition semantics
 
-The nine pinned contexts are the stable set the model keeps. Every pinned name is per concern, not per package: `ci / lint`, `ci / test`, and `ci / audit` are concern names whose job fans out over packages (the job id stays `ci` while the package is a parameter), and `sdk`, `contract`, `sonar`, `conventional-commits`, `codescene delta`, and `design-pattern-governance` name concerns, not packages. Adding the #87 package therefore changes zero pinned context names and requires zero branch-protection edits; a new concern is the only thing that ever requires a settings edit, and nothing enforces that edit — which is precisely F1 and the reason one-job-per-concern is the ratified shape. Token-gated analysis may be skipped for untrusted PRs, but a skipped required context renders as a skip and merge gating counts the declared list, so a skip never reads as a pass.
+The ten pinned contexts are the stable set the model keeps. Every pinned name is per concern, not per package: `ci / lint`, `ci / test`, and `ci / audit` are concern names whose job fans out over packages (the job id stays `ci` while the package is a parameter), and `sdk`, `contract`, `coverage`, `sonar`, `conventional-commits`, `codescene delta`, and `design-pattern-governance` name concerns, not packages. Adding the #87 package therefore changes zero pinned context names and requires zero branch-protection edits; a new concern is the only thing that ever requires a settings edit, and nothing enforces that edit — which is precisely F1 and the reason one-job-per-concern is the ratified shape. Token-gated analysis may be skipped for untrusted PRs, but a skipped required context renders as a skip and merge gating counts the declared list, so a skip never reads as a pass.
 
 ## Read-only workflow-shape validation
 
 The issue's verification section requires validating representative workflow shapes read-only. Performed at materialization time against `origin/main` `e35e3e9` (the ratify-ci-topology proposal merge), reading `.github/workflows/ci.yml` (414 lines), `conventional-commits.yml`, and `release-please.yml` without modification — `.github/workflows/` and `.github/scripts/` are governance-core paths and are out of scope for this decision.
 
-Mapping of the nine required contexts to the model's stable aggregates and today's jobs:
+Mapping of the ten required contexts to the model's stable aggregates and today's jobs:
 
 | Required context (live, branch protection) | Today's source (at e35e3e9) | Model aggregate |
 | --- | --- | --- |
@@ -87,10 +87,11 @@ Mapping of the nine required contexts to the model's stable aggregates and today
 | `conventional-commits` | `conventional-commits.yml` (separate workflow file) | repository-level concern, once per change |
 | `codescene delta` | `codescene-delta` job (`name: codescene delta`) | repository-level concern, once per change |
 | `design-pattern-governance` | `design-pattern-governance` job — checker, dual check, CRA, governance tests | repository-level concern, once per change |
+| `coverage` | `coverage` job — aggregate coverage collection and enforcement | repository-level concern, once per change |
 
 Findings of the read-only validation:
 
-- All nine pinned contexts are already per-concern names; none embeds a package identity that moves when a package is added. The ratified model expresses today's required-context set with zero context-name churn: branch protection as it stands is already the model's stable aggregate set.
+- All ten pinned contexts are already per-concern names; none embeds a package identity that moves when a package is added. The ratified model expresses today's required-context set with zero context-name churn: branch protection as it stands is already the model's stable aggregate set.
 - The fan-out shape is already proven in-repo: the `ci` job keeps its job id `ci` (so the `ci / lint|test|audit` contexts keep their names) while `working-directory: research/browser-telemetry` selects the package. The model generalizes exactly that shape over the declared list.
 - The CodeScene App check run was verified live at the PR #273 head: `CodeScene Code Health Review (main)`, conclusion success, not among the pinned contexts — while the stable `codescene delta` workflow job is. This is the live proof that names that move cannot be gates.
 - The per-package Node matrix expresses today's jobs without contradiction: ci.yml runs its Node-dependent jobs on 26 (`sonar` on 22 for scanner compatibility; `codescene-delta` sets up no Node), and the model's only addition is the SDK's declared Node 24.2.0 leg from `compatibility.json`, which today's single-version jobs simply do not exercise.
@@ -98,7 +99,7 @@ Findings of the read-only validation:
 - The three rules match today's shape: the SDK validate chain already performs the production-only packed install (rule 1); ci.yml exposes no restricted secret to fork/Dependabot paths and the `codescene-delta` job already renders install-failure skips as warnings with an advisory exit (rule 2, partially — the full skip-rendering semantics are #85's materialization); and every job already reads `vars.RUNNER_LABEL` with no per-job literals (rule 3).
 - The completeness enumeration was re-run live at materialization and matches the declared three packages exactly, so the assertion's today-baseline is sound.
 
-This validation proves the chosen model can express today's nine required contexts and today's `ci.yml` jobs without settings churn. It performs no workflow edit: nothing under `.github/` was modified, generated, or committed.
+This validation proves the chosen model can express today's ten required contexts and today's `ci.yml` jobs without settings churn. It performs no workflow edit: nothing under `.github/` was modified, generated, or committed.
 
 ## Acceptance-criteria mapping (#82)
 
@@ -108,7 +109,7 @@ This validation proves the chosen model can express today's nine required contex
 - Status names/failure semantics are stable — D1 stable per-concern names plus fail-closed semantics: a missing required static validation is a failure, not a skip.
 - Validate representative workflow shapes read-only — the validation section above.
 
-The coverage question — whether `coverage` must become a required context, given that it passes today, is not required, and can silently collapse — is deliberately not folded into this decision. It is tracked separately as issue #271 (open at materialization).
+The coverage question — whether `coverage` must become a required context, given that it passes today, is not required, and can silently collapse — was tracked separately as issue #271 and resolved by adding `coverage` as the tenth pinned context.
 
 ## Scope boundary
 
@@ -124,7 +125,7 @@ The decision is re-opened when any of the following becomes true:
 
 ## Consequences
 
-- Branch protection's nine pinned contexts remain stable as packages are added; no settings churn per package.
+- Branch protection's ten pinned contexts remain stable as packages are added; no settings churn per package.
 - A package present on disk but missing from the declared list, or listed but absent, fails the completeness assertion closed — silent coverage loss is impossible.
 - The SDK keeps its Node 24 matrix leg and the contract/research workspaces stay inside their declared `>=26.5.0` range.
 - Merge gating counts branch protection's declared context list, never the reported set, so a check that never started cannot read as a pass.
