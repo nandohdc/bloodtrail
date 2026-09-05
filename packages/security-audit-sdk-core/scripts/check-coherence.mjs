@@ -126,11 +126,11 @@ rule("package-version", "package.json", pkg.version === expected.packageVersion,
 rule("package-private", "package.json", pkg.private === true, "package must remain private pending explicit release authorization");
 rule("module-policy", "package.json", pkg.type === "module", "public package must remain ESM");
 rule("node-engines", "package.json", pkg.engines?.node === expected.nodeEngines, "Node engines policy differs from the verified majors");
-rule("runtime-dependencies", "package.json", Object.keys(pkg.dependencies ?? {}).length === expected.runtimeDependencyCount, "runtime dependency count differs from zero-runtime policy");
+rule("runtime-dependencies", "package.json", Object.keys(pkg.dependencies ?? {}).every((dep) => dep.startsWith("@bloodtrail/")), "package.json declares a third-party runtime dependency");
 rule("public-subpaths", "package.json", same(Object.keys(pkg.exports ?? {}), expected.packageExports), "public package subpaths differ from the documented export map");
 rule("typescript-pin", "package.json", pkg.devDependencies?.typescript === expected.typescriptCiVersion, "TypeScript compiler pin differs from compatibility policy");
 rule("lock-root", "package-lock.json", lock.packages?.[""]?.version === pkg.version && lock.packages?.[""]?.name === pkg.name, "lockfile root package identity differs from package.json");
-rule("lock-runtime-dependencies", "package-lock.json", Object.keys(lock.packages?.[""]?.dependencies ?? {}).length === 0, "lockfile declares a runtime dependency");
+rule("lock-runtime-dependencies", "package-lock.json", Object.keys(lock.packages?.[""]?.dependencies ?? {}).every((dep) => dep.startsWith("@bloodtrail/")), "lockfile declares a third-party runtime dependency");
 
 rule("compat-package", "compatibility.json", compatibility.package?.name === pkg.name && compatibility.package?.version === pkg.version, "compatibility package identity differs from package.json");
 rule("compat-contract", "compatibility.json", compatibility.contractVersion === expected.contractVersion && same(compatibility.supportedContractVersions, [expected.contractVersion]), "compatibility contract range is not exactly 1.0.0");

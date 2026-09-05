@@ -18,7 +18,7 @@ export const SHIPPED_IMPORT_POLICY = Object.freeze({
     }),
     examples: Object.freeze({
       prefix: "examples/",
-      builtins: Object.freeze(["node:assert", "node:timers/promises"]),
+      builtins: Object.freeze(["node:assert", "node:async_hooks", "node:timers/promises"]),
       allowSelfReference: true,
     }),
   }),

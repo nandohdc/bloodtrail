@@ -2,11 +2,37 @@ import validateSchema from "../generated/schema-validator.generated.cjs";
 import type { SecurityAuditEvent } from "../generated/contract.generated.js";
 import type { AuditResult } from "../errors.js";
 import { failure } from "../errors.js";
+import type { AuditSchemaRuntime } from "../providers.js";
 
-export function validateSchemaStructure(value: unknown): AuditResult<SecurityAuditEvent> {
-  if (validateSchema(value)) return { ok: true, value: value as SecurityAuditEvent };
-  const first = validateSchema.errors?.[0];
-  return failure(mapSchemaError(first), categoryForSchemaCode(mapSchemaError(first)), first?.instancePath || pathFromMissingProperty(first) || "/");
+export const cjsSchemaRuntime: AuditSchemaRuntime = Object.freeze({
+  validate(value: unknown): AuditResult<void> {
+    if (validateSchema(value)) return { ok: true, value: undefined };
+    const first = validateSchema.errors?.[0];
+    return failure(
+      mapSchemaError(first),
+      categoryForSchemaCode(mapSchemaError(first)),
+      first?.instancePath || pathFromMissingProperty(first) || "/",
+    );
+  },
+});
+
+let activeSchemaRuntime: AuditSchemaRuntime = cjsSchemaRuntime;
+
+export function setSchemaRuntime(runtime: AuditSchemaRuntime): AuditSchemaRuntime {
+  const previous = activeSchemaRuntime;
+  activeSchemaRuntime = runtime;
+  return previous;
+}
+
+export function getSchemaRuntime(): AuditSchemaRuntime {
+  return activeSchemaRuntime;
+}
+
+export function validateSchemaStructure(value: unknown, schemaRuntime?: AuditSchemaRuntime): AuditResult<SecurityAuditEvent> {
+  const runtime = schemaRuntime ?? activeSchemaRuntime;
+  const result = runtime.validate(value);
+  if (!result.ok) return result;
+  return { ok: true, value: value as SecurityAuditEvent };
 }
 
 interface StandaloneValidationError {

@@ -2,8 +2,22 @@ import { CONTRACT_VERSION } from "./generated/contract.generated.js";
 import type { FIELD_POLICY, SecurityAuditEvent } from "./generated/contract.generated.js";
 import type { AuditContextFrame, AuditContextFrameInput } from "./context.js";
 import { createAuditContextFrame } from "./context.js";
-import type { AuditClock, AuditIdentifierProvider } from "./providers.js";
-import { systemAuditClock, systemAuditIdentifiers } from "./providers.js";
+import type {
+  AuditByteLengthProvider,
+  AuditClock,
+  AuditIdentifierProvider,
+  AuditSchemaRuntime,
+  AuditTimerProvider,
+  ContextProvider,
+} from "./providers.js";
+import {
+  defaultByteLengthProvider,
+  defaultTimerProvider,
+  getContextProvider,
+  systemAuditClock,
+  systemAuditIdentifiers,
+} from "./providers.js";
+import { cjsSchemaRuntime } from "./validation/index.js";
 import type { AuditEventSink } from "./sink.js";
 import { normalizeCanonicalInputOrThrow, SecurityAuditSdkError } from "./errors.js";
 import { isTransformableFieldPath } from "./internal.js";
@@ -45,6 +59,10 @@ export interface SecurityAuditSdkConfiguration {
   readonly sink: AuditEventSink;
   readonly clock?: AuditClock;
   readonly identifiers?: AuditIdentifierProvider;
+  readonly byteLength?: AuditByteLengthProvider;
+  readonly timers?: AuditTimerProvider;
+  readonly schemaRuntime?: AuditSchemaRuntime;
+  readonly contextProvider?: ContextProvider;
   readonly shutdownTimeoutMs?: number;
   readonly retention?: AuditRetentionConfiguration;
 }
@@ -75,6 +93,10 @@ export interface NormalizedSdkConfiguration {
   readonly sink: AuditEventSink;
   readonly clock: AuditClock;
   readonly identifiers: AuditIdentifierProvider;
+  readonly byteLength: AuditByteLengthProvider;
+  readonly timers: AuditTimerProvider;
+  readonly schemaRuntime: AuditSchemaRuntime;
+  readonly contextProvider: ContextProvider;
   readonly shutdownTimeoutMs: number;
   readonly retention: NormalizedAuditRetentionConfiguration;
 }
@@ -102,6 +124,10 @@ function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): Nor
   if (!input.sink || typeof input.sink.emit !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/sink");
   if (input.clock !== undefined && typeof input.clock.now !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/clock");
   if (input.identifiers !== undefined) requireIdentifierProvider(input.identifiers);
+  if (input.byteLength !== undefined && typeof input.byteLength.byteLength !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/byteLength");
+  if (input.timers !== undefined && (typeof input.timers.setTimeout !== "function" || typeof input.timers.clearTimeout !== "function")) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/timers");
+  if (input.schemaRuntime !== undefined && typeof input.schemaRuntime.validate !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/schemaRuntime");
+  if (input.contextProvider !== undefined && (typeof input.contextProvider.run !== "function" || typeof input.contextProvider.get !== "function")) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/contextProvider");
   const transformations = normalizeTransformations(input.transformations);
   const timeout = input.shutdownTimeoutMs ?? 5000;
   if (!Number.isSafeInteger(timeout) || timeout < 0 || timeout > 60_000) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/shutdownTimeoutMs");
@@ -116,6 +142,10 @@ function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): Nor
     sink: input.sink,
     clock: input.clock ?? systemAuditClock,
     identifiers: input.identifiers ?? systemAuditIdentifiers,
+    byteLength: input.byteLength ?? defaultByteLengthProvider,
+    timers: input.timers ?? defaultTimerProvider,
+    schemaRuntime: input.schemaRuntime ?? cjsSchemaRuntime,
+    contextProvider: input.contextProvider ?? getContextProvider(),
     shutdownTimeoutMs: timeout,
     retention,
   };

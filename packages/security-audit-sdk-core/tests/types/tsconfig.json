@@ -4,5 +4,5 @@
     "noEmit": true,
     "rootDir": "../.."
   },
-  "include": ["index.ts", "../../src/**/*.ts", "../../src/**/*.mts"]
+  "include": ["index.ts", "../fixtures/paper-consumer/**/*.ts", "../../src/**/*.ts", "../../src/**/*.mts"]
 }

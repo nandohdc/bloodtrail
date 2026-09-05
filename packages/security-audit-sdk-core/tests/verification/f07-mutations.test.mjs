@@ -22,7 +22,7 @@ const mutations = [
   },
   {
     name: "M-F07-B remove timeout cancellation",
-    oldText: "      clearTimeout(timer);",
+    oldText: "      timers.clearTimeout(timer);",
     newText: "",
     pattern: "controlled timer instrumentation",
     expected: /Expected values to be strictly equal|0 !== 1/i,
@@ -36,8 +36,8 @@ const mutations = [
   },
   {
     name: "M-F07-D break logical timeout behavior",
-    oldText: "  const timer = setTimeout(() => resolveTimeout(false), timeoutMs);",
-    newText: "  const timer = setTimeout(() => {}, timeoutMs);",
+    oldText: "  const timer = timers.setTimeout(() => resolveTimeout(false), timeoutMs);",
+    newText: "  const timer = timers.setTimeout(() => {}, timeoutMs);",
     pattern: "referenced process still observes",
     expected: /exceeded 2000 ms/i,
   },

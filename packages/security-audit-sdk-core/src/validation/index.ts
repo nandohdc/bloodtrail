@@ -4,13 +4,14 @@ import { normalizeCanonicalInput } from "../errors.js";
 import { validateBaseSemantics } from "./semantic.js";
 import { validateSchemaStructure } from "./schema.js";
 import { validateNormalizedNoProhibitedData } from "./prohibited.js";
+import type { AuditSchemaRuntime } from "../providers.js";
 
-export function validateSecurityAuditEvent(value: unknown): AuditResult<SecurityAuditEvent> {
+export function validateSecurityAuditEvent(value: unknown, schemaRuntime?: AuditSchemaRuntime): AuditResult<SecurityAuditEvent> {
   const normalized = normalizeCanonicalInput(value, "/");
   if (!normalized.ok) return normalized;
   const prohibited = validateNormalizedNoProhibitedData(normalized.value.value, normalized.value.bytes);
   if (!prohibited.ok) return prohibited;
-  const structural = validateSchemaStructure(normalized.value.value);
+  const structural = validateSchemaStructure(normalized.value.value, schemaRuntime);
   if (!structural.ok) return structural;
   const semantic = validateBaseSemantics(structural.value);
   if (!semantic.ok) return semantic;
@@ -20,3 +21,4 @@ export function validateSecurityAuditEvent(value: unknown): AuditResult<Security
 }
 
 export { validateNoProhibitedData } from "./prohibited.js";
+export { cjsSchemaRuntime, getSchemaRuntime, setSchemaRuntime } from "./schema.js";

@@ -1,4 +1,5 @@
 import { strict as assert } from "node:assert";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -40,6 +41,8 @@ import {
   sessionEvidence,
   validateSecurityAuditEvent,
   workloadIdentityActor,
+  setContextProvider,
+  type AuditContextFrame,
   type AuditContextFrameInput,
   type AuditDeliveryResult,
   type AuditEventSink,
@@ -50,6 +53,12 @@ import {
   type SecurityAuditEvent,
 } from "../dist/index.js";
 import { createCapturingAuditSink, createInMemoryAuditSink } from "../dist/testing.js";
+
+const nodeTestAls = new AsyncLocalStorage<AuditContextFrame>();
+setContextProvider({
+  run: (ctx, fn) => nodeTestAls.run(ctx, fn),
+  get: () => nodeTestAls.getStore(),
+});
 
 const contractRoot = resolve(process.cwd(), "../../contracts/security-audit");
 

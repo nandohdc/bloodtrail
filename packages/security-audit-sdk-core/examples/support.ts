@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import {
   authenticatedHumanActor,
   authenticatedPrincipal,
@@ -10,9 +11,11 @@ import {
   createSecurityAuditSdk,
   observedSource,
   sessionEvidence,
+  type AuditContextFrame,
   type AuditFieldTransformationHook,
   type AuditIdentifierProvider,
   type AuditResult,
+  type ContextProvider,
   type SecurityAuditSdk,
 } from "@bloodtrail/security-audit-sdk-core";
 import {
@@ -32,6 +35,11 @@ export function createExampleHarness(
   transformations: readonly AuditFieldTransformationHook[] = [],
 ): ExampleHarness {
   const sink = createCapturingAuditSink();
+  const als = new AsyncLocalStorage<AuditContextFrame>();
+  const contextProvider: ContextProvider = {
+    run: (ctx, fn) => als.run(ctx, fn),
+    get: () => als.getStore(),
+  };
   const audit = createSecurityAuditSdk({
     contractVersion: "1.0.0",
     producer: {
@@ -46,6 +54,7 @@ export function createExampleHarness(
     clock: Object.freeze({ now: () => new Date(SYNTHETIC_TIME) }),
     identifiers: deterministicIdentifiers(seed),
     transformations,
+    contextProvider,
     shutdownTimeoutMs: 100,
   });
   return { audit, sink };

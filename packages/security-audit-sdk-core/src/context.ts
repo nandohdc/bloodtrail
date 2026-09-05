@@ -1,8 +1,8 @@
-import { AsyncLocalStorage } from "node:async_hooks";
 import type { GeneratedOperationContext, SecurityAuditEvent } from "./generated/contract.generated.js";
 import { deepFreeze, omitUndefined } from "./internal.js";
 import { failure, normalizeCanonicalInputOrThrow, SecurityAuditSdkError, type AuditResult, type SafeAuditError } from "./errors.js";
 import { DUPLICATE_AUTHORITY_MESSAGE, duplicateAuthorityCode, registerCopyProbe } from "./duplicate-copy-probe.js";
+import { getContextProvider, type ContextProvider } from "./providers.js";
 
 type ContextValue<K extends keyof SecurityAuditEvent> = NonNullable<SecurityAuditEvent[K]>;
 
@@ -107,8 +107,6 @@ export interface AuditContextFrame {
 }
 
 export type AuditContextFrameInput = Readonly<Partial<AuditContextFrame>>;
-
-const storage = new AsyncLocalStorage<AuditContextFrame>();
 
 const FRAME_BRAND_FIELDS: ReadonlyArray<readonly [keyof AuditContextFrame, readonly AuditBrandKind[]]> = [
   ["actor", ["authoritative_actor", "claimed_actor"]],
@@ -336,13 +334,14 @@ export function createAuditContextFrame(input: AuditContextFrameInput): AuditCon
 }
 
 export function currentAuditContext(): AuditContextFrame | undefined {
-  return storage.getStore();
+  return getContextProvider().get();
 }
 
-export function runWithAuditContext<T>(frame: AuditContextFrameInput, callback: () => T): T {
-  const merged = mergeAuditContextFrames(storage.getStore(), frame);
+export function runWithAuditContext<T>(frame: AuditContextFrameInput, callback: () => T, provider?: ContextProvider): T {
+  const active = provider ?? getContextProvider();
+  const merged = mergeAuditContextFrames(active.get(), frame);
   if (!merged.ok) throw frameFailureError(merged.error);
-  return storage.run(merged.value, callback);
+  return active.run(merged.value, callback);
 }
 
 export function mergeAuditContextFrames(

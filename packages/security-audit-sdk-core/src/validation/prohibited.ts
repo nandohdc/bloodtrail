@@ -2,6 +2,7 @@ import { PROHIBITED_DATA_KEYS } from "../generated/contract.generated.js";
 import type { AuditResult } from "../errors.js";
 import { failure, normalizeCanonicalInput } from "../errors.js";
 import { isPlainObject } from "../internal.js";
+import { utf8ByteLength } from "../providers.js";
 
 const MAX_DEPTH = 8;
 const MAX_ARRAY_ITEMS = 32;
@@ -86,7 +87,7 @@ function isProhibitedKey(key: string): boolean {
 }
 
 function byteLength(value: string): number {
-  return Buffer.byteLength(value, "utf8");
+  return utf8ByteLength(value);
 }
 
 function escapePath(key: string): string {

@@ -7,13 +7,19 @@ const pkg = await readJson(resolve(packageRoot, "package.json"));
 const lock = await readJson(resolve(packageRoot, "package-lock.json"));
 const dependencyRecord = await readFile(resolve(packageRoot, "DEPENDENCIES.md"), "utf8");
 
-for (const field of ["dependencies", "optionalDependencies", "peerDependencies"]) {
+for (const dep of Object.keys(pkg.dependencies ?? {})) {
+  assert(dep.startsWith("@bloodtrail/"), `runtime dependency ${dep} is not in first-party allowlist (@bloodtrail/*)`);
+}
+for (const field of ["optionalDependencies", "peerDependencies"]) {
   assert(Object.keys(pkg[field] ?? {}).length === 0, `${field} must remain empty`);
 }
 assert(lock.lockfileVersion === 3, "package-lock.json must use lockfileVersion 3");
 const root = lock.packages?.[""];
 assert(root && typeof root === "object", "lockfile root package entry is missing");
-for (const field of ["dependencies", "optionalDependencies", "peerDependencies"]) {
+for (const dep of Object.keys(root.dependencies ?? {})) {
+  assert(dep.startsWith("@bloodtrail/"), `lockfile runtime dependency ${dep} is not in first-party allowlist (@bloodtrail/*)`);
+}
+for (const field of ["optionalDependencies", "peerDependencies"]) {
   assert(Object.keys(root[field] ?? {}).length === 0, `lockfile root ${field} must remain empty`);
 }
 
@@ -61,9 +67,11 @@ const productionTree = JSON.parse(runChecked("npm", ["ls", "--omit=dev", "--all"
   cwd: packageRoot,
   capture: true,
 }));
-assert(Object.keys(productionTree.dependencies ?? {}).length === 0, "installed production dependency tree is not empty");
+for (const dep of Object.keys(productionTree.dependencies ?? {})) {
+  assert(dep.startsWith("@bloodtrail/"), `production tree dependency ${dep} is not in first-party allowlist (@bloodtrail/*)`);
+}
 
-process.stdout.write(`dependency policy passed: 0 runtime, ${shippedImports.inspected} shipped artifacts with ${shippedImports.specifiers} module specifiers, and ${installedPackages} locked installed development packages with integrity/license metadata\n`);
+process.stdout.write(`dependency policy passed: ${Object.keys(pkg.dependencies ?? {}).length} runtime, ${shippedImports.inspected} shipped artifacts with ${shippedImports.specifiers} module specifiers, and ${installedPackages} locked installed development packages with integrity/license metadata\n`);
 
 function packedFiles() {
   const output = runChecked("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {

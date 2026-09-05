@@ -102,21 +102,9 @@ export const PLATFORM_COUPLING_POLICY = Object.freeze({
     authored: Object.freeze({
       name: "authored",
       prefix: "src/",
-      hostGlobals: Object.freeze({
-        Buffer: Object.freeze({
-          name: "Buffer",
-          reason: "Calculates byte lengths for payload and property byte bounds in errors and validation",
-          boundary: "internal byte length helper",
-        }),
-      }),
-      specifiers: Object.freeze(["node:async_hooks", "node:crypto"]),
-      uninspectedCouplings: Object.freeze([
-        Object.freeze({
-          name: "Timeout.unref()",
-          reason: "Unreferences timer handles where supported per spec.md:523; host member access is not mechanically detected",
-          boundary: "timer management",
-        }),
-      ]),
+      hostGlobals: Object.freeze({}),
+      specifiers: Object.freeze([]),
+      uninspectedCouplings: Object.freeze([]),
     }),
     generated: Object.freeze({
       name: "generated",

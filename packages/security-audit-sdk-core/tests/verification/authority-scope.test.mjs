@@ -26,6 +26,7 @@
 // imported twice, so sibling verification tests that snapshot the live
 // package in parallel are never written to.
 import assert from "node:assert/strict";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
@@ -35,6 +36,12 @@ import test from "node:test";
 import { packageRoot, repositoryRoot } from "../../scripts/verification-helpers.mjs";
 import * as sdk from "../../dist/index.js";
 import { createCapturingAuditSink } from "../../dist/testing.js";
+
+const verificationAls = new AsyncLocalStorage();
+sdk.setContextProvider({
+  run: (ctx, fn) => verificationAls.run(ctx, fn),
+  get: () => verificationAls.getStore(),
+});
 
 const PACKAGE_INSTALL_PREFIX = "@bloodtrail/security-audit-sdk-core";
 
