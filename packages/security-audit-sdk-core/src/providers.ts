@@ -121,9 +121,18 @@ export const defaultTimerProvider: AuditTimerProvider = Object.freeze({
 
 export const systemAuditClock: AuditClock = Object.freeze({ now: () => new Date() });
 
+let uuidSeed = 0x9e3779b9;
+
+function nextRandomNibble(): number {
+  uuidSeed = (uuidSeed + 0x6d2b79f5) | 0;
+  let t = Math.imul(uuidSeed ^ (uuidSeed >>> 15), 1 | uuidSeed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) & 0xf;
+}
+
 function generateUuidV4(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
+    const r = nextRandomNibble();
     const v = c === "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
