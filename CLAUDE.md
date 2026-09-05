@@ -22,11 +22,17 @@ The contract is the product; the SDK is a projection of it. Two boundaries gover
 | `research/browser-telemetry/` | `>=26.5.0` | isolated investigation, not shipping code |
 
 ```bash
-# Full gate chains — run both before pushing
+# Fast product development loop (~18s across workspaces) — use during active development
+npm run test:matrix --prefix packages/security-audit-sdk-core  # SDK product loop (~14.6s cold, ~9.2s runtime warm)
+npm run validate --prefix contracts/security-audit             # Contract validation (~1.5s)
+npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry  # Research harness (~15s)
+
+# Full gate chains — run before pushing
+# SDK validate (~291s): dominant cost (~254s) is test:verification (governance gate mutation testing, proving gates fail closed, not product test assertions)
 npm run validate --prefix packages/security-audit-sdk-core
 npm run validate --prefix contracts/security-audit
 
-# Matrix-safe subset (no git/package/coherence gates) — use when running across Node majors
+# Matrix-safe subset (no git/package/coherence gates) — also used when running across Node majors
 npm run test:matrix --prefix packages/security-audit-sdk-core
 
 # Canonical verification: wipes node_modules, npm ci, every gate, plus strict OpenSpec validation.
@@ -65,7 +71,7 @@ Verification tests **must operate on a disposable clone** via `tests/verificatio
 | `test:coherence` | package identity, version, engines, event counts, and consumer docs all agree |
 | `test:changed-paths` | lifecycle-aware staged scope (see below) |
 | `test:git` | whitespace, final newlines, and an empty Git index |
-| `test:verification` | the mutation/evidence suite in `tests/verification/` |
+| `test:verification` | the mutation/evidence suite in `tests/verification/` (~254s; proves governance gates fail closed, not product assertions) |
 
 ## Architecture
 
