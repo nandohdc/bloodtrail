@@ -94,6 +94,10 @@ export interface NormalizedSdkConfiguration {
   readonly retention: NormalizedAuditRetentionConfiguration;
 }
 
+function invalidConfiguration(path: string): SecurityAuditSdkError {
+  return new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", path);
+}
+
 function configErrorPath(error: unknown): string {
   if (error instanceof SecurityAuditSdkError && error.path) return error.path;
   return "/configuration";
@@ -104,7 +108,7 @@ export function normalizeConfiguration(input: SecurityAuditSdkConfiguration): No
     return normalizeConfigurationUnsafe(input);
   } catch (error) {
     if (error instanceof SecurityAuditSdkError && error.category === "configuration") throw error;
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", configErrorPath(error));
+    throw invalidConfiguration(configErrorPath(error));
   }
 }
 
@@ -126,7 +130,7 @@ function isValidTimeout(timeout: number): boolean {
 function resolveTimeout(input: SecurityAuditSdkConfiguration): number {
   const timeout = input.shutdownTimeoutMs ?? 5000;
   if (!isValidTimeout(timeout)) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/shutdownTimeoutMs");
+    throw invalidConfiguration("/shutdownTimeoutMs");
   }
   return timeout;
 }
@@ -159,49 +163,41 @@ function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): Nor
 }
 
 function requirePlainRetentionObject(value: unknown): asserts value is object {
-  if (!isPlainObject(value)) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
-  }
+  if (!isPlainObject(value)) throw invalidConfiguration("/retention");
 }
 
 const ALLOWED_RETENTION_KEYS = new Set(["recentGeneratedEventIds", "recentIssuedOperationIds"]);
 
-function isAccessor(item: PropertyDescriptor | undefined): boolean {
-  if (!item) return true;
-  if (item.get !== undefined) return true;
-  return item.set !== undefined;
+const DEFAULT_RETENTION: NormalizedAuditRetentionConfiguration = Object.freeze({
+  recentGeneratedEventIds: DEFAULT_RETENTION_CAPACITY,
+  recentIssuedOperationIds: DEFAULT_RETENTION_CAPACITY,
+});
+
+// Reads a property without ever invoking user code: an accessor is rejected
+// rather than called, so a getter cannot observe configuration validation.
+function dataPropertyOrThrow(target: object, key: PropertyKey, path: string): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(target, key);
+  if (descriptor === undefined) return undefined;
+  if (descriptor.get !== undefined) throw invalidConfiguration(path);
+  if (descriptor.set !== undefined) throw invalidConfiguration(path);
+  return descriptor.value;
 }
 
-function validateRetentionKey(value: object, key: string | symbol): void {
-  if (typeof key !== "string") {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
-  }
-  if (!ALLOWED_RETENTION_KEYS.has(key)) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
-  }
-  if (isAccessor(Object.getOwnPropertyDescriptor(value, key))) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/retention/${key}`);
-  }
+function requireRetentionKey(key: string | symbol): asserts key is string {
+  if (typeof key !== "string") throw invalidConfiguration("/retention");
+  if (!ALLOWED_RETENTION_KEYS.has(key)) throw invalidConfiguration("/retention");
 }
 
 function requireRetentionKeys(value: object): void {
   for (const key of Reflect.ownKeys(value)) {
-    validateRetentionKey(value, key);
+    requireRetentionKey(key);
+    dataPropertyOrThrow(value, key, `/retention/${key}`);
   }
 }
 
 function normalizeRetentionConfiguration(input: SecurityAuditSdkConfiguration): NormalizedAuditRetentionConfiguration {
-  const descriptor = Object.getOwnPropertyDescriptor(input, "retention");
-  if (descriptor?.get || descriptor?.set) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
-  }
-  const value = descriptor?.value;
-  if (value === undefined) {
-    return Object.freeze({
-      recentGeneratedEventIds: DEFAULT_RETENTION_CAPACITY,
-      recentIssuedOperationIds: DEFAULT_RETENTION_CAPACITY,
-    });
-  }
+  const value = dataPropertyOrThrow(input, "retention", "/retention");
+  if (value === undefined) return DEFAULT_RETENTION;
   requirePlainRetentionObject(value);
   requireRetentionKeys(value);
   return Object.freeze({
@@ -218,36 +214,29 @@ function isValidCapacity(capacity: unknown): capacity is number {
 }
 
 function retentionCapacity(value: object, key: keyof AuditRetentionConfiguration): number {
-  const descriptor = Object.getOwnPropertyDescriptor(value, key);
-  const capacity = descriptor?.value;
+  const path = `/retention/${key}`;
+  const capacity = dataPropertyOrThrow(value, key, path);
   if (capacity === undefined) return DEFAULT_RETENTION_CAPACITY;
-  if (!isValidCapacity(capacity)) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/retention/${key}`);
-  }
+  if (!isValidCapacity(capacity)) throw invalidConfiguration(path);
   return capacity;
 }
 
 function requireEntry(path: string, key: string, item: unknown): void {
-  if (!key) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `${path}/${key}`);
-  }
-  if (typeof item !== "string") {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `${path}/${key}`);
-  }
-  if (item.length === 0) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `${path}/${key}`);
-  }
+  // A record entry carries the same demand as a scalar field on both halves:
+  // a non-empty string, reported against the entry's own pointer.
+  requireString(key, `${path}/${key}`);
+  requireString(item, `${path}/${key}`);
 }
 
 function requireRecord(value: unknown, path: string): asserts value is Readonly<Record<string, string>> {
-  if (!isPlainObject(value)) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", path);
+  if (!isPlainObject(value)) throw invalidConfiguration(path);
   for (const [key, item] of Object.entries(value)) {
     requireEntry(path, key, item);
   }
 }
 
 function requireString(value: unknown, path: string): asserts value is string {
-  if (typeof value !== "string" || value.length === 0) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", path);
+  if (typeof value !== "string" || value.length === 0) throw invalidConfiguration(path);
 }
 
 function cloneRecord<T extends object>(value: T): Readonly<T> {
@@ -264,14 +253,14 @@ function isValidHookShape(hook: unknown): hook is AuditFieldTransformationHook {
 
 function normalizeTransformationHook(hook: unknown, index: number, seen: Set<string>): NormalizedAuditFieldTransformation {
   if (!isValidHookShape(hook)) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}`);
+    throw invalidConfiguration(`/transformations/${index}`);
   }
   const path = hook.path;
   if (!isTransformableFieldPath(path)) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}/path`);
+    throw invalidConfiguration(`/transformations/${index}/path`);
   }
   if (seen.has(path)) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}/path`);
+    throw invalidConfiguration(`/transformations/${index}/path`);
   }
   seen.add(path);
   return Object.freeze({ path, hook });
@@ -279,8 +268,8 @@ function normalizeTransformationHook(hook: unknown, index: number, seen: Set<str
 
 function normalizeTransformations(input: readonly AuditFieldTransformationHook[] | undefined): readonly NormalizedAuditFieldTransformation[] {
   if (input === undefined) return Object.freeze([]);
-  if (!Array.isArray(input)) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/transformations");
-  if (input.length > 32) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/transformations");
+  if (!Array.isArray(input)) throw invalidConfiguration("/transformations");
+  if (input.length > 32) throw invalidConfiguration("/transformations");
   const seen = new Set<string>();
   const hooks = input.map((hook, index) => normalizeTransformationHook(hook, index, seen));
   return Object.freeze(hooks);
