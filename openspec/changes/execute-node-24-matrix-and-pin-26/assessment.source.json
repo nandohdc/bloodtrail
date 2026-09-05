@@ -1,0 +1,100 @@
+{
+  "decision": "direct_implementation",
+  "forces": [
+    "The SDK declares Node 24.2.0 and 26.5.0 in compatibility.json while CI currently runs no Node 24 leg, leaving older-major compatibility unexercised.",
+    "CI workflow jobs float on node-version: 26, creating unverified drift from the pinned 26.5.0 compatibility baseline.",
+    "Branch protection pins ten required contexts including sdk; a matrix job that splits context names silently drops the required check.",
+    "Gate split policy requires runtime gates on every matrix leg and repository-level gates once per change to avoid multiplying verification cost."
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-execute-node-24-matrix-and-pin-26",
+      "kind": "direct_implementation",
+      "summary": "Pin node-version to 26.5.0 across CI jobs, execute Node 24.2.0 test:matrix in the sdk job, and verify compatibility failure modes.",
+      "forces_addressed": [
+        "The SDK declares Node 24.2.0 and 26.5.0 in compatibility.json while CI currently runs no Node 24 leg, leaving older-major compatibility unexercised.",
+        "CI workflow jobs float on node-version: 26, creating unverified drift from the pinned 26.5.0 compatibility baseline.",
+        "Branch protection pins ten required contexts including sdk; a matrix job that splits context names silently drops the required check.",
+        "Gate split policy requires runtime gates on every matrix leg and repository-level gates once per change to avoid multiplying verification cost."
+      ]
+    },
+    {
+      "id": "approach-split-sdk-job-matrix",
+      "kind": "alternative",
+      "summary": "Create a separate GitHub Actions job matrix for the SDK with per-version job contexts.",
+      "forces_addressed": [
+        "The SDK declares Node 24.2.0 and 26.5.0 in compatibility.json while CI currently runs no Node 24 leg, leaving older-major compatibility unexercised.",
+        "CI workflow jobs float on node-version: 26, creating unverified drift from the pinned 26.5.0 compatibility baseline."
+      ]
+    },
+    {
+      "id": "approach-repository-wide-node-24",
+      "kind": "alternative",
+      "summary": "Run all repository jobs across Node 24.2.0 and 26.5.0 uniformly.",
+      "forces_addressed": [
+        "The SDK declares Node 24.2.0 and 26.5.0 in compatibility.json while CI currently runs no Node 24 leg, leaving older-major compatibility unexercised.",
+        "Gate split policy requires runtime gates on every matrix leg and repository-level gates once per change to avoid multiplying verification cost."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-execute-node-24-matrix-and-pin-26",
+  "rejected_alternative_ids": [
+    "approach-split-sdk-job-matrix",
+    "approach-repository-wide-node-24"
+  ],
+  "rejection_reasons": {
+    "approach-split-sdk-job-matrix": {
+      "forces": [
+        "Branch protection pins ten required contexts including sdk; a matrix job that splits context names silently drops the required check."
+      ],
+      "reason": "A separate job matrix changes the required context name from sdk to sdk (24.2.0) and sdk (26.5.0), silently bypassing the pinned branch protection check."
+    },
+    "approach-repository-wide-node-24": {
+      "forces": [
+        "Gate split policy requires runtime gates on every matrix leg and repository-level gates once per change to avoid multiplying verification cost."
+      ],
+      "reason": "Running all jobs across Node 24 violates the contract and research workspaces declared engines (>=26.5.0) and multiplies repository-level gate runtime without providing additional evidence."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-pin-node-26",
+    "implementation-execute-node-24",
+    "implementation-preserve-stable-sdk-context"
+  ],
+  "invariant_evidence": {
+    "implementation-pin-node-26": {
+      "task_ids": ["1.1"],
+      "evidence_ids": [
+        "ci.yml sets node-version: 26.5.0 across jobs and removes floating 26"
+      ]
+    },
+    "implementation-execute-node-24": {
+      "task_ids": ["1.2"],
+      "evidence_ids": [
+        "sdk job executes setup-node 24.2.0 and npm run test:matrix"
+      ]
+    },
+    "implementation-preserve-stable-sdk-context": {
+      "task_ids": ["1.2"],
+      "evidence_ids": [
+        "sdk job maintains the single stable context name sdk in ci.yml"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "owned_paths": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/conventional-commits.yml",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-core/tests/verification/node-compatibility-mutations.test.mjs",
+    "openspec/changes/execute-node-24-matrix-and-pin-26/proposal.md",
+    "openspec/changes/execute-node-24-matrix-and-pin-26/design.md",
+    "openspec/changes/execute-node-24-matrix-and-pin-26/specs/ci-topology/spec.md",
+    "openspec/changes/execute-node-24-matrix-and-pin-26/tasks.md",
+    "openspec/changes/execute-node-24-matrix-and-pin-26/assessment.json",
+    "openspec/changes/execute-node-24-matrix-and-pin-26/assessment.source.json"
+  ],
+  "ordering": {
+    "proposal_baseline_commit": "8a851153d1f5b3cd93987729303f8221f2ff2797"
+  }
+}
