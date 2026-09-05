@@ -1,7 +1,6 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { assert, packageRoot, readJson, repositoryRoot, runChecked } from "./verification-helpers.mjs";
 
 const pkg = await readJson(resolve(packageRoot, "package.json"));

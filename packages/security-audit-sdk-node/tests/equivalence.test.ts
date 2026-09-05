@@ -154,6 +154,18 @@ describe("Node SPI implementations equivalence", () => {
     });
   });
 
+  describe("nodePlatformProvider", () => {
+    it("bundles all platform SPI implementations and freeze posture", () => {
+      assert.equal(nodePlatformProvider.clock, nodeClock);
+      assert.equal(nodePlatformProvider.identifiers, nodeIdentifiers);
+      assert.equal(nodePlatformProvider.byteLength, nodeByteLength);
+      assert.equal(nodePlatformProvider.timers, nodeTimers);
+      assert.equal(nodePlatformProvider.schemaRuntime, nodeSchemaRuntime);
+      assert.equal(nodePlatformProvider.contextProvider, nodeContextProvider);
+      assert.ok(Object.isFrozen(nodePlatformProvider));
+    });
+  });
+
   describe("createNodeSecurityAuditSdk", () => {
     it("initializes an SDK instance with node platform defaults", async () => {
       const { readFile } = await import("node:fs/promises");
