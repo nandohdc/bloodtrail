@@ -28,4 +28,4 @@
 
 - [x] 5.1 Re-run platform coupling policy: verify zero Node built-in imports, zero host globals, zero third-party runtime dependencies, and verify that the paper second consumer compiles cleanly under `test:types`.
 - [x] 5.2 Assert pinned counts unchanged: exactly 24 canonical catalog events, 24 named event APIs, 35 brand constructors, and 19 brand kinds.
-- [ ] 5.3 Fold the `security-audit-sdk-core` delta into canonical `openspec/specs/security-audit-sdk-core/spec.md`, verify strict validation, and archive the completed change in a byte-preserving relocation commit.
+- [x] 5.3 Fold the `security-audit-sdk-core` delta into canonical `openspec/specs/security-audit-sdk-core/spec.md`, verify strict validation, and archive the completed change in a byte-preserving relocation commit.
