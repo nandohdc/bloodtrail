@@ -1,7 +1,7 @@
 import type { NormalizedSdkConfiguration, SecurityAuditSdkConfiguration } from "./config.js";
 import { normalizeConfiguration } from "./config.js";
 import type { AuditContextFrameInput } from "./context.js";
-import { currentAuditContext, runWithAuditContext } from "./context.js";
+import { runWithAuditContext } from "./context.js";
 import { buildNamedAuditEvent } from "./events.js";
 import { failure, normalizeCanonicalInput } from "./errors.js";
 import type { AuditResult } from "./errors.js";
@@ -13,6 +13,7 @@ import type { AuditDeliveryResult } from "./sink.js";
 import { validateSecurityAuditEvent } from "./validation/index.js";
 import type { DeliveryIntent } from "./internal.js";
 import { BoundedFifoSet } from "./bounded-fifo.js";
+import type { AuditTimerProvider } from "./providers.js";
 
 export type SecurityAuditSdkState = "ready" | "shutting_down" | "shut_down";
 
@@ -103,7 +104,7 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
   }
 
   runWithContext<T>(frame: AuditContextFrameInput, callback: () => T): T {
-    return runWithAuditContext(frame, callback);
+    return runWithAuditContext(frame, callback, this.#config.contextProvider);
   }
 
   accountRegistrationAttempted(input: WithOperationHandle<NamedAuditEventInputMap["accountRegistrationAttempted"]>): Promise<AuditResult<AuditDeliveryResult>> {
@@ -212,7 +213,7 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
     const suppliedOperation = supplied.value;
     const operation = this.#operationAuthority.resolve(suppliedOperation);
     if (!operation.ok) return operation;
-    const activeContext = currentAuditContext();
+    const activeContext = this.#config.contextProvider.get();
     const duplicateAttempt = this.#rejectDuplicateAttempt(method, operation.value, input, activeContext, suppliedOperation);
     if (duplicateAttempt) return duplicateAttempt;
     let built;
@@ -296,7 +297,7 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
     intent: DeliveryIntent,
   ): Promise<AuditResult<AuditDeliveryResult>> {
     if (this.#state !== "ready") return failure(this.#state === "shut_down" ? "SDK_SHUT_DOWN" : "SDK_SHUTTING_DOWN", "lifecycle");
-    const validated = validateSecurityAuditEvent(event);
+    const validated = validateSecurityAuditEvent(event, this.#config.schemaRuntime);
     if (!validated.ok) return validated;
     return this.#handoffValidatedEvent(validated.value, intent);
   }
@@ -342,7 +343,7 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
   async #performShutdown(): Promise<AuditResult<void>> {
     if (this.#state === "shut_down") return failure("SDK_SHUT_DOWN", "lifecycle");
     this.#state = "shutting_down";
-    const timeout = createShutdownTimeout(this.#config.shutdownTimeoutMs);
+    const timeout = createShutdownTimeout(this.#config.shutdownTimeoutMs, this.#config.timers);
     try {
       const settled = Promise.allSettled([...this.#inFlight]).then(() => true);
       if (!(await Promise.race([settled, timeout.promise]))) {
@@ -381,20 +382,22 @@ type ShutdownTimeout = {
   cancel(): void;
 };
 
-function createShutdownTimeout(timeoutMs: number): ShutdownTimeout {
+function createShutdownTimeout(timeoutMs: number, timers: AuditTimerProvider): ShutdownTimeout {
   let cancelled = false;
   let resolveTimeout: (value: false) => void = () => {};
   const promise = new Promise<false>((resolve) => {
     resolveTimeout = resolve;
   });
-  const timer = setTimeout(() => resolveTimeout(false), timeoutMs);
-  timer.unref();
+  const timer = timers.setTimeout(() => resolveTimeout(false), timeoutMs);
+  if (typeof timer.unref === "function") {
+    timer.unref();
+  }
   return {
     promise,
     cancel() {
       if (cancelled) return;
       cancelled = true;
-      clearTimeout(timer);
+      timers.clearTimeout(timer);
     },
   };
 }

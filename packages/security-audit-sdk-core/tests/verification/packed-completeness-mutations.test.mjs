@@ -6,6 +6,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -33,14 +34,21 @@ test("packed inventory omitting a loaded module fails closed", () => {
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
     manifest.files.push("!dist/validation");
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-    const omittedModule = resolve(copiedPackage, "dist/validation/index.js");
-    writeFileSync(omittedModule, `${readFileSync(omittedModule, "utf8")}\n// ${sourceMarker}\n`, "utf8");
+    // Which module under dist/validation the entry graph reaches first is an
+    // implementation detail of the import order, so mark every one of them and
+    // assert on the omitted directory rather than on a single leaf.
+    const omittedDirectory = resolve(copiedPackage, "dist/validation");
+    for (const entry of readdirSync(omittedDirectory)) {
+      if (!entry.endsWith(".js")) continue;
+      const omittedModule = resolve(omittedDirectory, entry);
+      writeFileSync(omittedModule, `${readFileSync(omittedModule, "utf8")}\n// ${sourceMarker}\n`, "utf8");
+    }
   });
 
   assertFailure(result, {
     code: "entry-point-import",
     entryPoint: "@bloodtrail/security-audit-sdk-core",
-    detail: "dist/validation/index.js",
+    detail: "dist/validation/",
     sourceMarker,
   });
 });

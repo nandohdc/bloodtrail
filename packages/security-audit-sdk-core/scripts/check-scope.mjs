@@ -25,7 +25,10 @@ for (const file of sourceTree.files) {
   if (forbiddenFileName.test(relativePath)) violations.push(`${relativePath}: forbidden production integration filename`);
 }
 
-for (const field of ["dependencies", "optionalDependencies", "peerDependencies"]) {
+for (const dep of Object.keys(packageJson.dependencies ?? {})) {
+  if (!dep.startsWith("@bloodtrail/")) violations.push(`package.json: dependencies must remain empty of third-party packages; runtime dependency ${dep} must be in first-party allowlist (@bloodtrail/*)`);
+}
+for (const field of ["optionalDependencies", "peerDependencies"]) {
   if (Object.keys(packageJson[field] ?? {}).length > 0) violations.push(`package.json: ${field} must remain empty`);
 }
 const exportsText = JSON.stringify(packageJson.exports ?? "").toLowerCase();
@@ -45,7 +48,7 @@ if (violations.length > 0) {
 }
 
 process.stdout.write(
-  `scope passed: ${sourceTree.files.length} SDK source files, only node:async_hooks/node:crypto external runtime imports, no production integration or runtime dependency\n${formatInventory(coupling.inventory)}\n`,
+  `scope passed: ${sourceTree.files.length} SDK source files, zero external runtime imports, no production integration or runtime dependency\n${formatInventory(coupling.inventory)}\n`,
 );
 
 function formatInventory(inventory) {

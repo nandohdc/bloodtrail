@@ -1,6 +1,7 @@
 import { SDK_ERROR_CODES } from "./generated/contract.generated.js";
 import type { AuditErrorCode, SdkGeneratedErrorCode } from "./generated/contract.generated.js";
 import { boundedPath, deepFreeze } from "./internal.js";
+import { utf8ByteLength } from "./providers.js";
 
 export type AuditErrorCategory = "configuration" | "validation" | "authority" | "privacy" | "lifecycle" | "sink";
 export type SdkErrorCode = SdkGeneratedErrorCode;
@@ -78,7 +79,7 @@ export function normalizeCanonicalInput<T>(value: T, path = "/"): AuditResult<No
   if (serialized === undefined) return failure("FIELD_SERIALIZATION_FAILED", "validation", path);
   return {
     ok: true,
-    value: { value: deepFreeze(snapshot) as Readonly<T>, serialized, bytes: Buffer.byteLength(serialized, "utf8") },
+    value: { value: deepFreeze(snapshot) as Readonly<T>, serialized, bytes: utf8ByteLength(serialized) },
   };
 }
 

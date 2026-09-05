@@ -9,7 +9,7 @@ import { packageRoot, repositoryRoot } from "../../scripts/verification-helpers.
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-f10-mutations-"));
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
 
-const constructionGuard = "    if (!isTransformableFieldPath(path)) {\n      throw new SecurityAuditSdkError(\"SDK_INVALID_CONFIGURATION\", \"configuration\", `/transformations/${index}/path`);\n    }";
+const constructionGuard = "  if (!isTransformableFieldPath(path)) {\n    throw invalidConfiguration(`/transformations/${index}/path`);\n  }";
 const runtimeGuard = "  if (!isTransformableFieldPath(path)) return failure(\"SDK_HOOK_FAILURE\", \"privacy\", pointer);";
 
 const mutations = [
@@ -23,8 +23,8 @@ const mutations = [
   {
     name: "M-F10-B validate only against FIELD_POLICY",
     file: "src/config.ts",
-    oldText: "    if (!isTransformableFieldPath(path)) {",
-    newText: "    if (!isTransformableFieldPath(path) && path !== \"event.outcome_reason.code\" && path !== \"event.outcome_reason.message\") {",
+    oldText: "  if (!isTransformableFieldPath(path)) {",
+    newText: "  if (!isTransformableFieldPath(path) && path !== \"event.outcome_reason.code\" && path !== \"event.outcome_reason.message\") {",
     pattern: "F-10 parity",
   },
   {
@@ -52,14 +52,14 @@ const mutations = [
     name: "M-F10-F invoke hooks during construction",
     file: "src/config.ts",
     oldText: constructionGuard,
-    newText: `${constructionGuard}\n    hook.transform({ path, value: "construction-probe", purpose: "construction-validation" });`,
+    newText: `${constructionGuard}\n  hook.transform({ path, value: "construction-probe", purpose: "construction-validation" });`,
     pattern: "F-10 ownership",
   },
   {
     name: "M-F10-G leak configured path",
     file: "src/config.ts",
     oldText: constructionGuard,
-    newText: "    if (!isTransformableFieldPath(path)) {\n      throw new SecurityAuditSdkError(\"SDK_INVALID_CONFIGURATION\", \"configuration\", `/transformations/${index}/path/${path}`);\n    }",
+    newText: "  if (!isTransformableFieldPath(path)) {\n    throw invalidConfiguration(`/transformations/${index}/path/${path}`);\n  }",
     pattern: "F-10 diagnostics",
   },
 ];

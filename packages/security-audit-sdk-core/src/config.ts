@@ -2,11 +2,18 @@ import { CONTRACT_VERSION } from "./generated/contract.generated.js";
 import type { FIELD_POLICY, SecurityAuditEvent } from "./generated/contract.generated.js";
 import type { AuditContextFrame, AuditContextFrameInput } from "./context.js";
 import { createAuditContextFrame } from "./context.js";
-import type { AuditClock, AuditIdentifierProvider } from "./providers.js";
-import { systemAuditClock, systemAuditIdentifiers } from "./providers.js";
+import type {
+  AuditByteLengthProvider,
+  AuditClock,
+  AuditIdentifierProvider,
+  AuditSchemaRuntime,
+  AuditTimerProvider,
+  ContextProvider,
+} from "./providers.js";
+import { resolveProviders } from "./providers.js";
 import type { AuditEventSink } from "./sink.js";
 import { normalizeCanonicalInputOrThrow, SecurityAuditSdkError } from "./errors.js";
-import { isTransformableFieldPath } from "./internal.js";
+import { isPlainObject, isTransformableFieldPath } from "./internal.js";
 
 export type AuditFieldPolicyPath = (typeof FIELD_POLICY)[number]["path"];
 
@@ -45,6 +52,10 @@ export interface SecurityAuditSdkConfiguration {
   readonly sink: AuditEventSink;
   readonly clock?: AuditClock;
   readonly identifiers?: AuditIdentifierProvider;
+  readonly byteLength?: AuditByteLengthProvider;
+  readonly timers?: AuditTimerProvider;
+  readonly schemaRuntime?: AuditSchemaRuntime;
+  readonly contextProvider?: ContextProvider;
   readonly shutdownTimeoutMs?: number;
   readonly retention?: AuditRetentionConfiguration;
 }
@@ -75,8 +86,21 @@ export interface NormalizedSdkConfiguration {
   readonly sink: AuditEventSink;
   readonly clock: AuditClock;
   readonly identifiers: AuditIdentifierProvider;
+  readonly byteLength: AuditByteLengthProvider;
+  readonly timers: AuditTimerProvider;
+  readonly schemaRuntime: AuditSchemaRuntime;
+  readonly contextProvider: ContextProvider;
   readonly shutdownTimeoutMs: number;
   readonly retention: NormalizedAuditRetentionConfiguration;
+}
+
+function invalidConfiguration(path: string): SecurityAuditSdkError {
+  return new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", path);
+}
+
+function configErrorPath(error: unknown): string {
+  if (error instanceof SecurityAuditSdkError && error.path) return error.path;
+  return "/configuration";
 }
 
 export function normalizeConfiguration(input: SecurityAuditSdkConfiguration): NormalizedSdkConfiguration {
@@ -84,13 +108,11 @@ export function normalizeConfiguration(input: SecurityAuditSdkConfiguration): No
     return normalizeConfigurationUnsafe(input);
   } catch (error) {
     if (error instanceof SecurityAuditSdkError && error.category === "configuration") throw error;
-    const path = error instanceof SecurityAuditSdkError ? error.path : undefined;
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", path ?? "/configuration");
+    throw invalidConfiguration(configErrorPath(error));
   }
 }
 
-function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): NormalizedSdkConfiguration {
-  if (input.contractVersion !== CONTRACT_VERSION) throw new SecurityAuditSdkError("SDK_UNSUPPORTED_CONTRACT_VERSION", "configuration", "/contractVersion");
+function validateServiceIdentity(input: SecurityAuditSdkConfiguration): void {
   requireRecord(input.producer, "/producer");
   requireString(input.producer.name, "/producer/name");
   requireString(input.producer.version, "/producer/version");
@@ -99,12 +121,26 @@ function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): Nor
   requireRecord(input.environment, "/environment");
   requireString(input.environment.name, "/environment/name");
   if (input.deployment !== undefined) requireRecord(input.deployment, "/deployment");
-  if (!input.sink || typeof input.sink.emit !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/sink");
-  if (input.clock !== undefined && typeof input.clock.now !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/clock");
-  if (input.identifiers !== undefined) requireIdentifierProvider(input.identifiers);
-  const transformations = normalizeTransformations(input.transformations);
+}
+
+function isValidTimeout(timeout: number): boolean {
+  return Number.isSafeInteger(timeout) && timeout >= 0 && timeout <= 60_000;
+}
+
+function resolveTimeout(input: SecurityAuditSdkConfiguration): number {
   const timeout = input.shutdownTimeoutMs ?? 5000;
-  if (!Number.isSafeInteger(timeout) || timeout < 0 || timeout > 60_000) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/shutdownTimeoutMs");
+  if (!isValidTimeout(timeout)) {
+    throw invalidConfiguration("/shutdownTimeoutMs");
+  }
+  return timeout;
+}
+
+function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): NormalizedSdkConfiguration {
+  if (input.contractVersion !== CONTRACT_VERSION) throw new SecurityAuditSdkError("SDK_UNSUPPORTED_CONTRACT_VERSION", "configuration", "/contractVersion");
+  validateServiceIdentity(input);
+  const providers = resolveProviders(input);
+  const timeout = resolveTimeout(input);
+  const transformations = normalizeTransformations(input.transformations);
   const retention = normalizeRetentionConfiguration(input);
   const base = {
     contractVersion: CONTRACT_VERSION,
@@ -113,100 +149,128 @@ function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): Nor
     environment: cloneRecord(input.environment),
     authoritativeContext: createAuditContextFrame(input.authoritativeContext ?? {}),
     transformations,
-    sink: input.sink,
-    clock: input.clock ?? systemAuditClock,
-    identifiers: input.identifiers ?? systemAuditIdentifiers,
+    sink: providers.sink,
+    clock: providers.clock,
+    identifiers: providers.identifiers,
+    byteLength: providers.byteLength,
+    timers: providers.timers,
+    schemaRuntime: providers.schemaRuntime,
+    contextProvider: providers.contextProvider,
     shutdownTimeoutMs: timeout,
     retention,
   };
   return Object.freeze(input.deployment === undefined ? base : { ...base, deployment: cloneRecord(input.deployment) });
 }
 
-function normalizeRetentionConfiguration(input: SecurityAuditSdkConfiguration): NormalizedAuditRetentionConfiguration {
-  const descriptor = Object.getOwnPropertyDescriptor(input, "retention");
-  if (descriptor?.get || descriptor?.set) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
-  }
-  const value = descriptor?.value;
-  if (value === undefined) {
-    return Object.freeze({
-      recentGeneratedEventIds: DEFAULT_RETENTION_CAPACITY,
-      recentIssuedOperationIds: DEFAULT_RETENTION_CAPACITY,
-    });
-  }
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
-  }
-  const prototype = Object.getPrototypeOf(value);
-  if (prototype !== Object.prototype && prototype !== null) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
-  }
-  const allowed = new Set(["recentGeneratedEventIds", "recentIssuedOperationIds"]);
+function requirePlainRetentionObject(value: unknown): asserts value is object {
+  if (!isPlainObject(value)) throw invalidConfiguration("/retention");
+}
+
+const ALLOWED_RETENTION_KEYS = new Set(["recentGeneratedEventIds", "recentIssuedOperationIds"]);
+
+const DEFAULT_RETENTION: NormalizedAuditRetentionConfiguration = Object.freeze({
+  recentGeneratedEventIds: DEFAULT_RETENTION_CAPACITY,
+  recentIssuedOperationIds: DEFAULT_RETENTION_CAPACITY,
+});
+
+// Reads a property without ever invoking user code: an accessor is rejected
+// rather than called, so a getter cannot observe configuration validation.
+function dataPropertyOrThrow(target: object, key: PropertyKey, path: string): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(target, key);
+  if (descriptor === undefined) return undefined;
+  if (descriptor.get !== undefined) throw invalidConfiguration(path);
+  if (descriptor.set !== undefined) throw invalidConfiguration(path);
+  return descriptor.value;
+}
+
+function requireRetentionKey(key: string | symbol): asserts key is string {
+  if (typeof key !== "string") throw invalidConfiguration("/retention");
+  if (!ALLOWED_RETENTION_KEYS.has(key)) throw invalidConfiguration("/retention");
+}
+
+function requireRetentionKeys(value: object): void {
   for (const key of Reflect.ownKeys(value)) {
-    if (typeof key !== "string" || !allowed.has(key)) {
-      throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/retention");
-    }
-    const item = Object.getOwnPropertyDescriptor(value, key);
-    if (!item || item.get || item.set) {
-      throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/retention/${key}`);
-    }
+    requireRetentionKey(key);
+    dataPropertyOrThrow(value, key, `/retention/${key}`);
   }
+}
+
+function normalizeRetentionConfiguration(input: SecurityAuditSdkConfiguration): NormalizedAuditRetentionConfiguration {
+  const value = dataPropertyOrThrow(input, "retention", "/retention");
+  if (value === undefined) return DEFAULT_RETENTION;
+  requirePlainRetentionObject(value);
+  requireRetentionKeys(value);
   return Object.freeze({
     recentGeneratedEventIds: retentionCapacity(value, "recentGeneratedEventIds"),
     recentIssuedOperationIds: retentionCapacity(value, "recentIssuedOperationIds"),
   });
 }
 
+function isValidCapacity(capacity: unknown): capacity is number {
+  if (typeof capacity !== "number") return false;
+  if (!Number.isSafeInteger(capacity)) return false;
+  if (capacity <= 0) return false;
+  return capacity <= MAX_RETENTION_CAPACITY;
+}
+
 function retentionCapacity(value: object, key: keyof AuditRetentionConfiguration): number {
-  const descriptor = Object.getOwnPropertyDescriptor(value, key);
-  if (descriptor?.value === undefined) return DEFAULT_RETENTION_CAPACITY;
-  const capacity = descriptor.value;
-  if (!Number.isSafeInteger(capacity) || capacity <= 0 || capacity > MAX_RETENTION_CAPACITY) {
-    throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/retention/${key}`);
-  }
-  return capacity as number;
+  const path = `/retention/${key}`;
+  const capacity = dataPropertyOrThrow(value, key, path);
+  if (capacity === undefined) return DEFAULT_RETENTION_CAPACITY;
+  if (!isValidCapacity(capacity)) throw invalidConfiguration(path);
+  return capacity;
+}
+
+function requireEntry(path: string, key: string, item: unknown): void {
+  // A record entry carries the same demand as a scalar field on both halves:
+  // a non-empty string, reported against the entry's own pointer.
+  requireString(key, `${path}/${key}`);
+  requireString(item, `${path}/${key}`);
 }
 
 function requireRecord(value: unknown, path: string): asserts value is Readonly<Record<string, string>> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", path);
+  if (!isPlainObject(value)) throw invalidConfiguration(path);
   for (const [key, item] of Object.entries(value)) {
-    if (!key || typeof item !== "string" || !item) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `${path}/${key}`);
+    requireEntry(path, key, item);
   }
 }
 
 function requireString(value: unknown, path: string): asserts value is string {
-  if (typeof value !== "string" || value.length === 0) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", path);
+  if (typeof value !== "string" || value.length === 0) throw invalidConfiguration(path);
 }
 
 function cloneRecord<T extends object>(value: T): Readonly<T> {
   return normalizeCanonicalInputOrThrow(value, "/configuration");
 }
 
-function requireIdentifierProvider(value: AuditIdentifierProvider): void {
-  const required: readonly (keyof AuditIdentifierProvider)[] = ["eventId", "operationId", "correlationId", "causationId", "requestId", "messageId", "transactionId"];
-  for (const key of required) {
-    if (typeof value[key] !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/identifiers/${key}`);
+function isValidHookShape(hook: unknown): hook is AuditFieldTransformationHook {
+  if (typeof hook !== "object") return false;
+  if (hook === null) return false;
+  const candidate = hook as AuditFieldTransformationHook;
+  if (typeof candidate.path !== "string") return false;
+  return typeof candidate.transform === "function";
+}
+
+function normalizeTransformationHook(hook: unknown, index: number, seen: Set<string>): NormalizedAuditFieldTransformation {
+  if (!isValidHookShape(hook)) {
+    throw invalidConfiguration(`/transformations/${index}`);
   }
+  const path = hook.path;
+  if (!isTransformableFieldPath(path)) {
+    throw invalidConfiguration(`/transformations/${index}/path`);
+  }
+  if (seen.has(path)) {
+    throw invalidConfiguration(`/transformations/${index}/path`);
+  }
+  seen.add(path);
+  return Object.freeze({ path, hook });
 }
 
 function normalizeTransformations(input: readonly AuditFieldTransformationHook[] | undefined): readonly NormalizedAuditFieldTransformation[] {
   if (input === undefined) return Object.freeze([]);
-  if (!Array.isArray(input) || input.length > 32) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/transformations");
+  if (!Array.isArray(input)) throw invalidConfiguration("/transformations");
+  if (input.length > 32) throw invalidConfiguration("/transformations");
   const seen = new Set<string>();
-  const hooks = input.map((hook, index) => {
-    if (!hook || typeof hook !== "object") {
-      throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}`);
-    }
-    const path = hook.path;
-    if (typeof path !== "string" || typeof hook.transform !== "function") {
-      throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}`);
-    }
-    if (!isTransformableFieldPath(path)) {
-      throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}/path`);
-    }
-    if (seen.has(path)) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", `/transformations/${index}/path`);
-    seen.add(path);
-    return Object.freeze({ path, hook });
-  });
+  const hooks = input.map((hook, index) => normalizeTransformationHook(hook, index, seen));
   return Object.freeze(hooks);
 }

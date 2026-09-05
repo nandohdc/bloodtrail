@@ -72,9 +72,35 @@ export type {
 export type { AuditOperationHandle, AuditOperationInput, AuditOperationSnapshot, AuditOperationState } from "./operations.js";
 export { SecurityAuditSdkError, SDK_ERROR_CODES } from "./errors.js";
 export type { AuditErrorCategory, AuditResult, SafeAuditError, SdkErrorCode } from "./errors.js";
-export type { AuditClock, AuditIdentifierProvider } from "./providers.js";
+export type {
+  AuditByteLengthProvider,
+  AuditClock,
+  AuditIdentifierProvider,
+  AuditSchemaRuntime,
+  AuditTimerHandle,
+  AuditTimerProvider,
+  ContextProvider,
+  PlatformProvider,
+} from "./providers.js";
+export {
+  defaultByteLengthProvider,
+  defaultContextProvider,
+  defaultTimerProvider,
+  getContextProvider,
+  setContextProvider,
+  StackContextProvider,
+  systemAuditClock,
+  systemAuditIdentifiers,
+  utf8ByteLength,
+} from "./providers.js";
 export type { AuditDeliveryResult, AuditEventSink } from "./sink.js";
-export { validateSecurityAuditEvent } from "./validation/index.js";
+export {
+  cjsSchemaRuntime,
+  getSchemaRuntime,
+  setSchemaRuntime,
+  validateNoProhibitedData,
+  validateSecurityAuditEvent,
+} from "./validation/index.js";
 export {
   CONTRACT_ERROR_CODES,
   CONTRACT_SCHEMA_ID,

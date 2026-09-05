@@ -8,6 +8,7 @@ import {
   type MfaEnrolledEventInput,
   type SecurityAuditEvent,
 } from "../../src/index.js";
+import { createPaperConsumerSdk } from "../fixtures/paper-consumer/consumer.js";
 
 const sink: AuditEventSink = { async emit() { return { status: "accepted" }; } };
 const sdk = createSecurityAuditSdk({
@@ -137,3 +138,6 @@ void contractCode;
 void sdkCode;
 void invalidInputCode;
 void serializationFailureCode;
+
+const paperConsumerSdk = createPaperConsumerSdk(sink);
+void paperConsumerSdk;

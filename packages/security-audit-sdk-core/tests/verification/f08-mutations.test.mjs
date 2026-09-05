@@ -48,8 +48,8 @@ const mutations = [
   {
     name: "M-F08-F remove hard configuration maximum",
     file: "src/config.ts",
-    oldText: "  if (!Number.isSafeInteger(capacity) || capacity <= 0 || capacity > MAX_RETENTION_CAPACITY) {",
-    newText: "  if (!Number.isSafeInteger(capacity) || capacity <= 0) {",
+    oldText: "  return capacity <= MAX_RETENTION_CAPACITY;",
+    newText: "  return true;",
     pattern: "retention configuration is finite",
   },
   {

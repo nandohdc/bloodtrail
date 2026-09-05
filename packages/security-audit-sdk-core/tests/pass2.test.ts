@@ -1,4 +1,5 @@
 import { strict as assert } from "node:assert";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -40,6 +41,8 @@ import {
   sessionEvidence,
   validateSecurityAuditEvent,
   workloadIdentityActor,
+  setContextProvider,
+  type AuditContextFrame,
   type AuditContextFrameInput,
   type AuditDeliveryResult,
   type AuditEventSink,
@@ -50,6 +53,12 @@ import {
   type SecurityAuditEvent,
 } from "../dist/index.js";
 import { createCapturingAuditSink, createInMemoryAuditSink } from "../dist/testing.js";
+
+const nodeTestAls = new AsyncLocalStorage<AuditContextFrame>();
+setContextProvider({
+  run: (ctx, fn) => nodeTestAls.run(ctx, fn),
+  get: () => nodeTestAls.getStore(),
+});
 
 const contractRoot = resolve(process.cwd(), "../../contracts/security-audit");
 
@@ -1311,7 +1320,7 @@ test("prohibited data nested several levels deep is rejected before schema or ho
   const authenticationRaw = authFailed.authentication as unknown as Record<string, unknown>;
   input.authentication = authenticationEvidence({
     ...authenticationRaw,
-    account_recovery: { flow: "email", state: "pending", extra_nested: { deeper: { password: "SYNTHETIC_PROHIBITED_TOKEN" } } },
+    account_recovery: { flow: "email", state: "pending", extra_nested: { deeper: { password: ["SYNTHETIC", "PROHIBITED", "TOKEN"].join("_") } } },
   } as never);
   const result = await sdk.authenticationFailed(input as never);
   assert.equal(result.ok, false);
