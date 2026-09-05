@@ -1,0 +1,170 @@
+{
+  "schema_version": "1.1",
+  "change_id": "add-provisional-node-binding",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Node applications require concrete implementations of Core platform SPIs without violating Core's platform neutrality.",
+    "AsyncLocalStorage context propagation must ensure strict isolation across concurrent asynchronous execution chains without cross-scope data leakage.",
+    "Shutdown timers must support unref to avoid retaining host processes while strictly avoiding the installation of process signal handlers.",
+    "The package must maintain standalone repository topology with zero third-party runtime dependencies and private unlicensed status.",
+    "The package public API must remain explicitly provisional and unfrozen until vertical evidence is established under PLAN-047."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "integration",
+      "lifecycle_or_state",
+      "concurrency",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/add-provisional-node-binding/proposal.md",
+    "openspec/changes/add-provisional-node-binding/assessment.source.json",
+    "openspec/changes/add-provisional-node-binding/assessment.json",
+    "openspec/changes/add-provisional-node-binding/design.md",
+    "openspec/changes/add-provisional-node-binding/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/add-provisional-node-binding/tasks.md",
+    "packages/security-audit-sdk-node/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-node-binding",
+      "kind": "direct_implementation",
+      "summary": "Direct implementation of Core SPIs using native Node built-ins in a standalone first-party package.",
+      "forces_addressed": [
+        "Node applications require concrete implementations of Core platform SPIs without violating Core's platform neutrality.",
+        "AsyncLocalStorage context propagation must ensure strict isolation across concurrent asynchronous execution chains without cross-scope data leakage.",
+        "Shutdown timers must support unref to avoid retaining host processes while strictly avoiding the installation of process signal handlers.",
+        "The package must maintain standalone repository topology with zero third-party runtime dependencies and private unlicensed status.",
+        "The package public API must remain explicitly provisional and unfrozen until vertical evidence is established under PLAN-047."
+      ]
+    },
+    {
+      "id": "approach-ambient-global-shims",
+      "kind": "alternative",
+      "summary": "Injecting Node implementations into globalThis or ambient environment instead of a typed first-party package.",
+      "forces_addressed": [
+        "Node applications require concrete implementations of Core platform SPIs without violating Core's platform neutrality."
+      ]
+    },
+    {
+      "id": "approach-re-merge-into-core",
+      "kind": "alternative",
+      "summary": "Folding Node implementations back into Core behind conditional dynamic imports.",
+      "forces_addressed": [
+        "Node applications require concrete implementations of Core platform SPIs without violating Core's platform neutrality."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-node-binding",
+  "rejected_alternative_ids": [
+    "approach-ambient-global-shims",
+    "approach-re-merge-into-core"
+  ],
+  "rejection_reasons": {
+    "approach-ambient-global-shims": {
+      "forces": [
+        "Node applications require concrete implementations of Core platform SPIs without violating Core's platform neutrality."
+      ],
+      "reason": "Ambient global shims undermine module-level authority boundaries, defeat compile-time type safety, and risk conflicting with consumer host globals."
+    },
+    "approach-re-merge-into-core": {
+      "forces": [
+        "Node applications require concrete implementations of Core platform SPIs without violating Core's platform neutrality."
+      ],
+      "reason": "Conditional dynamic imports in Core re-couple Core to Node engine constraints and undermine verified platform neutrality across non-Node runtimes."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-node-spi-implementations",
+    "implementation-context-isolation",
+    "implementation-shutdown-timer-unref",
+    "implementation-zero-third-party-dependencies",
+    "implementation-provisional-unfrozen-status"
+  ],
+  "invariant_evidence": {
+    "implementation-node-spi-implementations": {
+      "task_ids": [
+        "3.2",
+        "3.3",
+        "3.4",
+        "3.5",
+        "3.6",
+        "3.7",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "Node SPI providers implement all Core SPIs and reproduce pre-split behavior in equivalence tests"
+      ]
+    },
+    "implementation-context-isolation": {
+      "task_ids": [
+        "3.6",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "Child-process tests prove concurrent asynchronous operations under AsyncLocalStorage do not leak context"
+      ]
+    },
+    "implementation-shutdown-timer-unref": {
+      "task_ids": [
+        "3.5",
+        "4.3"
+      ],
+      "evidence_ids": [
+        "Child-process shutdown test proves process exits cleanly with scheduled timer and without signal handlers"
+      ]
+    },
+    "implementation-zero-third-party-dependencies": {
+      "task_ids": [
+        "3.1",
+        "4.4",
+        "4.5"
+      ],
+      "evidence_ids": [
+        "check-dependencies proves zero third-party deps and check-package-contents proves packed installation"
+      ]
+    },
+    "implementation-provisional-unfrozen-status": {
+      "task_ids": [
+        "3.9"
+      ],
+      "evidence_ids": [
+        "compatibility.json and package README explicitly record API as provisional and unfrozen"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "ddb456a5bc3a90097334994ff9bb3f0d622af1f1"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4",
+    "3.5",
+    "3.6",
+    "3.7",
+    "3.8",
+    "3.9",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4",
+    "4.5",
+    "5.1",
+    "5.2"
+  ]
+}
