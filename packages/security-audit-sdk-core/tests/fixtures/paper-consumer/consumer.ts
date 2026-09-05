@@ -55,15 +55,14 @@ export class WebAuditByteLengthProvider implements AuditByteLengthProvider {
 }
 
 export class WebAuditTimerProvider implements AuditTimerProvider {
-  setTimeout(callback: () => void, ms: number): AuditTimerHandle {
-    setTimeout(callback, ms);
+  setTimeout(): AuditTimerHandle {
     return {};
   }
-  clearTimeout(_handle: AuditTimerHandle): void {}
+  clearTimeout(): void {}
 }
 
 export class WebAuditSchemaRuntime implements AuditSchemaRuntime {
-  validate(_event: unknown): AuditResult<void> {
+  validate(): AuditResult<void> {
     return { ok: true, value: undefined };
   }
 }

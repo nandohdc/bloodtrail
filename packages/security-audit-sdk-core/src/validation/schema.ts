@@ -42,6 +42,10 @@ interface StandaloneValidationError {
   readonly params: Readonly<Record<string, unknown>>;
 }
 
+const SCHEMA_VERSION_PATHS = new Set(["/schema/version", "/schema/name"]);
+const CATALOG_PATHS = new Set(["/event/name", "/event/category", "/event/action", "/event/delivery_class"]);
+const FIELD_LIMIT_KEYWORDS = new Set(["maxLength", "maximum", "maxItems"]);
+
 function mapRequiredError(instancePath: string, missing: string): string {
   if (missing === "actor" || (instancePath === "/actor" && missing === "type")) return "MISSING_REQUIRED_ACTOR";
   if (missing === "tenant") return "MISSING_TENANT_CONTEXT";
@@ -55,13 +59,15 @@ function mapAdditionalPropertiesError(path: string, extra: string): string {
   return "SDK_SCHEMA_VALIDATION_FAILED";
 }
 
-function mapSchemaError(error: StandaloneValidationError | undefined): string {
-  if (!error) return "SDK_SCHEMA_VALIDATION_FAILED";
-  const path = error.instancePath || pathFromMissingProperty(error) || "/";
-  if (path === "/schema/version" || path === "/schema/name") return "UNSUPPORTED_SCHEMA_VERSION";
-  if (path === "/event/name" || path === "/event/category" || path === "/event/action" || path === "/event/delivery_class") return "UNKNOWN_CATALOG_VALUE";
+function matchPathCode(path: string): string | undefined {
+  if (SCHEMA_VERSION_PATHS.has(path)) return "UNSUPPORTED_SCHEMA_VERSION";
+  if (CATALOG_PATHS.has(path)) return "UNKNOWN_CATALOG_VALUE";
   if (path.startsWith("/extensions")) return "UNKNOWN_EXTENSION";
-  if (error.keyword === "maxLength" || error.keyword === "maximum" || error.keyword === "maxItems") return "FIELD_LIMIT_EXCEEDED";
+  return undefined;
+}
+
+function matchKeywordCode(error: StandaloneValidationError, path: string): string {
+  if (FIELD_LIMIT_KEYWORDS.has(error.keyword)) return "FIELD_LIMIT_EXCEEDED";
   if (error.keyword === "required") {
     const missing = typeof error.params.missingProperty === "string" ? error.params.missingProperty : "";
     return mapRequiredError(error.instancePath, missing);
@@ -71,6 +77,22 @@ function mapSchemaError(error: StandaloneValidationError | undefined): string {
     return mapAdditionalPropertiesError(path, extra);
   }
   return "SDK_SCHEMA_VALIDATION_FAILED";
+}
+
+function resolveErrorPath(error: StandaloneValidationError | undefined): string {
+  if (!error) return "/";
+  if (error.instancePath) return error.instancePath;
+  const fromMissing = pathFromMissingProperty(error);
+  if (fromMissing) return fromMissing;
+  return "/";
+}
+
+function mapSchemaError(error: StandaloneValidationError | undefined): string {
+  if (!error) return "SDK_SCHEMA_VALIDATION_FAILED";
+  const path = resolveErrorPath(error);
+  const pathCode = matchPathCode(path);
+  if (pathCode !== undefined) return pathCode;
+  return matchKeywordCode(error, path);
 }
 
 function categoryForSchemaCode(code: string): "validation" | "privacy" {

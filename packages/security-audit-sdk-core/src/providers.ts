@@ -77,10 +77,17 @@ export interface PlatformProvider {
   readonly contextProvider?: ContextProvider;
 }
 
+function isSurrogatePair(code: number, next: number): boolean {
+  if (code < 0xd800) return false;
+  if (code > 0xdbff) return false;
+  if (next < 0xdc00) return false;
+  return next <= 0xdfff;
+}
+
 function charByteLength(code: number, next: number): number {
   if (code < 0x80) return 1;
   if (code < 0x800) return 2;
-  if (code >= 0xd800 && code <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) return 4;
+  if (isSurrogatePair(code, next)) return 4;
   return 3;
 }
 

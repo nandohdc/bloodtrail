@@ -111,8 +111,7 @@ export function normalizeConfiguration(input: SecurityAuditSdkConfiguration): No
   }
 }
 
-function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): NormalizedSdkConfiguration {
-  if (input.contractVersion !== CONTRACT_VERSION) throw new SecurityAuditSdkError("SDK_UNSUPPORTED_CONTRACT_VERSION", "configuration", "/contractVersion");
+function validateServiceIdentity(input: SecurityAuditSdkConfiguration): void {
   requireRecord(input.producer, "/producer");
   requireString(input.producer.name, "/producer/name");
   requireString(input.producer.version, "/producer/version");
@@ -121,16 +120,45 @@ function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): Nor
   requireRecord(input.environment, "/environment");
   requireString(input.environment.name, "/environment/name");
   if (input.deployment !== undefined) requireRecord(input.deployment, "/deployment");
+}
+
+function resolveCoreProviders(input: SecurityAuditSdkConfiguration) {
   if (!input.sink || typeof input.sink.emit !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/sink");
   if (input.clock !== undefined && typeof input.clock.now !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/clock");
   if (input.identifiers !== undefined) requireIdentifierProvider(input.identifiers);
+  return {
+    sink: input.sink,
+    clock: input.clock ?? systemAuditClock,
+    identifiers: input.identifiers ?? systemAuditIdentifiers,
+  };
+}
+
+function resolvePlatformProviders(input: SecurityAuditSdkConfiguration) {
   if (input.byteLength !== undefined && typeof input.byteLength.byteLength !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/byteLength");
   if (input.timers !== undefined) requireTimerProvider(input.timers);
   if (input.schemaRuntime !== undefined && typeof input.schemaRuntime.validate !== "function") throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/schemaRuntime");
   if (input.contextProvider !== undefined) requireContextProvider(input.contextProvider);
-  const transformations = normalizeTransformations(input.transformations);
+  return {
+    byteLength: input.byteLength ?? defaultByteLengthProvider,
+    timers: input.timers ?? defaultTimerProvider,
+    schemaRuntime: input.schemaRuntime ?? cjsSchemaRuntime,
+    contextProvider: input.contextProvider ?? getContextProvider(),
+  };
+}
+
+function resolveTimeout(input: SecurityAuditSdkConfiguration): number {
   const timeout = input.shutdownTimeoutMs ?? 5000;
   if (!Number.isSafeInteger(timeout) || timeout < 0 || timeout > 60_000) throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/shutdownTimeoutMs");
+  return timeout;
+}
+
+function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): NormalizedSdkConfiguration {
+  if (input.contractVersion !== CONTRACT_VERSION) throw new SecurityAuditSdkError("SDK_UNSUPPORTED_CONTRACT_VERSION", "configuration", "/contractVersion");
+  validateServiceIdentity(input);
+  const core = resolveCoreProviders(input);
+  const platform = resolvePlatformProviders(input);
+  const timeout = resolveTimeout(input);
+  const transformations = normalizeTransformations(input.transformations);
   const retention = normalizeRetentionConfiguration(input);
   const base = {
     contractVersion: CONTRACT_VERSION,
@@ -139,13 +167,13 @@ function normalizeConfigurationUnsafe(input: SecurityAuditSdkConfiguration): Nor
     environment: cloneRecord(input.environment),
     authoritativeContext: createAuditContextFrame(input.authoritativeContext ?? {}),
     transformations,
-    sink: input.sink,
-    clock: input.clock ?? systemAuditClock,
-    identifiers: input.identifiers ?? systemAuditIdentifiers,
-    byteLength: input.byteLength ?? defaultByteLengthProvider,
-    timers: input.timers ?? defaultTimerProvider,
-    schemaRuntime: input.schemaRuntime ?? cjsSchemaRuntime,
-    contextProvider: input.contextProvider ?? getContextProvider(),
+    sink: core.sink,
+    clock: core.clock,
+    identifiers: core.identifiers,
+    byteLength: platform.byteLength,
+    timers: platform.timers,
+    schemaRuntime: platform.schemaRuntime,
+    contextProvider: platform.contextProvider,
     shutdownTimeoutMs: timeout,
     retention,
   };
