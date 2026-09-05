@@ -22,7 +22,7 @@ jobs:
   ci:
     uses: nandohdc/gh-pipelines/.github/workflows/ci-node.yml@v1
     with:
-      node-version: "26"                     # matches package.json engines >=26.5.0
+      node-version: "26.5.0"                 # matches package.json engines >=26.5.0
       working-directory: "research/browser-telemetry"
       package-manager: "npm"
       lint-script: "lint"
@@ -47,9 +47,10 @@ jobs:
         with:
           fetch-depth: 0                     # required by test:changed-paths, test:git, test:verification
 
+      # Primary Node 26.5.0 leg: runs full validation chain including repository-level and governance gates
       - uses: actions/setup-node@v7
         with:
-          node-version: "26"                 # engines: >=24 <25 || >=26 <27
+          node-version: "26.5.0"             # engines: >=24 <25 || >=26 <27
           cache: npm
           cache-dependency-path: packages/security-audit-sdk-core/package-lock.json
 
@@ -61,6 +62,17 @@ jobs:
         run: npm run check:generated
 
       - run: npm run validate
+
+      # Node 24.2.0 compatibility leg: runs matrix-safe product test loop under Node 24.2.0
+      - name: Setup Node 24.2.0
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.2.0"
+          cache: npm
+          cache-dependency-path: packages/security-audit-sdk-core/package-lock.json
+
+      - name: Run matrix-safe product loop on Node 24.2.0
+        run: npm run test:matrix
 
       # DEPENDENCIES.md: "npm audit --audit-level=low must pass; findings are
       # not waived by this record." The other jobs stay at high — neither of
@@ -80,7 +92,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: "26"
+          node-version: "26.5.0"
           cache: npm
           cache-dependency-path: contracts/security-audit/package-lock.json
 
@@ -104,7 +116,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: "26"
+          node-version: "26.5.0"
 
       - name: Governance checker
         run: node openspec/scripts/check-design-pattern-governance.mjs --phase final
@@ -146,7 +158,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: "26"
+          node-version: "26.5.0"
           cache: npm
           cache-dependency-path: |
             packages/security-audit-sdk-core/package-lock.json
