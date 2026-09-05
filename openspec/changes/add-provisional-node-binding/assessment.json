@@ -31,7 +31,8 @@
     "openspec/changes/add-provisional-node-binding/specs/security-audit-sdk-node/spec.md",
     "openspec/changes/add-provisional-node-binding/tasks.md",
     "packages/security-audit-sdk-core/tests/verification/publication-path-mutations.test.mjs",
-    "packages/security-audit-sdk-node/"
+    "packages/security-audit-sdk-node/",
+    "openspec/specs/security-audit-sdk-node/spec.md"
   ],
   "candidate_approaches": [
     {
@@ -144,7 +145,7 @@
   },
   "security_sensitive": true,
   "ordering": {
-    "proposal_baseline_commit": "ddb456a5bc3a90097334994ff9bb3f0d622af1f1"
+    "proposal_baseline_commit": "6a3565b7893075fa46f487b54761d898a759870e"
   },
   "verification_task_ids": [
     "1.1",
