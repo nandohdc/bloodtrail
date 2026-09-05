@@ -92,9 +92,10 @@
     "openspec/changes/execute-node-24-matrix-and-pin-26/specs/ci-topology/spec.md",
     "openspec/changes/execute-node-24-matrix-and-pin-26/tasks.md",
     "openspec/changes/execute-node-24-matrix-and-pin-26/assessment.json",
-    "openspec/changes/execute-node-24-matrix-and-pin-26/assessment.source.json"
+    "openspec/changes/execute-node-24-matrix-and-pin-26/assessment.source.json",
+    "openspec/specs/ci-topology/spec.md"
   ],
   "ordering": {
-    "proposal_baseline_commit": "8a851153d1f5b3cd93987729303f8221f2ff2797"
+    "proposal_baseline_commit": "3ce075c676170faba457550e2b8e9226cf59bab8"
   }
 }
