@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1](https://github.com/nandohdc/bloodtrail/compare/v0.9.0...v0.9.1) (2026-09-06)
+
+
+### Documentation
+
+* **openspec:** propose enforce-collector-auth-and-version ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([160dc30](https://github.com/nandohdc/bloodtrail/commit/160dc30422638e4169b14c6ca208134ed411f0e8))
+* **openspec:** propose enforce-collector-auth-and-version ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([f90c81c](https://github.com/nandohdc/bloodtrail/commit/f90c81c3e8f9830a089d986a0d928d7c7422d494))
+
 ## [0.9.0](https://github.com/nandohdc/bloodtrail/compare/v0.8.0...v0.9.0) (2026-09-06)
 
 
