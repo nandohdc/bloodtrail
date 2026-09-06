@@ -65,8 +65,8 @@
     "implementation-widening-events-exact": {
       "task_ids": ["2.1", "4.1"],
       "evidence_ids": [
-        "path events are computed by classifying the tracked universe under both policies, keyed by path, firing only when the candidate class is documentation_only and the baseline class was not",
-        "pattern events are keyed pattern:<pattern> for documentation_only patterns absent from the baseline policy",
+        "path events are computed by classifying the tracked universe under both policies, keyed by path, firing only when the path existed at the base, the candidate class is documentation_only, and the baseline class was not",
+        "pattern events are keyed pattern:<pattern> for documentation_only patterns absent from the baseline policy and matching no tracked path",
         "self-governance fixtures assert path-class-widening-unacknowledged for both event kinds"
       ]
     },
@@ -106,7 +106,6 @@
   "owned_paths": [
     "openspec/scripts/design-pattern-governance/path-widening.mjs",
     "openspec/scripts/check-design-pattern-governance.mjs",
-    "openspec/scripts/run-governance-dual-check.mjs",
     "openspec/tests/design-pattern-governance/self-governance.test.mjs",
     "docs/design-pattern-governance.md",
     "openspec/changes/enforce-r14-path-widening/.openspec.yaml",

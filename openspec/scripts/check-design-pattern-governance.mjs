@@ -66,6 +66,7 @@ import {
   validateOptIns,
 } from "./design-pattern-governance/provenance.mjs";
 import { checkClassificationCompleteness } from "./design-pattern-governance/classification-completeness.mjs";
+import { checkPathClassWidening } from "./design-pattern-governance/path-widening.mjs";
 
 const DEFAULT_POLICY = "openspec/governance/design-pattern-policy.json";
 const PHASES = new Set(["assessment", "implementation", "final", "bootstrap", "activation"]);
@@ -355,6 +356,7 @@ function checkPerimeter(opts, context, diagnostics) {
   checkOpenSpecAssociation(governed, changes, diagnostics);
   checkGrandfatheredScopes(policy, governed, changes, { context, diagnostics });
   checkSchemaEvolution(range.paths, base, policy, { context, diagnostics });
+  checkPathClassWidening({ base, policyPath: opts.policyPath, policy, cwd, sink: diagnostics });
 
   context.governanceCore = isGovernanceCore(range.paths, policy);
   context.rangeBase = base;
