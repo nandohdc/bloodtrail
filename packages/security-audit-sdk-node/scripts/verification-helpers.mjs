@@ -28,6 +28,12 @@ export function runChecked(command, args, options = {}) {
   return result.stdout ?? "";
 }
 
+export const byCodePoint = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+};
+
 export function assert(condition, message) {
   if (!condition) throw new Error(message);
 }

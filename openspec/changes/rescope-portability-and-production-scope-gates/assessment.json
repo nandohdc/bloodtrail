@@ -33,6 +33,7 @@
     "packages/security-audit-sdk-node/package.json",
     "packages/security-audit-sdk-node/scripts/check-scope.mjs",
     "packages/security-audit-sdk-node/scripts/platform-coupling-policy.mjs",
+    "packages/security-audit-sdk-node/scripts/verification-helpers.mjs",
     "packages/security-audit-sdk-node/tests/scope-mutations.test.ts"
   ],
   "candidate_approaches": [

@@ -13,7 +13,7 @@ export const SHIPPED_IMPORT_POLICY = Object.freeze({
   roles: Object.freeze({
     runtime: Object.freeze({
       prefix: "dist/",
-      builtins: Object.freeze(["node:async_hooks", "node:crypto"]),
+      builtins: Object.freeze([]),
       allowSelfReference: false,
     }),
     examples: Object.freeze({

@@ -101,6 +101,30 @@ const POSITIVE_MUTATIONS = [
     expected: { code: "undeclared-global", artifact: "src/probe.ts", detail: "eval" },
   },
   {
+    name: "placement-node-byte-length",
+    file: "src/byte-length-probe.ts",
+    generate: (marker) => `// ${marker}\nimport { Buffer } from "node:buffer";\nexport const byteLength = (s: string) => Buffer.byteLength(s, "utf8");\n`,
+    expected: { code: "undeclared-specifier", artifact: "src/byte-length-probe.ts", detail: "node:buffer" },
+  },
+  {
+    name: "placement-node-context",
+    file: "src/context-probe.ts",
+    generate: (marker) => `// ${marker}\nimport { AsyncLocalStorage } from "node:async_hooks";\nexport const storage = new AsyncLocalStorage();\n`,
+    expected: { code: "undeclared-specifier", artifact: "src/context-probe.ts", detail: "node:async_hooks" },
+  },
+  {
+    name: "placement-node-identifiers",
+    file: "src/identifiers-probe.ts",
+    generate: (marker) => `// ${marker}\nimport { randomUUID } from "node:crypto";\nexport const genId = () => randomUUID();\n`,
+    expected: { code: "undeclared-specifier", artifact: "src/identifiers-probe.ts", detail: "node:crypto" },
+  },
+  {
+    name: "placement-node-timers",
+    file: "src/timers-probe.ts",
+    generate: (marker) => `// ${marker}\nimport { setTimeout } from "node:timers";\nexport const timer = setTimeout(() => {}, 100);\n`,
+    expected: { code: "undeclared-specifier", artifact: "src/timers-probe.ts", detail: "node:timers" },
+  },
+  {
     name: "m-71-g-unparseable",
     file: "src/generated/broken.generated.ts",
     generate: (marker) => `// ${marker}\nexport const = { {{{ ;;\n`,
@@ -140,6 +164,28 @@ const RETIRED_SOURCE_SCAN_MUTATIONS = [
     // source regex still catches child_process before retirement.
     source: "export async function load(): Promise<unknown> { return await import(\"node:child_process\"); }\n",
     expected: { code: "undeclared-specifier", artifact: "src/retirement-probe.ts", detail: "node:child_process" },
+  },
+];
+
+// Placement mutations: code that belongs in a sibling package must not compile
+// past Core's gate merely because it was moved here. The filename class is
+// deliberately reported without a `[platform-coupling:...]` code so the two
+// rejection reasons stay distinguishable to a reader of the diagnostic.
+const FORBIDDEN_FILENAME_MUTATIONS = [
+  {
+    name: "m-71-i-filename-distinguishability",
+    artifact: "src/transport.ts",
+    source: "export const transportConfig = {};\n",
+  },
+  {
+    name: "placement-collector-filename",
+    artifact: "src/collector.ts",
+    source: "export const collectorConfig = {};\n",
+  },
+  {
+    name: "placement-browser-filename",
+    artifact: "src/browser-client.ts",
+    source: "export const browserConfig = {};\n",
   },
 ];
 
@@ -349,22 +395,24 @@ test("symlinked source artifact fails closed rather than going uninspected", () 
   });
 });
 
-test("forbidden production integration filename diagnostic remains distinguishable", () => {
-  const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
-  const result = runCase("m-71-i-filename-distinguishability", ({ copiedPackage }) => {
-    writeFileSync(
-      resolve(copiedPackage, "src/transport.ts"),
-      `// ${sourceMarker}\nexport const transportConfig = {};\n`,
-      "utf8",
-    );
-  });
+for (const scenario of FORBIDDEN_FILENAME_MUTATIONS) {
+  test(`forbidden production integration filename ${scenario.artifact} fails closed and stays distinguishable`, () => {
+    const sourceMarker = "SOURCE_MARKER_MUST_NOT_APPEAR_IN_DIAGNOSTICS";
+    const result = runCase(scenario.name, ({ copiedPackage }) => {
+      writeFileSync(
+        resolve(copiedPackage, scenario.artifact),
+        `// ${sourceMarker}\n${scenario.source}`,
+        "utf8",
+      );
+    });
 
-  assert.notEqual(result.status, 0, `filename mutation unexpectedly passed:\n${result.output}`);
-  assert.match(result.output, /forbidden production integration filename/);
-  assert.equal(result.output.includes("[platform-coupling:"), false, `diagnostic leaked coupling code:\n${result.output}`);
-  assert.equal(result.output.includes(sourceMarker), false, `diagnostic leaked source content:\n${result.output}`);
-  assert.ok(result.output.length < 4_096, `output length exceeded limit: ${String(result.output.length)} bytes`);
-});
+    assert.notEqual(result.status, 0, `filename mutation unexpectedly passed:\n${result.output}`);
+    assert.match(result.output, new RegExp(`${scenario.artifact.replaceAll("/", "\\/")}: forbidden production integration filename`));
+    assert.equal(result.output.includes("[platform-coupling:"), false, `diagnostic leaked coupling code:\n${result.output}`);
+    assert.equal(result.output.includes(sourceMarker), false, `diagnostic leaked source content:\n${result.output}`);
+    assert.ok(result.output.length < 4_096, `output length exceeded limit: ${String(result.output.length)} bytes`);
+  });
+}
 
 // chmod 0o000 is a no-op for root, and CI may run as root on a self-hosted
 // runner. Confirm the mode actually denies *this* process before asserting the
