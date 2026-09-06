@@ -367,3 +367,198 @@ describe("R14 a baseline disagreement is accepted only exactly where one signed 
       repository.commit("chore: open the acceptance schema");
     });
 });
+
+/**
+ * R14's widening scenario, enforced mechanically: an exempt or benign path
+ * class broadened without an exactly-bound signed-record acknowledgement fails
+ * with a named diagnostic, and only an exact acknowledgement clears it.
+ */
+describe("R14 path-class widening is rejected without an exactly-bound acknowledgement", () => {
+  const RECORD = "packages/security-audit-sdk-core/verification-lifecycle.json";
+  const CHANGE = "establish-design-pattern-governance";
+  const REASON = "The reviewer records this exact widening for this exact baseline and nothing else.";
+
+  function widenedRepository(mutate, acknowledge = null) {
+    const repository = fixture();
+    repository.commit("chore: baseline governance state");
+    const baseline = repository.head();
+    mutate(repository);
+    const technical = repository.commit("feat: widen a benign path class");
+    if (acknowledge) acknowledge(repository, baseline, technical);
+    return { repository, baseline, technical };
+  }
+
+  const moveTemplateToDocumentationOnly = (repository) => {
+    repository.mutateJson(POLICY_PATH, (policy) => {
+      const core = policy.path_classes.find((entry) => entry.class === "governance_core");
+      const docs = policy.path_classes.find((entry) => entry.class === "documentation_only");
+      core.patterns = core.patterns.filter((pattern) => pattern !== ".github/PULL_REQUEST_TEMPLATE.md");
+      docs.patterns = [...docs.patterns, ".github/PULL_REQUEST_TEMPLATE.md"];
+      return policy;
+    });
+  };
+
+  const addUnmatchedBenignPattern = (repository) => {
+    repository.mutateJson(POLICY_PATH, (policy) => {
+      const docs = policy.path_classes.find((entry) => entry.class === "documentation_only");
+      docs.patterns = [...docs.patterns, "NEVER-MATCHED.txt"];
+      return policy;
+    });
+  };
+
+  const narrowDocumentationOnly = (repository) => {
+    repository.mutateJson(POLICY_PATH, (policy) => {
+      const core = policy.path_classes.find((entry) => entry.class === "governance_core");
+      const docs = policy.path_classes.find((entry) => entry.class === "documentation_only");
+      docs.patterns = docs.patterns.filter((pattern) => pattern !== "README.md");
+      core.patterns = [...core.patterns, "README.md"];
+      return policy;
+    });
+  };
+
+  const strengthenGovernanceCore = (repository) => {
+    repository.mutateJson(POLICY_PATH, (policy) => {
+      const core = policy.path_classes.find((entry) => entry.class === "governance_core");
+      core.patterns = [...core.patterns, "NEW-CORE.txt"];
+      return policy;
+    });
+  };
+
+  function acknowledgement(baseline, technical, paths) {
+    return { acknowledged: true, baselineCommit: baseline, reason: REASON, paths };
+  }
+
+  function signRecord(repository, baseline, technical, build) {
+    repository.writeJson(RECORD, {
+      governanceRecords: [{
+        change: CHANGE,
+        signed: true,
+        reviewedCommit: technical,
+        pathClassWideningAcknowledgement: build(baseline, technical),
+      }],
+    });
+    repository.commit("docs: the signed governance record");
+  }
+
+  it("rejects an unacknowledged path reclassification into documentation_only", () => {
+    const { repository, baseline } = widenedRepository(moveTemplateToDocumentationOnly);
+    assertDiagnostic(runChecker(repository, { phase: "final", base: baseline }),
+      "path-class-widening-unacknowledged");
+  });
+
+  it("rejects an unacknowledged benign pattern growth that matches nothing tracked yet", () => {
+    const { repository, baseline } = widenedRepository(addUnmatchedBenignPattern);
+    assertDiagnostic(runChecker(repository, { phase: "final", base: baseline }),
+      "path-class-widening-unacknowledged");
+  });
+
+  it("rejects the widening through the dual check too", () => {
+    // The widening commits sit on a branch so the checker's own merge-base
+    // resolution (protected mainline against HEAD) sees the range; with
+    // main == HEAD the range would be empty and the rule could not fire.
+    const repository = fixture();
+    repository.commit("chore: baseline governance state");
+    const baseline = repository.head();
+    repository.branch("feat/widen");
+    moveTemplateToDocumentationOnly(repository);
+    repository.commit("feat: widen a benign path class");
+    const dual = spawnSync(process.execPath, [dualCheckPath, "--base", baseline, "--repo-root", repository.root, "--json"], {
+      encoding: "utf8",
+      cwd: repository.root,
+    });
+    assert.notEqual(dual.status, 0,
+      `the dual check must reject an unacknowledged widening\n${dual.stdout}${dual.stderr}`);
+  });
+
+  it("accepts an exactly-bound acknowledgement", () => {
+    const { repository, baseline, technical } = widenedRepository(
+      moveTemplateToDocumentationOnly,
+      (repository, baseline, technical) => signRecord(repository, baseline, technical,
+        (baseline) => acknowledgement(baseline, technical, [".github/PULL_REQUEST_TEMPLATE.md"])),
+    );
+    assertPasses(runChecker(repository, { phase: "final", base: baseline }),
+      "an exact acknowledgement must clear the widening rule");
+  });
+
+  it("rejects an acknowledgement naming a different baseline", () => {
+    const { repository, baseline, technical } = widenedRepository(
+      moveTemplateToDocumentationOnly,
+      (repository, baseline, technical) => signRecord(repository, baseline, technical,
+        () => acknowledgement("0".repeat(40), technical, [".github/PULL_REQUEST_TEMPLATE.md"])),
+    );
+    assertDiagnostic(runChecker(repository, { phase: "final", base: baseline }),
+      "path-class-widening-acknowledgement-stale");
+  });
+
+  it("rejects an acknowledgement covering a different path set", () => {
+    const { repository, baseline, technical } = widenedRepository(
+      moveTemplateToDocumentationOnly,
+      (repository, baseline, technical) => signRecord(repository, baseline, technical,
+        (baseline) => acknowledgement(baseline, technical, ["docs/other.md"])),
+    );
+    assertDiagnostic(runChecker(repository, { phase: "final", base: baseline }),
+      "path-class-widening-acknowledgement-incomplete");
+  });
+
+  it("rejects an acknowledgement whose path set is a superset", () => {
+    const { repository, baseline, technical } = widenedRepository(
+      moveTemplateToDocumentationOnly,
+      (repository, baseline, technical) => signRecord(repository, baseline, technical,
+        (baseline) => acknowledgement(baseline, technical, [".github/PULL_REQUEST_TEMPLATE.md", "docs/other.md"])),
+    );
+    assertDiagnostic(runChecker(repository, { phase: "final", base: baseline }),
+      "path-class-widening-acknowledgement-incomplete");
+  });
+
+  it("rejects a recorded denial", () => {
+    const { repository, baseline, technical } = widenedRepository(
+      moveTemplateToDocumentationOnly,
+      (repository, baseline, technical) => signRecord(repository, baseline, technical,
+        (baseline) => ({ ...acknowledgement(baseline, technical, [".github/PULL_REQUEST_TEMPLATE.md"]), acknowledged: false })),
+    );
+    assertDiagnostic(runChecker(repository, { phase: "final", base: baseline }),
+      "path-class-widening-acknowledgement-invalid");
+  });
+
+  it("rejects two records each claiming the acknowledgement", () => {
+    const { repository, baseline, technical } = widenedRepository(moveTemplateToDocumentationOnly);
+    repository.writeJson(RECORD, {
+      governanceRecords: [
+        { change: CHANGE, signed: true, reviewedCommit: technical, pathClassWideningAcknowledgement: acknowledgement(baseline, technical, [".github/PULL_REQUEST_TEMPLATE.md"]) },
+        { change: "right-size-change-governance", signed: true, reviewedCommit: technical, pathClassWideningAcknowledgement: acknowledgement(baseline, technical, [".github/PULL_REQUEST_TEMPLATE.md"]) },
+      ],
+    });
+    repository.commit("docs: two signed governance records");
+    assertDiagnostic(runChecker(repository, { phase: "final", base: baseline }),
+      "path-class-widening-acknowledgement-ambiguous");
+  });
+
+  it("does not fire on a narrowing", () => {
+    const { repository, baseline } = widenedRepository(narrowDocumentationOnly);
+    assertPasses(runChecker(repository, { phase: "final", base: baseline }),
+      "narrowing a benign class is a strengthening and must not fire the rule");
+  });
+
+  it("does not fire on a strengthening pattern addition", () => {
+    const { repository, baseline } = widenedRepository(strengthenGovernanceCore);
+    assertPasses(runChecker(repository, { phase: "final", base: baseline }),
+      "adding a governance_core pattern is a strengthening and must not fire the rule");
+  });
+
+  it("does not fire on a path introduced together with its benign classification", () => {
+    // The sanctioned flow: a new path arriving with its documentation_only
+    // classification had no prior scrutiny to weaken, so it is not a widening.
+    const repository = fixture();
+    repository.commit("chore: baseline governance state");
+    const baseline = repository.head();
+    repository.write("release-metadata.txt", "0.1.0\n");
+    repository.mutateJson(POLICY_PATH, (policy) => {
+      const docs = policy.path_classes.find((entry) => entry.class === "documentation_only");
+      docs.patterns = [...docs.patterns, "release-metadata.txt"];
+      return policy;
+    });
+    repository.commit("chore: add a classified path");
+    assertPasses(runChecker(repository, { phase: "final", base: baseline }),
+      "a new path with its own benign classification must not fire the widening rule");
+  });
+});

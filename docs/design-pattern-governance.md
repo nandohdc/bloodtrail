@@ -156,6 +156,34 @@ assessment, security-sensitive analysis, explicit reviewer acknowledgement, **an
 from the merge base or protected mainline, and the candidate checker from the branch. Both results
 are recorded separately. A candidate checker is never the sole judge of whether it weakened itself.
 
+## Path-class widening
+
+Broadening an exempt or benign path class is a weakening, and the checker rejects it unless the
+signed governance record acknowledges it exactly. `documentation_only` is the exempt/benign class.
+Two events count as a widening, both detected by comparing the candidate policy against the
+baseline policy at the merge base over the tracked-path universe:
+
+- a tracked path that already existed at the base whose classification moves into
+  `documentation_only` from any other class (including `unclassified`, which fails closed and is
+  the strongest scrutiny) — a path introduced together with its benign classification is normal
+  flow, not a widening, and produces no event, and
+- a pattern added to the `documentation_only` class that matches no tracked path — the one
+  case the path check cannot see; patterns that reclassify existing tracked paths are judged
+  through those paths.
+
+The acknowledgement is the optional `pathClassWideningAcknowledgement` field on the signed
+governance record: `acknowledged` (must be `true`), `baselineCommit` (must be the actual comparison
+base), `reason` (reviewer prose, at least 20 characters), and `paths` (must equal the detected
+widening event keys — path strings and `pattern:<pattern>` keys — as an exact set; a superset cannot
+pre-approve widens nobody reviewed, and a subset leaves widens unacknowledged). Exactly one signed
+record may carry the field. A record for a change that does not widen carries nothing.
+
+The distinct diagnostics, each with its own identifier: `path-class-widening-unacknowledged`,
+`path-class-widening-acknowledgement-absent`, `-ambiguous`, `-invalid`, `-stale`, and `-incomplete`.
+Strengthening a path, narrowing a class, and policy edits that change no classification never fire
+the rule. The rule runs inside the checker the trusted baseline executes, so a change that edits
+the rule away is itself judged by the baseline copy that still has it.
+
 ## Fail-closed behaviour
 
 After activation, all of the following fail with their own distinct diagnostic, and none of them ever

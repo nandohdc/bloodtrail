@@ -26,8 +26,8 @@ The checker already has the machinery this rule needs: a `--base` option, `blobA
 
 Two event classes, both computed by comparing the candidate policy (working tree) against the baseline policy at the merge base:
 
-- **Path reclassification.** For every tracked path, classification is computed under both policies. A path whose baseline classification was anything other than `documentation_only` (including `unclassified`, which fails closed and is therefore the strongest scrutiny) and whose candidate classification is `documentation_only` is a widening event, keyed by the path.
-- **Benign pattern growth.** Every pattern present in the candidate's `documentation_only` class but absent from the baseline's is a widening event, keyed as `pattern:<pattern>`. This is not redundant with the path check: a new benign pattern may match no tracked path today, and the acknowledgement must be recorded at the moment the class broadens, not the first time a future path happens to match it.
+- **Path reclassification.** For every tracked path that already existed at the base, classification is computed under both policies. A path whose baseline classification was anything other than `documentation_only` (including `unclassified`, which fails closed and is therefore the strongest scrutiny) and whose candidate classification is `documentation_only` is a widening event, keyed by the path. A path introduced together with its benign classification is normal flow, not a widening: it had no prior scrutiny to weaken, so it produces no event — that is the sanctioned flow the classification-completeness controls already exercise.
+- **Benign pattern growth, the invisible case.** Every pattern present in the candidate's `documentation_only` class but absent from the baseline's that matches no tracked path is a widening event, keyed as `pattern:<pattern>`. A pattern that reclassifies existing tracked paths is judged through those path events; a pattern matching nothing today is judged at the moment the benign class broadens, not the first time a future path happens to match it.
 
 Moves in the strengthening direction — out of `documentation_only`, into `governed_implementation` or `governance_core` — and lateral moves between non-benign classes produce no event. An unclassified candidate path is judged by the existing `path-unclassified` control, not this rule.
 
@@ -50,7 +50,7 @@ The signed-governance-record schema file is deliberately not touched: record enf
 
 ### 3. Where the rule runs
 
-Inside the checker, invoked from `checkPerimeter` after `checkSchemaEvolution`, so it runs in the same phases (implementation and final) that already compute a range base. The rule reads the baseline policy itself; the dual check passes the explicit `--base` into both its checker runs so the candidate and the materialised baseline checker compare against one named ref. When this change lands, the merge-base checker contains the rule, which is what makes the baseline the judge the scenario requires: a future change that edits the rule away is itself judged by the baseline copy that still has it.
+Inside the checker, invoked from `checkPerimeter` after `checkSchemaEvolution`, so it runs in the same phases (implementation and final) that already compute a range base, and it reuses that exact base rather than resolving its own. Both sides of the dual check resolve the same merge base from the same candidate policy and protected-mainline reference, so the baseline run and the candidate run judge the widening against one base without any new plumbing. When this change lands, the merge-base checker contains the rule, which is what makes the baseline the judge the scenario requires: a future change that edits the rule away is itself judged by the baseline copy that still has it.
 
 ### 4. Failure modes that must stay distinct
 

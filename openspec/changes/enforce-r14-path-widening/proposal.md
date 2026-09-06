@@ -7,7 +7,7 @@ R14's scenario "Path classification is silently widened" — candidate policy br
 - Implement the R14 scenario mechanically in the governance checker as a named rule with a distinct diagnostic id: `path-class-widening-unacknowledged`.
 - Define what counts as a widening, with the comparison basis stated explicitly: the candidate policy in the working tree compared against the baseline policy at the merge base, over the tracked-path universe.
 - Add an optional, additive field `pathClassWideningAcknowledgement` to the signed governance record shape (camelCase, matching the record source's existing convention), so a reviewer can record the acknowledgement the rule demands. The field is optional: records that do not widen carry nothing.
-- Evaluate the rule inside the checker that the trusted baseline runs, not only the candidate: the dual check already materialises the merge-base checker against the candidate's data, and this change additionally passes the explicit `--base` into both checker runs so the comparison basis is one named ref for both.
+- Evaluate the rule inside the checker that the trusted baseline runs, not only the candidate: the dual check already materialises the merge-base checker against the candidate's data, and both runs resolve the same comparison base from the same candidate policy, so the acknowledgement binds one named merge base with no new plumbing.
 - Add mutation controls: an unacknowledged widening fails with the named diagnostic, an acknowledged one passes, a narrowing is unaffected, and an unrelated policy edit is unaffected.
 
 ## Capabilities
@@ -24,7 +24,6 @@ None. The assessment declares `software-design-pattern-governance` solely so the
 
 - `openspec/scripts/design-pattern-governance/path-widening.mjs` (new rule module)
 - `openspec/scripts/check-design-pattern-governance.mjs` (call site)
-- `openspec/scripts/run-governance-dual-check.mjs` (passes the explicit base into both checker runs)
 - `openspec/tests/design-pattern-governance/self-governance.test.mjs` (mutation controls)
 - `docs/design-pattern-governance.md` (actor-neutral description of the new diagnostic and acknowledgement field)
 - `openspec/changes/enforce-r14-path-widening/`
