@@ -949,7 +949,8 @@ Classification SHALL be keyed to the artifact's role, distinguishing authored so
 source, and SHALL admit only what a declared coupling policy names for that role: the language
 globals available to every role, the host globals declared for that role with the reason each is
 admitted, and the module specifiers declared for that role. Identifiers referenced only in type
-position SHALL NOT be classified as coupling.
+position SHALL NOT be classified as coupling. Authored source and shipped runtime artifacts under `dist/`
+SHALL admit zero host built-in module specifiers.
 
 Verification SHALL fail when it can assign a reference to no declared boundary, SHALL fail when a
 source artifact or a directory under the source root cannot be read, SHALL fail when an entry under
@@ -1017,6 +1018,18 @@ portability.
 - **WHEN** a forbidden production-integration filename is added to the SDK source root
 - **THEN** verification fails with the existing production-integration diagnostic and emits no
   coupling diagnostic for it
+
+#### Scenario: Shipped runtime artifacts permit zero host builtins
+- **WHEN** dependency verification inspects built artifacts in `dist/` against the shipped import policy
+- **THEN** runtime artifacts are verified against an empty built-in list (`[]`), rejecting any Node or host module specifiers
+
+#### Scenario: Placement of Node binding code into Core source fails closed
+- **WHEN** Node binding source artifacts referencing Node built-in specifiers (`node:buffer`, `node:async_hooks`, `node:crypto`, `node:timers`) or Node host globals are placed under Core `src/`
+- **THEN** scope verification fails closed with an undeclared-specifier or undeclared-global diagnostic
+
+#### Scenario: Placement of transport, collector, or browser code into Core fails closed
+- **WHEN** artifacts containing transport, collector, or browser filenames, specifiers, or globals are placed under Core `src/`
+- **THEN** scope verification fails closed, rejecting forbidden filenames and undeclared couplings
 
 ### Requirement: Contract-version support is exact-one per SDK package version
 
