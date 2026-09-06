@@ -1,0 +1,139 @@
+{
+  "decision": "direct_implementation",
+  "forces": [
+    "The sanctioned merge path decides what enters the protected branch, yet it lived outside the repository with no tests and behind no required check, so two defects shipped in it undetected.",
+    "A merge gate whose logic can only run against live GitHub state is exercised only on inputs that happen to occur, and neither observed defect occurs on a healthy pull request.",
+    "gh pr checks --required lists only contexts that have reported, so counting not-passing over that list settles on an incomplete set and a context that never started reads as absent-and-fine.",
+    "A squash replays a branch as one commit parented on the target tip, orphaning any commit a governance record binds, so selecting the merge method by inspecting pull request contents can pick a method that breaks check-governance-history.",
+    "CI names one repository script test file by hand rather than enumerating them, so npm-audit-retry.test.mjs was written, passes, and is executed by no check at all."
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-versioned-gate-under-github-scripts",
+      "kind": "direct_implementation",
+      "summary": "Version the merge decision as pure functions in .github/scripts/merge-gate.mjs with a bash evidence collector in .github/scripts/merge-pr.sh, cover every arm and its null control in merge-gate.test.mjs, and enumerate repository script tests with a glob inside the existing required design-pattern-governance context.",
+      "forces_addressed": [
+        "The sanctioned merge path decides what enters the protected branch, yet it lived outside the repository with no tests and behind no required check, so two defects shipped in it undetected.",
+        "A merge gate whose logic can only run against live GitHub state is exercised only on inputs that happen to occur, and neither observed defect occurs on a healthy pull request.",
+        "gh pr checks --required lists only contexts that have reported, so counting not-passing over that list settles on an incomplete set and a context that never started reads as absent-and-fine.",
+        "A squash replays a branch as one commit parented on the target tip, orphaning any commit a governance record binds, so selecting the merge method by inspecting pull request contents can pick a method that breaks check-governance-history.",
+        "CI names one repository script test file by hand rather than enumerating them, so npm-audit-retry.test.mjs was written, passes, and is executed by no check at all."
+      ]
+    },
+    {
+      "id": "approach-classify-root-scripts-path-class",
+      "kind": "alternative",
+      "summary": "Add an operator_tooling path class covering root scripts/ to design-pattern-policy.json and keep the script as a single bash file there.",
+      "forces_addressed": [
+        "The sanctioned merge path decides what enters the protected branch, yet it lived outside the repository with no tests and behind no required check, so two defects shipped in it undetected."
+      ]
+    },
+    {
+      "id": "approach-new-required-merge-gate-context",
+      "kind": "alternative",
+      "summary": "Add a dedicated CI job and pin a new required branch-protection context for the merge gate tests.",
+      "forces_addressed": [
+        "A merge gate whose logic can only run against live GitHub state is exercised only on inputs that happen to occur, and neither observed defect occurs on a healthy pull request."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-versioned-gate-under-github-scripts",
+  "rejected_alternative_ids": [
+    "approach-classify-root-scripts-path-class",
+    "approach-new-required-merge-gate-context"
+  ],
+  "rejection_reasons": {
+    "approach-classify-root-scripts-path-class": {
+      "forces": [
+        "The sanctioned merge path decides what enters the protected branch, yet it lived outside the repository with no tests and behind no required check, so two defects shipped in it undetected."
+      ],
+      "reason": "It edits design-pattern-policy.json to invent a weaker class holding exactly one file, while .github/scripts/ already carries governance_core, the correct class for a gate deciding what enters main, and needs no policy edit."
+    },
+    "approach-new-required-merge-gate-context": {
+      "forces": [
+        "A merge gate whose logic can only run against live GitHub state is exercised only on inputs that happen to occur, and neither observed defect occurs on a healthy pull request."
+      ],
+      "reason": "Pinning a new required context makes every open pull request unmergeable until it re-runs, and the existing design-pattern-governance context already runs node --test over repository script and governance test directories."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-merge-gate-decision-is-pure-and-versioned",
+    "implementation-required-context-presence-from-branch-protection",
+    "implementation-single-merge-method-preserves-bound-commits",
+    "implementation-repository-script-tests-are-enumerated"
+  ],
+  "invariant_evidence": {
+    "implementation-merge-gate-decision-is-pure-and-versioned": {
+      "task_ids": [
+        "1.1",
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "merge-gate.mjs holds every decision as a function over supplied evidence and imports only node:fs and node:url; merge-pr.sh collects evidence and delegates the judgment"
+      ]
+    },
+    "implementation-required-context-presence-from-branch-protection": {
+      "task_ids": [
+        "1.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "evaluateRequiredChecks reads the protected branch required-context list and reports never-reported and not-passing distinctly; the PR #245 shape and its null control are both asserted"
+      ]
+    },
+    "implementation-single-merge-method-preserves-bound-commits": {
+      "task_ids": [
+        "1.3",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "selectMergeMethod returns --merge for every pull request, records the archive reason without selecting on it, and refuses a pull request reporting no changed paths"
+      ]
+    },
+    "implementation-repository-script-tests-are-enumerated": {
+      "task_ids": [
+        "3.2",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "the design-pattern-governance job runs node --test .github/scripts/*.test.mjs, executing merge-gate.test.mjs and the previously unrun npm-audit-retry.test.mjs"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Keeps every commit a governance record binds reachable from the branch head by landing every pull request as a merge commit, so check-governance-history can still verify the binding.",
+    "authentication_or_authorization": "Changes no authentication or authorization surface; the gate reads branch protection and reviewer runs and grants no capability the operator did not already hold.",
+    "authority_provenance": "Binds the review verdict to the exact reviewed head and reads it from run metadata, so a completed run of unknown verdict cannot pass as authority to merge.",
+    "concurrency": "The decision module holds no shared state and each evaluation is independent, so concurrent merge attempts cannot observe one another's intermediate results.",
+    "confidentiality": "Evidence carries pull request metadata, check names, and review verdicts only; no secret, token, or file content enters the evidence object or any diagnostic.",
+    "cryptography": "Introduces no cryptography; commit identity is compared as an opaque string supplied by GitHub, never derived or validated locally.",
+    "error_disclosure": "Diagnostics name the failing gate, the violated class, and the context or verdict at fault, and never echo evidence payloads or command output back to the caller.",
+    "external_security_integration": "Adds no exporter, collector, transport, or SIEM surface; the only external calls remain the gh and hermes reads the operator entry point already performed.",
+    "fail_posture": "Unreadable branch protection, an unparseable check list, an absent review binding, and a pull request with no changed paths each refuse the merge rather than defaulting to permit.",
+    "lifecycle": "The gate runs once per merge attempt and holds no state between attempts; its arms additionally run on every pull request inside the required governance check.",
+    "mutation_ownership": "The only mutation is the merge itself, performed by the operator entry point after a clean gate report; the decision module writes nothing.",
+    "privacy_transformation": "Processes no user payload and no personal data; the evidence object is repository control-plane metadata only.",
+    "resource_retention": "Retains nothing between runs, writes no cache or temporary artifact, and holds evidence only for the lifetime of a single evaluation.",
+    "retry_or_redelivery": "Evaluation is deterministic and idempotent over the same evidence, so re-running the gate after a transient failure cannot produce a different verdict from the same inputs.",
+    "trust_boundary": "Draws the boundary at the evidence object: everything outside it is untrusted input read from GitHub and Kanban, and the gate treats absence of evidence as refusal rather than consent."
+  },
+  "owned_paths": [
+    "openspec/changes/version-the-sanctioned-merge-gate/proposal.md",
+    "openspec/changes/version-the-sanctioned-merge-gate/design.md",
+    "openspec/changes/version-the-sanctioned-merge-gate/tasks.md",
+    "openspec/changes/version-the-sanctioned-merge-gate/specs/change-governance/spec.md",
+    "openspec/changes/version-the-sanctioned-merge-gate/assessment.source.json",
+    "openspec/changes/version-the-sanctioned-merge-gate/assessment.json",
+    "openspec/specs/change-governance/spec.md",
+    ".github/scripts/merge-gate.mjs",
+    ".github/scripts/merge-gate.test.mjs",
+    ".github/scripts/merge-pr.sh",
+    ".github/workflows/ci.yml",
+    "CONTRIBUTING.md"
+  ],
+  "ordering": {
+    "proposal_baseline_commit": "c70d5144d14d7e933c4a3b3b06c8ad3e76f044cc"
+  }
+}
