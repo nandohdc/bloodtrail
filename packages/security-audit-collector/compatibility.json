@@ -1,0 +1,31 @@
+{
+  "manifestVersion": 1,
+  "package": {
+    "name": "@bloodtrail/security-audit-collector",
+    "version": "0.1.0",
+    "status": "bounded-collector-candidate-not-published"
+  },
+  "apiStability": "provisional",
+  "apiFrozen": false,
+  "freezeOwnership": "wave-4-delivery-vertical",
+  "node": {
+    "supportedMajors": [24, 26],
+    "ciVersions": ["24.2.0", "26.5.0"],
+    "engines": ">=24 <25 || >=26 <27"
+  },
+  "typescript": {
+    "supported": ">=5.9.2 <6",
+    "ciVersion": "5.9.2"
+  },
+  "runtimeDependencyCount": 0,
+  "thirdPartyRuntimeDependencies": 0,
+  "firstPartyDependencies": [],
+  "packageExports": ["."],
+  "collector": {
+    "supportedContractVersions": ["1.0.0"],
+    "ingressOrder": ["authenticate", "size", "parse", "schema", "version", "accept"],
+    "authentication": "non-production-synthetic-fixture-only",
+    "productionAuthorization": "none",
+    "authorizationRecord": "issue-343"
+  }
+}

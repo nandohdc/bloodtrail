@@ -55,6 +55,7 @@ jobs:
           cache-dependency-path: |
             packages/security-audit-sdk-core/package-lock.json
             packages/security-audit-sdk-node/package-lock.json
+            packages/security-audit-collector/package-lock.json
 
       - run: npm ci
 
@@ -83,6 +84,18 @@ jobs:
         run: node ../../.github/scripts/npm-audit-retry.mjs --audit-level=low
         working-directory: packages/security-audit-sdk-node
 
+      - name: Install collector dependencies
+        run: npm ci
+        working-directory: packages/security-audit-collector
+
+      - name: Validate collector on Node 26.5.0
+        run: npm run validate
+        working-directory: packages/security-audit-collector
+
+      - name: Audit collector
+        run: node ../../.github/scripts/npm-audit-retry.mjs --audit-level=low
+        working-directory: packages/security-audit-collector
+
       # Node 24.2.0 compatibility leg: runs matrix-safe product test loop under Node 24.2.0
       - name: Setup Node 24.2.0
         uses: actions/setup-node@v7
@@ -92,6 +105,7 @@ jobs:
           cache-dependency-path: |
             packages/security-audit-sdk-core/package-lock.json
             packages/security-audit-sdk-node/package-lock.json
+            packages/security-audit-collector/package-lock.json
 
       - name: Run matrix-safe product loop on Node 24.2.0
         run: npm run test:matrix
@@ -99,6 +113,10 @@ jobs:
       - name: Run test on Node 24.2.0 (sdk-node)
         run: npm run test
         working-directory: packages/security-audit-sdk-node
+
+      - name: Run test on Node 24.2.0 (collector)
+        run: npm run test
+        working-directory: packages/security-audit-collector
 
   # contracts/security-audit — the canonical contract.
   contract:
@@ -193,6 +211,7 @@ jobs:
           cache-dependency-path: |
             packages/security-audit-sdk-core/package-lock.json
             packages/security-audit-sdk-node/package-lock.json
+            packages/security-audit-collector/package-lock.json
             research/browser-telemetry/package-lock.json
 
       - run: npm ci
@@ -204,6 +223,11 @@ jobs:
         working-directory: packages/security-audit-sdk-node
       - run: npm run test:coverage
         working-directory: packages/security-audit-sdk-node
+
+      - run: npm ci
+        working-directory: packages/security-audit-collector
+      - run: npm run test:coverage
+        working-directory: packages/security-audit-collector
 
       - run: npm ci
         working-directory: research/browser-telemetry
@@ -219,6 +243,7 @@ jobs:
             for (const [file, prefix] of [
               ["packages/security-audit-sdk-core/coverage/lcov.info", "packages/security-audit-sdk-core/"],
               ["packages/security-audit-sdk-node/coverage/lcov.info", "packages/security-audit-sdk-node/"],
+              ["packages/security-audit-collector/coverage/lcov.info", "packages/security-audit-collector/"],
               ["research/browser-telemetry/coverage/lcov.info", "research/browser-telemetry/"],
             ]) {
               fs.writeFileSync(file, fs.readFileSync(file, "utf8").replaceAll(/^SF:/gm, "SF:" + prefix));
@@ -243,6 +268,7 @@ jobs:
           path: |
             packages/security-audit-sdk-core/coverage/lcov.info
             packages/security-audit-sdk-node/coverage/lcov.info
+            packages/security-audit-collector/coverage/lcov.info
             research/browser-telemetry/coverage/lcov.info
           if-no-files-found: error
           overwrite: true
@@ -259,6 +285,7 @@ jobs:
           path: |
             packages/security-audit-sdk-core/coverage/lcov.info
             packages/security-audit-sdk-node/coverage/lcov.info
+            packages/security-audit-collector/coverage/lcov.info
             research/browser-telemetry/coverage/lcov.info
           if-no-files-found: error
           overwrite: true
@@ -270,8 +297,8 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: packages/security-audit-sdk-core/coverage/lcov.info,packages/security-audit-sdk-node/coverage/lcov.info,research/browser-telemetry/coverage/lcov.info
-          flags: sdk,sdk-node,research
+          files: packages/security-audit-sdk-core/coverage/lcov.info,packages/security-audit-sdk-node/coverage/lcov.info,packages/security-audit-collector/coverage/lcov.info,research/browser-telemetry/coverage/lcov.info
+          flags: sdk,sdk-node,collector,research
           fail_ci_if_error: false
 
       - name: Upload test results to Codecov
@@ -280,8 +307,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: test_results
-          files: packages/security-audit-sdk-core/coverage/junit.xml,packages/security-audit-sdk-node/coverage/junit.xml,research/browser-telemetry/coverage/junit.xml
-          flags: sdk,sdk-node,research
+          files: packages/security-audit-sdk-core/coverage/junit.xml,packages/security-audit-sdk-node/coverage/junit.xml,packages/security-audit-collector/coverage/junit.xml,research/browser-telemetry/coverage/junit.xml
+          flags: sdk,sdk-node,collector,research
           disable_search: true
           fail_ci_if_error: false
 

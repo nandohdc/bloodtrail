@@ -10,6 +10,7 @@ export const DECLARED_PACKAGES = Object.freeze([
   "contracts/security-audit/package.json",
   "packages/security-audit-sdk-core/package.json",
   "packages/security-audit-sdk-node/package.json",
+  "packages/security-audit-collector/package.json",
   "research/browser-telemetry/package.json",
 ]);
 
