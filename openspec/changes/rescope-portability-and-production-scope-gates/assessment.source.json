@@ -1,0 +1,131 @@
+{
+  "decision": "direct_implementation",
+  "forces": [
+    "Following the package split in #86 and #87, Core and sdk-node have distinct platform coupling postures that must be independently enforced by package-specific scope gates.",
+    "Core must enforce complete platform neutrality with zero host globals and zero host built-in specifiers in authored code and shipped runtime artifacts.",
+    "sdk-node must permit only approved Node capabilities (node:async_hooks, node:buffer, node:crypto, node:timers) and first-party SDK Core, while strictly rejecting unapproved built-ins, host globals, and third-party dependencies.",
+    "Cross-package placement mutations must prove that moving Node binding code into Core fails closed, and moving transport, browser, or collector code into either SDK package fails closed."
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-package-specific-scope-gates",
+      "kind": "direct_implementation",
+      "summary": "Implement dedicated AST scope gate in sdk-node for approved Node capabilities, tighten Core shipped import policy to zero built-ins, and add cross-package placement mutations in both packages.",
+      "forces_addressed": [
+        "Following the package split in #86 and #87, Core and sdk-node have distinct platform coupling postures that must be independently enforced by package-specific scope gates.",
+        "Core must enforce complete platform neutrality with zero host globals and zero host built-in specifiers in authored code and shipped runtime artifacts.",
+        "sdk-node must permit only approved Node capabilities (node:async_hooks, node:buffer, node:crypto, node:timers) and first-party SDK Core, while strictly rejecting unapproved built-ins, host globals, and third-party dependencies.",
+        "Cross-package placement mutations must prove that moving Node binding code into Core fails closed, and moving transport, browser, or collector code into either SDK package fails closed."
+      ]
+    },
+    {
+      "id": "approach-shared-unified-scope-script",
+      "kind": "alternative",
+      "summary": "Use a single shared scope verification script across both SDK packages with conditional flags.",
+      "forces_addressed": [
+        "Following the package split in #86 and #87, Core and sdk-node have distinct platform coupling postures that must be independently enforced by package-specific scope gates."
+      ]
+    },
+    {
+      "id": "approach-regex-only-inspection",
+      "kind": "alternative",
+      "summary": "Rely on regex scanning of import specifiers in check-dependencies without AST inspection of free globals.",
+      "forces_addressed": [
+        "sdk-node must permit only approved Node capabilities (node:async_hooks, node:buffer, node:crypto, node:timers) and first-party SDK Core, while strictly rejecting unapproved built-ins, host globals, and third-party dependencies."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-package-specific-scope-gates",
+  "rejected_alternative_ids": [
+    "approach-shared-unified-scope-script",
+    "approach-regex-only-inspection"
+  ],
+  "rejection_reasons": {
+    "approach-shared-unified-scope-script": {
+      "forces": [
+        "Following the package split in #86 and #87, Core and sdk-node have distinct platform coupling postures that must be independently enforced by package-specific scope gates."
+      ],
+      "reason": "Core and sdk-node have diametrically opposed platform coupling rules and independent package lifecycles; a shared parameterized script creates mutual coupling between standalone workspaces."
+    },
+    "approach-regex-only-inspection": {
+      "forces": [
+        "sdk-node must permit only approved Node capabilities (node:async_hooks, node:buffer, node:crypto, node:timers) and first-party SDK Core, while strictly rejecting unapproved built-ins, host globals, and third-party dependencies."
+      ],
+      "reason": "Regex scanning cannot detect free undeclared globals (like process or window), is easily evaded by dynamic syntax, and cannot verify CommonJS or AST scope boundaries."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-sdk-node-scope-gate",
+    "implementation-core-neutrality-hardening",
+    "implementation-cross-package-placement-mutations"
+  ],
+  "invariant_evidence": {
+    "implementation-sdk-node-scope-gate": {
+      "task_ids": [
+        "1.1",
+        "1.2",
+        "1.3"
+      ],
+      "evidence_ids": [
+        "sdk-node check-scope.mjs and platform-coupling-policy.mjs enforce approved built-ins and test:scope in validate"
+      ]
+    },
+    "implementation-core-neutrality-hardening": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "Core shipped-import-policy.mjs tightens runtime built-ins to empty array and tests prove dist rejects all built-ins"
+      ]
+    },
+    "implementation-cross-package-placement-mutations": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "scope-mutations.test.ts in sdk-node and platform-coupling-mutations.test.mjs in Core verify fail-closed placement rejection"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Preserves canonical audit event contracts and structural validation without altering any event metadata or schema constraints.",
+    "authentication_or_authorization": "Does not alter authentication, credential reference validation, or authorization brand registries.",
+    "authority_provenance": "Strengthens package boundaries so authority brands and SPI abstractions remain strictly segregated from platform bindings.",
+    "concurrency": "Validates that ambient context providers remain isolated across async scopes and introduces no concurrent state leaks.",
+    "confidentiality": "Scope gates inspect AST identifiers and specifiers statically, emitting bounded diagnostics without disclosing file contents.",
+    "cryptography": "Verifies that sdk-node uses only approved crypto capabilities (node:crypto randomUUID) and Core uses abstract providers.",
+    "error_disclosure": "Diagnostic emitters bound output length and sanitize control characters, preventing information disclosure on error.",
+    "external_security_integration": "Strictly forbids external transport, collector, exporter, and SIEM integration surfaces in both SDK packages.",
+    "fail_posture": "Unknown coupling, unapproved specifiers, undeclared globals, unreadable files, and empty inventories fail closed.",
+    "lifecycle": "Scope verification runs deterministically during package validation, CI pipelines, and governance gate executions.",
+    "mutation_ownership": "Modifications are strictly confined to declared owned paths in Core, sdk-node, and OpenSpec artifacts.",
+    "privacy_transformation": "Does not process user payloads or personal data; scope verification operates strictly on static source code.",
+    "resource_retention": "Scope checking tools and mutation test suites clean up temporary isolated directories and dispose of resources.",
+    "retry_or_redelivery": "Static verification scripts execute deterministically with idempotent validation results and no retry side-effects.",
+    "trust_boundary": "Enforces explicit trust boundaries between platform-neutral Core, Node platform binding, and forbidden external layers."
+  },
+  "owned_paths": [
+    "openspec/changes/rescope-portability-and-production-scope-gates/proposal.md",
+    "openspec/changes/rescope-portability-and-production-scope-gates/design.md",
+    "openspec/changes/rescope-portability-and-production-scope-gates/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/rescope-portability-and-production-scope-gates/specs/security-audit-sdk-core/spec.md",
+    "openspec/changes/rescope-portability-and-production-scope-gates/tasks.md",
+    "openspec/changes/rescope-portability-and-production-scope-gates/assessment.source.json",
+    "openspec/changes/rescope-portability-and-production-scope-gates/assessment.json",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "openspec/specs/security-audit-sdk-core/spec.md",
+    "packages/security-audit-sdk-core/scripts/shipped-import-policy.mjs",
+    "packages/security-audit-sdk-core/tests/verification/shipped-import-policy.test.mjs",
+    "packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs",
+    "packages/security-audit-sdk-node/package.json",
+    "packages/security-audit-sdk-node/scripts/check-scope.mjs",
+    "packages/security-audit-sdk-node/scripts/platform-coupling-policy.mjs",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts"
+  ],
+  "ordering": {
+    "proposal_baseline_commit": "d74d609fb1d22fe79624fb6b65a77afeafccb84d"
+  }
+}
