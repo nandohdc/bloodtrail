@@ -1,0 +1,149 @@
+{
+  "decision": "direct_implementation",
+  "forces": [
+    "#107 is a severity:high network trust boundary: an unauthenticated collector ingress would accept evidence from unidentifiable senders, and authentication must precede body work so unauthenticated input cannot drive parsing cost.",
+    "The producer and collector must not disagree about validity: only the exact generated validator can be the structural authority, which rules out any reimplemented validation.",
+    "The frozen contract's bounds are the only legitimate size authority: a collector with looser or stricter self-configured limits accepts what the producer could not emit or rejects valid events.",
+    "The ratified version policy is deliberately asymmetric: the producer binds EXACT_ONE while a separately authorized collector MAY support an explicit finite set; the version stage must enforce a set, never an open-ended semver check.",
+    "The SDK core scope gate forbids collector source in the producer package and the delivery conformance contract forbids sink collector communication, so the collector must be a dedicated zero-runtime-dependency package.",
+    "The repository topology is a ratified owner decision naming exactly four packages; landing a fifth package without amending the capability would leave the canonical spec contradicting the repository.",
+    "Rejection diagnostics and operational counters are attacker-adjacent surfaces: payload or credential leakage there is a data disclosure, and a recursive audit-event loop would amplify any failure."
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-dedicated-package-ingress-pipeline",
+      "kind": "direct_implementation",
+      "summary": "A dedicated private collector package implementing the fixed ingress order authenticate → size → parse → schema → version → accept, validating through a byte-identical vendored generated validator with a drift gate, enforcing the explicit supported-version set, with bounded diagnostics and non-secret counters, plus a MODIFIED repository-topology delta.",
+      "forces_addressed": [
+        "#107 is a severity:high network trust boundary: an unauthenticated collector ingress would accept evidence from unidentifiable senders, and authentication must precede body work so unauthenticated input cannot drive parsing cost.",
+        "The producer and collector must not disagree about validity: only the exact generated validator can be the structural authority, which rules out any reimplemented validation.",
+        "The frozen contract's bounds are the only legitimate size authority: a collector with looser or stricter self-configured limits accepts what the producer could not emit or rejects valid events.",
+        "The ratified version policy is deliberately asymmetric: the producer binds EXACT_ONE while a separately authorized collector MAY support an explicit finite set; the version stage must enforce a set, never an open-ended semver check.",
+        "The SDK core scope gate forbids collector source in the producer package and the delivery conformance contract forbids sink collector communication, so the collector must be a dedicated zero-runtime-dependency package.",
+        "The repository topology is a ratified owner decision naming exactly four packages; landing a fifth package without amending the capability would leave the canonical spec contradicting the repository.",
+        "Rejection diagnostics and operational counters are attacker-adjacent surfaces: payload or credential leakage there is a data disclosure, and a recursive audit-event loop would amplify any failure."
+      ]
+    },
+    {
+      "id": "approach-sdk-core-export-validator",
+      "kind": "alternative",
+      "summary": "Export the generated validator from the SDK core package and consume it as a file: dependency from the collector.",
+      "forces_addressed": [
+        "The producer and collector must not disagree about validity: only the exact generated validator can be the structural authority, which rules out any reimplemented validation."
+      ]
+    },
+    {
+      "id": "approach-no-topology-amendment",
+      "kind": "alternative",
+      "summary": "Land the collector package without modifying the repository-topology capability, treating the four-package target as historical.",
+      "forces_addressed": [
+        "The repository topology is a ratified owner decision naming exactly four packages; landing a fifth package without amending the capability would leave the canonical spec contradicting the repository."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-dedicated-package-ingress-pipeline",
+  "rejected_alternative_ids": [
+    "approach-sdk-core-export-validator",
+    "approach-no-topology-amendment"
+  ],
+  "rejection_reasons": {
+    "approach-sdk-core-export-validator": {
+      "forces": [
+        "The SDK core scope gate forbids collector source in the producer package and the delivery conformance contract forbids sink collector communication, so the collector must be a dedicated zero-runtime-dependency package."
+      ],
+      "reason": "Modifying the producer package's export surface to serve the collector would couple the platform-neutral core to the collector's consumption pattern and touch a package this change is forbidden to modify; the generated validator is standalone CJS precisely so it can be shared by byte-identical vendoring with a drift gate instead of an export."
+    },
+    "approach-no-topology-amendment": {
+      "forces": [
+        "The repository topology is a ratified owner decision naming exactly four packages; landing a fifth package without amending the capability would leave the canonical spec contradicting the repository."
+      ],
+      "reason": "A canonical capability that names an exact target set and contradicts the repository's actual state is a standing incoherence every future capability audit would flag; the amendment carries the #343 authorization verbatim and is explicitly flagged for owner ratification."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-auth-precedes-parse",
+    "implementation-validator-byte-identity",
+    "implementation-bounds-derived-not-configured",
+    "implementation-version-set-enforced",
+    "implementation-diagnostics-and-metrics-secret-free",
+    "implementation-admission-only"
+  ],
+  "invariant_evidence": {
+    "implementation-auth-precedes-parse": {
+      "task_ids": ["3.1", "3.2", "4.1"],
+      "evidence_ids": [
+        "arms E2, E3, E4 reject a schema-valid body before the parse stage runs",
+        "the parse stage is instrumented and E2 asserts zero parse invocations at runtime"
+      ]
+    },
+    "implementation-validator-byte-identity": {
+      "task_ids": ["1.3", "2.2", "4.4"],
+      "evidence_ids": [
+        "the vendored copy is byte-identical to the canonical generated artifact at scaffold time",
+        "check:generated-validator recomputes sha256 identity and fails closed on divergence"
+      ]
+    },
+    "implementation-bounds-derived-not-configured": {
+      "task_ids": ["1.2", "4.2"],
+      "evidence_ids": [
+        "every enforced bound equals the corresponding frozen contract bound",
+        "E5 rejects an oversized body with the size diagnostic before schema runs"
+      ]
+    },
+    "implementation-version-set-enforced": {
+      "task_ids": ["4.5", "3.1"],
+      "evidence_ids": [
+        "the supported set is exactly { \"1.0.0\" } read against schema.version",
+        "E7's version rejection is distinguishable from E6's schema rejection"
+      ]
+    },
+    "implementation-diagnostics-and-metrics-secret-free": {
+      "task_ids": ["4.7", "3.1"],
+      "evidence_ids": [
+        "every diagnostic is the bounded triple code, category, path",
+        "E8 inspects diagnostics and counters after a mixed run and asserts no payload or credential material"
+      ]
+    },
+    "implementation-admission-only": {
+      "task_ids": ["4.6", "3.1"],
+      "evidence_ids": [
+        "accept records admitted with the occurrence's event identity and consumes capacity",
+        "no durability, delivery, retry, or downstream claim exists anywhere in the package"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "trust_boundary": "The ingress is the first network-adjacent trust boundary for collected evidence; it authenticates first and fails closed, and authentication identifies a sender without conferring trust.",
+    "authority_provenance": "No authority or signing logic is added or modified; the supported-version set and the bounds derive from ratified canonical sources (#75/#76 policy, frozen contract bounds) and the topology amendment cites the #343 owner decision.",
+    "authentication_or_authorization": "Introduces the authentication interface and one non-production synthetic-fixture implementation; no production credential system, secret management, or infrastructure is selected, configured, or shipped.",
+    "audit_integrity": "Every rejection carries a stable bounded diagnostic and every acceptance records admission with event identity, leaving a reviewable disposition for each occurrence.",
+    "confidentiality": "Processes synthetic fixture submissions only; diagnostics and counters are bounded, keyed by a closed vocabulary, and E8 proves no payload or credential material appears in them.",
+    "mutation_ownership": "Changes are confined to the declared owned paths: the new collector package, the package-discovery declaration, the CI workflow entries, and this change's governance artifacts.",
+    "fail_posture": "Fails closed at every stage: unreadable, malformed, or unexpected input at any stage rejects before admission and consumes no capacity.",
+    "error_disclosure": "Diagnostics are the bounded triple code, category, path; no stack traces, tokens, payloads, or environment data are emitted.",
+    "concurrency": "The ingress is a synchronous, stateless, single-threaded pipeline per submission; counters are the only shared state and are bounded increments with no ordering semantics.",
+    "lifecycle": "Runs inside the existing package validate chain and repository CI jobs; no new lifecycle stage, server, or long-running process is introduced.",
+    "resource_retention": "Parsing is bounded by the derived size stage before any allocation of schema work; no queue, buffer, or retention of submission material exists.",
+    "retry_or_redelivery": "No retry or redelivery behavior is introduced; a rejected occurrence is terminal and never retried by the ingress.",
+    "cryptography": "Does not introduce, modify, or rely upon cryptographic algorithms or keys; the synthetic authenticator compares fixture values only.",
+    "privacy_transformation": "Processes no real-user data; fixtures are synthetic adversarial test material, and no transformation of payload content occurs.",
+    "external_security_integration": "No external security integration, network service, or new tool invocation is introduced."
+  },
+  "owned_paths": [
+    "packages/security-audit-collector/",
+    ".github/scripts/check-package-discovery.mjs",
+    ".github/workflows/ci.yml",
+    "openspec/changes/enforce-collector-auth-and-version/.openspec.yaml",
+    "openspec/changes/enforce-collector-auth-and-version/proposal.md",
+    "openspec/changes/enforce-collector-auth-and-version/design.md",
+    "openspec/changes/enforce-collector-auth-and-version/tasks.md",
+    "openspec/changes/enforce-collector-auth-and-version/assessment.source.json",
+    "openspec/changes/enforce-collector-auth-and-version/assessment.json",
+    "openspec/changes/enforce-collector-auth-and-version/specs/security-audit-collector/spec.md",
+    "openspec/changes/enforce-collector-auth-and-version/specs/repository-topology/spec.md"
+  ],
+  "ordering": {
+    "proposal_baseline_commit": "776674917a2b787f90b3fbee2cd5ffad5b97af0e"
+  }
+}
