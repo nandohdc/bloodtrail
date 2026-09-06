@@ -44,9 +44,9 @@ const permittedFixtures = [
     specifiers: 1,
   },
   {
-    name: "approved runtime built-in is accepted",
-    artifact: "dist/builtin.js",
-    source: 'import { randomUUID } from "node:crypto";\nvoid randomUUID;\n',
+    name: "approved examples built-in is accepted",
+    artifact: "examples/builtin.ts",
+    source: 'import assert from "node:assert";\nvoid assert;\n',
     specifiers: 1,
   },
   {
@@ -93,6 +93,13 @@ const rejectedFixtures = [
     source: 'import "node:assert";\n',
     code: "unapproved-builtin",
     specifier: "node:assert",
+  },
+  {
+    name: "runtime built-in is rejected under zero built-in policy",
+    artifact: "dist/crypto.js",
+    source: 'import { randomUUID } from "node:crypto";\nvoid randomUUID;\n',
+    code: "unapproved-builtin",
+    specifier: "node:crypto",
   },
   {
     name: "unprefixed built-in is rejected",
