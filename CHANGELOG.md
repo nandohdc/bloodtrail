@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.9.0](https://github.com/nandohdc/bloodtrail/compare/v0.8.0...v0.9.0) (2026-09-06)
+
+
+### Added
+
+* **governance:** enforce R14 path-class widening with signed-record acknowledgement ([#203](https://github.com/nandohdc/bloodtrail/issues/203)) ([777150b](https://github.com/nandohdc/bloodtrail/commit/777150b61a6f75ff9546b324e47e73e4382d13ec))
+* **governance:** enforce R14 path-class widening with signed-record acknowledgement ([#203](https://github.com/nandohdc/bloodtrail/issues/203)) ([b7b5473](https://github.com/nandohdc/bloodtrail/commit/b7b5473910bd8d0ea6e7cfba3993339084d3e0fa))
+
+
+### Fixed
+
+* **ci:** retry coverage artifact upload and download on transport failure ([#345](https://github.com/nandohdc/bloodtrail/issues/345)) ([dc77fa1](https://github.com/nandohdc/bloodtrail/commit/dc77fa13879eb035a265e009c2605104bb551f2d))
+* **ci:** retry coverage artifact upload and download on transport failure ([#345](https://github.com/nandohdc/bloodtrail/issues/345)) ([b522409](https://github.com/nandohdc/bloodtrail/commit/b522409a7d0f35449f12ebe30aa926edab8983f0))
+* **openspec:** restore final newline on assessment source ([#345](https://github.com/nandohdc/bloodtrail/issues/345)) ([0a6014b](https://github.com/nandohdc/bloodtrail/commit/0a6014bdd477776f80437eeb555f558a9e3da79b))
+* **openspec:** restore final newline on assessment source ([#345](https://github.com/nandohdc/bloodtrail/issues/345)) ([f25e999](https://github.com/nandohdc/bloodtrail/commit/f25e9996619b4eaaaa7aee6e660d107cfddb4f9d))
+
+
+### Documentation
+
+* **openspec:** archive enforce-r14-path-widening ([#203](https://github.com/nandohdc/bloodtrail/issues/203)) ([360fa6d](https://github.com/nandohdc/bloodtrail/commit/360fa6d332a35d1d30040ccf1f953a70c1a5a365))
+* **openspec:** archive enforce-r14-path-widening ([#203](https://github.com/nandohdc/bloodtrail/issues/203)) ([30c25fc](https://github.com/nandohdc/bloodtrail/commit/30c25fc46d1e44f823bf2c129c32a7ba4dbf23fe))
+* **openspec:** archive retry-artifact-transport-in-ci ([#345](https://github.com/nandohdc/bloodtrail/issues/345)) ([ba28763](https://github.com/nandohdc/bloodtrail/commit/ba28763f9bc0a5b4ac802f5b8635ea8a3e6505eb))
+* **openspec:** archive retry-artifact-transport-in-ci ([#345](https://github.com/nandohdc/bloodtrail/issues/345)) ([44fc07a](https://github.com/nandohdc/bloodtrail/commit/44fc07af4d4a9c3e13fda25879b53e5102235852))
+* **openspec:** propose enforce-r14-path-widening ([#203](https://github.com/nandohdc/bloodtrail/issues/203)) ([8b5b875](https://github.com/nandohdc/bloodtrail/commit/8b5b875f2324b8152bac65594f2daa611847a4e8))
+* **openspec:** propose enforce-r14-path-widening ([#203](https://github.com/nandohdc/bloodtrail/issues/203)) ([474ad8c](https://github.com/nandohdc/bloodtrail/commit/474ad8cf0a2073d397e5b8c5215b066ca03015b2))
+* **openspec:** propose retry-artifact-transport-in-ci ([#345](https://github.com/nandohdc/bloodtrail/issues/345)) ([90f3c72](https://github.com/nandohdc/bloodtrail/commit/90f3c72651759229c699039321b1a24f754d328c))
+* **openspec:** propose retry-artifact-transport-in-ci ([#345](https://github.com/nandohdc/bloodtrail/issues/345)) ([32323d4](https://github.com/nandohdc/bloodtrail/commit/32323d421a00c14aca3d7ecd8edbe94b8c1c170c))
+
 ## [0.8.0](https://github.com/nandohdc/bloodtrail/compare/v0.7.0...v0.8.0) (2026-09-06)
 
 
