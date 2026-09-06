@@ -1,0 +1,139 @@
+{
+  "schema_version": "1.1",
+  "change_id": "enforce-r14-path-widening",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "R14 specifies the path-class-widening scenario but no rule implements it: no widen or benign logic, no diagnostic id, and no acknowledgement field exist in the checker or the signed-record shape, so an unacknowledged weakening is caught only by a human noticing (#203).",
+    "Widening is the cheap direction: moving a path into documentation_only lowers what governance demands of every future change touching it, which is precisely the weakening R14 exists to catch.",
+    "The assessment schema is closed, so the acknowledgement cannot ride there without a schema version bump; the signed governance record is the natural carrier, and its records tolerate additive optional fields.",
+    "A candidate checker is never the sole judge of whether it weakened itself: the rule must live in the checker code the trusted baseline runs, so the dual check's baseline-candidate asymmetry judges both the policy and any future edit to the rule.",
+    "The checker already has the needed machinery: a --base option, blobAt for reading files at any ref, trackedPaths for the tracked universe, classifyPath for classification, and the checkSchemaEvolution precedent for comparing a candidate artifact against its merge-base copy."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "material_capability_modification": false,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/scripts/design-pattern-governance/path-widening.mjs",
+    "openspec/scripts/check-design-pattern-governance.mjs",
+    "openspec/scripts/run-governance-dual-check.mjs",
+    "openspec/tests/design-pattern-governance/self-governance.test.mjs",
+    "docs/design-pattern-governance.md",
+    "openspec/changes/enforce-r14-path-widening/.openspec.yaml",
+    "openspec/changes/enforce-r14-path-widening/proposal.md",
+    "openspec/changes/enforce-r14-path-widening/design.md",
+    "openspec/changes/enforce-r14-path-widening/tasks.md",
+    "openspec/changes/enforce-r14-path-widening/assessment.source.json",
+    "openspec/changes/enforce-r14-path-widening/assessment.json"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-checker-rule-with-record-acknowledgement",
+      "kind": "direct_implementation",
+      "summary": "Implement a checker rule comparing the candidate policy against the merge-base policy over the tracked universe, with acknowledgement as an optional closed-shape field on the signed governance record.",
+      "forces_addressed": [
+        "R14 specifies the path-class-widening scenario but no rule implements it: no widen or benign logic, no diagnostic id, and no acknowledgement field exist in the checker or the signed-record shape, so an unacknowledged weakening is caught only by a human noticing (#203).",
+        "Widening is the cheap direction: moving a path into documentation_only lowers what governance demands of every future change touching it, which is precisely the weakening R14 exists to catch.",
+        "The assessment schema is closed, so the acknowledgement cannot ride there without a schema version bump; the signed governance record is the natural carrier, and its records tolerate additive optional fields.",
+        "A candidate checker is never the sole judge of whether it weakened itself: the rule must live in the checker code the trusted baseline runs, so the dual check's baseline-candidate asymmetry judges both the policy and any future edit to the rule.",
+        "The checker already has the needed machinery: a --base option, blobAt for reading files at any ref, trackedPaths for the tracked universe, classifyPath for classification, and the checkSchemaEvolution precedent for comparing a candidate artifact against its merge-base copy."
+      ]
+    },
+    {
+      "id": "approach-acknowledgement-in-assessment",
+      "kind": "alternative",
+      "summary": "Record the acknowledgement in the OpenSpec assessment instead of the signed governance record.",
+      "forces_addressed": [
+        "R14 specifies the path-class-widening scenario but no rule implements it: no widen or benign logic, no diagnostic id, and no acknowledgement field exist in the checker or the signed-record shape, so an unacknowledged weakening is caught only by a human noticing (#203)."
+      ]
+    },
+    {
+      "id": "approach-changed-paths-only-detection",
+      "kind": "alternative",
+      "summary": "Detect widens only over the paths the commit range changed, instead of the full tracked universe.",
+      "forces_addressed": [
+        "Widening is the cheap direction: moving a path into documentation_only lowers what governance demands of every future change touching it, which is precisely the weakening R14 exists to catch."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-checker-rule-with-record-acknowledgement",
+  "rejected_alternative_ids": [
+    "approach-acknowledgement-in-assessment",
+    "approach-changed-paths-only-detection"
+  ],
+  "rejection_reasons": {
+    "approach-acknowledgement-in-assessment": {
+      "forces": [
+        "The assessment schema is closed, so the acknowledgement cannot ride there without a schema version bump; the signed governance record is the natural carrier, and its records tolerate additive optional fields."
+      ],
+      "reason": "The assessment is authored before implementation and before review; the acknowledgement is a reviewer act that must bind an exact reviewed commit, which is what the signed record exists to do. Recording it in the assessment would also demand a closed-schema version bump for an artifact that is the wrong carrier."
+    },
+    "approach-changed-paths-only-detection": {
+      "forces": [
+        "Widening is the cheap direction: moving a path into documentation_only lowers what governance demands of every future change touching it, which is precisely the weakening R14 exists to catch."
+      ],
+      "reason": "A pattern edit can reclassify paths the commit range never touches, so restricting detection to changed paths would miss exactly the silent, broad reclassification the scenario exists to reject; the tracked universe is the only complete basis."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-widening-events-exact",
+    "implementation-acknowledgement-exact-binding",
+    "implementation-narrowing-never-fires"
+  ],
+  "invariant_evidence": {
+    "implementation-widening-events-exact": {
+      "task_ids": [
+        "2.1",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "path events are computed by classifying the tracked universe under both policies, keyed by path, firing only when the candidate class is documentation_only and the baseline class was not",
+        "pattern events are keyed pattern:<pattern> for documentation_only patterns absent from the baseline policy",
+        "self-governance fixtures assert path-class-widening-unacknowledged for both event kinds"
+      ]
+    },
+    "implementation-acknowledgement-exact-binding": {
+      "task_ids": [
+        "2.1",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "exactly one signed record may carry pathClassWideningAcknowledgement, with acknowledged true, the actual comparison baselineCommit, a substantive reason, and an exact path-key set",
+        "fixtures assert the absent, ambiguous, invalid, stale, and incomplete diagnostics separately"
+      ]
+    },
+    "implementation-narrowing-never-fires": {
+      "task_ids": [
+        "2.1",
+        "4.3"
+      ],
+      "evidence_ids": [
+        "strengthening moves, narrowing moves, and policy edits that change no classification produce no widening event",
+        "fixtures assert a narrowing and an unrelated policy edit pass without the diagnostic"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "ecd75e90ab0091c282561a5d01965533ec8903d8"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "4.1",
+    "4.2",
+    "4.3",
+    "5.1",
+    "5.2",
+    "5.3",
+    "5.4"
+  ]
+}
