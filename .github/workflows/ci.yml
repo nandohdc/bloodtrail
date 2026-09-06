@@ -141,8 +141,12 @@ jobs:
       - name: Assert package discovery completeness
         run: node .github/scripts/check-package-discovery.mjs
 
-      - name: Package discovery test suite
-        run: node --test .github/scripts/check-package-discovery.test.mjs
+      # Every test beside a repository script, not a hand-named subset. Naming one
+      # file made the set a hand-maintained list that silently fell behind twice:
+      # npm-audit-retry.test.mjs was written and never run by any check, and the
+      # merge gate's arms had no runner at all until this glob.
+      - name: Repository script test suite
+        run: node --test .github/scripts/*.test.mjs
 
       - name: Governance checker
         run: node openspec/scripts/check-design-pattern-governance.mjs --phase final

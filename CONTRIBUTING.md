@@ -1,9 +1,12 @@
 # Contributing
 
-`main` is protected — land every change via PR, with one approving review from a CODEOWNER.
-`@nandohdc` is the sole CODEOWNER and cannot self-approve, so in practice PRs land with
-`gh pr merge --admin`. An admin merge substitutes for the approval only; it never substitutes for
-the required checks, which must have passed.
+`main` is protected — land every change via PR. That protection is required status checks and
+nothing else: `required_pull_request_reviews` is `null` and there is no CODEOWNERS file, so GitHub
+supplies **no approval gate at all** and `reviewDecision` is empty on every PR here. `enforce_admins`
+is false, so PRs land with `gh pr merge --admin`. That flag bypasses only the checks' blocking
+effect; it never substitutes for the checks themselves having passed, and there is no GitHub
+approval for it to substitute for. Review is a human and process obligation this repository
+enforces itself — see [The sanctioned merge path](#the-sanctioned-merge-path).
 
 Before pushing, run the same gates CI runs:
 
@@ -234,10 +237,35 @@ commits. For those branches, fetch before pushing and merge rather than rebase, 
 merge commit must then be squashed or reworded before the PR can pass. Prefer to pause the
 automation and rebase once it is idle.
 
-## Archive PRs: prefer a merge commit
+## The sanctioned merge path
 
-Merge a PR that archives an OpenSpec change with a merge commit rather than a squash, where the
-required checks allow it.
+Merge through [`.github/scripts/merge-pr.sh`](.github/scripts/merge-pr.sh). It collects the
+evidence — pull-request state, the reported checks, the contexts branch protection requires, the
+reviewing profile's runs, the changed paths — and [`merge-gate.mjs`](.github/scripts/merge-gate.mjs)
+decides from that evidence alone. The split is what makes the decision testable:
+`merge-gate.test.mjs` runs behind the required `design-pattern-governance` check and asserts each
+arm against both a defective input and the matching healthy one.
+
+Two of those arms exist because the logic previously lived in an unversioned script outside the
+repository, where nothing could test it:
+
+- **A required context that never started is absent from the reported set, not pending in it.**
+  `gh pr checks --required` lists only contexts that have *reported*, so counting "nothing is
+  failing" over that list settles on an incomplete set. Presence is asserted against
+  `.required_status_checks.contexts` from branch protection instead, and an unreadable protection
+  response refuses rather than defaults.
+- **Every PR lands as a merge commit, never a squash.** A squash replays the branch as one commit
+  parented on the target tip, which orphans the commit a governance record named; see
+  [Bind the record to a content object](#bind-the-record-to-a-content-object).
+
+Do not reach for `--admin` to get past a refusal. `--admin` bypasses the checks' *blocking effect*
+on a PR whose checks have already passed; it is not a way to merge past a check that failed or
+never ran.
+
+## Archive PRs: land as a merge commit
+
+Every PR here lands as a merge commit. Archive PRs additionally carry the reason below, which is
+why they are called out separately.
 
 Archive-movement validation compares the archive against the active change it replaced. When the
 pre-archive commit is still reachable it re-derives that comparison from history, which proves the
