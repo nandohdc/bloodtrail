@@ -35,7 +35,7 @@ export function checkPathClassWidening({ base, policyPath, policy, cwd, sink }) 
   const baselinePolicy = readBaselinePolicy(base, policyPath, cwd, sink);
   if (baselinePolicy === null) return;
 
-  const events = detectWideningEvents(baselinePolicy, policy, cwd, base, policyPath, sink);
+  const events = detectWideningEvents({ baselinePolicy, candidatePolicy: policy, cwd, base, policyPath, sink });
   if (events === null || events.length === 0) return;
 
   const acknowledgement = resolveAcknowledgement(policy, cwd, sink);
@@ -44,7 +44,7 @@ export function checkPathClassWidening({ base, policyPath, policy, cwd, sink }) 
     return;
   }
 
-  reportAcknowledgementFailures(acknowledgement, events, base, policyPath, sink);
+  reportAcknowledgementFailures(acknowledgement, { events, base, policyPath, sink });
 }
 
 /**
@@ -76,33 +76,51 @@ function readBaselinePolicy(base, policyPath, cwd, sink) {
  * is judged through those paths; a pattern matching nothing today is judged at
  * the moment the benign class broadens, not the day a future path matches it.
  */
-function detectWideningEvents(baselinePolicy, candidatePolicy, cwd, base, policyPath, sink) {
+function detectWideningEvents({ baselinePolicy, candidatePolicy, cwd, base, policyPath, sink }) {
   const paths = trackedPaths(cwd);
   if (paths === null) {
     sink.fail("history-unavailable", policyPath,
       "cannot enumerate tracked paths to compare path classifications");
     return null;
   }
-
-  const events = [];
-  for (const path of paths) {
-    if (objectAtPath(base, path, cwd) === null) continue;
-    const before = classifyPath(path, baselinePolicy);
-    const after = classifyPath(path, candidatePolicy);
-    if (after === BENIGN_CLASS && before !== BENIGN_CLASS) {
-      events.push({ key: path, kind: "path", before });
-    }
-  }
-  for (const pattern of addedBenignPatterns(baselinePolicy, candidatePolicy)) {
-    if (paths.some((path) => longestMatch(path, [pattern]) !== null)) continue;
-    events.push({ key: `pattern:${pattern}`, kind: "pattern" });
-  }
+  const events = [
+    ...pathReclassificationEvents(paths, { baselinePolicy, candidatePolicy, base, cwd }),
+    ...unmatchedBenignPatternEvents(paths, { baselinePolicy, candidatePolicy }),
+  ];
   return events.sort((left, right) => byCodePoint(left.key, right.key));
 }
 
-function addedBenignPatterns(baselinePolicy, candidatePolicy) {
+function pathReclassificationEvents(paths, { baselinePolicy, candidatePolicy, base, cwd }) {
+  const events = [];
+  for (const path of paths) {
+    const event = reclassificationEvent(path, { baselinePolicy, candidatePolicy, base, cwd });
+    if (event !== null) events.push(event);
+  }
+  return events;
+}
+
+function reclassificationEvent(path, { baselinePolicy, candidatePolicy, base, cwd }) {
+  if (objectAtPath(base, path, cwd) === null) return null;
+  const before = classifyPath(path, baselinePolicy);
+  const after = classifyPath(path, candidatePolicy);
+  if (after !== BENIGN_CLASS) return null;
+  if (before === BENIGN_CLASS) return null;
+  return { key: path, kind: "path", before };
+}
+
+function unmatchedBenignPatternEvents(paths, { baselinePolicy, candidatePolicy }) {
   const before = new Set(documentationPatterns(baselinePolicy));
-  return documentationPatterns(candidatePolicy).filter((pattern) => !before.has(pattern));
+  const events = [];
+  for (const pattern of documentationPatterns(candidatePolicy)) {
+    if (before.has(pattern)) continue;
+    if (patternMatchesTrackedPath(paths, pattern)) continue;
+    events.push({ key: `pattern:${pattern}`, kind: "pattern" });
+  }
+  return events;
+}
+
+function patternMatchesTrackedPath(paths, pattern) {
+  return paths.some((path) => longestMatch(path, [pattern]) !== null);
 }
 
 function documentationPatterns(policy) {
@@ -133,13 +151,12 @@ function resolveAcknowledgement(policy, cwd, sink) {
     return null;
   }
 
-  const record = carriers[0];
-  const shapeProblem = acknowledgementShapeProblem(record);
+  const shapeProblem = acknowledgementShapeProblem(carriers[0]);
   if (shapeProblem !== null) {
     sink.fail("path-class-widening-acknowledgement-invalid", recordPath, shapeProblem);
     return null;
   }
-  return { record, acknowledgement: record[ACK_FIELD], recordPath };
+  return { acknowledgement: carriers[0][ACK_FIELD], recordPath };
 }
 
 function readRecordSource(recordPath, cwd, sink) {
@@ -160,31 +177,76 @@ function readRecordSource(recordPath, cwd, sink) {
   return { records: parsed.governanceRecords };
 }
 
+/** Shape checks in declaration order: the first violation reported is the first one. */
+const SHAPE_CHECKS = Object.freeze([
+  fieldIsObjectProblem,
+  unknownKeyProblem,
+  signedCarrierProblem,
+  acknowledgedProblem,
+  baselineCommitProblem,
+  reasonProblem,
+  pathsProblem,
+]);
+
 /** A human-readable shape violation, or null when the field is exactly right. */
 function acknowledgementShapeProblem(record) {
   const field = record[ACK_FIELD];
-  if (!isRecord(field)) return `${ACK_FIELD} must be an object`;
+  for (const check of SHAPE_CHECKS) {
+    const problem = check(field, record);
+    if (problem !== null) return problem;
+  }
+  return null;
+}
+
+function fieldIsObjectProblem(field) {
+  return isRecord(field) ? null : `${ACK_FIELD} must be an object`;
+}
+
+function unknownKeyProblem(field) {
   const unknown = Object.keys(field).find((key) => !ACK_KEYS.includes(key));
-  if (unknown !== undefined) return `${ACK_FIELD} carries undeclared field ${unknown}`;
-  if (record.signed !== true) return `${ACK_FIELD} must sit on the signed governance record`;
-  if (field.acknowledged !== true) return `${ACK_FIELD}.acknowledged must be true; a recorded denial is not an acknowledgement`;
-  if (typeof field.baselineCommit !== "string" || !OBJECT_ID.test(field.baselineCommit)) {
-    return `${ACK_FIELD}.baselineCommit must be a full Git commit id`;
-  }
-  if (typeof field.reason !== "string" || field.reason.trim().length < MIN_REASON_LENGTH) {
-    return `${ACK_FIELD}.reason must be reviewer prose of at least ${MIN_REASON_LENGTH} characters`;
-  }
+  return unknown === undefined ? null : `${ACK_FIELD} carries undeclared field ${unknown}`;
+}
+
+function signedCarrierProblem(_field, record) {
+  return record.signed === true ? null : `${ACK_FIELD} must sit on the signed governance record`;
+}
+
+function acknowledgedProblem(field) {
+  return field.acknowledged === true ? null : `${ACK_FIELD}.acknowledged must be true; a recorded denial is not an acknowledgement`;
+}
+
+function baselineCommitProblem(field) {
+  const wellFormed = typeof field.baselineCommit === "string" && OBJECT_ID.test(field.baselineCommit);
+  return wellFormed ? null : `${ACK_FIELD}.baselineCommit must be a full Git commit id`;
+}
+
+function reasonProblem(field) {
+  const substantive = typeof field.reason === "string" && field.reason.trim().length >= MIN_REASON_LENGTH;
+  return substantive ? null : `${ACK_FIELD}.reason must be reviewer prose of at least ${MIN_REASON_LENGTH} characters`;
+}
+
+function pathsProblem(field) {
   if (!Array.isArray(field.paths) || field.paths.length === 0) {
     return `${ACK_FIELD}.paths must be a non-empty array`;
   }
   for (const path of field.paths) {
-    if (typeof path !== "string" || path.length === 0) return `${ACK_FIELD}.paths carries an empty entry`;
-    if (PATTERN_KEY.test(path)) continue;
-    if (path.includes("..") || path.startsWith("/") || path.includes("\\")) {
-      return `${ACK_FIELD}.paths carries a malformed entry ${path}`;
-    }
+    const problem = pathEntryProblem(path);
+    if (problem !== null) return problem;
   }
   return null;
+}
+
+function pathEntryProblem(path) {
+  if (typeof path !== "string" || path.length === 0) return `${ACK_FIELD}.paths carries an empty entry`;
+  if (PATTERN_KEY.test(path)) return null;
+  if (path.includes("..")) return malformedPathEntry(path);
+  if (path.startsWith("/")) return malformedPathEntry(path);
+  if (path.includes("\\")) return malformedPathEntry(path);
+  return null;
+}
+
+function malformedPathEntry(path) {
+  return `${ACK_FIELD}.paths carries a malformed entry ${path}`;
 }
 
 /**
@@ -193,7 +255,7 @@ function acknowledgementShapeProblem(record) {
  * keys must equal the detected event keys as an exact set — a superset cannot
  * pre-approve widens nobody reviewed, and a subset leaves widens unacknowledged.
  */
-function reportAcknowledgementFailures({ acknowledgement, recordPath }, events, base, policyPath, sink) {
+function reportAcknowledgementFailures({ acknowledgement, recordPath }, { events, base, policyPath, sink }) {
   let matched = true;
   if (acknowledgement.baselineCommit !== base) {
     matched = false;
