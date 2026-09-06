@@ -1,0 +1,151 @@
+{
+  "schema_version": "1.1",
+  "change_id": "ratify-derived-field-trust-semantics",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The contract assigns a trust level to every field and marks several as derived_server, but carries no governed answer to what a derivation's trust may be, so derived-field trust is currently a producer convention rather than a contract rule.",
+    "Every lenient answer to the open questions in #94 fails in the same direction, toward a derived field carrying more assurance than its material inputs support, so the decision must be taken deliberately rather than left to defaults.",
+    "Omitting a material low-trust input must not be a way to raise a derived field's trust, which is the security property PLAN-044 exists for and which no current rule states.",
+    "The canonical contract is frozen at 1.0.0 and an SDK package version supports exactly one contract version, so the cost of introducing and then enforcing derived provenance must be recorded before any implementation is proposed.",
+    "The decision cannot establish that producers enumerate their inputs honestly, so the residual assurance limitation must be stated rather than implied by silence."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "material_capability_modification": false,
+    "capabilities": [
+      "derived-field-trust-semantics"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/ratify-derived-field-trust-semantics/.openspec.yaml",
+    "openspec/changes/ratify-derived-field-trust-semantics/proposal.md",
+    "openspec/changes/ratify-derived-field-trust-semantics/design.md",
+    "openspec/changes/ratify-derived-field-trust-semantics/tasks.md",
+    "openspec/changes/ratify-derived-field-trust-semantics/specs/derived-field-trust-semantics/spec.md",
+    "openspec/changes/ratify-derived-field-trust-semantics/assessment.source.json",
+    "openspec/changes/ratify-derived-field-trust-semantics/assessment.json",
+    "openspec/specs/derived-field-trust-semantics/spec.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-ratify-decision-capability-only",
+      "kind": "direct_implementation",
+      "summary": "Ratify the semantics as a decision-only capability spec covering the trust total order, counterfactual materiality, set-valued provenance, fail-closed rejection outcomes, one-hop provenance with transitive trust, the maximum-output-trust function, the two-step compatibility treatment, the decision provenance and its assurance limitation, and the revisit conditions, performing no contract or code change.",
+      "forces_addressed": [
+        "The contract assigns a trust level to every field and marks several as derived_server, but carries no governed answer to what a derivation's trust may be, so derived-field trust is currently a producer convention rather than a contract rule.",
+        "Every lenient answer to the open questions in #94 fails in the same direction, toward a derived field carrying more assurance than its material inputs support, so the decision must be taken deliberately rather than left to defaults.",
+        "Omitting a material low-trust input must not be a way to raise a derived field's trust, which is the security property PLAN-044 exists for and which no current rule states.",
+        "The canonical contract is frozen at 1.0.0 and an SDK package version supports exactly one contract version, so the cost of introducing and then enforcing derived provenance must be recorded before any implementation is proposed.",
+        "The decision cannot establish that producers enumerate their inputs honestly, so the residual assurance limitation must be stated rather than implied by silence."
+      ]
+    },
+    {
+      "id": "approach-decide-alongside-contract-change",
+      "kind": "alternative",
+      "summary": "Decide the semantics and introduce the derived_from field in the canonical contract in the same change, moving the contract version at ratification time.",
+      "forces_addressed": [
+        "The canonical contract is frozen at 1.0.0 and an SDK package version supports exactly one contract version, so the cost of introducing and then enforcing derived provenance must be recorded before any implementation is proposed."
+      ]
+    },
+    {
+      "id": "approach-defer-to-implementation-time",
+      "kind": "alternative",
+      "summary": "Leave materiality, ordering, duplicate, unknown-field, and transitive behaviour to be settled inside the later enforcement change, when concrete validator code makes the trade-offs visible.",
+      "forces_addressed": [
+        "Every lenient answer to the open questions in #94 fails in the same direction, toward a derived field carrying more assurance than its material inputs support, so the decision must be taken deliberately rather than left to defaults."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-ratify-decision-capability-only",
+  "rejected_alternative_ids": [
+    "approach-decide-alongside-contract-change",
+    "approach-defer-to-implementation-time"
+  ],
+  "rejection_reasons": {
+    "approach-decide-alongside-contract-change": {
+      "forces": [
+        "The canonical contract is frozen at 1.0.0 and an SDK package version supports exactly one contract version, so the cost of introducing and then enforcing derived provenance must be recorded before any implementation is proposed."
+      ],
+      "reason": "The contract is a protected prefix that changed-path verification refuses to write, a version move carries an SDK package version step with it, and #94 places contract schema and validator changes out of scope; bundling them would make a decision unmergeable on a boundary the decision itself is meant to describe."
+    },
+    "approach-defer-to-implementation-time": {
+      "forces": [
+        "Every lenient answer to the open questions in #94 fails in the same direction, toward a derived field carrying more assurance than its material inputs support, so the decision must be taken deliberately rather than left to defaults."
+      ],
+      "reason": "Enforcement written before the model is stated encodes whichever default the implementation happened to reach, and the defaults here are precisely the escalation-permitting ones; the trust floor must be a contract rule that code conforms to, not a property discovered from code."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-trust-total-order-with-unknown-floor",
+    "implementation-counterfactual-materiality-and-set-provenance",
+    "implementation-malformed-provenance-fails-closed",
+    "implementation-output-trust-is-floor-and-ceiling",
+    "implementation-ratification-performs-no-version-move"
+  ],
+  "invariant_evidence": {
+    "implementation-trust-total-order-with-unknown-floor": {
+      "task_ids": [
+        "1.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "the capability states a total order over the seven registry trust levels with unknown as the least trusted, and requires the comparison to be context-independent"
+      ]
+    },
+    "implementation-counterfactual-materiality-and-set-provenance": {
+      "task_ids": [
+        "1.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "materiality is defined by counterfactual rather than by field category, and provenance is set-valued with code-point canonical serialization and no positional meaning"
+      ]
+    },
+    "implementation-malformed-provenance-fails-closed": {
+      "task_ids": [
+        "1.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "duplicate, unresolvable, absent, cyclic, and empty-set provenance each carry a distinct named rejection outcome, and normalization or repair is explicitly forbidden"
+      ]
+    },
+    "implementation-output-trust-is-floor-and-ceiling": {
+      "task_ids": [
+        "1.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "maximum output trust is the lesser of the transitive-closure input floor and the transformation authority ceiling, with a scenario proving omission provides no path to raise trust"
+      ]
+    },
+    "implementation-ratification-performs-no-version-move": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "the change touches no contracts path and no generated artifact, and records the additive-then-breaking two-step treatment without performing either step"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "c70d5144d14d7e933c4a3b3b06c8ad3e76f044cc"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3",
+    "4.1",
+    "4.2"
+  ]
+}
