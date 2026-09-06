@@ -1,0 +1,129 @@
+{
+  "decision": "direct_implementation",
+  "forces": [
+    "The repository now contains four distinct packages (contracts, sdk-core, sdk-node, research), but CI exercises only three, leaving sdk-node unvalidated across its declared Node 24 and 26 matrix.",
+    "ADR 0011 ratified an explicit declared package list with a mechanical both-directions completeness assertion, which must fail closed if on-disk packages and declared packages drift.",
+    "Branch protection pins ten required contexts; adding packages must not alter required context names, while ensuring new packages are validated immediately under stable concern aggregates.",
+    "The root Makefile command surface must dispatch the product test loop across all four workspaces without redefining gates."
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-stable-concern-and-discovery-assertion",
+      "kind": "direct_implementation",
+      "summary": "Wire sdk-node into existing stable sdk and coverage jobs, enforce mechanical package discovery in design-pattern-governance, and update root Makefile.",
+      "forces_addressed": [
+        "The repository now contains four distinct packages (contracts, sdk-core, sdk-node, research), but CI exercises only three, leaving sdk-node unvalidated across its declared Node 24 and 26 matrix.",
+        "ADR 0011 ratified an explicit declared package list with a mechanical both-directions completeness assertion, which must fail closed if on-disk packages and declared packages drift.",
+        "Branch protection pins ten required contexts; adding packages must not alter required context names, while ensuring new packages are validated immediately under stable concern aggregates.",
+        "The root Makefile command surface must dispatch the product test loop across all four workspaces without redefining gates."
+      ]
+    },
+    {
+      "id": "approach-standalone-per-package-jobs",
+      "kind": "alternative",
+      "summary": "Create a new top-level sdk-node CI job matrix and separate coverage job.",
+      "forces_addressed": [
+        "The repository now contains four distinct packages (contracts, sdk-core, sdk-node, research), but CI exercises only three, leaving sdk-node unvalidated across its declared Node 24 and 26 matrix.",
+        "Branch protection pins ten required contexts; adding packages must not alter required context names, while ensuring new packages are validated immediately under stable concern aggregates."
+      ]
+    },
+    {
+      "id": "approach-filesystem-glob-discovery",
+      "kind": "alternative",
+      "summary": "Use filesystem globbing to discover and iterate over packages in CI.",
+      "forces_addressed": [
+        "ADR 0011 ratified an explicit declared package list with a mechanical both-directions completeness assertion, which must fail closed if on-disk packages and declared packages drift."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-stable-concern-and-discovery-assertion",
+  "rejected_alternative_ids": [
+    "approach-standalone-per-package-jobs",
+    "approach-filesystem-glob-discovery"
+  ],
+  "rejection_reasons": {
+    "approach-standalone-per-package-jobs": {
+      "forces": [
+        "Branch protection pins ten required contexts; adding packages must not alter required context names, while ensuring new packages are validated immediately under stable concern aggregates."
+      ],
+      "reason": "Creates new job context names that are not pinned in branch protection, leaving the new package advisory and vulnerable to silent failures without repository settings edits."
+    },
+    "approach-filesystem-glob-discovery": {
+      "forces": [
+        "ADR 0011 ratified an explicit declared package list with a mechanical both-directions completeness assertion, which must fail closed if on-disk packages and declared packages drift."
+      ],
+      "reason": "Packages reside under three different roots (contracts, packages, research), so no single glob can reach them and globbing cannot detect forgotten packages."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-package-discovery-completeness",
+    "implementation-sdk-node-ci-coverage",
+    "implementation-root-surface-all-packages"
+  ],
+  "invariant_evidence": {
+    "implementation-package-discovery-completeness": {
+      "task_ids": [
+        "1.1",
+        "1.2"
+      ],
+      "evidence_ids": [
+        "check-package-discovery.test.mjs proves exact 4-package match and both-directions fail-closed behavior"
+      ]
+    },
+    "implementation-sdk-node-ci-coverage": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "ci.yml exercises sdk-node under Node 26.5.0 validate and Node 24.2.0 test in the sdk job",
+        "ci.yml collects and uploads sdk-node coverage with enforced line and branch thresholds"
+      ]
+    },
+    "implementation-root-surface-all-packages": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "Makefile executes fast product loop across all four workspaces in test and runtime-gates targets"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Preserves all required audit assertions, contract checks, and governance records without alteration.",
+    "authentication_or_authorization": "Does not modify or interact with authentication or authorization mechanisms.",
+    "authority_provenance": "Derives public change metadata only; cryptographic signing and identity authority logic are untouched.",
+    "concurrency": "CI steps execute deterministically within their respective container and matrix environments.",
+    "confidentiality": "Untrusted pull requests receive no restricted secrets; token-gated jobs remain securely gated.",
+    "cryptography": "Does not introduce, modify, or rely upon cryptographic algorithms or keys.",
+    "error_disclosure": "Package discovery checker emits structured error diagnostics on standard streams without exposing credentials.",
+    "external_security_integration": "Operates within GitHub Actions runner environments with no external network security integrations.",
+    "fail_posture": "Package discovery and CI validations fail closed on mismatch, build errors, or test failures.",
+    "lifecycle": "Applies across the standard OpenSpec change lifecycle and CI PR/push verification workflows.",
+    "mutation_ownership": "Changes are strictly confined to declared owned paths with no unintended file modifications.",
+    "privacy_transformation": "Processes no user telemetry, personal data, or operational payloads.",
+    "resource_retention": "CI runner containers dispose of temporary files, packages, and outputs upon job completion.",
+    "retry_or_redelivery": "Idempotent CI job execution with retry policies applied only to transient transport blips.",
+    "trust_boundary": "Preserves repository trust boundaries; fork PRs receive no write secrets or elevated permissions."
+  },
+  "owned_paths": [
+    ".github/workflows/ci.yml",
+    ".github/scripts/check-package-discovery.mjs",
+    ".github/scripts/check-package-discovery.test.mjs",
+    "packages/security-audit-sdk-node/package.json",
+    "Makefile",
+    "openspec/changes/add-ci-coverage-for-every-package/proposal.md",
+    "openspec/changes/add-ci-coverage-for-every-package/design.md",
+    "openspec/changes/add-ci-coverage-for-every-package/specs/ci-topology/spec.md",
+    "openspec/changes/add-ci-coverage-for-every-package/tasks.md",
+    "openspec/changes/add-ci-coverage-for-every-package/assessment.source.json",
+    "openspec/changes/add-ci-coverage-for-every-package/assessment.json",
+    "openspec/specs/ci-topology/spec.md"
+  ],
+  "ordering": {
+    "proposal_baseline_commit": "d403b51af228ca208beba9835e4238505b9a997f"
+  }
+}
