@@ -225,7 +225,19 @@ jobs:
             }
           '
 
-      - uses: actions/upload-artifact@v7
+      # actions/upload-artifact has no step-level retry; one transport-level
+      # ECONNRESET reds the required coverage context even though every
+      # threshold passed, and the needs: [coverage] edge then prevents sonar
+      # from ever starting (#345). One bounded retry converts a network blip
+      # into a slow green run; a genuine failure — including a missing report
+      # (if-no-files-found) — still fails twice. overwrite: true lets the
+      # retry replace a partially created run-scoped container instead of
+      # dying on an artifact-already-exists conflict; the coverage artifact
+      # name has no other producer in the run.
+      - name: Upload coverage artifact
+        id: upload
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: |
@@ -233,6 +245,23 @@ jobs:
             packages/security-audit-sdk-node/coverage/lcov.info
             research/browser-telemetry/coverage/lcov.info
           if-no-files-found: error
+          overwrite: true
+
+      - name: Wait before retrying the coverage artifact upload
+        if: steps.upload.outcome == 'failure'
+        run: sleep 10
+
+      - name: Upload coverage artifact (retry)
+        if: steps.upload.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: |
+            packages/security-audit-sdk-core/coverage/lcov.info
+            packages/security-audit-sdk-node/coverage/lcov.info
+            research/browser-telemetry/coverage/lcov.info
+          if-no-files-found: error
+          overwrite: true
 
       # files/flags must stay on one line with no space after the comma: the CLI
       # splits on "," without trimming, and a folded scalar would fold the
@@ -279,7 +308,25 @@ jobs:
         with:
           node-version: "22"
 
-      - uses: actions/download-artifact@v8
+      # Same defect class on the download side: one ECONNRESET redded the
+      # sonar job having never contacted SonarQube (#345). Same bounded retry
+      # shape; a failed download leaves no server-side state, so the retry
+      # needs no overwrite semantics.
+      - name: Download coverage artifact
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage
+          path: .
+
+      - name: Wait before retrying the coverage artifact download
+        if: steps.download.outcome == 'failure'
+        run: sleep 10
+
+      - name: Download coverage artifact (retry)
+        if: steps.download.outcome == 'failure'
+        uses: actions/download-artifact@v8
         with:
           name: coverage
           path: .
