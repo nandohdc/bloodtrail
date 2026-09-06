@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.7.0](https://github.com/nandohdc/bloodtrail/compare/v0.6.0...v0.7.0) (2026-09-06)
+
+
+### Added
+
+* **sdk:** rescope portability and production-scope gates ([#88](https://github.com/nandohdc/bloodtrail/issues/88)) ([c70d514](https://github.com/nandohdc/bloodtrail/commit/c70d5144d14d7e933c4a3b3b06c8ad3e76f044cc))
+* **sdk:** rescope portability and production-scope gates ([#88](https://github.com/nandohdc/bloodtrail/issues/88)) ([37b605f](https://github.com/nandohdc/bloodtrail/commit/37b605fd23cf5b52e91386587bb6d9a0f17d1736))
+
+
+### Documentation
+
+* **openspec:** archive add-ci-coverage-for-every-package ([#85](https://github.com/nandohdc/bloodtrail/issues/85)) ([d74d609](https://github.com/nandohdc/bloodtrail/commit/d74d609fb1d22fe79624fb6b65a77afeafccb84d))
+* **openspec:** archive add-ci-coverage-for-every-package ([#85](https://github.com/nandohdc/bloodtrail/issues/85)) ([8cc22ea](https://github.com/nandohdc/bloodtrail/commit/8cc22ea6e900ed2fc3cf5813908ca1b5daffac09))
+* **openspec:** archive rescope-portability-and-production-scope-gates ([#88](https://github.com/nandohdc/bloodtrail/issues/88)) ([c49873c](https://github.com/nandohdc/bloodtrail/commit/c49873c1ccaffc3ae1ebcaac1fcd847a55a37772))
+* **openspec:** archive rescope-portability-and-production-scope-gates ([#88](https://github.com/nandohdc/bloodtrail/issues/88)) ([0b4cf53](https://github.com/nandohdc/bloodtrail/commit/0b4cf5392a0b93d7d2a2f74fa9a092a2c7c18b63))
+* **openspec:** fold add-ci-coverage-for-every-package spec delta into ci-topology ([122d223](https://github.com/nandohdc/bloodtrail/commit/122d223929908604bb842c2dedf89958fe26c797))
+* **openspec:** fold add-ci-coverage-for-every-package spec delta into ci-topology ([3701463](https://github.com/nandohdc/bloodtrail/commit/3701463d2b77aef4e05285b3c20a122ec2544dbf))
+* **openspec:** fold rescope-portability-and-production-scope-gates spec deltas ([#88](https://github.com/nandohdc/bloodtrail/issues/88)) ([c8de16e](https://github.com/nandohdc/bloodtrail/commit/c8de16ee4d5d5e8383bba42b9c629b94e9fd69a9))
+* **openspec:** fold rescope-portability-and-production-scope-gates spec deltas ([#88](https://github.com/nandohdc/bloodtrail/issues/88)) ([f00b9ea](https://github.com/nandohdc/bloodtrail/commit/f00b9ea2f7db66327bb92d079ccfdedb183795d0))
+* **openspec:** propose add-ci-coverage-for-every-package ([#85](https://github.com/nandohdc/bloodtrail/issues/85)) ([9ede235](https://github.com/nandohdc/bloodtrail/commit/9ede23557f79ce37560e3a4b6aeb57b23120b5ef))
+* **openspec:** propose add-ci-coverage-for-every-package ([#85](https://github.com/nandohdc/bloodtrail/issues/85)) ([f6883fa](https://github.com/nandohdc/bloodtrail/commit/f6883fa23c6048533d7fd274ff6bedc46892dec1))
+* **openspec:** propose ratify-derived-field-trust-semantics ([#94](https://github.com/nandohdc/bloodtrail/issues/94)) ([c1c6936](https://github.com/nandohdc/bloodtrail/commit/c1c6936aeed717ec180d8af4b8238721b7c204e2))
+* **openspec:** propose ratify-derived-field-trust-semantics ([#94](https://github.com/nandohdc/bloodtrail/issues/94)) ([5928e5d](https://github.com/nandohdc/bloodtrail/commit/5928e5d2a37ece1a30c019eb9f8af4ba12ce9898))
+* **openspec:** propose rescope-portability-and-production-scope-gates ([#88](https://github.com/nandohdc/bloodtrail/issues/88)) ([0ed4b36](https://github.com/nandohdc/bloodtrail/commit/0ed4b362b75fb4ccf7861a06c09bee1bc59515d7))
+* **openspec:** propose rescope-portability-and-production-scope-gates ([#88](https://github.com/nandohdc/bloodtrail/issues/88)) ([63e5a59](https://github.com/nandohdc/bloodtrail/commit/63e5a59fb838cd2ca7d40b10b2ecdfdc17e37d10))
+* **openspec:** propose version-the-sanctioned-merge-gate ([#246](https://github.com/nandohdc/bloodtrail/issues/246)) ([9854c90](https://github.com/nandohdc/bloodtrail/commit/9854c90ac4f78a1dabcc7a68ef3d5a32a4bf7a04))
+* **openspec:** propose version-the-sanctioned-merge-gate ([#246](https://github.com/nandohdc/bloodtrail/issues/246)) ([38132b7](https://github.com/nandohdc/bloodtrail/commit/38132b788fde161153c7db1be79cf759f06e1d59))
+
 ## [0.6.0](https://github.com/nandohdc/bloodtrail/compare/v0.5.0...v0.6.0) (2026-09-05)
 
 
