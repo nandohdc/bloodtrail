@@ -30,7 +30,9 @@
     "openspec/changes/enforce-collector-auth-and-version/assessment.source.json",
     "openspec/changes/enforce-collector-auth-and-version/assessment.json",
     "openspec/changes/enforce-collector-auth-and-version/specs/security-audit-collector/spec.md",
-    "openspec/changes/enforce-collector-auth-and-version/specs/repository-topology/spec.md"
+    "openspec/changes/enforce-collector-auth-and-version/specs/repository-topology/spec.md",
+    "openspec/specs/security-audit-collector/spec.md",
+    "openspec/specs/repository-topology/spec.md"
   ],
   "candidate_approaches": [
     {
