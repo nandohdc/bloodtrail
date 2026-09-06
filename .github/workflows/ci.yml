@@ -52,7 +52,9 @@ jobs:
         with:
           node-version: "26.5.0"             # engines: >=24 <25 || >=26 <27
           cache: npm
-          cache-dependency-path: packages/security-audit-sdk-core/package-lock.json
+          cache-dependency-path: |
+            packages/security-audit-sdk-core/package-lock.json
+            packages/security-audit-sdk-node/package-lock.json
 
       - run: npm ci
 
@@ -63,22 +65,40 @@ jobs:
 
       - run: npm run validate
 
+      # DEPENDENCIES.md: "npm audit --audit-level=low must pass; findings are
+      # not waived by this record." The other jobs stay at high — neither of
+      # those packages documents a stricter policy. Retries on transport blips
+      # (#286) without retrying genuine advisories.
+      - run: node ../../.github/scripts/npm-audit-retry.mjs --audit-level=low
+
+      - name: Install sdk-node dependencies
+        run: npm ci
+        working-directory: packages/security-audit-sdk-node
+
+      - name: Validate sdk-node on Node 26.5.0
+        run: npm run validate
+        working-directory: packages/security-audit-sdk-node
+
+      - name: Audit sdk-node
+        run: node ../../.github/scripts/npm-audit-retry.mjs --audit-level=low
+        working-directory: packages/security-audit-sdk-node
+
       # Node 24.2.0 compatibility leg: runs matrix-safe product test loop under Node 24.2.0
       - name: Setup Node 24.2.0
         uses: actions/setup-node@v7
         with:
           node-version: "24.2.0"
           cache: npm
-          cache-dependency-path: packages/security-audit-sdk-core/package-lock.json
+          cache-dependency-path: |
+            packages/security-audit-sdk-core/package-lock.json
+            packages/security-audit-sdk-node/package-lock.json
 
       - name: Run matrix-safe product loop on Node 24.2.0
         run: npm run test:matrix
 
-      # DEPENDENCIES.md: "npm audit --audit-level=low must pass; findings are
-      # not waived by this record." The other jobs stay at high — neither of
-      # those packages documents a stricter policy. Retries on transport blips
-      # (#286) without retrying genuine advisories.
-      - run: node ../../.github/scripts/npm-audit-retry.mjs --audit-level=low
+      - name: Run test on Node 24.2.0 (sdk-node)
+        run: npm run test
+        working-directory: packages/security-audit-sdk-node
 
   # contracts/security-audit — the canonical contract.
   contract:
@@ -118,6 +138,12 @@ jobs:
         with:
           node-version: "26.5.0"
 
+      - name: Assert package discovery completeness
+        run: node .github/scripts/check-package-discovery.mjs
+
+      - name: Package discovery test suite
+        run: node --test .github/scripts/check-package-discovery.test.mjs
+
       - name: Governance checker
         run: node openspec/scripts/check-design-pattern-governance.mjs --phase final
 
@@ -145,8 +171,8 @@ jobs:
       - name: Governance test suite
         run: node --test openspec/tests/design-pattern-governance/*.test.mjs
 
-  # Line coverage for the two workspaces that have product code behind tests.
-  # Runs on Node 26 because both packages pin engines above the Node 22 the
+  # Line coverage for the workspaces that have product code behind tests.
+  # Runs on Node 26 because packages pin engines above the Node 22 the
   # sonar job uses, and the SDK must be built before its tests can run.
   coverage:
     name: coverage
@@ -162,12 +188,18 @@ jobs:
           cache: npm
           cache-dependency-path: |
             packages/security-audit-sdk-core/package-lock.json
+            packages/security-audit-sdk-node/package-lock.json
             research/browser-telemetry/package-lock.json
 
       - run: npm ci
         working-directory: packages/security-audit-sdk-core
       - run: npm run test:coverage
         working-directory: packages/security-audit-sdk-core
+
+      - run: npm ci
+        working-directory: packages/security-audit-sdk-node
+      - run: npm run test:coverage
+        working-directory: packages/security-audit-sdk-node
 
       - run: npm ci
         working-directory: research/browser-telemetry
@@ -182,6 +214,7 @@ jobs:
             const fs = require("node:fs");
             for (const [file, prefix] of [
               ["packages/security-audit-sdk-core/coverage/lcov.info", "packages/security-audit-sdk-core/"],
+              ["packages/security-audit-sdk-node/coverage/lcov.info", "packages/security-audit-sdk-node/"],
               ["research/browser-telemetry/coverage/lcov.info", "research/browser-telemetry/"],
             ]) {
               fs.writeFileSync(file, fs.readFileSync(file, "utf8").replaceAll(/^SF:/gm, "SF:" + prefix));
@@ -193,6 +226,7 @@ jobs:
           name: coverage
           path: |
             packages/security-audit-sdk-core/coverage/lcov.info
+            packages/security-audit-sdk-node/coverage/lcov.info
             research/browser-telemetry/coverage/lcov.info
           if-no-files-found: error
 
@@ -203,8 +237,8 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: packages/security-audit-sdk-core/coverage/lcov.info,research/browser-telemetry/coverage/lcov.info
-          flags: sdk,research
+          files: packages/security-audit-sdk-core/coverage/lcov.info,packages/security-audit-sdk-node/coverage/lcov.info,research/browser-telemetry/coverage/lcov.info
+          flags: sdk,sdk-node,research
           fail_ci_if_error: false
 
       - name: Upload test results to Codecov
@@ -213,8 +247,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: test_results
-          files: packages/security-audit-sdk-core/coverage/junit.xml,research/browser-telemetry/coverage/junit.xml
-          flags: sdk,research
+          files: packages/security-audit-sdk-core/coverage/junit.xml,packages/security-audit-sdk-node/coverage/junit.xml,research/browser-telemetry/coverage/junit.xml
+          flags: sdk,sdk-node,research
           disable_search: true
           fail_ci_if_error: false
 
