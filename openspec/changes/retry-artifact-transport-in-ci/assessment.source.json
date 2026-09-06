@@ -1,0 +1,144 @@
+{
+  "decision": "direct_implementation",
+  "forces": [
+    "A single transport-level ECONNRESET on the self-hosted runner reds the required coverage context though every coverage threshold passed, and the needs: [coverage] edge prevents the required sonar context: one dropped connection costs two required contexts and a full pipeline re-run (#345).",
+    "The same network fault struck the artifact download side in the sonar job eighteen minutes later on the same run, so retry coverage on the upload side alone leaves the sonar job exposed to an identical false red.",
+    "GitHub Actions has no step-level retry, and the repository has declined third-party retry actions on supply-chain grounds: npm-audit-retry.mjs was written rather than adopting one, so the remedy must stay in-house.",
+    "The gate's own subject - coverage thresholds - passed; the failure is transport. A retry wrapper must not swallow a genuine 'no coverage produced' outcome: if-no-files-found: error is currently the only assertion that the lcov reports exist, and it must keep failing closed on every attempt.",
+    "The repository already treats this exact class of resilience in-house in the same workflow: the SonarQube scan step uses continue-on-error plus an outcome-gated retry step, which turns a server blip into a slow green run while a real failure still fails twice."
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-step-level-retry-pattern",
+      "kind": "direct_implementation",
+      "summary": "Split the coverage upload and sonar download steps into a first attempt with continue-on-error and an outcome-gated retry step after a 10s wait, keeping if-no-files-found: error on every upload attempt and overwrite: true so a partial first container cannot poison the retry.",
+      "forces_addressed": [
+        "A single transport-level ECONNRESET on the self-hosted runner reds the required coverage context though every coverage threshold passed, and the needs: [coverage] edge prevents the required sonar context: one dropped connection costs two required contexts and a full pipeline re-run (#345).",
+        "The same network fault struck the artifact download side in the sonar job eighteen minutes later on the same run, so retry coverage on the upload side alone leaves the sonar job exposed to an identical false red.",
+        "GitHub Actions has no step-level retry, and the repository has declined third-party retry actions on supply-chain grounds: npm-audit-retry.mjs was written rather than adopting one, so the remedy must stay in-house.",
+        "The gate's own subject - coverage thresholds - passed; the failure is transport. A retry wrapper must not swallow a genuine 'no coverage produced' outcome: if-no-files-found: error is currently the only assertion that the lcov reports exist, and it must keep failing closed on every attempt.",
+        "The repository already treats this exact class of resilience in-house in the same workflow: the SonarQube scan step uses continue-on-error plus an outcome-gated retry step, which turns a server blip into a slow green run while a real failure still fails twice."
+      ]
+    },
+    {
+      "id": "approach-third-party-retry-action",
+      "kind": "alternative",
+      "summary": "Adopt a marketplace retry wrapper action around the upload and download steps.",
+      "forces_addressed": [
+        "A single transport-level ECONNRESET on the self-hosted runner reds the required coverage context though every coverage threshold passed, and the needs: [coverage] edge prevents the required sonar context: one dropped connection costs two required contexts and a full pipeline re-run (#345)."
+      ]
+    },
+    {
+      "id": "approach-inhouse-api-upload-script",
+      "kind": "alternative",
+      "summary": "Reimplement artifact upload with the Actions REST API in a new script with bounded retry, replacing actions/upload-artifact.",
+      "forces_addressed": [
+        "GitHub Actions has no step-level retry, and the repository has declined third-party retry actions on supply-chain grounds: npm-audit-retry.mjs was written rather than adopting one, so the remedy must stay in-house.",
+        "The gate's own subject - coverage thresholds - passed; the failure is transport. A retry wrapper must not swallow a genuine 'no coverage produced' outcome: if-no-files-found: error is currently the only assertion that the lcov reports exist, and it must keep failing closed on every attempt."
+      ]
+    },
+    {
+      "id": "approach-sonar-own-coverage",
+      "kind": "alternative",
+      "summary": "Remove the artifact hop by having the sonar job generate its own lcov reports.",
+      "forces_addressed": [
+        "A single transport-level ECONNRESET on the self-hosted runner reds the required coverage context though every coverage threshold passed, and the needs: [coverage] edge prevents the required sonar context: one dropped connection costs two required contexts and a full pipeline re-run (#345)."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-step-level-retry-pattern",
+  "rejected_alternative_ids": [
+    "approach-third-party-retry-action",
+    "approach-inhouse-api-upload-script",
+    "approach-sonar-own-coverage"
+  ],
+  "rejection_reasons": {
+    "approach-third-party-retry-action": {
+      "forces": [
+        "GitHub Actions has no step-level retry, and the repository has declined third-party retry actions on supply-chain grounds: npm-audit-retry.mjs was written rather than adopting one, so the remedy must stay in-house.",
+        "The gate's own subject - coverage thresholds - passed; the failure is transport. A retry wrapper must not swallow a genuine 'no coverage produced' outcome: if-no-files-found: error is currently the only assertion that the lcov reports exist, and it must keep failing closed on every attempt."
+      ],
+      "reason": "It widens the supply-chain surface the repository has deliberately kept closed for transport resilience, and a generic retry wrapper cannot distinguish a transport failure from the if-no-files-found failure it must not swallow without reimplementing the action's own error classification."
+    },
+    "approach-inhouse-api-upload-script": {
+      "forces": [
+        "GitHub Actions has no step-level retry, and the repository has declined third-party retry actions on supply-chain grounds: npm-audit-retry.mjs was written rather than adopting one, so the remedy must stay in-house.",
+        "The gate's own subject - coverage thresholds - passed; the failure is transport. A retry wrapper must not swallow a genuine 'no coverage produced' outcome: if-no-files-found: error is currently the only assertion that the lcov reports exist, and it must keep failing closed on every attempt."
+      ],
+      "reason": "It reimplements chunked upload, compression, and container bookkeeping that the maintained action already owns, enlarging the maintenance surface beyond the defect being fixed, and would itself need a new if-no-files-found-equivalent assertion to remain fail-closed."
+    },
+    "approach-sonar-own-coverage": {
+      "forces": [
+        "A single transport-level ECONNRESET on the self-hosted runner reds the required coverage context even though every coverage threshold passed, and the needs: [coverage] edge then prevents the required sonar context from ever starting, so one dropped connection costs two of the ten required contexts and a full pipeline re-run (#345)."
+      ],
+      "reason": "It duplicates the coverage job's three npm ci plus test:coverage legs inside the long-pole sonar job, worsening the makespan measured in #306, creates two producers of coverage metrics that can silently diverge, and still leaves the required coverage context's own upload unretried against the exact defect in #345."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-upload-fails-closed-on-missing-files",
+    "implementation-retry-shape-bounded-on-both-directions",
+    "implementation-no-new-dependencies-or-scripts"
+  ],
+  "invariant_evidence": {
+    "implementation-upload-fails-closed-on-missing-files": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "both upload attempts in the coverage job keep if-no-files-found: error over the exact three-lcov path list, so a genuine absence fails attempt 1 and attempt 2 and the context stays red",
+        "both upload attempts set overwrite: true so a partially created first container cannot turn the retry into an artifact-already-exists failure"
+      ]
+    },
+    "implementation-retry-shape-bounded-on-both-directions": {
+      "task_ids": [
+        "2.1",
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "coverage upload: first attempt carries continue-on-error: true, a 10s wait is gated on steps.upload.outcome == 'failure', and the retry step carries no continue-on-error so a second failure reds the job",
+        "sonar download: same shape with id download and steps.download.outcome == 'failure'"
+      ]
+    },
+    "implementation-no-new-dependencies-or-scripts": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "the implementation edits .github/workflows/ci.yml only; no new actions, no new .github/scripts files, no dependency manifest changes"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "trust_boundary": "Edits run only inside the existing coverage and sonar jobs; no new actor, credential, or trigger surface is introduced, and fork-PR trust boundaries are unchanged.",
+    "authority_provenance": "Does not modify or interact with authority, signing, or provenance logic; the retry steps carry no decision-bearing data.",
+    "authentication_or_authorization": "Does not modify or interact with authentication or authorization mechanisms; the existing job-level token exposure is unchanged.",
+    "audit_integrity": "Preserves every required audit assertion: coverage thresholds, sonar quality gate, and all ten required contexts keep their names and failure semantics.",
+    "confidentiality": "No new secret, environment variable, or data path is introduced; artifact contents are the same lcov reports as before.",
+    "mutation_ownership": "Changes are confined to the declared owned paths: .github/workflows/ci.yml and the change directory.",
+    "fail_posture": "Fails closed: if-no-files-found stays error on every upload attempt, the retry step is not gated by continue-on-error, and a real failure still fails twice.",
+    "error_disclosure": "The retry steps surface the action's own standard error output; no new diagnostic path is introduced and no data beyond existing logs is emitted.",
+    "concurrency": "The retry pattern runs sequentially within its own job step chain; no concurrent writers exist for the coverage artifact name, which is what makes overwrite: true safe.",
+    "lifecycle": "Applies only to the CI pull-request and main push verification workflows; no runtime or release lifecycle surface is touched.",
+    "resource_retention": "The artifact container remains run-scoped with the same retention as before; the 10s wait adds at most ten seconds to a failing run.",
+    "retry_or_redelivery": "The change itself is the retry control: exactly one bounded retry per direction on transport-class failures, with genuine failures still failing twice and no unbounded loop.",
+    "cryptography": "Does not introduce, modify, or rely upon cryptographic algorithms or keys.",
+    "privacy_transformation": "Processes no user telemetry, personal data, or operational payloads; artifact contents are coverage reports from the repository's own test suites.",
+    "external_security_integration": "Operates within the existing GitHub Actions runner environment with no new external security integration."
+  },
+  "owned_paths": [
+    ".github/workflows/ci.yml",
+    "openspec/changes/retry-artifact-transport-in-ci/.openspec.yaml",
+    "openspec/changes/retry-artifact-transport-in-ci/proposal.md",
+    "openspec/changes/retry-artifact-transport-in-ci/design.md",
+    "openspec/changes/retry-artifact-transport-in-ci/tasks.md",
+    "openspec/changes/retry-artifact-transport-in-ci/assessment.source.json",
+    "openspec/changes/retry-artifact-transport-in-ci/assessment.json"
+  ],
+  "ordering": {
+    "proposal_baseline_commit": "ecd75e90ab0091c282561a5d01965533ec8903d8"
+  }
+}
