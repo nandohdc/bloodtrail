@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.8.0](https://github.com/nandohdc/bloodtrail/compare/v0.7.0...v0.8.0) (2026-09-06)
+
+
+### Added
+
+* **governance:** version the sanctioned merge gate ([#246](https://github.com/nandohdc/bloodtrail/issues/246)) ([0e02b41](https://github.com/nandohdc/bloodtrail/commit/0e02b415b4da310e907d3ac3e01408af3eec8273))
+
+
+### Documentation
+
+* **openspec:** archive ratify-derived-field-trust-semantics ([#94](https://github.com/nandohdc/bloodtrail/issues/94)) ([b9e4904](https://github.com/nandohdc/bloodtrail/commit/b9e4904874b349788a519d1f153352cfc7da87d9))
+* **openspec:** archive ratify-derived-field-trust-semantics ([#94](https://github.com/nandohdc/bloodtrail/issues/94)) ([f76f743](https://github.com/nandohdc/bloodtrail/commit/f76f7437d6a256d55c857678fb222b402a1dcb41))
+* **openspec:** archive version-the-sanctioned-merge-gate ([#246](https://github.com/nandohdc/bloodtrail/issues/246)) ([596e3b5](https://github.com/nandohdc/bloodtrail/commit/596e3b562cf8922245fabf3fda0846b13c523abd))
+* **openspec:** archive version-the-sanctioned-merge-gate ([#246](https://github.com/nandohdc/bloodtrail/issues/246)) ([99cbdac](https://github.com/nandohdc/bloodtrail/commit/99cbdaca280d2cee611906a9b0cdcc4a776edc6d))
+* **openspec:** fold ratify-derived-field-trust-semantics delta into derived-field-trust-semantics ([#94](https://github.com/nandohdc/bloodtrail/issues/94)) ([edd8f2c](https://github.com/nandohdc/bloodtrail/commit/edd8f2cbd33c316f8bf530d6cdbe9313f047cf3a))
+* **openspec:** fold ratify-derived-field-trust-semantics delta into derived-field-trust-semantics ([#94](https://github.com/nandohdc/bloodtrail/issues/94)) ([925a8b1](https://github.com/nandohdc/bloodtrail/commit/925a8b1693ec14e2374274f0694ca2769c4873a2))
+* **openspec:** fold version-the-sanctioned-merge-gate delta into change-governance ([#246](https://github.com/nandohdc/bloodtrail/issues/246)) ([882b54f](https://github.com/nandohdc/bloodtrail/commit/882b54f20dc96e7ac88a45efdbf219b7ba9118ca))
+* **openspec:** fold version-the-sanctioned-merge-gate delta into change-governance ([#246](https://github.com/nandohdc/bloodtrail/issues/246)) ([1440d4a](https://github.com/nandohdc/bloodtrail/commit/1440d4aa558080123869f354b87ae32148105d85))
+
 ## [0.7.0](https://github.com/nandohdc/bloodtrail/compare/v0.6.0...v0.7.0) (2026-09-06)
 
 
