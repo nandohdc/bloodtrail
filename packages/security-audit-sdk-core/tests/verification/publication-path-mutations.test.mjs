@@ -26,7 +26,7 @@ test("P-00 unmutated control passes over real workflows and documentation", () =
   // The widened surface must be covered, not merely available: automation files
   // beyond the workflows, and every tracked manifest with its script bodies.
   assert.match(result.stdout, /[1-9]\d* automation file\(s\)/);
-  assert.match(result.stdout, /[34] private tracked package manifest\(s\)\/[1-9]\d* script\(s\)/);
+  assert.match(result.stdout, /[3-5] private tracked package manifest\(s\)\/[1-9]\d* script\(s\)/);
 });
 
 test("M-PP-A an introduced publish step is rejected", () => {

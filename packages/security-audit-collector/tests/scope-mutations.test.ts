@@ -207,25 +207,26 @@ test("negative control: locally bound identifier matching a host-global name pas
   assert.match(output, /scope passed:/);
 });
 
-test("manifest mutation: a runtime dependency fails closed", () => {
-  const result = runCase("runtime-dependency", ({ copiedPackage }) => {
+function runManifestMutation(name: string, mutate: (manifest: Record<string, unknown>) => void): CaseResult {
+  return runCase(name, ({ copiedPackage }) => {
     const manifestPath = resolve(copiedPackage, "package.json");
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { dependencies?: Record<string, string> };
-    manifest.dependencies = { kafkajs: "2.2.4" };
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
+    mutate(manifest);
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  });
+}
+
+test("manifest mutation: a runtime dependency fails closed", () => {
+  const result = runManifestMutation("runtime-dependency", (manifest) => {
+    (manifest as { dependencies?: Record<string, string> }).dependencies = { kafkajs: "2.2.4" };
   });
   assert.notEqual(result.status, 0, `manifest mutation unexpectedly passed:\n${result.output}`);
   assert.match(result.output, /dependencies must remain empty/);
 });
 
 test("manifest mutation: a forbidden transport export fails closed", () => {
-  const result = runCase("transport-export", ({ copiedPackage }) => {
-    const manifestPath = resolve(copiedPackage, "package.json");
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
-      exports: Record<string, unknown>;
-    };
-    manifest.exports["./transport"] = "./dist/transport.js";
-    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  const result = runManifestMutation("transport-export", (manifest) => {
+    (manifest as { exports: Record<string, unknown> }).exports["./transport"] = "./dist/transport.js";
   });
   assert.notEqual(result.status, 0, `manifest mutation unexpectedly passed:\n${result.output}`);
   assert.match(result.output, /forbidden transport export/);

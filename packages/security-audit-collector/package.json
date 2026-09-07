@@ -42,7 +42,7 @@
     "build": "npm run clean && tsc -p tsconfig.build.json && npm run copy:generated",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:runtime": "tsc -p tsconfig.test.json && node --test dist-tests/**/*.test.js",
-    "test:coverage": "node -e \"require('node:fs').mkdirSync('coverage',{recursive:true})\" && npm run build && tsc -p tsconfig.test.json && node --enable-source-maps --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=25 --test-reporter=lcov --test-reporter-destination=coverage/lcov.info --test-reporter=junit --test-reporter-destination=coverage/junit.xml dist-tests/**/*.test.js",
+    "test:coverage": "node -e \"require('node:fs').mkdirSync('coverage',{recursive:true})\" && npm run build && tsc -p tsconfig.test.json && node --enable-source-maps --test --experimental-test-coverage --test-coverage-exclude='dist/generated/**' --test-coverage-lines=80 --test-coverage-branches=25 --test-reporter=lcov --test-reporter-destination=coverage/lcov.info --test-reporter=junit --test-reporter-destination=coverage/junit.xml dist-tests/**/*.test.js",
     "test": "npm run build && npm run test:runtime",
     "test:matrix": "npm run check:generated && npm run test:runtime",
     "test:scope": "node scripts/check-scope.mjs",
