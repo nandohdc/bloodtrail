@@ -38,10 +38,10 @@
 
 - [x] 6.1 Open the implementation PR with the full authorization posture section; merge only when every required CI check is green on the exact head, under the away-window grant, as an identity-preserving 2-parent merge.
 - [x] 6.2 Fold the `security-audit-collector` delta into `openspec/specs/security-audit-collector/spec.md` (canonical header + purpose + requirements, no delta headers) and apply the MODIFIED `repository-topology` requirement in a dedicated fold PR, proving byte-identity of requirement blocks and no-op re-application.
-- [ ] 6.3 Archive the change with byte-preserving relocation plus `archive-evidence.md`; verify `openspec validate --all --strict` and staged rename similarity 100%.
-- [ ] 6.4 Close #107 with an evidence comment (the nine arms, the ingress order, the statement that authentication identifies a sender and does not prove evidence truth) and tick the #107 line in #132's Wave 4 checklist.
+- [x] 6.3 Archive the change with byte-preserving relocation plus `archive-evidence.md`; verify `openspec validate --all --strict` and staged rename similarity 100%.
+- [x] 6.4 Close #107 with an evidence comment (the nine arms, the ingress order, the statement that authentication identifies a sender and does not prove evidence truth) and tick the #107 line in #132's Wave 4 checklist.
 
 ## 7. Governance records and honest boundaries
 
-- [ ] 7.1 Confirm the design-pattern-governance final phase and dual check pass at every committed head; if any gate demands a signed owner decision bound to an exact commit, stop and record the pending state instead of fabricating one.
-- [ ] 7.2 Keep all PR bodies stating: AI verification is evidence, not approval; the topology amendment is decision-bearing and awaits owner ratification; no production authority is claimed.
+- [x] 7.1 Confirm the design-pattern-governance final phase and dual check pass at every committed head; if any gate demands a signed owner decision bound to an exact commit, stop and record the pending state instead of fabricating one.
+- [x] 7.2 Keep all PR bodies stating: AI verification is evidence, not approval; the topology amendment is decision-bearing and awaits owner ratification; no production authority is claimed.
