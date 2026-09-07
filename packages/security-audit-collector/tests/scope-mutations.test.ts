@@ -114,6 +114,11 @@ const FORBIDDEN_FILENAME_MUTATIONS: ReadonlyArray<{ readonly artifact: string; r
   { artifact: "src/http-client.ts", source: "export const httpClient = {};\n" },
 ];
 
+interface ProbeSpec {
+  readonly artifact: string;
+  readonly source: string;
+}
+
 interface CaseResult {
   readonly status: number | null;
   readonly output: string;
@@ -121,7 +126,15 @@ interface CaseResult {
 
 function runCase(name: string, mutate?: (context: { copiedPackage: string }) => void): CaseResult {
   const targetDir = resolve(suiteRoot, name, "packages/security-audit-collector");
-  stageIsolatedPackage(packageRoot, targetDir);
+  cpSync(packageRoot, targetDir, {
+    recursive: true,
+    force: true,
+    filter: (entry) =>
+      !entry.includes("node_modules") &&
+      !entry.includes("dist-") &&
+      !entry.includes("dist") &&
+      !entry.includes("coverage"),
+  });
   symlinkSync(resolve(packageRoot, "node_modules"), resolve(targetDir, "node_modules"), "dir");
   if (mutate) mutate({ copiedPackage: targetDir });
   const check = spawnSync(process.execPath, ["scripts/check-scope.mjs"], {
@@ -132,9 +145,9 @@ function runCase(name: string, mutate?: (context: { copiedPackage: string }) => 
   return { status: check.status, output: `${check.stdout}\n${check.stderr}` };
 }
 
-function runWithProbe(name: string, artifact: string, source: string): CaseResult {
+function runWithProbe(name: string, probe: ProbeSpec): CaseResult {
   return runCase(name, ({ copiedPackage }) => {
-    writeFileSync(resolve(copiedPackage, artifact), source, "utf8");
+    writeFileSync(resolve(copiedPackage, probe.artifact), probe.source, "utf8");
   });
 }
 
@@ -150,18 +163,6 @@ function slug(value: string): string {
   return value.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-").replaceAll(/(?:^-|-$)/g, "");
 }
 
-function stageIsolatedPackage(sourceDir: string, targetDir: string) {
-  cpSync(sourceDir, targetDir, {
-    recursive: true,
-    force: true,
-    filter: (entry) =>
-      !entry.includes("node_modules") &&
-      !entry.includes("dist-") &&
-      !entry.includes("dist") &&
-      !entry.includes("coverage"),
-  });
-}
-
 test("unmutated collector package passes the scope gate and reports zero approved couplings", () => {
   const { output, status } = runCase("null-control");
   assert.equal(status, 0, `unmutated control failed:\n${output}`);
@@ -170,25 +171,24 @@ test("unmutated collector package passes the scope gate and reports zero approve
 });
 
 test("positive control: language globals stay approved without false positives", () => {
-  const { output, status } = runWithProbe(
-    "language-globals",
-    PROBE_ARTIFACT,
-    "export function measure(text: string): number { return new TextEncoder().encode(text).byteLength + JSON.stringify({}).length; }\n",
-  );
+  const { output, status } = runWithProbe("language-globals", {
+    artifact: PROBE_ARTIFACT,
+    source: "export function measure(text: string): number { return new TextEncoder().encode(text).byteLength + JSON.stringify({}).length; }\n",
+  });
   assert.equal(status, 0, `language-global control failed:\n${output}`);
   assert.match(output, /scope passed:/);
 });
 
 for (const scenario of COUPLING_REJECTIONS) {
   test(`${scenario.name} is rejected`, () => {
-    const result = runWithProbe(slug(scenario.name), PROBE_ARTIFACT, scenario.source);
+    const result = runWithProbe(slug(scenario.name), { artifact: PROBE_ARTIFACT, source: scenario.source });
     verifyCouplingFailure(result, { code: scenario.code, artifact: PROBE_ARTIFACT, detail: scenario.detail });
   });
 }
 
 for (const scenario of FORBIDDEN_FILENAME_MUTATIONS) {
   test(`filename mutation: ${scenario.artifact} fails closed`, () => {
-    const result = runWithProbe(slug(scenario.artifact), scenario.artifact, scenario.source);
+    const result = runWithProbe(slug(scenario.artifact), { artifact: scenario.artifact, source: scenario.source });
     assert.notEqual(result.status, 0, `filename mutation unexpectedly passed:\n${result.output}`);
     assert.match(
       result.output,
@@ -198,11 +198,10 @@ for (const scenario of FORBIDDEN_FILENAME_MUTATIONS) {
 }
 
 test("negative control: locally bound identifier matching a host-global name passes", () => {
-  const { output, status } = runWithProbe(
-    "locally-bound-identifier",
-    PROBE_ARTIFACT,
-    "export function processName(process: string): string { const Buffer = process.length; return `${process}:${Buffer}`; }\n",
-  );
+  const { output, status } = runWithProbe("locally-bound-identifier", {
+    artifact: PROBE_ARTIFACT,
+    source: "export function processName(process: string): string { const Buffer = process.length; return `${process}:${Buffer}`; }\n",
+  });
   assert.equal(status, 0, `negative control failed:\n${output}`);
   assert.match(output, /scope passed:/);
 });

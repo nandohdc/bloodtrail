@@ -58,9 +58,7 @@ function render(bounds, supportedVersions) {
   return `${lines.join("\n")}\n`;
 }
 
-async function main() {
-  const check = process.argv.includes("--check");
-  const contract = JSON.parse(await readFile(contractSourcePath, "utf8"));
+function loadContractData(contract) {
   const bounds = contract?.bounds;
   if (typeof bounds !== "object" || bounds === null) {
     throw new Error("contract source has no bounds block");
@@ -69,18 +67,29 @@ async function main() {
   if (typeof schemaVersion !== "string" || schemaVersion.length === 0) {
     throw new Error("contract source has no metadata.schema_version string");
   }
+  return { bounds, schemaVersion };
+}
+
+async function checkDrift(rendered) {
+  const existing = await readFile(outputPath, "utf8");
+  if (existing !== rendered) {
+    process.stderr.write(
+      "bounds drift: src/generated/bounds.generated.ts differs from the contract source; run npm run generate\n",
+    );
+    process.exitCode = 1;
+    return;
+  }
+  process.stdout.write("bounds generation check passed: byte-identical to contract source\n");
+}
+
+async function main() {
+  const check = process.argv.includes("--check");
+  const contract = JSON.parse(await readFile(contractSourcePath, "utf8"));
+  const { bounds, schemaVersion } = loadContractData(contract);
   const rendered = render(bounds, [schemaVersion]);
 
   if (check) {
-    const existing = await readFile(outputPath, "utf8");
-    if (existing !== rendered) {
-      process.stderr.write(
-        "bounds drift: src/generated/bounds.generated.ts differs from the contract source; run npm run generate\n",
-      );
-      process.exitCode = 1;
-      return;
-    }
-    process.stdout.write("bounds generation check passed: byte-identical to contract source\n");
+    await checkDrift(rendered);
     return;
   }
 

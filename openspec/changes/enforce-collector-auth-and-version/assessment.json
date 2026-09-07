@@ -22,7 +22,9 @@
   "owned_paths": [
     "packages/security-audit-collector/",
     ".github/scripts/check-package-discovery.mjs",
+    ".github/scripts/check-package-discovery.test.mjs",
     ".github/workflows/ci.yml",
+    "packages/security-audit-sdk-core/tests/verification/publication-path-mutations.test.mjs",
     "openspec/changes/enforce-collector-auth-and-version/.openspec.yaml",
     "openspec/changes/enforce-collector-auth-and-version/proposal.md",
     "openspec/changes/enforce-collector-auth-and-version/design.md",
