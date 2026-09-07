@@ -30,9 +30,9 @@
 
 ## 5. Repository integration and verification
 
-- [ ] 5.1 Amend `DECLARED_PACKAGES` in `.github/scripts/check-package-discovery.mjs` with `packages/security-audit-collector/package.json` and wire the package into `.github/workflows/ci.yml` (job, cache paths, coverage entry) following the #85 pattern; run the discovery check locally.
-- [ ] 5.2 Run the full read-only battery with an empty index: package `validate`, contract `validate`, `openspec validate --strict`, design-pattern-governance phases, dual check, and `git diff --check`.
-- [ ] 5.3 Stage the explicit implementation allowlist only; commit; verify the committed head passes the final governance phase and dual check.
+- [x] 5.1 Amend `DECLARED_PACKAGES` in `.github/scripts/check-package-discovery.mjs` with `packages/security-audit-collector/package.json` and wire the package into `.github/workflows/ci.yml` (job, cache paths, coverage entry) following the #85 pattern; run the discovery check locally.
+- [x] 5.2 Run the full read-only battery with an empty index: package `validate`, contract `validate`, `openspec validate --strict`, design-pattern-governance phases, dual check, and `git diff --check`.
+- [x] 5.3 Stage the explicit implementation allowlist only; commit; verify the committed head passes the final governance phase and dual check.
 
 ## 6. Delivery, fold, archive, and closure
 

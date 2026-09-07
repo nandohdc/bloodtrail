@@ -58,15 +58,23 @@ function render(bounds, supportedVersions) {
   return `${lines.join("\n")}\n`;
 }
 
-function loadContractData(contract) {
-  const bounds = contract?.bounds;
-  if (typeof bounds !== "object" || bounds === null) {
+function requireBounds(value) {
+  if (typeof value !== "object" || value === null) {
     throw new Error("contract source has no bounds block");
   }
-  const schemaVersion = contract?.metadata?.schema_version;
-  if (typeof schemaVersion !== "string" || schemaVersion.length === 0) {
+  return value;
+}
+
+function requireSchemaVersion(value) {
+  if (typeof value !== "string" || value.length === 0) {
     throw new Error("contract source has no metadata.schema_version string");
   }
+  return value;
+}
+
+function loadContractData(contract) {
+  const bounds = requireBounds(contract?.bounds);
+  const schemaVersion = requireSchemaVersion(contract?.metadata?.schema_version);
   return { bounds, schemaVersion };
 }
 
