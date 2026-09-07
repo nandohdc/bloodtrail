@@ -8,9 +8,10 @@ import {
 
 test("check-package-discovery: enumerateGitPackages discovers all tracked packages", () => {
   const enumerated = enumerateGitPackages();
-  assert.equal(enumerated.length, 4);
+  assert.equal(enumerated.length, 5);
   assert.deepEqual(enumerated, [
     "contracts/security-audit/package.json",
+    "packages/security-audit-collector/package.json",
     "packages/security-audit-sdk-core/package.json",
     "packages/security-audit-sdk-node/package.json",
     "research/browser-telemetry/package.json",
@@ -19,9 +20,9 @@ test("check-package-discovery: enumerateGitPackages discovers all tracked packag
 
 test("check-package-discovery: passing verification on exact declared package list", () => {
   const result = assertPackageDiscovery();
-  assert.equal(result.packageCount, 4);
-  assert.equal(result.packages.length, 4);
-  assert.match(result.message, /package discovery completeness passed: 4 declared package\(s\)/);
+  assert.equal(result.packageCount, 5);
+  assert.equal(result.packages.length, 5);
+  assert.match(result.message, /package discovery completeness passed: 5 declared package\(s\)/);
 });
 
 test("check-package-discovery: fails closed when discovered package count is zero", () => {

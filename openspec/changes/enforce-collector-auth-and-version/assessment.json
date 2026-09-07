@@ -22,7 +22,9 @@
   "owned_paths": [
     "packages/security-audit-collector/",
     ".github/scripts/check-package-discovery.mjs",
+    ".github/scripts/check-package-discovery.test.mjs",
     ".github/workflows/ci.yml",
+    "packages/security-audit-sdk-core/tests/verification/publication-path-mutations.test.mjs",
     "openspec/changes/enforce-collector-auth-and-version/.openspec.yaml",
     "openspec/changes/enforce-collector-auth-and-version/proposal.md",
     "openspec/changes/enforce-collector-auth-and-version/design.md",
@@ -30,7 +32,9 @@
     "openspec/changes/enforce-collector-auth-and-version/assessment.source.json",
     "openspec/changes/enforce-collector-auth-and-version/assessment.json",
     "openspec/changes/enforce-collector-auth-and-version/specs/security-audit-collector/spec.md",
-    "openspec/changes/enforce-collector-auth-and-version/specs/repository-topology/spec.md"
+    "openspec/changes/enforce-collector-auth-and-version/specs/repository-topology/spec.md",
+    "openspec/specs/security-audit-collector/spec.md",
+    "openspec/specs/repository-topology/spec.md"
   ],
   "candidate_approaches": [
     {
