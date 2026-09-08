@@ -53,8 +53,39 @@ const handoff = createHttpDeliveryHandoff({
 Only a 2xx response with exactly one matching accepted acknowledgment produces
 `acknowledged`. Retryable responses, timeouts, and exchange failures are
 classified as `retryable`; permanent responses are `non_retryable`; malformed
-or ambiguous acknowledgments are terminal `protocol_error`. Retrying, capacity,
-and shutdown behavior remain separately governed work.
+or ambiguous acknowledgments are terminal `protocol_error`. Capacity and
+shutdown behavior remain separately governed work.
+
+## Bounded delivery retry (provisional)
+
+`createBoundedDeliveryRetry` composes a `HttpDeliveryHandoff` with a bounded,
+jittered retry schedule. Only a `retryable` outcome is ever retried; any other
+terminal outcome — or a spent retry budget — stops scheduling immediately and
+never exceeds the configured maximum number of attempts.
+
+```typescript
+import { createHttpDeliveryHandoff, createBoundedDeliveryRetry, nodeTimers } from "@bloodtrail/security-audit-sdk-node";
+
+const retry = createBoundedDeliveryRetry({
+  handoff: createHttpDeliveryHandoff({ path: "/v1/security-audit", exchange }),
+  maxAttempts: 5,
+  baseDelayMs: 200,
+  maxDelayMs: 10_000,
+  jitterSource: Math.random,
+  timers: nodeTimers,
+});
+
+const result = await retry.deliver(event);
+// result.status: "acknowledged" | "non_retryable" | "protocol_error" | "exhausted"
+```
+
+Each retried attempt carries the occurrence's unchanged `event.id` and an
+incrementing zero-based `correlation.retry_attempt`, matching the delivery
+conformance contract's attempt-identity requirement. Delay before each retry is
+a jittered, capped exponential backoff: `floor(min(baseDelayMs * 2^attempt,
+maxDelayMs) * jitterSource())`. An optional `observability` hook exposes
+`onAttemptScheduled` and `onExhausted` for callers that need retry-exhaustion
+alerting.
 
 ## Usage
 

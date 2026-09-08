@@ -1,0 +1,147 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A previously shipped, tested single-attempt handoff must gain a caller-supplied attempt ordinal without breaking any existing caller or loosening its fail-closed outcome classification.",
+    "Retry scheduling needs full determinism under test — bounded delay, jitter, and timing — without the module itself reading wall-clock time or an unseeded random source.",
+    "The retry budget and wire correlation must respect the frozen contract's retry_attempt_max ceiling and the delivery conformance contract's attempt-identity requirement without the module reading the frozen contract source or requiring a contract change.",
+    "Retry scheduling must stay compositional and separate from the single-attempt handoff's own scope, preserving the existing requirement that the handoff module itself never schedules a retry."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "lifecycle_or_state",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/src/http-handoff.ts",
+    "packages/security-audit-sdk-node/src/delivery-retry.ts",
+    "packages/security-audit-sdk-node/src/index.ts",
+    "packages/security-audit-sdk-node/tests/http-handoff.test.ts",
+    "packages/security-audit-sdk-node/tests/delivery-retry.test.ts",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
+    "packages/security-audit-sdk-node/README.md",
+    "openspec/changes/implement-delivery-retry-semantics/",
+    "openspec/specs/security-audit-sdk-node/spec.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-implement-delivery-retry-semantics",
+      "kind": "direct_implementation",
+      "summary": "Widen the handoff's attempt ordinal into an optional parameter and add a separate composing module that schedules bounded, jittered retries over it using injected timers and jitter.",
+      "forces_addressed": [
+        "A previously shipped, tested single-attempt handoff must gain a caller-supplied attempt ordinal without breaking any existing caller or loosening its fail-closed outcome classification.",
+        "Retry scheduling needs full determinism under test — bounded delay, jitter, and timing — without the module itself reading wall-clock time or an unseeded random source.",
+        "The retry budget and wire correlation must respect the frozen contract's retry_attempt_max ceiling and the delivery conformance contract's attempt-identity requirement without the module reading the frozen contract source or requiring a contract change.",
+        "Retry scheduling must stay compositional and separate from the single-attempt handoff's own scope, preserving the existing requirement that the handoff module itself never schedules a retry."
+      ]
+    },
+    {
+      "id": "approach-alternative-implement-delivery-retry-semantics",
+      "kind": "alternative",
+      "summary": "Fold scheduling directly into the existing handoff module so one function both attempts and retries a delivery internally.",
+      "forces_addressed": [
+        "A previously shipped, tested single-attempt handoff must gain a caller-supplied attempt ordinal without breaking any existing caller or loosening its fail-closed outcome classification."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-implement-delivery-retry-semantics",
+  "rejected_alternative_ids": [
+    "approach-alternative-implement-delivery-retry-semantics"
+  ],
+  "rejection_reasons": {
+    "approach-alternative-implement-delivery-retry-semantics": {
+      "forces": [
+        "Retry scheduling must stay compositional and separate from the single-attempt handoff's own scope, preserving the existing requirement that the handoff module itself never schedules a retry."
+      ],
+      "reason": "Folding scheduling into the handoff module would directly contradict the shipped requirement that the single-attempt handoff never itself schedules a retry, would force every existing handoff test to carry fake-timer setup it does not need, and would couple HTTP outcome classification to backoff/jitter concerns that #105 and #106 will also need to compose against independently."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-parameterized-attempt-ordinal",
+    "implementation-retry-only-on-retryable",
+    "implementation-bounded-attempt-budget",
+    "implementation-deterministic-jittered-delay"
+  ],
+  "invariant_evidence": {
+    "implementation-parameterized-attempt-ordinal": {
+      "task_ids": [
+        "1.2",
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "wire-correlation test asserts the supplied ordinal reaches correlation.retry_attempt and the result without mutating event.id",
+        "out-of-bounds ordinal test asserts a negative, non-integer, or over-ceiling ordinal is rejected before any exchange call"
+      ]
+    },
+    "implementation-retry-only-on-retryable": {
+      "task_ids": [
+        "1.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "only-retries-retryable test: a non_retryable/acknowledged/protocol_error outcome stops scheduling immediately",
+        "outcome-mutation test: a retryable outcome followed by a permanent outcome makes exactly two attempts, never three"
+      ]
+    },
+    "implementation-bounded-attempt-budget": {
+      "task_ids": [
+        "1.2",
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "max-attempts test: an always-retryable handoff produces exactly maxAttempts calls and a terminal exhausted result with an attempt counter",
+        "single-attempt boundary test: maxAttempts=1 makes exactly one call and schedules no delay",
+        "construction-validation test: out-of-range maxAttempts, negative delays, and maxDelayMs < baseDelayMs all throw TypeError before any attempt"
+      ]
+    },
+    "implementation-deterministic-jittered-delay": {
+      "task_ids": [
+        "1.2",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "delay-computation test: exact expected delays asserted for a fixed jitter source and base/max delay configuration",
+        "delay-cap test: an uncapped exponential value is clamped to maxDelayMs",
+        "jitter-range test: a jitter source returning a value outside [0, 1) is rejected"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Retry scheduling never fabricates or reports an acknowledgment itself; the terminal status returned is always exactly what the wrapped handoff classified for the last attempt, or the explicit exhausted status when the budget is spent, so no attempt can be misrepresented as delivered.",
+    "authentication_or_authorization": "This module performs no authentication or authorization; it composes an already-authenticated exchange boundary supplied by the caller and adds no credential or identity handling.",
+    "authority_provenance": "The occurrence's event.id is read once and passed through unchanged on every attempt; the module never mints, substitutes, or derives a new event identity across retries.",
+    "concurrency": "One deliver() call drives its attempts strictly sequentially — each attempt is awaited to completion before the next is scheduled — so no two attempts for the same occurrence are ever in flight concurrently and no shared mutable state is read or written across calls.",
+    "confidentiality": "The module never inspects or logs response bodies, headers, or error text; its only external outputs are the closed result status/code/event_id/attempts shape and the caller-supplied observability hook's own arguments (an attempt ordinal and a delay in milliseconds).",
+    "cryptography": "No cipher, key, signature, hash, or TLS configuration is introduced or touched; the injected jitter source is a plain numeric function, not a security-relevant random source.",
+    "error_disclosure": "The exhausted terminal code is a fixed literal (retry_exhausted); all other codes pass through unchanged from the wrapped handoff's own closed code set, so no attacker-controlled or peer-controlled text can reach a caller through this module.",
+    "external_security_integration": "The module adds no network client, security service, or external runtime integration; the wrapped handoff, timer provider, and jitter source are all caller-injected ports.",
+    "fail_posture": "Any outcome other than retryable is terminal immediately; a spent retry budget fails to a distinct exhausted status rather than silently reporting the last retryable attempt as final or as delivered.",
+    "lifecycle": "The module owns no persistent resource: each scheduled wait uses an unref'd timer handle from the injected timer provider and no interval, socket, queue, or background task outlives one deliver() call.",
+    "mutation_ownership": "The change is bounded to the Node binding's handoff and new retry module, their tests and documentation, and the owning OpenSpec artifacts and capability specification.",
+    "privacy_transformation": "The module transforms no personal data; it only recomputes correlation.retry_attempt on an already-canonical occurrence for the wrapped handoff and introduces no new data collection, transformation policy, or retention store.",
+    "resource_retention": "Attempt count and delay are bounded by validated construction-time configuration (maxAttempts <= 1000, matching the frozen contract's retry_attempt_max ceiling); no attempt history, response body, or timer beyond the current wait is retained after deliver() resolves.",
+    "retry_or_redelivery": "This module's entire purpose is bounded, jittered redelivery of one occurrence: retries are strictly capped, only triggered by a retryable classification, and every attempt is at-least-once (never claimed exactly-once), consistent with the delivery conformance contract.",
+    "trust_boundary": "The wrapped handoff's classification of the remote peer's response remains the sole trust boundary; this module does not weaken it — it only decides, from that already-fail-closed classification, whether to schedule another already-validated attempt."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "4aa52c357d96579505001aba877e71103c9303be"
+  },
+  "verification_task_ids": [
+    "1.2",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "3.3",
+    "4.1"
+  ]
+}
