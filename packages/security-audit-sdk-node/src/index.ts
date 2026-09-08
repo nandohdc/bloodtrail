@@ -23,6 +23,13 @@ export {
   type DeliveryRetryResult,
 } from "./delivery-retry.js";
 export {
+  createBoundedDeliveryBackpressure,
+  type DeliveryAdmissionResult,
+  type DeliveryBackpressure,
+  type DeliveryBackpressureObservability,
+  type DeliveryBackpressureOptions,
+} from "./delivery-backpressure.js";
+export {
   nodePlatformProvider,
   type NodePlatformProvider,
   createNodeSecurityAuditSdk,

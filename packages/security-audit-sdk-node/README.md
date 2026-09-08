@@ -87,6 +87,29 @@ maxDelayMs) * jitterSource())`. An optional `observability` hook exposes
 `onAttemptScheduled` and `onExhausted` for callers that need retry-exhaustion
 alerting.
 
+## Bounded delivery backpressure (provisional)
+
+`createBoundedDeliveryBackpressure` gates admission to any async delivery
+operation by a bounded in-flight capacity, independent of what that operation
+does. It composes above either the raw handoff or the retry-wrapped delivery —
+wrap whichever one call should count as one admitted slot.
+
+```typescript
+import { createBoundedDeliveryBackpressure } from "@bloodtrail/security-audit-sdk-node";
+
+const gate = createBoundedDeliveryBackpressure({ capacity: 64 });
+
+const outcome = await gate.submit(() => retry.deliver(event));
+// outcome.status: "admitted" (outcome.result is retry's own result) | "rejected_overload"
+```
+
+An admission attempted at capacity is rejected immediately and synchronously
+with `rejected_overload` — the wrapped operation is never invoked and never
+queued. Capacity is released exactly once per admitted operation when it
+settles, whether it resolves or rejects, so a failure never leaks a slot. An
+optional `observability` hook exposes `onAdmitted`, `onRejectedOverload`, and
+`onReleased`, each receiving only numeric depth and capacity values.
+
 ## Usage
 
 ```typescript
