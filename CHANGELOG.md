@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.11.0](https://github.com/nandohdc/bloodtrail/compare/v0.10.0...v0.11.0) (2026-09-08)
+
+
+### Added
+
+* **collector:** implement bounded ingress idempotency and deduplication ([#108](https://github.com/nandohdc/bloodtrail/issues/108)) ([b06a7e9](https://github.com/nandohdc/bloodtrail/commit/b06a7e9584e608a36137d158d60db55431ff254e))
+* **collector:** implement bounded ingress idempotency and deduplication ([#108](https://github.com/nandohdc/bloodtrail/issues/108)) ([5771f66](https://github.com/nandohdc/bloodtrail/commit/5771f66b4001d89451e4d9c3a5d6ab68919d6351))
+* **node:** add HTTP delivery handoff ([a687098](https://github.com/nandohdc/bloodtrail/commit/a687098d6fa2cde094f20c6ae51011b7a4399826))
+* **node:** add HTTP delivery handoff ([#103](https://github.com/nandohdc/bloodtrail/issues/103)) ([ffd698f](https://github.com/nandohdc/bloodtrail/commit/ffd698f37a8129aeb2c16f20096a2c604e85744f))
+
+
+### Fixed
+
+* **governance:** preserve assessment baselines across merges ([6b9b94f](https://github.com/nandohdc/bloodtrail/commit/6b9b94f0b2603dc12417eb766e2568aa771652a4))
+* **governance:** preserve assessment baselines across merges ([2df9e4b](https://github.com/nandohdc/bloodtrail/commit/2df9e4b078ac74e9f6ec7a27e48cbd9090f61580))
+* **openspec:** refresh collector assessment artifact ([#108](https://github.com/nandohdc/bloodtrail/issues/108)) ([6180947](https://github.com/nandohdc/bloodtrail/commit/6180947cfd2c23f17e3bab3108669519cccc7237))
+
+
+### Documentation
+
+* **openspec:** archive assessment baseline merge drift ([#372](https://github.com/nandohdc/bloodtrail/issues/372)) ([4aa52c3](https://github.com/nandohdc/bloodtrail/commit/4aa52c357d96579505001aba877e71103c9303be))
+* **openspec:** archive assessment baseline merge drift ([#372](https://github.com/nandohdc/bloodtrail/issues/372)) ([e6248de](https://github.com/nandohdc/bloodtrail/commit/e6248dee95c95f3dcce90c7252cf210329fbc6c9))
+* **openspec:** archive HTTP delivery handoff ([#103](https://github.com/nandohdc/bloodtrail/issues/103)) ([b402608](https://github.com/nandohdc/bloodtrail/commit/b402608a148f84964b10ddd5152f78de07545b20))
+* **openspec:** archive HTTP delivery handoff ([#103](https://github.com/nandohdc/bloodtrail/issues/103)) ([6fcb230](https://github.com/nandohdc/bloodtrail/commit/6fcb2300fca254931d917bed5ded688027e491a8))
+* **openspec:** archive implement collector idempotency and deduplication ([#108](https://github.com/nandohdc/bloodtrail/issues/108)) ([77ba037](https://github.com/nandohdc/bloodtrail/commit/77ba03724a563f48760b58ab1c9514bb582d994e))
+* **openspec:** archive implement collector idempotency and deduplication ([#108](https://github.com/nandohdc/bloodtrail/issues/108)) ([d367a93](https://github.com/nandohdc/bloodtrail/commit/d367a93f195392ff8297efe9090cb56340eae368))
+* **openspec:** assess HTTP delivery handoff ([#103](https://github.com/nandohdc/bloodtrail/issues/103)) ([5396fc6](https://github.com/nandohdc/bloodtrail/commit/5396fc6f2e78293e88a3ab96989b9292ca59cbfd))
+* **openspec:** assess stable assessment baselines ([e210704](https://github.com/nandohdc/bloodtrail/commit/e210704f0591dc6e17a4f87abe541733b2491ef7))
+* **openspec:** fold assessment baseline specification ([#372](https://github.com/nandohdc/bloodtrail/issues/372)) ([be08f4b](https://github.com/nandohdc/bloodtrail/commit/be08f4b5967b02268494dacbf84488944a2d3759))
+* **openspec:** fold assessment baseline specification ([#372](https://github.com/nandohdc/bloodtrail/issues/372)) ([ceae51c](https://github.com/nandohdc/bloodtrail/commit/ceae51c31339338c5c3861d1bb501bef202b5b2a))
+* **openspec:** fold collector idempotency specification ([#108](https://github.com/nandohdc/bloodtrail/issues/108)) ([4be6b20](https://github.com/nandohdc/bloodtrail/commit/4be6b2070a3df484b00ed671fbae3e84377fa7e9))
+* **openspec:** fold collector idempotency specification ([#108](https://github.com/nandohdc/bloodtrail/issues/108)) ([5180305](https://github.com/nandohdc/bloodtrail/commit/5180305a60f38ba6526d18c0c4d0e4ac748a97dd))
+* **openspec:** fold http delivery handoff specification ([#103](https://github.com/nandohdc/bloodtrail/issues/103)) ([7150bfe](https://github.com/nandohdc/bloodtrail/commit/7150bfea1e587b04a7c1b9c43ad69b40b37384ce))
+* **openspec:** fold http delivery handoff specification ([#103](https://github.com/nandohdc/bloodtrail/issues/103)) ([43e6693](https://github.com/nandohdc/bloodtrail/commit/43e66933824b1742004b668969c1b96b75719b99))
+* **openspec:** record assessment baseline verification ([3129c5b](https://github.com/nandohdc/bloodtrail/commit/3129c5bdc6c1675f51cf051a05976d886c0df721))
+* **openspec:** record collector spec fold completion ([#108](https://github.com/nandohdc/bloodtrail/issues/108)) ([4a24ada](https://github.com/nandohdc/bloodtrail/commit/4a24ada926bd92dc270e8d6bacadee4c8d450a4c))
+* **openspec:** record collector spec fold completion ([#108](https://github.com/nandohdc/bloodtrail/issues/108)) ([2300f20](https://github.com/nandohdc/bloodtrail/commit/2300f20866015d3ae4d0f541888597e14c8436d9))
+* **openspec:** record HTTP handoff verification ([#103](https://github.com/nandohdc/bloodtrail/issues/103)) ([1d26855](https://github.com/nandohdc/bloodtrail/commit/1d26855b58de90a88caa34deddbcfa896b29d426))
+
 ## [0.10.0](https://github.com/nandohdc/bloodtrail/compare/v0.9.1...v0.10.0) (2026-09-07)
 
 
