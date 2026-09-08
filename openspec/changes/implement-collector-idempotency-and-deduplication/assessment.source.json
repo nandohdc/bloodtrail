@@ -135,6 +135,9 @@
       ]
     }
   },
+  "ordering": {
+    "proposal_baseline_commit": "4be6b2070a3df484b00ed671fbae3e84377fa7e9"
+  },
   "security_sensitive": true,
   "security_justification": {
     "audit_integrity": "The sender-and-event pair records only one first-seen admission and surfaces a conflict rather than silently accepting conflicting evidence under one event identity.",

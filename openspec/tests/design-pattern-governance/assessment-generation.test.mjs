@@ -10,8 +10,25 @@ import {
   scaffoldSource,
   stableJson
 } from "../../scripts/design-pattern-governance/assessment-generation.mjs";
-import { createRepository } from "./support/disposable-repo.mjs";
-import { runChecker } from "./support/harness.mjs";
+import { ASSESSMENT, createRepository } from "./support/disposable-repo.mjs";
+import { assertPasses, runChecker } from "./support/harness.mjs";
+
+function sourceFromAssessment(assessment) {
+  return {
+    decision: assessment.decision,
+    forces: assessment.forces,
+    applicability: assessment.applicability,
+    candidate_approaches: assessment.candidate_approaches,
+    selected_approach_id: assessment.selected_approach_id,
+    rejected_alternative_ids: assessment.rejected_alternative_ids,
+    rejection_reasons: assessment.rejection_reasons,
+    implementation_invariant_ids: assessment.implementation_invariant_ids,
+    invariant_evidence: assessment.invariant_evidence,
+    security_sensitive: assessment.security_sensitive,
+    security_justification: assessment.security_justification,
+    verification_task_ids: assessment.verification_task_ids
+  };
+}
 
 describe("assessment generation and scaffolding", () => {
   it("scaffolds an authored assessment.source.json template", () => {
@@ -67,6 +84,9 @@ describe("assessment generation and scaffolding", () => {
             evidence_ids: ["test-fixture-proof"]
           }
         },
+        ordering: {
+          proposal_baseline_commit: "1".repeat(40)
+        },
         security_sensitive: false
       };
 
@@ -108,6 +128,9 @@ describe("assessment generation and scaffolding", () => {
         security_sensitive: false,
         security_justification: {
           trust_boundary: customMsg
+        },
+        ordering: {
+          proposal_baseline_commit: "2".repeat(40)
         }
       };
 
@@ -194,6 +217,51 @@ describe("assessment generation and scaffolding", () => {
         resFail.stderr.includes("assessment-generated-drift") ||
         resFail.stdout.includes("assessment-generated-drift")
       );
+    } finally {
+      repo.dispose();
+    }
+  });
+
+  it("rejects generation when the authored proposal baseline is omitted", () => {
+    const repo = createRepository();
+    try {
+      const changeDir = repo.path("openspec/changes/establish-design-pattern-governance");
+      const source = sourceFromAssessment(repo.readJson(ASSESSMENT));
+
+      assert.throws(
+        () => generateAssessment(changeDir, source, repo.root),
+        /ordering\.proposal_baseline_commit as a 40-character Git commit ID/
+      );
+    } finally {
+      repo.dispose();
+    }
+  });
+
+  it("keeps generated assessments stable across a descendant merge", () => {
+    const repo = createRepository();
+    try {
+      const change = "establish-design-pattern-governance";
+      const changeDir = repo.path(`openspec/changes/${change}`);
+      const source = sourceFromAssessment(repo.readJson(ASSESSMENT));
+      const baseline = repo.head();
+      source.ordering = { proposal_baseline_commit: baseline };
+
+      repo.git(["update-ref", "refs/remotes/origin/main", baseline]);
+      repo.branch("feature-assessment");
+      repo.write(`openspec/changes/${change}/assessment.source.json`, stableJson(source));
+      const generated = stableJson(generateAssessment(changeDir, null, repo.root));
+      repo.write(ASSESSMENT, generated);
+      repo.commit("docs: add generated assessment source");
+      assertPasses(runChecker(repo, { phase: "assessment" }), "before descendant merge");
+
+      repo.checkout("main");
+      repo.write("README.md", "# Governance fixture\n\nMain-line change.\n");
+      repo.commit("docs: create main-line descendant");
+      repo.git(["merge", "--no-ff", "feature-assessment", "-m", "merge generated assessment"]);
+      repo.git(["update-ref", "refs/remotes/origin/main", repo.head()]);
+
+      assertPasses(runChecker(repo, { phase: "assessment" }), "after descendant merge");
+      assert.equal(repo.read(ASSESSMENT), generated);
     } finally {
       repo.dispose();
     }
