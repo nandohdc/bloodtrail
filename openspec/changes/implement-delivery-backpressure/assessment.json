@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.1",
+  "change_id": "implement-delivery-backpressure",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Admission must be gated by an explicit bounded capacity so unbounded concurrent submission cannot cause unbounded resource use, without depending on any transport, queue, or storage runtime mechanism.",
+    "Overload must be a deterministic, immediate, synchronous outcome — never queued, never a silent drop — so a caller can rely on the result of one submit call.",
+    "Capacity accounting must never drift regardless of whether the wrapped operation succeeds or fails, and must remain correct under concurrent submission with only cooperative (non-preemptive) scheduling.",
+    "The gate must compose above any delivery mechanism (a raw handoff, a retry-wrapped delivery, or otherwise) without coupling to any one of their result shapes."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "lifecycle_or_state",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/src/delivery-backpressure.ts",
+    "packages/security-audit-sdk-node/src/index.ts",
+    "packages/security-audit-sdk-node/tests/delivery-backpressure.test.ts",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
+    "packages/security-audit-sdk-node/README.md",
+    "openspec/changes/implement-delivery-backpressure/",
+    "openspec/specs/security-audit-sdk-node/spec.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-implement-delivery-backpressure",
+      "kind": "direct_implementation",
+      "summary": "A generic synchronous admission gate that wraps any async operation, incrementing/decrementing an in-flight counter with no locks, rejecting immediately at capacity.",
+      "forces_addressed": [
+        "Admission must be gated by an explicit bounded capacity so unbounded concurrent submission cannot cause unbounded resource use, without depending on any transport, queue, or storage runtime mechanism.",
+        "Overload must be a deterministic, immediate, synchronous outcome — never queued, never a silent drop — so a caller can rely on the result of one submit call.",
+        "Capacity accounting must never drift regardless of whether the wrapped operation succeeds or fails, and must remain correct under concurrent submission with only cooperative (non-preemptive) scheduling.",
+        "The gate must compose above any delivery mechanism (a raw handoff, a retry-wrapped delivery, or otherwise) without coupling to any one of their result shapes."
+      ]
+    },
+    {
+      "id": "approach-alternative-implement-delivery-backpressure",
+      "kind": "alternative",
+      "summary": "A FIFO queue that buffers excess submissions and admits them as capacity frees up, rather than rejecting immediately.",
+      "forces_addressed": [
+        "Capacity accounting must never drift regardless of whether the wrapped operation succeeds or fails, and must remain correct under concurrent submission with only cooperative (non-preemptive) scheduling."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-implement-delivery-backpressure",
+  "rejected_alternative_ids": [
+    "approach-alternative-implement-delivery-backpressure"
+  ],
+  "rejection_reasons": {
+    "approach-alternative-implement-delivery-backpressure": {
+      "forces": [
+        "Overload must be a deterministic, immediate, synchronous outcome — never queued, never a silent drop — so a caller can rely on the result of one submit call.",
+        "Admission must be gated by an explicit bounded capacity so unbounded concurrent submission cannot cause unbounded resource use, without depending on any transport, queue, or storage runtime mechanism."
+      ],
+      "reason": "A buffering queue reintroduces exactly the unbounded-memory risk backpressure exists to prevent, contradicts the issue's explicit exclusion of queue capacity beyond the bound, and turns a deterministic immediate result into a delayed one the caller cannot rely on synchronously."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-synchronous-bounded-admission",
+    "implementation-capacity-release-no-drift",
+    "implementation-never-silent-drop"
+  ],
+  "invariant_evidence": {
+    "implementation-synchronous-bounded-admission": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "overload-rejection test: admission at capacity returns rejected_overload synchronously without invoking the wrapped operation",
+        "concurrent-admission test: exactly `capacity` submissions proceed and every submission beyond that is rejected"
+      ]
+    },
+    "implementation-capacity-release-no-drift": {
+      "task_ids": [
+        "1.2",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "release-after-completion test asserts depth returns to zero after success",
+        "release-after-failure test asserts depth returns to zero after a rejected operation, via try/finally"
+      ]
+    },
+    "implementation-never-silent-drop": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "all-admitted-settle test: every admitted submission's own result is awaited and reported, none discarded"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "42c86ecc0920815ed57b6e28f93edbd3e0752077"
+  },
+  "verification_task_ids": [
+    "1.2",
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "3.1"
+  ]
+}
