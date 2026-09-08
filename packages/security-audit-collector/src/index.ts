@@ -11,6 +11,7 @@
 export { CollectorIngress } from "./ingress.js";
 export type {
   Admission,
+  DuplicateAdmission,
   IngressOptions,
   IngressRejection,
   IngressResult,

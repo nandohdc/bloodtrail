@@ -1,0 +1,176 @@
+{
+  "schema_version": "1.1",
+  "change_id": "implement-collector-idempotency-and-deduplication",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A retry must be recognized only after the existing authentication and structural-validation trust boundary, so attacker-controlled invalid input cannot reserve identity capacity or bypass validation.",
+    "A live sender-and-event identity must distinguish an exact retry from conflicting content without a delimiter collision, a fingerprint collision, or a claim of global exactly-once delivery.",
+    "The synthetic collector remains a zero-runtime-dependency, relative-import-only package, so duplicate state must be bounded without a host capability, timer, external cache, queue, or durable adapter.",
+    "Transient retained submission bytes, duplicate diagnostics, and counters are attacker-adjacent surfaces that must stay bounded and must not disclose credentials or payload content."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "lifecycle_or_state",
+      "concurrency",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-collector"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-collector/",
+    "openspec/changes/implement-collector-idempotency-and-deduplication/",
+    "openspec/specs/security-audit-collector/spec.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-nested-bounded-ledger",
+      "kind": "direct_implementation",
+      "summary": "Keep an instance-local nested Map keyed first by authenticated sender identity and then validated event ID, store the exact bounded body with lazy expiry, reserve it before admission, and expose closed duplicate outcomes.",
+      "forces_addressed": [
+        "A retry must be recognized only after the existing authentication and structural-validation trust boundary, so attacker-controlled invalid input cannot reserve identity capacity or bypass validation.",
+        "A live sender-and-event identity must distinguish an exact retry from conflicting content without a delimiter collision, a fingerprint collision, or a claim of global exactly-once delivery.",
+        "The synthetic collector remains a zero-runtime-dependency, relative-import-only package, so duplicate state must be bounded without a host capability, timer, external cache, queue, or durable adapter.",
+        "Transient retained submission bytes, duplicate diagnostics, and counters are attacker-adjacent surfaces that must stay bounded and must not disclose credentials or payload content."
+      ]
+    },
+    {
+      "id": "approach-delimited-composite-key",
+      "kind": "alternative",
+      "summary": "Serialize sender identity and event ID into one string with a delimiter and retain one record per serialized key.",
+      "forces_addressed": [
+        "A live sender-and-event identity must distinguish an exact retry from conflicting content without a delimiter collision, a fingerprint collision, or a claim of global exactly-once delivery."
+      ]
+    },
+    {
+      "id": "approach-local-fingerprint",
+      "kind": "alternative",
+      "summary": "Store a locally computed non-cryptographic fingerprint of the body instead of the exact bounded submission bytes.",
+      "forces_addressed": [
+        "A live sender-and-event identity must distinguish an exact retry from conflicting content without a delimiter collision, a fingerprint collision, or a claim of global exactly-once delivery.",
+        "The synthetic collector remains a zero-runtime-dependency, relative-import-only package, so duplicate state must be bounded without a host capability, timer, external cache, queue, or durable adapter."
+      ]
+    },
+    {
+      "id": "approach-durable-idempotency-adapter",
+      "kind": "alternative",
+      "summary": "Delegate identity retention and atomic reservation to an external durable cache or storage adapter shared across collector instances.",
+      "forces_addressed": [
+        "The synthetic collector remains a zero-runtime-dependency, relative-import-only package, so duplicate state must be bounded without a host capability, timer, external cache, queue, or durable adapter."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-nested-bounded-ledger",
+  "rejected_alternative_ids": [
+    "approach-delimited-composite-key",
+    "approach-local-fingerprint",
+    "approach-durable-idempotency-adapter"
+  ],
+  "rejection_reasons": {
+    "approach-delimited-composite-key": {
+      "forces": [
+        "A live sender-and-event identity must distinguish an exact retry from conflicting content without a delimiter collision, a fingerprint collision, or a claim of global exactly-once delivery."
+      ],
+      "reason": "A delimiter is an implicit grammar for two arbitrary authenticator-controlled strings; without a restricted identity alphabet it admits ambiguous sender/event pairs, while nested maps preserve the pair without a parsing rule."
+    },
+    "approach-local-fingerprint": {
+      "forces": [
+        "A live sender-and-event identity must distinguish an exact retry from conflicting content without a delimiter collision, a fingerprint collision, or a claim of global exactly-once delivery.",
+        "The synthetic collector remains a zero-runtime-dependency, relative-import-only package, so duplicate state must be bounded without a host capability, timer, external cache, queue, or durable adapter."
+      ],
+      "reason": "A non-cryptographic fingerprint can collide and misclassify conflicting content as a duplicate, while a cryptographic helper would violate the no-host-import policy. The existing size bound makes exact byte comparison safely bounded."
+    },
+    "approach-durable-idempotency-adapter": {
+      "forces": [
+        "The synthetic collector remains a zero-runtime-dependency, relative-import-only package, so duplicate state must be bounded without a host capability, timer, external cache, queue, or durable adapter.",
+        "Transient retained submission bytes, duplicate diagnostics, and counters are attacker-adjacent surfaces that must stay bounded and must not disclose credentials or payload content."
+      ],
+      "reason": "A shared durable adapter expands this package into the deliberately deferred storage and infrastructure boundary (#114/#115), creates an unapproved dependency and lifecycle, and would falsely imply cross-instance persistence beyond #108's synthetic scope."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-validation-precedes-deduplication",
+    "implementation-exact-pair-identity",
+    "implementation-bounded-lazy-records",
+    "implementation-reservation-precedes-admission",
+    "implementation-secret-free-outcomes"
+  ],
+  "invariant_evidence": {
+    "implementation-validation-precedes-deduplication": {
+      "task_ids": [
+        "1.3",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "invalid-authentication, size, parse, schema, and version arms prove no duplicate record or duplicate metric is created",
+        "the public submit ordering arm proves the ledger is reached only after every existing validation stage"
+      ]
+    },
+    "implementation-exact-pair-identity": {
+      "task_ids": [
+        "1.3",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "same-sender identical-body, same-sender conflict, and different-sender same-event controls exercise the nested identity pair",
+        "the exact-body comparison has no hash collision or delimiter parsing surface"
+      ]
+    },
+    "implementation-bounded-lazy-records": {
+      "task_ids": [
+        "1.3",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "the exact 300000 ms expiry control and 32-live-record capacity control prove bounded lazy cleanup",
+        "scope and dependency gates prove no timer, queue, adapter, or runtime import exists"
+      ]
+    },
+    "implementation-reservation-precedes-admission": {
+      "task_ids": [
+        "1.3",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "the re-entrant validator fixture observes exactly one admitted result and one duplicate result",
+        "admission and duplicate counters prove a duplicate does not consume admission capacity"
+      ]
+    },
+    "implementation-secret-free-outcomes": {
+      "task_ids": [
+        "1.3",
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "mixed duplicate/conflict/capacity fixture searches every public result, diagnostic, and metric for credential and payload markers",
+        "closed diagnostic codes and counter keys are asserted exactly"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "1e8199a9b5186e7ee855c55f0860871860f9c287"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "3.1",
+    "3.2",
+    "3.3",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4"
+  ]
+}

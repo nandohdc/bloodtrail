@@ -14,7 +14,7 @@ Bounded, **non-production** collector ingress for Bloodtrail security audit even
 The ingress enforces the fixed stage order, each stage failing closed:
 
 ```
-authenticate → size → parse → schema → version → accept
+authenticate → size → parse → schema → version → deduplicate → accept
 ```
 
 - **authenticate** — the configured `Authenticator` verifies the submission before
@@ -32,6 +32,11 @@ authenticate → size → parse → schema → version → accept
 - **version** — the explicitly enumerated finite supported set
   `["1.0.0"]` per the ratified asymmetric version policy (#75/#76). An
   unsupported version is rejected distinctly from a schema rejection.
+- **deduplicate** — after every existing validation stage, each collector
+  instance retains at most 32 authenticated-sender/validated-event pairs for
+  five minutes. A byte-identical retry is a distinct `duplicate` outcome and
+  is not admitted again; different bytes under a live pair are rejected as a
+  conflict. Full live capacity rejects rather than evicting a live pair.
 - **accept** — acceptance is **admission only**: the occurrence enters
   `admitted` with its event identity. No durability, delivery, retry, storage,
   or downstream claim is made (delivery conformance contract, #102).
@@ -40,6 +45,11 @@ Rejection diagnostics are bounded triples `{ code, category, path }` from a
 closed vocabulary; counters are plain increments keyed by stable labels.
 No diagnostic or metric carries payload content, credentials, or secrets, and
 no failure emits an audit event.
+
+Duplicate recognition is an in-memory, instance-local synthetic control. It
+uses lazy expiry (no timer), is not durable or shared between collectors, and
+makes **no exactly-once, delivery, retry, storage, or production-retention
+claim**.
 
 ## Package boundaries
 
@@ -72,6 +82,8 @@ const result = ingress.submit({
 
 if (result.kind === "admitted") {
   console.log("admitted", result.eventId, "from", result.senderIdentity);
+} else if (result.kind === "duplicate") {
+  console.log("duplicate", result.eventId);
 } else {
   console.log("rejected", result.diagnostic.code);
 }
