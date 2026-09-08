@@ -1,0 +1,127 @@
+{
+  "schema_version": "1.1",
+  "change_id": "fix-collector-dedup-retry-conflict",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A genuine retry of an already-admitted occurrence must be recognized as a duplicate even though its wire body legitimately differs in the attempt-scoped correlation.retry_attempt field, without weakening detection of a substantively different payload under the same identity.",
+    "Any field excluded from the duplicate/conflict comparison must come from a fixed, contract-derived allowlist rather than a heuristic or fingerprint, since #108 already rejected a non-cryptographic fingerprint for its collision risk.",
+    "The generic, schema-agnostic DeduplicationLedger must not be taught contract-specific field knowledge; any exclusion logic belongs at the ingress layer that already parses and validates the body."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-collector"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-collector/src/ingress.ts",
+    "packages/security-audit-collector/tests/ingress.test.ts",
+    "openspec/specs/security-audit-collector/spec.md",
+    "openspec/changes/fix-collector-dedup-retry-conflict/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-canonical-key-at-ingress",
+      "kind": "direct_implementation",
+      "summary": "Derive a canonical deduplication key at the ingress layer from the already-parsed, schema-validated body, excluding exactly correlation.retry_attempt via a deterministic key-sorted serialization, and pass that opaque key into the unmodified, schema-agnostic DeduplicationLedger.",
+      "forces_addressed": [
+        "A genuine retry of an already-admitted occurrence must be recognized as a duplicate even though its wire body legitimately differs in the attempt-scoped correlation.retry_attempt field, without weakening detection of a substantively different payload under the same identity.",
+        "Any field excluded from the duplicate/conflict comparison must come from a fixed, contract-derived allowlist rather than a heuristic or fingerprint, since #108 already rejected a non-cryptographic fingerprint for its collision risk.",
+        "The generic, schema-agnostic DeduplicationLedger must not be taught contract-specific field knowledge; any exclusion logic belongs at the ingress layer that already parses and validates the body."
+      ]
+    },
+    {
+      "id": "approach-ledger-side-exclusion-list",
+      "kind": "alternative",
+      "summary": "Give DeduplicationLedger.decide an explicit field-exclusion list and have it parse/re-serialize the body itself before comparison.",
+      "forces_addressed": [
+        "A genuine retry of an already-admitted occurrence must be recognized as a duplicate even though its wire body legitimately differs in the attempt-scoped correlation.retry_attempt field, without weakening detection of a substantively different payload under the same identity."
+      ]
+    },
+    {
+      "id": "approach-content-fingerprint",
+      "kind": "alternative",
+      "summary": "Replace exact comparison with a non-cryptographic content fingerprint computed over the body minus attempt-scoped fields.",
+      "forces_addressed": [
+        "A genuine retry of an already-admitted occurrence must be recognized as a duplicate even though its wire body legitimately differs in the attempt-scoped correlation.retry_attempt field, without weakening detection of a substantively different payload under the same identity."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-canonical-key-at-ingress",
+  "rejected_alternative_ids": [
+    "approach-ledger-side-exclusion-list",
+    "approach-content-fingerprint"
+  ],
+  "rejection_reasons": {
+    "approach-ledger-side-exclusion-list": {
+      "forces": [
+        "The generic, schema-agnostic DeduplicationLedger must not be taught contract-specific field knowledge; any exclusion logic belongs at the ingress layer that already parses and validates the body."
+      ],
+      "reason": "The ledger would need to parse JSON and know the event contract's field shape, duplicating work ingress.ts already performs and coupling a deliberately generic bounded comparator to a specific wire schema that may change independently of it."
+    },
+    "approach-content-fingerprint": {
+      "forces": [
+        "Any field excluded from the duplicate/conflict comparison must come from a fixed, contract-derived allowlist rather than a heuristic or fingerprint, since #108 already rejected a non-cryptographic fingerprint for its collision risk."
+      ],
+      "reason": "A fingerprint can collide, silently reclassifying a genuinely different payload as a duplicate; #108's own assessment already rejected this for the collector's original design, and nothing about this defect changes that collision-risk conclusion."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-canonical-key-excludes-retry-attempt-only",
+    "implementation-ledger-stays-schema-agnostic",
+    "implementation-conflict-detection-unweakened"
+  ],
+  "invariant_evidence": {
+    "implementation-canonical-key-excludes-retry-attempt-only": {
+      "task_ids": [
+        "2.1",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "regression test: same event.id, body differing only in correlation.retry_attempt, decides duplicate",
+        "canonicalStringify unit coverage proves key-sorted determinism independent of source object property order"
+      ]
+    },
+    "implementation-ledger-stays-schema-agnostic": {
+      "task_ids": [
+        "2.2"
+      ],
+      "evidence_ids": [
+        "DeduplicationLedger source and its existing unit tests (deduplication.test.ts) are unchanged by this fix"
+      ]
+    },
+    "implementation-conflict-detection-unweakened": {
+      "task_ids": [
+        "2.3"
+      ],
+      "evidence_ids": [
+        "existing D2 test (different producer field under the same identity) continues to assert conflict, unmodified in outcome"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "128680cfe5c533e19e502c372240b3db8c8b0048"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4",
+    "4.5"
+  ]
+}

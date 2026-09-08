@@ -1,0 +1,127 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A genuine retry of an already-admitted occurrence must be recognized as a duplicate even though its wire body legitimately differs in the attempt-scoped correlation.retry_attempt field, without weakening detection of a substantively different payload under the same identity.",
+    "Any field excluded from the duplicate/conflict comparison must come from a fixed, contract-derived allowlist rather than a heuristic or fingerprint, since #108 already rejected a non-cryptographic fingerprint for its collision risk.",
+    "The generic, schema-agnostic DeduplicationLedger must not be taught contract-specific field knowledge; any exclusion logic belongs at the ingress layer that already parses and validates the body."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-collector"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-collector/src/ingress.ts",
+    "packages/security-audit-collector/tests/ingress.test.ts",
+    "openspec/specs/security-audit-collector/spec.md",
+    "openspec/changes/fix-collector-dedup-retry-conflict/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-canonical-key-at-ingress",
+      "kind": "direct_implementation",
+      "summary": "Derive a canonical deduplication key at the ingress layer from the already-parsed, schema-validated body, excluding exactly correlation.retry_attempt via a deterministic key-sorted serialization, and pass that opaque key into the unmodified, schema-agnostic DeduplicationLedger.",
+      "forces_addressed": [
+        "A genuine retry of an already-admitted occurrence must be recognized as a duplicate even though its wire body legitimately differs in the attempt-scoped correlation.retry_attempt field, without weakening detection of a substantively different payload under the same identity.",
+        "Any field excluded from the duplicate/conflict comparison must come from a fixed, contract-derived allowlist rather than a heuristic or fingerprint, since #108 already rejected a non-cryptographic fingerprint for its collision risk.",
+        "The generic, schema-agnostic DeduplicationLedger must not be taught contract-specific field knowledge; any exclusion logic belongs at the ingress layer that already parses and validates the body."
+      ]
+    },
+    {
+      "id": "approach-ledger-side-exclusion-list",
+      "kind": "alternative",
+      "summary": "Give DeduplicationLedger.decide an explicit field-exclusion list and have it parse/re-serialize the body itself before comparison.",
+      "forces_addressed": [
+        "A genuine retry of an already-admitted occurrence must be recognized as a duplicate even though its wire body legitimately differs in the attempt-scoped correlation.retry_attempt field, without weakening detection of a substantively different payload under the same identity."
+      ]
+    },
+    {
+      "id": "approach-content-fingerprint",
+      "kind": "alternative",
+      "summary": "Replace exact comparison with a non-cryptographic content fingerprint computed over the body minus attempt-scoped fields.",
+      "forces_addressed": [
+        "A genuine retry of an already-admitted occurrence must be recognized as a duplicate even though its wire body legitimately differs in the attempt-scoped correlation.retry_attempt field, without weakening detection of a substantively different payload under the same identity."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-canonical-key-at-ingress",
+  "rejected_alternative_ids": [
+    "approach-ledger-side-exclusion-list",
+    "approach-content-fingerprint"
+  ],
+  "rejection_reasons": {
+    "approach-ledger-side-exclusion-list": {
+      "forces": [
+        "The generic, schema-agnostic DeduplicationLedger must not be taught contract-specific field knowledge; any exclusion logic belongs at the ingress layer that already parses and validates the body."
+      ],
+      "reason": "The ledger would need to parse JSON and know the event contract's field shape, duplicating work ingress.ts already performs and coupling a deliberately generic bounded comparator to a specific wire schema that may change independently of it."
+    },
+    "approach-content-fingerprint": {
+      "forces": [
+        "Any field excluded from the duplicate/conflict comparison must come from a fixed, contract-derived allowlist rather than a heuristic or fingerprint, since #108 already rejected a non-cryptographic fingerprint for its collision risk."
+      ],
+      "reason": "A fingerprint can collide, silently reclassifying a genuinely different payload as a duplicate; #108's own assessment already rejected this for the collector's original design, and nothing about this defect changes that collision-risk conclusion."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-canonical-key-excludes-retry-attempt-only",
+    "implementation-ledger-stays-schema-agnostic",
+    "implementation-conflict-detection-unweakened"
+  ],
+  "invariant_evidence": {
+    "implementation-canonical-key-excludes-retry-attempt-only": {
+      "task_ids": [
+        "2.1",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "regression test: same event.id, body differing only in correlation.retry_attempt, decides duplicate",
+        "canonicalStringify unit coverage proves key-sorted determinism independent of source object property order"
+      ]
+    },
+    "implementation-ledger-stays-schema-agnostic": {
+      "task_ids": [
+        "2.2"
+      ],
+      "evidence_ids": [
+        "DeduplicationLedger source and its existing unit tests (deduplication.test.ts) are unchanged by this fix"
+      ]
+    },
+    "implementation-conflict-detection-unweakened": {
+      "task_ids": [
+        "2.3"
+      ],
+      "evidence_ids": [
+        "existing D2 test (different producer field under the same identity) continues to assert conflict, unmodified in outcome"
+      ]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "128680cfe5c533e19e502c372240b3db8c8b0048"
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "A genuine retry and a genuinely conflicting resubmission remain distinguishable outcomes; the fix changes only which field is ignored when comparing, not whether a real conflict is detected.",
+    "authentication_or_authorization": "No change to the authentication stage; the deduplication key is computed only after authentication, size, parse, schema, and version validation succeed, exactly as before.",
+    "authority_provenance": "The event ID and sender identity remain sourced exactly as before; the canonical key is derived from already-validated body content, not from any new claimed authority.",
+    "concurrency": "No change to the synchronous reservation-before-admission behavior; the re-entrant duplicate test (D5) is unaffected.",
+    "confidentiality": "The retained record becomes a canonical re-serialization of the same validated body rather than its raw bytes; it discloses no more than the original body already did, and D8's secret-marker test continues to cover it.",
+    "cryptography": "No cryptographic algorithm, key, hash, or fingerprint is introduced; the fix is a structural equality comparison over a deterministic, key-sorted projection, preserving #108's rejection of a fingerprint approach.",
+    "error_disclosure": "The conflict and duplicate diagnostics are unchanged (same codes, categories, paths); no new information is added to any rejection.",
+    "external_security_integration": "No new dependency, import, or external integration; the fix is two pure functions added to the existing relative-import-only ingress module.",
+    "fail_posture": "A payload that differs in any field other than correlation.retry_attempt still fails closed as a conflict; only the one contract-defined attempt-scoped field is excluded from comparison.",
+    "lifecycle": "No change to record retention, expiry, or capacity behavior (300s / 32 records); only the content being compared and retained changes shape.",
+    "mutation_ownership": "Changes are limited to the collector's ingress module and its tests, this change's own artifacts, and the folded collector specification.",
+    "privacy_transformation": "No personal data is introduced; the collector continues to handle only synthetic, non-production fixture data as before.",
+    "resource_retention": "The canonical key is derived from an already size-bounded body and is not larger than the original; the 32-record/300-second bounds are unchanged.",
+    "retry_or_redelivery": "This is precisely a retry/redelivery correctness fix: an at-least-once retry of one occurrence now dedups correctly instead of being misclassified as a conflict, matching the delivery-conformance-contract's stated intent.",
+    "trust_boundary": "The trust boundary (authenticate before dedup, dedup before admission) is unchanged; only the definition of \"the same occurrence\" used within that boundary is corrected."
+  }
+}
