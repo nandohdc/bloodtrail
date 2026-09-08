@@ -1,0 +1,130 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The admission boundary must close synchronously at the exact moment shutdown is initiated so no concurrent submission can be accepted after it, without any locking primitive.",
+    "Deadline-bounded draining must produce an exact accepted/completed/abandoned accounting even though JavaScript promises cannot be forcibly cancelled, and must never report abandoned work as delivered.",
+    "Repeated or concurrent shutdown calls must be idempotent and must never re-drain or double-count already-reported work.",
+    "The mechanism must reuse the delivery layer's own established shutdown-timer pattern (cancellable, unref'd) rather than inventing a second one, and must remain independent of what the wrapped delivery operation is."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "lifecycle_or_state",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/src/delivery-shutdown.ts",
+    "packages/security-audit-sdk-node/src/index.ts",
+    "packages/security-audit-sdk-node/tests/delivery-shutdown.test.ts",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
+    "packages/security-audit-sdk-node/README.md",
+    "openspec/changes/implement-delivery-shutdown/",
+    "openspec/specs/security-audit-sdk-node/spec.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-implement-delivery-shutdown",
+      "kind": "direct_implementation",
+      "summary": "A boolean admission flag checked synchronously in submit(), plus a Set of in-flight promises drained via Promise.race against a cancellable deadline timer mirroring security-audit-sdk-core's createShutdownTimeout, with the shutdown report memoized for idempotency.",
+      "forces_addressed": [
+        "The admission boundary must close synchronously at the exact moment shutdown is initiated so no concurrent submission can be accepted after it, without any locking primitive.",
+        "Deadline-bounded draining must produce an exact accepted/completed/abandoned accounting even though JavaScript promises cannot be forcibly cancelled, and must never report abandoned work as delivered.",
+        "Repeated or concurrent shutdown calls must be idempotent and must never re-drain or double-count already-reported work.",
+        "The mechanism must reuse the delivery layer's own established shutdown-timer pattern (cancellable, unref'd) rather than inventing a second one, and must remain independent of what the wrapped delivery operation is."
+      ]
+    },
+    {
+      "id": "approach-alternative-implement-delivery-shutdown",
+      "kind": "alternative",
+      "summary": "An AbortController-based cancellation protocol that requires every wrapped delivery operation to accept and honor an AbortSignal.",
+      "forces_addressed": [
+        "Deadline-bounded draining must produce an exact accepted/completed/abandoned accounting even though JavaScript promises cannot be forcibly cancelled, and must never report abandoned work as delivered."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-implement-delivery-shutdown",
+  "rejected_alternative_ids": [
+    "approach-alternative-implement-delivery-shutdown"
+  ],
+  "rejection_reasons": {
+    "approach-alternative-implement-delivery-shutdown": {
+      "forces": [
+        "The mechanism must reuse the delivery layer's own established shutdown-timer pattern (cancellable, unref'd) rather than inventing a second one, and must remain independent of what the wrapped delivery operation is."
+      ],
+      "reason": "Requiring every wrapped operation to accept and cooperatively honor an AbortSignal would couple this generic composing module to a cancellation contract none of the existing handoff, retry, or backpressure modules implement, and the issue explicitly excludes guaranteeing anything about persistence after cancellation — abandonment-by-accounting satisfies the acceptance criteria without that added surface."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-synchronous-admission-boundary",
+    "implementation-deadline-bounded-drain-no-loss",
+    "implementation-idempotent-shutdown"
+  ],
+  "invariant_evidence": {
+    "implementation-synchronous-admission-boundary": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "new-admission-rejected test: a submission attempted synchronously right after shutdown() is called is rejected without invoking the operation",
+        "concurrent-admission-boundary test asserts no window exists for an admission to cross the boundary"
+      ]
+    },
+    "implementation-deadline-bounded-drain-no-loss": {
+      "task_ids": [
+        "1.2",
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "empty-drain test: shutdown resolves without waiting for the deadline and reports zero abandoned",
+        "deadline-expiry test: exact accepted/completed/abandoned counts when operations remain outstanding",
+        "never-silently-dropped test: an abandoned operation's own submit() call still resolves once it settles"
+      ]
+    },
+    "implementation-idempotent-shutdown": {
+      "task_ids": [
+        "1.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "idempotency test: repeated and concurrent shutdown() calls return the identical report object"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Shutdown never reports an abandoned operation as delivered or completed; the accepted/completed/abandoned counts are derived directly from the tracked Set's membership, not from an independently-maintained flag that could drift.",
+    "authentication_or_authorization": "The module performs no authentication or authorization; it gates admission by lifecycle phase only, independent of caller or credential identity.",
+    "authority_provenance": "The module does not read, construct, or forward any event identity; it only tracks in-flight promises and forwards whatever the wrapped operation returns.",
+    "concurrency": "The admission flag is checked synchronously with no `await` before it, which is atomic under Node's run-to-completion semantics; the memoized shutdown promise guarantees exactly one drain regardless of how many callers call shutdown() concurrently.",
+    "confidentiality": "The module never inspects, stores, or logs the wrapped operation's arguments or result beyond forwarding it to the original submit() caller; the shutdown report contains only numeric counts.",
+    "cryptography": "No cipher, key, signature, hash, or TLS configuration is introduced or touched.",
+    "error_disclosure": "A wrapped operation's rejection propagates to its own submit() caller unchanged; the shutdown report and the rejected_shutting_down result carry no operation-specific text beyond this module's own bounded construction-time TypeError.",
+    "external_security_integration": "The module adds no network client, security service, credential store, or external runtime integration; it wraps a caller-supplied function and an injected timer provider.",
+    "fail_posture": "New admission fails closed immediately once shutdown starts; a deadline that expires with outstanding work fails to an explicit abandoned count rather than silently reporting success or hanging indefinitely.",
+    "lifecycle": "The module's only resource is the in-memory Set of in-flight promises and one cancellable, unref'd deadline timer per shutdown call; the timer is always cancelled on the winning drain path so no dangling resource remains referenced by this module.",
+    "mutation_ownership": "The change is bounded to the new shutdown module, its export, tests, documentation, and the owning OpenSpec artifacts and capability specification.",
+    "privacy_transformation": "The module performs no personal-data collection, transformation, or retention; it never inspects the wrapped operation's payload.",
+    "resource_retention": "In-flight tracking is bounded to operations admitted during this module's lifetime and is cleared as each settles; no operation result, argument, or timer is retained after the shutdown report is produced.",
+    "retry_or_redelivery": "The module never retries; it wraps whatever operation it is given exactly once per submit call and reports that call's own outcome, independent of shutdown's own accounting.",
+    "trust_boundary": "The only attacker-controlled pressure this module answers is submission timing relative to shutdown; a submission attempted after the boundary is rejected deterministically rather than admitted, queued, or silently dropped."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "5384c46994e4cacc8c1513db94dcb4ae0b1281d1"
+  },
+  "verification_task_ids": [
+    "1.2",
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "3.1"
+  ]
+}
