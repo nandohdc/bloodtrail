@@ -30,6 +30,14 @@ export {
   type DeliveryBackpressureOptions,
 } from "./delivery-backpressure.js";
 export {
+  createDeliveryShutdown,
+  type DeliveryShutdown,
+  type DeliveryShutdownOptions,
+  type DeliveryShutdownReport,
+  type DeliveryShutdownSubmission,
+  type DeliveryShutdownSubmitResult,
+} from "./delivery-shutdown.js";
+export {
   nodePlatformProvider,
   type NodePlatformProvider,
   createNodeSecurityAuditSdk,

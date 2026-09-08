@@ -110,6 +110,35 @@ settles, whether it resolves or rejects, so a failure never leaks a slot. An
 optional `observability` hook exposes `onAdmitted`, `onRejectedOverload`, and
 `onReleased`, each receiving only numeric depth and capacity values.
 
+## Deadline-bounded delivery shutdown (provisional)
+
+`createDeliveryShutdown` gates admission to any async delivery operation with
+a lifecycle boundary, independent of what that operation does. It composes
+above the raw handoff, the retry-wrapped delivery, or the backpressure gate.
+
+```typescript
+import { createDeliveryShutdown, nodeTimers } from "@bloodtrail/security-audit-sdk-node";
+
+const lifecycle = createDeliveryShutdown({ deadlineMs: 5000, timers: nodeTimers });
+
+const outcome = await lifecycle.submit(() => gate.submit(() => retry.deliver(event)));
+// outcome.status: "admitted" (outcome.result is the wrapped call's own result) | "rejected_shutting_down"
+
+// At process shutdown:
+const report = await lifecycle.shutdown();
+// report: { accepted, completed, abandoned }
+```
+
+Once `shutdown()` is called, every subsequent `submit()` is rejected
+immediately and synchronously with `rejected_shutting_down` — no wrapped
+operation is invoked and no window exists for a concurrent submission to
+cross the boundary. `shutdown()` drains every operation admitted before that
+boundary against the configured deadline; anything still outstanding when the
+deadline expires is counted `abandoned` and never reported delivered, but its
+own `submit()` call still resolves once it eventually settles — shutdown
+never causes an admitted operation to be lost. `shutdown()` is idempotent:
+repeated calls return the identical accounting from the first call.
+
 ## Usage
 
 ```typescript
