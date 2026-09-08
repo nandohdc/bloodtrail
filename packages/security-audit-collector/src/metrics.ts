@@ -4,7 +4,10 @@
 
 export interface IngressMetrics {
   readonly accepted: number;
+  readonly deduplicated: number;
   readonly rejectedAuthentication: number;
+  readonly rejectedDeduplicationCapacity: number;
+  readonly rejectedDuplicateConflict: number;
   readonly rejectedSize: number;
   readonly rejectedParse: number;
   readonly rejectedSchema: number;
@@ -15,7 +18,10 @@ export type MetricKey = keyof IngressMetrics;
 
 const METRIC_KEYS: readonly MetricKey[] = Object.freeze([
   "accepted",
+  "deduplicated",
   "rejectedAuthentication",
+  "rejectedDeduplicationCapacity",
+  "rejectedDuplicateConflict",
   "rejectedSize",
   "rejectedParse",
   "rejectedSchema",

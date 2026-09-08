@@ -11,6 +11,8 @@ export const DIAGNOSTIC_CODES = Object.freeze({
   PARSE_INVALID: "COLLECTOR_PARSE_INVALID",
   SCHEMA_INVALID: "COLLECTOR_SCHEMA_INVALID",
   VERSION_UNSUPPORTED: "COLLECTOR_VERSION_UNSUPPORTED",
+  DUPLICATE_CONFLICT: "COLLECTOR_DUPLICATE_CONFLICT",
+  DEDUPLICATION_CAPACITY: "COLLECTOR_DEDUPLICATION_CAPACITY",
 });
 
 export type DiagnosticCategory =
@@ -18,7 +20,8 @@ export type DiagnosticCategory =
   | "size"
   | "parse"
   | "validation"
-  | "version";
+  | "version"
+  | "deduplication";
 
 export interface IngressDiagnostic {
   readonly code: string;
