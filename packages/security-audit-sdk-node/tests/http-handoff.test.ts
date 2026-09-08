@@ -135,4 +135,28 @@ describe("HTTP delivery handoff", () => {
     });
     assert.equal(requests.length, 0);
   });
+
+  it("carries a caller-supplied attempt ordinal into the wire correlation and the result without mutating event identity", async () => {
+    const event = eventFixture();
+    const original = JSON.stringify(event);
+    const { handoff, requests } = handoffWith(response(202, [{ event_id: event.event.id, outcome: "accepted" }]));
+
+    const result = await handoff.handoff(event, 3);
+
+    assert.deepEqual(result, { status: "acknowledged", code: "acknowledged", event_id: event.event.id, attempt: 3 });
+    assert.equal(requests[0]!.attempt, 3);
+    assert.equal(requests[0]!.event_id, event.event.id);
+    assert.equal(JSON.parse(requests[0]!.body).correlation.retry_attempt, 3);
+    assert.equal(JSON.stringify(event), original);
+  });
+
+  it("rejects a negative, non-integer, or over-ceiling attempt ordinal before calling the injected exchange", async () => {
+    const event = eventFixture();
+
+    for (const invalid of [-1, 1.5, 1001, Number.NaN]) {
+      const { handoff, requests } = handoffWith({ kind: "timeout" });
+      await assert.rejects(() => handoff.handoff(event, invalid), TypeError);
+      assert.equal(requests.length, 0);
+    }
+  });
 });

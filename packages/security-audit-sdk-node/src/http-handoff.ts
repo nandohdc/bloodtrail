@@ -4,10 +4,12 @@ import { nodeByteLength } from "./byte-length.js";
 
 const MAX_REQUEST_BODY_BYTES = 65_536;
 const RETRYABLE_RESPONSE_STATUSES = new Set([408, 425, 429]);
+// Contract 1.0.0 bounds.retry_attempt_max — the wire ceiling on correlation.retry_attempt.
+const RETRY_ATTEMPT_MAX = 1000;
 
 type AttemptIdentity = Readonly<{
   readonly eventId: string;
-  readonly ordinal: 0;
+  readonly ordinal: number;
 }>;
 
 export interface HttpExchangeRequest {
@@ -19,7 +21,7 @@ export interface HttpExchangeRequest {
   }>;
   readonly body: string;
   readonly event_id: string;
-  readonly attempt: 0;
+  readonly attempt: number;
 }
 
 export interface HttpAcknowledgment {
@@ -56,37 +58,43 @@ export type HttpDeliveryHandoffResult = Readonly<{
     | "request_serialization_failed"
     | "unexpected_response";
   readonly event_id: string;
-  readonly attempt: 0;
+  readonly attempt: number;
 }>;
 
 export interface HttpDeliveryHandoff {
-  handoff(event: Readonly<SecurityAuditEvent>): Promise<HttpDeliveryHandoffResult>;
+  /**
+   * Performs exactly one exchange for one attempt of one occurrence. `attempt`
+   * is the caller-supplied zero-based ordinal for this exchange (default `0`);
+   * this method never schedules another attempt itself — retry scheduling is a
+   * separate, composing concern.
+   */
+  handoff(event: Readonly<SecurityAuditEvent>, attempt?: number): Promise<HttpDeliveryHandoffResult>;
 }
 
 /**
  * Creates one injected, transport-free HTTP handoff boundary. The exchange
  * function owns network behavior; this factory only projects and classifies one
- * canonical occurrence.
+ * canonical occurrence per call.
  */
 export function createHttpDeliveryHandoff(options: HttpDeliveryHandoffOptions): HttpDeliveryHandoff {
   const path = validatePath(options.path);
   const exchange = options.exchange;
 
   return Object.freeze({
-    async handoff(event: Readonly<SecurityAuditEvent>): Promise<HttpDeliveryHandoffResult> {
-      const attempt: AttemptIdentity = Object.freeze({ eventId: event.event.id, ordinal: 0 });
-      const request = projectRequest(event, path, attempt);
+    async handoff(event: Readonly<SecurityAuditEvent>, attempt = 0): Promise<HttpDeliveryHandoffResult> {
+      const identity: AttemptIdentity = Object.freeze({ eventId: event.event.id, ordinal: validateAttempt(attempt) });
+      const request = projectRequest(event, path, identity);
       if (request === null) {
-        return result("non_retryable", "request_serialization_failed", attempt);
+        return result("non_retryable", "request_serialization_failed", identity);
       }
       if (nodeByteLength.byteLength(request.body) > MAX_REQUEST_BODY_BYTES) {
-        return result("non_retryable", "request_too_large", attempt);
+        return result("non_retryable", "request_too_large", identity);
       }
 
       try {
-        return classifyOutcome(await exchange(request), attempt);
+        return classifyOutcome(await exchange(request), identity);
       } catch {
-        return result("retryable", "transport_failure", attempt);
+        return result("retryable", "transport_failure", identity);
       }
     },
   } satisfies HttpDeliveryHandoff);
@@ -99,6 +107,13 @@ function validatePath(path: string): string {
   return path;
 }
 
+function validateAttempt(attempt: number): number {
+  if (!Number.isInteger(attempt) || attempt < 0 || attempt > RETRY_ATTEMPT_MAX) {
+    throw new TypeError("HTTP handoff attempt ordinal must be a bounded non-negative integer");
+  }
+  return attempt;
+}
+
 function projectRequest(
   event: Readonly<SecurityAuditEvent>,
   path: string,
@@ -108,7 +123,7 @@ function projectRequest(
   try {
     body = JSON.stringify({
       ...event,
-      correlation: { ...event.correlation, retry_attempt: 0 },
+      correlation: { ...event.correlation, retry_attempt: attempt.ordinal },
     });
   } catch {
     return null;
