@@ -20,7 +20,7 @@ const packageRoot = resolve(__dirname, "..");
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-sdk-node-scope-"));
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
 
-const BASELINE_INVENTORY = "platform coupling inventory: authored: 8 artifacts, 34 references, host couplings: [none]";
+const BASELINE_INVENTORY = "platform coupling inventory: authored: 9 artifacts, 44 references, host couplings: [none]";
 
 const PROBE_ARTIFACT = "src/probe.ts";
 
@@ -201,7 +201,7 @@ function stageIsolatedPackage(sourceDir: string, targetDir: string) {
 test("unmutated sdk-node package passes the scope gate and reports declared coupling inventory", () => {
   const { output, status } = runCase("null-control");
   assert.equal(status, 0, `unmutated control failed:\n${output}`);
-  assert.match(output, /scope passed: 8 SDK source files/);
+  assert.match(output, /scope passed: 9 SDK source files/);
   const inventoryLine = output.split(/\r?\n/).find((line) => line.startsWith("platform coupling inventory:"));
   assert.equal(inventoryLine, BASELINE_INVENTORY, `null control inventory changed:\n${output}`);
 });
@@ -222,7 +222,7 @@ test("positive control: approved Node capabilities and first-party Core dependen
     ].join("\n"),
   );
   assert.equal(status, 0, `approved capabilities failed:\n${output}`);
-  assert.match(output, /scope passed: 9 SDK source files/);
+  assert.match(output, /scope passed: 10 SDK source files/);
 });
 
 for (const scenario of COUPLING_REJECTIONS) {
