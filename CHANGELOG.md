@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.13.0](https://github.com/nandohdc/bloodtrail/compare/v0.12.0...v0.13.0) (2026-09-08)
+
+
+### Added
+
+* **node:** add bounded delivery backpressure ([#105](https://github.com/nandohdc/bloodtrail/issues/105)) ([135f80f](https://github.com/nandohdc/bloodtrail/commit/135f80f841e5a2dfdcbffd664abaaa0624806133))
+* **node:** implement bounded delivery backpressure ([#105](https://github.com/nandohdc/bloodtrail/issues/105)) ([a39462c](https://github.com/nandohdc/bloodtrail/commit/a39462c3c13e2855cb9a2616176040c9f7491e74))
+
+
+### Documentation
+
+* **openspec:** archive delivery retry semantics ([#104](https://github.com/nandohdc/bloodtrail/issues/104)) ([42c86ec](https://github.com/nandohdc/bloodtrail/commit/42c86ecc0920815ed57b6e28f93edbd3e0752077))
+* **openspec:** archive delivery retry semantics ([#104](https://github.com/nandohdc/bloodtrail/issues/104)) ([36f8446](https://github.com/nandohdc/bloodtrail/commit/36f84462b46f6772805f100da7b4536a007b3ff4))
+* **openspec:** assess delivery backpressure ([#105](https://github.com/nandohdc/bloodtrail/issues/105)) ([b6b6de1](https://github.com/nandohdc/bloodtrail/commit/b6b6de11e2fd7767d18c0d131fa6270d532354d4))
+* **openspec:** fold delivery backpressure spec ([#105](https://github.com/nandohdc/bloodtrail/issues/105)) ([44583e2](https://github.com/nandohdc/bloodtrail/commit/44583e2c32e51986523cbb13aa9277d7468a4a0a))
+* **openspec:** fold delivery backpressure spec ([#105](https://github.com/nandohdc/bloodtrail/issues/105)) ([30784af](https://github.com/nandohdc/bloodtrail/commit/30784afe70286e0f3fa5ea55f505028a68b45adb))
+
 ## [0.12.0](https://github.com/nandohdc/bloodtrail/compare/v0.11.0...v0.12.0) (2026-09-08)
 
 
