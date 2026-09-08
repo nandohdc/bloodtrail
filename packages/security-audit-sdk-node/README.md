@@ -26,6 +26,36 @@ Per ADR 0009:
 - **Zero third-party runtime dependencies**; depends strictly on first-party `@bloodtrail/security-audit-sdk-core`.
 - Supported engines: Node `>=24 <25 || >=26 <27`.
 
+## Single-attempt HTTP handoff (provisional)
+
+`createHttpDeliveryHandoff` projects one canonical occurrence into a bounded
+`POST` request descriptor and delegates the exchange to caller-owned code. It
+does not open sockets, use `fetch` or `node:http`, schedule retries, manage a
+queue, drain during shutdown, or claim durable or exactly-once delivery.
+
+```typescript
+import { createHttpDeliveryHandoff } from "@bloodtrail/security-audit-sdk-node";
+
+const handoff = createHttpDeliveryHandoff({
+  path: "/v1/security-audit",
+  exchange: async (request) => {
+    // The application owns the actual HTTP client and credential lifecycle.
+    await sendWithApplicationOwnedClient(request);
+    return {
+      kind: "response",
+      status: 202,
+      acknowledgments: [{ event_id: request.event_id, outcome: "accepted" }],
+    };
+  },
+});
+```
+
+Only a 2xx response with exactly one matching accepted acknowledgment produces
+`acknowledged`. Retryable responses, timeouts, and exchange failures are
+classified as `retryable`; permanent responses are `non_retryable`; malformed
+or ambiguous acknowledgments are terminal `protocol_error`. Retrying, capacity,
+and shutdown behavior remain separately governed work.
+
 ## Usage
 
 ```typescript

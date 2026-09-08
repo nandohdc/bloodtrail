@@ -1,0 +1,139 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A remote peer controls response status, acknowledgment content, timing, and connection failure, so acceptance must be exact, bounded, and fail closed.",
+    "The Node binding must prove delivery semantics without acquiring an unapproved socket, HTTP client, host fetch, credential, or third-party runtime dependency.",
+    "Attempt identity must preserve canonical event identity without mutating caller-owned event data or implying retry, durability, or exactly-once behavior.",
+    "Serialized request bytes and peer-controlled diagnostics must remain bounded and secret-free while result classes stay deterministic for conformance tests."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "lifecycle_or_state",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/src/",
+    "packages/security-audit-sdk-node/tests/",
+    "packages/security-audit-sdk-node/README.md",
+    "openspec/changes/implement-http-delivery-handoff/",
+    "openspec/specs/security-audit-sdk-node/spec.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-implement-http-delivery-handoff",
+      "kind": "direct_implementation",
+      "summary": "Expose a pure one-attempt descriptor and closed exchange-result port whose caller supplies the actual network behavior.",
+      "forces_addressed": [
+        "A remote peer controls response status, acknowledgment content, timing, and connection failure, so acceptance must be exact, bounded, and fail closed.",
+        "The Node binding must prove delivery semantics without acquiring an unapproved socket, HTTP client, host fetch, credential, or third-party runtime dependency.",
+        "Attempt identity must preserve canonical event identity without mutating caller-owned event data or implying retry, durability, or exactly-once behavior.",
+        "Serialized request bytes and peer-controlled diagnostics must remain bounded and secret-free while result classes stay deterministic for conformance tests."
+      ]
+    },
+    {
+      "id": "approach-alternative-implement-http-delivery-handoff",
+      "kind": "alternative",
+      "summary": "Open an HTTP connection directly and expose arbitrary response and error objects to callers for classification.",
+      "forces_addressed": [
+        "A remote peer controls response status, acknowledgment content, timing, and connection failure, so acceptance must be exact, bounded, and fail closed.",
+        "The Node binding must prove delivery semantics without acquiring an unapproved socket, HTTP client, host fetch, credential, or third-party runtime dependency.",
+        "Serialized request bytes and peer-controlled diagnostics must remain bounded and secret-free while result classes stay deterministic for conformance tests."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-implement-http-delivery-handoff",
+  "rejected_alternative_ids": [
+    "approach-alternative-implement-http-delivery-handoff"
+  ],
+  "rejection_reasons": {
+    "approach-alternative-implement-http-delivery-handoff": {
+      "forces": [
+        "A remote peer controls response status, acknowledgment content, timing, and connection failure, so acceptance must be exact, bounded, and fail closed.",
+        "The Node binding must prove delivery semantics without acquiring an unapproved socket, HTTP client, host fetch, credential, or third-party runtime dependency.",
+        "Serialized request bytes and peer-controlled diagnostics must remain bounded and secret-free while result classes stay deterministic for conformance tests."
+      ],
+      "reason": "A direct connection adds an unapproved network lifecycle and platform coupling, while arbitrary remote objects create an unbounded peer-controlled diagnostic surface and make acceptance classification non-deterministic."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-injected-exchange-only",
+    "implementation-stable-attempt-identity",
+    "implementation-fail-closed-acknowledgment",
+    "implementation-bounded-secret-free-projection"
+  ],
+  "invariant_evidence": {
+    "implementation-injected-exchange-only": {
+      "task_ids": [
+        "1.2",
+        "2.1",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "in-memory exchange tests observe exactly one call and no live-network dependency",
+        "Node scope and dependency checks reject unapproved host and package couplings"
+      ]
+    },
+    "implementation-stable-attempt-identity": {
+      "task_ids": [
+        "1.2",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "all result-class tests assert original event.id and zero-based attempt ordinal without mutating source event"
+      ]
+    },
+    "implementation-fail-closed-acknowledgment": {
+      "task_ids": [
+        "1.2",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "accepted, permanent, retryable, timeout, transport-failure, malformed, ambiguous, and mismatched-acknowledgment fixture arms"
+      ]
+    },
+    "implementation-bounded-secret-free-projection": {
+      "task_ids": [
+        "1.2",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "oversized projection rejects before exchange and all public failure results exclude peer body and error text"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "A terminal acknowledgment is recorded only after an exact matching acceptance, preventing a peer response from being mistaken for evidence that this occurrence was handled.",
+    "authentication_or_authorization": "The handoff does not authenticate or authorize a peer, caller, credential, or request; exchange ownership remains outside the package.",
+    "authority_provenance": "The event identity comes from the canonical occurrence and is preserved unchanged; a peer acknowledgment is accepted only when it binds to that exact identity.",
+    "concurrency": "One handoff invokes its exchange exactly once and creates no queue, retry loop, shared mutable state, or overlapping attempt lifecycle.",
+    "confidentiality": "Request projection is bounded and results expose closed category/code values rather than peer response bodies, headers, URLs, credentials, or error messages.",
+    "cryptography": "No cipher, key, signature, hash, TLS configuration, or credential management is introduced; actual connection security remains caller-owned and out of scope.",
+    "error_disclosure": "Timeout, transport failure, permanent response, and protocol error outcomes use finite codes and do not echo attacker-controlled text.",
+    "external_security_integration": "The injected exchange is a caller-owned port; the package adds no network client, security service, credential store, or external runtime integration.",
+    "fail_posture": "Malformed, ambiguous, missing, duplicate, or mismatched acknowledgment information is terminal protocol error, never acceptance.",
+    "lifecycle": "The module limits itself to one attempt and expressly introduces no retry schedule, queue, backpressure, shutdown drain, socket, or background resource lifecycle.",
+    "mutation_ownership": "The change is bounded to the Node binding, its tests and documentation, and the owning OpenSpec artifacts and capability specification.",
+    "privacy_transformation": "The change serializes an already canonical occurrence for a caller-owned exchange but creates no personal-data collection, transformation policy, or retention store.",
+    "resource_retention": "Request serialization has a fixed bound, failure data is closed, and no connection, timer, buffer, queue, cache, or durable record is retained by the handoff.",
+    "retry_or_redelivery": "Retryable is only a classified single-attempt result; no retry is scheduled and the unchanged identity is not represented as exactly-once or durable delivery.",
+    "trust_boundary": "The remote peer is attacker-controlled at the exchange boundary, so only exact well-formed acknowledgment of the submitted event ID crosses into accepted state."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "6b9b94f0b2603dc12417eb766e2568aa771652a4"
+  },
+  "verification_task_ids": [
+    "1.2",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1"
+  ]
+}
