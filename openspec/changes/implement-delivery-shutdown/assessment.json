@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.1",
+  "change_id": "implement-delivery-shutdown",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The admission boundary must close synchronously at the exact moment shutdown is initiated so no concurrent submission can be accepted after it, without any locking primitive.",
+    "Deadline-bounded draining must produce an exact accepted/completed/abandoned accounting even though JavaScript promises cannot be forcibly cancelled, and must never report abandoned work as delivered.",
+    "Repeated or concurrent shutdown calls must be idempotent and must never re-drain or double-count already-reported work.",
+    "The mechanism must reuse the delivery layer's own established shutdown-timer pattern (cancellable, unref'd) rather than inventing a second one, and must remain independent of what the wrapped delivery operation is."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "lifecycle_or_state",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/src/delivery-shutdown.ts",
+    "packages/security-audit-sdk-node/src/index.ts",
+    "packages/security-audit-sdk-node/tests/delivery-shutdown.test.ts",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
+    "packages/security-audit-sdk-node/README.md",
+    "openspec/changes/implement-delivery-shutdown/",
+    "openspec/specs/security-audit-sdk-node/spec.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-implement-delivery-shutdown",
+      "kind": "direct_implementation",
+      "summary": "A boolean admission flag checked synchronously in submit(), plus a Set of in-flight promises drained via Promise.race against a cancellable deadline timer mirroring security-audit-sdk-core's createShutdownTimeout, with the shutdown report memoized for idempotency.",
+      "forces_addressed": [
+        "The admission boundary must close synchronously at the exact moment shutdown is initiated so no concurrent submission can be accepted after it, without any locking primitive.",
+        "Deadline-bounded draining must produce an exact accepted/completed/abandoned accounting even though JavaScript promises cannot be forcibly cancelled, and must never report abandoned work as delivered.",
+        "Repeated or concurrent shutdown calls must be idempotent and must never re-drain or double-count already-reported work.",
+        "The mechanism must reuse the delivery layer's own established shutdown-timer pattern (cancellable, unref'd) rather than inventing a second one, and must remain independent of what the wrapped delivery operation is."
+      ]
+    },
+    {
+      "id": "approach-alternative-implement-delivery-shutdown",
+      "kind": "alternative",
+      "summary": "An AbortController-based cancellation protocol that requires every wrapped delivery operation to accept and honor an AbortSignal.",
+      "forces_addressed": [
+        "Deadline-bounded draining must produce an exact accepted/completed/abandoned accounting even though JavaScript promises cannot be forcibly cancelled, and must never report abandoned work as delivered."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-implement-delivery-shutdown",
+  "rejected_alternative_ids": [
+    "approach-alternative-implement-delivery-shutdown"
+  ],
+  "rejection_reasons": {
+    "approach-alternative-implement-delivery-shutdown": {
+      "forces": [
+        "The mechanism must reuse the delivery layer's own established shutdown-timer pattern (cancellable, unref'd) rather than inventing a second one, and must remain independent of what the wrapped delivery operation is."
+      ],
+      "reason": "Requiring every wrapped operation to accept and cooperatively honor an AbortSignal would couple this generic composing module to a cancellation contract none of the existing handoff, retry, or backpressure modules implement, and the issue explicitly excludes guaranteeing anything about persistence after cancellation — abandonment-by-accounting satisfies the acceptance criteria without that added surface."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-synchronous-admission-boundary",
+    "implementation-deadline-bounded-drain-no-loss",
+    "implementation-idempotent-shutdown"
+  ],
+  "invariant_evidence": {
+    "implementation-synchronous-admission-boundary": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "new-admission-rejected test: a submission attempted synchronously right after shutdown() is called is rejected without invoking the operation",
+        "concurrent-admission-boundary test asserts no window exists for an admission to cross the boundary"
+      ]
+    },
+    "implementation-deadline-bounded-drain-no-loss": {
+      "task_ids": [
+        "1.2",
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "empty-drain test: shutdown resolves without waiting for the deadline and reports zero abandoned",
+        "deadline-expiry test: exact accepted/completed/abandoned counts when operations remain outstanding",
+        "never-silently-dropped test: an abandoned operation's own submit() call still resolves once it settles"
+      ]
+    },
+    "implementation-idempotent-shutdown": {
+      "task_ids": [
+        "1.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "idempotency test: repeated and concurrent shutdown() calls return the identical report object"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "5384c46994e4cacc8c1513db94dcb4ae0b1281d1"
+  },
+  "verification_task_ids": [
+    "1.2",
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "3.1"
+  ]
+}

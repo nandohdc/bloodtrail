@@ -1,0 +1,25 @@
+## ADDED Requirements
+
+### Requirement: Node binding provides deadline-bounded delivery shutdown
+
+The Node binding SHALL provide a shutdown module that gates admission to an injected asynchronous delivery operation with a lifecycle boundary, independent of what that operation is. Once shutdown has been initiated, every subsequent admission attempt SHALL be rejected immediately and synchronously with a `rejected_shutting_down` outcome, without invoking the wrapped operation, and with no window in which a concurrent admission attempt could be accepted after that boundary. Shutdown SHALL drain every operation admitted before the boundary against a configured deadline and SHALL return an exact accounting of how many operations were accepted, completed before the deadline, and abandoned at deadline expiry. An operation still outstanding when the deadline expires SHALL be counted as abandoned and SHALL never be reported delivered. Shutdown SHALL be idempotent: a repeated shutdown call SHALL return the same accounting without re-draining or double-counting.
+
+#### Scenario: New admission after shutdown is rejected deterministically
+- **WHEN** an admission is attempted after shutdown has been initiated
+- **THEN** the module immediately returns `rejected_shutting_down` without invoking the wrapped operation
+
+#### Scenario: Concurrent admission cannot cross the shutdown boundary
+- **WHEN** shutdown is initiated concurrently with an admission attempt
+- **THEN** the admission boundary applies without a gap, so no admission attempted at or after the moment shutdown is initiated is ever accepted
+
+#### Scenario: An empty or fully drained set of operations completes before the deadline
+- **WHEN** shutdown is initiated with no admitted operations outstanding, or all admitted operations have already settled
+- **THEN** shutdown resolves without waiting for the configured deadline and reports zero abandoned operations
+
+#### Scenario: Deadline expiry marks outstanding work as abandoned with exact accounting
+- **WHEN** shutdown's configured deadline expires while operations admitted before the boundary remain outstanding
+- **THEN** shutdown returns the exact count of accepted, completed, and abandoned operations, and no abandoned operation is ever reported delivered
+
+#### Scenario: Repeated shutdown is idempotent
+- **WHEN** shutdown is called more than once, sequentially or concurrently
+- **THEN** every call returns the identical accounting from the first shutdown, and no operation is drained or counted more than once
