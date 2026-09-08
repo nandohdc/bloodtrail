@@ -155,7 +155,7 @@
   },
   "security_sensitive": true,
   "ordering": {
-    "proposal_baseline_commit": "1e8199a9b5186e7ee855c55f0860871860f9c287"
+    "proposal_baseline_commit": "b06a7e9584e608a36137d158d60db55431ff254e"
   },
   "verification_task_ids": [
     "1.1",

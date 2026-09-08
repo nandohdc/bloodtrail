@@ -15,11 +15,11 @@
 
 - [x] 3.1 Run every duplicate arm green through the public `submit()` surface, including first/duplicate/conflict/sender-isolation/re-entrancy/expiry/capacity/null-control behavior; verify `npm run validate --prefix packages/security-audit-collector` passes.
 - [x] 3.2 Run `npx --yes @fission-ai/openspec@latest validate --all --strict`, the assessment and implementation design-pattern-governance phases, the candidate/baseline dual check, and `git diff --check` with an empty index; resolve any scope, secret-disclosure, or classification failure before staging.
-- [ ] 3.3 Stage only the collector source/tests/docs and this change's declared OpenSpec artifacts; commit with Conventional Commits, then verify the committed head passes final governance and the dual check.
+- [x] 3.3 Stage only the collector source/tests/docs and this change's declared OpenSpec artifacts; commit with Conventional Commits, then verify the committed head passes final governance and the dual check.
 
 ## 4. Delivery, fold, archive, and closure
 
-- [ ] 4.1 Open the implementation PR with the complete authorization posture, explicit five-minute/32-record synthetic bound, full-security assessment, AI-not-approval statement, topology-ratification status, and no-production/no-exactly-once boundary; merge only when all required CI checks are green on the exact head under the away-window grant.
+- [x] 4.1 Open the implementation PR with the complete authorization posture, explicit five-minute/32-record synthetic bound, full-security assessment, AI-not-approval statement, topology-ratification status, and no-production/no-exactly-once boundary; merge only when all required CI checks are green on the exact head under the away-window grant.
 - [ ] 4.2 Fold the `security-audit-collector` delta into its canonical specification in a dedicated fold PR, proving each requirement block is byte-identical and a second application is a no-op; merge only after its exact-head CI is green.
 - [ ] 4.3 Archive the completed change with byte-preserving relocation and `archive-evidence.md`; verify strict OpenSpec validation, staged rename identity for immutable artifacts, committed-head final governance, candidate/baseline dual verification, and the complete repository governance-gate chain.
 - [ ] 4.4 Close #108 with first/duplicate/conflict/re-entrancy/expiry/capacity and scope-boundary evidence, then tick only #108 in #132's Wave 4 checklist after the archive PR is merged.
