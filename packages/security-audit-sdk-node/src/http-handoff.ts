@@ -108,10 +108,14 @@ function validatePath(path: string): string {
 }
 
 function validateAttempt(attempt: number): number {
-  if (!Number.isInteger(attempt) || attempt < 0 || attempt > RETRY_ATTEMPT_MAX) {
-    throw new TypeError("HTTP handoff attempt ordinal must be a bounded non-negative integer");
-  }
+  if (!Number.isInteger(attempt)) throw invalidAttempt();
+  if (attempt < 0) throw invalidAttempt();
+  if (attempt > RETRY_ATTEMPT_MAX) throw invalidAttempt();
   return attempt;
+}
+
+function invalidAttempt(): TypeError {
+  return new TypeError("HTTP handoff attempt ordinal must be a bounded non-negative integer");
 }
 
 function projectRequest(

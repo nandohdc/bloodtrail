@@ -41,42 +41,72 @@ export interface DeliveryRetry {
   deliver(event: Readonly<SecurityAuditEvent>): Promise<DeliveryRetryResult>;
 }
 
+interface ResolvedDeliveryRetryConfig {
+  readonly handoff: HttpDeliveryHandoff;
+  readonly maxAttempts: number;
+  readonly baseDelayMs: number;
+  readonly maxDelayMs: number;
+  readonly jitterSource: DeliveryRetryJitterSource;
+  readonly timers: AuditTimerProvider;
+  readonly observability: DeliveryRetryObservability | undefined;
+}
+
 /**
  * Wraps a single-attempt HTTP handoff with a bounded, jittered retry schedule.
  * Only a `retryable` outcome is ever retried; any other terminal outcome — or
  * budget exhaustion — stops scheduling immediately.
  */
 export function createBoundedDeliveryRetry(options: DeliveryRetryOptions): DeliveryRetry {
+  const config = resolveConfig(options);
+  return Object.freeze({
+    deliver: (event: Readonly<SecurityAuditEvent>) => runDeliveryAttempts(config, event),
+  } satisfies DeliveryRetry);
+}
+
+function resolveConfig(options: DeliveryRetryOptions): ResolvedDeliveryRetryConfig {
   const maxAttempts = validateMaxAttempts(options.maxAttempts);
   const baseDelayMs = validateDelay(options.baseDelayMs, "baseDelayMs");
   const maxDelayMs = validateDelay(options.maxDelayMs, "maxDelayMs");
   if (maxDelayMs < baseDelayMs) {
     throw new TypeError("delivery retry maxDelayMs must be greater than or equal to baseDelayMs");
   }
-  const { handoff, jitterSource, timers, observability } = options;
+  return {
+    handoff: options.handoff,
+    maxAttempts,
+    baseDelayMs,
+    maxDelayMs,
+    jitterSource: options.jitterSource,
+    timers: options.timers,
+    observability: options.observability,
+  };
+}
 
-  return Object.freeze({
-    async deliver(event: Readonly<SecurityAuditEvent>): Promise<DeliveryRetryResult> {
-      let attempts = 0;
+async function runDeliveryAttempts(
+  config: ResolvedDeliveryRetryConfig,
+  event: Readonly<SecurityAuditEvent>,
+): Promise<DeliveryRetryResult> {
+  let attempts = 0;
 
-      for (let ordinal = 0; ordinal < maxAttempts; ordinal += 1) {
-        const outcome = await handoff.handoff(event, ordinal);
-        attempts += 1;
+  for (let ordinal = 0; ordinal < config.maxAttempts; ordinal += 1) {
+    const outcome = await config.handoff.handoff(event, ordinal);
+    attempts += 1;
 
-        if (outcome.status !== "retryable") {
-          return terminal(outcome.status, outcome.code, outcome.event_id, attempts);
-        }
-        if (ordinal + 1 >= maxAttempts) break;
+    if (outcome.status !== "retryable") {
+      return terminal(outcome.status, outcome.code, outcome.event_id, attempts);
+    }
+    if (ordinal + 1 >= config.maxAttempts) break;
 
-        const delayMs = computeDelayMs(baseDelayMs, maxDelayMs, ordinal, jitterSource);
-        observability?.onAttemptScheduled?.(ordinal + 1, delayMs);
-        await wait(timers, delayMs);
-      }
+    await scheduleNextAttempt(config, ordinal);
+  }
 
-      observability?.onExhausted?.(attempts);
-      return terminal("exhausted", "retry_exhausted", event.event.id, attempts);
-    },
-  } satisfies DeliveryRetry);
+  config.observability?.onExhausted?.(attempts);
+  return terminal("exhausted", "retry_exhausted", event.event.id, attempts);
+}
+
+async function scheduleNextAttempt(config: ResolvedDeliveryRetryConfig, ordinal: number): Promise<void> {
+  const delayMs = computeDelayMs(config.baseDelayMs, config.maxDelayMs, ordinal, config.jitterSource);
+  config.observability?.onAttemptScheduled?.(ordinal + 1, delayMs);
+  await wait(config.timers, delayMs);
 }
 
 function terminal(
@@ -96,11 +126,17 @@ function computeDelayMs(
 ): number {
   const uncapped = baseDelayMs * 2 ** attemptOrdinal;
   const capped = Math.min(uncapped, maxDelayMs);
-  const jitter = jitterSource();
-  if (!Number.isFinite(jitter) || jitter < 0 || jitter >= 1) {
-    throw new TypeError("delivery retry jitterSource must return a finite value in [0, 1)");
-  }
-  return Math.floor(capped * jitter);
+  return Math.floor(capped * validateJitter(jitterSource()));
+}
+
+function validateJitter(jitter: number): number {
+  if (!Number.isFinite(jitter)) throw invalidJitter();
+  if (jitter < 0 || jitter >= 1) throw invalidJitter();
+  return jitter;
+}
+
+function invalidJitter(): TypeError {
+  return new TypeError("delivery retry jitterSource must return a finite value in [0, 1)");
 }
 
 function wait(timers: AuditTimerProvider, delayMs: number): Promise<void> {
@@ -111,10 +147,13 @@ function wait(timers: AuditTimerProvider, delayMs: number): Promise<void> {
 }
 
 function validateMaxAttempts(maxAttempts: number): number {
-  if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > MAX_ATTEMPTS_CEILING) {
-    throw new TypeError("delivery retry maxAttempts must be a bounded integer between 1 and 1000");
-  }
+  if (!Number.isInteger(maxAttempts)) throw invalidMaxAttempts();
+  if (maxAttempts < 1 || maxAttempts > MAX_ATTEMPTS_CEILING) throw invalidMaxAttempts();
   return maxAttempts;
+}
+
+function invalidMaxAttempts(): TypeError {
+  return new TypeError("delivery retry maxAttempts must be a bounded integer between 1 and 1000");
 }
 
 function validateDelay(delayMs: number, field: "baseDelayMs" | "maxDelayMs"): number {
