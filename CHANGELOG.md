@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.10.0](https://github.com/nandohdc/bloodtrail/compare/v0.9.1...v0.10.0) (2026-09-07)
+
+
+### Added
+
+* **collector:** enforce collector authentication and contract-version validation ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([543c1bf](https://github.com/nandohdc/bloodtrail/commit/543c1bffb0acc7665c3e67cf24bb9d75b7a4f57d))
+* **collector:** enforce collector authentication and contract-version validation ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([01a20c4](https://github.com/nandohdc/bloodtrail/commit/01a20c4b2e582eff366bbacd74c25043ec8beb56))
+
+
+### Fixed
+
+* **collector:** simplify bounds generation validation ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([503f2d1](https://github.com/nandohdc/bloodtrail/commit/503f2d112095458ead5acc2bda46f28fe774cde2))
+* **tests:** address governance checker and codescene findings ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([593eaf3](https://github.com/nandohdc/bloodtrail/commit/593eaf37f4cbb4488866e98949e95e39b69d100e))
+* **tests:** update gates for fifth collector package ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([7a07f15](https://github.com/nandohdc/bloodtrail/commit/7a07f1502829f21ad6f25ade4934a5003d2132cf))
+
+
+### Documentation
+
+* **openspec:** archive enforce collector auth and version ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([e93b5e7](https://github.com/nandohdc/bloodtrail/commit/e93b5e799a066d624251fc347a514157ee8c1773))
+* **openspec:** archive enforce-collector-auth-and-version ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([689f43a](https://github.com/nandohdc/bloodtrail/commit/689f43a6a4a4287b3774281c9b5cd7c64bbe7b35))
+* **openspec:** extend enforce-collector-auth-and-version ownership to canonical fold targets ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([172afd3](https://github.com/nandohdc/bloodtrail/commit/172afd31b0de0086f23281681b1d548b9edff741))
+* **openspec:** fold collector specification ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([a6bc819](https://github.com/nandohdc/bloodtrail/commit/a6bc8196ed2d754b5c60860fe06d927fc5426372))
+* **openspec:** fold enforce-collector-auth-and-version specs ([#107](https://github.com/nandohdc/bloodtrail/issues/107)) ([eec13a7](https://github.com/nandohdc/bloodtrail/commit/eec13a7c0d1a88afa5e131e88a4cf917fe5318d5))
+
 ## [0.9.1](https://github.com/nandohdc/bloodtrail/compare/v0.9.0...v0.9.1) (2026-09-06)
 
 
