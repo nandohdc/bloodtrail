@@ -11,5 +11,5 @@
 
 ## 3. Verification and delivery
 
-- [ ] 3.1 Run the Node package validation chain, focused handoff tests, strict OpenSpec validation, baseline/candidate governance checks, and `git diff --check`.
+- [x] 3.1 Run the Node package validation chain, focused handoff tests, strict OpenSpec validation, baseline/candidate governance checks, and `git diff --check`.
 - [ ] 3.2 Commit, open the #103 PR with the complete governance posture, and merge only after exact-head CI has no failures.
