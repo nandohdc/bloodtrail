@@ -11,5 +11,5 @@
 
 ## 3. Verification and delivery
 
-- [ ] 3.1 Run focused governance tests, strict OpenSpec validation, baseline/candidate governance checks, and `git diff --check`.
+- [x] 3.1 Run focused governance tests, strict OpenSpec validation, baseline/candidate governance checks, and `git diff --check`.
 - [ ] 3.2 Commit, open a PR with the full governance posture, and merge only after exact-head CI is green.
