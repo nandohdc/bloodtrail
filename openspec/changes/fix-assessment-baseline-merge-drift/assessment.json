@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.1",
+  "change_id": "fix-assessment-baseline-merge-drift",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Ordering evidence must remain byte-identical when Git creates a descendant merge commit after pull-request validation.",
+    "The generator must fail closed when an author has not supplied immutable ancestry evidence rather than silently binding it to checkout state.",
+    "Assessment source and generated JSON must stay deterministic so the existing drift detector continues to distinguish source changes from tampering."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "security_sensitive_behavior",
+      "lifecycle_or_state"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/scripts/design-pattern-governance/assessment-generation.mjs",
+    "openspec/tests/design-pattern-governance/assessment-generation.test.mjs",
+    "openspec/changes/implement-collector-idempotency-and-deduplication/assessment.source.json",
+    "openspec/changes/implement-collector-idempotency-and-deduplication/assessment.json",
+    "openspec/changes/fix-assessment-baseline-merge-drift/",
+    "openspec/specs/software-design-pattern-governance/spec.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-fix-assessment-baseline-merge-drift",
+      "kind": "direct_implementation",
+      "summary": "Require an explicit source-owned ordering baseline and retain strict regenerated-byte comparison across descendant commits.",
+      "forces_addressed": [
+        "Ordering evidence must remain byte-identical when Git creates a descendant merge commit after pull-request validation.",
+        "The generator must fail closed when an author has not supplied immutable ancestry evidence rather than silently binding it to checkout state.",
+        "Assessment source and generated JSON must stay deterministic so the existing drift detector continues to distinguish source changes from tampering."
+      ]
+    },
+    {
+      "id": "approach-alternative-fix-assessment-baseline-merge-drift",
+      "kind": "alternative",
+      "summary": "Derive a fallback baseline from checkout HEAD, merge-base, or another dynamic repository reference during generation.",
+      "forces_addressed": [
+        "Ordering evidence must remain byte-identical when Git creates a descendant merge commit after pull-request validation.",
+        "The generator must fail closed when an author has not supplied immutable ancestry evidence rather than silently binding it to checkout state."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-fix-assessment-baseline-merge-drift",
+  "rejected_alternative_ids": [
+    "approach-alternative-fix-assessment-baseline-merge-drift"
+  ],
+  "rejection_reasons": {
+    "approach-alternative-fix-assessment-baseline-merge-drift": {
+      "forces": [
+        "Ordering evidence must remain byte-identical when Git creates a descendant merge commit after pull-request validation.",
+        "The generator must fail closed when an author has not supplied immutable ancestry evidence rather than silently binding it to checkout state."
+      ],
+      "reason": "Every repository-derived fallback changes when checkout topology changes, including a clean merge commit, so it cannot preserve immutable ordering evidence or expose an omitted author decision."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-explicit-proposal-baseline",
+    "implementation-generated-assessment-stability",
+    "implementation-bounded-omission-diagnostic"
+  ],
+  "invariant_evidence": {
+    "implementation-explicit-proposal-baseline": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "assessment-generation test rejects a source without ordering.proposal_baseline_commit",
+        "collector source preserves its recorded pre-merge baseline through regeneration"
+      ]
+    },
+    "implementation-generated-assessment-stability": {
+      "task_ids": [
+        "1.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "fixture commits generated assessment, creates descendant merge commit, and reruns checker successfully"
+      ]
+    },
+    "implementation-bounded-omission-diagnostic": {
+      "task_ids": [
+        "2.1"
+      ],
+      "evidence_ids": [
+        "generator throws an actionable ordering.proposal_baseline_commit diagnostic without inspecting checkout HEAD"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "4a24ada926bd92dc270e8d6bacadee4c8d450a4c"
+  },
+  "verification_task_ids": [
+    "1.2",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1"
+  ]
+}

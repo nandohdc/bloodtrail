@@ -1,7 +1,6 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { execFileSync } from "node:child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const repositoryRoot = resolve(__dirname, "../../..");
@@ -50,33 +49,6 @@ export const DEFAULT_SECURITY_JUSTIFICATIONS = Object.freeze({
  */
 export function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
-}
-
-/**
- * Resolves the baseline git commit hash from origin/main merge base or HEAD.
- */
-export function resolveGitBaseline(repoRoot = repositoryRoot) {
-  try {
-    const base = execFileSync("git", ["merge-base", "HEAD", "origin/main"], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"]
-    }).trim();
-    if (/^[0-9a-f]{40}$/.test(base)) return base;
-  } catch {
-    // fallback
-  }
-  try {
-    const head = execFileSync("git", ["rev-parse", "HEAD"], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"]
-    }).trim();
-    if (/^[0-9a-f]{40}$/.test(head)) return head;
-  } catch {
-    // ignore
-  }
-  return "0000000000000000000000000000000000000000";
 }
 
 /**
@@ -170,12 +142,14 @@ function buildSecurityJustification(source) {
   return justification;
 }
 
-function buildOrdering(source, repoRoot) {
+function buildOrdering(source) {
   const orderingSource = source.ordering ?? {};
-  const proposalBaseline =
-    orderingSource.proposal_baseline_commit ??
-    source.proposal_baseline_commit ??
-    resolveGitBaseline(repoRoot);
+  const proposalBaseline = orderingSource.proposal_baseline_commit;
+  if (typeof proposalBaseline !== "string" || !/^[0-9a-f]{40}$/.test(proposalBaseline)) {
+    throw new Error(
+      "assessment.source.json must declare ordering.proposal_baseline_commit as a 40-character Git commit ID"
+    );
+  }
 
   const ordering = { proposal_baseline_commit: proposalBaseline };
   if (orderingSource.assessment_commit) {
@@ -206,7 +180,7 @@ export function generateAssessment(changeDir, sourceInput = null, repoRoot = rep
   const applicability = buildApplicability(source, changeDir);
   const approaches = buildCandidateApproaches(source, changeId);
   const securityJustification = buildSecurityJustification(source);
-  const ordering = buildOrdering(source, repoRoot);
+  const ordering = buildOrdering(source);
   const verificationTaskIds = extractVerificationTaskIds(changeDir, source);
 
   const assessment = {
@@ -325,6 +299,9 @@ function buildScaffoldTemplate(changeId) {
         task_ids: ["1.1"],
         evidence_ids: ["<fixture or test proving this invariant>"]
       }
+    },
+    ordering: {
+      proposal_baseline_commit: "<40-character Git commit ID at proposal baseline>"
     },
     security_sensitive: false
   };
