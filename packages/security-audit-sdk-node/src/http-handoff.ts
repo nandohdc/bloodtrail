@@ -5,6 +5,11 @@ import { nodeByteLength } from "./byte-length.js";
 const MAX_REQUEST_BODY_BYTES = 65_536;
 const RETRYABLE_RESPONSE_STATUSES = new Set([408, 425, 429]);
 
+type AttemptIdentity = Readonly<{
+  readonly eventId: string;
+  readonly ordinal: 0;
+}>;
+
 export interface HttpExchangeRequest {
   readonly method: "POST";
   readonly path: string;
@@ -69,19 +74,19 @@ export function createHttpDeliveryHandoff(options: HttpDeliveryHandoffOptions): 
 
   return Object.freeze({
     async handoff(event: Readonly<SecurityAuditEvent>): Promise<HttpDeliveryHandoffResult> {
-      const eventId = event.event.id;
-      const request = projectRequest(event, path, eventId);
+      const attempt: AttemptIdentity = Object.freeze({ eventId: event.event.id, ordinal: 0 });
+      const request = projectRequest(event, path, attempt);
       if (request === null) {
-        return result("non_retryable", "request_serialization_failed", eventId);
+        return result("non_retryable", "request_serialization_failed", attempt);
       }
       if (nodeByteLength.byteLength(request.body) > MAX_REQUEST_BODY_BYTES) {
-        return result("non_retryable", "request_too_large", eventId);
+        return result("non_retryable", "request_too_large", attempt);
       }
 
       try {
-        return classifyOutcome(await exchange(request), eventId);
+        return classifyOutcome(await exchange(request), attempt);
       } catch {
-        return result("retryable", "transport_failure", eventId);
+        return result("retryable", "transport_failure", attempt);
       }
     },
   } satisfies HttpDeliveryHandoff);
@@ -97,7 +102,7 @@ function validatePath(path: string): string {
 function projectRequest(
   event: Readonly<SecurityAuditEvent>,
   path: string,
-  eventId: string,
+  attempt: AttemptIdentity,
 ): HttpExchangeRequest | null {
   let body: string;
   try {
@@ -118,40 +123,40 @@ function projectRequest(
       "content-length": String(nodeByteLength.byteLength(body)),
     }),
     body,
-    event_id: eventId,
-    attempt: 0,
+    event_id: attempt.eventId,
+    attempt: attempt.ordinal,
   });
 }
 
-function classifyOutcome(outcome: unknown, eventId: string): HttpDeliveryHandoffResult {
-  if (isResponseOutcome(outcome)) return classifyResponse(outcome, eventId);
-  return classifyNonResponse(outcome, eventId);
+function classifyOutcome(outcome: unknown, attempt: AttemptIdentity): HttpDeliveryHandoffResult {
+  if (isResponseOutcome(outcome)) return classifyResponse(outcome, attempt);
+  return classifyNonResponse(outcome, attempt);
 }
 
-function classifyNonResponse(outcome: unknown, eventId: string): HttpDeliveryHandoffResult {
-  if (!isRecord(outcome)) return result("protocol_error", "unexpected_response", eventId);
+function classifyNonResponse(outcome: unknown, attempt: AttemptIdentity): HttpDeliveryHandoffResult {
+  if (!isRecord(outcome)) return result("protocol_error", "unexpected_response", attempt);
   switch (outcome.kind) {
     case "timeout":
-      return result("retryable", "timeout", eventId);
+      return result("retryable", "timeout", attempt);
     case "transport_failure":
-      return result("retryable", "transport_failure", eventId);
+      return result("retryable", "transport_failure", attempt);
     default:
-      return result("protocol_error", "unexpected_response", eventId);
+      return result("protocol_error", "unexpected_response", attempt);
   }
 }
 
 function classifyResponse(
   response: Readonly<Record<string, unknown>> & Readonly<{ readonly kind: "response" }>,
-  eventId: string,
+  attempt: AttemptIdentity,
 ): HttpDeliveryHandoffResult {
   const statusClassification = classifyStatus(response.status);
   if (statusClassification !== null) {
-    return result(statusClassification.status, statusClassification.code, eventId);
+    return result(statusClassification.status, statusClassification.code, attempt);
   }
 
-  return isExactAcknowledgment(response.acknowledgments, eventId)
-    ? result("acknowledged", "acknowledged", eventId)
-    : result("protocol_error", "malformed_acknowledgment", eventId);
+  return isExactAcknowledgment(response.acknowledgments, attempt)
+    ? result("acknowledged", "acknowledged", attempt)
+    : result("protocol_error", "malformed_acknowledgment", attempt);
 }
 
 function classifyStatus(status: unknown): Pick<HttpDeliveryHandoffResult, "status" | "code"> | null {
@@ -171,11 +176,11 @@ function isHttpStatus(status: unknown): status is number {
   return status <= 599;
 }
 
-function isExactAcknowledgment(acknowledgments: unknown, eventId: string): boolean {
+function isExactAcknowledgment(acknowledgments: unknown, attempt: AttemptIdentity): boolean {
   if (!Array.isArray(acknowledgments) || acknowledgments.length !== 1) return false;
   const acknowledgment = acknowledgments[0];
   return isRecord(acknowledgment)
-    && acknowledgment.event_id === eventId
+    && acknowledgment.event_id === attempt.eventId
     && acknowledgment.outcome === "accepted";
 }
 
@@ -192,7 +197,7 @@ function isResponseOutcome(
 function result(
   status: HttpDeliveryHandoffResult["status"],
   code: HttpDeliveryHandoffResult["code"],
-  eventId: string,
+  attempt: AttemptIdentity,
 ): HttpDeliveryHandoffResult {
-  return Object.freeze({ status, code, event_id: eventId, attempt: 0 });
+  return Object.freeze({ status, code, event_id: attempt.eventId, attempt: attempt.ordinal });
 }
