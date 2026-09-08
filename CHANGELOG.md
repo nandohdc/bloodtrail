@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/nandohdc/bloodtrail/compare/v0.11.0...v0.12.0) (2026-09-08)
+
+
+### Added
+
+* **node:** implement bounded delivery retry semantics ([#104](https://github.com/nandohdc/bloodtrail/issues/104)) ([ed6a24d](https://github.com/nandohdc/bloodtrail/commit/ed6a24dd7ae94790b1ec69da66e5b0e5b5523f98))
+
 ## [0.11.0](https://github.com/nandohdc/bloodtrail/compare/v0.10.0...v0.11.0) (2026-09-08)
 
 
