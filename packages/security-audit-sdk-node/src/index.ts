@@ -15,6 +15,14 @@ export {
   type HttpExchangeRequest,
 } from "./http-handoff.js";
 export {
+  createBoundedDeliveryRetry,
+  type DeliveryRetry,
+  type DeliveryRetryJitterSource,
+  type DeliveryRetryObservability,
+  type DeliveryRetryOptions,
+  type DeliveryRetryResult,
+} from "./delivery-retry.js";
+export {
   nodePlatformProvider,
   type NodePlatformProvider,
   createNodeSecurityAuditSdk,
