@@ -124,24 +124,51 @@ function projectRequest(
 }
 
 function classifyOutcome(outcome: unknown, eventId: string): HttpDeliveryHandoffResult {
+  if (isResponseOutcome(outcome)) return classifyResponse(outcome, eventId);
+  return classifyNonResponse(outcome, eventId);
+}
+
+function classifyNonResponse(outcome: unknown, eventId: string): HttpDeliveryHandoffResult {
   if (!isRecord(outcome)) return result("protocol_error", "unexpected_response", eventId);
-  if (outcome.kind === "timeout") return result("retryable", "timeout", eventId);
-  if (outcome.kind === "transport_failure") return result("retryable", "transport_failure", eventId);
-  if (outcome.kind !== "response") return result("protocol_error", "unexpected_response", eventId);
-
-  const { status } = outcome;
-  if (typeof status !== "number" || !Number.isInteger(status) || status < 100 || status > 599) {
-    return result("protocol_error", "unexpected_response", eventId);
+  switch (outcome.kind) {
+    case "timeout":
+      return result("retryable", "timeout", eventId);
+    case "transport_failure":
+      return result("retryable", "transport_failure", eventId);
+    default:
+      return result("protocol_error", "unexpected_response", eventId);
   }
-  if (RETRYABLE_RESPONSE_STATUSES.has(status) || status >= 500) {
-    return result("retryable", "http_retryable", eventId);
-  }
-  if (status >= 400) return result("non_retryable", "http_permanent", eventId);
-  if (status < 200 || status >= 300) return result("protocol_error", "unexpected_response", eventId);
+}
 
-  return isExactAcknowledgment(outcome.acknowledgments, eventId)
+function classifyResponse(
+  response: Readonly<Record<string, unknown>> & Readonly<{ readonly kind: "response" }>,
+  eventId: string,
+): HttpDeliveryHandoffResult {
+  const statusClassification = classifyStatus(response.status);
+  if (statusClassification !== null) {
+    return result(statusClassification.status, statusClassification.code, eventId);
+  }
+
+  return isExactAcknowledgment(response.acknowledgments, eventId)
     ? result("acknowledged", "acknowledged", eventId)
     : result("protocol_error", "malformed_acknowledgment", eventId);
+}
+
+function classifyStatus(status: unknown): Pick<HttpDeliveryHandoffResult, "status" | "code"> | null {
+  if (!isHttpStatus(status)) return { status: "protocol_error", code: "unexpected_response" };
+  if (status >= 500) return { status: "retryable", code: "http_retryable" };
+  if (RETRYABLE_RESPONSE_STATUSES.has(status)) return { status: "retryable", code: "http_retryable" };
+  if (status >= 400) return { status: "non_retryable", code: "http_permanent" };
+  if (status >= 300) return { status: "protocol_error", code: "unexpected_response" };
+  if (status < 200) return { status: "protocol_error", code: "unexpected_response" };
+  return null;
+}
+
+function isHttpStatus(status: unknown): status is number {
+  if (typeof status !== "number") return false;
+  if (!Number.isInteger(status)) return false;
+  if (status < 100) return false;
+  return status <= 599;
 }
 
 function isExactAcknowledgment(acknowledgments: unknown, eventId: string): boolean {
@@ -154,6 +181,12 @@ function isExactAcknowledgment(acknowledgments: unknown, eventId: string): boole
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isResponseOutcome(
+  outcome: unknown,
+): outcome is Readonly<Record<string, unknown>> & Readonly<{ readonly kind: "response" }> {
+  return isRecord(outcome) && outcome.kind === "response";
 }
 
 function result(
