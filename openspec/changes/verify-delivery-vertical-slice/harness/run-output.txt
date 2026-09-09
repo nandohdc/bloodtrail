@@ -1,0 +1,379 @@
+happy_path: resultClass=acknowledged deterministic=true
+timeout: resultClass=acknowledged deterministic=true
+retry_exhaustion: resultClass=exhausted deterministic=true
+overload: resultClass=rejected_overload deterministic=true
+shutdown_deadline: resultClass=abandoned deterministic=true
+invalid_authentication: resultClass=non_retryable deterministic=true
+unsupported_version: resultClass=non_retryable deterministic=true
+duplicate: resultClass=acknowledged deterministic=true
+null_control: resultClass=acknowledged deterministic=true
+
+=== full detail (JSON) ===
+{
+  "happy_path": {
+    "resultClass": "acknowledged",
+    "deterministic": true,
+    "runs": [
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "deliveryResult": {
+            "status": "acknowledged",
+            "code": "acknowledged",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 1
+          },
+          "shutdownReport": {
+            "accepted": 1,
+            "completed": 1,
+            "abandoned": 0
+          }
+        }
+      },
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "deliveryResult": {
+            "status": "acknowledged",
+            "code": "acknowledged",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 1
+          },
+          "shutdownReport": {
+            "accepted": 1,
+            "completed": 1,
+            "abandoned": 0
+          }
+        }
+      },
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "deliveryResult": {
+            "status": "acknowledged",
+            "code": "acknowledged",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 1
+          },
+          "shutdownReport": {
+            "accepted": 1,
+            "completed": 1,
+            "abandoned": 0
+          }
+        }
+      }
+    ]
+  },
+  "timeout": {
+    "resultClass": "acknowledged",
+    "deterministic": true,
+    "runs": [
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "status": "acknowledged",
+          "code": "acknowledged",
+          "event_id": "00000000-0000-4000-8000-000000000001",
+          "attempts": 2
+        }
+      },
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "status": "acknowledged",
+          "code": "acknowledged",
+          "event_id": "00000000-0000-4000-8000-000000000001",
+          "attempts": 2
+        }
+      },
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "status": "acknowledged",
+          "code": "acknowledged",
+          "event_id": "00000000-0000-4000-8000-000000000001",
+          "attempts": 2
+        }
+      }
+    ]
+  },
+  "retry_exhaustion": {
+    "resultClass": "exhausted",
+    "deterministic": true,
+    "runs": [
+      {
+        "resultClass": "exhausted",
+        "detail": {
+          "result": {
+            "status": "exhausted",
+            "code": "retry_exhausted",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 3
+          },
+          "exhaustedAlerted": true
+        }
+      },
+      {
+        "resultClass": "exhausted",
+        "detail": {
+          "result": {
+            "status": "exhausted",
+            "code": "retry_exhausted",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 3
+          },
+          "exhaustedAlerted": true
+        }
+      },
+      {
+        "resultClass": "exhausted",
+        "detail": {
+          "result": {
+            "status": "exhausted",
+            "code": "retry_exhausted",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 3
+          },
+          "exhaustedAlerted": true
+        }
+      }
+    ]
+  },
+  "overload": {
+    "resultClass": "rejected_overload",
+    "deterministic": true,
+    "runs": [
+      {
+        "resultClass": "rejected_overload",
+        "detail": {
+          "status": "rejected_overload",
+          "depth": 1,
+          "capacity": 1
+        }
+      },
+      {
+        "resultClass": "rejected_overload",
+        "detail": {
+          "status": "rejected_overload",
+          "depth": 1,
+          "capacity": 1
+        }
+      },
+      {
+        "resultClass": "rejected_overload",
+        "detail": {
+          "status": "rejected_overload",
+          "depth": 1,
+          "capacity": 1
+        }
+      }
+    ]
+  },
+  "shutdown_deadline": {
+    "resultClass": "abandoned",
+    "deterministic": true,
+    "runs": [
+      {
+        "resultClass": "abandoned",
+        "detail": {
+          "accepted": 1,
+          "completed": 0,
+          "abandoned": 1
+        }
+      },
+      {
+        "resultClass": "abandoned",
+        "detail": {
+          "accepted": 1,
+          "completed": 0,
+          "abandoned": 1
+        }
+      },
+      {
+        "resultClass": "abandoned",
+        "detail": {
+          "accepted": 1,
+          "completed": 0,
+          "abandoned": 1
+        }
+      }
+    ]
+  },
+  "invalid_authentication": {
+    "resultClass": "non_retryable",
+    "deterministic": true,
+    "runs": [
+      {
+        "resultClass": "non_retryable",
+        "detail": {
+          "status": "non_retryable",
+          "code": "http_permanent",
+          "event_id": "00000000-0000-4000-8000-000000000001",
+          "attempts": 1
+        }
+      },
+      {
+        "resultClass": "non_retryable",
+        "detail": {
+          "status": "non_retryable",
+          "code": "http_permanent",
+          "event_id": "00000000-0000-4000-8000-000000000001",
+          "attempts": 1
+        }
+      },
+      {
+        "resultClass": "non_retryable",
+        "detail": {
+          "status": "non_retryable",
+          "code": "http_permanent",
+          "event_id": "00000000-0000-4000-8000-000000000001",
+          "attempts": 1
+        }
+      }
+    ]
+  },
+  "unsupported_version": {
+    "resultClass": "non_retryable",
+    "deterministic": true,
+    "runs": [
+      {
+        "resultClass": "non_retryable",
+        "detail": {
+          "result": {
+            "status": "non_retryable",
+            "code": "http_permanent",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 1
+          },
+          "collectorDiagnosticCode": "COLLECTOR_VERSION_UNSUPPORTED",
+          "distinctFromSchemaInvalid": true
+        }
+      },
+      {
+        "resultClass": "non_retryable",
+        "detail": {
+          "result": {
+            "status": "non_retryable",
+            "code": "http_permanent",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 1
+          },
+          "collectorDiagnosticCode": "COLLECTOR_VERSION_UNSUPPORTED",
+          "distinctFromSchemaInvalid": true
+        }
+      },
+      {
+        "resultClass": "non_retryable",
+        "detail": {
+          "result": {
+            "status": "non_retryable",
+            "code": "http_permanent",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 1
+          },
+          "collectorDiagnosticCode": "COLLECTOR_VERSION_UNSUPPORTED",
+          "distinctFromSchemaInvalid": true
+        }
+      }
+    ]
+  },
+  "duplicate": {
+    "resultClass": "acknowledged",
+    "deterministic": true,
+    "runs": [
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "result": {
+            "status": "acknowledged",
+            "code": "acknowledged",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 2
+          },
+          "firstIngressDecision": "admitted",
+          "secondIngressDecision": "duplicate"
+        }
+      },
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "result": {
+            "status": "acknowledged",
+            "code": "acknowledged",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 2
+          },
+          "firstIngressDecision": "admitted",
+          "secondIngressDecision": "duplicate"
+        }
+      },
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "result": {
+            "status": "acknowledged",
+            "code": "acknowledged",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 2
+          },
+          "firstIngressDecision": "admitted",
+          "secondIngressDecision": "duplicate"
+        }
+      }
+    ]
+  },
+  "null_control": {
+    "resultClass": "acknowledged",
+    "deterministic": true,
+    "runs": [
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "deliveryResult": {
+            "status": "acknowledged",
+            "code": "acknowledged",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 1
+          },
+          "shutdownReport": {
+            "accepted": 1,
+            "completed": 1,
+            "abandoned": 0
+          }
+        }
+      },
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "deliveryResult": {
+            "status": "acknowledged",
+            "code": "acknowledged",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 1
+          },
+          "shutdownReport": {
+            "accepted": 1,
+            "completed": 1,
+            "abandoned": 0
+          }
+        }
+      },
+      {
+        "resultClass": "acknowledged",
+        "detail": {
+          "deliveryResult": {
+            "status": "acknowledged",
+            "code": "acknowledged",
+            "event_id": "00000000-0000-4000-8000-000000000001",
+            "attempts": 1
+          },
+          "shutdownReport": {
+            "accepted": 1,
+            "completed": 1,
+            "abandoned": 0
+          }
+        }
+      }
+    ]
+  }
+}
