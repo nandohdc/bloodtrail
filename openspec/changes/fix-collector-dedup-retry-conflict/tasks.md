@@ -18,7 +18,7 @@
 ## 4. Delivery, fold, archive, and closure
 
 - [x] 4.1 Open the proposal PR (this change's planning artifacts only); merge only when every required branch-protection context is green on the exact head. — PR #392, merged `8da0490`.
-- [ ] 4.2 Open the implementation PR (section 2 + 3 changes); merge only when every required branch-protection context is green on the exact head.
-- [ ] 4.3 Fold the `security-audit-collector` delta into its canonical spec in a dedicated fold PR, proving the requirement blocks match byte-for-byte and a second application is a no-op; merge only after its exact-head CI is green.
+- [x] 4.2 Open the implementation PR (section 2 + 3 changes); merge only when every required branch-protection context is green on the exact head. — PR #394, merged `ee595a8`.
+- [x] 4.3 Fold the `security-audit-collector` delta into its canonical spec in a dedicated fold PR, proving the requirement blocks match byte-for-byte and a second application is a no-op; merge only after its exact-head CI is green.
 - [ ] 4.4 Archive the completed change with byte-preserving relocation and `archive-evidence.md`; verify strict OpenSpec validation and the repository's governance-gate chain, then merge as a merge commit (not squash).
 - [ ] 4.5 Close #391 with the regression-test and null-control evidence, and note in #109's tracking that this blocker is resolved.
