@@ -57,6 +57,10 @@ function bodyWithProducer(overrides: Record<string, unknown>): string {
   return JSON.stringify({ ...VALID_EVENT, producer: { ...VALID_EVENT.producer, ...overrides } });
 }
 
+function bodyWithCorrelation(overrides: Record<string, unknown>): string {
+  return JSON.stringify({ ...VALID_EVENT, correlation: { ...VALID_EVENT.correlation, ...overrides } });
+}
+
 function ingressWithCountingParse(): { ingress: CollectorIngress; parseCalls: () => number } {
   let parseCalls = 0;
   const ingress = new CollectorIngress({
@@ -392,4 +396,23 @@ test("D8 — duplicate outcomes, diagnostics, and metrics do not disclose payloa
   const publicText = JSON.stringify({ duplicate, conflict, metrics: ingress.metrics() });
   assert.ok(!publicText.includes(marker), `public duplicate state leaked submission material: ${publicText}`);
   assert.ok(!publicText.includes("producer-fixture"), "public duplicate state leaked a retained body field");
+});
+
+test("D9 — a retry that only advances correlation.retry_attempt is a duplicate, not a conflict (#391)", () => {
+  const { ingress } = ingressWithCountingParse();
+  expectAdmission(ingress.submit(authenticated(validBody())));
+  const retry = ingress.submit(authenticated(bodyWithCorrelation({ retry_attempt: 1 })));
+  assert.deepEqual(retry, {
+    kind: "duplicate",
+    eventId: "00000000-0000-4000-8000-000000000001",
+    senderIdentity: `synthetic:${FIXTURE_TOKEN}`,
+  });
+  assert.equal(ingress.metrics().accepted, 1);
+  assert.equal(JSON.stringify(ingress.metrics()).includes('"deduplicated":1'), true);
+
+  // Null control: a field other than correlation.retry_attempt still conflicts.
+  const conflict = ingress.submit(
+    authenticated(JSON.stringify({ ...VALID_EVENT, correlation: { ...VALID_EVENT.correlation, retry_attempt: 1, correlation_id: "different" } })),
+  );
+  assert.equal((conflict as { readonly kind: string }).kind, "rejected");
 });

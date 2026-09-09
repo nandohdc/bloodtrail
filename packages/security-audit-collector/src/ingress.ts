@@ -33,7 +33,7 @@ export interface Admission {
 interface DeduplicationInput {
   readonly senderIdentity: string;
   readonly eventId: string;
-  readonly body: string;
+  readonly dedupKey: string;
 }
 
 export interface DuplicateAdmission {
@@ -122,7 +122,7 @@ export class CollectorIngress {
     const deduplicated = this.#deduplicate({
       senderIdentity: authentication.identity,
       eventId: eventIdOf(parsed.value),
-      body: submission.body,
+      dedupKey: deduplicationKeyOf(parsed.value),
     });
     if (deduplicated !== null) {
       return deduplicated;
@@ -137,7 +137,7 @@ export class CollectorIngress {
   // first-seen reservation so the caller proceeds to admission; every other
   // decision terminates the submission without consuming admission capacity.
   #deduplicate(input: DeduplicationInput): IngressResult | null {
-    const decision = this.#deduplication.decide(input.senderIdentity, input.eventId, input.body);
+    const decision = this.#deduplication.decide(input.senderIdentity, input.eventId, input.dedupKey);
     if (decision === "first") {
       return null;
     }
@@ -225,6 +225,49 @@ function eventIdOf(value: unknown): string {
   if (typeof event !== "object" || event === null) return "";
   const id = (event as { readonly id?: unknown }).id;
   return typeof id === "string" ? id : "";
+}
+
+// Delivery conformance contract §Attempt identity: correlation.retry_attempt
+// is the only field an implementation is required to advance across retries
+// of one occurrence, so it is the only field excluded here. Comparing every
+// other field exactly (rather than a fingerprint) keeps a genuinely
+// different payload under the same identity distinguishable as a conflict.
+function deduplicationKeyOf(value: unknown): string {
+  return canonicalStringify(withoutRetryAttempt(value));
+}
+
+function withoutRetryAttempt(value: unknown): unknown {
+  if (typeof value !== "object" || value === null) return value;
+  const record = value as Record<string, unknown>;
+  const correlation = record.correlation;
+  if (typeof correlation !== "object" || correlation === null) return value;
+  const { retry_attempt: _retryAttempt, ...correlationRest } = correlation as Record<string, unknown>;
+  return { ...record, correlation: correlationRest };
+}
+
+// Deterministic, key-sorted serialization so the comparison does not depend
+// on incidental property insertion order — a structural equality check, not
+// a hash, so it carries no collision risk.
+function canonicalStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalStringify).join(",")}]`;
+  }
+  if (typeof value === "object" && value !== null) {
+    const record = value as Record<string, unknown>;
+    const entries = Object.keys(record)
+      .sort(compareCodePointOrder)
+      .map((key) => `${JSON.stringify(key)}:${canonicalStringify(record[key])}`);
+    return `{${entries.join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+// Deliberately code-point order, not localeCompare: this key must be
+// identical across locales, not merely alphabetically pleasing.
+function compareCodePointOrder(a: string, b: string): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
 }
 
 function defaultParse(text: string): unknown {
