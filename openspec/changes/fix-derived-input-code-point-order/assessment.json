@@ -1,0 +1,167 @@
+{
+  "schema_version": "1.1",
+  "change_id": "fix-derived-input-code-point-order",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The canonical contract and ratified capability require Unicode code-point ordering, so both reference validators must implement that exact deterministic order rather than JavaScript UTF-16 code-unit comparison.",
+    "Ordering runs before path resolution and consumes bounded but otherwise arbitrary strings, so astral inputs can select the wrong public diagnostic even though currently resolvable field paths are ASCII.",
+    "The canonical validator and SDK Core validator are independent trust boundaries and must remain behaviorally identical without adding a runtime dependency or coupling either workspace to the other.",
+    "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-event-contract",
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/fix-derived-input-code-point-order/.openspec.yaml",
+    "openspec/changes/fix-derived-input-code-point-order/proposal.md",
+    "openspec/changes/fix-derived-input-code-point-order/design.md",
+    "openspec/changes/fix-derived-input-code-point-order/tasks.md",
+    "openspec/changes/fix-derived-input-code-point-order/assessment.source.json",
+    "openspec/changes/fix-derived-input-code-point-order/assessment.json",
+    "openspec/changes/fix-derived-input-code-point-order/contract-reuse.json",
+    "contracts/security-audit/scripts/generate-artifacts.mjs",
+    "contracts/security-audit/scripts/validate-contract.mjs",
+    "contracts/security-audit/docs/validation.md",
+    "contracts/security-audit/examples/negative/all-negative.json",
+    "contracts/security-audit/examples/negative/derived-from-astral-order.json",
+    "contracts/security-audit/tests/contract.test.mjs",
+    "packages/security-audit-sdk-core/src/validation/semantic.ts",
+    "packages/security-audit-sdk-core/tests/derived-field-provenance.test.ts"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-code-point-comparison",
+      "kind": "direct_implementation",
+      "summary": "Decode each bounded string into its JavaScript-iterated code-point sequence, compare numeric code points lexicographically in both validators, and generate two-sided astral regression evidence plus precise rule documentation.",
+      "forces_addressed": [
+        "The canonical contract and ratified capability require Unicode code-point ordering, so both reference validators must implement that exact deterministic order rather than JavaScript UTF-16 code-unit comparison.",
+        "Ordering runs before path resolution and consumes bounded but otherwise arbitrary strings, so astral inputs can select the wrong public diagnostic even though currently resolvable field paths are ASCII.",
+        "The canonical validator and SDK Core validator are independent trust boundaries and must remain behaviorally identical without adding a runtime dependency or coupling either workspace to the other.",
+        "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged."
+      ]
+    },
+    {
+      "id": "approach-rename-order-to-utf16",
+      "kind": "alternative",
+      "summary": "Change the canonical declaration and capability requirement to UTF-16 code-unit order so the existing JavaScript relational comparisons become conforming.",
+      "forces_addressed": [
+        "The canonical contract and ratified capability require Unicode code-point ordering, so both reference validators must implement that exact deterministic order rather than JavaScript UTF-16 code-unit comparison.",
+        "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged."
+      ]
+    },
+    {
+      "id": "approach-restrict-inputs-to-ascii",
+      "kind": "alternative",
+      "summary": "Narrow the structural schema to ASCII-only provenance paths so UTF-16 code-unit order and Unicode code-point order cannot diverge for accepted input strings.",
+      "forces_addressed": [
+        "Ordering runs before path resolution and consumes bounded but otherwise arbitrary strings, so astral inputs can select the wrong public diagnostic even though currently resolvable field paths are ASCII.",
+        "The canonical validator and SDK Core validator are independent trust boundaries and must remain behaviorally identical without adding a runtime dependency or coupling either workspace to the other."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-code-point-comparison",
+  "rejected_alternative_ids": [
+    "approach-rename-order-to-utf16",
+    "approach-restrict-inputs-to-ascii"
+  ],
+  "rejection_reasons": {
+    "approach-rename-order-to-utf16": {
+      "forces": [
+        "The canonical contract and ratified capability require Unicode code-point ordering, so both reference validators must implement that exact deterministic order rather than JavaScript UTF-16 code-unit comparison.",
+        "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged."
+      ],
+      "reason": "Renaming the order would change the already-ratified normative meaning and require a governed contract/specification version move merely to preserve an accidental implementation detail; it would expand scope while leaving third-party code-point implementations nonconforming."
+    },
+    "approach-restrict-inputs-to-ascii": {
+      "forces": [
+        "Ordering runs before path resolution and consumes bounded but otherwise arbitrary strings, so astral inputs can select the wrong public diagnostic even though currently resolvable field paths are ASCII."
+      ],
+      "reason": "An ASCII-only schema would narrow the accepted string domain of the released 1.1.0 contract, require a breaking compatibility treatment, and avoid rather than implement the explicit Unicode code-point ordering rule."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-code-point-order-is-exact",
+    "implementation-validator-outcomes-stay-aligned",
+    "implementation-diagnostic-precedence-is-preserved",
+    "implementation-generated-evidence-owns-the-rule",
+    "implementation-contract-identity-is-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-code-point-order-is-exact": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "U+10000 before U+FF01 is rejected as non-canonical while U+FF01 before U+10000 passes the ordering stage in both validators"
+      ]
+    },
+    "implementation-validator-outcomes-stay-aligned": {
+      "task_ids": [
+        "2.3",
+        "3.1",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "contract and SDK Core public validation boundaries return identical stable codes for both disagreement-pair directions"
+      ]
+    },
+    "implementation-diagnostic-precedence-is-preserved": {
+      "task_ids": [
+        "2.1",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "descending astral fixture reports order before resolution and inverse control reaches unresolvable input without an order diagnostic"
+      ]
+    },
+    "implementation-generated-evidence-owns-the-rule": {
+      "task_ids": [
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "generate-artifacts emits the individual and aggregate astral fixture plus validation prose and its check mode reports no drift"
+      ]
+    },
+    "implementation-contract-identity-is-unchanged": {
+      "task_ids": [
+        "2.4",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "canonical source, schema version 1.1.0, error registries, manifests, dependencies, and public API surfaces are byte-identical to the proposal baseline"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "820ee71644749635c7c28cc30fcc5be95c8071a9"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "3.1",
+    "3.2",
+    "3.3",
+    "4.1",
+    "4.2",
+    "4.3"
+  ]
+}
