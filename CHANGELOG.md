@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.14.0](https://github.com/nandohdc/bloodtrail/compare/v0.13.0...v0.14.0) (2026-09-08)
+
+
+### Added
+
+* **node:** add deadline-bounded delivery shutdown ([#106](https://github.com/nandohdc/bloodtrail/issues/106)) ([0ef8c8e](https://github.com/nandohdc/bloodtrail/commit/0ef8c8e233657ac540c51d22ba14d01556bb9f3e))
+* **node:** implement deadline-bounded delivery shutdown ([#106](https://github.com/nandohdc/bloodtrail/issues/106)) ([df64383](https://github.com/nandohdc/bloodtrail/commit/df64383458c97d94fe8e4c11a8330381e5aba3e9))
+
+
+### Documentation
+
+* **openspec:** archive delivery shutdown ([#106](https://github.com/nandohdc/bloodtrail/issues/106)) ([34cc629](https://github.com/nandohdc/bloodtrail/commit/34cc6291458273e221f0aed634aac335447ca689))
+* **openspec:** archive delivery shutdown ([#106](https://github.com/nandohdc/bloodtrail/issues/106)) ([128680c](https://github.com/nandohdc/bloodtrail/commit/128680cfe5c533e19e502c372240b3db8c8b0048))
+* **openspec:** assess delivery shutdown ([#106](https://github.com/nandohdc/bloodtrail/issues/106)) ([4759f71](https://github.com/nandohdc/bloodtrail/commit/4759f713d6c6f6caf054925a78d3954d05b7cbf5))
+* **openspec:** fold delivery shutdown spec ([#106](https://github.com/nandohdc/bloodtrail/issues/106)) ([05e2865](https://github.com/nandohdc/bloodtrail/commit/05e2865653583b2a1c1061fe969ad5d505504d98))
+* **openspec:** fold delivery shutdown spec ([#106](https://github.com/nandohdc/bloodtrail/issues/106)) ([e062312](https://github.com/nandohdc/bloodtrail/commit/e062312c04e16f6d71da30119c5c09e82591d441))
+
 ## [0.13.0](https://github.com/nandohdc/bloodtrail/compare/v0.12.0...v0.13.0) (2026-09-08)
 
 
