@@ -1,0 +1,141 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The freeze must cover the package's complete public surface (every value and type-only export), including types marked inline with the type keyword inside mixed export blocks — a different source style than sdk-core's separate export type blocks.",
+    "The freeze must positively prove the Node binding's surface reuses the platform-neutral core's semantic types rather than duplicating them, mechanically (no name collision), not merely by inspection.",
+    "compatibility.json already pre-declares this issue as the freeze's owner (freezeOwnership: governed-issue-111-after-109), so the freeze record must actually flip those fields, not merely add a parallel record.",
+    "This package has no check-coherence.mjs-style founding-requirement immutability mechanism (unlike sdk-core), so the spec delta must still avoid modifying an existing requirement, for structural consistency with the corrected pattern #110 established, not because a gate currently enforces it here."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/scripts/check-exports.mjs",
+    "packages/security-audit-sdk-node/package.json",
+    "packages/security-audit-sdk-node/adr/001-frozen-public-api-surface.md",
+    "packages/security-audit-sdk-node/compatibility.json",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/freeze-sdk-node-api-surface/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-new-check-exports-mirroring-sdk-core",
+      "kind": "direct_implementation",
+      "summary": "Write a new check-exports.mjs (this package has none) with two literal frozen arrays (value exports, type-only exports) parsed from mixed inline-type export blocks, plus a collision check against sdk-core's own frozen surface, mirroring #110's proven pattern.",
+      "forces_addressed": [
+        "The freeze must cover the package's complete public surface (every value and type-only export), including types marked inline with the type keyword inside mixed export blocks — a different source style than sdk-core's separate export type blocks.",
+        "The freeze must positively prove the Node binding's surface reuses the platform-neutral core's semantic types rather than duplicating them, mechanically (no name collision), not merely by inspection.",
+        "compatibility.json already pre-declares this issue as the freeze's owner (freezeOwnership: governed-issue-111-after-109), so the freeze record must actually flip those fields, not merely add a parallel record.",
+        "This package has no check-coherence.mjs-style founding-requirement immutability mechanism (unlike sdk-core), so the spec delta must still avoid modifying an existing requirement, for structural consistency with the corrected pattern #110 established, not because a gate currently enforces it here."
+      ]
+    },
+    {
+      "id": "approach-shared-cross-package-check-script",
+      "kind": "alternative",
+      "summary": "Extract a single shared export-surface-check module usable by both sdk-core and sdk-node, rather than two independent scripts.",
+      "forces_addressed": [
+        "The freeze must cover the package's complete public surface (every value and type-only export), including types marked inline with the type keyword inside mixed export blocks — a different source style than sdk-core's separate export type blocks."
+      ]
+    },
+    {
+      "id": "approach-manual-collision-review-only",
+      "kind": "alternative",
+      "summary": "Verify the no-duplication acceptance criterion once by manual inspection during this change's review, without a standing mechanical check.",
+      "forces_addressed": [
+        "The freeze must positively prove the Node binding's surface reuses the platform-neutral core's semantic types rather than duplicating them, mechanically (no name collision), not merely by inspection."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-new-check-exports-mirroring-sdk-core",
+  "rejected_alternative_ids": [
+    "approach-shared-cross-package-check-script",
+    "approach-manual-collision-review-only"
+  ],
+  "rejection_reasons": {
+    "approach-shared-cross-package-check-script": {
+      "forces": [
+        "The freeze must cover the package's complete public surface (every value and type-only export), including types marked inline with the type keyword inside mixed export blocks — a different source style than sdk-core's separate export type blocks."
+      ],
+      "reason": "Each package is independently standalone by design (there is no root package.json and no shared workspace tooling); a shared module would need to live in one package and be imported by the other, creating exactly the cross-package coupling this repo's package topology deliberately avoids. The two scripts already differ in parsing strategy (separate export type blocks vs. inline type markers), so sharing would need branching logic anyway."
+    },
+    "approach-manual-collision-review-only": {
+      "forces": [
+        "The freeze must positively prove the Node binding's surface reuses the platform-neutral core's semantic types rather than duplicating them, mechanically (no name collision), not merely by inspection."
+      ],
+      "reason": "A one-time manual check does not survive a future change to either package's surface; #111's acceptance criteria ask for a check that detects an unapproved mutation, which a point-in-time review cannot provide going forward."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-complete-surface-frozen",
+    "implementation-mutation-detected-both-directions",
+    "implementation-no-core-collision",
+    "implementation-compatibility-record-flipped"
+  ],
+  "invariant_evidence": {
+    "implementation-complete-surface-frozen": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "check-exports.mjs enumerates exactly 13 value exports and 24 type-only exports, matching the package's actual current surface"
+      ]
+    },
+    "implementation-mutation-detected-both-directions": {
+      "task_ids": [
+        "2.3"
+      ],
+      "evidence_ids": [
+        "manual mutation arm: an added unapproved export fails the check, naming it",
+        "manual mutation arm: a removed frozen export fails the check, naming it",
+        "null control: the restored, unmutated surface passes"
+      ]
+    },
+    "implementation-no-core-collision": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "check-exports.mjs asserts zero overlap between this package's frozen names and sdk-core's frozen names"
+      ]
+    },
+    "implementation-compatibility-record-flipped": {
+      "task_ids": [
+        "2.5"
+      ],
+      "evidence_ids": [
+        "compatibility.json's apiFrozen is true and freezeRecord names the issue, ADR, and evidence commit"
+      ]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "0f6039985e99da18b3293220d6cfac6ce34eb9b1"
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No audit-event construction, validation, or emission behavior changes; this freezes which symbols are exported, not what they do.",
+    "authentication_or_authorization": "No authentication or authorization path is touched.",
+    "authority_provenance": "No authority-brand construction changes; the frozen list only names existing exports, none of which is newly given authority.",
+    "concurrency": "The check is a synchronous, single-pass script with no concurrency concern.",
+    "confidentiality": "The check reads only the package's own already-public source and built output; it discloses no secret or private data.",
+    "cryptography": "No cryptographic algorithm, key, or secret handling is introduced.",
+    "error_disclosure": "The check's failure messages name only export identifiers already present in this package's public, version-controlled source; no caller data or secret is disclosed.",
+    "external_security_integration": "No external service, transport, or security integration is introduced; the check runs entirely against local build output and source.",
+    "fail_posture": "An unapproved addition or removal fails the check closed.",
+    "lifecycle": "The check is a one-shot verification script with no persistent state or background process.",
+    "mutation_ownership": "Changes are limited to one new script, package.json's scripts section, one new ADR, compatibility.json's freeze fields, and the added sdk-node specification requirement.",
+    "privacy_transformation": "No personal data is introduced; this concerns only exported symbol names.",
+    "resource_retention": "The check retains no data beyond its own run; it creates no durable resource.",
+    "retry_or_redelivery": "Not applicable; this change concerns the package's export surface, not delivery or retry behavior (the frozen exports include the retry/backpressure/shutdown APIs, but their behavior is unchanged).",
+    "trust_boundary": "No trust boundary changes; the check adds a new governance gate at the existing package-verification boundary without altering what that boundary already protects."
+  }
+}
