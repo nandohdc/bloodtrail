@@ -8,12 +8,14 @@
     "A supplied provenance list can be attacker-controlled and must distinguish malformed, unknown, absent, duplicate, unordered, and cyclic input declarations without normalizing any of them.",
     "An optional contract-minor field still replaces the Core package's exact contract baseline, so generated types, runtime validation, compatibility metadata, and constructor behavior must move atomically.",
     "The frozen-contract immutability and protected-prefix gates intentionally reject the necessary sources today; rebinding must remain specific to this governed candidate rather than weakening the boundary globally.",
-    "The Node package is a frozen public surface with a first-party Core dependency, so candidate identity alignment must not become an unreviewed API or delivery change."
+    "The Node package is a frozen public surface with a first-party Core dependency, so candidate identity alignment must not become an unreviewed API or delivery change.",
+    "Contract Reuse Assessment mechanism references must resolve against the reviewed contract baseline, because resolving them from the candidate source would make this authorized version transition self-invalidating."
   ],
   "applicability": {
     "triggers_matched": [
       "public_api",
       "security_sensitive_behavior",
+      "governance_core_path",
       "canonical_capability_requirement"
     ],
     "material_capability_modification": true,
@@ -55,28 +57,34 @@
     "packages/security-audit-sdk-core/compatibility.json",
     "packages/security-audit-sdk-core/contract-provenance.json",
     "packages/security-audit-sdk-core/scripts/check-contract-immutability.mjs",
+    "packages/security-audit-sdk-core/scripts/check-changed-paths.mjs",
     "packages/security-audit-sdk-core/scripts/generate-contract.mjs",
     "packages/security-audit-sdk-core/src/validation/semantic.ts",
     "packages/security-audit-sdk-core/src/generated/contract.generated.ts",
     "packages/security-audit-sdk-core/src/generated/schema-validator.generated.cjs",
     "packages/security-audit-sdk-core/src/generated/schema-validator.generated.d.cts",
     "packages/security-audit-sdk-core/tests/pass2.test.ts",
+    "packages/security-audit-sdk-core/tests/verification/contract-toolchain-exemption.test.mjs",
     "packages/security-audit-sdk-core/verification-lifecycle.json",
     "packages/security-audit-sdk-node/package.json",
     "packages/security-audit-sdk-node/package-lock.json",
-    "packages/security-audit-sdk-node/compatibility.json"
+    "packages/security-audit-sdk-node/compatibility.json",
+    "packages/security-audit-sdk-node/scripts/check-compatibility.mjs",
+    "openspec/scripts/contract-reuse/check.mjs",
+    "openspec/tests/contract-reuse/checker.test.mjs"
   ],
   "candidate_approaches": [
     {
       "id": "approach-bounded-risk-provenance",
       "kind": "direct_implementation",
-      "summary": "Add one optional bounded provenance list beside the existing derived risk model, validate its declared paths in the canonical validator, and move all exact-version projections and gates together.",
+      "summary": "Add one optional bounded provenance list beside the existing derived risk model, validate its declared paths in the canonical validator, bind CRA mechanism resolution to the reviewed baseline, and move all exact-version projections and gates together.",
       "forces_addressed": [
         "The canonical event contract has a derived risk result but no machine-readable material-input provenance, so trust-floor reasoning cannot be reproduced from an event.",
         "A supplied provenance list can be attacker-controlled and must distinguish malformed, unknown, absent, duplicate, unordered, and cyclic input declarations without normalizing any of them.",
         "An optional contract-minor field still replaces the Core package's exact contract baseline, so generated types, runtime validation, compatibility metadata, and constructor behavior must move atomically.",
         "The frozen-contract immutability and protected-prefix gates intentionally reject the necessary sources today; rebinding must remain specific to this governed candidate rather than weakening the boundary globally.",
-        "The Node package is a frozen public surface with a first-party Core dependency, so candidate identity alignment must not become an unreviewed API or delivery change."
+        "The Node package is a frozen public surface with a first-party Core dependency, so candidate identity alignment must not become an unreviewed API or delivery change.",
+        "Contract Reuse Assessment mechanism references must resolve against the reviewed contract baseline, because resolving them from the candidate source would make this authorized version transition self-invalidating."
       ]
     },
     {
@@ -124,7 +132,8 @@
     "implementation-provenance-rejections-are-closed",
     "implementation-contract-projections-remain-exact",
     "implementation-contract-gate-rebinding-is-bounded",
-    "implementation-node-freeze-survives-alignment"
+    "implementation-node-freeze-survives-alignment",
+    "implementation-cra-remains-baseline-bound"
   ],
   "invariant_evidence": {
     "implementation-provenance-rejections-are-closed": {
@@ -144,7 +153,7 @@
         "4.1"
       ],
       "evidence_ids": [
-        "contract generation, Core generated drift, Core compatibility, and Node validation bind 1.1.0 and reject 1.0.0 from the new Core candidate"
+        "contract generation, Core generated drift, Core compatibility, and Node compatibility validation bind 1.1.0 and reject 1.0.0 from the new Core candidate"
       ]
     },
     "implementation-contract-gate-rebinding-is-bounded": {
@@ -153,7 +162,7 @@
         "4.2"
       ],
       "evidence_ids": [
-        "immutability and changed-path negative controls retain rejection of undeclared protected contract writes"
+        "immutability and changed-path negative controls retain rejection of undeclared or byte-different protected contract writes"
       ]
     },
     "implementation-node-freeze-survives-alignment": {
@@ -163,6 +172,15 @@
       ],
       "evidence_ids": [
         "Node package validation and frozen-export verification confirm metadata alignment without export drift"
+      ]
+    },
+    "implementation-cra-remains-baseline-bound": {
+      "task_ids": [
+        "1.5",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "CRA controls accept the authorized candidate version transition only when the reviewed baseline resolves and reject a non-authoritative baseline"
       ]
     }
   },

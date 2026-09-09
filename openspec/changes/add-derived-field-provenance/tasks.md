@@ -3,7 +3,8 @@
 - [x] 1.1 Generate the full design-pattern assessment for this contract, compatibility, and gate-binding change; assess every security dimension and declare the security-sensitive classification before any governed implementation commit.
 - [x] 1.2 Validate the complete active OpenSpec packet with `openspec validate add-derived-field-provenance --strict`; verify its three capability deltas match the approved `1.1.0` / `0.2.0` scope.
 - [x] 1.3 Record the required Contract Reuse Assessment as an `extend` of the existing security-audit contract and validate it against the proposal baseline.
-- [ ] 1.4 Commit the assessed proposal packet and merge its dedicated PR with an exact green head; verify it changes only the active OpenSpec directory before beginning governed implementation.
+- [x] 1.4 Commit the assessed proposal packet and merge its dedicated PR with an exact green head; verify it changes only the active OpenSpec directory before beginning governed implementation.
+- [ ] 1.5 Correct Contract Reuse Assessment mechanism resolution to read the exact reviewed baseline source, and add transition and non-authoritative-baseline regression controls before changing the canonical contract.
 
 ## 2. Canonical contract and provenance validation
 
@@ -14,8 +15,8 @@
 ## 3. Exact SDK and gate transition
 
 - [ ] 3.1 Regenerate the Core TypeScript and validator projections from the `1.1.0` contract, then verify `npm run check:generated --prefix packages/security-audit-sdk-core` passes without generated-source edits.
-- [ ] 3.2 Move the Core and Node private candidate manifests, lockfiles, and compatibility metadata from `0.1.0` to `0.2.0`; bind Core to exact contract `1.1.0` and verify `1.0.0` fails before readiness while Node's frozen export surface remains unchanged.
-- [ ] 3.3 Rebind `contract-provenance.json`, `check-contract-immutability.mjs`, and the changed-path lifecycle metadata to this named governed candidate; verify the new binding accepts only this authorized contract path set and continues to reject unrelated protected-contract writes.
+- [ ] 3.2 Move the Core and Node private candidate manifests, lockfiles, and compatibility metadata from `0.1.0` to `0.2.0`; bind Core to exact contract `1.1.0` and verify `1.0.0` fails before readiness. Add a Node compatibility check to `validate` that rejects package, lockfile, compatibility, or installed first-party Core identity drift while Node's frozen export surface remains unchanged.
+- [ ] 3.3 Rebind `contract-provenance.json`, `check-contract-immutability.mjs`, changed-path lifecycle metadata, and their negative verification control to this named governed candidate; verify the new binding accepts only this exact candidate content inventory and continues to reject unrelated or byte-different protected-contract writes.
 
 ## 4. Verification and delivery
 

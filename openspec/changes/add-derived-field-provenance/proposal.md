@@ -46,5 +46,8 @@ None.
   `packages/security-audit-sdk-core/` and `packages/security-audit-sdk-node/`.
 - Affected governance record: the narrowly scoped contract immutability and changed-path binding in
   `packages/security-audit-sdk-core/verification-lifecycle.json`.
+- Affected governance prerequisite: Contract Reuse Assessment mechanism resolution remains bound to
+  the reviewed PR baseline, so the candidate's authorized version transition cannot invalidate its
+  own assessment.
 - No runtime delivery, persistence, browser evidence, trust-floor enforcement, package publication,
   production deployment, or real-user collection is authorized by this change.

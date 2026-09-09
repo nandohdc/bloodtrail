@@ -78,15 +78,29 @@ only metadata lets runtime version checks and generated artifacts drift.
 
 ### D5 — Rebind, do not disable, the frozen-contract gates
 
-After the proposal packet is committed, the governed implementation will update
+After the proposal packet is merged, the governed implementation will update
 `contract-provenance.json` with `1.1.0`, the new canonical target, and the proposal baseline, then
 update the matching literals in the immutability checker. The changed-path lifecycle record will
-name this change's bounded contract and projection paths so the protected-prefix exception is
-specific to this candidate and fails closed outside it.
+bind a closed inventory of protected paths to the exact technical candidate content. The checker
+will accept those paths only while their current blobs match that named candidate and will retain
+rejection for any undeclared or byte-different protected write.
 
 The alternative of removing the literal or protected prefix creates a generic escape from the
 frozen-contract boundary. The alternative of leaving the old bindings makes the authorized change
 impossible and gives no binding for the new contract.
+
+### D6 — Resolve Contract Reuse Assessment mechanisms at the reviewed baseline
+
+An `extend` CRA establishes that a proposed change relates to the contract presented for review.
+Its mechanism references therefore resolve from the exact PR range baseline, not from the mutable
+candidate source that the change is intentionally allowed to version. The CRA checker will read the
+authoritative source blob at that baseline and continue to require the closed `security-audit@1.0.0`
+record and resolvable mechanism references. Regression controls will prove both that an authorized
+`1.0.0` to `1.1.0` transition remains CRA-valid and that a non-authoritative baseline fails closed.
+
+The alternative of evaluating the candidate source makes every contract-version transition
+self-invalidating. The alternative of skipping CRA for versioned changes removes the independent
+reuse/extend decision and would create an unbounded exception.
 
 ## Risks / Trade-offs
 
@@ -96,8 +110,11 @@ impossible and gives no binding for the new contract.
   and bounded field paths; tests assert unsafe input is never echoed.
 - [One source version drifts from an SDK or generated artifact] → Generation, drift, compatibility,
   contract, core, node, and governance-gate validation run against the exact candidate head.
-- [The gate rebinding becomes a broad exception] → The lifecycle record is restricted to this named
-  change and its exact path inventory; tests retain negative cases for unrelated contract edits.
+- [The gate rebinding becomes a broad exception] → The lifecycle record binds the named candidate
+  and exact content inventory; tests retain negative cases for unrelated or byte-different contract
+  edits.
+- [A version transition invalidates its own CRA] → Mechanism resolution reads the exact reviewed
+  baseline blob, while regression controls preserve baseline-authority rejection.
 
 ## Migration Plan
 
