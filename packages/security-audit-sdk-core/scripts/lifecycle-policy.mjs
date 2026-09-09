@@ -193,6 +193,28 @@ export function boundedFailure(id, file, message) {
   return Object.freeze({ id: String(id), file: String(file), message: String(message).slice(0, 240) });
 }
 
+/**
+ * Resolves the directory holding a governed candidate's OpenSpec artifacts.
+ *
+ * A governed candidate is named in `contract.governedCandidate.change` by change
+ * id, not by path, and that identity survives archiving. Resolving the id only
+ * under `openspec/changes/` therefore breaks the moment the candidate is
+ * archived, reporting its proposal, design, tasks and contract spec as missing
+ * when they were relocated intact.
+ *
+ * Returns the active directory when it exists, otherwise the single dated
+ * archive for that id. Zero or several archives resolve to `undefined` rather
+ * than a guess: the caller must fail closed instead of binding to the wrong
+ * artifacts.
+ */
+export async function resolveGovernedCandidateRoot(root, changeName) {
+  if (typeof changeName !== "string" || !/^[a-z0-9][a-z0-9-]{2,99}$/.test(changeName)) return undefined;
+  const active = resolve(root, "openspec/changes", changeName);
+  if (existsSync(active)) return active;
+  const archives = await matchingArchives(root, new RegExp(`^openspec/changes/archive/\\d{4}-\\d{2}-\\d{2}-${changeName}$`));
+  return archives.length === 1 ? archives[0] : undefined;
+}
+
 async function matchingArchives(root, pattern) {
   const archiveRoot = resolve(root, "openspec/changes/archive");
   let entries;
