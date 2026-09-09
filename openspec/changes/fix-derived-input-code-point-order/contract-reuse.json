@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@1.1.0",
+  "mode": "assessment",
+  "disposition": "reuse",
+  "mechanism_references": [
+    "derived_field_provenance.canonical_order"
+  ],
+  "rationale": "The change reuses the released security-audit 1.1.0 provenance-order mechanism exactly as declared and repairs two reference implementations that currently apply a different JavaScript representation order. It adds no field, value, error, or contract meaning.",
+  "trust_boundary": "The canonical contract remains authoritative for the ordering rule. The contract validator and SDK Core validator independently enforce that rule on bounded producer input before path resolution, with no new caller authority or cross-process trust relationship.",
+  "transformation_ownership": "Producers continue to supply provenance paths without normalization, and each existing validation boundary remains responsible for deterministic comparison and rejection. No downstream consumer receives new transformation or interpretation responsibility.",
+  "alternatives": [
+    {
+      "approach": "extend",
+      "rejection_reason": "No contract mechanism is added or widened: code-point ordering, diagnostic precedence, and error outcomes already exist in the 1.1.0 source and canonical capability; only nonconforming reference code and evidence are corrected."
+    },
+    {
+      "approach": "new_contract",
+      "rejection_reason": "The defect is wholly inside two implementations of the existing security-audit provenance rule and introduces no independent producer, lifecycle, trust boundary, or reusable contract surface."
+    }
+  ],
+  "author": {
+    "name": "Fernando Homem da Costa (nandohdc)",
+    "handle": "nandohdc"
+  },
+  "evidence_references": [
+    "openspec/changes/fix-derived-input-code-point-order/design.md",
+    "openspec/specs/security-audit-event-contract/spec.md"
+  ],
+  "assurance_limitations": [
+    "This assessment classifies reuse of the existing contract mechanism; it is not independent review, does not prove the two validators are equivalent, and does not replace regression, generated-drift, compatibility, or governance verification."
+  ]
+}
