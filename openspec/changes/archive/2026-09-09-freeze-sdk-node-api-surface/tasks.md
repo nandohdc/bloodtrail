@@ -19,8 +19,8 @@
 
 ## 4. Delivery, fold, archive, and closure
 
-- [x] 4.1 Open the proposal PR (planning artifacts only); merge only when every required branch-protection context is green on the exact head.
-- [x] 4.2 Open the implementation PR (section 2 + 3 changes); merge only when every required branch-protection context is green on the exact head.
-- [x] 4.3 Fold the `security-audit-sdk-node` delta into its canonical spec in a dedicated fold PR — discovered at fold time that the existing "Package boundaries..." requirement hardcoded a now-false "provisional, unfrozen" claim, so the delta gained a MODIFIED section correcting it alongside the ADDED frozen-surface requirement; prove both requirement blocks match byte-for-byte and a second application is a no-op; merge only after its exact-head CI is green.
-- [ ] 4.4 Archive the completed change with byte-preserving relocation and `archive-evidence.md`; verify strict OpenSpec validation and the repository's governance-gate chain (checked against the *committed* archive commit, not a staged-only move), then merge as a merge commit.
-- [ ] 4.5 Close #111 with the mutation-test and no-collision evidence.
+- [x] 4.1 Open the proposal PR (planning artifacts only); merge only when every required branch-protection context is green on the exact head. — PR #404, merged `da29fd0`.
+- [x] 4.2 Open the implementation PR (section 2 + 3 changes); merge only when every required branch-protection context is green on the exact head. — PR #405, merged `54f4eec`.
+- [x] 4.3 Fold the `security-audit-sdk-node` delta into its canonical spec in a dedicated fold PR — discovered at fold time that the existing "Package boundaries..." requirement hardcoded a now-false "provisional, unfrozen" claim, so the delta gained a MODIFIED section correcting it alongside the ADDED frozen-surface requirement; prove both requirement blocks match byte-for-byte and a second application is a no-op; merge only after its exact-head CI is green. — PR #406, merged `7522c72`.
+- [x] 4.4 Archive the completed change with byte-preserving relocation and `archive-evidence.md`; verify strict OpenSpec validation and the repository's governance-gate chain (checked against the *committed* archive commit, not a staged-only move), then merge as a merge commit.
+- [x] 4.5 Close #111 with the mutation-test and no-collision evidence.
