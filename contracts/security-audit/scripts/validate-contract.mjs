@@ -151,16 +151,39 @@ function isMalformedDerivedInput(input) {
 }
 
 function derivedInputReferenceError(event, inputs, codes) {
+  return firstProvenanceDiagnostic(event, [
+    duplicateDerivedInputCode(inputs, codes),
+    derivedInputOrderCode(inputs, codes),
+    firstDerivedInputResolutionCode(event, inputs, codes)
+  ]);
+}
+
+function duplicateDerivedInputCode(inputs, codes) {
   const seen = new Set();
   for (const input of inputs) {
-    if (seen.has(input)) return provenanceDiagnostic(codes.duplicate, event);
+    if (seen.has(input)) return codes.duplicate;
     seen.add(input);
   }
+  return null;
+}
+
+function derivedInputOrderCode(inputs, codes) {
   for (let index = 1; index < inputs.length; index += 1) {
-    if (inputs[index - 1] > inputs[index]) return provenanceDiagnostic(codes.noncanonical_order, event);
+    if (inputs[index - 1] > inputs[index]) return codes.noncanonical_order;
   }
+  return null;
+}
+
+function firstDerivedInputResolutionCode(event, inputs, codes) {
   for (const input of inputs) {
     const code = derivedInputResolutionCode(event, input, codes);
+    if (code) return code;
+  }
+  return null;
+}
+
+function firstProvenanceDiagnostic(event, codes) {
+  for (const code of codes) {
     if (code) return provenanceDiagnostic(code, event);
   }
   return null;
@@ -222,8 +245,21 @@ function canonicalContextError(event) {
 }
 
 function tenantContextError(event) {
-  if (event.tenant?.scope === "tenant" && (!event.tenant.effective_tenant_id || !event.tenant.resource_tenant_id)) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
-  if (event.tenant?.scope === "cross_tenant" && (!event.tenant.actor_tenant_id || !event.tenant.effective_tenant_id || !event.tenant.resource_tenant_id)) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
+  if (event.tenant?.scope === "tenant") return tenantScopeContextError(event);
+  if (event.tenant?.scope === "cross_tenant") return crossTenantScopeContextError(event);
+  return null;
+}
+
+function tenantScopeContextError(event) {
+  if (!event.tenant?.effective_tenant_id) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
+  if (!event.tenant?.resource_tenant_id) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
+  return null;
+}
+
+function crossTenantScopeContextError(event) {
+  if (!event.tenant?.actor_tenant_id) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
+  if (!event.tenant?.effective_tenant_id) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
+  if (!event.tenant?.resource_tenant_id) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
   return null;
 }
 
@@ -264,9 +300,23 @@ function catalogIdentityError(event, catalog) {
 }
 
 function lifecycleError(event) {
-  if (event.event.lifecycle_phase === "completed" && event.event.outcome === "success" && !["committed", "not_applicable"].includes(event.event.commit_state)) return diagnostic("PREMATURE_SUCCESS", "event.commit_state", event);
-  if (event.event.lifecycle_phase === "compensating" && event.event.outcome === "success" && event.event.commit_state !== "compensated") return diagnostic("PREMATURE_SUCCESS", "event.commit_state", event);
-  return null;
+  return completedSuccessError(event) ?? compensatingSuccessError(event);
+}
+
+function completedSuccessError(event) {
+  if (event.event.lifecycle_phase !== "completed") return null;
+  if (event.event.outcome !== "success") return null;
+  return ["committed", "not_applicable"].includes(event.event.commit_state)
+    ? null
+    : diagnostic("PREMATURE_SUCCESS", "event.commit_state", event);
+}
+
+function compensatingSuccessError(event) {
+  if (event.event.lifecycle_phase !== "compensating") return null;
+  if (event.event.outcome !== "success") return null;
+  return event.event.commit_state === "compensated"
+    ? null
+    : diagnostic("PREMATURE_SUCCESS", "event.commit_state", event);
 }
 
 function authorizationOutcomeError(event) {
@@ -288,10 +338,48 @@ function delegationError(event) {
 }
 
 function causalityError(event, catalog) {
-  if (event.correlation?.causation_id && event.correlation.causation_id === event.event.id) return diagnostic("BAD_CAUSALITY", "correlation.causation_id", event);
-  if (event.event.lifecycle_phase === "compensating" && !event.correlation?.original_event_id) return diagnostic("BAD_CAUSALITY", "correlation.original_event_id", event);
-  if ((event.correlation?.retry_attempt ?? 0) > 0 && !event.correlation?.original_event_id) return diagnostic("BAD_CAUSALITY", "correlation.original_event_id", event);
-  if (catalog.semantic.endsWith("_completed") && (!event.correlation?.causation_id || !event.correlation?.original_event_id)) return diagnostic("BAD_CAUSALITY", "correlation.causation_id/original_event_id", event);
+  return firstError([
+    () => selfCausationError(event),
+    () => compensatingCausalityError(event),
+    () => retryCausalityError(event),
+    () => completedEventCausalityError(event, catalog)
+  ]);
+}
+
+function selfCausationError(event) {
+  if (!event.correlation?.causation_id) return null;
+  return event.correlation.causation_id === event.event.id
+    ? diagnostic("BAD_CAUSALITY", "correlation.causation_id", event)
+    : null;
+}
+
+function compensatingCausalityError(event) {
+  if (event.event.lifecycle_phase !== "compensating") return null;
+  return event.correlation?.original_event_id
+    ? null
+    : diagnostic("BAD_CAUSALITY", "correlation.original_event_id", event);
+}
+
+function retryCausalityError(event) {
+  if ((event.correlation?.retry_attempt ?? 0) <= 0) return null;
+  return event.correlation?.original_event_id
+    ? null
+    : diagnostic("BAD_CAUSALITY", "correlation.original_event_id", event);
+}
+
+function completedEventCausalityError(event, catalog) {
+  if (!catalog.semantic.endsWith("_completed")) return null;
+  if (!event.correlation?.causation_id) return diagnostic("BAD_CAUSALITY", "correlation.causation_id/original_event_id", event);
+  return event.correlation?.original_event_id
+    ? null
+    : diagnostic("BAD_CAUSALITY", "correlation.causation_id/original_event_id", event);
+}
+
+function firstError(validators) {
+  for (const validate of validators) {
+    const error = validate();
+    if (error) return error;
+  }
   return null;
 }
 
