@@ -45,7 +45,7 @@ const REVIEWED_PATH_RULES = Object.freeze([
 const GOVERNED_CONTRACT_CANDIDATE = Object.freeze({
   change: "add-derived-field-provenance",
   rangeBase: "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-  technicalCommit: "dce24621303eb9707fc991c1e03e04630906cabb",
+  technicalCommit: "f69f3b7f60c5cfddd6311c6aa4f242280e1ce5d0",
 });
 
 const requestedLifecycle = parseLifecycleArguments();

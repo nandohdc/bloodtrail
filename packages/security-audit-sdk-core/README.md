@@ -126,7 +126,7 @@ Expected validation and sink failures are returned as `AuditResult` values with 
 
 ## Contract compatibility
 
-This candidate implements exactly contract version `1.1.0`, bound to normative contract commit `dce24621303eb9707fc991c1e03e04630906cabb`. `compatibility.json` is the machine-readable compatibility manifest and `contract-provenance.json` identifies all authoritative inputs. The SDK cannot silently change contract semantics. Unsupported versions, including `1.0.0`, fail safely. Contract changes require separate contract governance before SDK adaptation.
+This candidate implements exactly contract version `1.1.0`, bound to normative contract commit `f69f3b7f60c5cfddd6311c6aa4f242280e1ce5d0`. `compatibility.json` is the machine-readable compatibility manifest and `contract-provenance.json` identifies all authoritative inputs. The SDK cannot silently change contract semantics. Unsupported versions, including `1.0.0`, fail safely. Contract changes require separate contract governance before SDK adaptation.
 
 The private, unpublished candidate is `0.2.0`. Its optional `risk.model.provenance.derived_from` list records code-point-ordered material input paths for a `derived_server` risk model when a producer supplies them; omission remains valid in contract `1.1.0` and does not infer provenance.
 
