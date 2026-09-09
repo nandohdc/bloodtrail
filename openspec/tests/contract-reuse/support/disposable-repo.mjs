@@ -113,6 +113,19 @@ function seedRepository(repository) {
     mkdirSync(dirname(destination), { recursive: true });
     cpSync(source, destination, { recursive: true });
   }
+  seedSupportedContractBaseline(repository);
+}
+
+function seedSupportedContractBaseline(repository) {
+  // These fixtures exercise CRA records for security-audit@1.0.0. The live
+  // canonical source intentionally advances to 1.1.0 in a governed change,
+  // so copying it verbatim would turn every fixture baseline into the wrong
+  // reviewed contract. Keep the live mechanism table, but make the seeded Git
+  // baseline explicitly represent the version selected by the fixture record.
+  repository.mutateJson("contracts/security-audit/source/contract.source.json", (source) => ({
+    ...source,
+    metadata: { ...source.metadata, schema_version: "1.0.0" },
+  }));
 }
 
 function seedActiveChange(repository, changeId, ownedPaths = []) {

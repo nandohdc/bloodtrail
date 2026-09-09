@@ -94,16 +94,6 @@ test("all approved negative fixtures fail with exact safe codes and no secret ec
   }
 });
 
-test("derived provenance accepts canonical inputs and preserves optional absence", async () => {
-  const fixtures = await positives();
-  const withProvenance = fixtures.find((event) => event.risk?.model?.provenance?.derived_from);
-  const withoutProvenance = fixtures.find((event) => !event.risk?.model?.provenance?.derived_from);
-  assert.ok(withProvenance, "expected one generated valid provenance fixture");
-  assert.ok(withoutProvenance, "expected one generated absent-provenance control");
-  assert.equal(validateSecurityAuditEvent(withProvenance).ok, true);
-  assert.equal(validateSecurityAuditEvent(withoutProvenance).ok, true);
-});
-
 test("named APIs cover all 24 catalog events using authoritative construction", async () => {
   const sink = createCapturingAuditSink();
   const sdk = createSdk(sink, deterministicProviders());

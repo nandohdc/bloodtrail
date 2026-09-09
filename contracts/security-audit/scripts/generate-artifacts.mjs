@@ -182,6 +182,24 @@ function actor(type, scope) {
   return base;
 }
 
+function fixtureRisk(entry, index) {
+  const derivedFrom = index === 0 ? ["event.name", "event.outcome"] : undefined;
+  const policyCritical = entry.delivery === "policy_critical";
+  return {
+    level: policyCritical ? "high" : "low",
+    score: policyCritical ? 80 : 15,
+    reason_codes: ["policy_baseline"],
+    model: {
+      name: "fixture-risk",
+      version: "1.0.0",
+      provenance: {
+        trust_level: "derived_server",
+        ...(derivedFrom ? { derived_from: derivedFrom } : {})
+      }
+    }
+  };
+}
+
 function makeEvent(entry, index) {
   const ex = entry.example;
   const phase = ex.phase ?? entry.phase[0];
@@ -266,7 +284,7 @@ function makeEvent(entry, index) {
       retry_attempt: 0,
       original_event_id: phase === "compensating" || entry.semantic.endsWith("_completed") ? id(Math.max(1, index)) : undefined
     },
-    risk: { level: entry.delivery === "policy_critical" ? "high" : "low", score: entry.delivery === "policy_critical" ? 80 : 15, reason_codes: ["policy_baseline"], model: { name: "fixture-risk", version: "1.0.0", provenance: { trust_level: "derived_server", ...(index === 0 ? { derived_from: ["event.name", "event.outcome"] } : {}) } } },
+    risk: fixtureRisk(entry, index),
     data: { classification: entry.retention === "policy_governed" ? "restricted" : "confidential", retention_class: entry.retention, field_policy_version: source.metadata.field_policy_version },
     integrity: { transport_authentication: { method: "mtls", verified: true, peer: "producer-registry/ref" } }
   };
