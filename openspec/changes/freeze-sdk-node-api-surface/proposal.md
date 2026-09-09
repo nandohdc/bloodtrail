@@ -16,7 +16,7 @@
 - `security-audit-sdk-node` (new requirement within the existing capability): "The public export surface is frozen after vertical-slice evidence" — the package's complete public surface is frozen, referencing the exact evidence commit, and mechanically checked, with no name collision against the core's frozen surface.
 
 ### Modified Capabilities
-(none)
+- `security-audit-sdk-node`: "Package boundaries enforce standalone topology and zero third-party dependencies" — discovered during fold review: the existing requirement hardcoded the API surface as "explicitly provisional, unfrozen," which this change makes false. The requirement and its provisional/unfrozen scenario are corrected to instead require that the declared stability state (provisional or frozen) match whatever the new frozen-surface requirement's conditions actually are, rather than asserting a fixed state. The other two scenarios (dependency inspection, packed-install) are unchanged.
 
 ## Impact
 
@@ -24,6 +24,6 @@
 - `packages/security-audit-sdk-node/package.json`: one new script, wired into `validate`.
 - `packages/security-audit-sdk-node/adr/001-frozen-public-api-surface.md`: new file (and new `adr/` directory).
 - `packages/security-audit-sdk-node/compatibility.json`: freeze fields flipped, per its own pre-declared `freezeOwnership`.
-- `openspec/specs/security-audit-sdk-node/spec.md`: one new requirement added.
+- `openspec/specs/security-audit-sdk-node/spec.md`: one new requirement added; one existing requirement corrected (see Modified Capabilities above).
 - No behavior change to any exported symbol — this freezes what already exists and ships today; it adds no new export and removes none.
 - Out of scope (per #111 itself): freezing browser or React Native adapter APIs (deferred, tier 10, not authorized), publishing the Node SDK, changing core API scope (#110, already done separately).
