@@ -14,11 +14,26 @@
     "evidenceCommit": "2833852489e162954bdd495a4c466cbdc75fee84",
     "evidencePath": "openspec/changes/archive/2026-09-08-verify-delivery-vertical-slice/harness/evidence.md",
     "valueExportCount": 13,
-    "typeExportCount": 24
+    "typeExportCount": 24,
+    "amendments": [
+      {
+        "issue": 112,
+        "reason": "Governed additive widening for the remaining delivery classes (best_effort, transaction_critical, policy_critical).",
+        "adr": "adr/002-governed-widening-for-remaining-delivery-classes.md",
+        "valueExportCount": 17,
+        "typeExportCount": 41
+      }
+    ]
   },
   "node": {
-    "supportedMajors": [24, 26],
-    "ciVersions": ["24.2.0", "26.5.0"],
+    "supportedMajors": [
+      24,
+      26
+    ],
+    "ciVersions": [
+      "24.2.0",
+      "26.5.0"
+    ],
     "engines": ">=24 <25 || >=26 <27"
   },
   "typescript": {
@@ -27,8 +42,12 @@
   },
   "runtimeDependencyCount": 0,
   "thirdPartyRuntimeDependencies": 0,
-  "firstPartyDependencies": ["@bloodtrail/security-audit-sdk-core"],
-  "packageExports": ["."],
+  "firstPartyDependencies": [
+    "@bloodtrail/security-audit-sdk-core"
+  ],
+  "packageExports": [
+    "."
+  ],
   "spiImplementations": {
     "clock": "nodeClock",
     "identifiers": "nodeIdentifiers",
