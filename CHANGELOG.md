@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.16.0](https://github.com/nandohdc/bloodtrail/compare/v0.15.0...v0.16.0) (2026-09-09)
+
+
+### Added
+
+* **sdk-node:** implement the remaining governed delivery classes ([#112](https://github.com/nandohdc/bloodtrail/issues/112)) ([753c8cf](https://github.com/nandohdc/bloodtrail/commit/753c8cf1ccf3f30abd31eb1cbcc42044ed1b607d))
+* **sdk-node:** implement the remaining governed delivery classes ([#112](https://github.com/nandohdc/bloodtrail/issues/112)) ([a59cec8](https://github.com/nandohdc/bloodtrail/commit/a59cec8a41fa17f4149e9f54360a77b62356a7ec))
+
+
+### Documentation
+
+* **openspec:** archive implement-remaining-delivery-classes ([#112](https://github.com/nandohdc/bloodtrail/issues/112)) ([afaffa1](https://github.com/nandohdc/bloodtrail/commit/afaffa1815d636db41fa2af6cebeda96392ff679))
+* **openspec:** archive implement-remaining-delivery-classes ([#112](https://github.com/nandohdc/bloodtrail/issues/112)) ([fb43ed7](https://github.com/nandohdc/bloodtrail/commit/fb43ed70108720ff50d1d212ab450f8b82781256))
+* **openspec:** archive ratify-collector-storage-semantics ([#114](https://github.com/nandohdc/bloodtrail/issues/114)) ([dda8cf8](https://github.com/nandohdc/bloodtrail/commit/dda8cf84012d4ce7b22347ba3ee11981637fd48c))
+* **openspec:** archive ratify-collector-storage-semantics ([#114](https://github.com/nandohdc/bloodtrail/issues/114)) ([320a51d](https://github.com/nandohdc/bloodtrail/commit/320a51d347d3701df4b82e80bed6c1eeb2b2f193))
+* **openspec:** archive reconcile-tracker-and-workspace-docs ([#308](https://github.com/nandohdc/bloodtrail/issues/308), [#412](https://github.com/nandohdc/bloodtrail/issues/412)) ([8dd355a](https://github.com/nandohdc/bloodtrail/commit/8dd355a2c351c8699acdec7d9204edc4e494d86b))
+* **openspec:** archive reconcile-tracker-and-workspace-docs ([#308](https://github.com/nandohdc/bloodtrail/issues/308), [#412](https://github.com/nandohdc/bloodtrail/issues/412)) ([75c8fbe](https://github.com/nandohdc/bloodtrail/commit/75c8fbecb32f757decfbba93db047f955a140487))
+* **openspec:** correct ci-topology to name every declared workspace ([4596049](https://github.com/nandohdc/bloodtrail/commit/4596049ef7dd70ac2d95988a153d3ad6a0147d97))
+* **openspec:** fold collector-storage-semantics spec ([#114](https://github.com/nandohdc/bloodtrail/issues/114)) ([c52b442](https://github.com/nandohdc/bloodtrail/commit/c52b44238980f55623e3904ab2c6ad093f138fba))
+* **openspec:** fold collector-storage-semantics spec ([#114](https://github.com/nandohdc/bloodtrail/issues/114)) ([555355a](https://github.com/nandohdc/bloodtrail/commit/555355ac8b1ae67b0b381006a031c5024cffcca3))
+* **openspec:** fold the remaining delivery classes spec ([#112](https://github.com/nandohdc/bloodtrail/issues/112)) ([13bae3e](https://github.com/nandohdc/bloodtrail/commit/13bae3e4318b4dd872653e03387b7808c650c996))
+* **openspec:** fold the remaining delivery classes spec ([#112](https://github.com/nandohdc/bloodtrail/issues/112)) ([437d27a](https://github.com/nandohdc/bloodtrail/commit/437d27a90f06e02f8fd1606e9ea10bfe034821b7))
+* **openspec:** fold tracker and workspace-coverage specs ([#308](https://github.com/nandohdc/bloodtrail/issues/308), [#412](https://github.com/nandohdc/bloodtrail/issues/412)) ([a424c26](https://github.com/nandohdc/bloodtrail/commit/a424c2660031a2074e400f2a8a8a4b4558ddf3df))
+* **openspec:** fold tracker and workspace-coverage specs ([#308](https://github.com/nandohdc/bloodtrail/issues/308), [#412](https://github.com/nandohdc/bloodtrail/issues/412)) ([9943c01](https://github.com/nandohdc/bloodtrail/commit/9943c014c909155ecc4fb8dceb5008db06a41498))
+* **openspec:** propose collector storage semantics ([#114](https://github.com/nandohdc/bloodtrail/issues/114)) ([2f2fa20](https://github.com/nandohdc/bloodtrail/commit/2f2fa2007c076f76dec808f22ed2ec4d0bef0018))
+* **openspec:** propose collector storage semantics ([#114](https://github.com/nandohdc/bloodtrail/issues/114)) ([6bf5c39](https://github.com/nandohdc/bloodtrail/commit/6bf5c39a8faaf86230831695be45ba322b398d1f))
+* **openspec:** propose the remaining delivery classes ([#112](https://github.com/nandohdc/bloodtrail/issues/112)) ([14f5392](https://github.com/nandohdc/bloodtrail/commit/14f5392fabb94b437a79d77e4c12815ce6170424))
+* **openspec:** propose the remaining delivery classes ([#112](https://github.com/nandohdc/bloodtrail/issues/112)) ([40a5f67](https://github.com/nandohdc/bloodtrail/commit/40a5f67cc5d2a4c99db137cd24065c7b2daa1fea))
+* **openspec:** require concurrency-safe transaction dedup ([#112](https://github.com/nandohdc/bloodtrail/issues/112)) ([8e37437](https://github.com/nandohdc/bloodtrail/commit/8e37437d4869a4fc2164ce73ae8bf464948b4426))
+* reconcile tracker and workspace documentation with reality ([#308](https://github.com/nandohdc/bloodtrail/issues/308), [#412](https://github.com/nandohdc/bloodtrail/issues/412)) ([4bc0e7e](https://github.com/nandohdc/bloodtrail/commit/4bc0e7e41a2dad40b30a5e093f1f32ef1e9dd718))
+* reconcile tracker and workspace documentation with reality ([#308](https://github.com/nandohdc/bloodtrail/issues/308), [#412](https://github.com/nandohdc/bloodtrail/issues/412)) ([b0820c0](https://github.com/nandohdc/bloodtrail/commit/b0820c0ef8b98815d991d9231b1fdeef3bde9730))
+
 ## [0.15.0](https://github.com/nandohdc/bloodtrail/compare/v0.14.0...v0.15.0) (2026-09-09)
 
 
