@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { byCodePoint, packageRoot, readJson, repositoryRoot } from "./verification-helpers.mjs";
 
 export const supportedModes = Object.freeze(["active", "governed", "archived"]);
+const GOVERNED_CANDIDATE_ID = /^[a-z0-9][a-z0-9-]{2,99}$/;
 
 const PREMATURE_FAILURE_ID_BY_PHASE = Object.freeze({
   "technical-review": "active-technical-review-premature",
@@ -208,11 +209,21 @@ export function boundedFailure(id, file, message) {
  * artifacts.
  */
 export async function resolveGovernedCandidateRoot(root, changeName) {
-  if (typeof changeName !== "string" || !/^[a-z0-9][a-z0-9-]{2,99}$/.test(changeName)) return undefined;
+  if (!isGovernedCandidateId(changeName)) return undefined;
   const active = resolve(root, "openspec/changes", changeName);
   if (existsSync(active)) return active;
-  const archives = await matchingArchives(root, new RegExp(`^openspec/changes/archive/\\d{4}-\\d{2}-\\d{2}-${changeName}$`));
+  const archives = await matchingArchives(root, datedArchivePattern(changeName));
   return archives.length === 1 ? archives[0] : undefined;
+}
+
+/** A change id is interpolated into a pattern below, so its shape is checked first. */
+function isGovernedCandidateId(changeName) {
+  return typeof changeName === "string" && GOVERNED_CANDIDATE_ID.test(changeName);
+}
+
+/** `openspec archive` prefixes the change id with its archive date and never stacks a second one. */
+function datedArchivePattern(changeName) {
+  return new RegExp(`^openspec/changes/archive/\\d{4}-\\d{2}-\\d{2}-${changeName}$`);
 }
 
 async function matchingArchives(root, pattern) {
