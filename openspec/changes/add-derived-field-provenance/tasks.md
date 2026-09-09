@@ -21,7 +21,7 @@
 ## 4. Verification and delivery
 
 - [x] 4.1 Run `npm run validate --prefix contracts/security-audit`, Core generated/compatibility checks and `npm run validate --prefix packages/security-audit-sdk-core`, and `npm run validate --prefix packages/security-audit-sdk-node`; record each exact result.
-- [ ] 4.2 Run `npx --yes @fission-ai/openspec@latest validate --all --strict`, `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment`, `node openspec/scripts/check-design-pattern-governance.mjs --phase final`, `node openspec/scripts/run-governance-dual-check.mjs`, and `git diff --check`; verify no governance or whitespace failure remains.
+- [x] 4.2 Run `npx --yes @fission-ai/openspec@latest validate --all --strict`, `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment`, `node openspec/scripts/check-design-pattern-governance.mjs --phase final`, `node openspec/scripts/run-governance-dual-check.mjs`, and `git diff --check`; verify no governance or whitespace failure remains.
 - [ ] 4.3 Commit the assessed implementation with a Conventional Commit, push the branch, and open the implementation PR using every section of the repository template; verify its head is rebased on `origin/main` and the PR cites #95 without prematurely closing it.
 
 ## 5. Canonicalization and lifecycle closure
