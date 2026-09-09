@@ -223,7 +223,7 @@ function isGovernedCandidateId(changeName) {
 
 /** `openspec archive` prefixes the change id with its archive date and never stacks a second one. */
 function datedArchivePattern(changeName) {
-  return new RegExp(`^openspec/changes/archive/\\d{4}-\\d{2}-\\d{2}-${changeName}$`);
+  return new RegExp(String.raw`^openspec/changes/archive/\d{4}-\d{2}-\d{2}-${changeName}$`);
 }
 
 async function matchingArchives(root, pattern) {
