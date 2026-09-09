@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -80,10 +81,75 @@ export function assertPackageDiscovery(
   };
 }
 
+/**
+ * The `make` recipes that must exercise every declared workspace. Both the fast
+ * product loop and the full gate chain claim to cover the repository, so both
+ * are held to the same completeness assertion.
+ */
+export const COVERING_MAKE_TARGETS = Object.freeze(["runtime-gates", "governance-gates"]);
+
+/** Reads one target's recipe lines out of a Makefile's text. */
+export function makeRecipeFor(makefileText, target) {
+  const lines = makefileText.split(/\r?\n/);
+  const start = lines.findIndex((line) => line.startsWith(`${target}:`));
+  if (start === -1) return null;
+  const recipe = [];
+  for (const line of lines.slice(start + 1)) {
+    if (line.startsWith("\t")) recipe.push(line);
+    else if (line.trim().length > 0) break;
+  }
+  return recipe.join("\n");
+}
+
+/**
+ * Asserts that every declared workspace is actually invoked by each covering
+ * `make` target.
+ *
+ * The declared list alone is not enough: `make` reported green across "all four
+ * workspaces" while never running `packages/security-audit-collector`, because
+ * the count in the success message was a hand-maintained literal consistent with
+ * the recipe rather than with the repository. An explicit list needs a
+ * completeness assertion, or "add a package, forget the Makefile" fails silently.
+ */
+export function assertMakefileCoverage(
+  makefileText = null,
+  declaredPackages = DECLARED_PACKAGES,
+  targets = COVERING_MAKE_TARGETS,
+) {
+  const text = makefileText ?? readFileSync(resolve(repositoryRoot, "Makefile"), "utf8");
+  const workspaces = declaredPackages.map((pkg) => pkg.replace(/\/package\.json$/, ""));
+  const failures = [];
+
+  for (const target of targets) {
+    const recipe = makeRecipeFor(text, target);
+    if (recipe === null) {
+      failures.push(`[makefile-target-missing] Makefile declares no '${target}' target`);
+      continue;
+    }
+    const uncovered = workspaces.filter((workspace) => !recipe.includes(workspace));
+    if (uncovered.length > 0) {
+      failures.push(
+        `[makefile-workspace-uncovered] '${target}' does not run: ${uncovered.join(", ")}`,
+      );
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(`Makefile workspace coverage assertion failed:\n  ${failures.join("\n  ")}`);
+  }
+
+  return {
+    targets: [...targets],
+    workspaceCount: workspaces.length,
+    message: `Makefile workspace coverage passed: ${targets.length} target(s) each run all ${workspaces.length} declared workspace(s)\n`,
+  };
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const result = assertPackageDiscovery();
     process.stdout.write(result.message);
+    process.stdout.write(assertMakefileCoverage().message);
   } catch (err) {
     process.stderr.write(`${err.message}\n`);
     process.exit(1);

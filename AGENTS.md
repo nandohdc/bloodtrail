@@ -12,9 +12,11 @@ This repository has no root `package.json`; run npm commands within a workspace 
 
 ## Build, Test, and Development Commands
 
-- **Product test loop (~18s across all three workspaces — use during active development):**
-  - `make` (or `make test` / `make runtime-gates`): bare root entry point running the loop across all three workspaces.
-  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: fast SDK product test loop (~14.6s cold, ~9.2s runtime warm) across its matrix-safe checks (or `make sdk`).
+- **Product test loop (~34s across all five workspaces — use during active development):**
+  - `make` (or `make test` / `make runtime-gates`): bare root entry point running the loop across every declared workspace. `.github/scripts/check-package-discovery.mjs` asserts the recipe actually invokes each one, so a package cannot be silently skipped (#412).
+  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: fast SDK core product test loop (~14.6s cold, ~9.2s runtime warm) across its matrix-safe checks (or `make sdk`).
+  - `npm run validate --prefix packages/security-audit-sdk-node`: typecheck, build, tests, scope, frozen exports, dependencies, and package contents for the Node binding.
+  - `npm run validate --prefix packages/security-audit-collector`: generated-artifact drift, tests, scope, dependencies, and package contents for the collector.
   - `npm run validate --prefix contracts/security-audit`: validate generated contract artifacts and contract tests (~1.5s) (or `make contract`).
   - `npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry`: check the research harness (~15s) (or `make research`).
 - **Full governance-gate chains (~291s — run before pushing):**
@@ -48,14 +50,15 @@ Changes begin with an owning OpenSpec change. Complete every section of `.github
 
 ### Issue tracker
 
-Engineering work is tracked in Hermes Kanban on the `bloodtrail` board.
-GitHub Issues remain an external intake surface only.
+Engineering work is tracked in **GitHub Issues**. Hermes Kanban is retained for
+fleet runs but is not authoritative for execution state — do not read the board
+to decide what is done.
 See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-The five canonical triage roles map onto Hermes Kanban statuses and typed
-block kinds, not label strings.
+The five canonical triage roles are GitHub labels of the same name:
+`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`.
 See `docs/agents/triage-labels.md`.
 
 ### Domain docs

@@ -1,0 +1,183 @@
+{
+  "decision": "direct_implementation",
+  "forces": [
+    "The tracker named as canonical in agent-facing documentation recorded 1 of 114 merged pull requests over five days and moved one card while 36 issues closed, so every agent reading CLAUDE.md was directed at a surface that does not carry execution state.",
+    "The triage mapping justifies itself with a factual claim that four of the five canonical role labels do not exist in the GitHub label set, while all five exist and carry 82 applications, so an agent following it sets state nobody reads and leaves the labels that are actually filtered on untouched.",
+    "Both make targets that claim repository-wide coverage omit one of the five declared workspaces and then report success with a hand-maintained count consistent with the recipe rather than the repository, so a local loop certifies code it never ran while CI covers that package fully.",
+    "The repository already learned that an explicit list needs a completeness assertion, because adding a thing and forgetting to list it fails silently, and the governance specification requires a repository-state claim with no enforcing gate to gain a gate rather than a prose assertion.",
+    "Governance-core documentation edits must be batched into a dedicated documentation change rather than riding along with bounded implementation work, so these corrections cannot be folded into the delivery changes that surfaced them."
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-reconcile-docs-and-gate-the-loop",
+      "kind": "direct_implementation",
+      "summary": "State GitHub Issues as the execution tracker with Hermes Kanban retained but not authoritative and completion never inferred from a card; map the five canonical roles onto the GitHub labels of the same name; add the missing workspace to both covering make targets and delete the hand-maintained counts; and extend the existing package-discovery gate with a Makefile-coverage assertion plus five failing arms, one reproducing the observed defect exactly. Record the measurements that withdrew each claim and the reversal path.",
+      "forces_addressed": [
+        "The tracker named as canonical in agent-facing documentation recorded 1 of 114 merged pull requests over five days and moved one card while 36 issues closed, so every agent reading CLAUDE.md was directed at a surface that does not carry execution state.",
+        "The triage mapping justifies itself with a factual claim that four of the five canonical role labels do not exist in the GitHub label set, while all five exist and carry 82 applications, so an agent following it sets state nobody reads and leaves the labels that are actually filtered on untouched.",
+        "Both make targets that claim repository-wide coverage omit one of the five declared workspaces and then report success with a hand-maintained count consistent with the recipe rather than the repository, so a local loop certifies code it never ran while CI covers that package fully.",
+        "The repository already learned that an explicit list needs a completeness assertion, because adding a thing and forgetting to list it fails silently, and the governance specification requires a repository-state claim with no enforcing gate to gain a gate rather than a prose assertion.",
+        "Governance-core documentation edits must be batched into a dedicated documentation change rather than riding along with bounded implementation work, so these corrections cannot be folded into the delivery changes that surfaced them."
+      ]
+    },
+    {
+      "id": "approach-repair-the-board-and-keep-the-canon",
+      "kind": "alternative",
+      "summary": "Treat the board as being in an outage, reconcile it against the closed-issue set, and leave the documentation asserting Hermes Kanban as the canonical execution tracker.",
+      "forces_addressed": [
+        "The tracker named as canonical in agent-facing documentation recorded 1 of 114 merged pull requests over five days and moved one card while 36 issues closed, so every agent reading CLAUDE.md was directed at a surface that does not carry execution state."
+      ]
+    },
+    {
+      "id": "approach-record-a-qualification-only",
+      "kind": "alternative",
+      "summary": "Leave the canonical statement in place and append a recorded qualification noting that the board is currently not in use, deciding nothing about which tracker is authoritative.",
+      "forces_addressed": [
+        "The tracker named as canonical in agent-facing documentation recorded 1 of 114 merged pull requests over five days and moved one card while 36 issues closed, so every agent reading CLAUDE.md was directed at a surface that does not carry execution state."
+      ]
+    },
+    {
+      "id": "approach-fix-the-makefile-without-a-gate",
+      "kind": "alternative",
+      "summary": "Add the missing workspace to both make targets and correct the documented counts, without adding an executable assertion that every covering target invokes every declared package.",
+      "forces_addressed": [
+        "Both make targets that claim repository-wide coverage omit one of the five declared workspaces and then report success with a hand-maintained count consistent with the recipe rather than the repository, so a local loop certifies code it never ran while CI covers that package fully."
+      ]
+    },
+    {
+      "id": "approach-expand-make-output-instead-of-parsing-recipes",
+      "kind": "alternative",
+      "summary": "Run make in dry-run mode and assert workspace coverage against the expanded command output rather than reading each target's recipe lines out of the Makefile text.",
+      "forces_addressed": [
+        "The repository already learned that an explicit list needs a completeness assertion, because adding a thing and forgetting to list it fails silently, and the governance specification requires a repository-state claim with no enforcing gate to gain a gate rather than a prose assertion."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-reconcile-docs-and-gate-the-loop",
+  "rejected_alternative_ids": [
+    "approach-repair-the-board-and-keep-the-canon",
+    "approach-record-a-qualification-only",
+    "approach-fix-the-makefile-without-a-gate",
+    "approach-expand-make-output-instead-of-parsing-recipes"
+  ],
+  "rejection_reasons": {
+    "approach-repair-the-board-and-keep-the-canon": {
+      "forces": [
+        "The tracker named as canonical in agent-facing documentation recorded 1 of 114 merged pull requests over five days and moved one card while 36 issues closed, so every agent reading CLAUDE.md was directed at a surface that does not carry execution state."
+      ],
+      "reason": "One Hermes-Task trailer in 114 merges describes a workflow that is not in use rather than a board that fell behind, and reconciling the board would not move where the work is; the option is kept available as the reversal path written into the file it would restore."
+    },
+    "approach-record-a-qualification-only": {
+      "forces": [
+        "The tracker named as canonical in agent-facing documentation recorded 1 of 114 merged pull requests over five days and moved one card while 36 issues closed, so every agent reading CLAUDE.md was directed at a surface that does not carry execution state."
+      ],
+      "reason": "A qualification decides less but leaves the operative instruction \u2014 read the board to know what is done \u2014 standing, and that instruction is the harmful part; an agent following it would still treat a todo card for a closed issue as outstanding work."
+    },
+    "approach-fix-the-makefile-without-a-gate": {
+      "forces": [
+        "Both make targets that claim repository-wide coverage omit one of the five declared workspaces and then report success with a hand-maintained count consistent with the recipe rather than the repository, so a local loop certifies code it never ran while CI covers that package fully."
+      ],
+      "reason": "It repairs this instance and leaves the next one to the same silent failure, and the governance specification requires that a repository-state claim without an enforcing gate gains a gate rather than being asserted in prose."
+    },
+    "approach-expand-make-output-instead-of-parsing-recipes": {
+      "forces": [
+        "The repository already learned that an explicit list needs a completeness assertion, because adding a thing and forgetting to list it fails silently, and the governance specification requires a repository-state claim with no enforcing gate to gain a gate rather than a prose assertion."
+      ],
+      "reason": "It would put make on the checker's path and make the gate depend on every recipe being runnable, for accuracy the declared-workspace check does not need; the shallow recipe parse errs toward reporting a covered workspace as uncovered, which is a false failure rather than a false pass."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-every-declared-workspace-is-run-by-make",
+    "implementation-workspace-coverage-is-gated-not-narrated",
+    "implementation-coverage-gate-has-failing-arms",
+    "implementation-retained-tracker-is-marked-non-authoritative",
+    "implementation-withdrawn-claims-carry-evidence-and-reversal"
+  ],
+  "invariant_evidence": {
+    "implementation-every-declared-workspace-is-run-by-make": {
+      "task_ids": [
+        "2.1",
+        "2.5"
+      ],
+      "evidence_ids": [
+        "both covering make targets invoke all five declared workspaces and no success or help message carries a hand-maintained workspace count that could disagree with the recipe"
+      ]
+    },
+    "implementation-workspace-coverage-is-gated-not-narrated": {
+      "task_ids": [
+        "2.2",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "assertMakefileCoverage reads each covering target's recipe and fails with a distinct named diagnostic for an uncovered workspace and for an absent target, and runs in the existing governance job without a workflow edit"
+      ]
+    },
+    "implementation-coverage-gate-has-failing-arms": {
+      "task_ids": [
+        "2.3",
+        "5.1"
+      ],
+      "evidence_ids": [
+        "five arms including one reproducing the observed defect exactly and one proving a newly declared package fails until a covering target runs it, each paired with the healthy input that must still pass"
+      ]
+    },
+    "implementation-retained-tracker-is-marked-non-authoritative": {
+      "task_ids": [
+        "3.1",
+        "4.1",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "the documentation names GitHub Issues as the execution tracker, states that completion may not be inferred from a Kanban card, keeps the kanban tool rule scoped to fleet runs, and CLAUDE.md and AGENTS.md agree with docs/agents"
+      ]
+    },
+    "implementation-withdrawn-claims-carry-evidence-and-reversal": {
+      "task_ids": [
+        "3.1",
+        "3.2",
+        "4.3"
+      ],
+      "evidence_ids": [
+        "each withdrawn claim records the measurements that withdrew it and the reversal path, and no tracked file still asserts three workspaces, Hermes Kanban as the canonical execution tracker, or the roles as non-GitHub-labels"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Closes a path by which a local product loop reported success across workspaces it never executed, so a change to the collector could reach a pull request having been certified by a loop that did not run it.",
+    "authentication_or_authorization": "Changes no authentication or authorization behaviour; the change edits documentation, a Makefile, and a repository-script gate, and touches no runtime code path.",
+    "authority_provenance": "Records the tracker statement as a delegated decision naming its provenance in the file itself, so a later reader cannot mistake it for a human owner decision, and states plainly that the delegated statement is not owner authorization.",
+    "concurrency": "Introduces no concurrent behaviour; the coverage assertion is a pure function over Makefile text and a declared package list, evaluated once per invocation.",
+    "confidentiality": "Processes only repository file contents and public issue and label metadata; no credential, payload, personal data, or customer content enters any file, diagnostic, or test fixture.",
+    "cryptography": "Introduces no cryptography and makes no integrity claim requiring any.",
+    "error_disclosure": "Every new failure is a named diagnostic identifying the target and the uncovered workspace, carrying no file content beyond the workspace path already declared in the repository.",
+    "external_security_integration": "Adds no exporter, collector, SIEM, or external integration; the new assertion runs inside the existing governance job and reaches no network.",
+    "fail_posture": "Fails closed in both directions: an uncovered workspace fails, an absent covering target fails rather than passing vacuously, and the shallow recipe parse errs toward reporting a covered workspace as uncovered rather than the reverse.",
+    "lifecycle": "Adds no runtime lifecycle; the gate is invoked by an existing CI step and by the local command surface, and holds no state between invocations.",
+    "mutation_ownership": "Confined to the Makefile, the package-discovery gate and its test, the two agent documentation files, CLAUDE.md, AGENTS.md, and this change directory. No contract, package source, generated artifact, or workflow file is written.",
+    "privacy_transformation": "Performs no transformation of personal data; the measurements recorded are counts of pull requests, issues, and labels, with no author, actor, or identifier retained.",
+    "resource_retention": "Retains nothing; counts quoted in the documentation are dated observations rather than stored state, and the gate holds no data between runs.",
+    "retry_or_redelivery": "No delivery, retry, or redelivery behaviour is involved; the gate is deterministic over its inputs, so re-running it on unchanged inputs yields the same verdict.",
+    "trust_boundary": "Moves the boundary of the local loop's claim from a hand-maintained literal to an executable assertion, and states plainly that the coverage gate proves each declared workspace is invoked, not that any workspace's own validation is adequate."
+  },
+  "owned_paths": [
+    "openspec/changes/reconcile-tracker-and-workspace-docs/.openspec.yaml",
+    "openspec/changes/reconcile-tracker-and-workspace-docs/proposal.md",
+    "openspec/changes/reconcile-tracker-and-workspace-docs/design.md",
+    "openspec/changes/reconcile-tracker-and-workspace-docs/tasks.md",
+    "openspec/changes/reconcile-tracker-and-workspace-docs/specs/change-governance/spec.md",
+    "openspec/changes/reconcile-tracker-and-workspace-docs/assessment.source.json",
+    "openspec/changes/reconcile-tracker-and-workspace-docs/assessment.json",
+    "openspec/specs/change-governance/spec.md",
+    "Makefile",
+    ".github/scripts/check-package-discovery.mjs",
+    ".github/scripts/check-package-discovery.test.mjs",
+    "docs/agents/issue-tracker.md",
+    "docs/agents/triage-labels.md",
+    "CLAUDE.md",
+    "AGENTS.md"
+  ],
+  "ordering": {
+    "proposal_baseline_commit": "c52b44238980f55623e3904ab2c6ad093f138fba"
+  }
+}
