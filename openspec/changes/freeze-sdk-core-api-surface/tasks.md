@@ -19,7 +19,7 @@
 ## 4. Delivery, fold, archive, and closure
 
 - [x] 4.1 Open the proposal PR (planning artifacts only); merge only when every required branch-protection context is green on the exact head. — PR #400, merged `b5dde92`.
-- [ ] 4.2 Open the implementation PR (section 2 + 3 changes); merge only when every required branch-protection context is green on the exact head.
-- [ ] 4.3 Fold the `security-audit-sdk-core` delta into its canonical spec in a dedicated fold PR, proving the requirement block matches byte-for-byte and a second application is a no-op; merge only after its exact-head CI is green.
+- [x] 4.2 Open the implementation PR (section 2 + 3 changes); merge only when every required branch-protection context is green on the exact head. — PR #401, merged `8a91854` (required one amend: `sonar` failed on 4 bare `.sort()` calls added by this change; fixed by removing them, since the comparison is Set-based and never needed sorted input).
+- [x] 4.3 Fold the `security-audit-sdk-core` delta into its canonical spec in a dedicated fold PR, proving the requirement block matches byte-for-byte and a second application is a no-op; merge only after its exact-head CI is green.
 - [ ] 4.4 Archive the completed change with byte-preserving relocation and `archive-evidence.md`; verify strict OpenSpec validation and the repository's governance-gate chain (checked against the *committed* archive commit, not a staged-only move), then merge as a merge commit.
 - [ ] 4.5 Close #110 with the mutation-test evidence, and note in #111's tracking (a separate issue) that this precedent exists but does not freeze its surface.
