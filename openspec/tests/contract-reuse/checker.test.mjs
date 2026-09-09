@@ -202,15 +202,29 @@ describe("CRA trigger attribution fails closed", () => {
 });
 
 describe("CRA mechanism resolution follows structural acceptance", () => {
-  it("rejects a non-authoritative canonical source before resolving references", () => {
+  it("rejects a non-authoritative reviewed baseline before resolving references", () => {
     const repository = fixture();
     repository.mutateJson("contracts/security-audit/source/contract.source.json",
       (source) => ({ ...source, authoritative_source: false }));
+    repository.baseline = repository.commit("chore: seed non-authoritative CRA baseline");
     writeReuseRecord(repository);
     addTrigger(repository, "contract");
     repository.commit("feat: tampered CRA canonical source");
 
     assertDiagnostic(runCraChecker(repository), "cra-contract-source-unavailable");
+  });
+
+  it("resolves extend mechanisms from the reviewed baseline across a candidate version transition", () => {
+    const repository = fixture();
+    writeReuseRecord(repository);
+    repository.mutateJson("contracts/security-audit/source/contract.source.json", (source) => ({
+      ...source,
+      metadata: { ...source.metadata, schema_version: "1.1.0" },
+    }));
+    addTrigger(repository, "contract");
+    repository.commit("feat: transition CRA candidate contract version");
+
+    assertPasses(runCraChecker(repository), "cra-validated");
   });
 
   it("rejects a structurally valid but unresolved safe reference", () => {

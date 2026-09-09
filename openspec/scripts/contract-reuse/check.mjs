@@ -301,7 +301,7 @@ function evaluateMode(record, recordPath, context) {
 }
 
 function evaluateAssessment(record, recordPath, context) {
-  if (!resolveAssessmentReferences(record, context.repositoryRoot, recordPath, context.sink)) {
+  if (!resolveAssessmentReferences(record, context, recordPath)) {
     return rejectedSummary(context);
   }
   return outcomeSummary(context, "cra-validated");
@@ -313,14 +313,14 @@ function evaluateExemption(record, recordPath, context) {
   return outcomeSummary(context, "approved-exemption");
 }
 
-function resolveAssessmentReferences(record, repositoryRoot, recordPath, sink) {
+function resolveAssessmentReferences(record, context, recordPath) {
   if (!requiresMechanismResolution(record.disposition)) return true;
-  const source = readCanonicalContract(repositoryRoot, sink);
+  const source = readCanonicalContractAtBase(context.repositoryRoot, context.range.base, context.sink);
   if (source === null) return false;
   let resolved = true;
   for (const reference of record.mechanism_references ?? []) {
     if (resolvesReference(source, reference)) continue;
-    sink.fail("cra-mechanism-unresolved", recordPath,
+    context.sink.fail("cra-mechanism-unresolved", recordPath,
       `the canonical security-audit source does not resolve mechanism reference ${describeSafeReference(reference)}`);
     resolved = false;
   }
@@ -333,13 +333,11 @@ function requiresMechanismResolution(disposition) {
   return false;
 }
 
-function readCanonicalContract(repositoryRoot, sink) {
-  let text;
-  try {
-    text = readFileSync(resolve(repositoryRoot, CANONICAL_CONTRACT_PATH), "utf8");
-  } catch {
+function readCanonicalContractAtBase(repositoryRoot, base, sink) {
+  const text = blobAt(base, CANONICAL_CONTRACT_PATH, repositoryRoot);
+  if (text === null) {
     sink.fail("cra-contract-source-unavailable", CANONICAL_CONTRACT_PATH,
-      "the supported canonical security-audit source is absent or unreadable");
+      "the supported canonical security-audit source is absent or unreadable at the reviewed range baseline");
     return null;
   }
   try {
@@ -356,7 +354,7 @@ function readCanonicalContract(repositoryRoot, sink) {
 
 function rejectCanonicalSource(sink) {
   sink.fail("cra-contract-source-unavailable", CANONICAL_CONTRACT_PATH,
-    "the supported canonical source is not the authoritative security-audit source at schema version 1.0.0");
+    "the reviewed range baseline is not the authoritative security-audit source at schema version 1.0.0");
   return null;
 }
 

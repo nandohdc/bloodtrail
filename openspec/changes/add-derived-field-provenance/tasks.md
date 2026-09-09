@@ -4,7 +4,7 @@
 - [x] 1.2 Validate the complete active OpenSpec packet with `openspec validate add-derived-field-provenance --strict`; verify its three capability deltas match the approved `1.1.0` / `0.2.0` scope.
 - [x] 1.3 Record the required Contract Reuse Assessment as an `extend` of the existing security-audit contract and validate it against the proposal baseline.
 - [x] 1.4 Commit the assessed proposal packet and merge its dedicated PR with an exact green head; verify it changes only the active OpenSpec directory before beginning governed implementation.
-- [ ] 1.5 Correct Contract Reuse Assessment mechanism resolution to read the exact reviewed baseline source, and add transition and non-authoritative-baseline regression controls before changing the canonical contract.
+- [x] 1.5 Correct Contract Reuse Assessment mechanism resolution to read the exact reviewed baseline source, and add transition and non-authoritative-baseline regression controls before changing the canonical contract.
 
 ## 2. Canonical contract and provenance validation
 
