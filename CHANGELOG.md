@@ -1,5 +1,51 @@
 # Changelog
 
+## [0.17.0](https://github.com/nandohdc/bloodtrail/compare/v0.16.0...v0.17.0) (2026-09-09)
+
+
+### Added
+
+* **contract:** add derived field provenance ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([49eaead](https://github.com/nandohdc/bloodtrail/commit/49eaead4481f6e160257ad582b65669dc210149b))
+* **contract:** add derived field provenance ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([41f4e00](https://github.com/nandohdc/bloodtrail/commit/41f4e00b22666c429c5117997450878c9137756b))
+
+
+### Fixed
+
+* **collector:** realign generated projections and fixtures with contract 1.1.0 ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([a851483](https://github.com/nandohdc/bloodtrail/commit/a851483e0d6d4d3c702dbc4079e420f398ee9d9f))
+* **contract:** decompose provenance validation ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([f69f3b7](https://github.com/nandohdc/bloodtrail/commit/f69f3b7f60c5cfddd6311c6aa4f242280e1ce5d0))
+* **contract:** simplify provenance validation ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([dce2462](https://github.com/nandohdc/bloodtrail/commit/dce24621303eb9707fc991c1e03e04630906cabb))
+* **governance:** advance the CRA contract pin to 1.1.0 ([#95](https://github.com/nandohdc/bloodtrail/issues/95), [#426](https://github.com/nandohdc/bloodtrail/issues/426)) ([e275b8d](https://github.com/nandohdc/bloodtrail/commit/e275b8d4242503cd867a6896fc6d129cc274d8d5))
+* **governance:** bind CRA to review baseline ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([34aaaa1](https://github.com/nandohdc/bloodtrail/commit/34aaaa16f87f0ed2fa08cf2077b97b091e39cb88))
+* **governance:** bind derived provenance candidate ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([f425fbc](https://github.com/nandohdc/bloodtrail/commit/f425fbc6d2cbd07bb602be76e1e9819ca2adfdd7))
+* **governance:** bind final provenance candidate ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([b8fbaba](https://github.com/nandohdc/bloodtrail/commit/b8fbaba1350cd4c2daaad30b36ffdb9bd927ac77))
+* **governance:** rebind provenance candidate ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([48a5bb4](https://github.com/nandohdc/bloodtrail/commit/48a5bb48b5b53894e44a7d5f5c9d99432a596134))
+* **governance:** rebind the contract baseline to the fold commit ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([80101f1](https://github.com/nandohdc/bloodtrail/commit/80101f1dd5bf71abfa274ef945343783eaae3dfa))
+* **governance:** resolve a governed candidate after it is archived ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([f20b7cb](https://github.com/nandohdc/bloodtrail/commit/f20b7cb554de751e2867f5b9150c78a36f471645))
+* **governance:** resolve a governed candidate after it is archived ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([288b82d](https://github.com/nandohdc/bloodtrail/commit/288b82d6aec71427506d4ef69beff48da2561522))
+
+
+### Documentation
+
+* **openspec:** archive add-derived-field-provenance ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([a87a477](https://github.com/nandohdc/bloodtrail/commit/a87a4776636b554d61dd10dfcdd76386b0a3a11a))
+* **openspec:** archive add-derived-field-provenance ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([c234a1d](https://github.com/nandohdc/bloodtrail/commit/c234a1d4e8a1e4a8d411fea42b7f85e43b3edbb8))
+* **openspec:** bind provenance CRA to baseline ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([cfbf09a](https://github.com/nandohdc/bloodtrail/commit/cfbf09a0b423f1fe61a176a50e6f8e089cf4d1fb))
+* **openspec:** fold derived field provenance into canonical specs ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([e5a83f4](https://github.com/nandohdc/bloodtrail/commit/e5a83f4589485b4d33adfd45a1cfa92fdddce964))
+* **openspec:** fold derived-field provenance into canonical specs ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([8d11f27](https://github.com/nandohdc/bloodtrail/commit/8d11f273cd4512fdc9b2f08b1663fb8557233137))
+* **openspec:** own collector projections and correct decision source ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([7e7573b](https://github.com/nandohdc/bloodtrail/commit/7e7573b5113d30b16233ff0cd276b4409d8abea4))
+* **openspec:** own the canonical capability specs for the fold ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([426a86b](https://github.com/nandohdc/bloodtrail/commit/426a86b822acf8678d6d96df0ef2f7268fb782c5))
+* **openspec:** own the CRA fixtures advanced by the pin move ([#95](https://github.com/nandohdc/bloodtrail/issues/95), [#426](https://github.com/nandohdc/bloodtrail/issues/426)) ([525c4ba](https://github.com/nandohdc/bloodtrail/commit/525c4ba020d1954427446e23948fc889cd49743c))
+* **openspec:** own the CRA schema for the contract pin move ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([4877afe](https://github.com/nandohdc/bloodtrail/commit/4877afe1ec46616ae7a4ea7c3fb9415ce5ff8970))
+* **openspec:** propose derived-field provenance ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([cdecd7f](https://github.com/nandohdc/bloodtrail/commit/cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb))
+* **openspec:** propose derived-field provenance ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([1dd420b](https://github.com/nandohdc/bloodtrail/commit/1dd420b3abd76c43543e5bcc8717e6f48250ff95))
+* **openspec:** record corrected provenance verification ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([c7a37bf](https://github.com/nandohdc/bloodtrail/commit/c7a37bf4f1f74027f83d453023fefc48bf76b809))
+* **openspec:** record final provenance verification ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([2bcc00b](https://github.com/nandohdc/bloodtrail/commit/2bcc00bbeacec3f4e2b4ae834b63bea5985a1c04))
+* **openspec:** record provenance delivery ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([27e1654](https://github.com/nandohdc/bloodtrail/commit/27e1654b89970e971552f3f7903ff2c6128cc8c0))
+* **openspec:** record provenance verification ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([01f634c](https://github.com/nandohdc/bloodtrail/commit/01f634c1cb5d9ef9c0bc57eb374169d415f80d7e))
+* **openspec:** record the canonical fold verification ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([1b19321](https://github.com/nandohdc/bloodtrail/commit/1b1932103ff0412a7a8d8b2b5a793379df355703))
+* **openspec:** record the CRA pin move in the fold verification ([#95](https://github.com/nandohdc/bloodtrail/issues/95), [#426](https://github.com/nandohdc/bloodtrail/issues/426)) ([c6779ad](https://github.com/nandohdc/bloodtrail/commit/c6779ad2db91f10e19acdb1821606fbe897427ab))
+* **openspec:** record verification at the corrected head ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([736f721](https://github.com/nandohdc/bloodtrail/commit/736f721135adeb489aeccc27d61789117d82640b))
+* **openspec:** scope derived contract projection ([#95](https://github.com/nandohdc/bloodtrail/issues/95)) ([722cd4d](https://github.com/nandohdc/bloodtrail/commit/722cd4d1fd5513ab54aed0c1b3d1e870f5a68761))
+
 ## [0.16.0](https://github.com/nandohdc/bloodtrail/compare/v0.15.0...v0.16.0) (2026-09-09)
 
 
