@@ -1,0 +1,147 @@
+{
+  "schema_version": "1.1",
+  "change_id": "freeze-sdk-core-api-surface",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The freeze must cover the package's complete public surface (every value and type-only export), not a small hand-picked sample, or an unapproved mutation outside the sample goes undetected.",
+    "The check must not introduce a second snapshot-artifact format when the package's existing coherence/compatibility checks already pin literal constants directly in script source.",
+    "Type-only exports do not exist at runtime, so verifying them requires parsing the source's own export statements rather than importing the built module.",
+    "The freeze must positively confirm the surface contains no Node-runtime-specific symbol, not merely assume it by omission."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/scripts/check-exports.mjs",
+    "packages/security-audit-sdk-core/adr/012-frozen-public-api-surface.md",
+    "openspec/specs/security-audit-sdk-core/spec.md",
+    "openspec/changes/freeze-sdk-core-api-surface/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-extend-check-exports-inline",
+      "kind": "direct_implementation",
+      "summary": "Extend the existing check-exports.mjs with two literal frozen arrays (value exports, type-only exports) enumerated from the built module and parsed from src/index.ts, plus a Node-prefix denylist check, replacing the prior 3-symbol smoke check.",
+      "forces_addressed": [
+        "The freeze must cover the package's complete public surface (every value and type-only export), not a small hand-picked sample, or an unapproved mutation outside the sample goes undetected.",
+        "The check must not introduce a second snapshot-artifact format when the package's existing coherence/compatibility checks already pin literal constants directly in script source.",
+        "Type-only exports do not exist at runtime, so verifying them requires parsing the source's own export statements rather than importing the built module.",
+        "The freeze must positively confirm the surface contains no Node-runtime-specific symbol, not merely assume it by omission."
+      ]
+    },
+    {
+      "id": "approach-json-snapshot-file",
+      "kind": "alternative",
+      "summary": "Store the frozen export lists in a separate checked-in JSON snapshot file, with check-exports.mjs comparing against it.",
+      "forces_addressed": [
+        "The freeze must cover the package's complete public surface (every value and type-only export), not a small hand-picked sample, or an unapproved mutation outside the sample goes undetected."
+      ]
+    },
+    {
+      "id": "approach-typescript-compiler-api",
+      "kind": "alternative",
+      "summary": "Use the TypeScript compiler API to resolve the entry point's full export table (value and type) instead of parsing export statements with a regular expression.",
+      "forces_addressed": [
+        "Type-only exports do not exist at runtime, so verifying them requires parsing the source's own export statements rather than importing the built module."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-extend-check-exports-inline",
+  "rejected_alternative_ids": [
+    "approach-json-snapshot-file",
+    "approach-typescript-compiler-api"
+  ],
+  "rejection_reasons": {
+    "approach-json-snapshot-file": {
+      "forces": [
+        "The check must not introduce a second snapshot-artifact format when the package's existing coherence/compatibility checks already pin literal constants directly in script source."
+      ],
+      "reason": "check-coherence.mjs and check-compatibility.mjs already establish the convention of literal constants in script source for exactly this kind of pinned-value governance; a separate JSON file would duplicate that pattern for no concrete benefit and split the frozen list from the logic that enforces it."
+    },
+    "approach-typescript-compiler-api": {
+      "forces": [
+        "Type-only exports do not exist at runtime, so verifying them requires parsing the source's own export statements rather than importing the built module."
+      ],
+      "reason": "Every current export in src/index.ts uses the plain `export { name, name }` / `export type { name, name }` re-export form; invoking the full TypeScript compiler API to resolve this is disproportionate machinery for statements a simple, auditable regular expression already parses correctly, and a future syntax this parser cannot handle is itself a visible, reviewable gap rather than a silent one."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-complete-surface-frozen",
+    "implementation-mutation-detected-both-directions",
+    "implementation-no-node-specific-symbol"
+  ],
+  "invariant_evidence": {
+    "implementation-complete-surface-frozen": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "check-exports.mjs enumerates exactly 61 value exports and 92 type-only exports, matching the package's actual current surface"
+      ]
+    },
+    "implementation-mutation-detected-both-directions": {
+      "task_ids": [
+        "2.2"
+      ],
+      "evidence_ids": [
+        "manual mutation arm: an added unapproved export fails the check, naming it",
+        "manual mutation arm: a removed frozen export fails the check, naming it",
+        "null control: the restored, unmutated surface passes"
+      ]
+    },
+    "implementation-no-node-specific-symbol": {
+      "task_ids": [
+        "2.1"
+      ],
+      "evidence_ids": [
+        "check-exports.mjs asserts no frozen export name matches a Node-prefix denylist pattern"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No audit-event construction, validation, or emission behavior changes; this freezes which symbols are exported, not what they do.",
+    "authentication_or_authorization": "No authentication or authorization path is touched; the package has none.",
+    "authority_provenance": "No authority-brand construction changes; the frozen list only names existing exports, none of which is newly given authority.",
+    "concurrency": "The check is a synchronous, single-pass script with no concurrency concern.",
+    "confidentiality": "The check reads only the package's own already-public source and built output; it discloses no secret or private data.",
+    "cryptography": "No cryptographic algorithm, key, or secret handling is introduced.",
+    "error_disclosure": "The check's failure messages name only export identifiers already present in this package's public, version-controlled source; no caller data or secret is disclosed.",
+    "external_security_integration": "No external service, transport, or security integration is introduced; the check runs entirely against local build output and source.",
+    "fail_posture": "An unapproved addition or removal fails the check closed, exactly the fail-closed behavior #110 requires.",
+    "lifecycle": "The check is a one-shot verification script with no persistent state or background process.",
+    "mutation_ownership": "Changes are limited to one script, one new ADR, and the folded sdk-core specification.",
+    "privacy_transformation": "No personal data is introduced; this concerns only exported symbol names.",
+    "resource_retention": "The check retains no data beyond its own run; it creates no durable resource.",
+    "retry_or_redelivery": "Not applicable; this change concerns the package's export surface, not delivery or retry behavior.",
+    "trust_boundary": "No trust boundary changes; the check adds a new governance gate at the existing package-verification boundary without altering what that boundary already protects."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "cbbd044c4533fc0483d6e8bbdb4f7eb62a0575bc"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4",
+    "4.5"
+  ]
+}
