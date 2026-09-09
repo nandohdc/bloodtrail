@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": {
     "version": "1.1.0",
-    "normativeTechnicalTarget": "41f4e00b22666c429c5117997450878c9137756b",
+    "normativeTechnicalTarget": "dce24621303eb9707fc991c1e03e04630906cabb",
     "protectedPrefixes": [
       "contracts/security-audit/",
       "openspec/specs/security-audit-event-contract/",
@@ -13,7 +13,8 @@
     ],
     "governedCandidate": {
       "change": "add-derived-field-provenance",
-      "technicalCommit": "41f4e00b22666c429c5117997450878c9137756b",
+      "rangeBase": "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
+      "technicalCommit": "dce24621303eb9707fc991c1e03e04630906cabb",
       "protectedPaths": [
         "contracts/security-audit/docs/field-policy.md",
         "contracts/security-audit/docs/validation.md",

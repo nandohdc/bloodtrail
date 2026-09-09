@@ -64,7 +64,8 @@
     "packages/security-audit-sdk-node/compatibility.json",
     "packages/security-audit-sdk-node/scripts/check-compatibility.mjs",
     "openspec/scripts/contract-reuse/check.mjs",
-    "openspec/tests/contract-reuse/checker.test.mjs"
+    "openspec/tests/contract-reuse/checker.test.mjs",
+    "openspec/tests/contract-reuse/support/disposable-repo.mjs"
   ],
   "candidate_approaches": [
     {

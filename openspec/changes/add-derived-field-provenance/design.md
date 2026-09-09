@@ -81,9 +81,10 @@ only metadata lets runtime version checks and generated artifacts drift.
 After the proposal packet is merged, the governed implementation will update
 `contract-provenance.json` with `1.1.0`, the new canonical target, and the proposal baseline, then
 update the matching literals in the immutability checker. The changed-path lifecycle record will
-bind a closed inventory of protected paths to the exact technical candidate content. The checker
-will accept those paths only while their current blobs match that named candidate and will retain
-rejection for any undeclared or byte-different protected write.
+bind a closed inventory of protected paths from the merged proposal baseline through the exact
+technical candidate endpoint. The checker will accept those paths only while their current blobs
+match that named candidate and will retain rejection for any undeclared or byte-different protected
+write.
 
 The alternative of removing the literal or protected prefix creates a generic escape from the
 frozen-contract boundary. The alternative of leaving the old bindings makes the authorized change
