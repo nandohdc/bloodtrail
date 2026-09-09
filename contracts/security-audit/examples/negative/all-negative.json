@@ -22,7 +22,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -163,7 +163,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -202,7 +202,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -349,7 +349,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -388,7 +388,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -538,7 +538,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -577,7 +577,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -727,7 +727,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -916,7 +916,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -955,7 +955,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -1106,7 +1106,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -1145,7 +1145,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -1296,7 +1296,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -1335,7 +1335,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -1486,7 +1486,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -1525,7 +1525,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -1675,7 +1675,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -1714,7 +1714,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -1864,7 +1864,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -1903,7 +1903,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -2054,7 +2054,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -2093,7 +2093,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -2243,7 +2243,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -2282,7 +2282,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -2432,7 +2432,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -2471,7 +2471,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -2621,7 +2621,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -2660,7 +2660,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -2810,7 +2810,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -2849,7 +2849,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "account-transaction-owner",
@@ -2996,7 +2996,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -3035,7 +3035,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -3185,7 +3185,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -3227,7 +3227,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -3377,7 +3377,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -3423,7 +3423,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -3573,7 +3573,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -3612,7 +3612,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -3765,7 +3765,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -3804,7 +3804,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       "producer": {
         "name": "mfa-account-authority",
@@ -3946,7 +3946,1547 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.0.0"
+        "field_policy_version": "1.1.0"
+      },
+      "integrity": {
+        "transport_authentication": {
+          "method": "mtls",
+          "verified": true,
+          "peer": "producer-registry/ref"
+        }
+      },
+      "authenticated_principal": {
+        "type": "human_user",
+        "id": "principal_5",
+        "issuer": "https://idp.example.test"
+      }
+    }
+  },
+  {
+    "name": "derived-from-malformed",
+    "expected_errors": [
+      "DERIVED_FROM_MALFORMED_INPUT"
+    ],
+    "event": {
+      "event": {
+        "id": "11111111-1111-4111-8111-000000000005",
+        "name": "bloodtrail.audit.authentication.mfa.enrolled",
+        "category": "authentication",
+        "action": "enroll_mfa",
+        "lifecycle_phase": "completed",
+        "outcome": "success",
+        "outcome_reason": {
+          "code": "completed"
+        },
+        "commit_state": "committed",
+        "timestamp": "2026-07-31T12:04:00.000Z",
+        "observed_at": "2026-07-31T12:04:01.000Z",
+        "delivery_class": "transaction_critical"
+      },
+      "schema": {
+        "name": "com.bloodtrail.security-audit.event",
+        "version": "1.1.0"
+      },
+      "producer": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0",
+        "instance_id": "producer_05"
+      },
+      "environment": {
+        "name": "development"
+      },
+      "service": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0"
+      },
+      "deployment": {
+        "id": "deploy_contract_fixture",
+        "region": "local",
+        "zone": "local-a"
+      },
+      "tenant": {
+        "scope": "tenant",
+        "actor_tenant_id": "tenant_alpha",
+        "effective_tenant_id": "tenant_alpha",
+        "resource_tenant_id": "tenant_alpha"
+      },
+      "actor": {
+        "type": "authenticated_human",
+        "provenance": {
+          "trust_level": "authoritative_server",
+          "source": "authentication_authority"
+        },
+        "id": "authenticated_human_001",
+        "tenant_id": "tenant_alpha"
+      },
+      "subject": {
+        "type": "credential",
+        "id": "credential_subject_5",
+        "tenant_id": "tenant_alpha"
+      },
+      "credential": {
+        "type": "password",
+        "reference": "cred_ref_5",
+        "key_id": "pseudonym-key-v1"
+      },
+      "initiator": {
+        "type": "application",
+        "id": "application_fixture",
+        "version": "1.0.0"
+      },
+      "session": {
+        "id": "session_ref_5",
+        "created_at": "2026-07-31T11:55:00.000Z",
+        "age_seconds": 300,
+        "assurance_level": "aal2"
+      },
+      "authentication": {
+        "method": "session",
+        "assurance_level": "aal2",
+        "mfa_state": "satisfied",
+        "credential_type": "session",
+        "authenticated_at": "2026-07-31T11:55:00.000Z",
+        "identity_provider": "https://idp.example.test",
+        "delegated": false,
+        "impersonated": false
+      },
+      "authorization": {
+        "decision": "allow",
+        "policy_id": "policy.audit-fixture",
+        "policy_version": "1.0.0",
+        "capability": "enroll_mfa",
+        "enforcement_point": "mfa-account-authority",
+        "decision_reason": "accepted",
+        "resource_context": {
+          "type": "credential",
+          "id": "credential_5"
+        },
+        "tenant_context": {
+          "effective_tenant_id": "tenant_alpha"
+        },
+        "override": false,
+        "break_glass": false,
+        "policy_correlation_id": "policy_corr_5"
+      },
+      "source": {
+        "observed": {
+          "address": "203.0.113.10",
+          "port": 443,
+          "proxy_chain": [
+            {
+              "address": "198.51.100.10",
+              "trust_level": "observed_transport",
+              "observed_by": "trusted-ingress"
+            }
+          ]
+        },
+        "client_reported": {
+          "user_agent_family": "ExampleBrowser",
+          "user_agent_version": "1"
+        }
+      },
+      "destination": {
+        "service": "mfa-account-authority",
+        "address": "service.local",
+        "port": 443
+      },
+      "resource": {
+        "type": "credential",
+        "id": "credential_5",
+        "owning_tenant_id": "tenant_alpha",
+        "data_classification": "confidential",
+        "operation_type": "create",
+        "change_categories": [
+          "metadata"
+        ]
+      },
+      "request": {
+        "id": "request_5",
+        "method": "POST",
+        "route": "/contract-fixtures/{resource}",
+        "user_agent": "ExampleBrowser/1",
+        "message_id": "message_5"
+      },
+      "correlation": {
+        "trace_id": "1234567890abcdef1234567890abcde4",
+        "span_id": "1234567890abcde4",
+        "correlation_id": "corr_5",
+        "causation_id": "11111111-1111-4111-8111-000000000004",
+        "operation_id": "operation_mfa_enrolled",
+        "transaction_id": "txn_5",
+        "request_id": "request_5",
+        "message_id": "message_5",
+        "retry_attempt": 0
+      },
+      "risk": {
+        "level": "low",
+        "score": 15,
+        "reason_codes": [
+          "policy_baseline"
+        ],
+        "model": {
+          "name": "fixture-risk",
+          "version": "1.0.0",
+          "provenance": {
+            "trust_level": "derived_server",
+            "derived_from": [
+              "event.name",
+              1
+            ]
+          }
+        }
+      },
+      "data": {
+        "classification": "confidential",
+        "retention_class": "security_elevated",
+        "field_policy_version": "1.1.0"
+      },
+      "integrity": {
+        "transport_authentication": {
+          "method": "mtls",
+          "verified": true,
+          "peer": "producer-registry/ref"
+        }
+      },
+      "authenticated_principal": {
+        "type": "human_user",
+        "id": "principal_5",
+        "issuer": "https://idp.example.test"
+      }
+    }
+  },
+  {
+    "name": "derived-from-duplicate",
+    "expected_errors": [
+      "DERIVED_FROM_DUPLICATE_INPUT"
+    ],
+    "event": {
+      "event": {
+        "id": "11111111-1111-4111-8111-000000000005",
+        "name": "bloodtrail.audit.authentication.mfa.enrolled",
+        "category": "authentication",
+        "action": "enroll_mfa",
+        "lifecycle_phase": "completed",
+        "outcome": "success",
+        "outcome_reason": {
+          "code": "completed"
+        },
+        "commit_state": "committed",
+        "timestamp": "2026-07-31T12:04:00.000Z",
+        "observed_at": "2026-07-31T12:04:01.000Z",
+        "delivery_class": "transaction_critical"
+      },
+      "schema": {
+        "name": "com.bloodtrail.security-audit.event",
+        "version": "1.1.0"
+      },
+      "producer": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0",
+        "instance_id": "producer_05"
+      },
+      "environment": {
+        "name": "development"
+      },
+      "service": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0"
+      },
+      "deployment": {
+        "id": "deploy_contract_fixture",
+        "region": "local",
+        "zone": "local-a"
+      },
+      "tenant": {
+        "scope": "tenant",
+        "actor_tenant_id": "tenant_alpha",
+        "effective_tenant_id": "tenant_alpha",
+        "resource_tenant_id": "tenant_alpha"
+      },
+      "actor": {
+        "type": "authenticated_human",
+        "provenance": {
+          "trust_level": "authoritative_server",
+          "source": "authentication_authority"
+        },
+        "id": "authenticated_human_001",
+        "tenant_id": "tenant_alpha"
+      },
+      "subject": {
+        "type": "credential",
+        "id": "credential_subject_5",
+        "tenant_id": "tenant_alpha"
+      },
+      "credential": {
+        "type": "password",
+        "reference": "cred_ref_5",
+        "key_id": "pseudonym-key-v1"
+      },
+      "initiator": {
+        "type": "application",
+        "id": "application_fixture",
+        "version": "1.0.0"
+      },
+      "session": {
+        "id": "session_ref_5",
+        "created_at": "2026-07-31T11:55:00.000Z",
+        "age_seconds": 300,
+        "assurance_level": "aal2"
+      },
+      "authentication": {
+        "method": "session",
+        "assurance_level": "aal2",
+        "mfa_state": "satisfied",
+        "credential_type": "session",
+        "authenticated_at": "2026-07-31T11:55:00.000Z",
+        "identity_provider": "https://idp.example.test",
+        "delegated": false,
+        "impersonated": false
+      },
+      "authorization": {
+        "decision": "allow",
+        "policy_id": "policy.audit-fixture",
+        "policy_version": "1.0.0",
+        "capability": "enroll_mfa",
+        "enforcement_point": "mfa-account-authority",
+        "decision_reason": "accepted",
+        "resource_context": {
+          "type": "credential",
+          "id": "credential_5"
+        },
+        "tenant_context": {
+          "effective_tenant_id": "tenant_alpha"
+        },
+        "override": false,
+        "break_glass": false,
+        "policy_correlation_id": "policy_corr_5"
+      },
+      "source": {
+        "observed": {
+          "address": "203.0.113.10",
+          "port": 443,
+          "proxy_chain": [
+            {
+              "address": "198.51.100.10",
+              "trust_level": "observed_transport",
+              "observed_by": "trusted-ingress"
+            }
+          ]
+        },
+        "client_reported": {
+          "user_agent_family": "ExampleBrowser",
+          "user_agent_version": "1"
+        }
+      },
+      "destination": {
+        "service": "mfa-account-authority",
+        "address": "service.local",
+        "port": 443
+      },
+      "resource": {
+        "type": "credential",
+        "id": "credential_5",
+        "owning_tenant_id": "tenant_alpha",
+        "data_classification": "confidential",
+        "operation_type": "create",
+        "change_categories": [
+          "metadata"
+        ]
+      },
+      "request": {
+        "id": "request_5",
+        "method": "POST",
+        "route": "/contract-fixtures/{resource}",
+        "user_agent": "ExampleBrowser/1",
+        "message_id": "message_5"
+      },
+      "correlation": {
+        "trace_id": "1234567890abcdef1234567890abcde4",
+        "span_id": "1234567890abcde4",
+        "correlation_id": "corr_5",
+        "causation_id": "11111111-1111-4111-8111-000000000004",
+        "operation_id": "operation_mfa_enrolled",
+        "transaction_id": "txn_5",
+        "request_id": "request_5",
+        "message_id": "message_5",
+        "retry_attempt": 0
+      },
+      "risk": {
+        "level": "low",
+        "score": 15,
+        "reason_codes": [
+          "policy_baseline"
+        ],
+        "model": {
+          "name": "fixture-risk",
+          "version": "1.0.0",
+          "provenance": {
+            "trust_level": "derived_server",
+            "derived_from": [
+              "event.name",
+              "event.name"
+            ]
+          }
+        }
+      },
+      "data": {
+        "classification": "confidential",
+        "retention_class": "security_elevated",
+        "field_policy_version": "1.1.0"
+      },
+      "integrity": {
+        "transport_authentication": {
+          "method": "mtls",
+          "verified": true,
+          "peer": "producer-registry/ref"
+        }
+      },
+      "authenticated_principal": {
+        "type": "human_user",
+        "id": "principal_5",
+        "issuer": "https://idp.example.test"
+      }
+    }
+  },
+  {
+    "name": "derived-from-unresolvable",
+    "expected_errors": [
+      "DERIVED_FROM_UNRESOLVABLE_INPUT"
+    ],
+    "event": {
+      "event": {
+        "id": "11111111-1111-4111-8111-000000000005",
+        "name": "bloodtrail.audit.authentication.mfa.enrolled",
+        "category": "authentication",
+        "action": "enroll_mfa",
+        "lifecycle_phase": "completed",
+        "outcome": "success",
+        "outcome_reason": {
+          "code": "completed"
+        },
+        "commit_state": "committed",
+        "timestamp": "2026-07-31T12:04:00.000Z",
+        "observed_at": "2026-07-31T12:04:01.000Z",
+        "delivery_class": "transaction_critical"
+      },
+      "schema": {
+        "name": "com.bloodtrail.security-audit.event",
+        "version": "1.1.0"
+      },
+      "producer": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0",
+        "instance_id": "producer_05"
+      },
+      "environment": {
+        "name": "development"
+      },
+      "service": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0"
+      },
+      "deployment": {
+        "id": "deploy_contract_fixture",
+        "region": "local",
+        "zone": "local-a"
+      },
+      "tenant": {
+        "scope": "tenant",
+        "actor_tenant_id": "tenant_alpha",
+        "effective_tenant_id": "tenant_alpha",
+        "resource_tenant_id": "tenant_alpha"
+      },
+      "actor": {
+        "type": "authenticated_human",
+        "provenance": {
+          "trust_level": "authoritative_server",
+          "source": "authentication_authority"
+        },
+        "id": "authenticated_human_001",
+        "tenant_id": "tenant_alpha"
+      },
+      "subject": {
+        "type": "credential",
+        "id": "credential_subject_5",
+        "tenant_id": "tenant_alpha"
+      },
+      "credential": {
+        "type": "password",
+        "reference": "cred_ref_5",
+        "key_id": "pseudonym-key-v1"
+      },
+      "initiator": {
+        "type": "application",
+        "id": "application_fixture",
+        "version": "1.0.0"
+      },
+      "session": {
+        "id": "session_ref_5",
+        "created_at": "2026-07-31T11:55:00.000Z",
+        "age_seconds": 300,
+        "assurance_level": "aal2"
+      },
+      "authentication": {
+        "method": "session",
+        "assurance_level": "aal2",
+        "mfa_state": "satisfied",
+        "credential_type": "session",
+        "authenticated_at": "2026-07-31T11:55:00.000Z",
+        "identity_provider": "https://idp.example.test",
+        "delegated": false,
+        "impersonated": false
+      },
+      "authorization": {
+        "decision": "allow",
+        "policy_id": "policy.audit-fixture",
+        "policy_version": "1.0.0",
+        "capability": "enroll_mfa",
+        "enforcement_point": "mfa-account-authority",
+        "decision_reason": "accepted",
+        "resource_context": {
+          "type": "credential",
+          "id": "credential_5"
+        },
+        "tenant_context": {
+          "effective_tenant_id": "tenant_alpha"
+        },
+        "override": false,
+        "break_glass": false,
+        "policy_correlation_id": "policy_corr_5"
+      },
+      "source": {
+        "observed": {
+          "address": "203.0.113.10",
+          "port": 443,
+          "proxy_chain": [
+            {
+              "address": "198.51.100.10",
+              "trust_level": "observed_transport",
+              "observed_by": "trusted-ingress"
+            }
+          ]
+        },
+        "client_reported": {
+          "user_agent_family": "ExampleBrowser",
+          "user_agent_version": "1"
+        }
+      },
+      "destination": {
+        "service": "mfa-account-authority",
+        "address": "service.local",
+        "port": 443
+      },
+      "resource": {
+        "type": "credential",
+        "id": "credential_5",
+        "owning_tenant_id": "tenant_alpha",
+        "data_classification": "confidential",
+        "operation_type": "create",
+        "change_categories": [
+          "metadata"
+        ]
+      },
+      "request": {
+        "id": "request_5",
+        "method": "POST",
+        "route": "/contract-fixtures/{resource}",
+        "user_agent": "ExampleBrowser/1",
+        "message_id": "message_5"
+      },
+      "correlation": {
+        "trace_id": "1234567890abcdef1234567890abcde4",
+        "span_id": "1234567890abcde4",
+        "correlation_id": "corr_5",
+        "causation_id": "11111111-1111-4111-8111-000000000004",
+        "operation_id": "operation_mfa_enrolled",
+        "transaction_id": "txn_5",
+        "request_id": "request_5",
+        "message_id": "message_5",
+        "retry_attempt": 0
+      },
+      "risk": {
+        "level": "low",
+        "score": 15,
+        "reason_codes": [
+          "policy_baseline"
+        ],
+        "model": {
+          "name": "fixture-risk",
+          "version": "1.0.0",
+          "provenance": {
+            "trust_level": "derived_server",
+            "derived_from": [
+              "event.name",
+              "not.a.canonical.field"
+            ]
+          }
+        }
+      },
+      "data": {
+        "classification": "confidential",
+        "retention_class": "security_elevated",
+        "field_policy_version": "1.1.0"
+      },
+      "integrity": {
+        "transport_authentication": {
+          "method": "mtls",
+          "verified": true,
+          "peer": "producer-registry/ref"
+        }
+      },
+      "authenticated_principal": {
+        "type": "human_user",
+        "id": "principal_5",
+        "issuer": "https://idp.example.test"
+      }
+    }
+  },
+  {
+    "name": "derived-from-absent",
+    "expected_errors": [
+      "DERIVED_FROM_ABSENT_INPUT"
+    ],
+    "event": {
+      "event": {
+        "id": "11111111-1111-4111-8111-000000000005",
+        "name": "bloodtrail.audit.authentication.mfa.enrolled",
+        "category": "authentication",
+        "action": "enroll_mfa",
+        "lifecycle_phase": "completed",
+        "outcome": "success",
+        "outcome_reason": {
+          "code": "completed"
+        },
+        "commit_state": "committed",
+        "timestamp": "2026-07-31T12:04:00.000Z",
+        "observed_at": "2026-07-31T12:04:01.000Z",
+        "delivery_class": "transaction_critical"
+      },
+      "schema": {
+        "name": "com.bloodtrail.security-audit.event",
+        "version": "1.1.0"
+      },
+      "producer": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0",
+        "instance_id": "producer_05"
+      },
+      "environment": {
+        "name": "development"
+      },
+      "service": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0"
+      },
+      "deployment": {
+        "id": "deploy_contract_fixture",
+        "region": "local",
+        "zone": "local-a"
+      },
+      "tenant": {
+        "scope": "tenant",
+        "actor_tenant_id": "tenant_alpha",
+        "effective_tenant_id": "tenant_alpha",
+        "resource_tenant_id": "tenant_alpha"
+      },
+      "actor": {
+        "type": "authenticated_human",
+        "provenance": {
+          "trust_level": "authoritative_server",
+          "source": "authentication_authority"
+        },
+        "id": "authenticated_human_001",
+        "tenant_id": "tenant_alpha"
+      },
+      "subject": {
+        "type": "credential",
+        "id": "credential_subject_5",
+        "tenant_id": "tenant_alpha"
+      },
+      "credential": {
+        "type": "password",
+        "reference": "cred_ref_5",
+        "key_id": "pseudonym-key-v1"
+      },
+      "initiator": {
+        "type": "application",
+        "id": "application_fixture",
+        "version": "1.0.0"
+      },
+      "session": {
+        "id": "session_ref_5",
+        "created_at": "2026-07-31T11:55:00.000Z",
+        "age_seconds": 300,
+        "assurance_level": "aal2"
+      },
+      "authentication": {
+        "method": "session",
+        "assurance_level": "aal2",
+        "mfa_state": "satisfied",
+        "credential_type": "session",
+        "authenticated_at": "2026-07-31T11:55:00.000Z",
+        "identity_provider": "https://idp.example.test",
+        "delegated": false,
+        "impersonated": false
+      },
+      "authorization": {
+        "decision": "allow",
+        "policy_id": "policy.audit-fixture",
+        "policy_version": "1.0.0",
+        "capability": "enroll_mfa",
+        "enforcement_point": "mfa-account-authority",
+        "decision_reason": "accepted",
+        "resource_context": {
+          "type": "credential",
+          "id": "credential_5"
+        },
+        "tenant_context": {
+          "effective_tenant_id": "tenant_alpha"
+        },
+        "override": false,
+        "break_glass": false,
+        "policy_correlation_id": "policy_corr_5"
+      },
+      "source": {
+        "observed": {
+          "address": "203.0.113.10",
+          "port": 443,
+          "proxy_chain": [
+            {
+              "address": "198.51.100.10",
+              "trust_level": "observed_transport",
+              "observed_by": "trusted-ingress"
+            }
+          ]
+        },
+        "client_reported": {
+          "user_agent_family": "ExampleBrowser",
+          "user_agent_version": "1"
+        }
+      },
+      "destination": {
+        "service": "mfa-account-authority",
+        "address": "service.local",
+        "port": 443
+      },
+      "resource": {
+        "type": "credential",
+        "id": "credential_5",
+        "owning_tenant_id": "tenant_alpha",
+        "data_classification": "confidential",
+        "operation_type": "create",
+        "change_categories": [
+          "metadata"
+        ]
+      },
+      "request": {
+        "id": "request_5",
+        "method": "POST",
+        "route": "/contract-fixtures/{resource}",
+        "user_agent": "ExampleBrowser/1",
+        "message_id": "message_5"
+      },
+      "correlation": {
+        "trace_id": "1234567890abcdef1234567890abcde4",
+        "span_id": "1234567890abcde4",
+        "correlation_id": "corr_5",
+        "causation_id": "11111111-1111-4111-8111-000000000004",
+        "operation_id": "operation_mfa_enrolled",
+        "transaction_id": "txn_5",
+        "request_id": "request_5",
+        "message_id": "message_5",
+        "retry_attempt": 0
+      },
+      "risk": {
+        "level": "low",
+        "score": 15,
+        "reason_codes": [
+          "policy_baseline"
+        ],
+        "model": {
+          "name": "fixture-risk",
+          "version": "1.0.0",
+          "provenance": {
+            "trust_level": "derived_server",
+            "derived_from": [
+              "event.name",
+              "subject.display_name"
+            ]
+          }
+        }
+      },
+      "data": {
+        "classification": "confidential",
+        "retention_class": "security_elevated",
+        "field_policy_version": "1.1.0"
+      },
+      "integrity": {
+        "transport_authentication": {
+          "method": "mtls",
+          "verified": true,
+          "peer": "producer-registry/ref"
+        }
+      },
+      "authenticated_principal": {
+        "type": "human_user",
+        "id": "principal_5",
+        "issuer": "https://idp.example.test"
+      }
+    }
+  },
+  {
+    "name": "derived-from-unordered",
+    "expected_errors": [
+      "DERIVED_FROM_NONCANONICAL_ORDER"
+    ],
+    "event": {
+      "event": {
+        "id": "11111111-1111-4111-8111-000000000005",
+        "name": "bloodtrail.audit.authentication.mfa.enrolled",
+        "category": "authentication",
+        "action": "enroll_mfa",
+        "lifecycle_phase": "completed",
+        "outcome": "success",
+        "outcome_reason": {
+          "code": "completed"
+        },
+        "commit_state": "committed",
+        "timestamp": "2026-07-31T12:04:00.000Z",
+        "observed_at": "2026-07-31T12:04:01.000Z",
+        "delivery_class": "transaction_critical"
+      },
+      "schema": {
+        "name": "com.bloodtrail.security-audit.event",
+        "version": "1.1.0"
+      },
+      "producer": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0",
+        "instance_id": "producer_05"
+      },
+      "environment": {
+        "name": "development"
+      },
+      "service": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0"
+      },
+      "deployment": {
+        "id": "deploy_contract_fixture",
+        "region": "local",
+        "zone": "local-a"
+      },
+      "tenant": {
+        "scope": "tenant",
+        "actor_tenant_id": "tenant_alpha",
+        "effective_tenant_id": "tenant_alpha",
+        "resource_tenant_id": "tenant_alpha"
+      },
+      "actor": {
+        "type": "authenticated_human",
+        "provenance": {
+          "trust_level": "authoritative_server",
+          "source": "authentication_authority"
+        },
+        "id": "authenticated_human_001",
+        "tenant_id": "tenant_alpha"
+      },
+      "subject": {
+        "type": "credential",
+        "id": "credential_subject_5",
+        "tenant_id": "tenant_alpha"
+      },
+      "credential": {
+        "type": "password",
+        "reference": "cred_ref_5",
+        "key_id": "pseudonym-key-v1"
+      },
+      "initiator": {
+        "type": "application",
+        "id": "application_fixture",
+        "version": "1.0.0"
+      },
+      "session": {
+        "id": "session_ref_5",
+        "created_at": "2026-07-31T11:55:00.000Z",
+        "age_seconds": 300,
+        "assurance_level": "aal2"
+      },
+      "authentication": {
+        "method": "session",
+        "assurance_level": "aal2",
+        "mfa_state": "satisfied",
+        "credential_type": "session",
+        "authenticated_at": "2026-07-31T11:55:00.000Z",
+        "identity_provider": "https://idp.example.test",
+        "delegated": false,
+        "impersonated": false
+      },
+      "authorization": {
+        "decision": "allow",
+        "policy_id": "policy.audit-fixture",
+        "policy_version": "1.0.0",
+        "capability": "enroll_mfa",
+        "enforcement_point": "mfa-account-authority",
+        "decision_reason": "accepted",
+        "resource_context": {
+          "type": "credential",
+          "id": "credential_5"
+        },
+        "tenant_context": {
+          "effective_tenant_id": "tenant_alpha"
+        },
+        "override": false,
+        "break_glass": false,
+        "policy_correlation_id": "policy_corr_5"
+      },
+      "source": {
+        "observed": {
+          "address": "203.0.113.10",
+          "port": 443,
+          "proxy_chain": [
+            {
+              "address": "198.51.100.10",
+              "trust_level": "observed_transport",
+              "observed_by": "trusted-ingress"
+            }
+          ]
+        },
+        "client_reported": {
+          "user_agent_family": "ExampleBrowser",
+          "user_agent_version": "1"
+        }
+      },
+      "destination": {
+        "service": "mfa-account-authority",
+        "address": "service.local",
+        "port": 443
+      },
+      "resource": {
+        "type": "credential",
+        "id": "credential_5",
+        "owning_tenant_id": "tenant_alpha",
+        "data_classification": "confidential",
+        "operation_type": "create",
+        "change_categories": [
+          "metadata"
+        ]
+      },
+      "request": {
+        "id": "request_5",
+        "method": "POST",
+        "route": "/contract-fixtures/{resource}",
+        "user_agent": "ExampleBrowser/1",
+        "message_id": "message_5"
+      },
+      "correlation": {
+        "trace_id": "1234567890abcdef1234567890abcde4",
+        "span_id": "1234567890abcde4",
+        "correlation_id": "corr_5",
+        "causation_id": "11111111-1111-4111-8111-000000000004",
+        "operation_id": "operation_mfa_enrolled",
+        "transaction_id": "txn_5",
+        "request_id": "request_5",
+        "message_id": "message_5",
+        "retry_attempt": 0
+      },
+      "risk": {
+        "level": "low",
+        "score": 15,
+        "reason_codes": [
+          "policy_baseline"
+        ],
+        "model": {
+          "name": "fixture-risk",
+          "version": "1.0.0",
+          "provenance": {
+            "trust_level": "derived_server",
+            "derived_from": [
+              "event.outcome",
+              "event.name"
+            ]
+          }
+        }
+      },
+      "data": {
+        "classification": "confidential",
+        "retention_class": "security_elevated",
+        "field_policy_version": "1.1.0"
+      },
+      "integrity": {
+        "transport_authentication": {
+          "method": "mtls",
+          "verified": true,
+          "peer": "producer-registry/ref"
+        }
+      },
+      "authenticated_principal": {
+        "type": "human_user",
+        "id": "principal_5",
+        "issuer": "https://idp.example.test"
+      }
+    }
+  },
+  {
+    "name": "derived-from-empty",
+    "expected_errors": [
+      "DERIVED_FROM_EMPTY_INPUT"
+    ],
+    "event": {
+      "event": {
+        "id": "11111111-1111-4111-8111-000000000005",
+        "name": "bloodtrail.audit.authentication.mfa.enrolled",
+        "category": "authentication",
+        "action": "enroll_mfa",
+        "lifecycle_phase": "completed",
+        "outcome": "success",
+        "outcome_reason": {
+          "code": "completed"
+        },
+        "commit_state": "committed",
+        "timestamp": "2026-07-31T12:04:00.000Z",
+        "observed_at": "2026-07-31T12:04:01.000Z",
+        "delivery_class": "transaction_critical"
+      },
+      "schema": {
+        "name": "com.bloodtrail.security-audit.event",
+        "version": "1.1.0"
+      },
+      "producer": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0",
+        "instance_id": "producer_05"
+      },
+      "environment": {
+        "name": "development"
+      },
+      "service": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0"
+      },
+      "deployment": {
+        "id": "deploy_contract_fixture",
+        "region": "local",
+        "zone": "local-a"
+      },
+      "tenant": {
+        "scope": "tenant",
+        "actor_tenant_id": "tenant_alpha",
+        "effective_tenant_id": "tenant_alpha",
+        "resource_tenant_id": "tenant_alpha"
+      },
+      "actor": {
+        "type": "authenticated_human",
+        "provenance": {
+          "trust_level": "authoritative_server",
+          "source": "authentication_authority"
+        },
+        "id": "authenticated_human_001",
+        "tenant_id": "tenant_alpha"
+      },
+      "subject": {
+        "type": "credential",
+        "id": "credential_subject_5",
+        "tenant_id": "tenant_alpha"
+      },
+      "credential": {
+        "type": "password",
+        "reference": "cred_ref_5",
+        "key_id": "pseudonym-key-v1"
+      },
+      "initiator": {
+        "type": "application",
+        "id": "application_fixture",
+        "version": "1.0.0"
+      },
+      "session": {
+        "id": "session_ref_5",
+        "created_at": "2026-07-31T11:55:00.000Z",
+        "age_seconds": 300,
+        "assurance_level": "aal2"
+      },
+      "authentication": {
+        "method": "session",
+        "assurance_level": "aal2",
+        "mfa_state": "satisfied",
+        "credential_type": "session",
+        "authenticated_at": "2026-07-31T11:55:00.000Z",
+        "identity_provider": "https://idp.example.test",
+        "delegated": false,
+        "impersonated": false
+      },
+      "authorization": {
+        "decision": "allow",
+        "policy_id": "policy.audit-fixture",
+        "policy_version": "1.0.0",
+        "capability": "enroll_mfa",
+        "enforcement_point": "mfa-account-authority",
+        "decision_reason": "accepted",
+        "resource_context": {
+          "type": "credential",
+          "id": "credential_5"
+        },
+        "tenant_context": {
+          "effective_tenant_id": "tenant_alpha"
+        },
+        "override": false,
+        "break_glass": false,
+        "policy_correlation_id": "policy_corr_5"
+      },
+      "source": {
+        "observed": {
+          "address": "203.0.113.10",
+          "port": 443,
+          "proxy_chain": [
+            {
+              "address": "198.51.100.10",
+              "trust_level": "observed_transport",
+              "observed_by": "trusted-ingress"
+            }
+          ]
+        },
+        "client_reported": {
+          "user_agent_family": "ExampleBrowser",
+          "user_agent_version": "1"
+        }
+      },
+      "destination": {
+        "service": "mfa-account-authority",
+        "address": "service.local",
+        "port": 443
+      },
+      "resource": {
+        "type": "credential",
+        "id": "credential_5",
+        "owning_tenant_id": "tenant_alpha",
+        "data_classification": "confidential",
+        "operation_type": "create",
+        "change_categories": [
+          "metadata"
+        ]
+      },
+      "request": {
+        "id": "request_5",
+        "method": "POST",
+        "route": "/contract-fixtures/{resource}",
+        "user_agent": "ExampleBrowser/1",
+        "message_id": "message_5"
+      },
+      "correlation": {
+        "trace_id": "1234567890abcdef1234567890abcde4",
+        "span_id": "1234567890abcde4",
+        "correlation_id": "corr_5",
+        "causation_id": "11111111-1111-4111-8111-000000000004",
+        "operation_id": "operation_mfa_enrolled",
+        "transaction_id": "txn_5",
+        "request_id": "request_5",
+        "message_id": "message_5",
+        "retry_attempt": 0
+      },
+      "risk": {
+        "level": "low",
+        "score": 15,
+        "reason_codes": [
+          "policy_baseline"
+        ],
+        "model": {
+          "name": "fixture-risk",
+          "version": "1.0.0",
+          "provenance": {
+            "trust_level": "derived_server",
+            "derived_from": []
+          }
+        }
+      },
+      "data": {
+        "classification": "confidential",
+        "retention_class": "security_elevated",
+        "field_policy_version": "1.1.0"
+      },
+      "integrity": {
+        "transport_authentication": {
+          "method": "mtls",
+          "verified": true,
+          "peer": "producer-registry/ref"
+        }
+      },
+      "authenticated_principal": {
+        "type": "human_user",
+        "id": "principal_5",
+        "issuer": "https://idp.example.test"
+      }
+    }
+  },
+  {
+    "name": "derived-from-non-derived",
+    "expected_errors": [
+      "DERIVED_FROM_NON_DERIVED"
+    ],
+    "event": {
+      "event": {
+        "id": "11111111-1111-4111-8111-000000000005",
+        "name": "bloodtrail.audit.authentication.mfa.enrolled",
+        "category": "authentication",
+        "action": "enroll_mfa",
+        "lifecycle_phase": "completed",
+        "outcome": "success",
+        "outcome_reason": {
+          "code": "completed"
+        },
+        "commit_state": "committed",
+        "timestamp": "2026-07-31T12:04:00.000Z",
+        "observed_at": "2026-07-31T12:04:01.000Z",
+        "delivery_class": "transaction_critical"
+      },
+      "schema": {
+        "name": "com.bloodtrail.security-audit.event",
+        "version": "1.1.0"
+      },
+      "producer": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0",
+        "instance_id": "producer_05"
+      },
+      "environment": {
+        "name": "development"
+      },
+      "service": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0"
+      },
+      "deployment": {
+        "id": "deploy_contract_fixture",
+        "region": "local",
+        "zone": "local-a"
+      },
+      "tenant": {
+        "scope": "tenant",
+        "actor_tenant_id": "tenant_alpha",
+        "effective_tenant_id": "tenant_alpha",
+        "resource_tenant_id": "tenant_alpha"
+      },
+      "actor": {
+        "type": "authenticated_human",
+        "provenance": {
+          "trust_level": "authoritative_server",
+          "source": "authentication_authority"
+        },
+        "id": "authenticated_human_001",
+        "tenant_id": "tenant_alpha"
+      },
+      "subject": {
+        "type": "credential",
+        "id": "credential_subject_5",
+        "tenant_id": "tenant_alpha"
+      },
+      "credential": {
+        "type": "password",
+        "reference": "cred_ref_5",
+        "key_id": "pseudonym-key-v1"
+      },
+      "initiator": {
+        "type": "application",
+        "id": "application_fixture",
+        "version": "1.0.0"
+      },
+      "session": {
+        "id": "session_ref_5",
+        "created_at": "2026-07-31T11:55:00.000Z",
+        "age_seconds": 300,
+        "assurance_level": "aal2"
+      },
+      "authentication": {
+        "method": "session",
+        "assurance_level": "aal2",
+        "mfa_state": "satisfied",
+        "credential_type": "session",
+        "authenticated_at": "2026-07-31T11:55:00.000Z",
+        "identity_provider": "https://idp.example.test",
+        "delegated": false,
+        "impersonated": false
+      },
+      "authorization": {
+        "decision": "allow",
+        "policy_id": "policy.audit-fixture",
+        "policy_version": "1.0.0",
+        "capability": "enroll_mfa",
+        "enforcement_point": "mfa-account-authority",
+        "decision_reason": "accepted",
+        "resource_context": {
+          "type": "credential",
+          "id": "credential_5"
+        },
+        "tenant_context": {
+          "effective_tenant_id": "tenant_alpha"
+        },
+        "override": false,
+        "break_glass": false,
+        "policy_correlation_id": "policy_corr_5"
+      },
+      "source": {
+        "observed": {
+          "address": "203.0.113.10",
+          "port": 443,
+          "proxy_chain": [
+            {
+              "address": "198.51.100.10",
+              "trust_level": "observed_transport",
+              "observed_by": "trusted-ingress"
+            }
+          ]
+        },
+        "client_reported": {
+          "user_agent_family": "ExampleBrowser",
+          "user_agent_version": "1"
+        }
+      },
+      "destination": {
+        "service": "mfa-account-authority",
+        "address": "service.local",
+        "port": 443
+      },
+      "resource": {
+        "type": "credential",
+        "id": "credential_5",
+        "owning_tenant_id": "tenant_alpha",
+        "data_classification": "confidential",
+        "operation_type": "create",
+        "change_categories": [
+          "metadata"
+        ]
+      },
+      "request": {
+        "id": "request_5",
+        "method": "POST",
+        "route": "/contract-fixtures/{resource}",
+        "user_agent": "ExampleBrowser/1",
+        "message_id": "message_5"
+      },
+      "correlation": {
+        "trace_id": "1234567890abcdef1234567890abcde4",
+        "span_id": "1234567890abcde4",
+        "correlation_id": "corr_5",
+        "causation_id": "11111111-1111-4111-8111-000000000004",
+        "operation_id": "operation_mfa_enrolled",
+        "transaction_id": "txn_5",
+        "request_id": "request_5",
+        "message_id": "message_5",
+        "retry_attempt": 0
+      },
+      "risk": {
+        "level": "low",
+        "score": 15,
+        "reason_codes": [
+          "policy_baseline"
+        ],
+        "model": {
+          "name": "fixture-risk",
+          "version": "1.0.0",
+          "provenance": {
+            "trust_level": "observed_transport",
+            "derived_from": [
+              "event.name",
+              "event.outcome"
+            ]
+          }
+        }
+      },
+      "data": {
+        "classification": "confidential",
+        "retention_class": "security_elevated",
+        "field_policy_version": "1.1.0"
+      },
+      "integrity": {
+        "transport_authentication": {
+          "method": "mtls",
+          "verified": true,
+          "peer": "producer-registry/ref"
+        }
+      },
+      "authenticated_principal": {
+        "type": "human_user",
+        "id": "principal_5",
+        "issuer": "https://idp.example.test"
+      }
+    }
+  },
+  {
+    "name": "derived-from-cycle",
+    "expected_errors": [
+      "DERIVED_FROM_CYCLE"
+    ],
+    "event": {
+      "event": {
+        "id": "11111111-1111-4111-8111-000000000005",
+        "name": "bloodtrail.audit.authentication.mfa.enrolled",
+        "category": "authentication",
+        "action": "enroll_mfa",
+        "lifecycle_phase": "completed",
+        "outcome": "success",
+        "outcome_reason": {
+          "code": "completed"
+        },
+        "commit_state": "committed",
+        "timestamp": "2026-07-31T12:04:00.000Z",
+        "observed_at": "2026-07-31T12:04:01.000Z",
+        "delivery_class": "transaction_critical"
+      },
+      "schema": {
+        "name": "com.bloodtrail.security-audit.event",
+        "version": "1.1.0"
+      },
+      "producer": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0",
+        "instance_id": "producer_05"
+      },
+      "environment": {
+        "name": "development"
+      },
+      "service": {
+        "name": "mfa-account-authority",
+        "version": "1.0.0"
+      },
+      "deployment": {
+        "id": "deploy_contract_fixture",
+        "region": "local",
+        "zone": "local-a"
+      },
+      "tenant": {
+        "scope": "tenant",
+        "actor_tenant_id": "tenant_alpha",
+        "effective_tenant_id": "tenant_alpha",
+        "resource_tenant_id": "tenant_alpha"
+      },
+      "actor": {
+        "type": "authenticated_human",
+        "provenance": {
+          "trust_level": "authoritative_server",
+          "source": "authentication_authority"
+        },
+        "id": "authenticated_human_001",
+        "tenant_id": "tenant_alpha"
+      },
+      "subject": {
+        "type": "credential",
+        "id": "credential_subject_5",
+        "tenant_id": "tenant_alpha"
+      },
+      "credential": {
+        "type": "password",
+        "reference": "cred_ref_5",
+        "key_id": "pseudonym-key-v1"
+      },
+      "initiator": {
+        "type": "application",
+        "id": "application_fixture",
+        "version": "1.0.0"
+      },
+      "session": {
+        "id": "session_ref_5",
+        "created_at": "2026-07-31T11:55:00.000Z",
+        "age_seconds": 300,
+        "assurance_level": "aal2"
+      },
+      "authentication": {
+        "method": "session",
+        "assurance_level": "aal2",
+        "mfa_state": "satisfied",
+        "credential_type": "session",
+        "authenticated_at": "2026-07-31T11:55:00.000Z",
+        "identity_provider": "https://idp.example.test",
+        "delegated": false,
+        "impersonated": false
+      },
+      "authorization": {
+        "decision": "allow",
+        "policy_id": "policy.audit-fixture",
+        "policy_version": "1.0.0",
+        "capability": "enroll_mfa",
+        "enforcement_point": "mfa-account-authority",
+        "decision_reason": "accepted",
+        "resource_context": {
+          "type": "credential",
+          "id": "credential_5"
+        },
+        "tenant_context": {
+          "effective_tenant_id": "tenant_alpha"
+        },
+        "override": false,
+        "break_glass": false,
+        "policy_correlation_id": "policy_corr_5"
+      },
+      "source": {
+        "observed": {
+          "address": "203.0.113.10",
+          "port": 443,
+          "proxy_chain": [
+            {
+              "address": "198.51.100.10",
+              "trust_level": "observed_transport",
+              "observed_by": "trusted-ingress"
+            }
+          ]
+        },
+        "client_reported": {
+          "user_agent_family": "ExampleBrowser",
+          "user_agent_version": "1"
+        }
+      },
+      "destination": {
+        "service": "mfa-account-authority",
+        "address": "service.local",
+        "port": 443
+      },
+      "resource": {
+        "type": "credential",
+        "id": "credential_5",
+        "owning_tenant_id": "tenant_alpha",
+        "data_classification": "confidential",
+        "operation_type": "create",
+        "change_categories": [
+          "metadata"
+        ]
+      },
+      "request": {
+        "id": "request_5",
+        "method": "POST",
+        "route": "/contract-fixtures/{resource}",
+        "user_agent": "ExampleBrowser/1",
+        "message_id": "message_5"
+      },
+      "correlation": {
+        "trace_id": "1234567890abcdef1234567890abcde4",
+        "span_id": "1234567890abcde4",
+        "correlation_id": "corr_5",
+        "causation_id": "11111111-1111-4111-8111-000000000004",
+        "operation_id": "operation_mfa_enrolled",
+        "transaction_id": "txn_5",
+        "request_id": "request_5",
+        "message_id": "message_5",
+        "retry_attempt": 0
+      },
+      "risk": {
+        "level": "low",
+        "score": 15,
+        "reason_codes": [
+          "policy_baseline"
+        ],
+        "model": {
+          "name": "fixture-risk",
+          "version": "1.0.0",
+          "provenance": {
+            "trust_level": "derived_server",
+            "derived_from": [
+              "risk.model.provenance.derived_from"
+            ]
+          }
+        }
+      },
+      "data": {
+        "classification": "confidential",
+        "retention_class": "security_elevated",
+        "field_policy_version": "1.1.0"
       },
       "integrity": {
         "transport_authentication": {

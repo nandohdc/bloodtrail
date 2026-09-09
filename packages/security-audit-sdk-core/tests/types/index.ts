@@ -12,7 +12,7 @@ import { createPaperConsumerSdk } from "../fixtures/paper-consumer/consumer.js";
 
 const sink: AuditEventSink = { async emit() { return { status: "accepted" }; } };
 const sdk = createSecurityAuditSdk({
-  contractVersion: "1.0.0",
+  contractVersion: "1.1.0",
   producer: { name: "producer", version: "1.0.0" },
   service: { name: "service", version: "1.0.0" },
   environment: { name: "test" },
@@ -20,7 +20,7 @@ const sdk = createSecurityAuditSdk({
   retention: { recentGeneratedEventIds: 4096, recentIssuedOperationIds: 4096 },
 });
 // @ts-expect-error retention capacities are numeric, not strings
-createSecurityAuditSdk({ contractVersion: "1.0.0", producer: { name: "p", version: "1.0.0" }, service: { name: "s" }, environment: { name: "e" }, sink, retention: { recentGeneratedEventIds: "4096" } });
+createSecurityAuditSdk({ contractVersion: "1.1.0", producer: { name: "p", version: "1.0.0" }, service: { name: "s" }, environment: { name: "e" }, sink, retention: { recentGeneratedEventIds: "4096" } });
 const known: EventName = "bloodtrail.audit.authentication.succeeded";
 void known;
 // @ts-expect-error unsupported contract versions must not type-check

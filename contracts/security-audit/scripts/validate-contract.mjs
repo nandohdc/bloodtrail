@@ -8,6 +8,7 @@ const source = JSON.parse(await readFile(resolve(root, "source/contract.source.j
 const catalogByName = new Map(source.catalog.map((entry) => [entry.name, entry]));
 const eventNames = new Set(source.catalog.map((entry) => entry.name));
 const fieldByPath = new Map(source.fields.map((field) => [field.p, field]));
+const derivedFieldProvenance = source.derived_field_provenance;
 const allowedParents = new Set();
 for (const field of source.fields) {
   const parts = field.p.split(".");
@@ -86,6 +87,7 @@ function formatOk(field, value) {
 
 function typeBoundsError(event) {
   for (const field of source.fields) {
+    if (field.p === derivedFieldProvenance.field_path) continue;
     const value = get(event, field.p);
     if (value === undefined) continue;
     if (field.t === "array" && !Array.isArray(value)) return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
@@ -100,6 +102,52 @@ function typeBoundsError(event) {
     if (!formatOk(field, value)) return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
   }
   return null;
+}
+
+function derivedFieldProvenanceError(event) {
+  const inputs = get(event, derivedFieldProvenance.field_path);
+  if (inputs === undefined) return null;
+  const { error_codes: codes } = derivedFieldProvenance;
+  if (!Array.isArray(inputs) || inputs.length > derivedFieldProvenance.maximum_inputs) {
+    return diagnostic(codes.malformed, derivedFieldProvenance.field_path, event);
+  }
+  if (inputs.length < derivedFieldProvenance.minimum_inputs) return diagnostic(codes.empty, derivedFieldProvenance.field_path, event);
+  if (inputs.some((input) => typeof input !== "string" || input.length === 0 || input.length > derivedFieldProvenance.maximum_input_length)) {
+    return diagnostic(codes.malformed, derivedFieldProvenance.field_path, event);
+  }
+  if (get(event, derivedFieldProvenance.trust_path) !== derivedFieldProvenance.required_trust) {
+    return diagnostic(codes.non_derived, derivedFieldProvenance.field_path, event);
+  }
+  const seen = new Set();
+  for (const input of inputs) {
+    if (seen.has(input)) return diagnostic(codes.duplicate, derivedFieldProvenance.field_path, event);
+    seen.add(input);
+  }
+  for (let index = 1; index < inputs.length; index += 1) {
+    if (inputs[index - 1] > inputs[index]) return diagnostic(codes.noncanonical_order, derivedFieldProvenance.field_path, event);
+  }
+  for (const input of inputs) {
+    if (input === derivedFieldProvenance.field_path) return diagnostic(codes.cycle, derivedFieldProvenance.field_path, event);
+    if (fieldByPath.has(input)) {
+      if (get(event, input) === undefined) return diagnostic(codes.absent, derivedFieldProvenance.field_path, event);
+      continue;
+    }
+    if (!isPresentRegisteredExtension(event, input)) {
+      const code = isRegisteredExtensionInput(input) ? codes.absent : codes.unresolvable;
+      return diagnostic(code, derivedFieldProvenance.field_path, event);
+    }
+  }
+  return null;
+}
+
+function isRegisteredExtensionInput(input) {
+  if (!input.startsWith("extensions.")) return false;
+  return source.registries.extension_namespaces.includes(input.slice("extensions.".length));
+}
+
+function isPresentRegisteredExtension(event, input) {
+  if (!isRegisteredExtensionInput(input)) return false;
+  return event.extensions?.[input.slice("extensions.".length)] !== undefined;
 }
 
 function unknownField(event) {
@@ -145,6 +193,8 @@ export function validateCanonicalEvent(event) {
   for (const field of source.fields.filter((f) => f.r === "required")) if (get(event, field.p) === undefined) return [diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event)];
   const bounds = typeBoundsError(event);
   if (bounds) return [bounds];
+  const provenance = derivedFieldProvenanceError(event);
+  if (provenance) return [provenance];
   const unknown = unknownField(event);
   if (unknown) return [diagnostic("UNKNOWN_CATALOG_VALUE", unknown, event)];
   return [];

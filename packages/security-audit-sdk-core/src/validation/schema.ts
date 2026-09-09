@@ -1,3 +1,4 @@
+import { DERIVED_FIELD_PROVENANCE } from "../generated/contract.generated.js";
 import validateSchema from "../generated/schema-validator.generated.cjs";
 import type { SecurityAuditEvent } from "../generated/contract.generated.js";
 import type { AuditResult } from "../errors.js";
@@ -45,6 +46,7 @@ interface StandaloneValidationError {
 const SCHEMA_VERSION_PATHS = new Set(["/schema/version", "/schema/name"]);
 const CATALOG_PATHS = new Set(["/event/name", "/event/category", "/event/action", "/event/delivery_class"]);
 const FIELD_LIMIT_KEYWORDS = new Set(["maxLength", "maximum", "maxItems"]);
+const DERIVED_FROM_POINTER = `/${DERIVED_FIELD_PROVENANCE.field_path.replaceAll(".", "/")}`;
 
 function mapRequiredError(error: StandaloneValidationError): string {
   const missing = typeof error.params.missingProperty === "string" ? error.params.missingProperty : "";
@@ -68,6 +70,9 @@ function mapAdditionalPropertiesError(error: StandaloneValidationError, path: st
 function matchPathCode(path: string): string | undefined {
   if (SCHEMA_VERSION_PATHS.has(path)) return "UNSUPPORTED_SCHEMA_VERSION";
   if (CATALOG_PATHS.has(path)) return "UNKNOWN_CATALOG_VALUE";
+  if (path === DERIVED_FROM_POINTER || path.startsWith(`${DERIVED_FROM_POINTER}/`)) {
+    return DERIVED_FIELD_PROVENANCE.error_codes.malformed;
+  }
   if (path.startsWith("/extensions")) return "UNKNOWN_EXTENSION";
   return undefined;
 }

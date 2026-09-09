@@ -1,5 +1,5 @@
 // GENERATED FILE. DO NOT EDIT.
-// Contract: Bloodtrail Security Audit Event Contract 1.0.0
+// Contract: Bloodtrail Security Audit Event Contract 1.1.0
 // Sources: contracts/security-audit/source/contract.source.json and generated contract artifacts.
 export type SecurityAuditEvent = {
   readonly "event": {
@@ -192,6 +192,7 @@ export type SecurityAuditEvent = {
       readonly "version"?: string;
       readonly "provenance"?: {
         readonly "trust_level"?: "authoritative_server" | "verified_assertion" | "observed_transport" | "derived_server" | "downstream_enrichment" | "client_claim" | "unknown";
+        readonly "derived_from"?: ReadonlyArray<string>;
       };
     };
   };
@@ -223,11 +224,11 @@ export type SecurityAuditEvent = {
   };
 };
 
-export const CONTRACT_VERSION = "1.0.0" as const;
+export const CONTRACT_VERSION = "1.1.0" as const;
 
 export const CONTRACT_SCHEMA_NAME = "com.bloodtrail.security-audit.event" as const;
 
-export const CONTRACT_SCHEMA_ID = "https://bloodtrail.dev/contracts/security-audit/1.0.0/security-audit-event.schema.json" as const;
+export const CONTRACT_SCHEMA_ID = "https://bloodtrail.dev/contracts/security-audit/1.1.0/security-audit-event.schema.json" as const;
 
 export const REGISTRIES = {
   "actions": [
@@ -460,7 +461,15 @@ export const REGISTRIES = {
     "MISSING_NATIVE_MAPPING",
     "MAPPING_SCOPE_OVERCLAIM",
     "UNAPPROVED_POLICY_CRITICAL_POSTURE",
-    "UNSUPPORTED_COMPATIBILITY_VERSION"
+    "UNSUPPORTED_COMPATIBILITY_VERSION",
+    "DERIVED_FROM_MALFORMED_INPUT",
+    "DERIVED_FROM_DUPLICATE_INPUT",
+    "DERIVED_FROM_NONCANONICAL_ORDER",
+    "DERIVED_FROM_UNRESOLVABLE_INPUT",
+    "DERIVED_FROM_ABSENT_INPUT",
+    "DERIVED_FROM_EMPTY_INPUT",
+    "DERIVED_FROM_NON_DERIVED",
+    "DERIVED_FROM_CYCLE"
   ]
 } as const;
 
@@ -1316,6 +1325,26 @@ export const EXTENSION_NAMESPACES = [
     ]
   }
 ] as const;
+
+export const DERIVED_FIELD_PROVENANCE = {
+  "canonical_order": "code_point_ascending",
+  "error_codes": {
+    "absent": "DERIVED_FROM_ABSENT_INPUT",
+    "cycle": "DERIVED_FROM_CYCLE",
+    "duplicate": "DERIVED_FROM_DUPLICATE_INPUT",
+    "empty": "DERIVED_FROM_EMPTY_INPUT",
+    "malformed": "DERIVED_FROM_MALFORMED_INPUT",
+    "non_derived": "DERIVED_FROM_NON_DERIVED",
+    "noncanonical_order": "DERIVED_FROM_NONCANONICAL_ORDER",
+    "unresolvable": "DERIVED_FROM_UNRESOLVABLE_INPUT"
+  },
+  "field_path": "risk.model.provenance.derived_from",
+  "maximum_input_length": 256,
+  "maximum_inputs": 32,
+  "minimum_inputs": 1,
+  "required_trust": "derived_server",
+  "trust_path": "risk.model.provenance.trust_level"
+} as const;
 
 export const FIELD_POLICY = [
   {
@@ -2587,6 +2616,16 @@ export const FIELD_POLICY = [
     "retention": "security_elevated",
     "redaction": "role and tenant access policy",
     "compatibility": "stable"
+  },
+  {
+    "path": "risk.model.provenance.derived_from",
+    "authority": "risk_enrichment",
+    "trust": "derived_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
   },
   {
     "path": "data.classification",

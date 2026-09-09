@@ -8,14 +8,14 @@
 
 ## 2. Canonical contract and provenance validation
 
-- [ ] 2.1 Update only `contracts/security-audit/source/contract.source.json` with the `1.1.0` metadata, bounded optional `risk.model.provenance.derived_from` field, closed provenance error vocabulary, and generated-documentation inputs; verify no generated contract artifact is hand-edited.
-- [ ] 2.2 Extend the canonical generation and validation boundary to reject duplicate, non-canonical, unresolvable, absent, empty, non-derived, and cyclic provenance declarations without normalization or unbounded diagnostic echo; verify focused contract tests exercise every stable outcome with null controls.
-- [ ] 2.3 Add canonical valid, absent, malformed, duplicate, unknown, absent-input, unordered, and cyclic provenance fixtures; run contract generation and verify the generated schema, catalog, registries, policies, docs, and examples are current.
+- [x] 2.1 Update only `contracts/security-audit/source/contract.source.json` with the `1.1.0` metadata, bounded optional `risk.model.provenance.derived_from` field, closed provenance error vocabulary, and generated-documentation inputs; verify no generated contract artifact is hand-edited.
+- [x] 2.2 Extend the canonical generation and validation boundary to reject duplicate, non-canonical, unresolvable, absent, empty, non-derived, and cyclic provenance declarations without normalization or unbounded diagnostic echo; verify focused contract tests exercise every stable outcome with null controls.
+- [x] 2.3 Add canonical valid, absent, malformed, duplicate, unknown, absent-input, unordered, and cyclic provenance fixtures; run contract generation and verify the generated schema, catalog, registries, policies, docs, and examples are current.
 
 ## 3. Exact SDK and gate transition
 
-- [ ] 3.1 Regenerate the Core TypeScript and validator projections from the `1.1.0` contract, then verify `npm run check:generated --prefix packages/security-audit-sdk-core` passes without generated-source edits.
-- [ ] 3.2 Move the Core and Node private candidate manifests, lockfiles, and compatibility metadata from `0.1.0` to `0.2.0`; bind Core to exact contract `1.1.0` and verify `1.0.0` fails before readiness. Add a Node compatibility check to `validate` that rejects package, lockfile, compatibility, or installed first-party Core identity drift while Node's frozen export surface remains unchanged.
+- [x] 3.1 Regenerate the Core TypeScript and validator projections from the `1.1.0` contract, then verify `npm run check:generated --prefix packages/security-audit-sdk-core` passes without generated-source edits.
+- [x] 3.2 Move the Core and Node private candidate manifests, lockfiles, and compatibility metadata from `0.1.0` to `0.2.0`; bind Core to exact contract `1.1.0` and verify `1.0.0` fails before readiness. Add a Node compatibility check to `validate` that rejects package, lockfile, compatibility, or installed first-party Core identity drift while Node's frozen export surface remains unchanged.
 - [ ] 3.3 Rebind `contract-provenance.json`, `check-contract-immutability.mjs`, changed-path lifecycle metadata, and their negative verification control to this named governed candidate; verify the new binding accepts only this exact candidate content inventory and continues to reject unrelated or byte-different protected-contract writes.
 
 ## 4. Verification and delivery

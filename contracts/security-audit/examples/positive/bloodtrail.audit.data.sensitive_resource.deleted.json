@@ -16,7 +16,7 @@
   },
   "schema": {
     "name": "com.bloodtrail.security-audit.event",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "producer": {
     "name": "resource-transaction-owner",
@@ -172,7 +172,7 @@
   "data": {
     "classification": "confidential",
     "retention_class": "security_elevated",
-    "field_policy_version": "1.0.0"
+    "field_policy_version": "1.1.0"
   },
   "integrity": {
     "transport_authentication": {

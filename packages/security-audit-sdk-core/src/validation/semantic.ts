@@ -1,4 +1,4 @@
-import { CONTRACT_SCHEMA_NAME, CONTRACT_VERSION, EVENT_CATALOG, EXTENSION_NAMESPACES } from "../generated/contract.generated.js";
+import { CONTRACT_SCHEMA_NAME, CONTRACT_VERSION, DERIVED_FIELD_PROVENANCE, EVENT_CATALOG, EXTENSION_NAMESPACES, FIELD_POLICY } from "../generated/contract.generated.js";
 import type { EventDefinition, EventSemantic, SecurityAuditEvent } from "../generated/contract.generated.js";
 import type { AuditResult } from "../errors.js";
 import { failure, normalizeCanonicalInput } from "../errors.js";
@@ -6,6 +6,9 @@ import { duplicateAuthorityCode } from "../duplicate-copy-probe.js";
 
 const byName = new Map(EVENT_CATALOG.map((entry) => [entry.name, entry]));
 const extensionsByNamespace = new Map(EXTENSION_NAMESPACES.map((entry) => [entry.namespace, entry]));
+const canonicalFieldPaths = new Set(FIELD_POLICY.map((field) => field.path));
+const derivedFromPath = DERIVED_FIELD_PROVENANCE.field_path;
+const derivedFromPointer = `/${derivedFromPath.replaceAll(".", "/")}`;
 const asyncCompletionSemantics = new Set(["account_registration_completed", "password_reset_completed"]);
 const resourceIdentityRequiredSemantics = new Set([
   "sensitive_resource_viewed",
@@ -74,7 +77,58 @@ export function validateBaseSemantics(event: SecurityAuditEvent): AuditResult<Se
   if (!delegationResult.ok) return delegationResult;
   const extensionResult = validateExtensions(event);
   if (!extensionResult.ok) return extensionResult;
+  const provenanceResult = validateDerivedFieldProvenance(event);
+  if (!provenanceResult.ok) return provenanceResult;
   return { ok: true, value: event };
+}
+
+function validateDerivedFieldProvenance(event: SecurityAuditEvent): AuditResult<void> {
+  const inputs = valueAtPath(event, derivedFromPath);
+  if (inputs === undefined) return { ok: true, value: undefined };
+  const { error_codes: codes } = DERIVED_FIELD_PROVENANCE;
+  if (!Array.isArray(inputs) || inputs.length > DERIVED_FIELD_PROVENANCE.maximum_inputs) {
+    return failure(codes.malformed, "validation", derivedFromPointer);
+  }
+  if (inputs.length < DERIVED_FIELD_PROVENANCE.minimum_inputs) return failure(codes.empty, "validation", derivedFromPointer);
+  if (inputs.some((input) => typeof input !== "string" || input.length === 0 || input.length > DERIVED_FIELD_PROVENANCE.maximum_input_length)) {
+    return failure(codes.malformed, "validation", derivedFromPointer);
+  }
+  if (valueAtPath(event, DERIVED_FIELD_PROVENANCE.trust_path) !== DERIVED_FIELD_PROVENANCE.required_trust) {
+    return failure(codes.non_derived, "validation", derivedFromPointer);
+  }
+  const seen = new Set<string>();
+  for (const input of inputs) {
+    if (seen.has(input)) return failure(codes.duplicate, "validation", derivedFromPointer);
+    seen.add(input);
+  }
+  for (let index = 1; index < inputs.length; index += 1) {
+    if (inputs[index - 1] > inputs[index]) return failure(codes.noncanonical_order, "validation", derivedFromPointer);
+  }
+  for (const input of inputs) {
+    if (input === derivedFromPath) return failure(codes.cycle, "validation", derivedFromPointer);
+    if (canonicalFieldPaths.has(input)) {
+      if (valueAtPath(event, input) === undefined) return failure(codes.absent, "validation", derivedFromPointer);
+      continue;
+    }
+    if (!isRegisteredExtensionPath(input)) return failure(codes.unresolvable, "validation", derivedFromPointer);
+    const namespace = input.slice("extensions.".length);
+    if (!event.extensions || !Object.hasOwn(event.extensions, namespace)) {
+      return failure(codes.absent, "validation", derivedFromPointer);
+    }
+  }
+  return { ok: true, value: undefined };
+}
+
+function valueAtPath(value: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((current, segment) => {
+    if (current === null || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[segment];
+  }, value);
+}
+
+function isRegisteredExtensionPath(input: string): boolean {
+  if (!input.startsWith("extensions.")) return false;
+  return extensionsByNamespace.has(input.slice("extensions.".length) as (typeof EXTENSION_NAMESPACES)[number]["namespace"]);
 }
 
 function validateCommit(event: SecurityAuditEvent, definition: EventDefinition): AuditResult<void> {

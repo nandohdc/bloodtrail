@@ -9,7 +9,7 @@ import { resolve } from "node:path";
 import { createSecurityAuditSdk } from "./dist/index.js";
 
 const baseConfiguration = (sink, shutdownTimeoutMs) => ({
-  contractVersion: "1.0.0",
+  contractVersion: "1.1.0",
   producer: { name: "f07-test-producer", version: "1.0.0" },
   service: { name: "f07-test-service", version: "1.0.0" },
   environment: { name: "test" },

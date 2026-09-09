@@ -1270,6 +1270,16 @@
     "compatibility": "stable"
   },
   {
+    "path": "risk.model.provenance.derived_from",
+    "authority": "risk_enrichment",
+    "trust": "derived_server",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_elevated",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
     "path": "data.classification",
     "authority": "data_privacy_delivery",
     "trust": "authoritative_server",

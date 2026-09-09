@@ -101,7 +101,7 @@ function createHarness(options: {
     },
   }]) as readonly AuditFieldTransformationHook[];
   const sdk = createSecurityAuditSdk({
-    contractVersion: "1.0.0",
+    contractVersion: "1.1.0",
     producer: { name: "f11-test", version: "1.0.0" },
     service: { name: "f11-test", version: "1.0.0" },
     environment: { name: "test" },

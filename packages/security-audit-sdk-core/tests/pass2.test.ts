@@ -94,6 +94,16 @@ test("all approved negative fixtures fail with exact safe codes and no secret ec
   }
 });
 
+test("derived provenance accepts canonical inputs and preserves optional absence", async () => {
+  const fixtures = await positives();
+  const withProvenance = fixtures.find((event) => event.risk?.model?.provenance?.derived_from);
+  const withoutProvenance = fixtures.find((event) => !event.risk?.model?.provenance?.derived_from);
+  assert.ok(withProvenance, "expected one generated valid provenance fixture");
+  assert.ok(withoutProvenance, "expected one generated absent-provenance control");
+  assert.equal(validateSecurityAuditEvent(withProvenance).ok, true);
+  assert.equal(validateSecurityAuditEvent(withoutProvenance).ok, true);
+});
+
 test("named APIs cover all 24 catalog events using authoritative construction", async () => {
   const sink = createCapturingAuditSink();
   const sdk = createSdk(sink, deterministicProviders());
@@ -775,7 +785,7 @@ test("concurrent terminal success reserves once before validation and sink hando
     },
   };
   const sdk = createSecurityAuditSdk({
-    contractVersion: "1.0.0",
+    contractVersion: "1.1.0",
     producer: { name: "sdk-test-producer", version: "1.0.0" },
     service: { name: "sdk-test-service", version: "1.0.0" },
     environment: { name: "test" },
@@ -1185,7 +1195,7 @@ test("required asynchronous completion events reject success without causation a
 test("privacy transformations, registered extensions, provider checks, and sink failures are bounded", async () => {
   const transformedSink = createCapturingAuditSink();
   const sdk = createSecurityAuditSdk({
-    contractVersion: "1.0.0",
+    contractVersion: "1.1.0",
     producer: { name: "sdk-test-producer", version: "1.0.0" },
     service: { name: "sdk-test-service", version: "1.0.0" },
     environment: { name: "test" },
@@ -1207,7 +1217,7 @@ test("privacy transformations, registered extensions, provider checks, and sink 
   // F-10: intrinsically untransformable paths now fail at construction instead of failing every event.
   assert.throws(
     () => createSecurityAuditSdk({
-      contractVersion: "1.0.0",
+      contractVersion: "1.1.0",
       producer: { name: "sdk-test-producer", version: "1.0.0" },
       service: { name: "sdk-test-service", version: "1.0.0" },
       environment: { name: "test" },
@@ -1229,7 +1239,7 @@ test("privacy transformations, registered extensions, provider checks, and sink 
   // F-10: policy-listed but runtime-ineligible paths also fail at construction.
   assert.throws(
     () => createSecurityAuditSdk({
-      contractVersion: "1.0.0",
+      contractVersion: "1.1.0",
       producer: { name: "sdk-test-producer", version: "1.0.0" },
       service: { name: "sdk-test-service", version: "1.0.0" },
       environment: { name: "test" },
@@ -1249,7 +1259,7 @@ test("privacy transformations, registered extensions, provider checks, and sink 
   );
 
   const promiseHookSdk = createSecurityAuditSdk({
-    contractVersion: "1.0.0",
+    contractVersion: "1.1.0",
     producer: { name: "sdk-test-producer", version: "1.0.0" },
     service: { name: "sdk-test-service", version: "1.0.0" },
     environment: { name: "test" },
@@ -1423,7 +1433,7 @@ function createSdk(sink: ReturnType<typeof createCapturingAuditSink>, identifier
 
 function createSdkWithSink(sink: AuditEventSink, identifiers: AuditIdentifierProvider, shutdownTimeoutMs: number) {
   return createSecurityAuditSdk({
-    contractVersion: "1.0.0",
+    contractVersion: "1.1.0",
     producer: { name: "sdk-test-producer", version: "1.0.0" },
     service: { name: "sdk-test-service", version: "1.0.0" },
     environment: { name: "test" },

@@ -37,7 +37,7 @@ assert(packageJson.exports["./testing"].require === undefined, "CommonJS testing
 
 const sink = Object.freeze({ emit: async () => Object.freeze({ status: "accepted" }) });
 const sdk = createSecurityAuditSdk({
-  contractVersion: "1.0.0",
+  contractVersion: "1.1.0",
   producer: { name: "compatibility-check", version: "1.0.0" },
   service: { name: "compatibility-check" },
   environment: { name: "test" },
