@@ -148,10 +148,11 @@
     "implementation-transaction-critical-order-is-observable": {
       "task_ids": [
         "2.3",
-        "2.5"
+        "2.5",
+        "2.6"
       ],
       "evidence_ids": [
-        "unreachable durability fails closed with the commit gate never invoked, a declined commit leaves the occurrence short of the durability point, and each failed_closed result records whether the gate ran and whether durability was attempted"
+        "unreachable durability fails closed with the commit gate never invoked, a declined commit leaves the occurrence short of the durability point, each failed_closed result records whether the gate ran and whether durability was attempted, and admission is decided in one synchronous step so a concurrent duplicate is refused rather than claimed delivered"
       ]
     },
     "implementation-policy-critical-has-no-default": {
@@ -194,6 +195,7 @@
     "2.3",
     "2.4",
     "2.5",
+    "2.6",
     "3.1",
     "3.2",
     "3.3",

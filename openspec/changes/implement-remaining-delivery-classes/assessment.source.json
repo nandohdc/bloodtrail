@@ -120,10 +120,11 @@
     "implementation-transaction-critical-order-is-observable": {
       "task_ids": [
         "2.3",
-        "2.5"
+        "2.5",
+        "2.6"
       ],
       "evidence_ids": [
-        "unreachable durability fails closed with the commit gate never invoked, a declined commit leaves the occurrence short of the durability point, and each failed_closed result records whether the gate ran and whether durability was attempted"
+        "unreachable durability fails closed with the commit gate never invoked, a declined commit leaves the occurrence short of the durability point, each failed_closed result records whether the gate ran and whether durability was attempted, and admission is decided in one synchronous step so a concurrent duplicate is refused rather than claimed delivered"
       ]
     },
     "implementation-policy-critical-has-no-default": {
@@ -159,7 +160,7 @@
     "audit_integrity": "Makes silent class substitution impossible in both directions, so an occurrence the catalog declares transaction-critical can never be carried by the loss-tolerating path, and a best-effort drop can never be reported as a delivery.",
     "authentication_or_authorization": "Changes no authentication or authorization behaviour; the bindings carry occurrences that were already constructed and validated by the core, and add no principal, credential, or permission.",
     "authority_provenance": "Adds no authority: a binding cannot alter an occurrence, and the policy-critical record names the approving policy owner and the review reference rather than letting the code assert its own approval.",
-    "concurrency": "Each binding is a per-occurrence policy with no shared scheduling; the only cross-call state is the transaction-critical deduplication set, which records an identity only after a delivery reached durability, so an interleaved failure cannot mark an undelivered occurrence as duplicate.",
+    "concurrency": "Admission \u2014 the duplicate check and its reservation \u2014 is decided in one synchronous step before any await, so a concurrently reachable duplicate is refused with its own outcome rather than reported delivered or put through a second commit gate; the reservation is released on success and on failure alike, so no failure leaks a key and permanently suppresses an audit record.",
     "confidentiality": "No occurrence content enters any counter, signal, refusal outcome, or thrown message; results carry event identity, transaction identity, and enumerated codes only.",
     "cryptography": "Introduces no cryptography and makes no integrity claim requiring any; no chaining, hashing, or tamper-evident linking is designed or implied.",
     "error_disclosure": "Every refusal is an enumerated code naming the violated condition, and the policy-critical construction failure names the missing field rather than echoing any caller-supplied value.",

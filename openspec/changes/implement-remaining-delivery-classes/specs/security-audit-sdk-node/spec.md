@@ -119,6 +119,13 @@ duplicate.
 Only a delivery that reached durability SHALL be recorded for deduplication; an occurrence that
 failed closed SHALL remain deliverable on a later attempt.
 
+A pair that is already in flight SHALL be **refused** with a distinct outcome rather than reported as
+already delivered, because the first attempt has not finished and claiming delivery would be a
+premature success. The duplicate check and the reservation that follows it SHALL be decided in one
+step with no interleaving point between them, so that a concurrently reachable duplicate is
+impossible rather than merely unlikely. A reservation SHALL be released whether the attempt succeeds
+or fails.
+
 #### Scenario: A missing transaction identifier is refused
 - **WHEN** an occurrence is offered without a transaction identifier
 - **THEN** it is refused and neither the durability probe nor the commit gate runs
@@ -133,7 +140,13 @@ failed closed SHALL remain deliverable on a later attempt.
 
 #### Scenario: A failed delivery stays retryable
 - **WHEN** a delivery fails closed and the same pair is offered again
-- **THEN** it is attempted again rather than reported as a duplicate
+- **THEN** it is attempted again rather than reported as a duplicate, the reservation having been
+  released
+
+#### Scenario: A concurrently reachable duplicate is refused, not claimed delivered
+- **WHEN** the same pair is offered again while the first attempt is still in flight
+- **THEN** the second is refused with an outcome distinct from already-delivered, and only one
+  occurrence reaches the durability point
 
 ### Requirement: Policy-critical delivery is blocked without a recorded policy-owner decision
 
