@@ -33,3 +33,7 @@
 ## Open Questions
 
 None — #111's acceptance criteria and #110's already-corrected pattern fully determine this design.
+
+## Fold-time correction
+
+Discovered during fold review (not caught at proposal time): the existing `security-audit-sdk-node` requirement "Package boundaries enforce standalone topology and zero third-party dependencies" hardcoded a scenario asserting the package's API surface is "explicitly marked provisional and unfrozen" — a claim this change makes false. Unlike sdk-core's founding-requirement collision (#110), this package has no `check-coherence.mjs`-style immutability gate, so nothing would have caught the contradiction mechanically; it would have shipped as two contradictory `SHALL` statements in the same spec. The delta spec now carries a `MODIFIED Requirements` section correcting this: the requirement text and scenario no longer assert a fixed provisional/unfrozen state, but instead require the declared stability state to match whatever the new frozen-surface requirement's conditions actually are. The other two scenarios under that requirement are carried forward unchanged.
