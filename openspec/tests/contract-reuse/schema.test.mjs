@@ -84,8 +84,8 @@ describe("CRA closed schema", () => {
     assert.equal(schema?.id, "contract-reuse");
     assert.deepEqual(schema?.supported_versions, ["1.0"]);
     assert.deepEqual(Object.keys(schema?.records ?? {}).sort(), ["assessment", "exemption"]);
-    assert.deepEqual(schema?.records.assessment.fields.contract.enum, ["security-audit@1.0.0"]);
-    assert.deepEqual(schema?.records.exemption.fields.contract.enum, ["security-audit@1.0.0"]);
+    assert.deepEqual(schema?.records.assessment.fields.contract.enum, ["security-audit@1.0.0", "security-audit@1.1.0"]);
+    assert.deepEqual(schema?.records.exemption.fields.contract.enum, ["security-audit@1.0.0", "security-audit@1.1.0"]);
     assert.deepEqual(schema?.records.assessment.rules.map((rule) => rule.id).sort(), RULE_IDS);
     assert.deepEqual(schema?.records.exemption.rules, []);
     assert.deepEqual(craAssessmentRuleIds, RULE_IDS);
@@ -208,7 +208,7 @@ describe("CRA identity and shared field-table failures", () => {
 
   it("rejects every unsupported contract version", () => {
     const sink = assess((record) => {
-      record.contract = "security-audit@1.1.0";
+      record.contract = "security-audit@2.0.0";
     });
 
     assertDiagnostic(sink, "schema-enum");
