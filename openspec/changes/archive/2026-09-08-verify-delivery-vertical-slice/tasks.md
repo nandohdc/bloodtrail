@@ -24,8 +24,8 @@
 ## 5. Deliver and archive
 
 - [x] 5.1 Open the proposal PR (planning artifacts only); merge only when every required branch-protection context is green on the exact head. — PR #397, merged `2833852`.
-- [ ] 5.2 Open the harness-and-evidence PR (section 2–4 changes, entirely inside this change's own directory); merge only when every required branch-protection context is green on the exact head.
-- [ ] 5.3 Archive the completed change with byte-preserving relocation and `archive-evidence.md`; verify strict OpenSpec validation and the repository's governance-gate chain, then merge as a merge commit.
+- [x] 5.2 Open the harness-and-evidence PR (section 2–4 changes, entirely inside this change's own directory); merge only when every required branch-protection context is green on the exact head. — PR #398, merged `f225cf9`.
+- [x] 5.3 Archive the completed change with byte-preserving relocation and `archive-evidence.md`; verify strict OpenSpec validation and the repository's governance-gate chain, then merge as a merge commit.
 
 ## 6. Hand off and close
 
