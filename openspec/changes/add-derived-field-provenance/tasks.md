@@ -20,8 +20,8 @@
 
 ## 4. Verification and delivery
 
-- [ ] 4.1 Run `npm run validate --prefix contracts/security-audit`, Core generated/compatibility checks and `npm run validate --prefix packages/security-audit-sdk-core`, and `npm run validate --prefix packages/security-audit-sdk-node`; record each exact result.
-- [ ] 4.2 Run `npx --yes @fission-ai/openspec@latest validate --all --strict`, `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment`, `node openspec/scripts/check-design-pattern-governance.mjs --phase final`, `node openspec/scripts/run-governance-dual-check.mjs`, and `git diff --check`; verify no governance or whitespace failure remains.
+- [x] 4.1 Run `npm run validate --prefix contracts/security-audit`, Core generated/compatibility checks and `npm run validate --prefix packages/security-audit-sdk-core`, and `npm run validate --prefix packages/security-audit-sdk-node`; record each exact result. — At exact head `48a5bb48b5b53894e44a7d5f5c9d99432a596134`, contract validation passed 14 checks; Core validation passed generated/type/build/compatibility/package/governance checks, 117 runtime tests, and 284 fail-closed verification tests; Node validation passed type/build/scope/frozen-export/compatibility/dependency/package checks and 103 runtime tests.
+- [x] 4.2 Run `npx --yes @fission-ai/openspec@latest validate --all --strict`, `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment`, `node openspec/scripts/check-design-pattern-governance.mjs --phase final`, `node openspec/scripts/run-governance-dual-check.mjs`, and `git diff --check`; verify no governance or whitespace failure remains. — At exact head `48a5bb48b5b53894e44a7d5f5c9d99432a596134`, strict OpenSpec passed 14 items, assessment and final design governance passed, the dual checker passed, and Git whitespace/index checks passed.
 - [x] 4.3 Commit the assessed implementation with a Conventional Commit, push the branch, and open the implementation PR using every section of the repository template; verify its head is rebased on `origin/main` and the PR cites #95 without prematurely closing it.
 
 ## 5. Canonicalization and lifecycle closure
