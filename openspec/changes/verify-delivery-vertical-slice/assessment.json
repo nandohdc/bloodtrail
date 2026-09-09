@@ -1,0 +1,146 @@
+{
+  "schema_version": "1.1",
+  "change_id": "verify-delivery-vertical-slice",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The evidence must be produced without modifying security-audit-sdk-node or security-audit-collector source, even when an arm's result is unexpected, so that a defect discovered here is a finding, not a fix folded into the same pass.",
+    "The harness needs both packages' real logic wired together, but neither package may gain a cross-package runtime or dev dependency, and there is no root workspace to host a shared test package.",
+    "The evidence must score only scenarios the implemented security_significant class can exercise, and record the other three classes' scenarios as not exercised rather than misrepresenting them as PASS.",
+    "The pass is not independently actored (no separate-reviewer mechanism exists in this delivery chain, unlike #60's remediation lifecycle), so the evidence document must say so rather than imply an independence it cannot provide."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "integration"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "delivery-conformance-contract"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/verify-delivery-vertical-slice/"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-verify-delivery-vertical-slice",
+      "kind": "direct_implementation",
+      "summary": "A harness script living inside this change's own directory imports each package's built dist/ output via relative paths, routes the producer's HTTP handoff into a real in-process CollectorIngress through a fake exchange, and runs nine injection arms three times each, publishing a PASS/FAIL/not-exercised evidence matrix.",
+      "forces_addressed": [
+        "The evidence must be produced without modifying security-audit-sdk-node or security-audit-collector source, even when an arm's result is unexpected, so that a defect discovered here is a finding, not a fix folded into the same pass.",
+        "The harness needs both packages' real logic wired together, but neither package may gain a cross-package runtime or dev dependency, and there is no root workspace to host a shared test package.",
+        "The evidence must score only scenarios the implemented security_significant class can exercise, and record the other three classes' scenarios as not exercised rather than misrepresenting them as PASS.",
+        "The pass is not independently actored (no separate-reviewer mechanism exists in this delivery chain, unlike #60's remediation lifecycle), so the evidence document must say so rather than imply an independence it cannot provide."
+      ]
+    },
+    {
+      "id": "approach-new-shared-test-package",
+      "kind": "alternative",
+      "summary": "Create a new permanent npm workspace/package dedicated to cross-package integration tests, with its own package.json depending on both packages.",
+      "forces_addressed": [
+        "The harness needs both packages' real logic wired together, but neither package may gain a cross-package runtime or dev dependency, and there is no root workspace to host a shared test package."
+      ]
+    },
+    {
+      "id": "approach-mocked-collector",
+      "kind": "alternative",
+      "summary": "Exercise only the producer side against a hand-written mock of collector responses, without a real CollectorIngress instance.",
+      "forces_addressed": [
+        "The harness needs both packages' real logic wired together, but neither package may gain a cross-package runtime or dev dependency, and there is no root workspace to host a shared test package."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-verify-delivery-vertical-slice",
+  "rejected_alternative_ids": [
+    "approach-new-shared-test-package",
+    "approach-mocked-collector"
+  ],
+  "rejection_reasons": {
+    "approach-new-shared-test-package": {
+      "forces": [
+        "The harness needs both packages' real logic wired together, but neither package may gain a cross-package runtime or dev dependency, and there is no root workspace to host a shared test package."
+      ],
+      "reason": "A new permanent workspace needs its own CI wiring, Node-engines declaration, and package-discovery registration to match this repository's existing package conventions — disproportionate for a one-time evidence pass that #109 itself scopes as verification, not a new shipped capability. It would also outlive this OpenSpec change, unlike the harness-in-the-change-directory approach, which relocates and closes cleanly on archive."
+    },
+    "approach-mocked-collector": {
+      "forces": [
+        "The evidence must be produced without modifying security-audit-sdk-node or security-audit-collector source, even when an arm's result is unexpected, so that a defect discovered here is a finding, not a fix folded into the same pass."
+      ],
+      "reason": "#109's own acceptance criteria require exercising real producer-to-collector delivery, not a hand-written stand-in for the collector's authentication, schema, version, and deduplication stages — a mock could not have surfaced #391, which #102's own vertical-slice reasoning depends on catching."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-no-production-source-modified",
+    "implementation-nine-arm-determinism",
+    "implementation-scoped-to-security-significant"
+  ],
+  "invariant_evidence": {
+    "implementation-no-production-source-modified": {
+      "task_ids": [
+        "2.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "the PR diff touches only openspec/changes/verify-delivery-vertical-slice/; no path under packages/ is modified"
+      ]
+    },
+    "implementation-nine-arm-determinism": {
+      "task_ids": [
+        "3.1",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "evidence.md records three runs per arm with identical observed result classes"
+      ]
+    },
+    "implementation-scoped-to-security-significant": {
+      "task_ids": [
+        "4.1"
+      ],
+      "evidence_ids": [
+        "evidence.md's matrix marks every best_effort/transaction_critical/policy_critical scenario as not exercised, never PASS"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "The harness generates only synthetic fixture events through already-audited producer and collector code; it introduces no new audit-event path and asserts no new audit-integrity property.",
+    "authentication_or_authorization": "The harness exercises the collector's existing SyntheticFixtureAuthenticator with valid and deliberately invalid fixture credentials; it adds no new authentication mechanism or path.",
+    "authority_provenance": "No new authority or trust claim is introduced; the harness only observes outcomes already produced by authorized, merged code.",
+    "concurrency": "The harness runs each arm sequentially and awaits every promise; it introduces no new concurrency primitive beyond what the existing backpressure and shutdown components already provide.",
+    "confidentiality": "Only synthetic, non-production fixture data is used throughout; the evidence document contains no secret or credential material.",
+    "cryptography": "No cryptographic algorithm, key, or secret handling is introduced.",
+    "error_disclosure": "The evidence document records bounded result classes and codes already defined by the delivery-conformance-contract and each package's own diagnostics; no new error surface is created.",
+    "external_security_integration": "The fake network peer is entirely in-process; no external service, transport, or security integration is introduced.",
+    "fail_posture": "The harness verifies, without altering, the existing fail-closed posture of validation-before-admission and conflict-detection; a fail-posture regression discovered here is recorded as a finding, not fixed.",
+    "lifecycle": "The harness's own process lifecycle is a single run-to-completion script with no persistent state, timer, or background process beyond the deterministic fakes it constructs.",
+    "mutation_ownership": "All new files live under this change's own directory; no path under packages/ or contracts/ is modified.",
+    "privacy_transformation": "No personal data is introduced; all fixtures are synthetic, matching the collector's own non-production scope.",
+    "resource_retention": "The harness holds no data beyond the lifetime of its own run; it creates no durable or long-lived resource.",
+    "retry_or_redelivery": "The harness exercises, without changing, the existing bounded retry and deduplication behavior; the duplicate arm specifically verifies #391's fix without modifying it.",
+    "trust_boundary": "The harness operates entirely within the already-authorized collector/producer boundary (#107/#108); it adds no new trust boundary and authorizes no new capability."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "7f74c6e3a79560ab24000f45e51d4f22df812404"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3",
+    "4.1",
+    "4.2",
+    "4.3",
+    "5.1",
+    "5.2",
+    "5.3",
+    "6.1",
+    "6.2",
+    "6.3"
+  ]
+}
