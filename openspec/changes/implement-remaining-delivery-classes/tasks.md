@@ -29,5 +29,5 @@
 
 ## 5. Fold and archive
 
-- [ ] 5.1 Fold the `security-audit-sdk-node` delta into `openspec/specs/security-audit-sdk-node/spec.md` in a dedicated commit and PR while this change is active; verify each requirement and scenario occurs exactly once, that no delta header reaches the canonical spec, and that a second application of the delta is a no-op.
-- [ ] 5.2 Archive the active change after merge in a separate byte-preserving relocation commit that does not repeat the fold and does not touch `openspec/specs/**`; verify strict OpenSpec validation and that the relocation changes no contract, package, or workflow path.
+- [x] 5.1 Fold the `security-audit-sdk-node` delta into `openspec/specs/security-audit-sdk-node/spec.md` in a dedicated commit and PR while this change is active; verify each requirement and scenario occurs exactly once, that no delta header reaches the canonical spec, and that a second application of the delta is a no-op.
+- [x] 5.2 Archive the active change after merge in a separate byte-preserving relocation commit that does not repeat the fold and does not touch `openspec/specs/**`; verify strict OpenSpec validation and that the relocation changes no contract, package, or workflow path.
