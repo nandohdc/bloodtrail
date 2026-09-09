@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@1.0.0",
+  "mode": "assessment",
+  "disposition": "extend",
+  "mechanism_references": ["registries.trust_levels"],
+  "compatibility_classification": "minor",
+  "rationale": "The change adds optional material-input provenance only beside the existing derived risk model and relies on the contract's registered trust-level mechanism to determine when that provenance is meaningful. It therefore extends the current security-audit contract rather than creating a parallel evidence boundary.",
+  "trust_boundary": "Provenance names fields already present in one canonical event and is accepted only when the existing derived_server trust assertion is present. No new producer, authority, or cross-process trust boundary is introduced by the optional declaration.",
+  "transformation_ownership": "The event producer remains responsible for declaring the canonical inputs that materially informed its derived risk result. Contract validation owns bounded resolution and rejection; downstream consumers receive no new transformation responsibility.",
+  "alternatives": [
+    {
+      "approach": "reuse",
+      "rejection_reason": "The existing contract has no field that records which canonical inputs informed a derived result, so merely reusing its current fields would leave the risk-model trust claim non-reproducible."
+    },
+    {
+      "approach": "new_contract",
+      "rejection_reason": "The provenance is attached to an existing derived risk model, uses the existing trust-level registry, and has no independent producer or lifecycle. A separate contract would fragment one event's audit semantics."
+    }
+  ],
+  "author": { "name": "Fernando Homem da Costa (nandohdc)", "handle": "nandohdc" },
+  "evidence_references": ["openspec/changes/add-derived-field-provenance/design.md"],
+  "assurance_limitations": [
+    "This assessment classifies the semantic relationship to the existing contract; it does not replace generated-artifact validation, exact-version binding, protected-path review, or security review."
+  ]
+}
