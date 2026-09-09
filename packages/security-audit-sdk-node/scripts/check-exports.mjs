@@ -9,21 +9,28 @@ import { readFile } from "node:fs/promises";
 // in the same governed change; see
 // packages/security-audit-sdk-node/adr/001-frozen-public-api-surface.md.
 const FROZEN_VALUE_EXPORTS = [
-  "NodeContextProvider", "createBoundedDeliveryBackpressure", "createBoundedDeliveryRetry",
-  "createDeliveryShutdown", "createHttpDeliveryHandoff", "createNodeSecurityAuditSdk",
-  "nodeByteLength", "nodeClock", "nodeContextProvider", "nodeIdentifiers", "nodePlatformProvider",
-  "nodeSchemaRuntime", "nodeTimers",
+  "BEST_EFFORT_LOSS_CEILING", "NodeContextProvider", "createBestEffortDelivery",
+  "createBoundedDeliveryBackpressure", "createBoundedDeliveryRetry", "createDeliveryShutdown",
+  "createHttpDeliveryHandoff", "createNodeSecurityAuditSdk", "createPolicyCriticalDelivery",
+  "createTransactionCriticalDelivery", "nodeByteLength", "nodeClock", "nodeContextProvider",
+  "nodeIdentifiers", "nodePlatformProvider", "nodeSchemaRuntime", "nodeTimers",
 ];
 
 const FROZEN_TYPE_EXPORTS = [
-  "DeliveryAdmissionResult", "DeliveryBackpressure", "DeliveryBackpressureObservability",
-  "DeliveryBackpressureOptions", "DeliveryRetry", "DeliveryRetryJitterSource",
-  "DeliveryRetryObservability", "DeliveryRetryOptions", "DeliveryRetryResult", "DeliveryShutdown",
-  "DeliveryShutdownOptions", "DeliveryShutdownReport", "DeliveryShutdownSubmission",
-  "DeliveryShutdownSubmitResult", "HttpAcknowledgment", "HttpDeliveryHandoff",
+  "BestEffortDelivery", "BestEffortDeliveryOptions", "BestEffortDeliveryResult",
+  "BestEffortObservability", "BusinessCommitGate", "DeliveryAdmissionResult",
+  "DeliveryBackpressure", "DeliveryBackpressureObservability", "DeliveryBackpressureOptions",
+  "DeliveryClassGuarantees", "DeliveryClassHealthSignal", "DeliveryClassRefusalCode",
+  "DeliveryRetry", "DeliveryRetryJitterSource", "DeliveryRetryObservability",
+  "DeliveryRetryOptions", "DeliveryRetryResult", "DeliveryShutdown", "DeliveryShutdownOptions",
+  "DeliveryShutdownReport", "DeliveryShutdownSubmission", "DeliveryShutdownSubmitResult",
+  "GovernedDeliveryClass", "HttpAcknowledgment", "HttpDeliveryHandoff",
   "HttpDeliveryHandoffOptions", "HttpDeliveryHandoffResult", "HttpExchange", "HttpExchangeOutcome",
   "HttpExchangeRequest", "NodePlatformProvider", "NodeSecurityAuditSdkConfiguration",
-  "NodeTimerHandle",
+  "NodeTimerHandle", "PolicyCriticalBehavior", "PolicyCriticalDelivery",
+  "PolicyCriticalDeliveryOptions", "PolicyCriticalDeliveryResult", "PolicyOwnerDecisionRecord",
+  "TransactionCriticalDelivery", "TransactionCriticalDeliveryOptions",
+  "TransactionCriticalDeliveryResult",
 ];
 
 // #111's acceptance criteria: the Node surface reuses core semantic types

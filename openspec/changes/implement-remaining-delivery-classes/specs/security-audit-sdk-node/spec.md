@@ -53,7 +53,11 @@ A `best_effort` binding SHALL make exactly one attempt per occurrence and SHALL 
 An occurrence that is not acknowledged SHALL be dropped, SHALL increment a loss counter, and SHALL be
 reported with a status distinct from delivery. The loss counter SHALL be **bounded**: it SHALL
 saturate at a declared ceiling rather than growing without limit or wrapping, and reaching the
-ceiling SHALL itself be observable.
+ceiling SHALL itself be observable, signalled once rather than on every subsequent drop.
+
+The ceiling SHALL be readable from the binding and SHALL be configurable within a bounded range, so
+that saturation is a behaviour a test can reach rather than a claim asserted about a value no test
+can drive to. A ceiling that is not a bounded positive integer SHALL fail at construction.
 
 A `best_effort` binding SHALL declare that it does not provide the `security_significant`
 guarantees. Its shutdown SHALL return without delay, and SHALL emit a health signal carrying the
@@ -69,8 +73,13 @@ absent.
 - **THEN** each made exactly one attempt at ordinal zero
 
 #### Scenario: The loss counter is bounded
-- **WHEN** the loss ceiling is reached
-- **THEN** the counter saturates rather than wrapping, and reaching the ceiling is signalled
+- **WHEN** drops continue past the configured loss ceiling
+- **THEN** the counter saturates at the ceiling rather than wrapping or growing, and reaching the
+  ceiling is signalled exactly once
+
+#### Scenario: An unbounded ceiling is refused
+- **WHEN** a binding is constructed with a loss ceiling that is not a bounded positive integer
+- **THEN** construction fails, and omitting the ceiling uses the declared default
 
 #### Scenario: Shutdown is immediate and claims nothing
 - **WHEN** a `best_effort` binding is shut down after a loss
