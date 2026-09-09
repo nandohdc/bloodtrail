@@ -39,10 +39,12 @@ npm run validate --prefix contracts/security-audit             # Contract valida
 npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry  # Research harness (~15s)
 
 # Full gate chains — run before pushing
-make governance-gates                                           # Runs full validation across workspaces (states cost upfront)
+make governance-gates                                           # Runs full validation across every declared workspace (~307s; states cost upfront)
 # or via direct workspace commands:
-# SDK validate (~291s): dominant cost (~254s) is test:verification (governance gate mutation testing, proving gates fail closed, not product test assertions)
+# sdk-core validate (~291s on its own): dominant cost (~254s) is test:verification (governance gate mutation testing, proving gates fail closed, not product test assertions)
 npm run validate --prefix packages/security-audit-sdk-core
+npm run validate --prefix packages/security-audit-sdk-node
+npm run validate --prefix packages/security-audit-collector
 npm run validate --prefix contracts/security-audit
 
 # Matrix-safe subset (no git/package/coherence gates) — also used when running across Node majors

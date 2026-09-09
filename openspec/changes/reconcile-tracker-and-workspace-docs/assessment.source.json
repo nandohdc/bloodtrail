@@ -5,7 +5,8 @@
     "The triage mapping justifies itself with a factual claim that four of the five canonical role labels do not exist in the GitHub label set, while all five exist and carry 82 applications, so an agent following it sets state nobody reads and leaves the labels that are actually filtered on untouched.",
     "Both make targets that claim repository-wide coverage omit one of the five declared workspaces and then report success with a hand-maintained count consistent with the recipe rather than the repository, so a local loop certifies code it never ran while CI covers that package fully.",
     "The repository already learned that an explicit list needs a completeness assertion, because adding a thing and forgetting to list it fails silently, and the governance specification requires a repository-state claim with no enforcing gate to gain a gate rather than a prose assertion.",
-    "Governance-core documentation edits must be batched into a dedicated documentation change rather than riding along with bounded implementation work, so these corrections cannot be folded into the delivery changes that surfaced them."
+    "Governance-core documentation edits must be batched into a dedicated documentation change rather than riding along with bounded implementation work, so these corrections cannot be folded into the delivery changes that surfaced them.",
+    "The ratified ci-topology specification itself requires the root command surface to run four named workspaces, omitting the collector, so correcting the Makefile without a MODIFIED delta would put the implementation in contradiction with a canonical requirement."
   ],
   "candidate_approaches": [
     {
@@ -17,7 +18,8 @@
         "The triage mapping justifies itself with a factual claim that four of the five canonical role labels do not exist in the GitHub label set, while all five exist and carry 82 applications, so an agent following it sets state nobody reads and leaves the labels that are actually filtered on untouched.",
         "Both make targets that claim repository-wide coverage omit one of the five declared workspaces and then report success with a hand-maintained count consistent with the recipe rather than the repository, so a local loop certifies code it never ran while CI covers that package fully.",
         "The repository already learned that an explicit list needs a completeness assertion, because adding a thing and forgetting to list it fails silently, and the governance specification requires a repository-state claim with no enforcing gate to gain a gate rather than a prose assertion.",
-        "Governance-core documentation edits must be batched into a dedicated documentation change rather than riding along with bounded implementation work, so these corrections cannot be folded into the delivery changes that surfaced them."
+        "Governance-core documentation edits must be batched into a dedicated documentation change rather than riding along with bounded implementation work, so these corrections cannot be folded into the delivery changes that surfaced them.",
+        "The ratified ci-topology specification itself requires the root command surface to run four named workspaces, omitting the collector, so correcting the Makefile without a MODIFIED delta would put the implementation in contradiction with a canonical requirement."
       ]
     },
     {
@@ -91,7 +93,8 @@
     "implementation-workspace-coverage-is-gated-not-narrated",
     "implementation-coverage-gate-has-failing-arms",
     "implementation-retained-tracker-is-marked-non-authoritative",
-    "implementation-withdrawn-claims-carry-evidence-and-reversal"
+    "implementation-withdrawn-claims-carry-evidence-and-reversal",
+    "implementation-canonical-spec-matches-the-corrected-command-surface"
   ],
   "invariant_evidence": {
     "implementation-every-declared-workspace-is-run-by-make": {
@@ -140,6 +143,15 @@
       "evidence_ids": [
         "each withdrawn claim records the measurements that withdrew it and the reversal path, and no tracked file still asserts three workspaces, Hermes Kanban as the canonical execution tracker, or the roles as non-GitHub-labels"
       ]
+    },
+    "implementation-canonical-spec-matches-the-corrected-command-surface": {
+      "task_ids": [
+        "2.6",
+        "5.2"
+      ],
+      "evidence_ids": [
+        "the ci-topology delta replaces both affected requirements in full rather than appending, so no contradictory SHALL survives the fold, and strict validation confirms no scenario the canonical spec still has is dropped"
+      ]
     }
   },
   "security_sensitive": true,
@@ -175,9 +187,13 @@
     "docs/agents/issue-tracker.md",
     "docs/agents/triage-labels.md",
     "CLAUDE.md",
-    "AGENTS.md"
+    "AGENTS.md",
+    "openspec/changes/reconcile-tracker-and-workspace-docs/specs/ci-topology/spec.md",
+    "openspec/specs/ci-topology/spec.md",
+    "openspec/CONTEXT.md",
+    "README.md"
   ],
   "ordering": {
-    "proposal_baseline_commit": "c52b44238980f55623e3904ab2c6ad093f138fba"
+    "proposal_baseline_commit": "dda8cf84012d4ce7b22347ba3ee11981637fd48c"
   }
 }

@@ -65,12 +65,16 @@ ownership, authorization decision, outcome, delivery class, or schema version.
 ## Layout
 
 There is **no root `package.json`** — every workspace is standalone. Always run npm scripts with
-`--prefix` or from inside the package directory.
+`--prefix` or from inside the package directory, or use the root `Makefile`, which runs every
+declared workspace. `.github/scripts/check-package-discovery.mjs` asserts that the declared package
+list matches what is on disk **and** that every covering `make` target actually invokes each one.
 
 | Path | What it is | Status |
 |---|---|---|
 | `contracts/security-audit/` | The canonical contract, version `1.0.0`. `source/contract.source.json` is the **single source of truth**; `catalog/`, `registries/`, `policies/`, `docs/`, `adr/` are **generated — never hand-edit**. | Frozen |
-| `packages/security-audit-sdk-core/` | [`@bloodtrail/security-audit-sdk-core`](packages/security-audit-sdk-core/README.md) — ESM TypeScript SDK core. Private, unpublished, unlicensed for distribution. | Isolated candidate |
+| `packages/security-audit-sdk-core/` | [`@bloodtrail/security-audit-sdk-core`](packages/security-audit-sdk-core/README.md) — platform-neutral ESM TypeScript SDK core. Private, unpublished, unlicensed for distribution. | Isolated candidate, API frozen |
+| `packages/security-audit-sdk-node/` | `@bloodtrail/security-audit-sdk-node` — the Node binding: platform SPI implementations plus the HTTP delivery handoff, bounded retry, bounded backpressure, deadline-bounded shutdown, and the governed delivery classes. | Isolated candidate, API frozen |
+| `packages/security-audit-collector/` | `@bloodtrail/security-audit-collector` — the synthetic collector ingress. Acceptance is admission only; no storage exists. | Isolated candidate, non-production |
 | `openspec/` | Spec-driven change management. `specs/` holds current capability specs; `changes/` holds in-flight proposals; `changes/archive/` holds completed ones. | Active |
 | `research/browser-telemetry/` | Isolated investigation. Research artifacts, **not** shipping code. | Investigation |
 
@@ -134,11 +138,11 @@ block.
 | Check | Required | Covers |
 |---|---|---|
 | `ci / lint`, `ci / test`, `ci / audit` | yes | `research/browser-telemetry`, via the reusable `nandohdc/gh-pipelines` Node workflow |
-| `sdk` | yes | `packages/security-audit-sdk-core` — `check:generated` then the full `validate` chain, `npm audit --audit-level=low` |
+| `sdk` | yes | `packages/security-audit-sdk-core`, `packages/security-audit-sdk-node`, and `packages/security-audit-collector` — `check:generated` then the full `validate` chain per package, `npm audit --audit-level=low` |
 | `contract` | yes | `contracts/security-audit` — `validate`, `npm audit --audit-level=high` |
 | `sonar` | yes | repository-wide SonarQube scan and blocking quality gate |
 | `conventional-commits` | yes | the PR title and **every** commit subject in the PR |
-| `coverage` | no | line coverage for both code workspaces, uploaded for the Sonar scan |
+| `coverage` | yes | line coverage for every code workspace — sdk-core, sdk-node, collector, and research — uploaded for the Sonar scan |
 | `codescene delta` | yes | behavioral code health delta — `cs delta --error-on-warnings` against the PR target. Fails on newly introduced code health issues **in the functions its TypeScript analyser can parse** (see the caveat below); a CodeScene outage or licence problem warns instead of failing |
 | `design-pattern-governance` | yes | the governance checker at `--phase final`, the trusted-baseline and candidate dual check, and `openspec/tests/design-pattern-governance/` — a candidate checker is never the sole judge of whether it weakened itself |
 

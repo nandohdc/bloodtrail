@@ -10,6 +10,7 @@
 - [ ] 2.3 Add the failing arms to `.github/scripts/check-package-discovery.test.mjs`: recipe extraction stopping at the next block, the real Makefile passing, an uncovered workspace failing in #412's exact shape, an absent covering target failing, and a newly declared package failing while the real list still passes.
 - [ ] 2.4 Verify the gate runs in CI without a workflow edit — `design-pattern-governance` already executes `check-package-discovery.mjs` and `node --test .github/scripts/*.test.mjs`.
 - [ ] 2.5 Run `make` and confirm the loop now exercises the collector and passes across every declared workspace.
+- [ ] 2.6 Replace, rather than append to, the two `ci-topology` requirements that fix the root command surface and the documented product loop, so the canonical specification names every declared package and no contradictory SHALL survives the fold; confirm strict validation reports no scenario dropped from either requirement.
 
 ## 3. Tracker and triage documentation
 
@@ -22,6 +23,7 @@
 - [ ] 4.1 Update `CLAUDE.md`: the workspace table lists all five workspaces, the command block runs each of them, the stated workspace count matches the repository, and the tracker and triage sections match `docs/agents/`.
 - [ ] 4.2 Update `AGENTS.md` to the same workspace set, command list, tracker statement, and triage mapping, keeping it consistent with `CLAUDE.md`.
 - [ ] 4.3 Verify no other tracked file still asserts the withdrawn claims — three workspaces, Hermes Kanban as canonical execution tracker, or the five roles as non-GitHub-labels.
+- [ ] 4.4 Update `README.md`: the layout table lists all three packages, the `sdk` row names every package that job validates, and the `coverage` row states that it is required and covers every code workspace — it claimed `no` while branch protection requires it.
 
 ## 5. Verification and governance
 

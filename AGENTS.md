@@ -19,9 +19,11 @@ This repository has no root `package.json`; run npm commands within a workspace 
   - `npm run validate --prefix packages/security-audit-collector`: generated-artifact drift, tests, scope, dependencies, and package contents for the collector.
   - `npm run validate --prefix contracts/security-audit`: validate generated contract artifacts and contract tests (~1.5s) (or `make contract`).
   - `npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry`: check the research harness (~15s) (or `make research`).
-- **Full governance-gate chains (~291s — run before pushing):**
-  - `make governance-gates`: runs full validation across workspaces (states cost upfront before executing).
-  - `npm run validate --prefix packages/security-audit-sdk-core`: complete SDK validation chain. Dominant cost (~254s) is `test:verification` (mutation testing proving governance gates fail closed, not product test assertions).
+- **Full governance-gate chains (~307s across all five workspaces — run before pushing):**
+  - `make governance-gates`: runs full validation across every declared workspace (states cost upfront before executing).
+  - `npm run validate --prefix packages/security-audit-sdk-core`: complete SDK core validation chain (~291s on its own). Dominant cost (~254s) is `test:verification` (mutation testing proving governance gates fail closed, not product test assertions).
+  - `npm run validate --prefix packages/security-audit-sdk-node`: Node binding validation chain, including the frozen-export check.
+  - `npm run validate --prefix packages/security-audit-collector`: collector validation chain, including generated-artifact drift.
   - `npm run validate --prefix contracts/security-audit`: validate generated contract artifacts and contract tests.
 - `npx --yes @fission-ai/openspec@latest validate --all --strict`: validate OpenSpec changes and specs.
 - `git diff --check`: catch trailing whitespace and malformed patch whitespace before committing.
