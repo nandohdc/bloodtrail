@@ -219,7 +219,7 @@ describe("CRA mechanism resolution follows structural acceptance", () => {
     writeReuseRecord(repository);
     repository.mutateJson("contracts/security-audit/source/contract.source.json", (source) => ({
       ...source,
-      metadata: { ...source.metadata, schema_version: "1.1.0" },
+      metadata: { ...source.metadata, schema_version: "1.2.0" },
     }));
     addTrigger(repository, "contract");
     repository.commit("feat: transition CRA candidate contract version");

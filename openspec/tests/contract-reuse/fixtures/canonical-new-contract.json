@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "contract": "security-audit@1.0.0",
+  "contract": "security-audit@1.1.0",
   "mode": "assessment",
   "disposition": "new_contract",
   "proposed_contract_id": "client-evidence-envelope",

@@ -33,7 +33,8 @@ import { loadCraSchema, validateCraRecord } from "./schema.mjs";
 const CRA_RECORD_NAME = "contract-reuse.json";
 const GOVERNANCE_RECORD_PATH = "packages/security-audit-sdk-core/verification-lifecycle.json";
 const CANONICAL_CONTRACT_PATH = "contracts/security-audit/source/contract.source.json";
-const REQUIRED_CONTRACT = "security-audit@1.0.0";
+const REQUIRED_CONTRACT = "security-audit@1.1.0";
+const SUPPORTED_CONTRACT_VERSION = REQUIRED_CONTRACT.slice(REQUIRED_CONTRACT.indexOf("@") + 1);
 const PROJECT_OWNER = "Fernando Homem da Costa (nandohdc)";
 const CHANGE_ID = /^[a-z0-9][a-z0-9-]{2,99}$/;
 const OBJECT_ID = /^[0-9a-f]{40}$/;
@@ -272,7 +273,7 @@ function hasSupportedContract(record, recordPath, sink) {
 
 function rejectUnsupportedContract(recordPath, sink) {
   sink.fail("cra-contract-unsupported", recordPath,
-    "the CRA checker supports exactly security-audit@1.0.0 and selects no other contract source");
+    "the CRA checker supports exactly security-audit@1.1.0 and selects no other contract source");
   return false;
 }
 
@@ -343,7 +344,7 @@ function readCanonicalContractAtBase(repositoryRoot, base, sink) {
   try {
     const source = JSON.parse(text);
     if (source?.authoritative_source !== true) return rejectCanonicalSource(sink);
-    if (source?.metadata?.schema_version !== "1.0.0") return rejectCanonicalSource(sink);
+    if (source?.metadata?.schema_version !== SUPPORTED_CONTRACT_VERSION) return rejectCanonicalSource(sink);
     return source;
   } catch {
     sink.fail("cra-contract-source-unavailable", CANONICAL_CONTRACT_PATH,
@@ -354,7 +355,7 @@ function readCanonicalContractAtBase(repositoryRoot, base, sink) {
 
 function rejectCanonicalSource(sink) {
   sink.fail("cra-contract-source-unavailable", CANONICAL_CONTRACT_PATH,
-    "the reviewed range baseline is not the authoritative security-audit source at schema version 1.0.0");
+    "the reviewed range baseline is not the authoritative security-audit source at schema version 1.1.0");
   return null;
 }
 
