@@ -1,0 +1,163 @@
+{
+  "decision": "direct_implementation",
+  "forces": [
+    "The collector accepts evidence and keeps none of it: ingress states that acceptance is admission only and makes no durability claim, so every property a pilot would need to observe belongs to a component that does not exist yet.",
+    "The only state the collector holds is an instance-local deduplication ledger bounded at 32 records with a five-minute expiry, whose own capacity outcome would be indistinguishable from a retention expiry if it were mistaken for a durability record.",
+    "Acknowledging admission ahead of a write would convert a collector crash into evidence loss the producer has already been told did not happen, and the security-significant delivery row entitles that producer to stop retrying once accepted.",
+    "Retention and integrity are not independent: field-level expiry inside a retained record invalidates any whole-record integrity computation, so a retention policy chosen without that constraint forecloses a future scheme before anyone decides whether to want it.",
+    "Storage, backend selection, deployment, and the pilot each sit behind an authorization this delegated decision cannot supply, so the decision must bound what the collector may claim without lifting any boundary."
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-ratify-storage-semantics-decision-only",
+      "kind": "direct_implementation",
+      "summary": "Ratify collector storage semantics as a decision-only capability: two acknowledgment kinds with persisted following a confirmed write; a three-operation port, idempotent on event identity, whose backend selection is separately governed; record-derived retention; whole-record deletion preserving a retention-stable projection; distinct outcomes for outright and indeterminate write failure; cross-tenant reads inexpressible; encryption at rest with separated key custody; three named owner roles; migration and recovery boundaries; provenance and assurance limits. Implements no storage.",
+      "forces_addressed": [
+        "The collector accepts evidence and keeps none of it: ingress states that acceptance is admission only and makes no durability claim, so every property a pilot would need to observe belongs to a component that does not exist yet.",
+        "The only state the collector holds is an instance-local deduplication ledger bounded at 32 records with a five-minute expiry, whose own capacity outcome would be indistinguishable from a retention expiry if it were mistaken for a durability record.",
+        "Acknowledging admission ahead of a write would convert a collector crash into evidence loss the producer has already been told did not happen, and the security-significant delivery row entitles that producer to stop retrying once accepted.",
+        "Retention and integrity are not independent: field-level expiry inside a retained record invalidates any whole-record integrity computation, so a retention policy chosen without that constraint forecloses a future scheme before anyone decides whether to want it.",
+        "Storage, backend selection, deployment, and the pilot each sit behind an authorization this delegated decision cannot supply, so the decision must bound what the collector may claim without lifting any boundary."
+      ]
+    },
+    {
+      "id": "approach-decide-alongside-a-backend-selection",
+      "kind": "alternative",
+      "summary": "Decide the semantics and select a concrete storage backend in the same change, so that the storage adapter issue becomes immediately actionable.",
+      "forces_addressed": [
+        "Storage, backend selection, deployment, and the pilot each sit behind an authorization this delegated decision cannot supply, so the decision must bound what the collector may claim without lifting any boundary."
+      ]
+    },
+    {
+      "id": "approach-extend-the-deduplication-ledger",
+      "kind": "alternative",
+      "summary": "Treat the existing bounded deduplication ledger as the durability record and decide storage semantics as an extension of its retention and capacity behaviour rather than as a new port.",
+      "forces_addressed": [
+        "The only state the collector holds is an instance-local deduplication ledger bounded at 32 records with a five-minute expiry, whose own capacity outcome would be indistinguishable from a retention expiry if it were mistaken for a durability record."
+      ]
+    },
+    {
+      "id": "approach-defer-to-adapter-implementation-time",
+      "kind": "alternative",
+      "summary": "Leave acknowledgment ordering, retention authority, failure classification, and deletion granularity to be settled inside the later storage adapter change, when a concrete backend makes the trade-offs visible.",
+      "forces_addressed": [
+        "Acknowledging admission ahead of a write would convert a collector crash into evidence loss the producer has already been told did not happen, and the security-significant delivery row entitles that producer to stop retrying once accepted.",
+        "Retention and integrity are not independent: field-level expiry inside a retained record invalidates any whole-record integrity computation, so a retention policy chosen without that constraint forecloses a future scheme before anyone decides whether to want it."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-ratify-storage-semantics-decision-only",
+  "rejected_alternative_ids": [
+    "approach-decide-alongside-a-backend-selection",
+    "approach-extend-the-deduplication-ledger",
+    "approach-defer-to-adapter-implementation-time"
+  ],
+  "rejection_reasons": {
+    "approach-decide-alongside-a-backend-selection": {
+      "forces": [
+        "Storage, backend selection, deployment, and the pilot each sit behind an authorization this delegated decision cannot supply, so the decision must bound what the collector may claim without lifting any boundary."
+      ],
+      "reason": "The issue places choosing infrastructure by implementation convenience explicitly out of scope, and with a three-operation port almost any backend conforms, so availability would become the differentiator and availability is not a security property; selection also needs an owner authorization a delegated decision cannot supply."
+    },
+    "approach-extend-the-deduplication-ledger": {
+      "forces": [
+        "The only state the collector holds is an instance-local deduplication ledger bounded at 32 records with a five-minute expiry, whose own capacity outcome would be indistinguishable from a retention expiry if it were mistaken for a durability record."
+      ],
+      "reason": "The ledger is instance-local, capped at 32 live records, expires after five minutes, and declares in its own header that records are never durable; building retention semantics on it would make a capacity eviction and a retention expiry the same observable event, which is the one confusion an audit store may not have."
+    },
+    "approach-defer-to-adapter-implementation-time": {
+      "forces": [
+        "Acknowledging admission ahead of a write would convert a collector crash into evidence loss the producer has already been told did not happen, and the security-significant delivery row entitles that producer to stop retrying once accepted.",
+        "Retention and integrity are not independent: field-level expiry inside a retained record invalidates any whole-record integrity computation, so a retention policy chosen without that constraint forecloses a future scheme before anyone decides whether to want it."
+      ],
+      "reason": "An adapter written before the model is stated encodes whichever default the backend made convenient, and the convenient defaults here are precisely acknowledge-early and field-level expiry \u2014 the two that lose evidence and foreclose integrity respectively; the issue also requires the decision to precede implementation."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-acknowledgment-never-precedes-durability",
+    "implementation-storage-port-is-closed-and-idempotent",
+    "implementation-retention-derives-from-the-record",
+    "implementation-write-failure-outcomes-are-distinct-and-fail-closed",
+    "implementation-ratification-adds-no-storage-and-lifts-no-boundary"
+  ],
+  "invariant_evidence": {
+    "implementation-acknowledgment-never-precedes-durability": {
+      "task_ids": [
+        "1.2",
+        "1.4"
+      ],
+      "evidence_ids": [
+        "the capability admits exactly two acknowledgment kinds and requires persisted to follow a confirmed write, with a scenario asserting no persisted acknowledgment is issued while a write is outstanding"
+      ]
+    },
+    "implementation-storage-port-is-closed-and-idempotent": {
+      "task_ids": [
+        "1.2",
+        "1.4"
+      ],
+      "evidence_ids": [
+        "the port is three operations over closed total result unions and is idempotent on event identity within a tenant scope, which is what makes treating an indeterminate write as not persisted safe from duplication"
+      ]
+    },
+    "implementation-retention-derives-from-the-record": {
+      "task_ids": [
+        "1.2",
+        "1.3",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "retention derives from the record's own data.retention_class rather than from deployment configuration, deletion is whole-record so a retention-stable projection remains available, and a deployment may only decline to store rather than silently shorten"
+      ]
+    },
+    "implementation-write-failure-outcomes-are-distinct-and-fail-closed": {
+      "task_ids": [
+        "1.4",
+        "1.5"
+      ],
+      "evidence_ids": [
+        "outright write failure and indeterminate write each carry a distinct diagnostic, neither is acknowledged as persisted, and an unsupported stored version is distinguishable from an absent record"
+      ]
+    },
+    "implementation-ratification-adds-no-storage-and-lifts-no-boundary": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "2.5"
+      ],
+      "evidence_ids": [
+        "the change touches no packages or contracts path, the production scope gate still rejects storage as a filename, import, and export token, and the capability states that it authorizes no implementation, backend selection, deployment, or pilot"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Fixes that a durable acknowledgment may never precede a confirmed write, which is the property that keeps the collector from telling a producer evidence was kept when it was not, and preserves whole-record integrity by forbidding field-level expiry inside a retained record.",
+    "authentication_or_authorization": "Changes no authentication or authorization behaviour; authentication remains the first ingress stage and this capability adds no credential, principal, or permission of its own.",
+    "authority_provenance": "Records the decision provenance as delegated rather than owner-authorized, requires three owner roles to be named by a deployment, and states that the delegated decision does not fill them.",
+    "concurrency": "Introduces no concurrent behaviour; the port is described by its results rather than its scheduling, and idempotency on event identity makes a repeated write indistinguishable from a single one regardless of interleaving.",
+    "confidentiality": "Requires encryption at rest, keeps key material out of the port entirely, disqualifies backends that cannot separate key custody from data custody, and makes cross-tenant retrieval inexpressible rather than merely disallowed.",
+    "cryptography": "Requires encryption at rest without specifying an algorithm or holding key material, and explicitly does not design cryptographic audit-log chaining, hash chains, or tamper-evident linking, which remain unauthorized.",
+    "error_disclosure": "Every failure resolves to a named diagnostic that identifies the violated condition, and no diagnostic carries record content; an unsupported stored version is reported as such rather than disclosed as an absent record.",
+    "external_security_integration": "Adds no exporter, SIEM, analytics, or external integration; the storage port is internal to the collector and its backend selection is deferred to a separately authorized change.",
+    "fail_posture": "Fails closed throughout: an indeterminate write is treated as not persisted, a scopeless read returns nothing rather than everything, an unnamed owner role blocks storage rather than defaulting to the operator, and a deployment that will not store a retention class rejects rather than shortening it.",
+    "lifecycle": "Ratifies semantics only and adds no runtime lifecycle; recovery restores records without reissuing or revoking an acknowledgment already returned, and enabling storage remains gated on a separate authorized change.",
+    "mutation_ownership": "Confined to this change directory and, by fold, the new capability specification; it writes no package, contract artifact, or workflow path.",
+    "privacy_transformation": "Performs no transformation of personal data; retention derives from the contract's existing per-record retention class, deletion is whole-record and irreversible, and no index may retain a value copied out of a deleted record.",
+    "resource_retention": "Retention is bounded by each record's own retention class rather than by deployment configuration, expiry deletes the whole record, and the decision holds no state of its own.",
+    "retry_or_redelivery": "Port idempotency on event identity makes a retry after an indeterminate write leave one record, so the fail-closed treatment of an unknown write outcome cannot produce duplicate evidence.",
+    "trust_boundary": "Places the boundary at the confirmed write and at the tenant scope, and states plainly that a port and a set of semantics bound what the collector may claim while proving nothing about a backend that has not been selected."
+  },
+  "owned_paths": [
+    "openspec/changes/ratify-collector-storage-semantics/.openspec.yaml",
+    "openspec/changes/ratify-collector-storage-semantics/proposal.md",
+    "openspec/changes/ratify-collector-storage-semantics/design.md",
+    "openspec/changes/ratify-collector-storage-semantics/tasks.md",
+    "openspec/changes/ratify-collector-storage-semantics/specs/collector-storage-semantics/spec.md",
+    "openspec/changes/ratify-collector-storage-semantics/assessment.source.json",
+    "openspec/changes/ratify-collector-storage-semantics/assessment.json",
+    "openspec/specs/collector-storage-semantics/spec.md"
+  ],
+  "ordering": {
+    "proposal_baseline_commit": "31eb5f4bdaf03c9f1bd3060d5722913450342d55"
+  }
+}
