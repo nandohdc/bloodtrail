@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.15.0](https://github.com/nandohdc/bloodtrail/compare/v0.14.0...v0.15.0) (2026-09-09)
+
+
+### Added
+
+* **sdk-core:** freeze the public API surface ([#110](https://github.com/nandohdc/bloodtrail/issues/110)) ([8a91854](https://github.com/nandohdc/bloodtrail/commit/8a91854f4e7b19a17a77c95e2effc645368366c7))
+* **sdk-core:** freeze the public API surface ([#110](https://github.com/nandohdc/bloodtrail/issues/110)) ([b665c73](https://github.com/nandohdc/bloodtrail/commit/b665c73ef5d497b3d81b3c414dc9fe71f0427347))
+* **sdk-node:** freeze the public API surface ([#111](https://github.com/nandohdc/bloodtrail/issues/111)) ([#405](https://github.com/nandohdc/bloodtrail/issues/405)) ([54f4eec](https://github.com/nandohdc/bloodtrail/commit/54f4eec1260fcb4a53c3aa009477e23b1dd5a4cf))
+
+
+### Fixed
+
+* **collector:** exclude retry_attempt from deduplication key ([#391](https://github.com/nandohdc/bloodtrail/issues/391)) ([ee595a8](https://github.com/nandohdc/bloodtrail/commit/ee595a8d541b5b143caaafe23a8bd4e7a66c79b1))
+* **collector:** exclude retry_attempt from deduplication key ([#391](https://github.com/nandohdc/bloodtrail/issues/391)) ([f36a5da](https://github.com/nandohdc/bloodtrail/commit/f36a5da5845cad31a0596b2ff95ad9836560c800))
+
+
+### Documentation
+
+* **openspec:** archive fix-collector-dedup-retry-conflict ([#391](https://github.com/nandohdc/bloodtrail/issues/391)) ([7f74c6e](https://github.com/nandohdc/bloodtrail/commit/7f74c6e3a79560ab24000f45e51d4f22df812404))
+* **openspec:** archive fix-collector-dedup-retry-conflict ([#391](https://github.com/nandohdc/bloodtrail/issues/391)) ([1f3a55e](https://github.com/nandohdc/bloodtrail/commit/1f3a55e44994a6e30c6497814c49a13e3065a46a))
+* **openspec:** archive freeze-sdk-core-api-surface ([#110](https://github.com/nandohdc/bloodtrail/issues/110)) ([5f408e7](https://github.com/nandohdc/bloodtrail/commit/5f408e789e4b49a1f4ce25a5ffb44f487f185a04))
+* **openspec:** archive freeze-sdk-core-api-surface ([#110](https://github.com/nandohdc/bloodtrail/issues/110)) ([2ba035e](https://github.com/nandohdc/bloodtrail/commit/2ba035e864354988401a9df1cdc4c47bf0390e15))
+* **openspec:** archive freeze-sdk-node-api-surface ([#111](https://github.com/nandohdc/bloodtrail/issues/111)) ([52dce2a](https://github.com/nandohdc/bloodtrail/commit/52dce2a774d87a03c998bd7bfeb86d2d104e45bd))
+* **openspec:** archive freeze-sdk-node-api-surface ([#111](https://github.com/nandohdc/bloodtrail/issues/111)) ([260f496](https://github.com/nandohdc/bloodtrail/commit/260f496d0943604796762247eb6002479ed7bcdb))
+* **openspec:** archive verify-delivery-vertical-slice ([#109](https://github.com/nandohdc/bloodtrail/issues/109)) ([cbbd044](https://github.com/nandohdc/bloodtrail/commit/cbbd044c4533fc0483d6e8bbdb4f7eb62a0575bc))
+* **openspec:** archive verify-delivery-vertical-slice ([#109](https://github.com/nandohdc/bloodtrail/issues/109)) ([c13e105](https://github.com/nandohdc/bloodtrail/commit/c13e1056f75ae9ef653737b3a005d4767b364f35))
+* **openspec:** fold fix-collector-dedup-retry-conflict spec ([#391](https://github.com/nandohdc/bloodtrail/issues/391)) ([4855cff](https://github.com/nandohdc/bloodtrail/commit/4855cffd43709e0265d485d24fd35ee41dc8b1f8))
+* **openspec:** fold fix-collector-dedup-retry-conflict spec ([#391](https://github.com/nandohdc/bloodtrail/issues/391)) ([02b349f](https://github.com/nandohdc/bloodtrail/commit/02b349ff1b7b699e5993e68a08e6d925a9bbea64))
+* **openspec:** fold freeze-sdk-core-api-surface spec ([#110](https://github.com/nandohdc/bloodtrail/issues/110)) ([0f60399](https://github.com/nandohdc/bloodtrail/commit/0f6039985e99da18b3293220d6cfac6ce34eb9b1))
+* **openspec:** fold freeze-sdk-core-api-surface spec ([#110](https://github.com/nandohdc/bloodtrail/issues/110)) ([3ecd5d4](https://github.com/nandohdc/bloodtrail/commit/3ecd5d45780db63d0a1c3086e75b9c5b594b043c))
+* **openspec:** fold freeze-sdk-core-api-surface spec ([#110](https://github.com/nandohdc/bloodtrail/issues/110)) ([aa7262a](https://github.com/nandohdc/bloodtrail/commit/aa7262aada47ec04c2fe391c4e435042a53ec5dd))
+* **openspec:** fold freeze-sdk-node-api-surface spec ([#111](https://github.com/nandohdc/bloodtrail/issues/111)) ([7522c72](https://github.com/nandohdc/bloodtrail/commit/7522c724a9caebc179dee59a2ef2ecf77b70913b))
+* **openspec:** fold freeze-sdk-node-api-surface spec ([#111](https://github.com/nandohdc/bloodtrail/issues/111)) ([6e956e2](https://github.com/nandohdc/bloodtrail/commit/6e956e2e3ea3528f306ea14859e76a26e6ff2bbf))
+* **openspec:** propose fix-collector-dedup-retry-conflict ([#391](https://github.com/nandohdc/bloodtrail/issues/391)) ([8da0490](https://github.com/nandohdc/bloodtrail/commit/8da049011b541262ca3dcb3edfc7ab17a41cc752))
+* **openspec:** propose fix-collector-dedup-retry-conflict ([#391](https://github.com/nandohdc/bloodtrail/issues/391)) ([5bf5367](https://github.com/nandohdc/bloodtrail/commit/5bf5367842fbaf0287b941b2f808a1ef8fbc38fc))
+* **openspec:** propose freeze-sdk-core-api-surface ([#110](https://github.com/nandohdc/bloodtrail/issues/110)) ([b5dde92](https://github.com/nandohdc/bloodtrail/commit/b5dde92d4169440c9d00166b1090afe00ac7d106))
+* **openspec:** propose freeze-sdk-core-api-surface ([#110](https://github.com/nandohdc/bloodtrail/issues/110)) ([590de5e](https://github.com/nandohdc/bloodtrail/commit/590de5e94fbc64e75985c6b8229fdfc2942d082f))
+* **openspec:** propose freeze-sdk-node-api-surface ([#111](https://github.com/nandohdc/bloodtrail/issues/111)) ([#404](https://github.com/nandohdc/bloodtrail/issues/404)) ([da29fd0](https://github.com/nandohdc/bloodtrail/commit/da29fd048ea92626d7a34fb49a8a4f41e6e2cff5))
+* **openspec:** propose verify-delivery-vertical-slice ([#109](https://github.com/nandohdc/bloodtrail/issues/109)) ([2833852](https://github.com/nandohdc/bloodtrail/commit/2833852489e162954bdd495a4c466cbdc75fee84))
+* **openspec:** propose verify-delivery-vertical-slice ([#109](https://github.com/nandohdc/bloodtrail/issues/109)) ([b244a80](https://github.com/nandohdc/bloodtrail/commit/b244a80ad8f960e2828b1f59e68045e2df28ed66))
+* **openspec:** verify delivery vertical slice ([#109](https://github.com/nandohdc/bloodtrail/issues/109)) ([f225cf9](https://github.com/nandohdc/bloodtrail/commit/f225cf90cd8279128a7d926c6af67ad434a5b1ac))
+* **openspec:** verify delivery vertical slice ([#109](https://github.com/nandohdc/bloodtrail/issues/109)) ([de42f52](https://github.com/nandohdc/bloodtrail/commit/de42f52b3fbb0f7d017c06d516dbbb4be9d3ae4b))
+
 ## [0.14.0](https://github.com/nandohdc/bloodtrail/compare/v0.13.0...v0.14.0) (2026-09-08)
 
 
