@@ -47,6 +47,7 @@
     "packages/security-audit-sdk-core/scripts/check-changed-paths.mjs",
     "packages/security-audit-sdk-core/scripts/check-compatibility.mjs",
     "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-core/scripts/lifecycle-policy.mjs",
     "packages/security-audit-sdk-core/scripts/generate-contract.mjs",
     "packages/security-audit-sdk-core/README.md",
     "packages/security-audit-sdk-core/API.md",

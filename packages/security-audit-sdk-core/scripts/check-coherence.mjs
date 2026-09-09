@@ -12,6 +12,7 @@ import {
   evaluateActiveTaskProgress,
   lifecycleMetadata,
   parseTaskChecklist,
+  resolveGovernedCandidateRoot,
   resolveVerificationLifecycle,
 } from "./lifecycle-policy.mjs";
 
@@ -220,9 +221,15 @@ rule("docs-no-durability", "consumer-docs", /(?:no|not|does not)[^.\n]{0,80}dura
 
 const openSpec = ["proposal", "design", "spec", "tasks"].map((id) => texts.get(id) ?? "").join("\n");
 const governedCandidateChange = lifecycleMetadata.contract?.governedCandidate?.change;
-const governedCandidateRoot = typeof governedCandidateChange === "string"
-  ? resolve(repositoryRoot, "openspec/changes", governedCandidateChange)
-  : undefined;
+const governedCandidateRoot = await resolveGovernedCandidateRoot(repositoryRoot, governedCandidateChange);
+const governedCandidateDeclared = typeof governedCandidateChange === "string";
+rule("governed-candidate-root", `openspec/changes/${governedCandidateChange}`,
+  !governedCandidateDeclared || governedCandidateRoot !== undefined,
+  "governed candidate resolves to neither an active change nor exactly one dated archive");
+// A declared-but-unresolvable candidate must not fall back to the active change's
+// own text: that text can mention the contract version and would turn a missing
+// binding into a false pass. Only an undeclared candidate falls back.
+const unresolvedCandidateOpenSpec = governedCandidateDeclared ? "" : openSpec;
 const governedCandidateOpenSpec = governedCandidateRoot
   ? await Promise.all([
     safeRead(resolve(governedCandidateRoot, "proposal.md"), "governed-candidate-proposal"),
@@ -230,7 +237,7 @@ const governedCandidateOpenSpec = governedCandidateRoot
     safeRead(resolve(governedCandidateRoot, "tasks.md"), "governed-candidate-tasks"),
     safeRead(resolve(governedCandidateRoot, "specs/security-audit-event-contract/spec.md"), "governed-candidate-contract-spec"),
   ]).then((parts) => parts.join("\n"))
-  : openSpec;
+  : unresolvedCandidateOpenSpec;
 rule("openspec-contract", governedCandidateRoot ? relative(repositoryRoot, governedCandidateRoot) : relative(repositoryRoot, changeRoot), governedCandidateOpenSpec.includes(expected.contractVersion), "governed contract transition does not remain bound to contract 1.1.0");
 rule("openspec-production", relative(repositoryRoot, changeRoot), includesAll(openSpec, ["browser telemetry", "production", "transport"]), "governed change lacks explicit production/transport/browser boundaries");
 

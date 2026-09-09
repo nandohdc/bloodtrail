@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { byCodePoint, packageRoot, readJson, repositoryRoot } from "./verification-helpers.mjs";
 
 export const supportedModes = Object.freeze(["active", "governed", "archived"]);
+const GOVERNED_CANDIDATE_ID = /^[a-z0-9][a-z0-9-]{2,99}$/;
 
 const PREMATURE_FAILURE_ID_BY_PHASE = Object.freeze({
   "technical-review": "active-technical-review-premature",
@@ -191,6 +192,38 @@ export function extractRequirementBlocks(text) {
 
 export function boundedFailure(id, file, message) {
   return Object.freeze({ id: String(id), file: String(file), message: String(message).slice(0, 240) });
+}
+
+/**
+ * Resolves the directory holding a governed candidate's OpenSpec artifacts.
+ *
+ * A governed candidate is named in `contract.governedCandidate.change` by change
+ * id, not by path, and that identity survives archiving. Resolving the id only
+ * under `openspec/changes/` therefore breaks the moment the candidate is
+ * archived, reporting its proposal, design, tasks and contract spec as missing
+ * when they were relocated intact.
+ *
+ * Returns the active directory when it exists, otherwise the single dated
+ * archive for that id. Zero or several archives resolve to `undefined` rather
+ * than a guess: the caller must fail closed instead of binding to the wrong
+ * artifacts.
+ */
+export async function resolveGovernedCandidateRoot(root, changeName) {
+  if (!isGovernedCandidateId(changeName)) return undefined;
+  const active = resolve(root, "openspec/changes", changeName);
+  if (existsSync(active)) return active;
+  const archives = await matchingArchives(root, datedArchivePattern(changeName));
+  return archives.length === 1 ? archives[0] : undefined;
+}
+
+/** A change id is interpolated into a pattern below, so its shape is checked first. */
+function isGovernedCandidateId(changeName) {
+  return typeof changeName === "string" && GOVERNED_CANDIDATE_ID.test(changeName);
+}
+
+/** `openspec archive` prefixes the change id with its archive date and never stacks a second one. */
+function datedArchivePattern(changeName) {
+  return new RegExp(String.raw`^openspec/changes/archive/\d{4}-\d{2}-\d{2}-${changeName}$`);
 }
 
 async function matchingArchives(root, pattern) {
