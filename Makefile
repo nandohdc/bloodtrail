@@ -5,21 +5,23 @@
 test: runtime-gates
 
 runtime-gates:
-	@echo "Running fast product test loop across all workspaces (~26s)..."
+	@echo "Running fast product test loop across all workspaces (~34s)..."
 	npm run test:matrix --prefix packages/security-audit-sdk-core
 	npm run validate --prefix packages/security-audit-sdk-node
+	npm run validate --prefix packages/security-audit-collector
 	npm run validate --prefix contracts/security-audit
 	npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry
-	@echo "Product test loop passed across all four workspaces (~26s)."
-	@echo "Notice: Full governance-gate chains (~299s) were NOT run. Run 'make governance-gates' before pushing."
+	@echo "Product test loop passed across every declared workspace (~34s)."
+	@echo "Notice: Full governance-gate chains (~307s) were NOT run. Run 'make governance-gates' before pushing."
 
 governance-gates:
-	@echo "Running full governance-gate chains (~299s across workspaces; dominant cost is SDK gate mutation testing ~254s)..."
+	@echo "Running full governance-gate chains (~307s across workspaces; dominant cost is SDK gate mutation testing ~254s)..."
 	npm run validate --prefix packages/security-audit-sdk-core
 	npm run validate --prefix packages/security-audit-sdk-node
+	npm run validate --prefix packages/security-audit-collector
 	npm run validate --prefix contracts/security-audit
 	npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry
-	@echo "Full governance-gate chains passed across all four workspaces (~299s)."
+	@echo "Full governance-gate chains passed across every declared workspace (~307s)."
 
 sdk:
 	@echo "Running SDK product loop (~23s)..."
@@ -39,7 +41,7 @@ research:
 
 help:
 	@echo "Bloodtrail command surface (delegating to workspace scripts):"
-	@echo "  make (or make test)   Run fast product test loop across all four workspaces (~26s)"
+	@echo "  make (or make test)   Run fast product test loop across every declared workspace (~34s)"
 	@echo "  make runtime-gates    Alias for make test (~26s)"
 	@echo "  make governance-gates Run full governance-gate chains (~299s; states cost upfront)"
 	@echo "  make sdk              Run SDK product test loop only (partial run)"

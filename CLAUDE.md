@@ -17,23 +17,34 @@ The contract is the product; the SDK is a projection of it. Two boundaries gover
 
 | Workspace | Node engines | Purpose |
 |---|---|---|
-| `packages/security-audit-sdk-core/` | `>=24 <25 \|\| >=26 <27` | the SDK (`@bloodtrail/security-audit-sdk-core`, private, `UNLICENSED`, never published) |
+| `packages/security-audit-sdk-core/` | `>=24 <25 \|\| >=26 <27` | the platform-neutral SDK core (`@bloodtrail/security-audit-sdk-core`, private, `UNLICENSED`, never published) |
+| `packages/security-audit-sdk-node/` | `>=24 <25 \|\| >=26 <27` | the Node binding and delivery primitives; public API frozen (#111), widened only through a governed change |
+| `packages/security-audit-collector/` | `>=24 <25 \|\| >=26 <27` | the synthetic collector ingress; acceptance is admission only, no storage |
 | `contracts/security-audit/` | `>=26.5.0` | the canonical contract, frozen at `1.0.0` |
 | `research/browser-telemetry/` | `>=26.5.0` | isolated investigation, not shipping code |
 
+**Five workspaces, and `make` runs all five.** `.github/scripts/check-package-discovery.mjs` asserts
+both that the declared package list matches what is on disk and that every covering `make` target
+actually invokes each one — added after `make` reported green across "all four workspaces" while
+never running the collector (#412).
+
 ```bash
-# Fast product development loop (~18s across workspaces) — use during active development
-make                                                            # Bare invocation runs the product loop across all three workspaces
+# Fast product development loop (~34s across workspaces) — use during active development
+make                                                            # Bare invocation runs the product loop across every declared workspace
 # or via direct workspace commands:
-npm run test:matrix --prefix packages/security-audit-sdk-core  # SDK product loop (~14.6s cold, ~9.2s runtime warm)
+npm run test:matrix --prefix packages/security-audit-sdk-core  # SDK core product loop (~14.6s cold, ~9.2s runtime warm)
+npm run validate --prefix packages/security-audit-sdk-node     # Node binding: typecheck, build, tests, scope, exports, deps, package
+npm run validate --prefix packages/security-audit-collector    # Collector: generated-artifact drift, tests, scope, deps, package
 npm run validate --prefix contracts/security-audit             # Contract validation (~1.5s)
 npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry  # Research harness (~15s)
 
 # Full gate chains — run before pushing
-make governance-gates                                           # Runs full validation across workspaces (states cost upfront)
+make governance-gates                                           # Runs full validation across every declared workspace (~307s; states cost upfront)
 # or via direct workspace commands:
-# SDK validate (~291s): dominant cost (~254s) is test:verification (governance gate mutation testing, proving gates fail closed, not product test assertions)
+# sdk-core validate (~291s on its own): dominant cost (~254s) is test:verification (governance gate mutation testing, proving gates fail closed, not product test assertions)
 npm run validate --prefix packages/security-audit-sdk-core
+npm run validate --prefix packages/security-audit-sdk-node
+npm run validate --prefix packages/security-audit-collector
 npm run validate --prefix contracts/security-audit
 
 # Matrix-safe subset (no git/package/coherence gates) — also used when running across Node majors
@@ -162,13 +173,15 @@ Releases are managed by Release Please from Conventional Commits. A release vers
 
 ### Issue tracker
 
-Engineering work is tracked in Hermes Kanban on the `bloodtrail` board; GitHub Issues
-remain an external intake surface only. See `docs/agents/issue-tracker.md`.
+Engineering work is tracked in **GitHub Issues**. Hermes Kanban is retained for fleet
+runs but is not authoritative for execution state — do not read the board to decide
+what is done. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-The five canonical triage roles map onto Hermes Kanban statuses and typed block kinds,
-not label strings. See `docs/agents/triage-labels.md`.
+The five canonical triage roles are GitHub labels of the same name — `needs-triage`,
+`needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See
+`docs/agents/triage-labels.md`.
 
 ### Domain docs
 

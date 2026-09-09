@@ -79,7 +79,7 @@ The checks that assert facts about the repository rather than about a specific r
 _Avoid_: per-leg gates, runtime checks
 
 **Product test loop**:
-The fast, matrix-safe verification loop (~18s across all three workspaces) executed during active development (`npm run test:matrix` in the SDK, `validate` in contracts, `lint` and `test` in research).
+The fast, matrix-safe verification loop (~34s across all five declared workspaces) executed during active development (`npm run test:matrix` in sdk-core, `validate` in sdk-node, the collector and contracts, and `lint` + `test` in research).
 _Avoid_: full governance-gate chain, slow validate
 
 **Governance-gate chain**:
