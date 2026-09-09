@@ -19,6 +19,7 @@
   },
   "owned_paths": [
     "packages/security-audit-sdk-core/scripts/check-exports.mjs",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
     "packages/security-audit-sdk-core/adr/012-frozen-public-api-surface.md",
     "openspec/specs/security-audit-sdk-core/spec.md",
     "openspec/changes/freeze-sdk-core-api-surface/"
@@ -121,7 +122,7 @@
     "external_security_integration": "No external service, transport, or security integration is introduced; the check runs entirely against local build output and source.",
     "fail_posture": "An unapproved addition or removal fails the check closed, exactly the fail-closed behavior #110 requires.",
     "lifecycle": "The check is a one-shot verification script with no persistent state or background process.",
-    "mutation_ownership": "Changes are limited to one script, one new ADR, and the folded sdk-core specification.",
+    "mutation_ownership": "Changes are limited to check-exports.mjs, the pinned ADR-count rule in check-coherence.mjs (updated from 11 to 12 to admit the new ADR), one new ADR, and the folded sdk-core specification.",
     "privacy_transformation": "No personal data is introduced; this concerns only exported symbol names.",
     "resource_retention": "The check retains no data beyond its own run; it creates no durable resource.",
     "retry_or_redelivery": "Not applicable; this change concerns the package's export surface, not delivery or retry behavior.",

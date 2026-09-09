@@ -192,8 +192,8 @@ rule("generated-public-exports", "src/index.ts", includesAll(publicSource, ["EVE
 
 const adrRoot = resolve(packageRoot, "adr");
 const adrFiles = (await readdir(adrRoot)).filter((name) => /^\d{3}-.+\.md$/.test(name)).sort(byCodePoint);
-rule("adr-count", "adr", adrFiles.length === 11, "expected exactly ADR-SDK-001 through ADR-SDK-011");
-rule("adr-sequence", "adr", same(adrFiles.map((name) => name.slice(0, 3)), ["001", "002", "003", "004", "005", "006", "007", "008", "009", "010", "011"]), "ADR identifiers are missing or duplicated");
+rule("adr-count", "adr", adrFiles.length === 12, "expected exactly ADR-SDK-001 through ADR-SDK-012");
+rule("adr-sequence", "adr", same(adrFiles.map((name) => name.slice(0, 3)), ["001", "002", "003", "004", "005", "006", "007", "008", "009", "010", "011", "012"]), "ADR identifiers are missing or duplicated");
 const adrTexts = [];
 for (const name of adrFiles) {
   const text = await safeRead(resolve(adrRoot, name), `adr/${name}`);
