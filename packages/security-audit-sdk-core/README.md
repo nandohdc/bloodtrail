@@ -1,6 +1,6 @@
 # @bloodtrail/security-audit-sdk-core
 
-Framework-independent ESM TypeScript SDK core for constructing and validating events that conform to Bloodtrail Security Audit Event Contract version `1.0.0`.
+Framework-independent ESM TypeScript SDK core for constructing and validating events that conform to Bloodtrail Security Audit Event Contract version `1.1.0`.
 
 ## Status and authorization boundary
 
@@ -69,7 +69,7 @@ import { createCapturingAuditSink } from "@bloodtrail/security-audit-sdk-core/te
 
 const sink = createCapturingAuditSink(); // test/development only
 const audit = createSecurityAuditSdk({
-  contractVersion: "1.0.0",
+  contractVersion: "1.1.0",
   producer: { name: "synthetic-audit-producer", version: "0.1.0" },
   service: { name: "synthetic-service", version: "0.1.0" },
   environment: { name: "test" },
@@ -126,7 +126,9 @@ Expected validation and sink failures are returned as `AuditResult` values with 
 
 ## Contract compatibility
 
-This candidate implements exactly contract version `1.0.0`, bound to normative contract commit `8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993`. `compatibility.json` is the machine-readable compatibility manifest and `contract-provenance.json` identifies all authoritative inputs. The SDK cannot silently change contract semantics. Unsupported versions fail safely. Contract changes require separate contract governance before SDK adaptation.
+This candidate implements exactly contract version `1.1.0`, bound to normative contract commit `f69f3b7f60c5cfddd6311c6aa4f242280e1ce5d0`. `compatibility.json` is the machine-readable compatibility manifest and `contract-provenance.json` identifies all authoritative inputs. The SDK cannot silently change contract semantics. Unsupported versions, including `1.0.0`, fail safely. Contract changes require separate contract governance before SDK adaptation.
+
+The private, unpublished candidate is `0.2.0`. Its optional `risk.model.provenance.derived_from` list records code-point-ordered material input paths for a `derived_server` risk model when a producer supplies them; omission remains valid in contract `1.1.0` and does not infer provenance.
 
 F-11 changes no public signature, root export, contract version, package version, or runtime dependency. Public complete-event acceptance remains source-compatible. Revalidation plus fixed metadata and operation/transaction/correlation enforcement for named `redelivery.event` is a behavioral security/lifecycle tightening. The package remains private and unpublished at `0.1.0`; this classification is not release, production, or publication authorization.
 

@@ -1,6 +1,6 @@
 {
   "name": "@bloodtrail/security-audit-sdk-node",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Provisional Node.js platform binding for Bloodtrail security audit events",
   "type": "module",
   "private": true,
@@ -43,9 +43,10 @@
     "test": "npm run build && npm run test:runtime",
     "test:scope": "node scripts/check-scope.mjs",
     "test:exports": "node scripts/check-exports.mjs",
+    "test:compatibility": "node scripts/check-compatibility.mjs",
     "test:dependencies": "node scripts/check-dependencies.mjs",
     "test:package": "node scripts/check-package-contents.mjs",
-    "validate": "npm run typecheck && npm run build && npm run test:runtime && npm run test:scope && npm run test:exports && npm run test:dependencies && npm run test:package"
+    "validate": "npm run typecheck && npm run build && npm run test:runtime && npm run test:scope && npm run test:exports && npm run test:compatibility && npm run test:dependencies && npm run test:package"
   },
   "dependencies": {
     "@bloodtrail/security-audit-sdk-core": "file:../security-audit-sdk-core"

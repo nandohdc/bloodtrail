@@ -5,10 +5,13 @@ that materially determined them. That makes an independently reproducible trust-
 impossible and lets a consumer distinguish neither a truthful derivation from an incomplete one nor
 an intentionally unprovenanced value from a non-derived value.
 
-The ratified `derived-field-trust-semantics` capability defines the closed semantics. The owner has
-now authorized the narrowly additive contract move required to encode those semantics: contract
-`1.0.0` to `1.1.0`. This change is the first of the two planned version steps; it does not make
-provenance mandatory or enforce the derived-field trust floor.
+The ratified `derived-field-trust-semantics` capability defines the closed semantics. Encoding them
+requires the narrowly additive contract move `1.0.0` to `1.1.0`. That move was selected under the
+repository owner's 2026-09-09 unattended-execution delegation and recorded on issue #95 —
+`decision_source = "delegated to Claude by the owner, 2026-09-09; not a human owner decision"`. It is
+**not** an exact-commit owner authorization and must not be cited as one; a human owner decision on
+this version move has not been taken. This change is the first of the two planned version steps; it
+does not make provenance mandatory or enforce the derived-field trust floor.
 
 ## What Changes
 
@@ -46,5 +49,8 @@ None.
   `packages/security-audit-sdk-core/` and `packages/security-audit-sdk-node/`.
 - Affected governance record: the narrowly scoped contract immutability and changed-path binding in
   `packages/security-audit-sdk-core/verification-lifecycle.json`.
+- Affected governance prerequisite: Contract Reuse Assessment mechanism resolution remains bound to
+  the reviewed PR baseline, so the candidate's authorized version transition cannot invalidate its
+  own assessment.
 - No runtime delivery, persistence, browser evidence, trust-floor enforcement, package publication,
   production deployment, or real-user collection is authorized by this change.

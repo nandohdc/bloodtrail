@@ -1,6 +1,6 @@
 # Compatibility and migration policy
 
-This policy applies to `@bloodtrail/security-audit-sdk-core`. The package is currently a private, unpublished candidate at version `0.1.0`; this document defines compatibility rules without authorizing release or production use.
+This policy applies to `@bloodtrail/security-audit-sdk-core`. The package is currently a private, unpublished candidate at version `0.2.0`; this document defines compatibility rules without authorizing release or production use.
 
 ## Two independent version axes
 
@@ -13,9 +13,9 @@ An SDK version does not create or approve a contract version. The SDK implementa
 
 `compatibility.json` is the machine-readable source for this candidate's compatibility declaration:
 
-- package: `@bloodtrail/security-audit-sdk-core` `0.1.0`;
-- supported contract versions: exactly `1.0.0` (minimum and maximum are both `1.0.0`);
-- normative contract target: `8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993`;
+- package: `@bloodtrail/security-audit-sdk-core` `0.2.0`;
+- supported contract versions: exactly `1.1.0` (minimum and maximum are both `1.1.0`);
+- normative contract target: `f69f3b7f60c5cfddd6311c6aa4f242280e1ce5d0`;
 - Node.js: majors `24` and `26` only; exact verification releases `24.2.0` and `26.5.0`;
 - TypeScript: `>=5.9.2 <6`; exact repository compiler `5.9.2`;
 - module policy: ESM public package with an internal generated CommonJS standalone-validator boundary;
@@ -139,6 +139,10 @@ The observable change is the horizon. Each history is insertion-order FIFO: memb
 The two FIFO windows are collision-detection horizons only. They never grant operation authority, restore a copied or forged handle, bypass event binding, or evict an active reservation or a completed terminal-duplicate guard: that state lives with the live handle and survives unrelated retention churn for the handle's lifetime. Redelivery does not insert generated event IDs, consume issued operation-ID capacity, or reserve or release terminal completion, so repeated redelivery cannot exhaust either window.
 
 No migration is required for callers that omit `retention`, because both defaults apply automatically and the option is additive and optional. Callers that supply `retention` must ensure each capacity is a positive safe integer no greater than `100000`, since an out-of-range or malformed value now fails initialization rather than being ignored or clamped. Under this package's Semantic Versioning policy the additive optional configuration is minor, but the narrowed local duplicate-detection horizon is behaviorally observable and would require explicit release notes — and a documented sizing recommendation — for a published package. No public export, error code, provider interface, canonical event interpretation, or contract version changes; contract `1.0.0`, package exports, and runtime dependencies are unchanged. The package remains private and unpublished at candidate `0.1.0`; this correction does not authorize release or production use.
+
+## Contract 1.1.0 provenance transition
+
+Candidate `0.2.0` replaces its exact contract baseline with `1.1.0`; callers must update the construction literal from `"1.0.0"` to `"1.1.0"`. The contract adds optional `risk.model.provenance.derived_from` for code-point-ordered material input paths of `derived_server` risk models. Existing events that omit the field remain valid. Supplied paths are rejected when malformed, duplicated, unordered, unresolvable, absent from the event, non-derived, or cyclic. This candidate remains private and unpublished and does not authorize release or production use.
 
 ## Contract-version upgrades
 

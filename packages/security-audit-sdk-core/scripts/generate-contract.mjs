@@ -58,12 +58,14 @@ const [source, schema, catalogArtifact, fieldPolicy, registriesArtifact, provena
   readJson(provenancePath),
 ]);
 
-assert(source.metadata?.schema_version === "1.0.0", "canonical source must be contract 1.0.0");
-assert(schema.$id === source.metadata?.schema_id && schema.$id.includes("/1.0.0/"), "schema ID must bind to contract 1.0.0");
+const contractVersion = source.metadata?.schema_version;
+assert(typeof contractVersion === "string" && /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(contractVersion), "canonical source must declare a stable contract version");
+assert(provenance.contractVersion === contractVersion, "contract provenance and canonical source versions differ");
+assert(schema.$id === source.metadata?.schema_id && schema.$id.includes(`/${contractVersion}/`), "schema ID must bind to the canonical contract version");
 assert(Array.isArray(source.catalog) && source.catalog.length === 24, "canonical catalog must contain 24 events");
 const generatedCatalog = Array.isArray(catalogArtifact) ? catalogArtifact : catalogArtifact.events ?? catalogArtifact.catalog;
 assert(Array.isArray(generatedCatalog) && generatedCatalog.length === 24, "generated catalog must contain 24 events");
-assert(provenance.normativeTechnicalTarget === "8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993", "normative contract target drift");
+assert(typeof provenance.normativeTechnicalTarget === "string" && /^[0-9a-f]{40}$/.test(provenance.normativeTechnicalTarget), "normative contract target must be a full Git commit");
 assert(JSON.stringify(stable(source.registries)) === JSON.stringify(stable(registriesArtifact)), "source and generated registries differ");
 assert(fieldPolicyMatches(source.fields, fieldPolicy), "source and generated field policy projection differ");
 assert(
@@ -73,7 +75,7 @@ assert(
 
 const header = [
   "// GENERATED FILE. DO NOT EDIT.",
-  "// Contract: Bloodtrail Security Audit Event Contract 1.0.0",
+  `// Contract: Bloodtrail Security Audit Event Contract ${contractVersion}`,
   "// Sources: contracts/security-audit/source/contract.source.json and generated contract artifacts.",
   "",
 ].join("\n");
@@ -135,6 +137,7 @@ function toType(node, depth) {
 
 function emitConstants(source, fieldPolicy) {
   const registries = stable(source.registries);
+  const derivedFieldProvenance = stable(source.derived_field_provenance);
   const catalog = source.catalog.map((entry) => ({
     semantic: entry.semantic,
     name: entry.name,
@@ -190,13 +193,14 @@ function emitConstants(source, fieldPolicy) {
     return `export type ${method.inputType} = EventBuilderInputForName<${JSON.stringify(method.name)}>;`;
   }).join("\n\n");
   return [
-    `export const CONTRACT_VERSION = "1.0.0" as const;`,
+    `export const CONTRACT_VERSION = ${JSON.stringify(source.metadata.schema_version)} as const;`,
     `export const CONTRACT_SCHEMA_NAME = ${JSON.stringify(source.metadata.schema_name)} as const;`,
     `export const CONTRACT_SCHEMA_ID = ${JSON.stringify(source.metadata.schema_id)} as const;`,
     `export const REGISTRIES = ${JSON.stringify(registries, null, 2)} as const;`,
     `export const EVENT_CATALOG = ${JSON.stringify(catalog, null, 2)} as const;`,
     `export const EVENT_METHODS = ${JSON.stringify(methods, null, 2)} as const;`,
     `export const EXTENSION_NAMESPACES = ${JSON.stringify(extensions, null, 2)} as const;`,
+    `export const DERIVED_FIELD_PROVENANCE = ${JSON.stringify(derivedFieldProvenance, null, 2)} as const;`,
     `export const FIELD_POLICY = ${JSON.stringify(fieldPolicy, null, 2)} as const;`,
     `export const PROHIBITED_DATA_KEYS = ${JSON.stringify([...source.prohibited_data].sort(byCodePoint), null, 2)} as const;`,
     `export const CONTRACT_ERROR_CODES = REGISTRIES.validation_error_codes;`,

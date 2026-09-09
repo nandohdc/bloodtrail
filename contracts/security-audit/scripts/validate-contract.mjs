@@ -8,6 +8,7 @@ const source = JSON.parse(await readFile(resolve(root, "source/contract.source.j
 const catalogByName = new Map(source.catalog.map((entry) => [entry.name, entry]));
 const eventNames = new Set(source.catalog.map((entry) => entry.name));
 const fieldByPath = new Map(source.fields.map((field) => [field.p, field]));
+const derivedFieldProvenance = source.derived_field_provenance;
 const allowedParents = new Set();
 for (const field of source.fields) {
   const parts = field.p.split(".");
@@ -86,20 +87,127 @@ function formatOk(field, value) {
 
 function typeBoundsError(event) {
   for (const field of source.fields) {
+    if (field.p === derivedFieldProvenance.field_path) continue;
     const value = get(event, field.p);
-    if (value === undefined) continue;
-    if (field.t === "array" && !Array.isArray(value)) return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
-    if (field.t === "string" && typeof value !== "string") return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
-    if (field.t === "integer" && (!Number.isInteger(value) || value < 0 || value > field.max)) return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
-    if (field.t === "number" && (typeof value !== "number" || value < 0 || value > field.max)) return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
-    if (field.t === "boolean" && typeof value !== "boolean") return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
-    if (typeof value === "string" && value.length > (field.max ?? source.bounds.default_string_max)) return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
-    if (Array.isArray(value) && value.length > (field.max ?? source.bounds.array_max_items)) return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
-    const enums = enumValues(field);
-    if (enums && !enums.includes(value)) return diagnostic("UNKNOWN_CATALOG_VALUE", field.p, event);
-    if (!formatOk(field, value)) return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
+    const code = fieldBoundsCode(field, value);
+    if (code) return diagnostic(code, field.p, event);
   }
   return null;
+}
+
+function fieldBoundsCode(field, value) {
+  if (value === undefined) return null;
+  if (invalidFieldType(field, value)) return "FIELD_LIMIT_EXCEEDED";
+  if (valueExceedsBound(field, value)) return "FIELD_LIMIT_EXCEEDED";
+  const enums = enumValues(field);
+  if (enums && !enums.includes(value)) return "UNKNOWN_CATALOG_VALUE";
+  return formatOk(field, value) ? null : "FIELD_LIMIT_EXCEEDED";
+}
+
+function invalidFieldType(field, value) {
+  if (field.t === "array") return !Array.isArray(value);
+  if (field.t === "string") return typeof value !== "string";
+  if (field.t === "integer") return !Number.isInteger(value) || isOutsideNumericBounds(value, field.max);
+  if (field.t === "number") return typeof value !== "number" || isOutsideNumericBounds(value, field.max);
+  if (field.t === "boolean") return typeof value !== "boolean";
+  return false;
+}
+
+function isOutsideNumericBounds(value, maximum) {
+  if (value < 0) return true;
+  return value > maximum;
+}
+
+function valueExceedsBound(field, value) {
+  if (typeof value === "string") return value.length > (field.max ?? source.bounds.default_string_max);
+  if (Array.isArray(value)) return value.length > (field.max ?? source.bounds.array_max_items);
+  return false;
+}
+
+function derivedFieldProvenanceError(event) {
+  const inputs = get(event, derivedFieldProvenance.field_path);
+  if (inputs === undefined) return null;
+  const { error_codes: codes } = derivedFieldProvenance;
+  const shapeCode = derivedInputShapeCode(inputs, codes);
+  if (shapeCode) return provenanceDiagnostic(shapeCode, event);
+  if (get(event, derivedFieldProvenance.trust_path) !== derivedFieldProvenance.required_trust) {
+    return provenanceDiagnostic(codes.non_derived, event);
+  }
+  return derivedInputReferenceError(event, inputs, codes);
+}
+
+function derivedInputShapeCode(inputs, codes) {
+  if (!Array.isArray(inputs)) return codes.malformed;
+  if (inputs.length > derivedFieldProvenance.maximum_inputs) return codes.malformed;
+  if (inputs.length < derivedFieldProvenance.minimum_inputs) return codes.empty;
+  for (const input of inputs) if (isMalformedDerivedInput(input)) return codes.malformed;
+  return null;
+}
+
+function isMalformedDerivedInput(input) {
+  if (typeof input !== "string") return true;
+  if (input.length === 0) return true;
+  return input.length > derivedFieldProvenance.maximum_input_length;
+}
+
+function derivedInputReferenceError(event, inputs, codes) {
+  return firstProvenanceDiagnostic(event, [
+    duplicateDerivedInputCode(inputs, codes),
+    derivedInputOrderCode(inputs, codes),
+    firstDerivedInputResolutionCode(event, inputs, codes)
+  ]);
+}
+
+function duplicateDerivedInputCode(inputs, codes) {
+  const seen = new Set();
+  for (const input of inputs) {
+    if (seen.has(input)) return codes.duplicate;
+    seen.add(input);
+  }
+  return null;
+}
+
+function derivedInputOrderCode(inputs, codes) {
+  for (let index = 1; index < inputs.length; index += 1) {
+    if (inputs[index - 1] > inputs[index]) return codes.noncanonical_order;
+  }
+  return null;
+}
+
+function firstDerivedInputResolutionCode(event, inputs, codes) {
+  for (const input of inputs) {
+    const code = derivedInputResolutionCode(event, input, codes);
+    if (code) return code;
+  }
+  return null;
+}
+
+function firstProvenanceDiagnostic(event, codes) {
+  for (const code of codes) {
+    if (code) return provenanceDiagnostic(code, event);
+  }
+  return null;
+}
+
+function derivedInputResolutionCode(event, input, codes) {
+  if (input === derivedFieldProvenance.field_path) return codes.cycle;
+  if (fieldByPath.has(input)) return get(event, input) === undefined ? codes.absent : null;
+  if (isPresentRegisteredExtension(event, input)) return null;
+  return isRegisteredExtensionInput(input) ? codes.absent : codes.unresolvable;
+}
+
+function provenanceDiagnostic(code, event) {
+  return diagnostic(code, derivedFieldProvenance.field_path, event);
+}
+
+function isRegisteredExtensionInput(input) {
+  if (!input.startsWith("extensions.")) return false;
+  return source.registries.extension_namespaces.includes(input.slice("extensions.".length));
+}
+
+function isPresentRegisteredExtension(event, input) {
+  if (!isRegisteredExtensionInput(input)) return false;
+  return event.extensions?.[input.slice("extensions.".length)] !== undefined;
 }
 
 function unknownField(event) {
@@ -112,42 +220,195 @@ function unknownField(event) {
 }
 
 export function validateCanonicalEvent(event) {
-  if (!isObject(event)) return [diagnostic("FIELD_LIMIT_EXCEEDED", "$", event)];
-  if (JSON.stringify(event).length > source.bounds.event_max_bytes || depth(event) > source.bounds.object_max_depth) return [diagnostic("FIELD_LIMIT_EXCEEDED", "$", event)];
-  const prohibited = firstProhibited(event);
-  if (prohibited) return [diagnostic("PROHIBITED_DATA", prohibited, event)];
-  if (event?.schema?.version !== source.metadata.schema_version) return [diagnostic("UNSUPPORTED_SCHEMA_VERSION", "schema.version", event)];
-  if (!event.actor?.type) return [diagnostic("MISSING_REQUIRED_ACTOR", "actor.type", event)];
-  if (event.tenant?.scope === "tenant" && (!event.tenant.effective_tenant_id || !event.tenant.resource_tenant_id)) return [diagnostic("MISSING_TENANT_CONTEXT", "tenant", event)];
-  if (event.tenant?.scope === "cross_tenant" && (!event.tenant.actor_tenant_id || !event.tenant.effective_tenant_id || !event.tenant.resource_tenant_id)) return [diagnostic("MISSING_TENANT_CONTEXT", "tenant", event)];
-  if (event.extensions) {
-    for (const namespace of Object.keys(event.extensions)) {
-      if (!source.registries.extension_namespaces.includes(namespace)) return [diagnostic("UNKNOWN_EXTENSION", `extensions.${namespace}`, event)];
-      if (event.extensions[namespace]?.provenance?.trust_level !== "downstream_enrichment") return [diagnostic("AUTHORITY_ESCALATION", `extensions.${namespace}.provenance.trust_level`, event)];
-      if (["tenant", "actor", "authorization", "event", "delivery_class"].some((key) => Object.hasOwn(event.extensions[namespace], key))) return [diagnostic("AUTHORITY_ESCALATION", `extensions.${namespace}`, event)];
-    }
-  }
+  const preflight = canonicalPreflightError(event);
+  if (preflight) return [preflight];
+  const context = canonicalContextError(event);
+  if (context) return [context];
   const catalog = catalogByName.get(event.event?.name);
   if (!catalog) return [diagnostic("UNKNOWN_CATALOG_VALUE", "event.name", event)];
-  if (event.event.category !== catalog.category || event.event.action !== catalog.action) return [diagnostic("UNKNOWN_CATALOG_VALUE", "event.category/action", event)];
-  if (event.event.lifecycle_phase === "completed" && event.event.outcome === "success" && !["committed", "not_applicable"].includes(event.event.commit_state)) return [diagnostic("PREMATURE_SUCCESS", "event.commit_state", event)];
-  if (event.event.lifecycle_phase === "compensating" && event.event.outcome === "success" && event.event.commit_state !== "compensated") return [diagnostic("PREMATURE_SUCCESS", "event.commit_state", event)];
-  if (event.authorization?.decision === "allow" && event.event.outcome === "denied") return [diagnostic("AUTHORIZATION_OUTCOME_CONFLICT", "authorization.decision", event)];
-  if (event.authorization?.decision === "deny" && event.event.outcome !== "denied") return [diagnostic("AUTHORIZATION_OUTCOME_CONFLICT", "authorization.decision", event)];
-  if (event.actor?.id && event.actor?.provenance?.trust_level === "client_claim") return [diagnostic("AUTHORITY_ESCALATION", "actor.provenance.trust_level", event)];
-  if (event.delegation?.mode && (!event.delegation.principal_id || !event.delegation.expires_at || !event.delegation.reason_code)) return [diagnostic("INVALID_DELEGATION", "delegation", event)];
-  if (event.correlation?.causation_id && event.correlation.causation_id === event.event.id) return [diagnostic("BAD_CAUSALITY", "correlation.causation_id", event)];
-  if (event.event.lifecycle_phase === "compensating" && !event.correlation?.original_event_id) return [diagnostic("BAD_CAUSALITY", "correlation.original_event_id", event)];
-  if ((event.correlation?.retry_attempt ?? 0) > 0 && !event.correlation?.original_event_id) return [diagnostic("BAD_CAUSALITY", "correlation.original_event_id", event)];
-  if (catalog.semantic.endsWith("_completed") && (!event.correlation?.causation_id || !event.correlation?.original_event_id)) return [diagnostic("BAD_CAUSALITY", "correlation.causation_id/original_event_id", event)];
-  if (event.tenant?.resource_tenant_id && event.resource?.owning_tenant_id && event.resource.owning_tenant_id !== event.tenant.resource_tenant_id) return [diagnostic("TENANT_RESOURCE_CONFLICT", "resource.owning_tenant_id", event)];
-  if (!catalog.phase.includes(event.event.lifecycle_phase) || !catalog.outcomes.includes(event.event.outcome) || !catalog.commit.includes(event.event.commit_state) || event.event.delivery_class !== catalog.delivery) return [diagnostic("UNKNOWN_CATALOG_VALUE", "event.lifecycle/outcome/commit/delivery", event)];
-  for (const field of source.fields.filter((f) => f.r === "required")) if (get(event, field.p) === undefined) return [diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event)];
-  const bounds = typeBoundsError(event);
-  if (bounds) return [bounds];
-  const unknown = unknownField(event);
-  if (unknown) return [diagnostic("UNKNOWN_CATALOG_VALUE", unknown, event)];
+  return catalogedEventErrors(event, catalog);
+}
+
+function canonicalPreflightError(event) {
+  if (!isObject(event)) return diagnostic("FIELD_LIMIT_EXCEEDED", "$", event);
+  if (JSON.stringify(event).length > source.bounds.event_max_bytes || depth(event) > source.bounds.object_max_depth) return diagnostic("FIELD_LIMIT_EXCEEDED", "$", event);
+  const prohibited = firstProhibited(event);
+  if (prohibited) return diagnostic("PROHIBITED_DATA", prohibited, event);
+  return event?.schema?.version !== source.metadata.schema_version ? diagnostic("UNSUPPORTED_SCHEMA_VERSION", "schema.version", event) : null;
+}
+
+function canonicalContextError(event) {
+  if (!event.actor?.type) return diagnostic("MISSING_REQUIRED_ACTOR", "actor.type", event);
+  const tenant = tenantContextError(event);
+  if (tenant) return tenant;
+  return extensionError(event);
+}
+
+function tenantContextError(event) {
+  if (event.tenant?.scope === "tenant") return tenantScopeContextError(event);
+  if (event.tenant?.scope === "cross_tenant") return crossTenantScopeContextError(event);
+  return null;
+}
+
+function tenantScopeContextError(event) {
+  if (!event.tenant?.effective_tenant_id) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
+  if (!event.tenant?.resource_tenant_id) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
+  return null;
+}
+
+function crossTenantScopeContextError(event) {
+  if (!event.tenant?.actor_tenant_id) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
+  if (!event.tenant?.effective_tenant_id) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
+  if (!event.tenant?.resource_tenant_id) return diagnostic("MISSING_TENANT_CONTEXT", "tenant", event);
+  return null;
+}
+
+function extensionError(event) {
+  if (!event.extensions) return null;
+  for (const namespace of Object.keys(event.extensions)) {
+    if (!source.registries.extension_namespaces.includes(namespace)) return diagnostic("UNKNOWN_EXTENSION", `extensions.${namespace}`, event);
+    if (event.extensions[namespace]?.provenance?.trust_level !== "downstream_enrichment") return diagnostic("AUTHORITY_ESCALATION", `extensions.${namespace}.provenance.trust_level`, event);
+    if (["tenant", "actor", "authorization", "event", "delivery_class"].some((key) => Object.hasOwn(event.extensions[namespace], key))) return diagnostic("AUTHORITY_ESCALATION", `extensions.${namespace}`, event);
+  }
+  return null;
+}
+
+function catalogedEventErrors(event, catalog) {
+  const validators = [
+    () => catalogIdentityError(event, catalog),
+    () => lifecycleError(event),
+    () => authorizationOutcomeError(event),
+    () => actorAuthorityError(event),
+    () => delegationError(event),
+    () => causalityError(event, catalog),
+    () => tenantResourceError(event),
+    () => catalogMembershipError(event, catalog),
+    () => missingRequiredFieldError(event),
+    () => canonicalFieldError(event)
+  ];
+  for (const validate of validators) {
+    const error = validate();
+    if (error) return [error];
+  }
   return [];
+}
+
+function catalogIdentityError(event, catalog) {
+  return event.event.category !== catalog.category || event.event.action !== catalog.action
+    ? diagnostic("UNKNOWN_CATALOG_VALUE", "event.category/action", event)
+    : null;
+}
+
+function lifecycleError(event) {
+  return completedSuccessError(event) ?? compensatingSuccessError(event);
+}
+
+function completedSuccessError(event) {
+  if (event.event.lifecycle_phase !== "completed") return null;
+  if (event.event.outcome !== "success") return null;
+  return ["committed", "not_applicable"].includes(event.event.commit_state)
+    ? null
+    : diagnostic("PREMATURE_SUCCESS", "event.commit_state", event);
+}
+
+function compensatingSuccessError(event) {
+  if (event.event.lifecycle_phase !== "compensating") return null;
+  if (event.event.outcome !== "success") return null;
+  return event.event.commit_state === "compensated"
+    ? null
+    : diagnostic("PREMATURE_SUCCESS", "event.commit_state", event);
+}
+
+function authorizationOutcomeError(event) {
+  if (event.authorization?.decision === "allow" && event.event.outcome === "denied") return diagnostic("AUTHORIZATION_OUTCOME_CONFLICT", "authorization.decision", event);
+  if (event.authorization?.decision === "deny" && event.event.outcome !== "denied") return diagnostic("AUTHORIZATION_OUTCOME_CONFLICT", "authorization.decision", event);
+  return null;
+}
+
+function actorAuthorityError(event) {
+  return event.actor?.id && event.actor?.provenance?.trust_level === "client_claim"
+    ? diagnostic("AUTHORITY_ESCALATION", "actor.provenance.trust_level", event)
+    : null;
+}
+
+function delegationError(event) {
+  return event.delegation?.mode && (!event.delegation.principal_id || !event.delegation.expires_at || !event.delegation.reason_code)
+    ? diagnostic("INVALID_DELEGATION", "delegation", event)
+    : null;
+}
+
+function causalityError(event, catalog) {
+  return firstError([
+    () => selfCausationError(event),
+    () => compensatingCausalityError(event),
+    () => retryCausalityError(event),
+    () => completedEventCausalityError(event, catalog)
+  ]);
+}
+
+function selfCausationError(event) {
+  if (!event.correlation?.causation_id) return null;
+  return event.correlation.causation_id === event.event.id
+    ? diagnostic("BAD_CAUSALITY", "correlation.causation_id", event)
+    : null;
+}
+
+function compensatingCausalityError(event) {
+  if (event.event.lifecycle_phase !== "compensating") return null;
+  return event.correlation?.original_event_id
+    ? null
+    : diagnostic("BAD_CAUSALITY", "correlation.original_event_id", event);
+}
+
+function retryCausalityError(event) {
+  if ((event.correlation?.retry_attempt ?? 0) <= 0) return null;
+  return event.correlation?.original_event_id
+    ? null
+    : diagnostic("BAD_CAUSALITY", "correlation.original_event_id", event);
+}
+
+function completedEventCausalityError(event, catalog) {
+  if (!catalog.semantic.endsWith("_completed")) return null;
+  if (!event.correlation?.causation_id) return diagnostic("BAD_CAUSALITY", "correlation.causation_id/original_event_id", event);
+  return event.correlation?.original_event_id
+    ? null
+    : diagnostic("BAD_CAUSALITY", "correlation.causation_id/original_event_id", event);
+}
+
+function firstError(validators) {
+  for (const validate of validators) {
+    const error = validate();
+    if (error) return error;
+  }
+  return null;
+}
+
+function tenantResourceError(event) {
+  return event.tenant?.resource_tenant_id && event.resource?.owning_tenant_id && event.resource.owning_tenant_id !== event.tenant.resource_tenant_id
+    ? diagnostic("TENANT_RESOURCE_CONFLICT", "resource.owning_tenant_id", event)
+    : null;
+}
+
+function catalogMembershipError(event, catalog) {
+  return !catalog.phase.includes(event.event.lifecycle_phase) || !catalog.outcomes.includes(event.event.outcome) || !catalog.commit.includes(event.event.commit_state) || event.event.delivery_class !== catalog.delivery
+    ? diagnostic("UNKNOWN_CATALOG_VALUE", "event.lifecycle/outcome/commit/delivery", event)
+    : null;
+}
+
+function missingRequiredFieldError(event) {
+  for (const field of source.fields.filter((candidate) => candidate.r === "required")) {
+    if (get(event, field.p) === undefined) return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
+  }
+  return null;
+}
+
+function canonicalFieldError(event) {
+  const bounds = typeBoundsError(event);
+  if (bounds) return bounds;
+  const provenance = derivedFieldProvenanceError(event);
+  if (provenance) return provenance;
+  const unknown = unknownField(event);
+  return unknown ? diagnostic("UNKNOWN_CATALOG_VALUE", unknown, event) : null;
 }
 
 export function validateCloudEventEnvelope(envelope) {

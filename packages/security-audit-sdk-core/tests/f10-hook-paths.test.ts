@@ -91,7 +91,7 @@ function configurationWith(transformations: readonly AuditFieldTransformationHoo
   return {
     sink,
     configuration: {
-      contractVersion: "1.0.0",
+      contractVersion: "1.1.0",
       producer: { name: "f10-test", version: "1.0.0" },
       service: { name: "f10-test", version: "1.0.0" },
       environment: { name: "test" },
@@ -244,7 +244,7 @@ test("F-10 valid paths: a known valid transformable path remains accepted and it
 });
 
 test("F-10 valid paths: every runtime-transformable policy path is accepted at construction", () => {
-  assert.equal(TRANSFORMABLE_PATHS.length, 59, "contract 1.0.0 transformable path inventory changed");
+  assert.equal(TRANSFORMABLE_PATHS.length, 59, "contract 1.1.0 transformable path inventory changed");
   for (const path of TRANSFORMABLE_PATHS) {
     const { configuration } = configurationWith([{ path, transform: () => "masked" }]);
     const normalized = normalizeConfiguration(configuration);
@@ -281,7 +281,7 @@ test("F-10 parity: configuration acceptance equals runtime transformability acro
       `construction/runtime policy mismatch for ${JSON.stringify(path)}`,
     );
   }
-  assert.equal(BLOCKED_POLICY_PATHS.length, 75, "contract 1.0.0 blocked policy-path inventory changed");
+  assert.equal(BLOCKED_POLICY_PATHS.length, 76, "contract 1.1.0 blocked policy-path inventory changed");
   assert.equal(fieldPolicyForPath("event.outcome_reason.code")?.policy, "conditionally_allowed");
 });
 

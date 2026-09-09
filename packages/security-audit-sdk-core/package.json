@@ -1,6 +1,6 @@
 {
   "name": "@bloodtrail/security-audit-sdk-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-independent, contract-bound TypeScript SDK core for Bloodtrail security audit events",
   "type": "module",
   "private": true,

@@ -62,7 +62,7 @@ function schemaForField(field) {
   } else if (field.t === "array") {
     schema.type = "array";
     schema.maxItems = typeof field.max === "number" ? field.max : source.bounds.array_max_items;
-    schema.items = { type: ["string", "object"], additionalProperties: true };
+    schema.items = schemaForArrayItem(field.items);
   } else {
     schema.type = "string";
     schema.minLength = 1;
@@ -76,6 +76,16 @@ function schemaForField(field) {
   }
   if (field.enum) schema.enum = enumValues(field.enum);
   return schema;
+}
+
+function schemaForArrayItem(item) {
+  if (item?.t === "string") {
+    const schema = { type: "string" };
+    if (typeof item.min === "number") schema.minLength = item.min;
+    if (typeof item.max === "number") schema.maxLength = item.max;
+    return schema;
+  }
+  return { type: ["string", "object"], additionalProperties: true };
 }
 
 function addField(rootSchema, field) {
@@ -172,6 +182,24 @@ function actor(type, scope) {
   return base;
 }
 
+function fixtureRisk(entry, index) {
+  const derivedFrom = index === 0 ? ["event.name", "event.outcome"] : undefined;
+  const policyCritical = entry.delivery === "policy_critical";
+  return {
+    level: policyCritical ? "high" : "low",
+    score: policyCritical ? 80 : 15,
+    reason_codes: ["policy_baseline"],
+    model: {
+      name: "fixture-risk",
+      version: "1.0.0",
+      provenance: {
+        trust_level: "derived_server",
+        ...(derivedFrom ? { derived_from: derivedFrom } : {})
+      }
+    }
+  };
+}
+
 function makeEvent(entry, index) {
   const ex = entry.example;
   const phase = ex.phase ?? entry.phase[0];
@@ -256,7 +284,7 @@ function makeEvent(entry, index) {
       retry_attempt: 0,
       original_event_id: phase === "compensating" || entry.semantic.endsWith("_completed") ? id(Math.max(1, index)) : undefined
     },
-    risk: { level: entry.delivery === "policy_critical" ? "high" : "low", score: entry.delivery === "policy_critical" ? 80 : 15, reason_codes: ["policy_baseline"], model: { name: "fixture-risk", version: "1.0.0", provenance: { trust_level: "derived_server" } } },
+    risk: fixtureRisk(entry, index),
     data: { classification: entry.retention === "policy_governed" ? "restricted" : "confidential", retention_class: entry.retention, field_policy_version: source.metadata.field_policy_version },
     integrity: { transport_authentication: { method: "mtls", verified: true, peer: "producer-registry/ref" } }
   };
@@ -334,6 +362,16 @@ function negativeFixtures(positive) {
   add("browser-client-authority-claim", "AUTHORITY_ESCALATION", (e) => { e.actor.provenance = { trust_level: "client_claim", source: "browser" }; });
   add("arbitrary-object-body", "PROHIBITED_DATA", (e) => { e.request.full_request = { arbitrary: "object" }; });
   add("ambiguous-actor-attribution", "MISSING_REQUIRED_ACTOR", (e) => { e.actor = {}; });
+  const provenance = source.derived_field_provenance;
+  const setDerivedInputs = (event, inputs) => { event.risk.model.provenance.derived_from = inputs; };
+  add("derived-from-malformed", provenance.error_codes.malformed, (e) => { setDerivedInputs(e, ["event.name", 1]); });
+  add("derived-from-duplicate", provenance.error_codes.duplicate, (e) => { setDerivedInputs(e, ["event.name", "event.name"]); });
+  add("derived-from-unresolvable", provenance.error_codes.unresolvable, (e) => { setDerivedInputs(e, ["event.name", "not.a.canonical.field"]); });
+  add("derived-from-absent", provenance.error_codes.absent, (e) => { setDerivedInputs(e, ["event.name", "subject.display_name"]); });
+  add("derived-from-unordered", provenance.error_codes.noncanonical_order, (e) => { setDerivedInputs(e, ["event.outcome", "event.name"]); });
+  add("derived-from-empty", provenance.error_codes.empty, (e) => { setDerivedInputs(e, []); });
+  add("derived-from-non-derived", provenance.error_codes.non_derived, (e) => { e.risk.model.provenance.trust_level = "observed_transport"; setDerivedInputs(e, ["event.name", "event.outcome"]); });
+  add("derived-from-cycle", provenance.error_codes.cycle, (e) => { setDerivedInputs(e, [provenance.field_path]); });
   return fixtures;
 }
 
@@ -409,6 +447,7 @@ async function main() {
   await emit("fixtures/compatibility/compatibility-scenarios.json", stableJson([
     { name: "patch-documentation-correction", change_class: "patch", expected: "compatible" },
     { name: "minor-optional-field-addition", change_class: "minor", expected: "compatible_with_absence_meaning" },
+    { name: "minor-derived-field-provenance", change_class: "minor", expected: "compatible_with_absence_meaning" },
     { name: "minor-catalog-addition", change_class: "minor", expected: "older_consumer_must_reject_or_quarantine_unknown_event" },
     { name: "minor-enum-addition", change_class: "minor", expected: "compatible_only_when registry version is supported" },
     { name: "minor-deprecation", change_class: "minor", expected: "compatible_during_support_window" },

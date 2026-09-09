@@ -4,12 +4,12 @@
   "metadata": {
     "contract": "bloodtrail-security-audit-event",
     "schema_name": "com.bloodtrail.security-audit.event",
-    "schema_version": "1.0.0",
-    "catalog_version": "1.0.0",
-    "field_policy_version": "1.0.0",
+    "schema_version": "1.1.0",
+    "catalog_version": "1.1.0",
+    "field_policy_version": "1.1.0",
     "schema_dialect": "https://json-schema.org/draft/2020-12/schema",
-    "schema_id": "https://bloodtrail.dev/contracts/security-audit/1.0.0/security-audit-event.schema.json",
-    "catalog_id": "https://bloodtrail.dev/contracts/security-audit/1.0.0/catalog.json",
+    "schema_id": "https://bloodtrail.dev/contracts/security-audit/1.1.0/security-audit-event.schema.json",
+    "catalog_id": "https://bloodtrail.dev/contracts/security-audit/1.1.0/catalog.json",
     "owner": "Bloodtrail project owner",
     "generated_artifact_notice": "GENERATED FROM contracts/security-audit/source/contract.source.json. DO NOT EDIT BY HAND.",
     "retrieval_date": "2026-07-31",
@@ -27,6 +27,25 @@
     "extension_max_namespaces": 4,
     "clock_skew_max_seconds": 300,
     "retry_attempt_max": 1000
+  },
+  "derived_field_provenance": {
+    "field_path": "risk.model.provenance.derived_from",
+    "trust_path": "risk.model.provenance.trust_level",
+    "required_trust": "derived_server",
+    "minimum_inputs": 1,
+    "maximum_inputs": 32,
+    "maximum_input_length": 256,
+    "canonical_order": "code_point_ascending",
+    "error_codes": {
+      "malformed": "DERIVED_FROM_MALFORMED_INPUT",
+      "duplicate": "DERIVED_FROM_DUPLICATE_INPUT",
+      "noncanonical_order": "DERIVED_FROM_NONCANONICAL_ORDER",
+      "unresolvable": "DERIVED_FROM_UNRESOLVABLE_INPUT",
+      "absent": "DERIVED_FROM_ABSENT_INPUT",
+      "empty": "DERIVED_FROM_EMPTY_INPUT",
+      "non_derived": "DERIVED_FROM_NON_DERIVED",
+      "cycle": "DERIVED_FROM_CYCLE"
+    }
   },
   "standards": [
     {
@@ -507,7 +526,15 @@
       "MISSING_NATIVE_MAPPING",
       "MAPPING_SCOPE_OVERCLAIM",
       "UNAPPROVED_POLICY_CRITICAL_POSTURE",
-      "UNSUPPORTED_COMPATIBILITY_VERSION"
+      "UNSUPPORTED_COMPATIBILITY_VERSION",
+      "DERIVED_FROM_MALFORMED_INPUT",
+      "DERIVED_FROM_DUPLICATE_INPUT",
+      "DERIVED_FROM_NONCANONICAL_ORDER",
+      "DERIVED_FROM_UNRESOLVABLE_INPUT",
+      "DERIVED_FROM_ABSENT_INPUT",
+      "DERIVED_FROM_EMPTY_INPUT",
+      "DERIVED_FROM_NON_DERIVED",
+      "DERIVED_FROM_CYCLE"
     ],
     "extension_namespaces": [
       "bloodtrail.audit.enrichment.v1"
@@ -2442,6 +2469,23 @@
       "max": 32,
       "compat": "stable",
       "enum": "trust_levels"
+    },
+    {
+      "p": "risk.model.provenance.derived_from",
+      "t": "array",
+      "items": {
+        "t": "string",
+        "min": 1,
+        "max": 256
+      },
+      "r": "optional",
+      "a": "risk_enrichment",
+      "trust": "derived_server",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_elevated",
+      "max": 32,
+      "compat": "additive"
     },
     {
       "p": "data.classification",

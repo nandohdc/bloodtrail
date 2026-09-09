@@ -5,10 +5,11 @@
     "A supplied provenance list can be attacker-controlled and must distinguish malformed, unknown, absent, duplicate, unordered, and cyclic input declarations without normalizing any of them.",
     "An optional contract-minor field still replaces the Core package's exact contract baseline, so generated types, runtime validation, compatibility metadata, and constructor behavior must move atomically.",
     "The frozen-contract immutability and protected-prefix gates intentionally reject the necessary sources today; rebinding must remain specific to this governed candidate rather than weakening the boundary globally.",
-    "The Node package is a frozen public surface with a first-party Core dependency, so candidate identity alignment must not become an unreviewed API or delivery change."
+    "The Node package is a frozen public surface with a first-party Core dependency, so candidate identity alignment must not become an unreviewed API or delivery change.",
+    "Contract Reuse Assessment mechanism references must resolve against the reviewed contract baseline, because resolving them from the candidate source would make this authorized version transition self-invalidating."
   ],
   "applicability": {
-    "triggers_matched": ["public_api", "security_sensitive_behavior", "canonical_capability_requirement"],
+    "triggers_matched": ["public_api", "security_sensitive_behavior", "governance_core_path", "canonical_capability_requirement"],
     "material_capability_modification": true,
     "capabilities": ["security-audit-event-contract", "security-audit-sdk-core", "security-audit-sdk-node"]
   },
@@ -16,13 +17,14 @@
     {
       "id": "approach-bounded-risk-provenance",
       "kind": "direct_implementation",
-      "summary": "Add one optional bounded provenance list beside the existing derived risk model, validate its declared paths in the canonical validator, and move all exact-version projections and gates together.",
+      "summary": "Add one optional bounded provenance list beside the existing derived risk model, validate its declared paths in the canonical validator, bind CRA mechanism resolution to the reviewed baseline, and move all exact-version projections and gates together.",
       "forces_addressed": [
         "The canonical event contract has a derived risk result but no machine-readable material-input provenance, so trust-floor reasoning cannot be reproduced from an event.",
         "A supplied provenance list can be attacker-controlled and must distinguish malformed, unknown, absent, duplicate, unordered, and cyclic input declarations without normalizing any of them.",
         "An optional contract-minor field still replaces the Core package's exact contract baseline, so generated types, runtime validation, compatibility metadata, and constructor behavior must move atomically.",
         "The frozen-contract immutability and protected-prefix gates intentionally reject the necessary sources today; rebinding must remain specific to this governed candidate rather than weakening the boundary globally.",
-        "The Node package is a frozen public surface with a first-party Core dependency, so candidate identity alignment must not become an unreviewed API or delivery change."
+        "The Node package is a frozen public surface with a first-party Core dependency, so candidate identity alignment must not become an unreviewed API or delivery change.",
+        "Contract Reuse Assessment mechanism references must resolve against the reviewed contract baseline, because resolving them from the candidate source would make this authorized version transition self-invalidating."
       ]
     },
     {
@@ -67,7 +69,8 @@
     "implementation-provenance-rejections-are-closed",
     "implementation-contract-projections-remain-exact",
     "implementation-contract-gate-rebinding-is-bounded",
-    "implementation-node-freeze-survives-alignment"
+    "implementation-node-freeze-survives-alignment",
+    "implementation-cra-remains-baseline-bound"
   ],
   "invariant_evidence": {
     "implementation-provenance-rejections-are-closed": {
@@ -76,15 +79,19 @@
     },
     "implementation-contract-projections-remain-exact": {
       "task_ids": ["2.1", "3.1", "3.2", "4.1"],
-      "evidence_ids": ["contract generation, Core generated drift, Core compatibility, and Node validation bind 1.1.0 and reject 1.0.0 from the new Core candidate"]
+      "evidence_ids": ["contract generation, Core generated drift, Core compatibility, and Node compatibility validation bind 1.1.0 and reject 1.0.0 from the new Core candidate"]
     },
     "implementation-contract-gate-rebinding-is-bounded": {
       "task_ids": ["3.3", "4.2"],
-      "evidence_ids": ["immutability and changed-path negative controls retain rejection of undeclared protected contract writes"]
+      "evidence_ids": ["immutability and changed-path negative controls retain rejection of undeclared or byte-different protected contract writes"]
     },
     "implementation-node-freeze-survives-alignment": {
       "task_ids": ["3.2", "4.1"],
       "evidence_ids": ["Node package validation and frozen-export verification confirm metadata alignment without export drift"]
+    },
+    "implementation-cra-remains-baseline-bound": {
+      "task_ids": ["1.5", "4.2"],
+      "evidence_ids": ["CRA controls accept the authorized candidate version transition only when the reviewed baseline resolves and reject a non-authoritative baseline"]
     }
   },
   "security_sensitive": true,
@@ -98,38 +105,42 @@
     "openspec/changes/add-derived-field-provenance/specs/security-audit-event-contract/spec.md",
     "openspec/changes/add-derived-field-provenance/specs/security-audit-sdk-core/spec.md",
     "openspec/changes/add-derived-field-provenance/specs/security-audit-sdk-node/spec.md",
-    "contracts/security-audit/package.json",
-    "contracts/security-audit/package-lock.json",
-    "contracts/security-audit/source/contract.source.json",
-    "contracts/security-audit/scripts/generate-artifacts.mjs",
-    "contracts/security-audit/tests/contract.test.mjs",
-    "contracts/security-audit/schema/security-audit-event.schema.json",
-    "contracts/security-audit/catalog/catalog.json",
-    "contracts/security-audit/registries/registries.json",
-    "contracts/security-audit/policies/field-policy.json",
-    "contracts/security-audit/examples/positive/all-events.json",
-    "contracts/security-audit/examples/negative/all-negative.json",
-    "contracts/security-audit/fixtures/compatibility/compatibility-scenarios.json",
-    "contracts/security-audit/docs/catalog.md",
-    "contracts/security-audit/docs/compatibility-and-migration.md",
-    "contracts/security-audit/docs/field-policy.md",
-    "contracts/security-audit/docs/sources.md",
-    "contracts/security-audit/docs/validation.md",
+    "contracts/security-audit/",
     "packages/security-audit-sdk-core/package.json",
     "packages/security-audit-sdk-core/package-lock.json",
     "packages/security-audit-sdk-core/compatibility.json",
     "packages/security-audit-sdk-core/contract-provenance.json",
     "packages/security-audit-sdk-core/scripts/check-contract-immutability.mjs",
+    "packages/security-audit-sdk-core/scripts/check-changed-paths.mjs",
+    "packages/security-audit-sdk-core/scripts/check-compatibility.mjs",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
     "packages/security-audit-sdk-core/scripts/generate-contract.mjs",
+    "packages/security-audit-sdk-core/README.md",
+    "packages/security-audit-sdk-core/API.md",
+    "packages/security-audit-sdk-core/SECURITY.md",
+    "packages/security-audit-sdk-core/MIGRATION.md",
+    "packages/security-audit-sdk-core/adr/009-package-contract-compatibility.md",
+    "packages/security-audit-sdk-core/examples/",
     "packages/security-audit-sdk-core/src/validation/semantic.ts",
+    "packages/security-audit-sdk-core/src/validation/schema.ts",
     "packages/security-audit-sdk-core/src/generated/contract.generated.ts",
     "packages/security-audit-sdk-core/src/generated/schema-validator.generated.cjs",
     "packages/security-audit-sdk-core/src/generated/schema-validator.generated.d.cts",
-    "packages/security-audit-sdk-core/tests/pass2.test.ts",
+    "packages/security-audit-sdk-core/tests/",
+    "packages/security-audit-sdk-core/tests/verification/contract-toolchain-exemption.test.mjs",
     "packages/security-audit-sdk-core/verification-lifecycle.json",
+    "packages/security-audit-collector/src/generated/bounds.generated.ts",
+    "packages/security-audit-collector/src/generated/schema-validator.generated.cjs",
+    "packages/security-audit-collector/src/generated/schema-validator.generated.d.cts",
+    "packages/security-audit-collector/tests/ingress.test.ts",
+    "packages/security-audit-collector/scripts/check-package-contents.mjs",
     "packages/security-audit-sdk-node/package.json",
     "packages/security-audit-sdk-node/package-lock.json",
-    "packages/security-audit-sdk-node/compatibility.json"
+    "packages/security-audit-sdk-node/compatibility.json",
+    "packages/security-audit-sdk-node/scripts/check-compatibility.mjs",
+    "openspec/scripts/contract-reuse/check.mjs",
+    "openspec/tests/contract-reuse/checker.test.mjs",
+    "openspec/tests/contract-reuse/support/disposable-repo.mjs"
   ],
   "verification_task_ids": ["1.2", "2.3", "3.1", "3.2", "3.3", "4.1", "4.2"],
   "ordering": {

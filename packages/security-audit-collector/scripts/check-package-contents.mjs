@@ -111,7 +111,7 @@ try {
       SUPPORTED_CONTRACT_VERSIONS,
     } from "@bloodtrail/security-audit-collector";
 
-    assert.deepEqual(SUPPORTED_CONTRACT_VERSIONS, ["1.0.0"]);
+    assert.deepEqual(SUPPORTED_CONTRACT_VERSIONS, ["1.1.0"]);
     const authenticator = new SyntheticFixtureAuthenticator(["fixture-token-a"]);
     const ingress = new CollectorIngress({ authenticator });
     assert.equal(typeof ingress.submit, "function");
@@ -119,7 +119,7 @@ try {
 
     const fixture = JSON.stringify({
       event: { id: "00000000-0000-4000-8000-000000000001", name: "bloodtrail.audit.authentication.succeeded", category: "authentication", action: "authenticate", lifecycle_phase: "completed", outcome: "success", timestamp: "2026-09-06T12:00:00.000Z", observed_at: "2026-09-06T12:00:00.000Z", delivery_class: "security_significant" },
-      schema: { name: "security-audit-event", version: "1.0.0" },
+      schema: { name: "security-audit-event", version: "1.1.0" },
       producer: { name: "producer-fixture", version: "1.0.0" },
       environment: { name: "synthetic" },
       service: { name: "svc" },
@@ -128,7 +128,7 @@ try {
       initiator: { type: "service", id: "init-1" },
       resource: { operation_type: "read" },
       correlation: { correlation_id: "c1", operation_id: "op1" },
-      data: { classification: "internal", retention_class: "security_standard", field_policy_version: "1.0.0" },
+      data: { classification: "internal", retention_class: "security_standard", field_policy_version: "1.1.0" },
     });
     const admitted = ingress.submit({ credentials: { credential: "fixture-token-a" }, body: fixture });
     assert.equal(admitted.kind, "admitted");

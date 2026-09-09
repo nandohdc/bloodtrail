@@ -131,6 +131,7 @@
 | risk.model.name | string | conditional | risk_enrichment | derived_server | confidential | allowed | security_elevated | stable |
 | risk.model.version | string | conditional | risk_enrichment | derived_server | confidential | allowed | security_elevated | stable |
 | risk.model.provenance.trust_level | string | conditional | risk_enrichment | derived_server | internal | allowed | security_elevated | stable |
+| risk.model.provenance.derived_from | array | optional | risk_enrichment | derived_server | internal | allowed | security_elevated | additive |
 | data.classification | string | required | data_privacy_delivery | authoritative_server | restricted | allowed | security_standard | registry |
 | data.retention_class | string | required | data_privacy_delivery | authoritative_server | restricted | allowed | security_standard | registry |
 | data.field_policy_version | string | required | data_privacy_delivery | authoritative_server | internal | allowed | security_standard | stable |

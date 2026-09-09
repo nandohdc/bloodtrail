@@ -16,6 +16,7 @@ const casePackage = resolve(caseRoot, "packages/security-audit-sdk-core");
 const lifecyclePath = resolve(casePackage, "verification-lifecycle.json");
 const exemptPath = "contracts/security-audit/package-lock.json";
 const unexemptPath = "contracts/security-audit/README.md";
+const candidatePath = "contracts/security-audit/source/contract.source.json";
 
 prepareCase();
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
@@ -59,6 +60,12 @@ function setExemptions(entries) {
   writeFileSync(lifecyclePath, JSON.stringify(meta, null, 2) + "\n", "utf8");
 }
 
+function setCandidatePaths(entries) {
+  const meta = JSON.parse(pristineLifecycle);
+  meta.contract.governedCandidate.protectedPaths = entries;
+  writeFileSync(lifecyclePath, JSON.stringify(meta, null, 2) + "\n", "utf8");
+}
+
 function touch(relativePath) {
   const target = resolve(caseRoot, relativePath);
   writeFileSync(target, `${readFileSync(target, "utf8")}\n`, "utf8");
@@ -79,8 +86,23 @@ describe("contract build-toolchain exemptions", () => {
     touch(exemptPath);
     const result = runChecker();
     assert.equal(result.passed, true, `expected the exempted path to pass:\n${result.output}`);
-    assert.match(result.output, /"event-contract":\s*1/,
+    assert.match(result.output, /"event-contract":\s*[1-9]\d*/,
       "the exempted path must stay classified rather than disappear from the record set");
+  });
+
+  it("rejects a byte-different write to an otherwise declared governed candidate path", () => {
+    touch(candidatePath);
+    const result = runChecker();
+    assert.equal(result.passed, false, "a candidate path with different bytes must fail");
+    assert.match(result.output, new RegExp(`${candidatePath}.*contract governance drift`));
+  });
+
+  it("rejects a governed candidate inventory that differs from its technical commit", () => {
+    const meta = JSON.parse(pristineLifecycle);
+    setCandidatePaths(meta.contract.governedCandidate.protectedPaths.filter((path) => path !== candidatePath));
+    const result = runChecker();
+    assert.equal(result.passed, false, "a shortened candidate inventory must fail");
+    assert.match(result.output, /protectedPaths does not exactly match its technical commit inventory/);
   });
 
   it("still fails on a contract path that is not exempted", () => {

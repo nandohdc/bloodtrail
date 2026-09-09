@@ -1,4 +1,4 @@
-import { CONTRACT_SCHEMA_NAME, CONTRACT_VERSION, EVENT_CATALOG, EXTENSION_NAMESPACES } from "../generated/contract.generated.js";
+import { CONTRACT_SCHEMA_NAME, CONTRACT_VERSION, DERIVED_FIELD_PROVENANCE, EVENT_CATALOG, EXTENSION_NAMESPACES, FIELD_POLICY } from "../generated/contract.generated.js";
 import type { EventDefinition, EventSemantic, SecurityAuditEvent } from "../generated/contract.generated.js";
 import type { AuditResult } from "../errors.js";
 import { failure, normalizeCanonicalInput } from "../errors.js";
@@ -6,6 +6,10 @@ import { duplicateAuthorityCode } from "../duplicate-copy-probe.js";
 
 const byName = new Map(EVENT_CATALOG.map((entry) => [entry.name, entry]));
 const extensionsByNamespace = new Map(EXTENSION_NAMESPACES.map((entry) => [entry.namespace, entry]));
+const canonicalFieldPaths: ReadonlySet<string> = new Set(FIELD_POLICY.map((field) => field.path));
+const derivedFromPath = DERIVED_FIELD_PROVENANCE.field_path;
+const derivedFromPointer = `/${derivedFromPath.replaceAll(".", "/")}`;
+const derivedProvenanceCodes = DERIVED_FIELD_PROVENANCE.error_codes;
 const asyncCompletionSemantics = new Set(["account_registration_completed", "password_reset_completed"]);
 const resourceIdentityRequiredSemantics = new Set([
   "sensitive_resource_viewed",
@@ -58,23 +62,102 @@ export function validateBaseSemantics(event: SecurityAuditEvent): AuditResult<Se
   if (event.event.delivery_class !== definition.delivery) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/delivery_class");
   if (!(definition.phase as readonly string[]).includes(event.event.lifecycle_phase)) return failure("SDK_SEMANTIC_VALIDATION_FAILED", "validation", "/event/lifecycle_phase");
   if (!(definition.outcomes as readonly string[]).includes(event.event.outcome)) return failure("SDK_SEMANTIC_VALIDATION_FAILED", "validation", "/event/outcome");
-  const commitResult = validateCommit(event, definition);
-  if (!commitResult.ok) return commitResult;
-  const contextResult = validateRequiredContext(event, definition);
-  if (!contextResult.ok) return contextResult;
-  const causalityResult = validateCausality(event, definition);
-  if (!causalityResult.ok) return causalityResult;
-  const authorityResult = validateAuthority(event, definition);
-  if (!authorityResult.ok) return authorityResult;
-  const tenantResult = validateTenantResourceConsistency(event, definition);
-  if (!tenantResult.ok) return tenantResult;
-  const authorizationResult = validateAuthorizationOutcome(event);
-  if (!authorizationResult.ok) return authorizationResult;
-  const delegationResult = validateDelegation(event);
-  if (!delegationResult.ok) return delegationResult;
-  const extensionResult = validateExtensions(event);
-  if (!extensionResult.ok) return extensionResult;
+  const semanticResult = validateEventSemantics(event, definition);
+  if (!semanticResult.ok) return semanticResult;
+  const provenanceResult = validateDerivedFieldProvenance(event);
+  if (!provenanceResult.ok) return provenanceResult;
   return { ok: true, value: event };
+}
+
+function validateEventSemantics(event: SecurityAuditEvent, definition: EventDefinition): AuditResult<void> {
+  const validations = [
+    () => validateCommit(event, definition),
+    () => validateRequiredContext(event, definition),
+    () => validateCausality(event, definition),
+    () => validateAuthority(event, definition),
+    () => validateTenantResourceConsistency(event, definition),
+    () => validateAuthorizationOutcome(event),
+    () => validateDelegation(event),
+    () => validateExtensions(event),
+  ];
+  for (const validate of validations) {
+    const result = validate();
+    if (!result.ok) return result;
+  }
+  return { ok: true, value: undefined };
+}
+
+function validateDerivedFieldProvenance(event: SecurityAuditEvent): AuditResult<void> {
+  const inputs = valueAtPath(event, derivedFromPath);
+  if (inputs === undefined) return { ok: true, value: undefined };
+  const shape = derivedInputShape(inputs);
+  if ("code" in shape) return failure(shape.code, "validation", derivedFromPointer);
+  if (valueAtPath(event, DERIVED_FIELD_PROVENANCE.trust_path) !== DERIVED_FIELD_PROVENANCE.required_trust) {
+    return failure(derivedProvenanceCodes.non_derived, "validation", derivedFromPointer);
+  }
+  const referenceCode = derivedInputReferenceCode(event, shape.inputs);
+  return referenceCode ? failure(referenceCode, "validation", derivedFromPointer) : { ok: true, value: undefined };
+}
+
+function derivedInputShape(inputs: unknown): { readonly code: string } | { readonly inputs: string[] } {
+  if (!Array.isArray(inputs)) return { code: derivedProvenanceCodes.malformed };
+  if (inputs.length > DERIVED_FIELD_PROVENANCE.maximum_inputs) return { code: derivedProvenanceCodes.malformed };
+  if (inputs.length < DERIVED_FIELD_PROVENANCE.minimum_inputs) return { code: derivedProvenanceCodes.empty };
+  if (inputs.some(isMalformedDerivedInput)) return { code: derivedProvenanceCodes.malformed };
+  return { inputs };
+}
+
+function isMalformedDerivedInput(input: unknown): boolean {
+  if (typeof input !== "string") return true;
+  if (input.length === 0) return true;
+  return input.length > DERIVED_FIELD_PROVENANCE.maximum_input_length;
+}
+
+function derivedInputReferenceCode(event: SecurityAuditEvent, inputs: readonly string[]): string | null {
+  const duplicateCode = duplicateDerivedInputCode(inputs);
+  if (duplicateCode) return duplicateCode;
+  const orderCode = derivedInputOrderCode(inputs);
+  if (orderCode) return orderCode;
+  for (const input of inputs) {
+    const resolutionCode = derivedInputResolutionCode(event, input);
+    if (resolutionCode) return resolutionCode;
+  }
+  return null;
+}
+
+function duplicateDerivedInputCode(inputs: readonly string[]): string | null {
+  const seen = new Set<string>();
+  for (const input of inputs) {
+    if (seen.has(input)) return derivedProvenanceCodes.duplicate;
+    seen.add(input);
+  }
+  return null;
+}
+
+function derivedInputOrderCode(inputs: readonly string[]): string | null {
+  return inputs.every((input, index) => index === 0 || inputs[index - 1]! <= input)
+    ? null
+    : derivedProvenanceCodes.noncanonical_order;
+}
+
+function derivedInputResolutionCode(event: SecurityAuditEvent, input: string): string | null {
+  if (input === derivedFromPath) return derivedProvenanceCodes.cycle;
+  if (canonicalFieldPaths.has(input)) return valueAtPath(event, input) === undefined ? derivedProvenanceCodes.absent : null;
+  if (!isRegisteredExtensionPath(input)) return derivedProvenanceCodes.unresolvable;
+  const namespace = input.slice("extensions.".length);
+  return !event.extensions || !Object.hasOwn(event.extensions, namespace) ? derivedProvenanceCodes.absent : null;
+}
+
+function valueAtPath(value: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((current, segment) => {
+    if (current === null || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[segment];
+  }, value);
+}
+
+function isRegisteredExtensionPath(input: string): boolean {
+  if (!input.startsWith("extensions.")) return false;
+  return extensionsByNamespace.has(input.slice("extensions.".length) as (typeof EXTENSION_NAMESPACES)[number]["namespace"]);
 }
 
 function validateCommit(event: SecurityAuditEvent, definition: EventDefinition): AuditResult<void> {
