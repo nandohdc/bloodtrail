@@ -16,11 +16,11 @@
 
 - [x] 3.1 Regenerate the Core TypeScript and validator projections from the `1.1.0` contract, then verify `npm run check:generated --prefix packages/security-audit-sdk-core` passes without generated-source edits.
 - [x] 3.2 Move the Core and Node private candidate manifests, lockfiles, and compatibility metadata from `0.1.0` to `0.2.0`; bind Core to exact contract `1.1.0` and verify `1.0.0` fails before readiness. Add a Node compatibility check to `validate` that rejects package, lockfile, compatibility, or installed first-party Core identity drift while Node's frozen export surface remains unchanged.
-- [ ] 3.3 Rebind `contract-provenance.json`, `check-contract-immutability.mjs`, changed-path lifecycle metadata, and their negative verification control to this named governed candidate; verify the new binding accepts only this exact candidate content inventory and continues to reject unrelated or byte-different protected-contract writes.
+- [x] 3.3 Rebind `contract-provenance.json`, `check-contract-immutability.mjs`, changed-path lifecycle metadata, and their negative verification control to this named governed candidate; verify the new binding accepts only this exact candidate content inventory and continues to reject unrelated or byte-different protected-contract writes.
 
 ## 4. Verification and delivery
 
-- [ ] 4.1 Run `npm run validate --prefix contracts/security-audit`, Core generated/compatibility checks and `npm run validate --prefix packages/security-audit-sdk-core`, and `npm run validate --prefix packages/security-audit-sdk-node`; record each exact result.
+- [x] 4.1 Run `npm run validate --prefix contracts/security-audit`, Core generated/compatibility checks and `npm run validate --prefix packages/security-audit-sdk-core`, and `npm run validate --prefix packages/security-audit-sdk-node`; record each exact result.
 - [ ] 4.2 Run `npx --yes @fission-ai/openspec@latest validate --all --strict`, `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment`, `node openspec/scripts/check-design-pattern-governance.mjs --phase final`, `node openspec/scripts/run-governance-dual-check.mjs`, and `git diff --check`; verify no governance or whitespace failure remains.
 - [ ] 4.3 Commit the assessed implementation with a Conventional Commit, push the branch, and open the implementation PR using every section of the repository template; verify its head is rebased on `origin/main` and the PR cites #95 without prematurely closing it.
 

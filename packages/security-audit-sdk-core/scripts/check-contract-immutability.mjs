@@ -6,8 +6,8 @@ import { spawnSync } from "node:child_process";
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(packageRoot, "../..");
 const manifest = JSON.parse(await readFile(resolve(packageRoot, "contract-provenance.json"), "utf8"));
-if (manifest.contractVersion !== "1.0.0" || manifest.normativeTechnicalTarget !== "8c5992bb6edc5c6dfdbfd0f48988b32f88ad2993") {
-  throw new Error("contract provenance is not bound to approved version 1.0.0");
+if (manifest.contractVersion !== "1.1.0" || manifest.normativeTechnicalTarget !== "41f4e00b22666c429c5117997450878c9137756b") {
+  throw new Error("contract provenance is not bound to approved version 1.1.0");
 }
 const protectedPaths = [
   manifest.canonicalCapability,
@@ -24,4 +24,4 @@ if (diff.status !== 0) {
   process.stderr.write(diff.stderr);
   throw new Error("approved contract or governance history differs from the proposal baseline");
 }
-console.log("approved contract 1.0.0 and governance history are unchanged");
+console.log("approved contract 1.1.0 and governance history are unchanged");

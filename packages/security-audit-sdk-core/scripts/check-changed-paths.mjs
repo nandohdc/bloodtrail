@@ -42,6 +42,11 @@ const REVIEWED_PATH_RULES = Object.freeze([
   Object.freeze([(path) => /[*?[{]/.test(path), (path) => `must not contain glob characters: ${path}`]),
 ]);
 
+const GOVERNED_CONTRACT_CANDIDATE = Object.freeze({
+  change: "add-derived-field-provenance",
+  technicalCommit: "41f4e00b22666c429c5117997450878c9137756b",
+});
+
 const requestedLifecycle = parseLifecycleArguments();
 let lifecycle;
 try {
@@ -62,6 +67,7 @@ const archiveMovement = lifecycle.mode === "archived" && lifecycle.change === re
   : Object.freeze({ activeSources: new Set(), archivePaths: new Set() });
 const reviewedNewPaths = validateReviewedNewSdkSourcePaths(metadata);
 const contractToolchainExemptions = validateContractToolchainExemptions(metadata);
+const governedContractCandidate = validateGovernedContractCandidate(metadata);
 
 const tracked = trackedChanges(base);
 const untracked = splitNull(git(["ls-files", "--others", "--exclude-standard", "-z"]));
@@ -87,8 +93,8 @@ for (const record of records) {
   for (const path of paths) {
     const classification = classify(path);
     classified.set(path, classification);
-    if (metadata.contract.protectedPrefixes.some((prefix) => path.startsWith(prefix))
-      && !contractToolchainExemptions.has(path)) {
+    if (metadata.contract.protectedPrefixes.some((prefix) => path.startsWith(prefix))) {
+      if (contractToolchainExemptions.has(path) || governedCandidateMatches(path, governedContractCandidate)) continue;
       violations.push(`${record.status} ${path} (canonical event contract or contract governance drift)`);
       continue;
     }
@@ -548,6 +554,57 @@ function assertToolchainExemptionShape(rawPath, metadata, normative) {
   }
   if (normative.some((declared) => rawPath === declared || rawPath.startsWith(`${declared}/`))) {
     throw new Error(`toolchainExemptions entry is declared contract content and may never be exempt: ${rawPath}`);
+  }
+}
+
+/**
+ * The contract prefix is frozen by default. This one governed transition is
+ * allowed only because its complete protected-path inventory and every blob
+ * are pinned to the reviewed technical commit below. Updating the lifecycle
+ * metadata alone cannot widen the allowance: this checker independently binds
+ * both the change name and commit, and re-derives the inventory from Git.
+ */
+function validateGovernedContractCandidate(metadata) {
+  const candidate = metadata.contract.governedCandidate;
+  assert(candidate && typeof candidate === "object" && !Array.isArray(candidate), "contract.governedCandidate must be an object");
+  assert(candidate.change === GOVERNED_CONTRACT_CANDIDATE.change, "contract.governedCandidate change is not the approved governed change");
+  assert(candidate.technicalCommit === GOVERNED_CONTRACT_CANDIDATE.technicalCommit, "contract.governedCandidate technical commit is not the approved candidate");
+  assert(metadata.contract.version === "1.1.0", "contract lifecycle version is not bound to the approved candidate");
+  assert(metadata.contract.normativeTechnicalTarget === candidate.technicalCommit, "contract lifecycle target is not bound to the approved candidate");
+  assert(/^[0-9a-f]{40}$/.test(candidate.technicalCommit), "contract.governedCandidate technical commit must be a full Git commit");
+  assert(Array.isArray(candidate.protectedPaths), "contract.governedCandidate protectedPaths must be an array");
+  git(["rev-parse", "--verify", `${candidate.technicalCommit}^{commit}`]);
+  git(["merge-base", "--is-ancestor", candidate.technicalCommit, "HEAD"]);
+
+  const parents = git(["show", "-s", "--format=%P", candidate.technicalCommit]).trim().split(/\s+/).filter(Boolean);
+  assert(parents.length === 1, "contract.governedCandidate technical commit must have exactly one parent");
+  const declared = [];
+  const seen = new Set();
+  for (const rawPath of candidate.protectedPaths) {
+    for (const [violates, message] of REVIEWED_PATH_RULES) {
+      if (violates(rawPath)) throw new Error(`contract.governedCandidate protectedPaths entry ${message(rawPath)}`);
+    }
+    assert(metadata.contract.protectedPrefixes.some((prefix) => rawPath.startsWith(prefix)), `contract.governedCandidate path is outside every protected contract prefix: ${rawPath}`);
+    assert(!seen.has(rawPath), `contract.governedCandidate protectedPaths contains duplicate path: ${rawPath}`);
+    if (declared.length > 0) assert(declared.at(-1) < rawPath, "contract.governedCandidate protectedPaths must use strict code-point order");
+    seen.add(rawPath);
+    declared.push(rawPath);
+  }
+
+  const actual = splitNull(git([
+    "diff", "--no-renames", "--name-only", "-z", `${candidate.technicalCommit}^`, candidate.technicalCommit, "--",
+  ])).filter((path) => metadata.contract.protectedPrefixes.some((prefix) => path.startsWith(prefix))).sort(byCodePoint);
+  assert(JSON.stringify(declared) === JSON.stringify(actual), "contract.governedCandidate protectedPaths does not exactly match its technical commit inventory");
+  return Object.freeze({ technicalCommit: candidate.technicalCommit, protectedPaths: new Set(declared) });
+}
+
+function governedCandidateMatches(path, candidate) {
+  if (!candidate.protectedPaths.has(path)) return false;
+  try {
+    git(["diff", "--quiet", candidate.technicalCommit, "--", path]);
+    return true;
+  } catch {
+    return false;
   }
 }
 
