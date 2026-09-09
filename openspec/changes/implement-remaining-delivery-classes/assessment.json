@@ -1,0 +1,211 @@
+{
+  "schema_version": "1.1",
+  "change_id": "implement-remaining-delivery-classes",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The contract fixes four delivery classes with a row each, and only security_significant has an implementation; the other three have no code and no other issue, so three ratified rows are currently unenforced.",
+    "Every one of the 24 catalog events declares a delivery class and the distribution is uneven, with 15 of 24 demanding more than best_effort, so a class binding that accepted any occurrence would let the single best_effort path carry an occurrence the catalog says must not be lost.",
+    "best_effort is the only class permitted to lose an occurrence, and its row makes bounded loss reporting the condition of that permission, so an unbounded or wrapping counter would convert accepted loss into silent loss.",
+    "transaction_critical asks for audit durability atomic with a successful business commit and fail-closed before that commit when durability is unreachable, which no single ordering of the existing primitives provides and which the existing single-identifier deduplication cannot key.",
+    "policy_critical's posture is blocked_pending_qualified_review, so any binding constructible without a recorded policy-owner decision would have a default behaviour that the row explicitly denies exists.",
+    "The Node public API surface was frozen by #111 while #112's criteria say no frozen surface is modified and ADR-NODE-001 says an addition must update the frozen lists in the same governed change, so the reading taken has to be recorded rather than assumed.",
+    "The delivery class rows are not emitted into any generated artifact, so a conformance suite that restates them would pass against a stale contract unless it reads the frozen source."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/implement-remaining-delivery-classes/.openspec.yaml",
+    "openspec/changes/implement-remaining-delivery-classes/proposal.md",
+    "openspec/changes/implement-remaining-delivery-classes/design.md",
+    "openspec/changes/implement-remaining-delivery-classes/tasks.md",
+    "openspec/changes/implement-remaining-delivery-classes/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/implement-remaining-delivery-classes/assessment.source.json",
+    "openspec/changes/implement-remaining-delivery-classes/assessment.json",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/src/delivery-classes.ts",
+    "packages/security-audit-sdk-node/src/index.ts",
+    "packages/security-audit-sdk-node/tests/delivery-classes.test.ts",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
+    "packages/security-audit-sdk-node/scripts/check-exports.mjs",
+    "packages/security-audit-sdk-node/adr/002-governed-widening-for-remaining-delivery-classes.md",
+    "packages/security-audit-sdk-node/compatibility.json"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-class-bindings-over-existing-primitives",
+      "kind": "direct_implementation",
+      "summary": "Add one module of three class bindings over the existing handoff, retry, backpressure and shutdown primitives: exact-match class binding refusing foreign and uncatalogued occurrences distinctly; best_effort with one attempt, a saturating observable loss counter and an immediate shutdown that cannot claim delivery; transaction_critical with a fixed probe/commit-gate/durability order, dual-identifier deduplication and observable ordering fields; policy_critical throwing without a complete policy-owner record. Assert it with a parameterized suite reading the frozen rows.",
+      "forces_addressed": [
+        "The contract fixes four delivery classes with a row each, and only security_significant has an implementation; the other three have no code and no other issue, so three ratified rows are currently unenforced.",
+        "Every one of the 24 catalog events declares a delivery class and the distribution is uneven, with 15 of 24 demanding more than best_effort, so a class binding that accepted any occurrence would let the single best_effort path carry an occurrence the catalog says must not be lost.",
+        "best_effort is the only class permitted to lose an occurrence, and its row makes bounded loss reporting the condition of that permission, so an unbounded or wrapping counter would convert accepted loss into silent loss.",
+        "transaction_critical asks for audit durability atomic with a successful business commit and fail-closed before that commit when durability is unreachable, which no single ordering of the existing primitives provides and which the existing single-identifier deduplication cannot key.",
+        "policy_critical's posture is blocked_pending_qualified_review, so any binding constructible without a recorded policy-owner decision would have a default behaviour that the row explicitly denies exists.",
+        "The Node public API surface was frozen by #111 while #112's criteria say no frozen surface is modified and ADR-NODE-001 says an addition must update the frozen lists in the same governed change, so the reading taken has to be recorded rather than assumed.",
+        "The delivery class rows are not emitted into any generated artifact, so a conformance suite that restates them would pass against a stale contract unless it reads the frozen source."
+      ]
+    },
+    {
+      "id": "approach-unexported-internal-bindings",
+      "kind": "alternative",
+      "summary": "Implement the three class bindings as unexported internals so that the frozen export surface is untouched, satisfying the strictest reading of the no-frozen-surface-modified criterion.",
+      "forces_addressed": [
+        "The Node public API surface was frozen by #111 while #112's criteria say no frozen surface is modified and ADR-NODE-001 says an addition must update the frozen lists in the same governed change, so the reading taken has to be recorded rather than assumed."
+      ]
+    },
+    {
+      "id": "approach-class-aware-primitives",
+      "kind": "alternative",
+      "summary": "Teach the existing retry, backpressure, and shutdown primitives about delivery classes through options, so each class is a configuration of the current surface rather than a new binding.",
+      "forces_addressed": [
+        "The contract fixes four delivery classes with a row each, and only security_significant has an implementation; the other three have no code and no other issue, so three ratified rows are currently unenforced."
+      ]
+    },
+    {
+      "id": "approach-generate-rows-into-sdk-core",
+      "kind": "alternative",
+      "summary": "Emit delivery_class_contracts into the generated contract artifacts and export it from sdk-core, so the conformance suite consumes a generated constant instead of reading the authored contract source at test time.",
+      "forces_addressed": [
+        "The delivery class rows are not emitted into any generated artifact, so a conformance suite that restates them would pass against a stale contract unless it reads the frozen source."
+      ]
+    },
+    {
+      "id": "approach-strength-ordering-substitution",
+      "kind": "alternative",
+      "summary": "Allow an occurrence to be delivered through any binding at least as strong as its declared class, ordering the four classes by strength rather than requiring an exact match.",
+      "forces_addressed": [
+        "Every one of the 24 catalog events declares a delivery class and the distribution is uneven, with 15 of 24 demanding more than best_effort, so a class binding that accepted any occurrence would let the single best_effort path carry an occurrence the catalog says must not be lost."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-class-bindings-over-existing-primitives",
+  "rejected_alternative_ids": [
+    "approach-unexported-internal-bindings",
+    "approach-class-aware-primitives",
+    "approach-generate-rows-into-sdk-core",
+    "approach-strength-ordering-substitution"
+  ],
+  "rejection_reasons": {
+    "approach-unexported-internal-bindings": {
+      "forces": [
+        "The Node public API surface was frozen by #111 while #112's criteria say no frozen surface is modified and ADR-NODE-001 says an addition must update the frozen lists in the same governed change, so the reading taken has to be recorded rather than assumed."
+      ],
+      "reason": "Bindings reachable by no consumer satisfy the letter of one acceptance criterion while making the issue's central requirement unachievable as a usable feature; ADR-NODE-001 explicitly provides for additive change through a governed change, and the roadmap sequences this tier after the freeze precisely so the surface can be widened. The reading is recorded in ADR-NODE-002 with the exact revert that would apply this stricter alternative instead."
+    },
+    "approach-class-aware-primitives": {
+      "forces": [
+        "The contract fixes four delivery classes with a row each, and only security_significant has an implementation; the other three have no code and no other issue, so three ratified rows are currently unenforced."
+      ],
+      "reason": "The primitives are deliberately class-agnostic and compose freely; folding class policy into them would couple four independent boundaries to a taxonomy none of them needs, and would leave the class-specific mechanisms that have no primitive at all — the loss counter, the commit gate, the policy record — without a home."
+    },
+    "approach-generate-rows-into-sdk-core": {
+      "forces": [
+        "The delivery class rows are not emitted into any generated artifact, so a conformance suite that restates them would pass against a stale contract unless it reads the frozen source."
+      ],
+      "reason": "It would change sdk-core's generated output and require a new sdk-core export, widening a second frozen package for a test-only concern; reading the canonical contract file directly has no drift risk at all because there is no copy to diverge."
+    },
+    "approach-strength-ordering-substitution": {
+      "forces": [
+        "Every one of the 24 catalog events declares a delivery class and the distribution is uneven, with 15 of 24 demanding more than best_effort, so a class binding that accepted any occurrence would let the single best_effort path carry an occurrence the catalog says must not be lost."
+      ],
+      "reason": "The contract fixes no ordering — policy_critical's durability row reads 'at least security-significant; may require transaction-critical semantics', which is not comparable to transaction_critical — and substitution is unsafe upward too, since promoting a best_effort occurrence whose posture is fail_open into a transaction_critical binding would let a losable event block a business commit."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-class-binding-is-exact-match-both-directions",
+    "implementation-best-effort-loss-is-bounded-and-never-claims-delivery",
+    "implementation-transaction-critical-order-is-observable",
+    "implementation-policy-critical-has-no-default",
+    "implementation-conformance-traces-to-the-frozen-rows",
+    "implementation-no-delivery-substrate-is-introduced"
+  ],
+  "invariant_evidence": {
+    "implementation-class-binding-is-exact-match-both-directions": {
+      "task_ids": [
+        "2.1",
+        "2.5"
+      ],
+      "evidence_ids": [
+        "each binding refuses every foreign class with a class-mismatch outcome and an uncatalogued event name with a distinct outcome, before any delivery attempt, asserted across all implemented classes by the shared suite"
+      ]
+    },
+    "implementation-best-effort-loss-is-bounded-and-never-claims-delivery": {
+      "task_ids": [
+        "2.2",
+        "2.5"
+      ],
+      "evidence_ids": [
+        "one attempt at ordinal zero with no retry, a saturating loss counter whose ceiling fires its own signal, and a health signal whose claimsDelivered is a false literal type rather than a runtime value"
+      ]
+    },
+    "implementation-transaction-critical-order-is-observable": {
+      "task_ids": [
+        "2.3",
+        "2.5",
+        "2.6"
+      ],
+      "evidence_ids": [
+        "unreachable durability fails closed with the commit gate never invoked, a declined commit leaves the occurrence short of the durability point, each failed_closed result records whether the gate ran and whether durability was attempted, and admission is decided in one synchronous step so a concurrent duplicate is refused rather than claimed delivered"
+      ]
+    },
+    "implementation-policy-critical-has-no-default": {
+      "task_ids": [
+        "2.4",
+        "2.5"
+      ],
+      "evidence_ids": [
+        "construction throws for an absent record, an unenumerated behaviour, an unattributed owner, and an absent review reference, and the recorded decision is frozen after construction"
+      ]
+    },
+    "implementation-conformance-traces-to-the-frozen-rows": {
+      "task_ids": [
+        "2.5",
+        "4.4"
+      ],
+      "evidence_ids": [
+        "the suite reads delivery_class_contracts from the authored contract source and occurrences from the contract's positive example set, asserts implemented behaviour against the row text, and carries security_significant as the already-satisfied control"
+      ]
+    },
+    "implementation-no-delivery-substrate-is-introduced": {
+      "task_ids": [
+        "4.1",
+        "4.3"
+      ],
+      "evidence_ids": [
+        "the scope gate still rejects transport, collector, queue, outbox, and storage as filename, import, and export tokens, and durability is reached only through an injected boundary"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "2f2fa2007c076f76dec808f22ed2ec4d0bef0018"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "2.5",
+    "2.6",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4",
+    "4.5",
+    "5.1",
+    "5.2"
+  ]
+}
