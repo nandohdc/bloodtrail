@@ -143,6 +143,8 @@
     "packages/security-audit-sdk-node/scripts/check-compatibility.mjs",
     "openspec/scripts/contract-reuse/check.mjs",
     "openspec/tests/contract-reuse/checker.test.mjs",
+    "openspec/governance/schemas/contract-reuse.schema.json",
+    "openspec/tests/contract-reuse/schema.test.mjs",
     "openspec/tests/contract-reuse/support/disposable-repo.mjs"
   ],
   "verification_task_ids": ["1.2", "2.3", "3.1", "3.2", "3.3", "4.1", "4.2"],
