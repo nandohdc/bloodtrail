@@ -59,7 +59,7 @@ const [source, schema, catalogArtifact, fieldPolicy, registriesArtifact, provena
 ]);
 
 const contractVersion = source.metadata?.schema_version;
-assert(typeof contractVersion === "string" && /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(contractVersion), "canonical source must declare a stable contract version");
+assert(typeof contractVersion === "string" && /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(contractVersion), "canonical source must declare a stable contract version");
 assert(provenance.contractVersion === contractVersion, "contract provenance and canonical source versions differ");
 assert(schema.$id === source.metadata?.schema_id && schema.$id.includes(`/${contractVersion}/`), "schema ID must bind to the canonical contract version");
 assert(Array.isArray(source.catalog) && source.catalog.length === 24, "canonical catalog must contain 24 events");
