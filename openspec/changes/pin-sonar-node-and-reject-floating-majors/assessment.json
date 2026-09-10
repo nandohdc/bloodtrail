@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.1",
+  "change_id": "pin-sonar-node-and-reject-floating-majors",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A ratified `ci-topology` requirement already states that CI workflows SHALL pin exact declared Node versions rather than floating major tags, so the sonar job's floating pin is a conformance violation and the repair may not restate or reinterpret that requirement.",
+    "`setup-node` resolves a floating major at run time, so the analyser's runtime can move with no commit and no diff; a gate that names specific majors cannot see a pin nobody enumerated.",
+    "`sonar` is one of ten required merge contexts, so when the analyser turns its recommended minimum into a hard one the job reds every pull request in the repository at once, with no code change to correlate against.",
+    "The sonar job installs SDK dependencies for type-aware analysis under an engine the package's `engines` range excludes, and with no `.npmrc` the mismatch warns instead of failing, so nothing stops the analysis running against that tree.",
+    "`compatibility.json` already declares `node.ciVersions` as the two supported releases, so the repair must move onto a declared release rather than introducing a third version the policy does not carry.",
+    "A floating-tag rule written against one literal major under-enforces the requirement it implements, so widening it must reject any bare major without failing closed on the six exact pins already in the workflow."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "ci-topology"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/pin-sonar-node-and-reject-floating-majors/.openspec.yaml",
+    "openspec/changes/pin-sonar-node-and-reject-floating-majors/proposal.md",
+    "openspec/changes/pin-sonar-node-and-reject-floating-majors/design.md",
+    "openspec/changes/pin-sonar-node-and-reject-floating-majors/tasks.md",
+    "openspec/changes/pin-sonar-node-and-reject-floating-majors/assessment.source.json",
+    "openspec/changes/pin-sonar-node-and-reject-floating-majors/assessment.json",
+    ".github/workflows/ci.yml",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-core/tests/verification/node-compatibility-mutations.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-pin-declared-release-and-widen-rule",
+      "kind": "direct_implementation",
+      "summary": "Pin the sonar job to the already-declared release 24.2.0 and generalise the floating-tag coherence rule from the literal 26 to any bare node-version major, proving the widening with a control that plants the 22 the previous rule never named.",
+      "forces_addressed": [
+        "A ratified `ci-topology` requirement already states that CI workflows SHALL pin exact declared Node versions rather than floating major tags, so the sonar job's floating pin is a conformance violation and the repair may not restate or reinterpret that requirement.",
+        "`setup-node` resolves a floating major at run time, so the analyser's runtime can move with no commit and no diff; a gate that names specific majors cannot see a pin nobody enumerated.",
+        "`sonar` is one of ten required merge contexts, so when the analyser turns its recommended minimum into a hard one the job reds every pull request in the repository at once, with no code change to correlate against.",
+        "The sonar job installs SDK dependencies for type-aware analysis under an engine the package's `engines` range excludes, and with no `.npmrc` the mismatch warns instead of failing, so nothing stops the analysis running against that tree.",
+        "`compatibility.json` already declares `node.ciVersions` as the two supported releases, so the repair must move onto a declared release rather than introducing a third version the policy does not carry.",
+        "A floating-tag rule written against one literal major under-enforces the requirement it implements, so widening it must reject any bare major without failing closed on the six exact pins already in the workflow."
+      ]
+    },
+    {
+      "id": "approach-add-22-to-the-existing-rule",
+      "kind": "alternative",
+      "summary": "Leave the rule literal-based and add 22 alongside 26, so the two majors CI has actually used are both rejected.",
+      "forces_addressed": [
+        "`setup-node` resolves a floating major at run time, so the analyser's runtime can move with no commit and no diff; a gate that names specific majors cannot see a pin nobody enumerated.",
+        "A floating-tag rule written against one literal major under-enforces the requirement it implements, so widening it must reject any bare major without failing closed on the six exact pins already in the workflow."
+      ]
+    },
+    {
+      "id": "approach-require-full-semver-everywhere",
+      "kind": "alternative",
+      "summary": "Require every node-version in the workflow to match an exact three-part version, rejecting anything else.",
+      "forces_addressed": [
+        "`setup-node` resolves a floating major at run time, so the analyser's runtime can move with no commit and no diff; a gate that names specific majors cannot see a pin nobody enumerated.",
+        "A floating-tag rule written against one literal major under-enforces the requirement it implements, so widening it must reject any bare major without failing closed on the six exact pins already in the workflow."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-pin-declared-release-and-widen-rule",
+  "rejected_alternative_ids": [
+    "approach-add-22-to-the-existing-rule",
+    "approach-require-full-semver-everywhere"
+  ],
+  "rejection_reasons": {
+    "approach-add-22-to-the-existing-rule": {
+      "forces": [
+        "`setup-node` resolves a floating major at run time, so the analyser's runtime can move with no commit and no diff; a gate that names specific majors cannot see a pin nobody enumerated.",
+        "A floating-tag rule written against one literal major under-enforces the requirement it implements, so widening it must reject any bare major without failing closed on the six exact pins already in the workflow."
+      ],
+      "reason": "Repeats the defect it is meant to fix. The rule would then name two majors and stay silent about every other, and the failure mode is precisely a pin nobody enumerated: 22 entered the workflow as a carried-over value from another repository's workflow, not as a considered choice, so the next carried-over value would drift the same way."
+    },
+    "approach-require-full-semver-everywhere": {
+      "forces": [
+        "`setup-node` resolves a floating major at run time, so the analyser's runtime can move with no commit and no diff; a gate that names specific majors cannot see a pin nobody enumerated.",
+        "A floating-tag rule written against one literal major under-enforces the requirement it implements, so widening it must reject any bare major without failing closed on the six exact pins already in the workflow."
+      ],
+      "reason": "Fails closed on legitimate future forms — a .nvmrc reference or a matrix expression — and converts a narrow anti-drift rule into a formatting mandate the ratified requirement does not make. The requirement forbids floating major tags; it does not prescribe one spelling for every other case."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-analyser-runs-on-a-declared-release",
+    "implementation-no-floating-major-survives-the-gate",
+    "implementation-exact-pins-are-unaffected"
+  ],
+  "invariant_evidence": {
+    "implementation-analyser-runs-on-a-declared-release": {
+      "task_ids": [
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "the sonar job requests 24.2.0, a release already listed in compatibility.json node.ciVersions, and its CI run emits neither the analyser's version-recommendation warning nor EBADENGINE for the SDK package"
+      ]
+    },
+    "implementation-no-floating-major-survives-the-gate": {
+      "task_ids": [
+        "3.1",
+        "3.2",
+        "3.4"
+      ],
+      "evidence_ids": [
+        "a planted floating \"22\" fails the widened coherence rule and passes the previous literal-26 rule, so the arm evidences the widening rather than restating a case already covered"
+      ]
+    },
+    "implementation-exact-pins-are-unaffected": {
+      "task_ids": [
+        "3.1",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "all six exact pins in the workflow still pass, because the pattern requires the closing quote to follow the digits and so cannot match a dotted release"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "43675620932f1ae460a182e68d622d7e8ce12223"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4",
+    "4.1",
+    "4.2",
+    "4.3"
+  ]
+}
