@@ -49,7 +49,7 @@ const REVIEWED_PATH_RULES = Object.freeze([
 const GOVERNED_CONTRACT_CANDIDATE = Object.freeze({
   change: "fix-derived-input-code-point-order",
   rangeBase: "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-  technicalCommit: "ee430bc6a7ca52671b294e8c73f0e2ea3ace67bf",
+  technicalCommit: "eeebae6d73e5a26db3e6778f56ee95756fa146c6",
 });
 
 const requestedLifecycle = parseLifecycleArguments();

@@ -137,7 +137,7 @@ describe("contract build-toolchain exemptions", () => {
   // twice because both cases assert the same contract on different fields.
   for (const [label, field, value] of [
     ["an endpoint that is not the approved technical commit", "technicalCommit", "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb"],
-    ["a range base that is not the approved cumulative base", "rangeBase", "ee430bc6a7ca52671b294e8c73f0e2ea3ace67bf"],
+    ["a range base that is not the approved cumulative base", "rangeBase", "eeebae6d73e5a26db3e6778f56ee95756fa146c6"],
   ]) {
     it(`rejects ${label}`, () => {
       setCandidateField(field, value);
