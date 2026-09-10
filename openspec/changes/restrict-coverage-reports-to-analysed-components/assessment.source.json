@@ -1,0 +1,205 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "`Could not resolve N file paths` has been printed by every `sonar` run for as long as the repository-wide scan has existed, so the signal is saturated: a new unresolvable path changes a number nobody reads and fails nothing.",
+    "The four unresolvable records are legitimate output — runtime tests execute built output, and the generated Ajv validator exists only as a `.cjs` file under `dist/` with no source map — so the report is not wrong, it is merely describing files the analyser was told not to index.",
+    "Widening the scope to make the records resolve would analyse generated and built output, which #452 had just excluded because a finding there is not actionable: the fix belongs in the generator.",
+    "Asserting the current count instead pins a magic number that moves for a legitimate reason as readily as for a defect, and keeps a report that describes excluded files.",
+    "The `coverage` job's rewrite step carries a hand-maintained list of four report/prefix pairs, a fifth copy of the declared-package set in a repository where the previous four each went stale (#412, #441 twice, #452).",
+    "Filtering alone would make the next regressed path rewrite quieter, not louder: a record for a moved file would simply be filtered away and its coverage would vanish with no warning at all.",
+    "#442's acceptance criteria require the coverage figures of analysed components to be unchanged and verified against the same project key, so any filter that could move a figure fails the criterion it was filed under.",
+    "`sonar` is one of ten required merge contexts and `coverage` is another, so a defect in a script the `coverage` job runs blocks every merge in the repository."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "ci-topology"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/restrict-coverage-reports-to-analysed-components/.openspec.yaml",
+    "openspec/changes/restrict-coverage-reports-to-analysed-components/proposal.md",
+    "openspec/changes/restrict-coverage-reports-to-analysed-components/design.md",
+    "openspec/changes/restrict-coverage-reports-to-analysed-components/tasks.md",
+    "openspec/changes/restrict-coverage-reports-to-analysed-components/assessment.source.json",
+    "openspec/changes/restrict-coverage-reports-to-analysed-components/assessment.json",
+    "openspec/changes/restrict-coverage-reports-to-analysed-components/specs/ci-topology/spec.md",
+    "openspec/specs/ci-topology/spec.md",
+    ".github/workflows/ci.yml",
+    ".github/scripts/normalize-coverage-reports.mjs",
+    ".github/scripts/normalize-coverage-reports.test.mjs",
+    "sonar-project.properties"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-normalize-and-filter-reports-against-the-declared-scope",
+      "kind": "direct_implementation",
+      "summary": "Replace the coverage job's inline path rewrite with a script that reads the declared analysis scope from sonar-project.properties, normalises every record path to a repository-relative path with parent segments resolved, drops only records that name no indexed component, and fails closed on a missing report, a non-existent path, an emptied report, or an unsupported glob construct.",
+      "forces_addressed": [
+        "`Could not resolve N file paths` has been printed by every `sonar` run for as long as the repository-wide scan has existed, so the signal is saturated: a new unresolvable path changes a number nobody reads and fails nothing.",
+        "The four unresolvable records are legitimate output — runtime tests execute built output, and the generated Ajv validator exists only as a `.cjs` file under `dist/` with no source map — so the report is not wrong, it is merely describing files the analyser was told not to index.",
+        "The `coverage` job's rewrite step carries a hand-maintained list of four report/prefix pairs, a fifth copy of the declared-package set in a repository where the previous four each went stale (#412, #441 twice, #452).",
+        "Filtering alone would make the next regressed path rewrite quieter, not louder: a record for a moved file would simply be filtered away and its coverage would vanish with no warning at all.",
+        "#442's acceptance criteria require the coverage figures of analysed components to be unchanged and verified against the same project key, so any filter that could move a figure fails the criterion it was filed under.",
+        "`sonar` is one of ten required merge contexts and `coverage` is another, so a defect in a script the `coverage` job runs blocks every merge in the repository."
+      ]
+    },
+    {
+      "id": "approach-widen-the-scope-so-the-records-resolve",
+      "kind": "alternative",
+      "summary": "Remove the generated and dist exclusions from sonar-project.properties so every record in every report names an indexed component.",
+      "forces_addressed": [
+        "`Could not resolve N file paths` has been printed by every `sonar` run for as long as the repository-wide scan has existed, so the signal is saturated: a new unresolvable path changes a number nobody reads and fails nothing."
+      ]
+    },
+    {
+      "id": "approach-assert-the-known-unresolved-count",
+      "kind": "alternative",
+      "summary": "Leave the reports alone and fail the sonar job when the number of unresolved paths differs from the recorded value, turning the standing warning into a tripwire without changing what is handed over.",
+      "forces_addressed": [
+        "`Could not resolve N file paths` has been printed by every `sonar` run for as long as the repository-wide scan has existed, so the signal is saturated: a new unresolvable path changes a number nobody reads and fails nothing.",
+        "#442's acceptance criteria require the coverage figures of analysed components to be unchanged and verified against the same project key, so any filter that could move a figure fails the criterion it was filed under."
+      ]
+    },
+    {
+      "id": "approach-filter-with-a-hard-coded-exclusion-list",
+      "kind": "alternative",
+      "summary": "Extend the existing inline node -e step to strip records whose path starts with dist/ or src/generated/, keeping the change inside the workflow file.",
+      "forces_addressed": [
+        "The four unresolvable records are legitimate output — runtime tests execute built output, and the generated Ajv validator exists only as a `.cjs` file under `dist/` with no source map — so the report is not wrong, it is merely describing files the analyser was told not to index."
+      ]
+    },
+    {
+      "id": "approach-document-the-warning-and-change-nothing",
+      "kind": "alternative",
+      "summary": "Record in sonar-project.properties why the warning is emitted and accept it as known, the status quo option named in the issue.",
+      "forces_addressed": [
+        "The four unresolvable records are legitimate output — runtime tests execute built output, and the generated Ajv validator exists only as a `.cjs` file under `dist/` with no source map — so the report is not wrong, it is merely describing files the analyser was told not to index."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-normalize-and-filter-reports-against-the-declared-scope",
+  "rejected_alternative_ids": [
+    "approach-widen-the-scope-so-the-records-resolve",
+    "approach-assert-the-known-unresolved-count",
+    "approach-filter-with-a-hard-coded-exclusion-list",
+    "approach-document-the-warning-and-change-nothing"
+  ],
+  "rejection_reasons": {
+    "approach-widen-the-scope-so-the-records-resolve": {
+      "forces": [
+        "Widening the scope to make the records resolve would analyse generated and built output, which #452 had just excluded because a finding there is not actionable: the fix belongs in the generator.",
+        "`sonar` is one of ten required merge contexts and `coverage` is another, so a defect in a script the `coverage` job runs blocks every merge in the repository."
+      ],
+      "reason": "It reverses a decision taken one change earlier for a reason that has not changed. `src/generated/` and `dist/` are regenerated from the canonical contract and never hand-edited, so a finding in them cannot be acted on where it is reported. It would also put generated output under the gate's new-code conditions, so regenerating the contract would red a required context on code no reviewer can edit."
+    },
+    "approach-assert-the-known-unresolved-count": {
+      "forces": [
+        "Asserting the current count instead pins a magic number that moves for a legitimate reason as readily as for a defect, and keeps a report that describes excluded files.",
+        "The `coverage` job's rewrite step carries a hand-maintained list of four report/prefix pairs, a fifth copy of the declared-package set in a repository where the previous four each went stale (#412, #441 twice, #452)."
+      ],
+      "reason": "It pins a hand-maintained number, which is the defect shape this repository has recorded four times, and the number moves for legitimate reasons: it went from 2 to 4 when #452 added the Node binding's report, with nothing wrong. A contributor facing a failing assertion whose correct response is usually to update the number will update the number. It also leaves the analyser being handed coverage for components it was told not to index, so the two artefacts still disagree."
+    },
+    "approach-filter-with-a-hard-coded-exclusion-list": {
+      "forces": [
+        "The `coverage` job's rewrite step carries a hand-maintained list of four report/prefix pairs, a fifth copy of the declared-package set in a repository where the previous four each went stale (#412, #441 twice, #452).",
+        "Filtering alone would make the next regressed path rewrite quieter, not louder: a record for a moved file would simply be filtered away and its coverage would vanish with no warning at all."
+      ],
+      "reason": "It creates a sixth copy of the scope and makes the failure quieter than the warning it replaces. Two lists that must agree — the exclusions the analyser reads and the prefixes the filter strips — will diverge, and when they do the filter drops records the analyser would have indexed, silently removing real coverage. Filtering without an existence check turns a moved file from a louder warning into no signal at all."
+    },
+    "approach-document-the-warning-and-change-nothing": {
+      "forces": [
+        "`Could not resolve N file paths` has been printed by every `sonar` run for as long as the repository-wide scan has existed, so the signal is saturated: a new unresolvable path changes a number nobody reads and fails nothing.",
+        "Filtering alone would make the next regressed path rewrite quieter, not louder: a record for a moved file would simply be filtered away and its coverage would vanish with no warning at all."
+      ],
+      "reason": "Documenting a saturated signal does not desaturate it. The failure this leaves open is a coverage report that stops covering a package while every required context stays green, because the only place that fact surfaces is a warning line whose value has been non-zero since the scan existed. The issue names this as the status-quo option and says so."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-every-supplied-record-names-an-analysed-component",
+    "implementation-scope-is-read-not-restated",
+    "implementation-paths-are-normalised-before-classification",
+    "implementation-unattributable-record-fails-the-producing-job",
+    "implementation-analysed-component-figures-are-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-every-supplied-record-names-an-analysed-component": {
+      "task_ids": [
+        "3.2",
+        "4.1",
+        "4.3",
+        "5.3"
+      ],
+      "evidence_ids": [
+        "the script drops exactly the four records identified from the regenerated reports, and the sonar job's own log emits no Could not resolve warning"
+      ]
+    },
+    "implementation-scope-is-read-not-restated": {
+      "task_ids": [
+        "3.1",
+        "3.6",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "no source root, exclusion glob, report path or package prefix appears in the script, and hard-coding one source root is rejected by a control"
+      ]
+    },
+    "implementation-paths-are-normalised-before-classification": {
+      "task_ids": [
+        "2.2",
+        "3.2",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "a cross-package record reaching another package through parent segments is classified by its normalised path and retained when it names an analysed component"
+      ]
+    },
+    "implementation-unattributable-record-fails-the-producing-job": {
+      "task_ids": [
+        "3.3",
+        "4.1",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "a non-existent path, a missing declared report, an emptied report and an unsupported glob construct each fail and name what failed, and removing the existence check is rejected by a control"
+      ]
+    },
+    "implementation-analysed-component-figures-are-unchanged": {
+      "task_ids": [
+        "2.3",
+        "4.3",
+        "5.4"
+      ],
+      "evidence_ids": [
+        "project coverage, lines_to_cover and uncovered_lines read from the same project key before and after the change, and every retained record byte-identical to its input"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "trust_boundary": "Two of the ten required merge contexts sit on the boundary that admits code to the protected mainline, and this change alters what one of them hands the other. The report handed over becomes exactly the set of components the analyser indexes, and a record that cannot be attributed fails the producing job instead of degrading into a warning.",
+    "authority_provenance": "No actor, tenant, or authority value is read, derived, or emitted. The change rewrites coverage record paths in a build artefact; nothing here participates in event authority.",
+    "authentication_or_authorization": "No authentication or authorization decision changes. The analyser token, host URL, project key and permission blocks are untouched, and the script reads no credential.",
+    "audit_integrity": "No audit event, catalog entry, or emitted record changes. The integrity that improves is the CI record's: the coverage artefact stops describing files the analysis excluded, so the two artefacts can no longer disagree silently.",
+    "confidentiality": "No data is read, stored, or transmitted that was not already. The script reads coverage reports and one properties file already in the workspace, writes the reports back, and prints paths already public in the repository.",
+    "mutation_ownership": "The script writes only the reports named in the gate's own report declaration, and every path this change edits is listed in the owned-path inventory. It writes no file outside the declared report set.",
+    "fail_posture": "Fail-closed, and deliberately more so than the state it replaces. A missing declared report, a record naming a path that does not exist, a report left with no records, and an exclusion pattern using an unimplemented glob construct each fail the required coverage job and name what failed. No existing failing arm is removed and no threshold is relaxed; the quality gate's three conditions are untouched.",
+    "error_disclosure": "Diagnostics name a report path, a record path, or an exclusion pattern — all repository-relative and already public. No file contents, environment values, or credential material are printed.",
+    "concurrency": "No concurrency is introduced, removed, or reordered. The script processes the declared reports sequentially in one synchronous pass, and the job graph, its dependency edges and the analyser's own parallelism are unchanged.",
+    "lifecycle": "No lifecycle state, transition, or ordering changes. The script replaces an existing step in place, between the coverage runs that produce the reports and the artifact upload that publishes them, so nothing observes a report in a state it could not observe before.",
+    "resource_retention": "Nothing is retained. Each report is read, transformed and written once; no cache, queue, temporary file or store is added, and the artifact retention settings are untouched.",
+    "retry_or_redelivery": "No retry or redelivery path changes. The coverage job's bounded artifact-upload retry and the sonar job's bounded scan and download retries are untouched, and the script itself performs no I/O that could be retried.",
+    "cryptography": "No cryptographic material, algorithm, signature, or hash chain is introduced, read, or changed.",
+    "privacy_transformation": "No field transformation, redaction, or privacy policy is involved. Coverage records contain file paths and execution counts, and no personal, user, or tenant data is in scope.",
+    "external_security_integration": "SonarQube is an existing required gate and remains one, on the same project key and quality profile. Nothing is integrated and no threshold moves; what changes is that the artefact handed to the existing integration matches the scope that integration declares."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "347fe09c0a0ffb245ecaafa0b748a17ec168c9ec"
+  }
+}
