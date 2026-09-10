@@ -29,19 +29,19 @@ actually invokes each one — added after `make` reported green across "all four
 never running the collector (#412).
 
 ```bash
-# Fast product development loop (~34s across workspaces) — use during active development
+# Fast product development loop (~45s local) — use during active development
 make                                                            # Bare invocation runs the product loop across every declared workspace
 # or via direct workspace commands:
-npm run test:matrix --prefix packages/security-audit-sdk-core  # SDK core product loop (~14.6s cold, ~9.2s runtime warm)
-npm run validate --prefix packages/security-audit-sdk-node     # Node binding: typecheck, build, tests, scope, exports, deps, package
-npm run validate --prefix packages/security-audit-collector    # Collector: generated-artifact drift, tests, scope, deps, package
-npm run validate --prefix contracts/security-audit             # Contract validation (~1.5s)
-npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry  # Research harness (~15s)
+npm run test:matrix --prefix packages/security-audit-sdk-core  # SDK core product loop (~25s local)
+npm run validate --prefix packages/security-audit-sdk-node     # Node binding: typecheck, build, tests, scope, exports, deps, package (~12s local)
+npm run validate --prefix packages/security-audit-collector    # Collector: generated-artifact drift, tests, scope, deps, package (~13s local)
+npm run validate --prefix contracts/security-audit             # Contract validation (~1s local)
+npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry  # Research harness (~3s local)
 
 # Full gate chains — run before pushing
-make governance-gates                                           # Runs full validation across every declared workspace (~307s; states cost upfront)
+make governance-gates                                           # Runs full validation across every declared workspace (~13-20min local; states cost upfront)
 # or via direct workspace commands:
-# sdk-core validate (~291s on its own): dominant cost (~254s) is test:verification (governance gate mutation testing, proving gates fail closed, not product test assertions)
+# sdk-core validate (~12-20min on its own): 94-95% of it is test:verification (governance gate mutation testing, proving gates fail closed, not product test assertions)
 npm run validate --prefix packages/security-audit-sdk-core
 npm run validate --prefix packages/security-audit-sdk-node
 npm run validate --prefix packages/security-audit-collector
@@ -54,6 +54,21 @@ npm run test:matrix --prefix packages/security-audit-sdk-core
 # Heavier than `validate` and needs the `openspec` CLI on PATH.
 npm run verify --prefix packages/security-audit-sdk-core
 ```
+
+**Every figure above is a measurement, not a threshold.** The local ones were taken on 2026-09-10
+with `time make <target>` on an Apple Silicon workstation (Darwin arm64, node v26.8.1, npm 11.19.0),
+warm, with dependencies installed. Re-derive a local figure the same way. Re-derive a CI figure from
+the interval between one npm script's banner and the next in the job log — the job's own step timing
+also covers checkout, `npm ci` and the matrix legs, which is why the `sdk` job total and the step
+total disagree so widely.
+
+The spread is large and is not noise to average away. `test:verification` measured 258s, 301s, 321s,
+344s, 681s, 1022s and 1234s across seven consecutive green `main` runs of unchanged code (runs
+`34478007327`, `34436080971`, `34440060205`, `34437677579`, `34430899289`, `34426872820`,
+`34479556234`), and 700s to 1164s locally in one afternoon. The cause is runner shape — the scanner
+reports `Available processors: 2` — and it is #306, not the code under test. Use these numbers to
+decide whether to run a chain before pushing. Never as a service level, and never to estimate CI
+wall-clock from a local run.
 
 There is **no ESLint or Prettier** anywhere. `lint` exists only in `research/browser-telemetry` and is a syntax check. Strict `tsc`, SonarQube, and CodeScene serve the linter's role.
 
@@ -86,7 +101,7 @@ Verification tests **must operate on a disposable clone** via `tests/verificatio
 | `test:coherence` | package identity, version, engines, event counts, and consumer docs all agree |
 | `test:changed-paths` | lifecycle-aware staged scope (see below) |
 | `test:git` | whitespace, final newlines, and an empty Git index |
-| `test:verification` | the mutation/evidence suite in `tests/verification/` (~254s; proves governance gates fail closed, not product assertions) |
+| `test:verification` | the mutation/evidence suite in `tests/verification/` (~12-20min local, 94-95% of the `validate` chain; proves governance gates fail closed, not product assertions) |
 
 ## Architecture
 
@@ -131,6 +146,34 @@ contracts/security-audit/source/contract.source.json      ← single source of t
 **`test:git` requires an empty Git index.** Verification runs *before* `git add`, not after. It also rejects a missing final newline, any CR byte, and any trailing whitespace in every file changed since the baseline — including new Markdown, YAML, and JSON. A stray trailing space fails CI.
 
 **`validate` runs `generate` first**, which rewrites `src/generated/` and would mask committed drift. Run `check:generated` *before* `validate` to catch it, exactly as CI does.
+
+**A contract version move must advance every pin at once.** The canonical version appears in more
+places than `npm run generate` reaches, and `1.0.0 → 1.1.0` (#95) left three of them behind — each
+failed *after* the move landed rather than in the change that made it. The full set, none of which
+regeneration updates:
+
+| Pin | Where |
+|---|---|
+| `metadata.schema_version`, `catalog_version`, `field_policy_version`, `schema_id`, `catalog_id` | `contracts/security-audit/source/contract.source.json` — everything else under `contracts/` and `src/generated/` follows from `npm run generate` |
+| `expected.contractVersion` | `packages/security-audit-sdk-core/scripts/check-coherence.mjs` |
+| `contractVersion` | `packages/security-audit-sdk-core/scripts/check-compatibility.mjs` |
+| the approved-version guard | `packages/security-audit-sdk-core/scripts/check-contract-immutability.mjs` |
+| the lifecycle contract-version assertion | `packages/security-audit-sdk-core/scripts/check-changed-paths.mjs` |
+| `contractVersion`, `supportedContractVersions`, and the range minimum and maximum | `packages/security-audit-sdk-core/compatibility.json` |
+| `contractVersion` | `packages/security-audit-sdk-core/contract-provenance.json` |
+| `contract.version` | `packages/security-audit-sdk-core/verification-lifecycle.json` |
+| `contractVersion` | `packages/security-audit-sdk-node/compatibility.json` |
+| `SUPPORTED_CONTRACT_VERSIONS` and the packed probe fixture | `packages/security-audit-collector/scripts/check-package-contents.mjs` |
+| `REQUIRED_CONTRACT` | `openspec/scripts/contract-reuse/check.mjs` |
+| both `contract` enums — **add** the new version and **keep** the old, or archived CRA records stop being structurally valid | `openspec/governance/schemas/contract-reuse.schema.json` |
+| the fixture seed and the eight CRA fixtures | `openspec/tests/contract-reuse/` |
+| consumer docs, gated by the coherence rule `adr-contract` | `packages/security-audit-sdk-core/{API,MIGRATION,README,SECURITY}.md` and `adr/009-package-contract-compatibility.md` |
+
+**The CRA pin fails open exactly once.** `check.mjs` validates the *reviewed range baseline*, not the
+working tree, precisely so a version transition cannot invalidate its own assessment. That means it
+passes for the version-move PR itself — whose base still carries the old version — and fails for
+every PR opened after the merge (#426). Verify a version move against a base that already carries
+the new version, not only against its own PR.
 
 **`test:coherence` pins constants** — package name and version, Node engines, TypeScript range, catalog counts, task counts. Changing one of them means updating `compatibility.json` and `verification-lifecycle.json` in the same change.
 
