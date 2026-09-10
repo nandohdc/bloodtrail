@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.5](https://github.com/nandohdc/bloodtrail/compare/v0.17.4...v0.17.5) (2026-09-10)
+
+
+### Documentation
+
+* **openspec:** propose aligning the sonar scope with declared packages ([#452](https://github.com/nandohdc/bloodtrail/issues/452)) ([3fb9756](https://github.com/nandohdc/bloodtrail/commit/3fb9756c3956b30942cd996eb91bae9632748190))
+* **openspec:** propose aligning the sonar scope with declared packages ([#452](https://github.com/nandohdc/bloodtrail/issues/452)) ([b124f2c](https://github.com/nandohdc/bloodtrail/commit/b124f2cbe0297176e1b0064cc83456fd0ebb4d97))
+
 ## [0.17.4](https://github.com/nandohdc/bloodtrail/compare/v0.17.3...v0.17.4) (2026-09-10)
 
 
