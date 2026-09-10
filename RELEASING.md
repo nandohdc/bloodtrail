@@ -27,9 +27,18 @@ It deliberately does **not** touch any `package.json`:
 
 | Workspace | Version | Governed by |
 | --- | --- | --- |
-| `packages/security-audit-sdk-core` | `0.1.0` | frozen until an explicit owner release authorization; `compatibility.json` asserts this exact value and `npm run test:compatibility` fails if it desyncs |
-| `contracts/security-audit` | `1.0.0` | the separate `security-audit-event-contract` governance process; a protected prefix that `test:changed-paths` refuses to write |
+| `packages/security-audit-sdk-core` | `0.4.0` | frozen until an explicit owner release authorization; `compatibility.json` asserts this exact value and `npm run test:compatibility` fails if it desyncs |
+| `packages/security-audit-sdk-node` | `0.4.0` | the same freeze, asserted by its own `compatibility.json` (`frozen-not-published`); the public API is frozen under #111 and widens only through a governed change |
+| `packages/client-evidence-browser` | `0.1.0` | frozen until an explicit owner release authorization; non-production browser evidence collection package (#124) |
+| `packages/security-audit-collector` | `0.1.0` | frozen until an explicit owner release authorization; its own `compatibility.json` asserts this value (`bounded-collector-candidate-not-published`) |
+| `contracts/security-audit` | `1.0.0` | the separate `security-audit-event-contract` governance process; a protected prefix that `test:changed-paths` refuses to write. Deliberately **independent of the canonical schema version**, which is `2.1.0` |
 | `research/browser-telemetry` | `0.0.0-research` | investigation artifact, never released |
+
+Every declared workspace appears above, and each version is the one that workspace's own
+`package.json` carries. `.github/scripts/check-package-discovery.mjs` asserts both, so a workspace
+added without a row, a row naming no declared workspace, and a row whose version has drifted from its
+manifest each fail. The table went stale once — it named `0.1.0` for a candidate that had moved to
+`0.2.0`, and omitted two of the five workspaces (#462).
 
 If you ever need the SDK package version to move, that is a governed change with its own owner
 decision — not a side effect of a release. It must update `compatibility.json` in the same commit.
