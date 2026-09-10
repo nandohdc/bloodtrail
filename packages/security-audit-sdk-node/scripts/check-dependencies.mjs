@@ -47,17 +47,38 @@ assert(codeFiles.length > 0, "no shipped artifacts found in dist/");
 let inspectedSpecifiers = 0;
 
 // TypeScript emits each static import/export declaration onto one line in the
-// shipped JavaScript and declaration files. Keep the two declaration forms
-// separate so this check has no nested wildcard that can backtrack across a
-// whole artifact while looking for `from`.
-const FROM_SPECIFIER_REGEX = /\b(?:import|export)\s+(?:type\s+)?[^"'`\r\n]*\bfrom\s*["']([^"'\r\n]+)["']/g;
-const BARE_IMPORT_SPECIFIER_REGEX = /\bimport\s*["']([^"'\r\n]+)["']/g;
+// shipped JavaScript and declaration files. Read that emitted syntax directly
+// instead of scanning an entire artifact with a broad expression.
+function quotedSpecifierAt(text, start) {
+  const quote = text[start];
+  if (quote !== "\"" && quote !== "'") return null;
+
+  const end = text.indexOf(quote, start + 1);
+  return end > start + 1 ? text.slice(start + 1, end) : null;
+}
+
+function staticImportSpecifier(line) {
+  const declaration = line.trimStart();
+  const isImport = declaration.startsWith("import ");
+  const isExport = declaration.startsWith("export ");
+  if (!isImport && !isExport) return null;
+
+  const bareSpecifier = isImport
+    ? quotedSpecifierAt(declaration, "import ".length)
+    : null;
+  if (bareSpecifier !== null) return bareSpecifier;
+
+  const fromIndex = declaration.lastIndexOf(" from ");
+  return fromIndex === -1
+    ? null
+    : quotedSpecifierAt(declaration, fromIndex + " from ".length);
+}
 
 function staticImportSpecifiers(content) {
-  return [
-    ...content.matchAll(FROM_SPECIFIER_REGEX),
-    ...content.matchAll(BARE_IMPORT_SPECIFIER_REGEX),
-  ].map((match) => match[1]);
+  return content
+    .split("\n")
+    .map((line) => staticImportSpecifier(line.endsWith("\r") ? line.slice(0, -1) : line))
+    .filter((specifier) => specifier !== null);
 }
 
 for (const file of codeFiles) {
