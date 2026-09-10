@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.17.4](https://github.com/nandohdc/bloodtrail/compare/v0.17.3...v0.17.4) (2026-09-10)
+
+
+### Fixed
+
+* **ci:** assert what the command surface claims about itself ([#444](https://github.com/nandohdc/bloodtrail/issues/444)) ([2bc16c6](https://github.com/nandohdc/bloodtrail/commit/2bc16c65cdc89bccccdde9a751d106e45115bea3))
+
+
+### Documentation
+
+* **openspec:** archive the ci-topology cost and package change ([#444](https://github.com/nandohdc/bloodtrail/issues/444)) ([1f40052](https://github.com/nandohdc/bloodtrail/commit/1f40052dfd3db0966316f6fc9449ebc02bf028b3))
+* **openspec:** archive the ci-topology cost and package change ([#444](https://github.com/nandohdc/bloodtrail/issues/444)) ([6b02f8a](https://github.com/nandohdc/bloodtrail/commit/6b02f8a3a912d10ce169c645cbb9516a5c04f06f))
+* **openspec:** fold the ci-topology cost and package delta ([#444](https://github.com/nandohdc/bloodtrail/issues/444)) ([f18ab84](https://github.com/nandohdc/bloodtrail/commit/f18ab846f3809097cd17ee42adceafa63f9c8007))
+* **openspec:** fold the ci-topology cost and package delta ([#444](https://github.com/nandohdc/bloodtrail/issues/444)) ([16d2c7f](https://github.com/nandohdc/bloodtrail/commit/16d2c7f194cc2edbac4a90471583dd8a11f5fbd1))
+
 ## [0.17.3](https://github.com/nandohdc/bloodtrail/compare/v0.17.2...v0.17.3) (2026-09-10)
 
 
