@@ -114,6 +114,24 @@ approved correction impossible to validate and falsely describes the authoritati
 Folding the rebinding into an unidentifiable working tree was also rejected because the gate requires
 an immutable commit and independently reproducible cumulative and correction inventories.
 
+### D7 — Re-derive package gate constants the comparator moves
+
+`tests/verification/platform-coupling-mutations.test.mjs` pins an exact authored-reference count for
+the SDK's platform-coupling inventory. That count is derived from the same `src/validation/semantic.ts`
+this change already owns, so adding the comparator moves it: measured 122 with `semantic.ts` at the
+merged planning baseline and 123 at the technical commit. The pin will be re-derived to the measured
+value, and the control's path joins the closed owned-path inventory.
+
+Relaxing the assertion to a bound or a regular expression was rejected: the pin exists to force a
+human to notice that the platform-coupling surface moved, and a range would admit a real host coupling
+under the same change. Leaving the path unowned was also rejected — the association gate correctly
+reports a governed implementation path that no change claims, and declaring it is the honest
+correction rather than an exception.
+
+This is the same shape as the defects the preceding change recorded: the inventory already claimed the
+source whose edit moves the constant, so the area was known to be implicated and only part of it was
+moved. Ownership is not coverage.
+
 ## Risks / Trade-offs
 
 - [One validator drifts from the other] → Run the same disagreement pair through both public
