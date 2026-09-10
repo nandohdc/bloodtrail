@@ -247,19 +247,14 @@ jobs:
 
       # Each report records paths relative to its own package, but the scan runs
       # from the repository root, so Sonar cannot match them to indexed files.
-      - name: Rewrite lcov paths as repository-relative
-        run: |
-          node -e '
-            const fs = require("node:fs");
-            for (const [file, prefix] of [
-              ["packages/security-audit-sdk-core/coverage/lcov.info", "packages/security-audit-sdk-core/"],
-              ["packages/security-audit-sdk-node/coverage/lcov.info", "packages/security-audit-sdk-node/"],
-              ["packages/security-audit-collector/coverage/lcov.info", "packages/security-audit-collector/"],
-              ["research/browser-telemetry/coverage/lcov.info", "research/browser-telemetry/"],
-            ]) {
-              fs.writeFileSync(file, fs.readFileSync(file, "utf8").replaceAll(/^SF:/gm, "SF:" + prefix));
-            }
-          '
+      # The same step drops records naming files the scan excludes — built
+      # output the runtime tests execute, and the generated validator, which
+      # has no source map to map back to src/ — so the analyser is not handed
+      # coverage for components it was told not to index (#442). The report
+      # list, the source roots and the exclusion globs are all read from
+      # sonar-project.properties rather than restated here.
+      - name: Normalize lcov reports against the declared analysis scope
+        run: node .github/scripts/normalize-coverage-reports.mjs
 
       # actions/upload-artifact has no step-level retry; one transport-level
       # ECONNRESET reds the required coverage context even though every
