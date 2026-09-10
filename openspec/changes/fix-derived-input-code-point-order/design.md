@@ -83,10 +83,20 @@ move. Release/package automation may assign a patch release independently of the
 ### D6 — Rebind the exact correction candidate without weakening the freeze
 
 After the corrected planning packet is merged, the comparator, tests, generator, generated
-documentation, and generated negative fixtures will be committed as a named technical candidate.
-The merged planning commit is the candidate range base; the technical commit is the endpoint. The
-lifecycle record will replace the previous governed candidate with this change and a strict,
-code-point-sorted inventory of every protected path changed across that range.
+documentation, and generated negative fixtures will be committed as a named technical endpoint. The
+merged planning commit remains the base for the separately audited #423 correction delta, whose
+strict code-point-sorted protected inventory contains exactly the six contract paths changed by this
+fix.
+
+The changed-path gate scans from the older SDK remediation baseline and its lifecycle schema carries
+one `governedCandidate`, not an append-only candidate list. Replacing that record with the six-path
+delta would therefore reopen every protected `1.1.0` write admitted by the preceding
+`add-derived-field-provenance` candidate. The lifecycle binding will instead retain that candidate's
+existing range base `cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb`, advance its endpoint to the exact
+#423 technical commit, and regenerate the protected-path inventory as the exact cumulative diff
+across that range. This cumulative gate witness preserves the previous approvals; it does not widen
+the #423 implementation scope, which remains independently reproducible from the merged planning
+baseline to the same endpoint.
 
 `contract-provenance.json` will advance both the normative technical target and its immutable
 comparison baseline to that technical commit. The matching target copies in compatibility metadata,
@@ -96,10 +106,31 @@ and verification controls must continue to reject an undeclared path, a mismatch
 an incorrect range, and an incorrect target.
 
 The alternative of exempting the aggregate fixture or removing a protected prefix creates a reusable
-freeze bypass. Leaving the previous `add-derived-field-provenance` candidate bound makes the approved
-correction impossible to validate and falsely describes the authoritative contract content. Folding
-the rebinding into an unidentifiable working tree was also rejected because the gate requires an
-immutable commit and an independently reproducible range inventory.
+freeze bypass. Replacing the cumulative witness with only the narrow correction range makes earlier
+protected `1.1.0` paths fail again. Adding a multi-candidate policy and overlap precedence would add
+new checker semantics solely to represent history already captured by one exact cumulative range, so
+it is rejected as unnecessary governance complexity. Leaving the previous endpoint bound makes the
+approved correction impossible to validate and falsely describes the authoritative contract content.
+Folding the rebinding into an unidentifiable working tree was also rejected because the gate requires
+an immutable commit and independently reproducible cumulative and correction inventories.
+
+### D7 — Re-derive package gate constants the comparator moves
+
+`tests/verification/platform-coupling-mutations.test.mjs` pins an exact authored-reference count for
+the SDK's platform-coupling inventory. That count is derived from the same `src/validation/semantic.ts`
+this change already owns, so adding the comparator moves it: measured 122 with `semantic.ts` at the
+merged planning baseline and 123 at the technical commit. The pin will be re-derived to the measured
+value, and the control's path joins the closed owned-path inventory.
+
+Relaxing the assertion to a bound or a regular expression was rejected: the pin exists to force a
+human to notice that the platform-coupling surface moved, and a range would admit a real host coupling
+under the same change. Leaving the path unowned was also rejected — the association gate correctly
+reports a governed implementation path that no change claims, and declaring it is the honest
+correction rather than an exception.
+
+This is the same shape as the defects the preceding change recorded: the inventory already claimed the
+source whose edit moves the constant, so the area was known to be implicated and only part of it was
+moved. Ownership is not coverage.
 
 ## Risks / Trade-offs
 
@@ -115,13 +146,17 @@ immutable commit and an independently reproducible range inventory.
   capability text unchanged and record that the code is conforming to their existing rule.
 - [Gate rebinding becomes a broad exception] → Bind one named change, exact range, exact technical
   commit, and exact protected-path inventory; retain mutation tests for every fail-closed boundary.
+- [The cumulative inventory is mistaken for #423 scope] → Record both ranges: the existing candidate
+  base to the new endpoint for enforcement, and the merged #423 planning baseline to that endpoint
+  for the exact six-path correction delta.
 - [A later binding edit silently changes protected content] → Commit protected content first and
   require every protected blob at the PR head to match the named technical commit exactly.
 
 ## Migration Plan
 
 Merge the corrected planning and assessment packet before creating the governed technical commit.
-Regenerate contract artifacts, commit the closed technical path set, bind the frozen-contract gates
-to that exact commit, then validate the contract and SDK Core workspaces and run repository governance
-and strict OpenSpec checks before delivery. Rollback is a branch revert before merge; no data
-migration, version negotiation, or production rollout is involved.
+Regenerate contract artifacts, commit the closed technical path set, derive both the six-path
+correction inventory and the cumulative protected inventory, bind the frozen-contract gates to that
+exact endpoint, then validate the contract and SDK Core workspaces and run repository governance and
+strict OpenSpec checks before delivery. Rollback is a branch revert before merge; no data migration,
+version negotiation, or production rollout is involved.

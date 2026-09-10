@@ -8,7 +8,9 @@
     "Ordering runs before path resolution and consumes bounded but otherwise arbitrary strings, so astral inputs can select the wrong public diagnostic even though currently resolvable field paths are ASCII.",
     "The canonical validator and SDK Core validator are independent trust boundaries and must remain behaviorally identical without adding a runtime dependency or coupling either workspace to the other.",
     "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged and the exact provenance target advances only to the corrected candidate.",
-    "The frozen aggregate fixture and all contract paths are protected by exact-history gates, so the correction must rebind provenance and lifecycle metadata to one immutable candidate without exemptions or wider prefixes."
+    "The changed-path gate carries one cumulative candidate and scans from the older SDK remediation baseline, so rebinding only the six-path correction range would reopen previously governed 1.1.0 paths.",
+    "The correction scope and cumulative enforcement range must remain distinct: six protected paths belong to #423, while the cumulative candidate preserves prior approved blobs through the same immutable endpoint.",
+    "Package gates pin constants derived from the authored sources this change already owns, so a control whose literal the comparator moves must be owned and re-derived rather than left to fail outside the declared inventory."
   ],
   "applicability": {
     "triggers_matched": [
@@ -45,19 +47,22 @@
     "packages/security-audit-sdk-core/src/validation/semantic.ts",
     "packages/security-audit-sdk-core/tests/derived-field-provenance.test.ts",
     "packages/security-audit-sdk-core/tests/verification/contract-toolchain-exemption.test.mjs",
+    "packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs",
     "packages/security-audit-sdk-core/verification-lifecycle.json"
   ],
   "candidate_approaches": [
     {
       "id": "approach-code-point-comparison",
       "kind": "direct_implementation",
-      "summary": "Decode each bounded string into its JavaScript-iterated code-point sequence, compare numeric code points lexicographically in both validators, generate two-sided astral regression evidence, and bind the exact protected correction candidate without relaxing the freeze.",
+      "summary": "Decode each bounded string into its JavaScript-iterated code-point sequence, compare numeric code points lexicographically in both validators, generate two-sided astral evidence, and bind cumulative protected history to the exact endpoint while recording the six-path correction delta and re-deriving every package gate constant the comparator moves.",
       "forces_addressed": [
         "The canonical contract and ratified capability require Unicode code-point ordering, so both reference validators must implement that exact deterministic order rather than JavaScript UTF-16 code-unit comparison.",
         "Ordering runs before path resolution and consumes bounded but otherwise arbitrary strings, so astral inputs can select the wrong public diagnostic even though currently resolvable field paths are ASCII.",
         "The canonical validator and SDK Core validator are independent trust boundaries and must remain behaviorally identical without adding a runtime dependency or coupling either workspace to the other.",
         "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged and the exact provenance target advances only to the corrected candidate.",
-        "The frozen aggregate fixture and all contract paths are protected by exact-history gates, so the correction must rebind provenance and lifecycle metadata to one immutable candidate without exemptions or wider prefixes."
+        "The changed-path gate carries one cumulative candidate and scans from the older SDK remediation baseline, so rebinding only the six-path correction range would reopen previously governed 1.1.0 paths.",
+        "The correction scope and cumulative enforcement range must remain distinct: six protected paths belong to #423, while the cumulative candidate preserves prior approved blobs through the same immutable endpoint.",
+        "Package gates pin constants derived from the authored sources this change already owns, so a control whose literal the comparator moves must be owned and re-derived rather than left to fail outside the declared inventory."
       ]
     },
     {
@@ -88,7 +93,7 @@
     "approach-rename-order-to-utf16": {
       "forces": [
         "The canonical contract and ratified capability require Unicode code-point ordering, so both reference validators must implement that exact deterministic order rather than JavaScript UTF-16 code-unit comparison.",
-        "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged."
+        "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged and the exact provenance target advances only to the corrected candidate."
       ],
       "reason": "Renaming the order would change the already-ratified normative meaning and require a governed contract/specification version move merely to preserve an accidental implementation detail; it would expand scope while leaving third-party code-point implementations nonconforming."
     },
@@ -160,20 +165,22 @@
     "implementation-contract-gate-rebinding-is-bounded": {
       "task_ids": [
         "2.5",
+        "2.6",
         "3.1",
         "3.2",
         "3.3",
-        "3.5"
+        "3.5",
+        "2.7"
       ],
       "evidence_ids": [
-        "provenance, compatibility, checker literals, and lifecycle metadata name one immutable technical commit and exact protected-path range while negative controls reject undeclared, byte-different, wrong-range, and wrong-target mutations"
+        "provenance, compatibility, checker literals, and lifecycle metadata name one immutable endpoint and exact cumulative protected range while the six-path correction delta stays separately reproducible and the pinned platform-coupling reference count is re-derived from the comparator rather than relaxed, and negative controls reject undeclared, byte-different, wrong-range, and wrong-target mutations"
       ]
     }
   },
   "security_sensitive": true,
   "ordering": {
     "proposal_baseline_commit": "820ee71644749635c7c28cc30fcc5be95c8071a9",
-    "assessment_commit": "705e99a058102561b1ab411ce5401338e2c71cd8"
+    "assessment_commit": "4921d39dbd86c72c0df3b43424a268499cf1265a"
   },
   "verification_task_ids": [
     "1.1",
@@ -185,6 +192,8 @@
     "2.3",
     "2.4",
     "2.5",
+    "2.6",
+    "2.7",
     "3.1",
     "3.2",
     "3.3",
