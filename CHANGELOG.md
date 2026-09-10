@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.17.6](https://github.com/nandohdc/bloodtrail/compare/v0.17.5...v0.17.6) (2026-09-10)
+
+
+### Fixed
+
+* **ci:** analyse every declared package, and assert that scope ([#452](https://github.com/nandohdc/bloodtrail/issues/452)) ([25caaf9](https://github.com/nandohdc/bloodtrail/commit/25caaf9da38c4bf13b2fe1ddc2c2b9a756906a40))
+* **ci:** analyse every declared package, and assert that scope ([#452](https://github.com/nandohdc/bloodtrail/issues/452)) ([c551d3f](https://github.com/nandohdc/bloodtrail/commit/c551d3f1571d8af3533f0037632ed21a5d77ebe7))
+* **ci:** eliminate remaining sonar regex findings ([#452](https://github.com/nandohdc/bloodtrail/issues/452)) ([9cb54f5](https://github.com/nandohdc/bloodtrail/commit/9cb54f5d68601f755bd3f123766b99819b2d7807))
+* **ci:** resolve widened sonar findings ([#452](https://github.com/nandohdc/bloodtrail/issues/452)) ([38ffa25](https://github.com/nandohdc/bloodtrail/commit/38ffa25b8ed472bdfc7dd4026966f0df952af84c))
+
 ## [0.17.5](https://github.com/nandohdc/bloodtrail/compare/v0.17.4...v0.17.5) (2026-09-10)
 
 
