@@ -135,9 +135,20 @@ function duplicateDerivedInputCode(inputs: readonly string[]): string | null {
 }
 
 function derivedInputOrderCode(inputs: readonly string[]): string | null {
-  return inputs.every((input, index) => index === 0 || inputs[index - 1]! <= input)
+  return inputs.every((input, index) => index === 0 || compareByCodePoint(inputs[index - 1]!, input) <= 0)
     ? null
     : derivedProvenanceCodes.noncanonical_order;
+}
+
+/** Compare bounded provenance paths by the contract's locale-independent code-point order. */
+function compareByCodePoint(left: string, right: string): number {
+  const leftPoints = Array.from(left, (character) => character.codePointAt(0)!);
+  const rightPoints = Array.from(right, (character) => character.codePointAt(0)!);
+  const sharedLength = Math.min(leftPoints.length, rightPoints.length);
+  for (let index = 0; index < sharedLength; index += 1) {
+    if (leftPoints[index] !== rightPoints[index]) return leftPoints[index]! - rightPoints[index]!;
+  }
+  return leftPoints.length - rightPoints.length;
 }
 
 function derivedInputResolutionCode(event: SecurityAuditEvent, input: string): string | null {
