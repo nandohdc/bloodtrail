@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.2](https://github.com/nandohdc/bloodtrail/compare/v0.17.1...v0.17.2) (2026-09-10)
+
+
+### Documentation
+
+* **openspec:** propose pinning the sonar Node and rejecting floating majors ([#434](https://github.com/nandohdc/bloodtrail/issues/434)) ([7c993fd](https://github.com/nandohdc/bloodtrail/commit/7c993fd50b645342ae7a988f37341a7fd8c075c3))
+* **openspec:** propose pinning the sonar Node and rejecting floating majors ([#434](https://github.com/nandohdc/bloodtrail/issues/434)) ([b09973c](https://github.com/nandohdc/bloodtrail/commit/b09973c5c5f4ae62ff7176a906a1c074ea2826d6))
+
 ## [0.17.1](https://github.com/nandohdc/bloodtrail/compare/v0.17.0...v0.17.1) (2026-09-10)
 
 
