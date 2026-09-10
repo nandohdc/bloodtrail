@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": {
     "version": "1.1.0",
-    "normativeTechnicalTarget": "8d11f273cd4512fdc9b2f08b1663fb8557233137",
+    "normativeTechnicalTarget": "ee430bc6a7ca52671b294e8c73f0e2ea3ace67bf",
     "protectedPrefixes": [
       "contracts/security-audit/",
       "openspec/specs/security-audit-event-contract/",
@@ -12,9 +12,9 @@
       "contracts/security-audit/package-lock.json"
     ],
     "governedCandidate": {
-      "change": "add-derived-field-provenance",
+      "change": "fix-derived-input-code-point-order",
       "rangeBase": "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-      "technicalCommit": "8d11f273cd4512fdc9b2f08b1663fb8557233137",
+      "technicalCommit": "ee430bc6a7ca52671b294e8c73f0e2ea3ace67bf",
       "protectedPaths": [
         "contracts/security-audit/docs/field-policy.md",
         "contracts/security-audit/docs/validation.md",
@@ -28,6 +28,7 @@
         "contracts/security-audit/examples/negative/client-authority-escalation.json",
         "contracts/security-audit/examples/negative/client-claimed-authenticated-identity.json",
         "contracts/security-audit/examples/negative/derived-from-absent.json",
+        "contracts/security-audit/examples/negative/derived-from-astral-order.json",
         "contracts/security-audit/examples/negative/derived-from-cycle.json",
         "contracts/security-audit/examples/negative/derived-from-duplicate.json",
         "contracts/security-audit/examples/negative/derived-from-empty.json",
@@ -83,6 +84,7 @@
         "contracts/security-audit/scripts/generate-artifacts.mjs",
         "contracts/security-audit/scripts/validate-contract.mjs",
         "contracts/security-audit/source/contract.source.json",
+        "contracts/security-audit/tests/contract.test.mjs",
         "openspec/specs/security-audit-event-contract/spec.md"
       ]
     }

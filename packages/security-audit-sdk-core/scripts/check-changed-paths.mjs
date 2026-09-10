@@ -42,10 +42,14 @@ const REVIEWED_PATH_RULES = Object.freeze([
   Object.freeze([(path) => /[*?[{]/.test(path), (path) => `must not contain glob characters: ${path}`]),
 ]);
 
+// One cumulative record, not an append-only list: the range base stays at the
+// first governed 1.1.0 candidate while the endpoint advances to the change that
+// last wrote protected content. Narrowing the base to the newest correction
+// would reopen every protected path the earlier candidate already admitted.
 const GOVERNED_CONTRACT_CANDIDATE = Object.freeze({
-  change: "add-derived-field-provenance",
+  change: "fix-derived-input-code-point-order",
   rangeBase: "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-  technicalCommit: "8d11f273cd4512fdc9b2f08b1663fb8557233137",
+  technicalCommit: "ee430bc6a7ca52671b294e8c73f0e2ea3ace67bf",
 });
 
 const requestedLifecycle = parseLifecycleArguments();
