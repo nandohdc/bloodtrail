@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.17.1](https://github.com/nandohdc/bloodtrail/compare/v0.17.0...v0.17.1) (2026-09-10)
+
+
+### Fixed
+
+* **contract:** enforce code-point provenance order ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([ee430bc](https://github.com/nandohdc/bloodtrail/commit/ee430bc6a7ca52671b294e8c73f0e2ea3ace67bf))
+* **contract:** lift the validation bullet list out of a nested template ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([eeebae6](https://github.com/nandohdc/bloodtrail/commit/eeebae6d73e5a26db3e6778f56ee95756fa146c6))
+* **governance:** advance the frozen-contract bindings to the corrected endpoint ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([c447853](https://github.com/nandohdc/bloodtrail/commit/c4478532bb3478db606a5695f1150ea7764596bd))
+* **governance:** rebind frozen-contract gates to the code-point candidate ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([4f322ce](https://github.com/nandohdc/bloodtrail/commit/4f322ce7660c7ebbf48f10e8485a4c04364d6e52))
+
+
+### Documentation
+
+* **openspec:** archive the code-point provenance order change ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([a30f9f6](https://github.com/nandohdc/bloodtrail/commit/a30f9f6dcd5ba3281432155fa151fcc98013076a))
+* **openspec:** declare the pinned coupling control in the [#423](https://github.com/nandohdc/bloodtrail/issues/423) owned-path inventory ([be0f108](https://github.com/nandohdc/bloodtrail/commit/be0f1081f0a5914a5148e809849ef560dbf47bcd))
+* **openspec:** plan contract gate rebinding ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([f09fb72](https://github.com/nandohdc/bloodtrail/commit/f09fb7294cc43ce7e0531579df0ed020b6dc9f42))
+* **openspec:** plan cumulative contract binding ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([59f6fd9](https://github.com/nandohdc/bloodtrail/commit/59f6fd9ed787facc18779ed9825ee608b8cbf711))
+* **openspec:** plan frozen-contract rebinding for [#423](https://github.com/nandohdc/bloodtrail/issues/423) ([f02d457](https://github.com/nandohdc/bloodtrail/commit/f02d45723e1f84aef649db06272bcc63258856e9))
+* **openspec:** plan the owned-path correction for the pinned coupling control ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([4789b48](https://github.com/nandohdc/bloodtrail/commit/4789b48864dac1dda283228f80762c392f2f2882))
+* **openspec:** preserve cumulative contract binding for [#423](https://github.com/nandohdc/bloodtrail/issues/423) ([f9f1a32](https://github.com/nandohdc/bloodtrail/commit/f9f1a321849c5fcb8f88a5cc04cad1802a8c0360))
+* **openspec:** propose code-point order conformance ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([938f27f](https://github.com/nandohdc/bloodtrail/commit/938f27f8919cc44db3a79de7b9989b734ebab73e))
+* **openspec:** propose code-point order conformance ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([b9f4a77](https://github.com/nandohdc/bloodtrail/commit/b9f4a772523a579c9bf6158c990054e640cae14d))
+* **openspec:** reconcile the [#423](https://github.com/nandohdc/bloodtrail/issues/423) planning packet with main ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([afe566b](https://github.com/nandohdc/bloodtrail/commit/afe566bbf53a65ed16642c312d0a2b5e3a539900))
+* **openspec:** record rebinding plan merge ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([e3fbdf9](https://github.com/nandohdc/bloodtrail/commit/e3fbdf90d68ae9af4889e66bb52396dc1cfd5eb4))
+* **openspec:** record the [#423](https://github.com/nandohdc/bloodtrail/issues/423) lifecycle evidence ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([2c6c3a2](https://github.com/nandohdc/bloodtrail/commit/2c6c3a240f90e3fd36b66cdec77913501453902c))
+* **openspec:** refresh cumulative binding assessment ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([4c06a00](https://github.com/nandohdc/bloodtrail/commit/4c06a00052027a38324d369fbe5b6bfc8dee85bb))
+* **openspec:** refresh rebinding assessment ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([705e99a](https://github.com/nandohdc/bloodtrail/commit/705e99a058102561b1ab411ce5401338e2c71cd8))
+* **openspec:** refresh the owned-path assessment ([#423](https://github.com/nandohdc/bloodtrail/issues/423)) ([4921d39](https://github.com/nandohdc/bloodtrail/commit/4921d39dbd86c72c0df3b43424a268499cf1265a))
+
 ## [0.17.0](https://github.com/nandohdc/bloodtrail/compare/v0.16.0...v0.17.0) (2026-09-09)
 
 
