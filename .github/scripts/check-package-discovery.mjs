@@ -298,6 +298,135 @@ export function assertCostFiguresAreVariables(makefileText = null) {
   };
 }
 
+/** Scope entries that are deliberately not under a declared package. */
+export const SONAR_SCOPE_EXCEPTIONS = Object.freeze([]);
+
+/** Deliberately duplicated standalone-package gate scripts, excluded from CPD only. */
+export const SONAR_CPD_EXCLUSIONS = Object.freeze(["packages/*/scripts/**"]);
+
+/** Reads one `key=value` property out of a properties file's text. */
+export function sonarPropertyFor(propertiesText, key) {
+  for (const line of propertiesText.split(/\r?\n/)) {
+    if (line.startsWith("#")) continue;
+    const separator = line.indexOf("=");
+    if (separator === -1) continue;
+    if (line.slice(0, separator).trim() !== key) continue;
+    return line
+      .slice(separator + 1)
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+  }
+  return null;
+}
+
+/**
+ * Asserts that the required static-analysis gate looks at every declared
+ * package.
+ *
+ * `sonar-project.properties` said in its own header that it "scans every
+ * workspace" while omitting two of the five, and the header is why nobody
+ * re-read the list: a file that declares itself complete does not invite
+ * checking. The list is the same kind of hand-maintained set as the `make`
+ * recipes, and it went stale the same way (#452).
+ *
+ * Fails closed in both directions. A declared package with no scope entry is a
+ * failure. A scope entry under no declared package is also a failure — it means
+ * either a workspace was removed and the list was not, or a path was mistyped
+ * and has been silently analysing nothing. Deliberate non-package entries are
+ * named in `SONAR_SCOPE_EXCEPTIONS`, so widening what the assertion tolerates is
+ * a visible edit rather than an inference.
+ */
+export function assertSonarScopeCoversDeclaredPackages(
+  propertiesText = null,
+  declaredPackages = DECLARED_PACKAGES,
+  exceptions = SONAR_SCOPE_EXCEPTIONS,
+) {
+  const text = propertiesText ?? readFileSync(resolve(repositoryRoot, "sonar-project.properties"), "utf8");
+  const workspaces = workspacesFrom(declaredPackages);
+  const sources = sonarPropertyFor(text, "sonar.sources");
+
+  if (sources === null) {
+    throw new Error(
+      "Sonar analysis scope assertion failed:\n  [sonar-sources-absent] sonar-project.properties declares no sonar.sources",
+    );
+  }
+
+  const failures = [
+    ...uncoveredDiagnostics(workspaces, sources),
+    ...strayDiagnostics(sources, workspaces, exceptions),
+  ];
+  if (failures.length > 0) {
+    throw new Error(`Sonar analysis scope assertion failed:\n  ${failures.join("\n  ")}`);
+  }
+
+  return {
+    workspaceCount: workspaces.length,
+    entryCount: sources.length,
+    message: `Sonar analysis scope passed: ${sources.length} scope entr(y|ies) covering all ${workspaces.length} declared package(s)\n`,
+  };
+}
+
+/**
+ * Keeps the intentional-duplication exception narrow and visible. Package
+ * scripts remain in sonar.sources, so this does not suppress code findings.
+ */
+export function assertSonarCpdExclusions(
+  propertiesText = null,
+  expectedExclusions = SONAR_CPD_EXCLUSIONS,
+) {
+  const text = propertiesText ?? readFileSync(resolve(repositoryRoot, "sonar-project.properties"), "utf8");
+  const exclusions = sonarPropertyFor(text, "sonar.cpd.exclusions");
+
+  if (exclusions === null) {
+    throw new Error(
+      "Sonar CPD exclusion assertion failed:\n  [sonar-cpd-exclusions-absent] sonar-project.properties declares no sonar.cpd.exclusions",
+    );
+  }
+
+  const missing = expectedExclusions.filter((entry) => !exclusions.includes(entry));
+  const unexpected = exclusions.filter((entry) => !expectedExclusions.includes(entry));
+  if (missing.length > 0 || unexpected.length > 0) {
+    const diagnostics = [
+      ...missing.map((entry) => `[sonar-cpd-exclusion-missing] required narrow exclusion absent: ${entry}`),
+      ...unexpected.map((entry) => `[sonar-cpd-exclusion-unexpected] exclusion exceeds the approved package-script boundary: ${entry}`),
+    ];
+    throw new Error(`Sonar CPD exclusion assertion failed:\n  ${diagnostics.join("\n  ")}`);
+  }
+
+  return {
+    exclusions,
+    message: `Sonar CPD exclusions passed: ${exclusions.join(", ")} is the approved standalone-package boundary\n`,
+  };
+}
+
+/** True when a scope entry is the workspace itself or a directory inside it. */
+function scopeEntryIsInside(entry, workspace) {
+  return entry === workspace || entry.startsWith(`${workspace}/`);
+}
+
+/** One diagnostic when any declared package has no scope entry, else none. */
+function uncoveredDiagnostics(workspaces, sources) {
+  const uncovered = workspaces.filter(
+    (workspace) => !sources.some((entry) => scopeEntryIsInside(entry, workspace)),
+  );
+  if (uncovered.length === 0) return [];
+  return [`[sonar-scope-uncovered] declared package(s) absent from sonar.sources: ${uncovered.join(", ")}`];
+}
+
+/** One diagnostic when any scope entry lies under no declared package, else none. */
+function strayDiagnostics(sources, workspaces, exceptions) {
+  const stray = sources.filter(
+    (entry) =>
+      !exceptions.includes(entry) &&
+      !workspaces.some((workspace) => scopeEntryIsInside(entry, workspace)),
+  );
+  if (stray.length === 0) return [];
+  return [
+    `[sonar-scope-stray] sonar.sources entr(y|ies) under no declared package and not a recorded exception: ${stray.join(", ")}`,
+  ];
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const result = assertPackageDiscovery();
@@ -305,6 +434,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.stdout.write(assertMakefileCoverage().message);
     process.stdout.write(assertPartialTargetDisclosure().message);
     process.stdout.write(assertCostFiguresAreVariables().message);
+    process.stdout.write(assertSonarScopeCoversDeclaredPackages().message);
+    process.stdout.write(assertSonarCpdExclusions().message);
   } catch (err) {
     process.stderr.write(`${err.message}\n`);
     process.exit(1);

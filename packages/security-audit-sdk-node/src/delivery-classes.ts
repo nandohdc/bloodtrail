@@ -478,11 +478,11 @@ function failClosed(
   });
 }
 
-const APPROVED_POLICY_BEHAVIORS: readonly PolicyCriticalBehavior[] = [
+const APPROVED_POLICY_BEHAVIORS = new Set<PolicyCriticalBehavior>([
   "fail_open",
   "fail_closed",
   "deferred_completion",
-];
+]);
 
 /**
  * One rule per way a policy record can be incomplete, as a table so each
@@ -493,7 +493,7 @@ const POLICY_DECISION_RULES: ReadonlyArray<
   readonly [(record: PolicyOwnerDecisionRecord) => boolean, string]
 > = [
   [
-    (record) => APPROVED_POLICY_BEHAVIORS.includes(record.behavior),
+    (record) => APPROVED_POLICY_BEHAVIORS.has(record.behavior),
     "behavior must name fail_open, fail_closed, or deferred_completion",
   ],
   [(record) => isFilledString(record.policyOwner), "policyOwner must be a non-empty string"],

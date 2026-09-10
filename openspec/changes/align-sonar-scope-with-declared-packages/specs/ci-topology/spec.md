@@ -8,6 +8,11 @@ Generated output SHALL be excluded from the analysis scope, because it is regene
 
 Repository tooling that is not a declared package MAY be outside the scope, but its exclusion SHALL be recorded with the reason rather than left as an omission.
 
+Every declared package's release-gate scripts SHALL remain in the analysis scope for findings. When
+those independently owned package scripts intentionally repeat the same gate policy, only
+`packages/*/scripts/**` MAY be excluded from copy-paste detection; that property SHALL be asserted
+mechanically and no broader source-tree exclusion is permitted.
+
 #### Scenario: Every declared package is in the analysis scope
 - **WHEN** the analysis scope is compared against `DECLARED_PACKAGES`
 - **THEN** each declared package is present, and the assertion passes
@@ -35,3 +40,7 @@ Repository tooling that is not a declared package MAY be outside the scope, but 
 #### Scenario: Tooling outside the scope is recorded, not merely absent
 - **WHEN** repository tooling that is not a declared package sits outside the analysis scope
 - **THEN** the reason for its exclusion is recorded rather than left implicit
+
+#### Scenario: Intentional package-script duplication remains finding-visible
+- **WHEN** the CPD exclusion is inspected
+- **THEN** it is exactly `packages/*/scripts/**`, and those scripts remain in the analysis scope for findings

@@ -5,6 +5,8 @@ import test from "node:test";
 import {
   DECLARED_PACKAGES,
   assertCostFiguresAreVariables,
+  assertSonarCpdExclusions,
+  assertSonarScopeCoversDeclaredPackages,
   assertMakefileCoverage,
   assertPackageDiscovery,
   assertPartialTargetDisclosure,
@@ -14,6 +16,7 @@ import {
   recipeCommandLines,
   recipeMessageLines,
   repositoryRoot,
+  sonarPropertyFor,
 } from "./check-package-discovery.mjs";
 
 test("check-package-discovery: enumerateGitPackages discovers all tracked packages", () => {
@@ -282,4 +285,114 @@ test("check-package-discovery: a cost stated only through its variable passes", 
   ].join("\n");
 
   assert.match(assertCostFiguresAreVariables(makefile).message, /every stated cost expands/);
+});
+
+// The analysis scope of a required gate. `sonar-project.properties` said it
+// "scans every workspace" while omitting two of the five, and the header is why
+// nobody re-read the list.
+
+test("check-package-discovery: sonarPropertyFor reads one list and skips comments", () => {
+  const properties = [
+    "# sonar.sources=commented/out",
+    "sonar.sources=a/src, b/src ,c/src",
+    "sonar.tests=a/tests",
+    "",
+  ].join("\n");
+
+  assert.deepEqual(sonarPropertyFor(properties, "sonar.sources"), ["a/src", "b/src", "c/src"]);
+  assert.deepEqual(sonarPropertyFor(properties, "sonar.tests"), ["a/tests"]);
+  assert.equal(sonarPropertyFor(properties, "sonar.absent"), null);
+});
+
+test("check-package-discovery: the analysis scope covers every declared package", () => {
+  const result = assertSonarScopeCoversDeclaredPackages();
+
+  assert.equal(result.workspaceCount, DECLARED_PACKAGES.length);
+  assert.match(result.message, /covering all 5 declared package\(s\)/);
+});
+
+test("check-package-discovery: fails closed when a declared package is absent from the scope", () => {
+  // The exact defect this arm exists for: the collector declared, and the
+  // analyser never told to look at it.
+  const properties = [
+    "sonar.sources=packages/security-audit-sdk-core/src,packages/security-audit-sdk-node/src,contracts/security-audit/scripts,research/browser-telemetry/lib",
+    "",
+  ].join("\n");
+
+  assert.throws(
+    () => assertSonarScopeCoversDeclaredPackages(properties),
+    /\[sonar-scope-uncovered\].*packages\/security-audit-collector/s,
+  );
+});
+
+test("check-package-discovery: fails closed on a scope entry under no declared package", () => {
+  const properties = [
+    "sonar.sources=packages/security-audit-sdk-core/src,packages/security-audit-sdk-node/src,packages/security-audit-collector/src,contracts/security-audit/scripts,research/browser-telemetry/lib,packages/removed-workspace/src",
+    "",
+  ].join("\n");
+
+  assert.throws(
+    () => assertSonarScopeCoversDeclaredPackages(properties),
+    /\[sonar-scope-stray\].*packages\/removed-workspace\/src/s,
+  );
+});
+
+test("check-package-discovery: a recorded exception is tolerated, an unrecorded one is not", () => {
+  const properties = [
+    "sonar.sources=packages/security-audit-sdk-core/src,packages/security-audit-sdk-node/src,packages/security-audit-collector/src,contracts/security-audit/scripts,research/browser-telemetry/lib,openspec/scripts",
+    "",
+  ].join("\n");
+
+  assert.throws(
+    () => assertSonarScopeCoversDeclaredPackages(properties),
+    /\[sonar-scope-stray\].*openspec\/scripts/s,
+  );
+  assert.match(
+    assertSonarScopeCoversDeclaredPackages(properties, DECLARED_PACKAGES, ["openspec/scripts"]).message,
+    /covering all 5 declared package\(s\)/,
+  );
+});
+
+test("check-package-discovery: fails closed when sonar.sources is absent entirely", () => {
+  assert.throws(
+    () => assertSonarScopeCoversDeclaredPackages("sonar.tests=a/tests\n"),
+    /\[sonar-sources-absent\]/,
+  );
+});
+
+test("check-package-discovery: a newly declared package must be added to the analysis scope", () => {
+  // "Add a package, forget the analyser" must fail rather than pass quietly,
+  // the same way "add a package, forget the Makefile" already does.
+  const properties = readFileSync(resolve(repositoryRoot, "sonar-project.properties"), "utf8");
+
+  assert.throws(
+    () =>
+      assertSonarScopeCoversDeclaredPackages(properties, [
+        ...DECLARED_PACKAGES,
+        "packages/brand-new/package.json",
+      ]),
+    /\[sonar-scope-uncovered\].*packages\/brand-new/s,
+  );
+  assert.equal(
+    assertSonarScopeCoversDeclaredPackages(properties).workspaceCount,
+    DECLARED_PACKAGES.length,
+  );
+});
+
+test("check-package-discovery: CPD excludes only intentional standalone-package script duplication", () => {
+  const result = assertSonarCpdExclusions();
+
+  assert.deepEqual(result.exclusions, ["packages/*/scripts/**"]);
+  assert.match(result.message, /approved standalone-package boundary/);
+});
+
+test("check-package-discovery: fails closed when the CPD exception is absent or broadened", () => {
+  assert.throws(
+    () => assertSonarCpdExclusions("sonar.sources=packages/security-audit-sdk-core/src\n"),
+    /\[sonar-cpd-exclusions-absent\]/,
+  );
+  assert.throws(
+    () => assertSonarCpdExclusions("sonar.cpd.exclusions=**/scripts/**\n"),
+    /\[sonar-cpd-exclusion-missing\].*packages\/\*\/scripts\/\*\*.*\[sonar-cpd-exclusion-unexpected\].*\*\*\/scripts\/\*\*/s,
+  );
 });
