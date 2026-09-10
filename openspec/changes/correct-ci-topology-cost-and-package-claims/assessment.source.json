@@ -1,0 +1,189 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A ratified `ci-topology` requirement tells `CLAUDE.md`, `AGENTS.md` and the `Makefile` to state the very figures that are wrong, so correcting the documents alone would put them out of conformance rather than into it; the spec has to move first.",
+    "`ci-topology` contradicts itself about the package set — one requirement enumerates four packages and names a count of 4, another names five — so a reader and a gate can both cite the spec and disagree.",
+    "A runtime is a measurement, not a threshold: the same unchanged `test:verification` step measured 258s and 1234s on green `main` runs, so no literal is both current and correct and a `SHALL` naming one makes conformant runs non-conformant.",
+    "The only claim about the command surface that has not drifted twice is the one an executable assertion covers, so a repair that corrects prose without extending that assertion repeats the failure it is fixing.",
+    "Widening the coverage gate to read a target's messages would, without care, let a message mention satisfy the invocation check, reintroducing #412's defect through the door this change opens.",
+    "Two statements of the same target's cost in one file have already diverged once (`~26s` in `help` against `~34s` in the recipe), so any repair that leaves them as two independently maintained strings will diverge again.",
+    "A contract version move touches pins the generator does not reach, and the list of them exists only as the union of four post-hoc repairs, so the next move has nothing to check itself against."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "ci-topology"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/correct-ci-topology-cost-and-package-claims/.openspec.yaml",
+    "openspec/changes/correct-ci-topology-cost-and-package-claims/proposal.md",
+    "openspec/changes/correct-ci-topology-cost-and-package-claims/design.md",
+    "openspec/changes/correct-ci-topology-cost-and-package-claims/tasks.md",
+    "openspec/changes/correct-ci-topology-cost-and-package-claims/assessment.source.json",
+    "openspec/changes/correct-ci-topology-cost-and-package-claims/assessment.json",
+    "openspec/changes/correct-ci-topology-cost-and-package-claims/specs/ci-topology/spec.md",
+    "openspec/specs/ci-topology/spec.md",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "Makefile",
+    ".github/scripts/check-package-discovery.mjs",
+    ".github/scripts/check-package-discovery.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-modify-the-spec-and-assert-the-claims",
+      "kind": "direct_implementation",
+      "summary": "Replace the three drifted `ci-topology` requirement blocks whole — deferring the package set to `DECLARED_PACKAGES` and replacing runtime literals with an obligation to state a figure with its provenance — then bring the documents into conformance and extend `check-package-discovery.mjs` so partial-run disclosure is asserted, coverage counts invocation rather than mention, and each cost is defined once as a `make` variable.",
+      "forces_addressed": [
+        "A ratified `ci-topology` requirement tells `CLAUDE.md`, `AGENTS.md` and the `Makefile` to state the very figures that are wrong, so correcting the documents alone would put them out of conformance rather than into it; the spec has to move first.",
+        "`ci-topology` contradicts itself about the package set — one requirement enumerates four packages and names a count of 4, another names five — so a reader and a gate can both cite the spec and disagree.",
+        "A runtime is a measurement, not a threshold: the same unchanged `test:verification` step measured 258s and 1234s on green `main` runs, so no literal is both current and correct and a `SHALL` naming one makes conformant runs non-conformant.",
+        "The only claim about the command surface that has not drifted twice is the one an executable assertion covers, so a repair that corrects prose without extending that assertion repeats the failure it is fixing.",
+        "Widening the coverage gate to read a target's messages would, without care, let a message mention satisfy the invocation check, reintroducing #412's defect through the door this change opens.",
+        "Two statements of the same target's cost in one file have already diverged once (`~26s` in `help` against `~34s` in the recipe), so any repair that leaves them as two independently maintained strings will diverge again.",
+        "A contract version move touches pins the generator does not reach, and the list of them exists only as the union of four post-hoc repairs, so the next move has nothing to check itself against."
+      ]
+    },
+    {
+      "id": "approach-correct-the-documents-only",
+      "kind": "alternative",
+      "summary": "Update the numbers and the notices in `CLAUDE.md`, `AGENTS.md` and the `Makefile`, and leave `ci-topology` alone.",
+      "forces_addressed": [
+        "A runtime is a measurement, not a threshold: the same unchanged `test:verification` step measured 258s and 1234s on green `main` runs, so no literal is both current and correct and a `SHALL` naming one makes conformant runs non-conformant.",
+        "Two statements of the same target's cost in one file have already diverged once (`~26s` in `help` against `~34s` in the recipe), so any repair that leaves them as two independently maintained strings will diverge again."
+      ]
+    },
+    {
+      "id": "approach-assert-the-runtimes",
+      "kind": "alternative",
+      "summary": "Keep the literals and add a gate that fails when a measured runtime deviates from the documented figure by more than a tolerance.",
+      "forces_addressed": [
+        "A runtime is a measurement, not a threshold: the same unchanged `test:verification` step measured 258s and 1234s on green `main` runs, so no literal is both current and correct and a `SHALL` naming one makes conformant runs non-conformant.",
+        "The only claim about the command surface that has not drifted twice is the one an executable assertion covers, so a repair that corrects prose without extending that assertion repeats the failure it is fixing."
+      ]
+    },
+    {
+      "id": "approach-drop-runtime-figures-entirely",
+      "kind": "alternative",
+      "summary": "Remove every runtime figure from the instructions and the `Makefile`, and say only that the governance chain is slow.",
+      "forces_addressed": [
+        "A runtime is a measurement, not a threshold: the same unchanged `test:verification` step measured 258s and 1234s on green `main` runs, so no literal is both current and correct and a `SHALL` naming one makes conformant runs non-conformant.",
+        "Two statements of the same target's cost in one file have already diverged once (`~26s` in `help` against `~34s` in the recipe), so any repair that leaves them as two independently maintained strings will diverge again."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-modify-the-spec-and-assert-the-claims",
+  "rejected_alternative_ids": [
+    "approach-correct-the-documents-only",
+    "approach-assert-the-runtimes",
+    "approach-drop-runtime-figures-entirely"
+  ],
+  "rejection_reasons": {
+    "approach-correct-the-documents-only": {
+      "forces": [
+        "A ratified `ci-topology` requirement tells `CLAUDE.md`, `AGENTS.md` and the `Makefile` to state the very figures that are wrong, so correcting the documents alone would put them out of conformance rather than into it; the spec has to move first.",
+        "`ci-topology` contradicts itself about the package set — one requirement enumerates four packages and names a count of 4, another names five — so a reader and a gate can both cite the spec and disagree.",
+        "The only claim about the command surface that has not drifted twice is the one an executable assertion covers, so a repair that corrects prose without extending that assertion repeats the failure it is fixing."
+      ],
+      "reason": "It produces documents that are accurate and non-conformant at the same time. The ratified scenarios require the instructions to state `roughly 34 seconds` and `~254 seconds out of ~291 seconds`; a corrected document contradicts them, and the four-versus-five contradiction inside `ci-topology` survives untouched. It also leaves the three partial notices as hand-maintained prose, which is how they reached their third year of describing a repository that no longer exists."
+    },
+    "approach-assert-the-runtimes": {
+      "forces": [
+        "A runtime is a measurement, not a threshold: the same unchanged `test:verification` step measured 258s and 1234s on green `main` runs, so no literal is both current and correct and a `SHALL` naming one makes conformant runs non-conformant.",
+        "The only claim about the command surface that has not drifted twice is the one an executable assertion covers, so a repair that corrects prose without extending that assertion repeats the failure it is fixing."
+      ],
+      "reason": "It would fail for reasons that are not defects. The 4.8x spread comes from runner shape (#306) — the scanner reports two available processors — not from the code under test, so the gate would red pull requests that changed nothing relevant, and a gate that fires on contention is turned off within a week. Asserting a measurement also mistakes what the figure is for: it exists to help someone decide whether to run a chain, not to bound how long the chain may take."
+    },
+    "approach-drop-runtime-figures-entirely": {
+      "forces": [
+        "A runtime is a measurement, not a threshold: the same unchanged `test:verification` step measured 258s and 1234s on green `main` runs, so no literal is both current and correct and a `SHALL` naming one makes conformant runs non-conformant."
+      ],
+      "reason": "It removes the only thing the figures are good for. `make governance-gates` costing roughly a quarter of an hour rather than roughly a minute is exactly the fact that decides whether an agent runs it before pushing, and 'slow' does not carry it. The problem is not that a number is stated; it is that a number is stated with no provenance and pinned in a `SHALL`."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-package-set-has-one-authority",
+    "implementation-runtime-figures-carry-provenance",
+    "implementation-partial-disclosure-is-asserted",
+    "implementation-coverage-counts-invocation-not-mention",
+    "implementation-one-target-one-cost"
+  ],
+  "invariant_evidence": {
+    "implementation-package-set-has-one-authority": {
+      "task_ids": [
+        "1.2",
+        "5.1",
+        "5.2"
+      ],
+      "evidence_ids": [
+        "the folded `ci-topology` names `DECLARED_PACKAGES` as the authority for the package set, states no count of its own, and no longer contradicts the root-command-surface requirement"
+      ]
+    },
+    "implementation-runtime-figures-carry-provenance": {
+      "task_ids": [
+        "3.3",
+        "3.4",
+        "5.2"
+      ],
+      "evidence_ids": [
+        "every runtime figure in `CLAUDE.md`, `AGENTS.md` and the `Makefile` names the CI run, or the host and date, it was measured on, and no ratified requirement pins an absolute gate runtime"
+      ]
+    },
+    "implementation-partial-disclosure-is-asserted": {
+      "task_ids": [
+        "2.1",
+        "3.2",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "`assertPartialTargetDisclosure` rejects both an undisclosed skipped workspace and a workspace named as skipped while actually invoked, and it failed on the pre-change `Makefile`"
+      ]
+    },
+    "implementation-coverage-counts-invocation-not-mention": {
+      "task_ids": [
+        "2.2",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "a recipe naming a declared workspace only in an `@echo` is reported uncovered, while the real `Makefile` passes both assertions"
+      ]
+    },
+    "implementation-one-target-one-cost": {
+      "task_ids": [
+        "2.3",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "each cost is a single `make` variable referenced by every statement of it, and a planted bare `~<digits>s` literal outside the variable block fails the assertion"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "trust_boundary": "The package-discovery gate decides whether a workspace is verified at all before code may land, so it sits inside the boundary that admits changes to the repository. This change widens what it refuses and narrows what counts as coverage; nothing it admits today would be refused tomorrow by accident, and a workspace that is skipped can no longer be described as run.",
+    "authority_provenance": "No actor, tenant, or authority value is read, derived, or emitted. The change alters ratified requirement text, three instruction documents, a Makefile, and a repository-script assertion; none participates in event authority.",
+    "authentication_or_authorization": "No authentication or authorization decision changes. No token, secret, permission, or workflow permission block is touched.",
+    "audit_integrity": "No audit event, catalog entry, or emitted record changes. The gate's own record improves: a partial run's claim about what it skipped becomes a checked statement rather than prose, so the log of what was verified stops being able to overstate itself.",
+    "confidentiality": "No data is read, stored, or transmitted that was not already. The assertion reads the `Makefile` and the declared package list, both already public in the repository.",
+    "mutation_ownership": "Every written path is `governance_core` and is owned here by an explicit inventory that includes the fold target `openspec/specs/ci-topology/spec.md` and the control file beside the checker. No path outside that inventory is written.",
+    "fail_posture": "Strictly fail-closed, in both directions and on both new arms. An undisclosed skipped workspace fails, a workspace named as skipped while invoked fails, a workspace mentioned but never invoked is counted as uncovered rather than covered, and a hand-typed cost literal fails. Removing the runtime literals removes no failing arm, because no gate ever asserted them.",
+    "error_disclosure": "Diagnostics name the target and the workspace only, matching the existing `[makefile-workspace-uncovered]` shape. No file contents, environment, or caller data is included.",
+    "concurrency": "No concurrency is introduced, removed, or reordered. The assertion is one synchronous read of one file, and the Makefile targets keep their existing sequential recipes.",
+    "lifecycle": "No lifecycle state, transition, or ordering changes. The gate runs where it already runs, in the `design-pattern-governance` job, and no OpenSpec lifecycle rule is altered.",
+    "resource_retention": "Nothing is retained. The assertion holds the Makefile text for one synchronous read and adds no cache, queue, or store.",
+    "retry_or_redelivery": "No retry or redelivery path changes. The workflow's existing bounded retries are untouched and this change neither adds nor removes an attempt.",
+    "cryptography": "No cryptographic material, algorithm, signature, or hash chain is introduced, read, or changed.",
+    "privacy_transformation": "No field transformation, redaction, or privacy policy is involved, and no personal or tenant data is in scope.",
+    "external_security_integration": "No SIEM, exporter, collector, detection, or telemetry integration is added or changed. SonarQube and CodeScene remain the existing required gates and are not reconfigured by this change."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "7389d05aa3ebeb1f76894cfadc246f2d02353e13"
+  }
+}
