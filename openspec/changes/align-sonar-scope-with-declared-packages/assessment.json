@@ -1,0 +1,180 @@
+{
+  "schema_version": "1.1",
+  "change_id": "align-sonar-scope-with-declared-packages",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "`sonar` is one of ten required merge contexts, so whatever it does not analyse is code that lands with a required gate having said nothing about it.",
+    "The two omitted workspaces hold the authentication, deduplication, retry and backpressure paths, which are the code a security-oriented analyser exists for.",
+    "`sonar-project.properties` asserts in its own header that it scans every workspace, so the omission is invisible to a reader and no gate can see it either.",
+    "An explicit list with no completeness assertion has already failed twice in this repository, in the `make` recipes (#412) and in their notices (#441).",
+    "The quality gate's three conditions are new-code only, so widening cannot red it on pre-existing findings, but a later PR touching a newly analysed line inherits what the analyser says about it.",
+    "`openspec/scripts/` and `.github/scripts/` have no coverage report at all, so analysing them under a new-code coverage condition would fail the next PR that edits the governance checker or the merge gate.",
+    "The `coverage` job already produces and path-rewrites reports for both omitted workspaces, so their coverage is computed and then discarded by a gate that never reads it."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "ci-topology"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/align-sonar-scope-with-declared-packages/.openspec.yaml",
+    "openspec/changes/align-sonar-scope-with-declared-packages/proposal.md",
+    "openspec/changes/align-sonar-scope-with-declared-packages/design.md",
+    "openspec/changes/align-sonar-scope-with-declared-packages/tasks.md",
+    "openspec/changes/align-sonar-scope-with-declared-packages/assessment.source.json",
+    "openspec/changes/align-sonar-scope-with-declared-packages/assessment.json",
+    "openspec/changes/align-sonar-scope-with-declared-packages/specs/ci-topology/spec.md",
+    "openspec/specs/ci-topology/spec.md",
+    "sonar-project.properties",
+    ".github/scripts/check-package-discovery.mjs",
+    ".github/scripts/check-package-discovery.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-widen-scope-and-assert-against-declared-packages",
+      "kind": "direct_implementation",
+      "summary": "Add both missing declared workspaces to the analyser's sources, tests, coverage reports and tsconfig paths, exclude the collector's generated output, correct the header comment, and assert the scope against DECLARED_PACKAGES failing closed in both directions.",
+      "forces_addressed": [
+        "`sonar` is one of ten required merge contexts, so whatever it does not analyse is code that lands with a required gate having said nothing about it.",
+        "The two omitted workspaces hold the authentication, deduplication, retry and backpressure paths, which are the code a security-oriented analyser exists for.",
+        "`sonar-project.properties` asserts in its own header that it scans every workspace, so the omission is invisible to a reader and no gate can see it either.",
+        "An explicit list with no completeness assertion has already failed twice in this repository, in the `make` recipes (#412) and in their notices (#441).",
+        "The quality gate's three conditions are new-code only, so widening cannot red it on pre-existing findings, but a later PR touching a newly analysed line inherits what the analyser says about it.",
+        "`openspec/scripts/` and `.github/scripts/` have no coverage report at all, so analysing them under a new-code coverage condition would fail the next PR that edits the governance checker or the merge gate.",
+        "The `coverage` job already produces and path-rewrites reports for both omitted workspaces, so their coverage is computed and then discarded by a gate that never reads it."
+      ]
+    },
+    {
+      "id": "approach-narrow-the-claim-instead",
+      "kind": "alternative",
+      "summary": "Leave the scope as it is and correct the header comment to name the three workspaces actually scanned.",
+      "forces_addressed": [
+        "`sonar-project.properties` asserts in its own header that it scans every workspace, so the omission is invisible to a reader and no gate can see it either."
+      ]
+    },
+    {
+      "id": "approach-add-every-tree-including-repository-tooling",
+      "kind": "alternative",
+      "summary": "Add the two workspaces and also openspec/scripts and .github/scripts, closing the whole gap in one change.",
+      "forces_addressed": [
+        "`sonar` is one of ten required merge contexts, so whatever it does not analyse is code that lands with a required gate having said nothing about it.",
+        "An explicit list with no completeness assertion has already failed twice in this repository, in the `make` recipes (#412) and in their notices (#441)."
+      ]
+    },
+    {
+      "id": "approach-correct-the-lists-without-asserting-them",
+      "kind": "alternative",
+      "summary": "Add the missing paths and leave the lists hand-maintained, as they are today.",
+      "forces_addressed": [
+        "`sonar` is one of ten required merge contexts, so whatever it does not analyse is code that lands with a required gate having said nothing about it.",
+        "`sonar-project.properties` asserts in its own header that it scans every workspace, so the omission is invisible to a reader and no gate can see it either."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-widen-scope-and-assert-against-declared-packages",
+  "rejected_alternative_ids": [
+    "approach-narrow-the-claim-instead",
+    "approach-add-every-tree-including-repository-tooling",
+    "approach-correct-the-lists-without-asserting-them"
+  ],
+  "rejection_reasons": {
+    "approach-narrow-the-claim-instead": {
+      "forces": [
+        "`sonar` is one of ten required merge contexts, so whatever it does not analyse is code that lands with a required gate having said nothing about it.",
+        "The two omitted workspaces hold the authentication, deduplication, retry and backpressure paths, which are the code a security-oriented analyser exists for."
+      ],
+      "reason": "It makes the document honest and the gate no better. The two workspaces left out are the delivery binding and the collector ingress — authentication, deduplication, retry, backpressure. A required static-analysis context that deliberately declines to look at those is a gate in name; correcting the sentence would record that choice rather than make it."
+    },
+    "approach-add-every-tree-including-repository-tooling": {
+      "forces": [
+        "`openspec/scripts/` and `.github/scripts/` have no coverage report at all, so analysing them under a new-code coverage condition would fail the next PR that edits the governance checker or the merge gate."
+      ],
+      "reason": "It would fail the next pull request that edits the governance checker. Neither `openspec/scripts/` nor `.github/scripts/` produces a coverage report, and the gate's `new_coverage` condition is evaluated on new code, so a touched line in an analysed file with no coverage reports zero and reds a required context. Closing the whole gap in one change trades a silent omission for a blocked repository."
+    },
+    "approach-correct-the-lists-without-asserting-them": {
+      "forces": [
+        "An explicit list with no completeness assertion has already failed twice in this repository, in the `make` recipes (#412) and in their notices (#441)."
+      ],
+      "reason": "It is exactly what produced this defect. The list was correct when written and went stale when a workspace was added, and the same is true of the `make` recipes and their notices — both of which needed an assertion, not a correction, before they stopped drifting. A third correction with no assertion behind it predicts a fourth."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-scope-covers-every-declared-package",
+    "implementation-scope-has-no-stray-entry",
+    "implementation-generated-output-excluded-generator-not",
+    "implementation-tooling-exclusion-is-recorded"
+  ],
+  "invariant_evidence": {
+    "implementation-scope-covers-every-declared-package": {
+      "task_ids": [
+        "3.1",
+        "3.3",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "assertSonarScopeCoversDeclaredPackages rejects a declared workspace removed from sonar.sources, and the sonar job's own log names both newly added workspaces"
+      ]
+    },
+    "implementation-scope-has-no-stray-entry": {
+      "task_ids": [
+        "3.3",
+        "3.4",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "a planted scope entry lying under no declared package and named as no recorded exception is rejected"
+      ]
+    },
+    "implementation-generated-output-excluded-generator-not": {
+      "task_ids": [
+        "3.1",
+        "5.2"
+      ],
+      "evidence_ids": [
+        "the collector's src/generated is excluded while the generator that produces it remains in sonar.sources"
+      ]
+    },
+    "implementation-tooling-exclusion-is-recorded": {
+      "task_ids": [
+        "2.3",
+        "3.2",
+        "5.2"
+      ],
+      "evidence_ids": [
+        "openspec/scripts and .github/scripts are named as out of scope with the new_coverage reason, in the properties file and in the change record"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "f006cbe183f5929972010ba21c4a850f782aff49"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4",
+    "4.5",
+    "5.1",
+    "5.2",
+    "5.3"
+  ]
+}
