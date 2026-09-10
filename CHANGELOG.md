@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.17.7](https://github.com/nandohdc/bloodtrail/compare/v0.17.6...v0.17.7) (2026-09-10)
+
+
+### Fixed
+
+* **ci:** hand the quality gate only records it can attribute ([#442](https://github.com/nandohdc/bloodtrail/issues/442)) ([10702d2](https://github.com/nandohdc/bloodtrail/commit/10702d2725395909f93d1c394647d6f3ed0a8189))
+* **ci:** hand the quality gate only records it can attribute ([#442](https://github.com/nandohdc/bloodtrail/issues/442)) ([6e599a4](https://github.com/nandohdc/bloodtrail/commit/6e599a4955f71ab66236e3f1f749d8b1f3971a36))
+* **governance:** assert contract version currency across every declared package ([#453](https://github.com/nandohdc/bloodtrail/issues/453)) ([616bea8](https://github.com/nandohdc/bloodtrail/commit/616bea8d5822f6517f6681599f2b78fc77f5d0c5))
+* **governance:** assert contract version currency across every declared package ([#453](https://github.com/nandohdc/bloodtrail/issues/453)) ([0f382fe](https://github.com/nandohdc/bloodtrail/commit/0f382fed87a0cee7eb22b7a8de2882f5e00dfd1b))
+
+
+### Documentation
+
+* **openspec:** archive the contract version currency change ([#453](https://github.com/nandohdc/bloodtrail/issues/453)) ([710721f](https://github.com/nandohdc/bloodtrail/commit/710721f6153857d9ae00450813ef7e6af0c66218))
+* **openspec:** archive the contract version currency change ([#453](https://github.com/nandohdc/bloodtrail/issues/453)) ([5c965d6](https://github.com/nandohdc/bloodtrail/commit/5c965d6664d082d0396ccd2d0e9093f460a4ec8b))
+* **openspec:** archive the coverage report scope change ([#442](https://github.com/nandohdc/bloodtrail/issues/442)) ([c2bd4f6](https://github.com/nandohdc/bloodtrail/commit/c2bd4f674f8bfb7364b0a58f5265cd328c2e9c3d))
+* **openspec:** archive the coverage report scope change ([#442](https://github.com/nandohdc/bloodtrail/issues/442)) ([7c83fc7](https://github.com/nandohdc/bloodtrail/commit/7c83fc7cb05dc510e5929679a50657d0f8ffc1cb))
+* **openspec:** archive the sonar scope alignment change ([#452](https://github.com/nandohdc/bloodtrail/issues/452)) ([a9357a8](https://github.com/nandohdc/bloodtrail/commit/a9357a874314f27e7838411534cc596087369ee7))
+* **openspec:** archive the sonar scope alignment change ([#452](https://github.com/nandohdc/bloodtrail/issues/452)) ([ecadff6](https://github.com/nandohdc/bloodtrail/commit/ecadff623215d4f5b95850b0d3bd555aac11d858))
+* **openspec:** fold sonar scope topology requirement ([347fe09](https://github.com/nandohdc/bloodtrail/commit/347fe09c0a0ffb245ecaafa0b748a17ec168c9ec))
+* **openspec:** fold sonar scope topology requirement ([#452](https://github.com/nandohdc/bloodtrail/issues/452)) ([866bc7d](https://github.com/nandohdc/bloodtrail/commit/866bc7d0437516af1ec18266a9a5bdd4710e9f3e))
+* **openspec:** fold the contract version currency requirement ([#453](https://github.com/nandohdc/bloodtrail/issues/453)) ([7ca7374](https://github.com/nandohdc/bloodtrail/commit/7ca7374ca883daea7eb4df4eb97d82515b083178))
+* **openspec:** fold the contract version currency requirement ([#453](https://github.com/nandohdc/bloodtrail/issues/453)) ([2be5ba9](https://github.com/nandohdc/bloodtrail/commit/2be5ba9e9cd14c3598ea3a242c95d0a2cf8c59fe))
+* **openspec:** fold the coverage report scope requirement ([#442](https://github.com/nandohdc/bloodtrail/issues/442)) ([39a1559](https://github.com/nandohdc/bloodtrail/commit/39a155969363a71b3a2941830d0e6b6306327484))
+* **openspec:** fold the coverage report scope requirement ([#442](https://github.com/nandohdc/bloodtrail/issues/442)) ([7e7b3d7](https://github.com/nandohdc/bloodtrail/commit/7e7b3d7a0aafc2fef63ffbd53e68daad1c4e1d02))
+* **openspec:** propose asserting contract version currency ([#453](https://github.com/nandohdc/bloodtrail/issues/453)) ([497e20a](https://github.com/nandohdc/bloodtrail/commit/497e20a4bb8ed0856520f8c4393f44a38dfff768))
+* **openspec:** propose asserting contract version currency ([#453](https://github.com/nandohdc/bloodtrail/issues/453)) ([a3b0b49](https://github.com/nandohdc/bloodtrail/commit/a3b0b49615178a12a8ad3e616f5207aa2bd4b533))
+* **openspec:** propose restricting coverage reports to analysed components ([#442](https://github.com/nandohdc/bloodtrail/issues/442)) ([a8c94dd](https://github.com/nandohdc/bloodtrail/commit/a8c94dd5cdb5a886a8e5cb101ecfec9d48ef067d))
+* **openspec:** propose restricting coverage reports to analysed components ([#442](https://github.com/nandohdc/bloodtrail/issues/442)) ([0511207](https://github.com/nandohdc/bloodtrail/commit/05112071e3dcfb2ac773ae82bc5a1c79a1905dcb))
+
 ## [0.17.6](https://github.com/nandohdc/bloodtrail/compare/v0.17.5...v0.17.6) (2026-09-10)
 
 
