@@ -19,7 +19,7 @@ export type SecurityAuditSdkState = "ready" | "shutting_down" | "shut_down";
 
 type RetryContext = { readonly correlation?: { readonly retry_attempt?: number } };
 
-// Contract 1.0.0 bounds.retry_attempt_max. This precheck must not let an
+// Contract 1.1.0 bounds.retry_attempt_max. This precheck must not let an
 // out-of-range attempt bypass a completed operation before schema validation.
 const MAX_RETRY_ATTEMPT = 1_000;
 
@@ -436,7 +436,7 @@ type RetryAttemptInput = {
   readonly correlation?: { readonly retry_attempt?: number };
 };
 
-// Contract 1.0.0 bounds.retry_attempt_max: only a positive safe-integer attempt
+// Contract 1.1.0 bounds.retry_attempt_max: only a positive safe-integer attempt
 // within the bound marks an explicit re-attempt; anything else remains an
 // ordinary terminal attempt subject to the completed-operation duplicate path.
 function isBoundedRetryAttempt(retryAttempt: number | undefined): boolean {
