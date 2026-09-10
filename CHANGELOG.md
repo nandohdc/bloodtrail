@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.17.3](https://github.com/nandohdc/bloodtrail/compare/v0.17.2...v0.17.3) (2026-09-10)
+
+
+### Fixed
+
+* **ci:** pin Sonar Node and reject floating majors ([#434](https://github.com/nandohdc/bloodtrail/issues/434)) ([63dcf49](https://github.com/nandohdc/bloodtrail/commit/63dcf49b943f60e4cd734db9889fd45ee7964b9b))
+* **ci:** pin Sonar Node and reject floating majors ([#434](https://github.com/nandohdc/bloodtrail/issues/434)) ([e33d100](https://github.com/nandohdc/bloodtrail/commit/e33d10031d32578ab28cd450664fc6de13e51507))
+
+
+### Documentation
+
+* **openspec:** archive the sonar Node pin change ([#434](https://github.com/nandohdc/bloodtrail/issues/434)) ([7389d05](https://github.com/nandohdc/bloodtrail/commit/7389d05aa3ebeb1f76894cfadc246f2d02353e13))
+* **openspec:** archive the sonar Node pin change ([#434](https://github.com/nandohdc/bloodtrail/issues/434)) ([ed2321c](https://github.com/nandohdc/bloodtrail/commit/ed2321cc6ed6e63fdd7a001759c5db1c18820fa5))
+* **openspec:** propose correcting ci-topology cost and package claims ([#444](https://github.com/nandohdc/bloodtrail/issues/444)) ([e7392de](https://github.com/nandohdc/bloodtrail/commit/e7392de8a2e2c8e269a699b5059b85b4e5e49b48))
+* **openspec:** propose correcting ci-topology cost and package claims ([#444](https://github.com/nandohdc/bloodtrail/issues/444)) ([4cd0ea5](https://github.com/nandohdc/bloodtrail/commit/4cd0ea54c0ae870f1e07f72377bb3b378e2a9e10))
+
 ## [0.17.2](https://github.com/nandohdc/bloodtrail/compare/v0.17.1...v0.17.2) (2026-09-10)
 
 
