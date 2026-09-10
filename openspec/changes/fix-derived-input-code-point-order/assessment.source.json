@@ -5,7 +5,8 @@
     "The canonical contract and ratified capability require Unicode code-point ordering, so both reference validators must implement that exact deterministic order rather than JavaScript UTF-16 code-unit comparison.",
     "Ordering runs before path resolution and consumes bounded but otherwise arbitrary strings, so astral inputs can select the wrong public diagnostic even though currently resolvable field paths are ASCII.",
     "The canonical validator and SDK Core validator are independent trust boundaries and must remain behaviorally identical without adding a runtime dependency or coupling either workspace to the other.",
-    "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged."
+    "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged and the exact provenance target advances only to the corrected candidate.",
+    "The frozen aggregate fixture and all contract paths are protected by exact-history gates, so the correction must rebind provenance and lifecycle metadata to one immutable candidate without exemptions or wider prefixes."
   ],
   "applicability": {
     "triggers_matched": [
@@ -31,19 +32,30 @@
     "contracts/security-audit/examples/negative/all-negative.json",
     "contracts/security-audit/examples/negative/derived-from-astral-order.json",
     "contracts/security-audit/tests/contract.test.mjs",
+    "packages/security-audit-sdk-core/MIGRATION.md",
+    "packages/security-audit-sdk-core/README.md",
+    "packages/security-audit-sdk-core/adr/009-package-contract-compatibility.md",
+    "packages/security-audit-sdk-core/compatibility.json",
+    "packages/security-audit-sdk-core/contract-provenance.json",
+    "packages/security-audit-sdk-core/scripts/check-changed-paths.mjs",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-core/scripts/check-contract-immutability.mjs",
     "packages/security-audit-sdk-core/src/validation/semantic.ts",
-    "packages/security-audit-sdk-core/tests/derived-field-provenance.test.ts"
+    "packages/security-audit-sdk-core/tests/derived-field-provenance.test.ts",
+    "packages/security-audit-sdk-core/tests/verification/contract-toolchain-exemption.test.mjs",
+    "packages/security-audit-sdk-core/verification-lifecycle.json"
   ],
   "candidate_approaches": [
     {
       "id": "approach-code-point-comparison",
       "kind": "direct_implementation",
-      "summary": "Decode each bounded string into its JavaScript-iterated code-point sequence, compare numeric code points lexicographically in both validators, and generate two-sided astral regression evidence plus precise rule documentation.",
+      "summary": "Decode each bounded string into its JavaScript-iterated code-point sequence, compare numeric code points lexicographically in both validators, generate two-sided astral regression evidence, and bind the exact protected correction candidate without relaxing the freeze.",
       "forces_addressed": [
         "The canonical contract and ratified capability require Unicode code-point ordering, so both reference validators must implement that exact deterministic order rather than JavaScript UTF-16 code-unit comparison.",
         "Ordering runs before path resolution and consumes bounded but otherwise arbitrary strings, so astral inputs can select the wrong public diagnostic even though currently resolvable field paths are ASCII.",
         "The canonical validator and SDK Core validator are independent trust boundaries and must remain behaviorally identical without adding a runtime dependency or coupling either workspace to the other.",
-        "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged."
+        "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged and the exact provenance target advances only to the corrected candidate.",
+        "The frozen aggregate fixture and all contract paths are protected by exact-history gates, so the correction must rebind provenance and lifecycle metadata to one immutable candidate without exemptions or wider prefixes."
       ]
     },
     {
@@ -52,7 +64,7 @@
       "summary": "Change the canonical declaration and capability requirement to UTF-16 code-unit order so the existing JavaScript relational comparisons become conforming.",
       "forces_addressed": [
         "The canonical contract and ratified capability require Unicode code-point ordering, so both reference validators must implement that exact deterministic order rather than JavaScript UTF-16 code-unit comparison.",
-        "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged."
+        "Generated fixtures and documentation must pin the declared rule while the canonical source, schema version, error vocabulary, and public APIs remain unchanged and the exact provenance target advances only to the corrected candidate."
       ]
     },
     {
@@ -91,7 +103,8 @@
     "implementation-validator-outcomes-stay-aligned",
     "implementation-diagnostic-precedence-is-preserved",
     "implementation-generated-evidence-owns-the-rule",
-    "implementation-contract-identity-is-unchanged"
+    "implementation-contract-identity-is-unchanged",
+    "implementation-contract-gate-rebinding-is-bounded"
   ],
   "invariant_evidence": {
     "implementation-code-point-order-is-exact": {
@@ -135,16 +148,29 @@
     "implementation-contract-identity-is-unchanged": {
       "task_ids": [
         "2.4",
-        "3.2"
+        "3.2",
+        "3.3"
       ],
       "evidence_ids": [
-        "canonical source, schema version 1.1.0, error registries, manifests, dependencies, and public API surfaces are byte-identical to the proposal baseline"
+        "canonical source, schema version 1.1.0, error registries, dependency manifests, and public API surfaces remain unchanged while the exact provenance target advances only to the corrected technical commit"
+      ]
+    },
+    "implementation-contract-gate-rebinding-is-bounded": {
+      "task_ids": [
+        "2.5",
+        "3.1",
+        "3.2",
+        "3.3",
+        "3.5"
+      ],
+      "evidence_ids": [
+        "provenance, compatibility, checker literals, and lifecycle metadata name one immutable technical commit and exact protected-path range while negative controls reject undeclared, byte-different, wrong-range, and wrong-target mutations"
       ]
     }
   },
   "security_sensitive": true,
   "security_justification": {
-    "audit_integrity": "Corrects the reference ordering rule used to accept or reject declared material-input provenance, preventing an out-of-order declaration from receiving the wrong validation disposition.",
+    "audit_integrity": "Corrects the reference ordering rule used to accept or reject declared material-input provenance and binds the exact corrected contract evidence to immutable history, preventing an out-of-order declaration or unreviewed protected write from receiving the wrong disposition.",
     "authentication_or_authorization": "Changes no identity, authentication, permission, or policy decision; both comparators run only inside existing semantic validation boundaries.",
     "authority_provenance": "Preserves the contract-owned code-point declaration and makes the validators conform to it, rather than allowing JavaScript representation details to supersede canonical provenance authority.",
     "concurrency": "Introduces only local pure comparison over already-bounded strings and creates no shared state, scheduling, reentrancy, or concurrent mutation behavior.",
@@ -152,15 +178,16 @@
     "cryptography": "No cryptographic primitive, key, digest, signature, or cryptographic assurance claim is introduced or changed.",
     "error_disclosure": "The stable error vocabulary and bounded diagnostic shape remain unchanged; focused tests assert only the existing order and resolution codes.",
     "external_security_integration": "Adds no network access, service integration, dependency, transport, exporter, collector, storage adapter, or production boundary.",
-    "fail_posture": "Fails closed according to the published order: a descending sequence is rejected before resolution, while an ascending but unknown sequence continues to the existing unresolvable-input rejection.",
-    "lifecycle": "Changes no operation, delivery, shutdown, retry, archive, or runtime state machine; comparison is stateless within one validation call.",
-    "mutation_ownership": "Writes are limited to this change packet, two authored validators, focused tests, and contract artifacts regenerated from the authored generator; canonical source and unrelated projections remain untouched.",
+    "fail_posture": "Fails closed according to the published order and protected-history policy: descending input is rejected before resolution, ascending unknown input remains unresolvable, and undeclared, byte-different, wrong-range, or wrong-target contract mutations remain rejected.",
+    "lifecycle": "Changes no operation, delivery, shutdown, retry, archive, or runtime state machine; lifecycle metadata is rebound only to identify the immutable protected-contract correction candidate and exact range.",
+    "mutation_ownership": "Writes are limited to this change packet, two authored validators, focused tests, generated contract artifacts, and the package-local provenance, compatibility, checker, and lifecycle records required to bind their exact technical commit; canonical source and unrelated projections remain untouched.",
     "privacy_transformation": "Performs no normalization or transformation of path contents and processes no new personal-data category; code points are compared without rewriting input.",
     "resource_retention": "Stores no values beyond one validation call; temporary code-point sequences are bounded by the existing 32-entry and 256-code-unit contract limits.",
     "retry_or_redelivery": "Changes no attempt or delivery behavior; repeated validation of unchanged input is deterministic and returns the same established result.",
-    "trust_boundary": "Repairs both independent contract and SDK Core trust boundaries together and verifies neither can accept UTF-16 ordering while the other enforces the canonical rule."
+    "trust_boundary": "Repairs both independent contract and SDK Core trust boundaries together, verifies neither can accept UTF-16 ordering while the other enforces the canonical rule, and preserves exact-history rejection around the corrected protected content."
   },
   "ordering": {
-    "proposal_baseline_commit": "820ee71644749635c7c28cc30fcc5be95c8071a9"
+    "proposal_baseline_commit": "820ee71644749635c7c28cc30fcc5be95c8071a9",
+    "assessment_commit": "b9f4a772523a579c9bf6158c990054e640cae14d"
   }
 }

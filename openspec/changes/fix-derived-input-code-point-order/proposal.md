@@ -13,6 +13,8 @@ producer while accepting the reverse order, so issue #423 needs a coordinated co
   and exercise the inverse, conforming order as a positive control in both validator suites.
 - Generate precise reimplementation guidance in `docs/validation.md` from the canonical source's
   declared order, failing generation if the declaration lacks matching documentation.
+- Rebind the frozen-contract provenance, compatibility, checker literals, and lifecycle inventory to
+  the exact technical correction commit without weakening the protected-path boundary.
 - Treat this as a patch-compatible implementation correction: the published `1.1.0` meaning and
   accepted-data contract do not change, and no schema-version move is made.
 
@@ -36,5 +38,7 @@ inventing a redundant requirement delta.
   `contracts/security-audit/docs/` and `contracts/security-audit/examples/negative/`.
 - SDK Core semantic validation under `packages/security-audit-sdk-core/src/validation/` and focused
   runtime tests in both affected workspaces.
+- SDK Core contract-provenance, compatibility, coherence, immutability, changed-path, lifecycle, and
+  explanatory binding metadata needed to admit only the named protected-contract candidate.
 - No public field, type, event, error code, dependency, package boundary, schema version, delivery
   behavior, persistence behavior, production deployment, or real-user processing changes.
