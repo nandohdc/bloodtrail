@@ -71,7 +71,7 @@ list matches what is on disk **and** that every covering `make` target actually 
 
 | Path | What it is | Status |
 |---|---|---|
-| `contracts/security-audit/` | The canonical contract, version `1.0.0`. `source/contract.source.json` is the **single source of truth**; `catalog/`, `registries/`, `policies/`, `docs/`, `adr/` are **generated — never hand-edit**. | Frozen |
+| `contracts/security-audit/` | The canonical contract, version `1.1.0`. `source/contract.source.json` is the **single source of truth**; `catalog/`, `registries/`, `policies/`, `docs/`, `adr/` are **generated — never hand-edit**. | Frozen |
 | `packages/security-audit-sdk-core/` | [`@bloodtrail/security-audit-sdk-core`](packages/security-audit-sdk-core/README.md) — platform-neutral ESM TypeScript SDK core. Private, unpublished, unlicensed for distribution. | Isolated candidate, API frozen |
 | `packages/security-audit-sdk-node/` | `@bloodtrail/security-audit-sdk-node` — the Node binding: platform SPI implementations plus the HTTP delivery handoff, bounded retry, bounded backpressure, deadline-bounded shutdown, and the governed delivery classes. | Isolated candidate, API frozen |
 | `packages/security-audit-collector/` | `@bloodtrail/security-audit-collector` — the synthetic collector ingress. Acceptance is admission only; no storage exists. | Isolated candidate, non-production |

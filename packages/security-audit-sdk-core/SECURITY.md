@@ -87,7 +87,7 @@ The SDK rejects accessors without invoking them and translates reachable getter,
 
 ## Extensions
 
-Only generated registered namespaces and fields are accepted. The version `1.0.0` enrichment namespace has `downstream_enrichment` provenance and is non-authoritative. Extensions cannot introduce alternate event names, actors, tenants, resource ownership, authorization, outcomes, schema versions, delivery classes, or arbitrary payloads.
+Only generated registered namespaces and fields are accepted. The version `1.1.0` enrichment namespace has `downstream_enrichment` provenance and is non-authoritative. Extensions cannot introduce alternate event names, actors, tenants, resource ownership, authorization, outcomes, schema versions, delivery classes, or arbitrary payloads.
 
 ## Safe errors
 

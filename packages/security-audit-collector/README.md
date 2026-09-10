@@ -30,7 +30,7 @@ authenticate → size → parse → schema → version → deduplicate → accep
   byte-identical vendored copy with a drift gate, so producer and collector
   cannot disagree about what is valid.
 - **version** — the explicitly enumerated finite supported set
-  `["1.0.0"]` per the ratified asymmetric version policy (#75/#76). An
+  `["1.1.0"]` per the ratified asymmetric version policy (#75/#76). An
   unsupported version is rejected distinctly from a schema rejection.
 - **deduplicate** — after every existing validation stage, each collector
   instance retains at most 32 authenticated-sender/validated-event pairs for

@@ -159,6 +159,16 @@ jobs:
       - name: Assert package discovery completeness
         run: node .github/scripts/check-package-discovery.mjs
 
+      # A statement describing present behaviour must name the current canonical
+      # contract version. `adr-contract` in check-coherence asserts only that the
+      # new version appears somewhere across all ADRs concatenated — presence,
+      # never absence — and is sdk-core-scoped, so it saw none of the eleven stale
+      # statements #453 found across five workspaces and the root documents. The
+      # repository-script test suite below already fails on the same defect; this
+      # step exists so the failure names the file and line directly.
+      - name: Assert contract version currency
+        run: node .github/scripts/check-contract-version-currency.mjs
+
       # Every test beside a repository script, not a hand-named subset. Naming one
       # file made the set a hand-maintained list that silently fell behind twice:
       # npm-audit-retry.test.mjs was written and never run by any check, and the
