@@ -60,6 +60,14 @@ function replaceInFile(relativePath, oldText, newText) {
   writeFileSync(target, content.replace(oldText, newText), "utf8");
 }
 
+function replaceAllInFile(relativePath, oldText, newText) {
+  const target = resolve(caseRoot, relativePath);
+  const content = readFileSync(target, "utf8");
+  const updated = content.replaceAll(oldText, newText);
+  assert.notEqual(updated, content, `pattern ${oldText} missing from ${relativePath}`);
+  writeFileSync(target, updated, "utf8");
+}
+
 describe("Node compatibility and CI version pinning mutations", () => {
   it("rejects dropping Node 24 from compatibility policy", () => {
     replaceInFile("packages/security-audit-sdk-core/compatibility.json", '"supportedMajors": [24, 26]', '"supportedMajors": [26]');
@@ -82,7 +90,7 @@ describe("Node compatibility and CI version pinning mutations", () => {
   });
 
   it("rejects CI workflow omitting declared Node 24 leg", () => {
-    replaceInFile(".github/workflows/ci.yml", 'node-version: "24.2.0"', 'node-version: "26.5.0"');
+    replaceAllInFile(".github/workflows/ci.yml", 'node-version: "24.2.0"', 'node-version: "26.5.0"');
     try {
       fails("scripts/check-coherence.mjs", ["--mode", "archived"], "ci-node-24-executed");
     } finally {
@@ -93,9 +101,26 @@ describe("Node compatibility and CI version pinning mutations", () => {
   it("rejects CI workflow using floating Node 26 tag", () => {
     replaceInFile(".github/workflows/ci.yml", 'node-version: "26.5.0"', 'node-version: "26"');
     try {
-      fails("scripts/check-coherence.mjs", ["--mode", "archived"], "ci-node-no-floating-26");
+      fails("scripts/check-coherence.mjs", ["--mode", "archived"], "ci-node-no-floating-major");
     } finally {
       git(caseRoot, ["checkout", "--", ".github/workflows/ci.yml"]);
+    }
+  });
+
+  it("rejects a floating Node 22 tag that the former literal rule allowed", () => {
+    const sonarSetup = 'node-version: "24.2.0"\n\n      # Same defect class on the download side';
+    replaceInFile(".github/workflows/ci.yml", sonarSetup, sonarSetup.replace('"24.2.0"', '"22"'));
+    try {
+      fails("scripts/check-coherence.mjs", ["--mode", "archived"], "ci-node-no-floating-major");
+      replaceInFile(
+        "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+        '!/node-version:\\s*["\']\\d+["\']/.test(ciWorkflow)',
+        '!/node-version:\\s*["\']26["\']/.test(ciWorkflow)',
+      );
+      const formerRule = runScript("scripts/check-coherence.mjs", ["--mode", "archived"]);
+      assert.equal(formerRule.status, 0, `former literal rule unexpectedly rejected the floating Node 22 tag:\n${formerRule.stdout}\n${formerRule.stderr}`);
+    } finally {
+      git(caseRoot, ["checkout", "--", ".github/workflows/ci.yml", "packages/security-audit-sdk-core/scripts/check-coherence.mjs"]);
     }
   });
 });
