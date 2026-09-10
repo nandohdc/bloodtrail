@@ -38,6 +38,15 @@ function mdTable(headers, rows) {
   ].join("\n");
 }
 
+// Renders a Markdown bullet list. Extracted so the validation document's emitter
+// does not nest a template literal inside its own template literal, which is what
+// the line this change already had to touch would otherwise inherit. The identical
+// pattern on the emitters this change does not touch is deliberately left alone:
+// rewriting them would widen a frozen-contract diff beyond this correction.
+function bulletList(values) {
+  return values.map((value) => `- ${value}`).join("\n");
+}
+
 function generatedHeader(label) {
   return `# ${label}\n\n> ${source.metadata.generated_artifact_notice}\n\n`;
 }
@@ -369,6 +378,11 @@ function negativeFixtures(positive) {
   add("derived-from-unresolvable", provenance.error_codes.unresolvable, (e) => { setDerivedInputs(e, ["event.name", "not.a.canonical.field"]); });
   add("derived-from-absent", provenance.error_codes.absent, (e) => { setDerivedInputs(e, ["event.name", "subject.display_name"]); });
   add("derived-from-unordered", provenance.error_codes.noncanonical_order, (e) => { setDerivedInputs(e, ["event.outcome", "event.name"]); });
+  // Pins canonical_order to Unicode code points rather than UTF-16 code units. U+10000 is a
+  // higher code point than U+FF01 but its lead surrogate (U+D800) is a lower code unit, so this
+  // pair is ascending under `<` and descending by code point. A validator that compares with `<`
+  // admits it here and reports the later unresolvable-input outcome instead.
+  add("derived-from-astral-order", provenance.error_codes.noncanonical_order, (e) => { setDerivedInputs(e, ["\u{10000}", "！"]); });
   add("derived-from-empty", provenance.error_codes.empty, (e) => { setDerivedInputs(e, []); });
   add("derived-from-non-derived", provenance.error_codes.non_derived, (e) => { e.risk.model.provenance.trust_level = "observed_transport"; setDerivedInputs(e, ["event.name", "event.outcome"]); });
   add("derived-from-cycle", provenance.error_codes.cycle, (e) => { setDerivedInputs(e, [provenance.field_path]); });
@@ -425,6 +439,34 @@ function mappingFixtures(positive) {
     { name: "otel-missing-native-timestamp", expected_errors: ["MISSING_NATIVE_MAPPING"], mapping: { ...otel[0], timestamp: undefined } }
   ];
   return { ocsf, otel, cloud, conflicts };
+}
+
+/**
+ * Prose for the declared canonical ordering of derived-field provenance inputs, keyed by the
+ * declaration itself so the documentation cannot drift from the contract source. An unrecognised
+ * declaration fails generation rather than emitting stale prose for a rule that has moved.
+ */
+const CANONICAL_ORDER_PROSE = {
+  code_point_ascending: [
+    "Entries are ordered by ascending Unicode code-point value. To compare two entries,",
+    "decode both to sequences of code points and compare them position by position; at the first",
+    "position whose code points differ, the entry with the smaller code point sorts first. If one",
+    "entry is a prefix of the other, the shorter entry sorts first. Consecutive entries must be",
+    "strictly ascending under this order; a repeated entry is reported as the duplicate-input",
+    "outcome rather than the non-canonical-order outcome.",
+    "",
+    "This is not UTF-16 code-unit order, and not locale collation. The two orders disagree for any",
+    "entry containing a character above U+FFFF, because a lead surrogate (U+D800..U+DBFF) is a",
+    "lower code unit than U+E000..U+FFFF while the character it encodes is a higher code point.",
+    "For example, U+FF01 precedes U+10000 by code point, but a UTF-16 code-unit comparison places",
+    "U+10000 first. An implementation that compares UTF-16 code units is not conformant.",
+  ].join("\n"),
+};
+
+function canonicalOrderSection(provenance) {
+  const prose = CANONICAL_ORDER_PROSE[provenance.canonical_order];
+  if (!prose) throw new Error(`no documented rule for canonical_order ${provenance.canonical_order}`);
+  return `## Canonical Order Of ${provenance.field_path}\n\nDeclared order: \`${provenance.canonical_order}\`.\n\n${prose}\n`;
 }
 
 const positive = source.catalog.map(makeEvent);
@@ -485,7 +527,7 @@ async function emitDocs() {
   await emit("docs/field-policy.md", `${generatedHeader("Field Policy")}${mdTable(["Path","Type","Requirement","Authority","Trust","Privacy","Policy","Retention","Compatibility"], source.fields.map((f) => [f.p, f.t, f.r, f.a, f.trust, f.privacy, f.policy, f.retention, f.compat]))}\n\n## Prohibited Data\n\n${source.prohibited_data.map((v) => `- ${v}`).join("\n")}\n\n## Transformations\n\n${mdTable(["Field Family","Policy","Method","Key Scope","Plain Hash Allowed"], source.privacy_transformations.map((p) => [p.field_family, p.policy, p.method, p.key_scope, p.plain_hash_allowed]))}\n`);
   await emit("docs/catalog.md", `${generatedHeader("Event Catalog")}${mdTable(["Semantic","Event Name","Category","Action","Phases","Outcomes","Commit","Delivery","Retention","Producer"], source.catalog.map((e) => [e.semantic, e.name, e.category, e.action, e.phase.join(", "), e.outcomes.join(", "), e.commit.join(", "), e.delivery, e.retention, e.producer]))}\n\n${source.catalog.map((e) => `## ${e.name}\n\nPurpose: ${e.purpose}\n\nTrigger: ${e.trigger}\n\nRequired context: ${e.required_context.join(", ")}\n\nActor rule: ${e.actor_rule}\n\nTenant rule: ${e.tenant_rule}\n\nResource rule: ${e.resource_rule}\n\nAuthorization rule: ${e.authorization_rule}\n\nPrivacy concerns: ${e.privacy.join(", ")}\n\nInvestigation value: ${e.investigation}\n\nMapping status: OCSF ${e.ocsf.status}, OpenTelemetry ${e.otel.status}, CloudEvents ${e.cloud_events.status}.\n`).join("\n")}`);
   await emit("docs/delivery-policy.md", `${generatedHeader("Delivery Policy")}${mdTable(["Class","Semantic","Durability","Idempotency","Retry","Backpressure","Shutdown","Outage","Business Posture"], Object.entries(source.delivery_class_contracts).map(([k, v]) => [k, v.semantic, v.durability, v.idempotency, v.retry, v.backpressure, v.shutdown, v.outage, v.business_failure_posture]))}\n\nPolicy-critical production use remains blocked until exact fail-open, fail-closed, or deferred-completion policy is reviewed and approved.\n`);
-  await emit("docs/validation.md", `${generatedHeader("Validation")}${mdTable(["Layer","Responsibility"], source.validation_layers.map((v) => [v.layer, v.responsibility]))}\n\nValidation error codes:\n\n${source.registries.validation_error_codes.map((c) => `- ${c}`).join("\n")}\n\nDiagnostics include bounded metadata only: code, path, safe event name, schema version, and producer. Rejected values and full payloads are never echoed.\n`);
+  await emit("docs/validation.md", `${generatedHeader("Validation")}${mdTable(["Layer","Responsibility"], source.validation_layers.map((v) => [v.layer, v.responsibility]))}\n\nValidation error codes:\n\n${bulletList(source.registries.validation_error_codes)}\n\nDiagnostics include bounded metadata only: code, path, safe event name, schema version, and producer. Rejected values and full payloads are never echoed.\n\n${canonicalOrderSection(source.derived_field_provenance)}`);
   await emit("docs/mappings.md", `${generatedHeader("Mappings")}## OCSF 1.8.0\n\nBoundary: ${source.mapping_policy.ocsf.boundary}\n\nAllowed claim: ${source.mapping_policy.ocsf.allowed_claim}\n\n${mdTable(["Event","OCSF Class","Status","Full Compatibility Claim"], source.catalog.map((e) => [e.name, e.ocsf.class, e.ocsf.status, "false"]))}\n\n## OpenTelemetry ${source.mapping_policy.opentelemetry.spec_version} / SemConv ${source.mapping_policy.opentelemetry.semconv_version}\n\nBoundary: ${source.mapping_policy.opentelemetry.boundary}\n\nNative fields: ${source.mapping_policy.opentelemetry.native_fields.join(", ")}\n\nBody policy: ${source.mapping_policy.opentelemetry.body_policy}\n\n## CloudEvents ${source.mapping_policy.cloudevents.standard_version}\n\nBoundary: ${source.mapping_policy.cloudevents.boundary}\n\nData policy: ${source.mapping_policy.cloudevents.data_policy}\n\nConflict policy: ${source.mapping_policy.cloudevents.conflict_policy}\n`);
   await emit("docs/compatibility-and-migration.md", `${generatedHeader("Compatibility And Migration")}${mdTable(["Change","Classification","Producer","Consumer"], source.compatibility_policy.map((p) => [p.change, p.classification, p.producer, p.consumer]))}\n\nTypeScript generation strategy: later SDK work may generate types from \`schema/security-audit-event.schema.json\` and constants from \`catalog/catalog.json\`, but generated types are compile-time help only. Runtime producer and ingestion validation remains mandatory. This package intentionally implements no SDK.\n`);
   await emit("docs/integrity-limits.md", `${generatedHeader("Integrity Limits")}${mdTable(["Claim","Can Establish","Cannot Establish"], source.integrity_claims.map((c) => [c.claim, c.can_establish, c.cannot_establish]))}\n`);

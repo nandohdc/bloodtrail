@@ -169,9 +169,28 @@ function duplicateDerivedInputCode(inputs, codes) {
 
 function derivedInputOrderCode(inputs, codes) {
   for (let index = 1; index < inputs.length; index += 1) {
-    if (inputs[index - 1] > inputs[index]) return codes.noncanonical_order;
+    if (compareByCodePoint(inputs[index - 1], inputs[index]) > 0) return codes.noncanonical_order;
   }
   return null;
+}
+
+/**
+ * Orders two strings by Unicode code point, which is what
+ * `derived_field_provenance.canonical_order = "code_point_ascending"` declares. JavaScript's
+ * relational operators compare UTF-16 code units instead, and the two orders disagree for any
+ * string containing a character above U+FFFF: a surrogate lead unit (U+D800..U+DBFF) sorts below
+ * U+E000..U+FFFF as a code unit but above them as a code point. This validator is the reference
+ * implementation of the published rule, so it compares code points explicitly rather than
+ * through `<`, and a producer that implements the rule as written is accepted.
+ */
+function compareByCodePoint(left, right) {
+  const leftPoints = Array.from(left, (character) => character.codePointAt(0));
+  const rightPoints = Array.from(right, (character) => character.codePointAt(0));
+  const sharedLength = Math.min(leftPoints.length, rightPoints.length);
+  for (let index = 0; index < sharedLength; index += 1) {
+    if (leftPoints[index] !== rightPoints[index]) return leftPoints[index] - rightPoints[index];
+  }
+  return leftPoints.length - rightPoints.length;
 }
 
 function firstDerivedInputResolutionCode(event, inputs, codes) {

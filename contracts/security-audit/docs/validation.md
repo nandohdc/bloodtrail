@@ -44,3 +44,20 @@ Validation error codes:
 - DERIVED_FROM_CYCLE
 
 Diagnostics include bounded metadata only: code, path, safe event name, schema version, and producer. Rejected values and full payloads are never echoed.
+
+## Canonical Order Of risk.model.provenance.derived_from
+
+Declared order: `code_point_ascending`.
+
+Entries are ordered by ascending Unicode code-point value. To compare two entries,
+decode both to sequences of code points and compare them position by position; at the first
+position whose code points differ, the entry with the smaller code point sorts first. If one
+entry is a prefix of the other, the shorter entry sorts first. Consecutive entries must be
+strictly ascending under this order; a repeated entry is reported as the duplicate-input
+outcome rather than the non-canonical-order outcome.
+
+This is not UTF-16 code-unit order, and not locale collation. The two orders disagree for any
+entry containing a character above U+FFFF, because a lead surrogate (U+D800..U+DBFF) is a
+lower code unit than U+E000..U+FFFF while the character it encodes is a higher code point.
+For example, U+FF01 precedes U+10000 by code point, but a UTF-16 code-unit comparison places
+U+10000 first. An implementation that compares UTF-16 code units is not conformant.

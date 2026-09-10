@@ -123,6 +123,23 @@ test("negative fixtures reject with exact safe error codes and no secret echo", 
   }
 });
 
+test("derived provenance ordering compares Unicode code points rather than UTF-16 code units", async () => {
+  const fixtures = await readJson("examples/negative/all-negative.json");
+  const descending = fixtures.find((fixture) => fixture.name === "derived-from-astral-order");
+  assert.ok(descending, "expected the generated astral-order fixture");
+  assert.deepEqual(
+    validateCanonicalEvent(descending.event).map((error) => error.code),
+    ["DERIVED_FROM_NONCANONICAL_ORDER"],
+  );
+
+  const ascending = structuredClone(descending.event);
+  ascending.risk.model.provenance.derived_from = ["！", "\u{10000}"];
+  assert.deepEqual(
+    validateCanonicalEvent(ascending).map((error) => error.code),
+    ["DERIVED_FROM_UNRESOLVABLE_INPUT"],
+  );
+});
+
 test("OCSF mapping is export-only, version-pinned, event-complete, and bounded", async () => {
   const rows = await readJson("fixtures/mappings/ocsf-1.8.0.json");
   assert.equal(rows.length, 24);

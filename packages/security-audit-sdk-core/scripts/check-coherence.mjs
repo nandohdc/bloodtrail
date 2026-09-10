@@ -23,8 +23,8 @@ const original = lifecycleMetadata.originalSdkChange;
 const remediation = lifecycleMetadata.remediationChange;
 const expected = Object.freeze({
   contractVersion: "1.1.0",
-  normativeTarget: "8d11f273cd4512fdc9b2f08b1663fb8557233137",
-  proposalBaseline: "8d11f273cd4512fdc9b2f08b1663fb8557233137",
+  normativeTarget: "eeebae6d73e5a26db3e6778f56ee95756fa146c6",
+  proposalBaseline: "eeebae6d73e5a26db3e6778f56ee95756fa146c6",
   remediationBaseline: "b4206f92fc92c7355efaa80d9f878353cf794452",
   packageName: "@bloodtrail/security-audit-sdk-core",
   packageVersion: "0.2.0",
@@ -231,12 +231,7 @@ rule("governed-candidate-root", `openspec/changes/${governedCandidateChange}`,
 // binding into a false pass. Only an undeclared candidate falls back.
 const unresolvedCandidateOpenSpec = governedCandidateDeclared ? "" : openSpec;
 const governedCandidateOpenSpec = governedCandidateRoot
-  ? await Promise.all([
-    safeRead(resolve(governedCandidateRoot, "proposal.md"), "governed-candidate-proposal"),
-    safeRead(resolve(governedCandidateRoot, "design.md"), "governed-candidate-design"),
-    safeRead(resolve(governedCandidateRoot, "tasks.md"), "governed-candidate-tasks"),
-    safeRead(resolve(governedCandidateRoot, "specs/security-audit-event-contract/spec.md"), "governed-candidate-contract-spec"),
-  ]).then((parts) => parts.join("\n"))
+  ? await readGovernedCandidateOpenSpec(governedCandidateRoot)
   : unresolvedCandidateOpenSpec;
 rule("openspec-contract", governedCandidateRoot ? relative(repositoryRoot, governedCandidateRoot) : relative(repositoryRoot, changeRoot), governedCandidateOpenSpec.includes(expected.contractVersion), "governed contract transition does not remain bound to contract 1.1.0");
 rule("openspec-production", relative(repositoryRoot, changeRoot), includesAll(openSpec, ["browser telemetry", "production", "transport"]), "governed change lacks explicit production/transport/browser boundaries");
@@ -359,6 +354,36 @@ async function safeRead(path, id) {
     rule("required-file", relative(repositoryRoot, path), false, `${id} is missing or unreadable`);
     return "";
   }
+}
+
+/**
+ * Joins the governed candidate's own OpenSpec text, which the contract-binding rule
+ * below reads as evidence.
+ *
+ * The contract spec delta is required unless the candidate declares `skip_specs`.
+ * A conformance correction changes reference implementations to match a ratified
+ * requirement it does not touch, so it carries no deltas at all; demanding one
+ * would force it to restate a SHALL it does not change, leaving two contradictory
+ * copies. Only that explicit declaration makes the absence legitimate: an
+ * undeclared missing delta still fails, so the relaxation cannot fail open.
+ */
+async function readGovernedCandidateOpenSpec(root) {
+  const manifest = await readOptional(resolve(root, ".openspec.yaml"));
+  const contractSpec = resolve(root, "specs/security-audit-event-contract/spec.md");
+  const parts = await Promise.all([
+    safeRead(resolve(root, "proposal.md"), "governed-candidate-proposal"),
+    safeRead(resolve(root, "design.md"), "governed-candidate-design"),
+    safeRead(resolve(root, "tasks.md"), "governed-candidate-tasks"),
+    declaresSkipSpecs(manifest)
+      ? readOptional(contractSpec)
+      : safeRead(contractSpec, "governed-candidate-contract-spec"),
+  ]);
+  return parts.join("\n");
+}
+
+/** Matches the top-level key `openspec` writes for a delta-less change. */
+function declaresSkipSpecs(manifest) {
+  return /^skip_specs:[ \t]*true[ \t]*$/m.test(manifest);
 }
 
 async function readOptional(path) {
