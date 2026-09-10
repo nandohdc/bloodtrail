@@ -176,7 +176,7 @@
   "security_sensitive": true,
   "ordering": {
     "proposal_baseline_commit": "820ee71644749635c7c28cc30fcc5be95c8071a9",
-    "assessment_commit": "705e99a058102561b1ab411ce5401338e2c71cd8"
+    "assessment_commit": "4c06a00052027a38324d369fbe5b6bfc8dee85bb"
   },
   "verification_task_ids": [
     "1.1",
