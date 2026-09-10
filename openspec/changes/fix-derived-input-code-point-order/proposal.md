@@ -14,7 +14,8 @@ producer while accepting the reverse order, so issue #423 needs a coordinated co
 - Generate precise reimplementation guidance in `docs/validation.md` from the canonical source's
   declared order, failing generation if the declaration lacks matching documentation.
 - Rebind the frozen-contract provenance, compatibility, checker literals, and lifecycle inventory to
-  the exact technical correction commit without weakening the protected-path boundary.
+  the exact technical correction commit by extending the existing cumulative candidate history,
+  without weakening the protected-path boundary or obscuring the six-path correction delta.
 - Treat this as a patch-compatible implementation correction: the published `1.1.0` meaning and
   accepted-data contract do not change, and no schema-version move is made.
 
