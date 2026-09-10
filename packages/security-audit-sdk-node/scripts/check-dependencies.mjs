@@ -45,14 +45,24 @@ const codeFiles = files.filter((f) => f.endsWith(".js") || f.endsWith(".d.ts"));
 assert(codeFiles.length > 0, "no shipped artifacts found in dist/");
 
 let inspectedSpecifiers = 0;
-const IMPORT_REGEX = /(?:import|export)\s+(?:(?:[\s\S]*?from\s+)?["']([^"']+)["']|type\s+[^=]+from\s+["']([^"']+)["'])/g;
+
+// TypeScript emits each static import/export declaration onto one line in the
+// shipped JavaScript and declaration files. Keep the two declaration forms
+// separate so this check has no nested wildcard that can backtrack across a
+// whole artifact while looking for `from`.
+const FROM_SPECIFIER_REGEX = /\b(?:import|export)\s+(?:type\s+)?[^"'`\r\n]*\bfrom\s*["']([^"'\r\n]+)["']/g;
+const BARE_IMPORT_SPECIFIER_REGEX = /\bimport\s*["']([^"'\r\n]+)["']/g;
+
+function staticImportSpecifiers(content) {
+  return [
+    ...content.matchAll(FROM_SPECIFIER_REGEX),
+    ...content.matchAll(BARE_IMPORT_SPECIFIER_REGEX),
+  ].map((match) => match[1]);
+}
 
 for (const file of codeFiles) {
   const content = await readFile(resolve(distDir, file), "utf8");
-  let match;
-  while ((match = IMPORT_REGEX.exec(content)) !== null) {
-    const specifier = match[1] ?? match[2];
-    if (!specifier) continue;
+  for (const specifier of staticImportSpecifiers(content)) {
     inspectedSpecifiers += 1;
 
     const isRelative = specifier.startsWith(".");

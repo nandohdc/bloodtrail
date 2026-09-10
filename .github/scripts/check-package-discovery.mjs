@@ -301,6 +301,9 @@ export function assertCostFiguresAreVariables(makefileText = null) {
 /** Scope entries that are deliberately not under a declared package. */
 export const SONAR_SCOPE_EXCEPTIONS = Object.freeze([]);
 
+/** Deliberately duplicated standalone-package gate scripts, excluded from CPD only. */
+export const SONAR_CPD_EXCLUSIONS = Object.freeze(["packages/*/scripts/**"]);
+
 /** Reads one `key=value` property out of a properties file's text. */
 export function sonarPropertyFor(propertiesText, key) {
   for (const line of propertiesText.split(/\r?\n/)) {
@@ -364,6 +367,39 @@ export function assertSonarScopeCoversDeclaredPackages(
   };
 }
 
+/**
+ * Keeps the intentional-duplication exception narrow and visible. Package
+ * scripts remain in sonar.sources, so this does not suppress code findings.
+ */
+export function assertSonarCpdExclusions(
+  propertiesText = null,
+  expectedExclusions = SONAR_CPD_EXCLUSIONS,
+) {
+  const text = propertiesText ?? readFileSync(resolve(repositoryRoot, "sonar-project.properties"), "utf8");
+  const exclusions = sonarPropertyFor(text, "sonar.cpd.exclusions");
+
+  if (exclusions === null) {
+    throw new Error(
+      "Sonar CPD exclusion assertion failed:\n  [sonar-cpd-exclusions-absent] sonar-project.properties declares no sonar.cpd.exclusions",
+    );
+  }
+
+  const missing = expectedExclusions.filter((entry) => !exclusions.includes(entry));
+  const unexpected = exclusions.filter((entry) => !expectedExclusions.includes(entry));
+  if (missing.length > 0 || unexpected.length > 0) {
+    const diagnostics = [
+      ...missing.map((entry) => `[sonar-cpd-exclusion-missing] required narrow exclusion absent: ${entry}`),
+      ...unexpected.map((entry) => `[sonar-cpd-exclusion-unexpected] exclusion exceeds the approved package-script boundary: ${entry}`),
+    ];
+    throw new Error(`Sonar CPD exclusion assertion failed:\n  ${diagnostics.join("\n  ")}`);
+  }
+
+  return {
+    exclusions,
+    message: `Sonar CPD exclusions passed: ${exclusions.join(", ")} is the approved standalone-package boundary\n`,
+  };
+}
+
 /** True when a scope entry is the workspace itself or a directory inside it. */
 function scopeEntryIsInside(entry, workspace) {
   return entry === workspace || entry.startsWith(`${workspace}/`);
@@ -399,6 +435,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.stdout.write(assertPartialTargetDisclosure().message);
     process.stdout.write(assertCostFiguresAreVariables().message);
     process.stdout.write(assertSonarScopeCoversDeclaredPackages().message);
+    process.stdout.write(assertSonarCpdExclusions().message);
   } catch (err) {
     process.stderr.write(`${err.message}\n`);
     process.exit(1);

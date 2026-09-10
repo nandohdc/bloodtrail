@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   DECLARED_PACKAGES,
   assertCostFiguresAreVariables,
+  assertSonarCpdExclusions,
   assertSonarScopeCoversDeclaredPackages,
   assertMakefileCoverage,
   assertPackageDiscovery,
@@ -375,5 +376,23 @@ test("check-package-discovery: a newly declared package must be added to the ana
   assert.equal(
     assertSonarScopeCoversDeclaredPackages(properties).workspaceCount,
     DECLARED_PACKAGES.length,
+  );
+});
+
+test("check-package-discovery: CPD excludes only intentional standalone-package script duplication", () => {
+  const result = assertSonarCpdExclusions();
+
+  assert.deepEqual(result.exclusions, ["packages/*/scripts/**"]);
+  assert.match(result.message, /approved standalone-package boundary/);
+});
+
+test("check-package-discovery: fails closed when the CPD exception is absent or broadened", () => {
+  assert.throws(
+    () => assertSonarCpdExclusions("sonar.sources=packages/security-audit-sdk-core/src\n"),
+    /\[sonar-cpd-exclusions-absent\]/,
+  );
+  assert.throws(
+    () => assertSonarCpdExclusions("sonar.cpd.exclusions=**/scripts/**\n"),
+    /\[sonar-cpd-exclusion-missing\].*packages\/\*\/scripts\/\*\*.*\[sonar-cpd-exclusion-unexpected\].*\*\*\/scripts\/\*\*/s,
   );
 });

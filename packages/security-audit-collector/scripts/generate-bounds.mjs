@@ -42,15 +42,17 @@ function render(bounds, supportedVersions) {
   for (const field of BOUND_FIELDS) {
     const value = bounds[field];
     if (typeof value !== "number" || !Number.isFinite(value)) {
-      throw new Error(`contract bounds block is missing a numeric ${field}`);
+      throw new TypeError(`contract bounds block is missing a numeric ${field}`);
     }
     lines.push(`export const ${constantName(field)} = ${String(value)} as const;`);
   }
-  lines.push("");
-  lines.push("// The explicitly enumerated finite supported set for the collector-side version stage,");
-  lines.push("// per the ratified asymmetric version policy (#75/#76): the producer binds EXACT_ONE while");
-  lines.push("// a separately authorized collector MAY support an explicit finite set for migration.");
-  lines.push("export const SUPPORTED_CONTRACT_VERSIONS: readonly string[] = [");
+  lines.push(
+    "",
+    "// The explicitly enumerated finite supported set for the collector-side version stage,",
+    "// per the ratified asymmetric version policy (#75/#76): the producer binds EXACT_ONE while",
+    "// a separately authorized collector MAY support an explicit finite set for migration.",
+    "export const SUPPORTED_CONTRACT_VERSIONS: readonly string[] = [",
+  );
   for (const version of supportedVersions) {
     lines.push(`  ${JSON.stringify(version)},`);
   }
@@ -60,14 +62,14 @@ function render(bounds, supportedVersions) {
 
 function requireBounds(value) {
   if (typeof value !== "object" || value === null) {
-    throw new Error("contract source has no bounds block");
+    throw new TypeError("contract source has no bounds block");
   }
   return value;
 }
 
 function requireSchemaVersion(value) {
   if (typeof value !== "string" || value.length === 0) {
-    throw new Error("contract source has no metadata.schema_version string");
+    throw new TypeError("contract source has no metadata.schema_version string");
   }
   return value;
 }
@@ -108,7 +110,9 @@ async function main() {
   );
 }
 
-main().catch((error) => {
+try {
+  await main();
+} catch (error) {
   process.stderr.write(`generate-bounds failed: ${error.message}\n`);
   process.exitCode = 1;
-});
+}

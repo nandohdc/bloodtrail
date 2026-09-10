@@ -90,7 +90,7 @@ async function track<TResult>(
 async function drain(inFlight: Set<Promise<unknown>>, deadlineMs: number, timers: AuditTimerProvider): Promise<number> {
   const timeout = createShutdownTimeout(deadlineMs, timers);
   try {
-    const settled = Promise.allSettled([...inFlight]).then(() => true as const);
+    const settled = Promise.allSettled(inFlight).then(() => true as const);
     await Promise.race([settled, timeout.promise]);
     return inFlight.size;
   } finally {

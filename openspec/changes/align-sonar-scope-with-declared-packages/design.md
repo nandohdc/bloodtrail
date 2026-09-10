@@ -37,24 +37,24 @@ delivery binding and the collector ingress, which are where authentication, dedu
 backpressure live. Of the five workspaces, they are the two whose code most warrants a security-
 oriented analyser, and `sonar` is required precisely so that such code is analysed before it lands.
 
-### D2 — The blast radius is bounded, and it was measured before deciding
+### D2 — The first widened scan is the authoritative onboarding measurement
 
 The quality gate is `Sonar way` (default, built-in) and all three of its conditions are new-code only:
-`new_coverage >= 80`, `new_duplicated_lines_density <= 3`, `new_violations = 0`. Pre-existing findings
-in newly analysed files land in overall code, which no condition covers, so widening cannot red the
-gate by itself.
+`new_coverage >= 80`, `new_duplicated_lines_density <= 3`, `new_violations = 0`. The initial
+prediction that a widened scope could not red the gate was wrong for this project: the scanner reports
+on the shared project rather than a PR-decorated branch, so files indexed for the first time are new
+relative to the stored project baseline.
 
-What it does change is that a future pull request touching one of those files inherits whatever the
-analyser says about the lines it touches. `packages/security-audit-collector/src/ingress.ts`, the
-largest file being added, was run through the analyser against this project's profile and reported
-`issueCount: 0`.
+The implementation scan in run `34508088172` therefore indexed 147 files, up from 96, and failed
+with `new_violations` 16 and `new_duplicated_lines_density` 9.25207. Its reported violations are the
+result to address, not a reason to narrow the scope: two super-linear/over-complex dependency-gate
+regexes, two over-complex package-inventory regexes, collector generator error and promise-shape
+findings, and two Node delivery implementation findings. The original collector ingress sample still
+reported `issueCount: 0`; it was a sample rather than evidence for the whole widened set.
 
-One sample bounds nothing on its own, and the way to bound it is not to replay the analyser file by
-file. The implementation pull request's own `sonar` run analyses exactly the widened set, against the
-live quality profile and the live gate, and it runs **before** the merge — so it is both the
-authoritative measurement and a blocking one. If the widening surfaces something the gate refuses,
-the required context is red and the change does not land. Task 2.1 is written around that: sample
-first so a catastrophic surprise is caught before the push, then take the real number from the run.
+The follow-up repairs preserve the package gates' checks and delivery behavior. They do not remove a
+source directory from the scanner or relax a quality condition. The candidate scan supplies the final
+quality-gate values and is the merge-blocking measurement.
 
 ### D3 — Declared packages now; repository tooling separately
 
@@ -79,6 +79,19 @@ analysed nothing. Both are the same class of stale list, so both fail.
 Recorded exceptions are named explicitly in the checker rather than inferred, so adding one is a
 visible edit to a governance-core file rather than a quiet widening of what the assertion tolerates.
 
+### D5 — Exclude only intentional standalone-package script duplication from CPD
+
+The onboarding measurement found 2,066 duplicated lines project-wide, concentrated in package-local
+release-gate scripts such as dependency, export, and package-content checks. The repository requires
+each package to remain independently installable and to carry its own gates; moving those checks into
+a root package would reverse that decided topology. The repeated scripts remain in `sonar.sources` and
+are still checked for code findings.
+
+`sonar.cpd.exclusions=packages/*/scripts/**` excludes only that duplication calculation. It does not
+cover `src`, repository tooling, contract scripts, or research scripts. The package-discovery checker
+asserts the property has exactly that one entry, rejecting both an absent property and a broader
+`**/scripts/**` exclusion.
+
 ## Risks / Trade-offs
 
 - **A future PR touching the newly analysed files inherits findings on its touched lines.** That is
@@ -92,3 +105,6 @@ visible edit to a governance-core file rather than a quiet widening of what the 
 - **The assertion couples two governance-core files.** `sonar-project.properties` can no longer be
   edited without regard for `DECLARED_PACKAGES`. That coupling is deliberate and already exists for
   the `Makefile`; the alternative is the state this change is fixing.
+- **CPD will no longer report intentional duplication between standalone-package scripts.** The
+  exception is limited to those scripts and mechanically held to that boundary; Sonar still reports
+  their security and maintainability findings, and all other source remains in CPD.

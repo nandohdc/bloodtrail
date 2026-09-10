@@ -36,6 +36,11 @@ workspace. Nothing yet asserts the same of the analysis scope of a required gate
   it to the analysis scope then fails the same way as forgetting the `Makefile`.
 - **Correct the header comment**, which is what made this invisible: it asserts complete coverage, so
   nobody re-reads the list.
+- **Resolve the measured onboarding findings at their source.** The widened scan found sixteen
+  violations in the newly analysed packages, so their package-gate parsers and the two affected
+  delivery implementations are repaired without removing them from `sonar.sources`. The separately
+  measured duplication is confined to intentionally repeated standalone-package gate scripts; only
+  `packages/*/scripts/**` is excluded from CPD, while those scripts remain analysed for findings.
 
 ## Capabilities
 
@@ -46,16 +51,20 @@ None.
 ### Modified Capabilities
 
 `ci-topology` gains one requirement: the required quality gate's analysis scope covers every declared
-package, asserted mechanically rather than maintained by hand. It sits beside the existing
-package-discovery and root-command-surface requirements, which already ratify exactly this property
-for the CI package list and for `make`. No existing requirement is modified.
+package, asserted mechanically rather than maintained by hand, with an equally narrow assertion for
+the intentional standalone-package CPD boundary. It sits beside the existing package-discovery and
+root-command-surface requirements, which already ratify exactly this property for the CI package list
+and for `make`. No existing requirement is modified.
 
 ## Impact
 
 - `sonar-project.properties` — `governance_core`; the scope lists, the report paths, the tsconfig
   paths, the generated-output exclusion, and the header comment.
 - `.github/scripts/check-package-discovery.mjs` and `.github/scripts/check-package-discovery.test.mjs`
-  — `governance_core`; the new assertion and its controls.
+  — `governance_core`; the scope and CPD-boundary assertions and their controls.
+- `packages/security-audit-sdk-node/{src,scripts}/` and
+  `packages/security-audit-collector/scripts/` — source-level repairs for findings surfaced by the
+  newly widened required gate; no public API changes.
 - `openspec/specs/ci-topology/spec.md` — the fold target for the added requirement.
 
 ## Out of scope
@@ -69,4 +78,4 @@ request that edits a line in the governance checker report 0% coverage on that l
 required context. That needs a coverage story first and is its own change.
 
 No package, dependency, API, or contract artifact changes. No workspace's declared Node support
-changes, and no gate threshold moves.
+changes, no source tree is removed from `sonar.sources`, and no gate threshold moves.

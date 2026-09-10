@@ -48,10 +48,31 @@ for (const req of REQUIRED_FILES) {
   assert(packedPaths.has(req), `required file ${req} missing from packed tarball`);
 }
 
-const FORBIDDEN_PATTERN = /(?:^|\/)(?:tests?|scripts?|src|\.git|node_modules|dist-tests|\.verification-output|coverage|\.cache)(?:\/|$)|(?:^|\/)\.env|\.tgz$/i;
+const FORBIDDEN_PATH_SEGMENTS = new Set([
+  "test",
+  "tests",
+  "script",
+  "scripts",
+  "src",
+  ".git",
+  "node_modules",
+  "dist-tests",
+  ".verification-output",
+  "coverage",
+  ".cache",
+]);
+
+function isForbiddenPackedPath(packedPath) {
+  const segments = packedPath.toLowerCase().split("/");
+  const finalSegment = segments.at(-1);
+  return (
+    segments.some((segment) => FORBIDDEN_PATH_SEGMENTS.has(segment) || segment.startsWith(".env")) ||
+    finalSegment.endsWith(".tgz")
+  );
+}
 
 for (const path of packedPaths) {
-  assert(!FORBIDDEN_PATTERN.test(path), `forbidden path ${path} included in package tarball`);
+  assert(!isForbiddenPackedPath(path), `forbidden path ${path} included in package tarball`);
   const absolute = resolve(packageRoot, path);
   const data = await readFile(absolute);
   if (data.includes(0)) continue;

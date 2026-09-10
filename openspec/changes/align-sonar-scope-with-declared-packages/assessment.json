@@ -8,7 +8,7 @@
     "The two omitted workspaces hold the authentication, deduplication, retry and backpressure paths, which are the code a security-oriented analyser exists for.",
     "`sonar-project.properties` asserts in its own header that it scans every workspace, so the omission is invisible to a reader and no gate can see it either.",
     "An explicit list with no completeness assertion has already failed twice in this repository, in the `make` recipes (#412) and in their notices (#441).",
-    "The quality gate's three conditions are new-code only, so widening cannot red it on pre-existing findings, but a later PR touching a newly analysed line inherits what the analyser says about it.",
+    "The first widened scan indexed 147 files rather than 96 and treated the first-indexed package files as new, failing on 16 violations and 9.25207 new duplicated-lines density; the repair must keep those files analysed rather than hide them.",
     "`openspec/scripts/` and `.github/scripts/` have no coverage report at all, so analysing them under a new-code coverage condition would fail the next PR that edits the governance checker or the merge gate.",
     "The `coverage` job already produces and path-rewrites reports for both omitted workspaces, so their coverage is computed and then discarded by a gate that never reads it."
   ],
@@ -33,19 +33,26 @@
     "openspec/specs/ci-topology/spec.md",
     "sonar-project.properties",
     ".github/scripts/check-package-discovery.mjs",
-    ".github/scripts/check-package-discovery.test.mjs"
+    ".github/scripts/check-package-discovery.test.mjs",
+    "packages/security-audit-sdk-node/scripts/check-dependencies.mjs",
+    "packages/security-audit-sdk-node/scripts/check-package-contents.mjs",
+    "packages/security-audit-sdk-node/src/delivery-classes.ts",
+    "packages/security-audit-sdk-node/src/delivery-shutdown.ts",
+    "packages/security-audit-collector/scripts/check-dependencies.mjs",
+    "packages/security-audit-collector/scripts/check-package-contents.mjs",
+    "packages/security-audit-collector/scripts/generate-bounds.mjs"
   ],
   "candidate_approaches": [
     {
       "id": "approach-widen-scope-and-assert-against-declared-packages",
       "kind": "direct_implementation",
-      "summary": "Add both missing declared workspaces to the analyser's sources, tests, coverage reports and tsconfig paths, exclude the collector's generated output, correct the header comment, and assert the scope against DECLARED_PACKAGES failing closed in both directions.",
+      "summary": "Add both missing declared workspaces to the analyser's sources, tests, coverage reports and tsconfig paths, exclude the collector's generated output, correct the header comment, repair the measured findings at source, exclude only intentional standalone-package script duplication from CPD, and assert both boundaries mechanically.",
       "forces_addressed": [
         "`sonar` is one of ten required merge contexts, so whatever it does not analyse is code that lands with a required gate having said nothing about it.",
         "The two omitted workspaces hold the authentication, deduplication, retry and backpressure paths, which are the code a security-oriented analyser exists for.",
         "`sonar-project.properties` asserts in its own header that it scans every workspace, so the omission is invisible to a reader and no gate can see it either.",
         "An explicit list with no completeness assertion has already failed twice in this repository, in the `make` recipes (#412) and in their notices (#441).",
-        "The quality gate's three conditions are new-code only, so widening cannot red it on pre-existing findings, but a later PR touching a newly analysed line inherits what the analyser says about it.",
+        "The first widened scan indexed 147 files rather than 96 and treated the first-indexed package files as new, failing on 16 violations and 9.25207 new duplicated-lines density; the repair must keep those files analysed rather than hide them.",
         "`openspec/scripts/` and `.github/scripts/` have no coverage report at all, so analysing them under a new-code coverage condition would fail the next PR that edits the governance checker or the merge gate.",
         "The `coverage` job already produces and path-rewrites reports for both omitted workspaces, so their coverage is computed and then discarded by a gate that never reads it."
       ]
@@ -109,7 +116,8 @@
     "implementation-scope-covers-every-declared-package",
     "implementation-scope-has-no-stray-entry",
     "implementation-generated-output-excluded-generator-not",
-    "implementation-tooling-exclusion-is-recorded"
+    "implementation-tooling-exclusion-is-recorded",
+    "implementation-cpd-exclusion-is-narrow-and-findings-remain-visible"
   ],
   "invariant_evidence": {
     "implementation-scope-covers-every-declared-package": {
@@ -150,6 +158,16 @@
       "evidence_ids": [
         "openspec/scripts and .github/scripts are named as out of scope with the new_coverage reason, in the properties file and in the change record"
       ]
+    },
+    "implementation-cpd-exclusion-is-narrow-and-findings-remain-visible": {
+      "task_ids": [
+        "2.4",
+        "3.5",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "assertSonarCpdExclusions accepts only packages/*/scripts/**, rejects an absent or broader exclusion, and sonar.sources continues to include the package scripts"
+      ]
     }
   },
   "security_sensitive": true,
@@ -164,10 +182,12 @@
     "2.1",
     "2.2",
     "2.3",
+    "2.4",
     "3.1",
     "3.2",
     "3.3",
     "3.4",
+    "3.5",
     "4.1",
     "4.2",
     "4.3",
