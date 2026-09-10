@@ -10,6 +10,12 @@ The generator owns committed contract fixtures and documentation. Although all c
 canonical and registered-extension paths are ASCII, the structural contract permits any bounded
 non-empty string and the semantic validator must order it before deciding whether it resolves.
 
+The aggregate negative-fixture projection is part of the SDK Core frozen-contract provenance set,
+and all contract paths are protected by the lifecycle-aware changed-path gate. The implementation
+therefore cannot pass full validation merely by regenerating the corrected fixture: the established
+governed-candidate mechanism must bind the exact protected-path inventory to an immutable technical
+commit and advance every exact target copy coherently.
+
 ## Goals / Non-Goals
 
 **Goals:**
@@ -18,12 +24,15 @@ non-empty string and the semantic validator must order it before deciding whethe
 - Pin both directions of the astral/BMP disagreement without relying only on prose.
 - Keep generated artifacts derived exclusively from the canonical generator.
 - Preserve current validation-error precedence, bounds, and secret-free diagnostics.
+- Rebind the frozen-contract gates to one exact technical candidate while retaining fail-closed
+  rejection of undeclared or byte-different protected writes.
 
 **Non-Goals:**
 
 - Restrict provenance inputs to ASCII or normalize Unicode.
 - Export a new comparator API, share runtime code across package boundaries, or add a dependency.
 - Change the `1.1.0` contract meaning, schema version, path-resolution rules, or error vocabulary.
+- Remove a protected prefix, add a generic exemption, or otherwise relax frozen-contract policy.
 
 ## Decisions
 
@@ -71,6 +80,27 @@ implementations and their evidence changes neither the normative accepted-data s
 interpretation, so it uses the contract's patch-compatible correction class without a schema-version
 move. Release/package automation may assign a patch release independently of the schema literal.
 
+### D6 — Rebind the exact correction candidate without weakening the freeze
+
+After the corrected planning packet is merged, the comparator, tests, generator, generated
+documentation, and generated negative fixtures will be committed as a named technical candidate.
+The merged planning commit is the candidate range base; the technical commit is the endpoint. The
+lifecycle record will replace the previous governed candidate with this change and a strict,
+code-point-sorted inventory of every protected path changed across that range.
+
+`contract-provenance.json` will advance both the normative technical target and its immutable
+comparison baseline to that technical commit. The matching target copies in compatibility metadata,
+human-readable package guidance, the coherence and immutability checkers, and the changed-path
+checker will move together. The binding commit itself will not alter protected contract content,
+and verification controls must continue to reject an undeclared path, a mismatched candidate blob,
+an incorrect range, and an incorrect target.
+
+The alternative of exempting the aggregate fixture or removing a protected prefix creates a reusable
+freeze bypass. Leaving the previous `add-derived-field-provenance` candidate bound makes the approved
+correction impossible to validate and falsely describes the authoritative contract content. Folding
+the rebinding into an unidentifiable working tree was also rejected because the gate requires an
+immutable commit and an independently reproducible range inventory.
+
 ## Risks / Trade-offs
 
 - [One validator drifts from the other] → Run the same disagreement pair through both public
@@ -83,9 +113,15 @@ move. Release/package automation may assign a patch release independently of the
   committed docs and fixtures.
 - [Patch classification is mistaken for a new contract meaning] → Leave the canonical source and
   capability text unchanged and record that the code is conforming to their existing rule.
+- [Gate rebinding becomes a broad exception] → Bind one named change, exact range, exact technical
+  commit, and exact protected-path inventory; retain mutation tests for every fail-closed boundary.
+- [A later binding edit silently changes protected content] → Commit protected content first and
+  require every protected blob at the PR head to match the named technical commit exactly.
 
 ## Migration Plan
 
-Regenerate contract artifacts, validate the contract and SDK Core workspaces, then run repository
-governance and strict OpenSpec checks before delivery. Rollback is a branch revert before merge; no
-data migration, version negotiation, or production rollout is involved.
+Merge the corrected planning and assessment packet before creating the governed technical commit.
+Regenerate contract artifacts, commit the closed technical path set, bind the frozen-contract gates
+to that exact commit, then validate the contract and SDK Core workspaces and run repository governance
+and strict OpenSpec checks before delivery. Rollback is a branch revert before merge; no data
+migration, version negotiation, or production rollout is involved.
