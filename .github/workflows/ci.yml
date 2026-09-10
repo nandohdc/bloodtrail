@@ -194,8 +194,9 @@ jobs:
         run: node --test openspec/tests/design-pattern-governance/*.test.mjs
 
   # Line coverage for the workspaces that have product code behind tests.
-  # Runs on Node 26 because packages pin engines above the Node 22 the
-  # sonar job uses, and the SDK must be built before its tests can run.
+  # Runs on 26.5.0 because research/browser-telemetry declares `>=26.5.0`, the
+  # highest engines floor among the four workspaces this job covers, and the SDK
+  # must be built before its tests can run.
   coverage:
     name: coverage
     runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
@@ -333,7 +334,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24.2.0"
 
       # Same defect class on the download side: one ECONNRESET redded the
       # sonar job having never contacted SonarQube (#345). Same bounded retry

@@ -150,7 +150,7 @@ rule("compat-verification-lifecycle", "compatibility.json", same(compatibility.v
 const ciWorkflow = await safeRead(resolve(repositoryRoot, ".github/workflows/ci.yml"), "ci-workflow");
 rule("ci-node-26-pinned", ".github/workflows/ci.yml", ciWorkflow.includes(`node-version: "${expected.nodeCiVersions[1]}"`), "CI workflow does not pin declared Node 26 release");
 rule("ci-node-24-executed", ".github/workflows/ci.yml", ciWorkflow.includes(`node-version: "${expected.nodeCiVersions[0]}"`), "CI workflow does not execute declared Node 24 leg");
-rule("ci-node-no-floating-26", ".github/workflows/ci.yml", !/node-version:\s*["']26["']/.test(ciWorkflow), "CI workflow uses floating Node 26 tag");
+rule("ci-node-no-floating-major", ".github/workflows/ci.yml", !/node-version:\s*["']\d+["']/.test(ciWorkflow), "CI workflow uses floating Node major tag");
 
 rule("provenance-version", "contract-provenance.json", provenance.contractVersion === expected.contractVersion, "contract provenance version differs from 1.1.0");
 rule("provenance-target", "contract-provenance.json", provenance.normativeTechnicalTarget === expected.normativeTarget, "contract provenance target differs from the approved commit");
