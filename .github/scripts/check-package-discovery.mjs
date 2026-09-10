@@ -88,6 +88,16 @@ export function assertPackageDiscovery(
  */
 export const COVERING_MAKE_TARGETS = Object.freeze(["runtime-gates", "governance-gates"]);
 
+/** The Makefile text an assertion should read: the caller's, or the repository's. */
+export function resolveMakefileText(makefileText) {
+  return makefileText ?? readFileSync(resolve(repositoryRoot, "Makefile"), "utf8");
+}
+
+/** Workspace directories, from the declared `package.json` paths. */
+export function workspacesFrom(declaredPackages) {
+  return declaredPackages.map((pkg) => pkg.replace(/\/package\.json$/, ""));
+}
+
 /** Reads one target's recipe lines out of a Makefile's text. */
 export function makeRecipeFor(makefileText, target) {
   const lines = makefileText.split(/\r?\n/);
@@ -110,14 +120,19 @@ export function makeRecipeFor(makefileText, target) {
  * the count in the success message was a hand-maintained literal consistent with
  * the recipe rather than with the repository. An explicit list needs a
  * completeness assertion, or "add a package, forget the Makefile" fails silently.
+ *
+ * Coverage is read from the recipe's command lines alone. Reading the whole
+ * recipe would let a workspace named in an `@echo` satisfy the check without ever
+ * being run, which is #412 again: a target that stopped running a workspace but
+ * still mentioned it would report coverage it does not have.
  */
 export function assertMakefileCoverage(
   makefileText = null,
   declaredPackages = DECLARED_PACKAGES,
   targets = COVERING_MAKE_TARGETS,
 ) {
-  const text = makefileText ?? readFileSync(resolve(repositoryRoot, "Makefile"), "utf8");
-  const workspaces = declaredPackages.map((pkg) => pkg.replace(/\/package\.json$/, ""));
+  const text = resolveMakefileText(makefileText);
+  const workspaces = workspacesFrom(declaredPackages);
   const failures = [];
 
   for (const target of targets) {
@@ -126,7 +141,8 @@ export function assertMakefileCoverage(
       failures.push(`[makefile-target-missing] Makefile declares no '${target}' target`);
       continue;
     }
-    const uncovered = workspaces.filter((workspace) => !recipe.includes(workspace));
+    const commands = recipeCommandLines(recipe);
+    const uncovered = workspaces.filter((workspace) => !commands.includes(workspace));
     if (uncovered.length > 0) {
       failures.push(
         `[makefile-workspace-uncovered] '${target}' does not run: ${uncovered.join(", ")}`,
@@ -145,11 +161,150 @@ export function assertMakefileCoverage(
   };
 }
 
+/**
+ * The recipe lines that run something.
+ *
+ * A target's coverage is what it invokes. What it prints is a claim about that,
+ * and the two must not be read from the same text.
+ */
+export function recipeCommandLines(recipe) {
+  return recipe
+    .split(/\r?\n/)
+    .filter((line) => !/^\t\s*@?echo\b/.test(line))
+    .join("\n");
+}
+
+/** The recipe lines that only print. A target's disclosure lives here. */
+export function recipeMessageLines(recipe) {
+  return recipe
+    .split(/\r?\n/)
+    .filter((line) => /^\t\s*@?echo\b/.test(line))
+    .join("\n");
+}
+
+/** The message lines in which a target states what it did not run. */
+export function recipeDisclosureLines(recipe) {
+  return recipeMessageLines(recipe)
+    .split(/\r?\n/)
+    .filter((line) => line.includes("NOT run"))
+    .join("\n");
+}
+
+/** Every rule target declared in a Makefile, in file order. */
+export function makeTargetsIn(makefileText) {
+  const targets = [];
+  for (const line of makefileText.split(/\r?\n/)) {
+    const match = /^([A-Za-z][A-Za-z0-9_-]*):(?!=)/.exec(line);
+    if (match) targets.push(match[1]);
+  }
+  return targets;
+}
+
+/**
+ * Asserts that a target running some but not all declared workspaces names every
+ * workspace it did not run.
+ *
+ * The ratified requirement has always said a partial run must name what it
+ * skipped. Nothing enforced it, so when `packages/security-audit-collector` was
+ * added, all three partial targets went on describing a four-workspace
+ * repository — the same silent staleness as #412, one file away from the
+ * assertion that catches it.
+ *
+ * Targets that run no workspace claim no coverage and are skipped; targets that
+ * run all of them are the covering case `assertMakefileCoverage` already holds.
+ * Both directions fail closed: a workspace skipped but not named is a failure,
+ * and so is a workspace named as skipped while the recipe actually runs it.
+ */
+export function assertPartialTargetDisclosure(
+  makefileText = null,
+  declaredPackages = DECLARED_PACKAGES,
+) {
+  const text = resolveMakefileText(makefileText);
+  const workspaces = workspacesFrom(declaredPackages);
+  const failures = [];
+  const partialTargets = [];
+
+  for (const target of makeTargetsIn(text)) {
+    const recipe = makeRecipeFor(text, target);
+    if (recipe === null) continue;
+
+    const commands = recipeCommandLines(recipe);
+    const invoked = workspaces.filter((workspace) => commands.includes(workspace));
+    if (invoked.length === 0 || invoked.length === workspaces.length) continue;
+    partialTargets.push(target);
+
+    const disclosure = recipeDisclosureLines(recipe);
+    const skipped = workspaces.filter((workspace) => !invoked.includes(workspace));
+    const undisclosed = skipped.filter((workspace) => !disclosure.includes(workspace));
+    const misreported = invoked.filter((workspace) => disclosure.includes(workspace));
+
+    if (undisclosed.length > 0) {
+      failures.push(
+        `[makefile-skip-undisclosed] '${target}' does not run and does not say it skipped: ${undisclosed.join(", ")}`,
+      );
+    }
+    if (misreported.length > 0) {
+      failures.push(
+        `[makefile-skip-misreported] '${target}' says it skipped a workspace it runs: ${misreported.join(", ")}`,
+      );
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(
+      `Makefile partial-run disclosure assertion failed:\n  ${failures.join("\n  ")}`,
+    );
+  }
+
+  return {
+    targets: partialTargets,
+    workspaceCount: workspaces.length,
+    message: `Makefile partial-run disclosure passed: ${partialTargets.length} partial target(s) name every workspace they skip\n`,
+  };
+}
+
+/** A cost figure written out by hand rather than expanded from a variable. */
+const HAND_TYPED_COST = /~\s*\d/;
+/** The one place a cost figure may be written. */
+const COST_VARIABLE_DEFINITION = /^COST_[A-Z0-9_]*\s*[:?+]?=/;
+
+/**
+ * Asserts that every cost figure in the Makefile expands from a single `COST_`
+ * variable.
+ *
+ * `help` described `runtime-gates` as 26s while the target itself echoed 34s: one
+ * file, one target, two costs, because the figure was written twice and only one
+ * copy was ever updated. Defining each cost once makes that divergence impossible
+ * rather than merely detectable, and this assertion keeps a hand-typed figure from
+ * quietly reintroducing a second copy.
+ */
+export function assertCostFiguresAreVariables(makefileText = null) {
+  const text = resolveMakefileText(makefileText);
+  const offenders = [];
+
+  text.split(/\r?\n/).forEach((line, index) => {
+    if (COST_VARIABLE_DEFINITION.test(line)) return;
+    if (HAND_TYPED_COST.test(line)) offenders.push(`line ${index + 1}: ${line.trim()}`);
+  });
+
+  if (offenders.length > 0) {
+    throw new Error(
+      `Makefile cost-figure assertion failed:\n  [makefile-cost-literal] a cost figure is written by hand instead of expanding from a COST_ variable, so two statements of one target's cost can diverge again:\n  ${offenders.join("\n  ")}`,
+    );
+  }
+
+  return {
+    message: "Makefile cost figures passed: every stated cost expands from a single COST_ variable\n",
+  };
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const result = assertPackageDiscovery();
     process.stdout.write(result.message);
     process.stdout.write(assertMakefileCoverage().message);
+    process.stdout.write(assertPartialTargetDisclosure().message);
+    process.stdout.write(assertCostFiguresAreVariables().message);
   } catch (err) {
     process.stderr.write(`${err.message}\n`);
     process.exit(1);

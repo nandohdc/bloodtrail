@@ -4,10 +4,15 @@ import { resolve } from "node:path";
 import test from "node:test";
 import {
   DECLARED_PACKAGES,
+  assertCostFiguresAreVariables,
   assertMakefileCoverage,
   assertPackageDiscovery,
+  assertPartialTargetDisclosure,
   enumerateGitPackages,
   makeRecipeFor,
+  makeTargetsIn,
+  recipeCommandLines,
+  recipeMessageLines,
   repositoryRoot,
 } from "./check-package-discovery.mjs";
 
@@ -131,4 +136,150 @@ test("check-package-discovery: a newly declared package is uncovered until the M
   );
   // The same Makefile still passes against the real declared list.
   assert.equal(assertMakefileCoverage(makefile).workspaceCount, DECLARED_PACKAGES.length);
+});
+
+// Coverage counts what a recipe runs, not what it says. Reading the whole recipe
+// would let a target that stopped running a workspace keep reporting coverage for
+// it as long as its notice still mentioned it — #412, re-entering through the
+// door partial-run disclosure opens.
+
+test("check-package-discovery: command and message lines are separated", () => {
+  const recipe = ["\t@echo skipped packages/a", "\tnpm run validate --prefix packages/b"].join("\n");
+
+  assert.match(recipeCommandLines(recipe), /packages\/b/);
+  assert.doesNotMatch(recipeCommandLines(recipe), /packages\/a/);
+  assert.match(recipeMessageLines(recipe), /packages\/a/);
+  assert.doesNotMatch(recipeMessageLines(recipe), /packages\/b/);
+});
+
+test("check-package-discovery: a workspace named only in a message is not covered", () => {
+  const makefile = [
+    "runtime-gates:",
+    "\tnpm run validate --prefix packages/a",
+    "\t@echo also covers packages/b",
+    "",
+    "governance-gates:",
+    "\tnpm run validate --prefix packages/a",
+    "\tnpm run validate --prefix packages/b",
+    "",
+  ].join("\n");
+
+  assert.throws(
+    () => assertMakefileCoverage(makefile, ["packages/a/package.json", "packages/b/package.json"]),
+    /\[makefile-workspace-uncovered\] 'runtime-gates' does not run: packages\/b/,
+  );
+});
+
+test("check-package-discovery: makeTargetsIn lists rule targets and skips variables", () => {
+  const makefile = [
+    ".DEFAULT_GOAL := test",
+    "COST_SDK := ~1s local, 2026-09-10",
+    ".PHONY: test sdk",
+    "test: runtime-gates",
+    "sdk:",
+    "\tnpm run validate --prefix packages/a",
+    "",
+  ].join("\n");
+
+  assert.deepEqual(makeTargetsIn(makefile), ["test", "sdk"]);
+});
+
+// Partial-run disclosure. The ratified requirement always said a partial run must
+// name what it skipped; nothing enforced it, and all three partial targets went on
+// describing a four-workspace repository after the collector was added.
+
+test("check-package-discovery: every partial target names the workspaces it skips", () => {
+  const result = assertPartialTargetDisclosure();
+
+  assert.deepEqual(result.targets, ["sdk", "contract", "research"]);
+  assert.equal(result.workspaceCount, DECLARED_PACKAGES.length);
+  assert.match(result.message, /name every workspace they skip/);
+});
+
+test("check-package-discovery: fails closed when a partial target omits a skipped workspace", () => {
+  // The exact defect this arm exists for: the collector skipped, and the notice
+  // still listing the pre-collector set.
+  const makefile = [
+    "sdk:",
+    "\tnpm run validate --prefix packages/security-audit-sdk-core",
+    "\t@echo Notice: contracts/security-audit and research/browser-telemetry were NOT run.",
+    "",
+  ].join("\n");
+
+  assert.throws(
+    () => assertPartialTargetDisclosure(makefile),
+    /\[makefile-skip-undisclosed\] 'sdk' does not run and does not say it skipped: .*packages\/security-audit-collector/s,
+  );
+});
+
+test("check-package-discovery: fails closed when a partial target claims to skip what it runs", () => {
+  const makefile = [
+    "sdk:",
+    "\tnpm run validate --prefix packages/security-audit-sdk-core",
+    "\tnpm run validate --prefix packages/security-audit-sdk-node",
+    "\t@echo Notice: packages/security-audit-sdk-node, packages/security-audit-collector, contracts/security-audit and research/browser-telemetry were NOT run.",
+    "",
+  ].join("\n");
+
+  assert.throws(
+    () => assertPartialTargetDisclosure(makefile),
+    /\[makefile-skip-misreported\] 'sdk' says it skipped a workspace it runs: packages\/security-audit-sdk-node/,
+  );
+});
+
+test("check-package-discovery: a target that runs no workspace makes no coverage claim", () => {
+  const makefile = ["help:", "\t@echo Bloodtrail command surface", ""].join("\n");
+
+  assert.deepEqual(assertPartialTargetDisclosure(makefile).targets, []);
+});
+
+test("check-package-discovery: a newly declared package must be disclosed by every partial target", () => {
+  // "Add a package, forget the notice" must fail rather than pass quietly, the
+  // same way "add a package, forget the Makefile" already does.
+  const makefile = readFileSync(resolve(repositoryRoot, "Makefile"), "utf8");
+
+  assert.throws(
+    () =>
+      assertPartialTargetDisclosure(makefile, [
+        ...DECLARED_PACKAGES,
+        "packages/brand-new/package.json",
+      ]),
+    /\[makefile-skip-undisclosed\].*packages\/brand-new/s,
+  );
+  assert.equal(assertPartialTargetDisclosure(makefile).targets.length, 3);
+});
+
+// One target, one documented cost. `help` said 26s while the recipe echoed 34s.
+
+test("check-package-discovery: every cost figure expands from a COST_ variable", () => {
+  const result = assertCostFiguresAreVariables();
+
+  assert.match(result.message, /every stated cost expands from a single COST_ variable/);
+});
+
+test("check-package-discovery: fails closed on a cost figure written by hand", () => {
+  const makefile = [
+    "COST_SDK := ~40s local, 2026-09-10",
+    "",
+    "sdk:",
+    "\t@echo Running SDK product loop (~26s)...",
+    "",
+  ].join("\n");
+
+  assert.throws(
+    () => assertCostFiguresAreVariables(makefile),
+    /\[makefile-cost-literal\].*Running SDK product loop/s,
+  );
+});
+
+test("check-package-discovery: a cost stated only through its variable passes", () => {
+  const makefile = [
+    "COST_SDK := ~40s local, 2026-09-10",
+    "",
+    "sdk:",
+    "\t@echo Running SDK product loop ($(COST_SDK))...",
+    "",
+  ].join("\n");
+
+  assert.match(assertCostFiguresAreVariables(makefile).message, /every stated cost expands/);
 });
