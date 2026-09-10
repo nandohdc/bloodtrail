@@ -1,0 +1,197 @@
+{
+  "schema_version": "1.1",
+  "change_id": "assert-the-release-version-table",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "`RELEASING.md` names `0.1.0` for a candidate whose `package.json` and `compatibility.json` both carry `0.2.0`, and the clause that would have caught it — \"`compatibility.json` asserts this exact value\" — is part of the same stale text.",
+    "The table lists three workspaces where `DECLARED_PACKAGES` holds five: `packages/security-audit-sdk-node` and `packages/security-audit-collector` are absent from the document that states what a release versions.",
+    "`openspec/specs/release-versioning-tag-model/spec.md` ratifies `0.1.0` in current-tense binding text and in two scenarios, so correcting the document alone would make it non-conformant with the ratified specification — the trap #424 recorded.",
+    "The same requirement states that a candidate version move is legitimate under a separate governed change with its own owner decision, so ratified text naming the value such a move departs from is text a sanctioned change makes false.",
+    "#422 moved both candidates to `0.2.0` and the ratified release spec was not among the paths that chain owned; the pin inventory it produced covers a contract move, and no counterpart exists for a candidate move.",
+    "A hand-maintained enumeration of the workspace set with nothing asserting it has gone stale four times already — the `make` recipes (#412), their notices and the ratified package enumeration (#441), and `sonar.sources` (#452).",
+    "`contracts/security-audit/package.json` really is `1.0.0` and is deliberately independent of the canonical schema version, now `1.1.0`, so that row is correct and a fix that rewrote it would introduce a defect."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "release-versioning-tag-model"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/assert-the-release-version-table/.openspec.yaml",
+    "openspec/changes/assert-the-release-version-table/proposal.md",
+    "openspec/changes/assert-the-release-version-table/design.md",
+    "openspec/changes/assert-the-release-version-table/tasks.md",
+    "openspec/changes/assert-the-release-version-table/assessment.source.json",
+    "openspec/changes/assert-the-release-version-table/assessment.json",
+    "openspec/changes/assert-the-release-version-table/specs/release-versioning-tag-model/spec.md",
+    "openspec/specs/release-versioning-tag-model/spec.md",
+    "RELEASING.md",
+    ".github/scripts/check-package-discovery.mjs",
+    ".github/scripts/check-package-discovery.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-remove-the-literal-and-assert-the-table",
+      "kind": "direct_implementation",
+      "summary": "Restate both ratified requirements so neither pins an absolute candidate version literal, pinning conformance to each candidate's compatibility.json package.version instead; correct and complete the RELEASING.md table; and assert it against DECLARED_PACKAGES in both directions with each row's version compared against that workspace's own package.json.",
+      "forces_addressed": [
+        "`RELEASING.md` names `0.1.0` for a candidate whose `package.json` and `compatibility.json` both carry `0.2.0`, and the clause that would have caught it — \"`compatibility.json` asserts this exact value\" — is part of the same stale text.",
+        "The table lists three workspaces where `DECLARED_PACKAGES` holds five: `packages/security-audit-sdk-node` and `packages/security-audit-collector` are absent from the document that states what a release versions.",
+        "`openspec/specs/release-versioning-tag-model/spec.md` ratifies `0.1.0` in current-tense binding text and in two scenarios, so correcting the document alone would make it non-conformant with the ratified specification — the trap #424 recorded.",
+        "The same requirement states that a candidate version move is legitimate under a separate governed change with its own owner decision, so ratified text naming the value such a move departs from is text a sanctioned change makes false.",
+        "A hand-maintained enumeration of the workspace set with nothing asserting it has gone stale four times already — the `make` recipes (#412), their notices and the ratified package enumeration (#441), and `sonar.sources` (#452).",
+        "`contracts/security-audit/package.json` really is `1.0.0` and is deliberately independent of the canonical schema version, now `1.1.0`, so that row is correct and a fix that rewrote it would introduce a defect."
+      ]
+    },
+    {
+      "id": "approach-update-the-literals-to-0-2-0",
+      "kind": "alternative",
+      "summary": "Change 0.1.0 to 0.2.0 in the four ratified places and in the table, leaving the shape unchanged.",
+      "forces_addressed": [
+        "`RELEASING.md` names `0.1.0` for a candidate whose `package.json` and `compatibility.json` both carry `0.2.0`, and the clause that would have caught it — \"`compatibility.json` asserts this exact value\" — is part of the same stale text.",
+        "`openspec/specs/release-versioning-tag-model/spec.md` ratifies `0.1.0` in current-tense binding text and in two scenarios, so correcting the document alone would make it non-conformant with the ratified specification — the trap #424 recorded."
+      ]
+    },
+    {
+      "id": "approach-correct-the-document-only",
+      "kind": "alternative",
+      "summary": "Correct RELEASING.md's table and add the missing workspaces, leaving the ratified spec alone, as the issue was originally filed.",
+      "forces_addressed": [
+        "`RELEASING.md` names `0.1.0` for a candidate whose `package.json` and `compatibility.json` both carry `0.2.0`, and the clause that would have caught it — \"`compatibility.json` asserts this exact value\" — is part of the same stale text.",
+        "The table lists three workspaces where `DECLARED_PACKAGES` holds five: `packages/security-audit-sdk-node` and `packages/security-audit-collector` are absent from the document that states what a release versions."
+      ]
+    },
+    {
+      "id": "approach-generate-the-table",
+      "kind": "alternative",
+      "summary": "Generate the table into RELEASING.md from the manifests, so it cannot be written by hand at all.",
+      "forces_addressed": [
+        "A hand-maintained enumeration of the workspace set with nothing asserting it has gone stale four times already — the `make` recipes (#412), their notices and the ratified package enumeration (#441), and `sonar.sources` (#452)."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-remove-the-literal-and-assert-the-table",
+  "rejected_alternative_ids": [
+    "approach-update-the-literals-to-0-2-0",
+    "approach-correct-the-document-only",
+    "approach-generate-the-table"
+  ],
+  "rejection_reasons": {
+    "approach-update-the-literals-to-0-2-0": {
+      "forces": [
+        "The same requirement states that a candidate version move is legitimate under a separate governed change with its own owner decision, so ratified text naming the value such a move departs from is text a sanctioned change makes false."
+      ],
+      "reason": "It restores conformance today and re-arms the same trap for the next governed candidate move, which the same requirement declares legitimate and expected. The scenarios do not depend on the number — what they mean is that the version after a release equals the version before it, and what holds it is `compatibility.json`, which the requirement already names one clause later. Updating a literal that a sanctioned change will move is the maintenance this change exists to end."
+    },
+    "approach-correct-the-document-only": {
+      "forces": [
+        "`openspec/specs/release-versioning-tag-model/spec.md` ratifies `0.1.0` in current-tense binding text and in two scenarios, so correcting the document alone would make it non-conformant with the ratified specification — the trap #424 recorded."
+      ],
+      "reason": "It would leave `RELEASING.md` asserting one value and the ratified specification asserting another, with the document in the wrong by the repository's own ordering. This is precisely the failure #424 hit and #444 recorded: correcting a document whose ratified source still requires the old value produces a non-conformant document rather than a correct one."
+    },
+    "approach-generate-the-table": {
+      "forces": [
+        "A hand-maintained enumeration of the workspace set with nothing asserting it has gone stale four times already — the `make` recipes (#412), their notices and the ratified package enumeration (#441), and `sonar.sources` (#452)."
+      ],
+      "reason": "The table's third column is editorial — what governs each version and why — and generation would either drop it or require a second authored source keyed by workspace, which is the hand-maintained list again with an extra step. Asserting an authored table costs one check and keeps the prose a human wrote; generating it trades the defect for a generator whose input is the same list."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-ratified-text-names-no-candidate-version-literal",
+    "implementation-no-requirement-or-scenario-is-dropped",
+    "implementation-table-covers-every-declared-package",
+    "implementation-row-versions-are-read-from-the-manifests",
+    "implementation-no-version-moves"
+  ],
+  "invariant_evidence": {
+    "implementation-ratified-text-names-no-candidate-version-literal": {
+      "task_ids": [
+        "3.1",
+        "3.2",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "a scenario asserts the capability's ratified text names no candidate version literal, and the contract and research literals are unchanged"
+      ]
+    },
+    "implementation-no-requirement-or-scenario-is-dropped": {
+      "task_ids": [
+        "1.2",
+        "3.4"
+      ],
+      "evidence_ids": [
+        "strict OpenSpec validation rejects a MODIFIED block that omits a scenario the current spec still has, and a diff against the pre-change file confirms the rest"
+      ]
+    },
+    "implementation-table-covers-every-declared-package": {
+      "task_ids": [
+        "4.1",
+        "4.2",
+        "5.1",
+        "5.2"
+      ],
+      "evidence_ids": [
+        "a declared workspace absent from the table fails and a row under no declared workspace fails, each proven by a control and by a planted mutation"
+      ]
+    },
+    "implementation-row-versions-are-read-from-the-manifests": {
+      "task_ids": [
+        "4.2",
+        "5.1",
+        "5.2",
+        "5.3"
+      ],
+      "evidence_ids": [
+        "a row whose version differs from its package.json fails, comparing against a constant instead of the manifest is rejected, and the original stale table is rejected when planted back"
+      ]
+    },
+    "implementation-no-version-moves": {
+      "task_ids": [
+        "2.1",
+        "4.1",
+        "6.1"
+      ],
+      "evidence_ids": [
+        "no package.json, compatibility.json, version.txt or manifest value differs, and check-coherence's package-version rule passes unchanged"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "0f755fb4984ed10f2b9f860c3a2d1f46bd846645"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4",
+    "5.1",
+    "5.2",
+    "5.3",
+    "6.1",
+    "6.2",
+    "6.3",
+    "6.4",
+    "7.1",
+    "7.2",
+    "7.3"
+  ]
+}
