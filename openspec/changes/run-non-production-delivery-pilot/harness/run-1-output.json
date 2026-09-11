@@ -1,0 +1,68 @@
+{
+  "preflight": {
+    "stopCriteriaProven": [
+      "SC1-secret-disclosure",
+      "SC2-false-durability",
+      "SC3-cross-tenant-read",
+      "SC4-deadline",
+      "SC5-storage-bound",
+      "SC6-unexpected-outcome"
+    ],
+    "rollbackProven": true
+  },
+  "pilot": {
+    "stopped": "SC4-deadline",
+    "contractVersion": "1.1.0",
+    "elapsedMs": 124803,
+    "httpRequests": 1289,
+    "outcomes": {
+      "after_shutdown:rejected_shutting_down": 1,
+      "valid:acknowledged": 32,
+      "valid:exhausted": 418
+    },
+    "retry": {
+      "scheduled": 839,
+      "exhausted": 418
+    },
+    "shutdown": {
+      "accepted": 450,
+      "completed": 450,
+      "abandoned": 0
+    },
+    "afterShutdown": "rejected_shutting_down",
+    "collectorMetrics": {
+      "accepted": 0,
+      "persisted": 32,
+      "deduplicated": 3,
+      "rejectedAuthentication": 0,
+      "rejectedDeduplicationCapacity": 1254,
+      "rejectedDuplicateConflict": 0,
+      "rejectedSize": 0,
+      "rejectedParse": 0,
+      "rejectedSchema": 0,
+      "rejectedVersion": 0,
+      "rejectedRetentionDeclined": 0,
+      "rejectedStorageScope": 0,
+      "rejectedStorageConflict": 0,
+      "rejectedStorageWrite": 0,
+      "rejectedStorageIndeterminate": 0
+    },
+    "storage": {
+      "acknowledged": 32,
+      "readBack": 32,
+      "expiredPerTenant": [
+        11,
+        11,
+        10
+      ],
+      "remainingAfterExpiry": 0,
+      "fileBytesAtClose": 159744
+    },
+    "latencyMs": {
+      "p50": 20,
+      "p95": 1020,
+      "max": 1034
+    },
+    "rolledBack": true
+  }
+}
