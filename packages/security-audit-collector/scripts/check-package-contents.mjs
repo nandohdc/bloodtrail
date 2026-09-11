@@ -42,6 +42,10 @@ const REQUIRED_FILES = [
   "dist/schema.d.ts",
   "dist/version.js",
   "dist/version.d.ts",
+  "dist/storage.js",
+  "dist/storage.d.ts",
+  "dist/sqlite-storage.js",
+  "dist/sqlite-storage.d.ts",
   "dist/generated/bounds.generated.js",
   "dist/generated/bounds.generated.d.ts",
   "dist/generated/schema-validator.generated.cjs",
@@ -128,6 +132,7 @@ try {
     import assert from "node:assert/strict";
     import {
       CollectorIngress,
+      SqliteStorage,
       SyntheticFixtureAuthenticator,
       SUPPORTED_CONTRACT_VERSIONS,
     } from "@bloodtrail/security-audit-collector";
@@ -158,6 +163,23 @@ try {
     const rejected = ingress.submit({ body: fixture });
     assert.equal(rejected.kind, "rejected");
     assert.equal(rejected.diagnostic.code, "COLLECTOR_AUTH_MISSING");
+
+    // The packed backend persists through node:sqlite outside the workspace.
+    const storage = new SqliteStorage({ location: ":memory:" });
+    const persisting = new CollectorIngress({
+      authenticator,
+      storage: {
+        port: storage,
+        owners: { dataOwner: "probe-data-owner", retentionAuthority: "probe-retention", keyOwner: "probe-key-owner" },
+      },
+    });
+    const platformFixture = fixture.replace('"tenant":{"scope":"tenant"}', '"tenant":{"scope":"platform"}');
+    const persisted = persisting.submit({ credentials: { credential: "fixture-token-a" }, body: platformFixture });
+    assert.equal(persisted.kind, "persisted");
+    const stored = storage.get({ kind: "platform" }, "00000000-0000-4000-8000-000000000001");
+    assert.equal(stored.kind, "found");
+    assert.equal(stored.record.body, platformFixture);
+    storage.close();
 
     console.log("consumer-probe:pass");
     `,

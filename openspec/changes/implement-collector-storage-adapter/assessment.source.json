@@ -1,0 +1,269 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The ratified semantics forbid a `persisted` acknowledgment ahead of a confirmed write, and the collector ingress is synchronous, so the backend's write confirmation must be synchronous and transactional for the ordering to be structural rather than disciplined.",
+    "The port must be idempotent on (scope, event identity) so an indeterminate write can be treated as not persisted without a retry producing a duplicate, and a genuine retry that only advances `correlation.retry_attempt` must not read as a conflict.",
+    "No port operation may span tenant scopes, and a read that cannot name a scope must return nothing, so scope must be part of every key and every statement rather than a filter a caller could omit.",
+    "Expiry must delete whole records irreversibly and no derived index may retain a copy of a deleted field, which rules out any backend whose indexes or log frames outlive the row.",
+    "Encryption at rest is required and a backend that makes the data holder also hold the keys is disqualified, so the collector may hold, derive, and receive no key material.",
+    "#114 selected no backend because availability would otherwise be the differentiator and is not a security property, so this selection must rest on security properties and record what it rejected.",
+    "The five-minute deduplication ledger answers a live retry `duplicate`; if a write fails after the ledger reserved the identity, a retry would be told `duplicate` for evidence never stored unless the reservation is withdrawn.",
+    "The collector ships zero npm runtime dependencies and its scope gate forbids every built-in import, so any backend must be admitted by exact-path gate changes rather than by loosening the gates.",
+    "The contract defines four retention classes and no durations, and `policy_governed` names a policy outside the record, so durations must be fixed in code and the ungovernable class declined rather than guessed."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "integration",
+      "lifecycle_or_state",
+      "persistence",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-collector",
+      "collector-storage-semantics"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/implement-collector-storage-adapter/.openspec.yaml",
+    "openspec/changes/implement-collector-storage-adapter/proposal.md",
+    "openspec/changes/implement-collector-storage-adapter/design.md",
+    "openspec/changes/implement-collector-storage-adapter/tasks.md",
+    "openspec/changes/implement-collector-storage-adapter/assessment.source.json",
+    "openspec/changes/implement-collector-storage-adapter/assessment.json",
+    "openspec/changes/implement-collector-storage-adapter/specs/security-audit-collector/spec.md",
+    "openspec/changes/implement-collector-storage-adapter/specs/collector-storage-semantics/spec.md",
+    "openspec/specs/security-audit-collector/spec.md",
+    "openspec/specs/collector-storage-semantics/spec.md",
+    "packages/security-audit-collector/README.md",
+    "packages/security-audit-collector/compatibility.json",
+    "packages/security-audit-collector/src/storage.ts",
+    "packages/security-audit-collector/src/sqlite-storage.ts",
+    "packages/security-audit-collector/src/ingress.ts",
+    "packages/security-audit-collector/src/deduplication.ts",
+    "packages/security-audit-collector/src/diagnostics.ts",
+    "packages/security-audit-collector/src/metrics.ts",
+    "packages/security-audit-collector/src/index.ts",
+    "packages/security-audit-collector/scripts/check-scope.mjs",
+    "packages/security-audit-collector/scripts/platform-coupling-policy.mjs",
+    "packages/security-audit-collector/scripts/check-dependencies.mjs",
+    "packages/security-audit-collector/scripts/check-package-contents.mjs",
+    "packages/security-audit-collector/tests/storage.test.ts",
+    "packages/security-audit-collector/tests/ingress.test.ts",
+    "packages/security-audit-collector/tests/scope-mutations.test.ts"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-embedded-sqlite-builtin",
+      "kind": "direct_implementation",
+      "summary": "Select SQLite through the Node runtime's built-in node:sqlite: a WITHOUT ROWID table keyed by scope kind, scope tenant, and event identity; ON CONFLICT DO NOTHING idempotency with exact occurrence-key comparison; secure_delete, a rollback journal, and full synchronous commits; failure classification by SQLite's no-effect guarantees; encryption supplied by the volume under a separate key owner; confined to one module by exact-path gate changes.",
+      "forces_addressed": [
+        "The ratified semantics forbid a `persisted` acknowledgment ahead of a confirmed write, and the collector ingress is synchronous, so the backend's write confirmation must be synchronous and transactional for the ordering to be structural rather than disciplined.",
+        "The port must be idempotent on (scope, event identity) so an indeterminate write can be treated as not persisted without a retry producing a duplicate, and a genuine retry that only advances `correlation.retry_attempt` must not read as a conflict.",
+        "No port operation may span tenant scopes, and a read that cannot name a scope must return nothing, so scope must be part of every key and every statement rather than a filter a caller could omit.",
+        "Expiry must delete whole records irreversibly and no derived index may retain a copy of a deleted field, which rules out any backend whose indexes or log frames outlive the row.",
+        "Encryption at rest is required and a backend that makes the data holder also hold the keys is disqualified, so the collector may hold, derive, and receive no key material.",
+        "#114 selected no backend because availability would otherwise be the differentiator and is not a security property, so this selection must rest on security properties and record what it rejected.",
+        "The five-minute deduplication ledger answers a live retry `duplicate`; if a write fails after the ledger reserved the identity, a retry would be told `duplicate` for evidence never stored unless the reservation is withdrawn.",
+        "The collector ships zero npm runtime dependencies and its scope gate forbids every built-in import, so any backend must be admitted by exact-path gate changes rather than by loosening the gates.",
+        "The contract defines four retention classes and no durations, and `policy_governed` names a policy outside the record, so durations must be fixed in code and the ungovernable class declined rather than guessed."
+      ]
+    },
+    {
+      "id": "approach-file-per-record",
+      "kind": "alternative",
+      "summary": "Store each record as a file under a per-tenant directory over node:fs, writing through a temporary file, fsync, and rename, with expiry by directory scan.",
+      "forces_addressed": [
+        "Encryption at rest is required and a backend that makes the data holder also hold the keys is disqualified, so the collector may hold, derive, and receive no key material.",
+        "The collector ships zero npm runtime dependencies and its scope gate forbids every built-in import, so any backend must be admitted by exact-path gate changes rather than by loosening the gates.",
+        "The contract defines four retention classes and no durations, and `policy_governed` names a policy outside the record, so durations must be fixed in code and the ungovernable class declined rather than guessed."
+      ]
+    },
+    {
+      "id": "approach-networked-database-driver",
+      "kind": "alternative",
+      "summary": "Store records in a networked relational database reached through an npm driver, with server-side encryption at rest.",
+      "forces_addressed": [
+        "The ratified semantics forbid a `persisted` acknowledgment ahead of a confirmed write, and the collector ingress is synchronous, so the backend's write confirmation must be synchronous and transactional for the ordering to be structural rather than disciplined.",
+        "The port must be idempotent on (scope, event identity) so an indeterminate write can be treated as not persisted without a retry producing a duplicate, and a genuine retry that only advances `correlation.retry_attempt` must not read as a conflict.",
+        "No port operation may span tenant scopes, and a read that cannot name a scope must return nothing, so scope must be part of every key and every statement rather than a filter a caller could omit.",
+        "Encryption at rest is required and a backend that makes the data holder also hold the keys is disqualified, so the collector may hold, derive, and receive no key material."
+      ]
+    },
+    {
+      "id": "approach-application-encrypted-sqlite",
+      "kind": "alternative",
+      "summary": "Store records in SQLite encrypted at the application layer with a key the collector supplies, so encryption does not depend on the volume.",
+      "forces_addressed": [
+        "The ratified semantics forbid a `persisted` acknowledgment ahead of a confirmed write, and the collector ingress is synchronous, so the backend's write confirmation must be synchronous and transactional for the ordering to be structural rather than disciplined.",
+        "The port must be idempotent on (scope, event identity) so an indeterminate write can be treated as not persisted without a retry producing a duplicate, and a genuine retry that only advances `correlation.retry_attempt` must not read as a conflict.",
+        "No port operation may span tenant scopes, and a read that cannot name a scope must return nothing, so scope must be part of every key and every statement rather than a filter a caller could omit.",
+        "Expiry must delete whole records irreversibly and no derived index may retain a copy of a deleted field, which rules out any backend whose indexes or log frames outlive the row."
+      ]
+    },
+    {
+      "id": "approach-in-memory-map",
+      "kind": "alternative",
+      "summary": "Back the port with an in-memory map, so no built-in or dependency is needed.",
+      "forces_addressed": [
+        "The port must be idempotent on (scope, event identity) so an indeterminate write can be treated as not persisted without a retry producing a duplicate, and a genuine retry that only advances `correlation.retry_attempt` must not read as a conflict.",
+        "No port operation may span tenant scopes, and a read that cannot name a scope must return nothing, so scope must be part of every key and every statement rather than a filter a caller could omit.",
+        "The collector ships zero npm runtime dependencies and its scope gate forbids every built-in import, so any backend must be admitted by exact-path gate changes rather than by loosening the gates."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-embedded-sqlite-builtin",
+  "rejected_alternative_ids": [
+    "approach-file-per-record",
+    "approach-networked-database-driver",
+    "approach-application-encrypted-sqlite",
+    "approach-in-memory-map"
+  ],
+  "rejection_reasons": {
+    "approach-file-per-record": {
+      "forces": [
+        "The ratified semantics forbid a `persisted` acknowledgment ahead of a confirmed write, and the collector ingress is synchronous, so the backend's write confirmation must be synchronous and transactional for the ordering to be structural rather than disciplined.",
+        "No port operation may span tenant scopes, and a read that cannot name a scope must return nothing, so scope must be part of every key and every statement rather than a filter a caller could omit.",
+        "Expiry must delete whole records irreversibly and no derived index may retain a copy of a deleted field, which rules out any backend whose indexes or log frames outlive the row."
+      ],
+      "reason": "Atomic durable writes need temp-file, fsync, rename, and directory fsync, each a separate place to lose the confirmation; idempotency becomes filename collision and a tenant identifier becomes a path component with traversal to defend; expiry needs a full scan. Every property SQLite supplies as an engine guarantee would become application code."
+    },
+    "approach-networked-database-driver": {
+      "forces": [
+        "The collector ships zero npm runtime dependencies and its scope gate forbids every built-in import, so any backend must be admitted by exact-path gate changes rather than by loosening the gates.",
+        "#114 selected no backend because availability would otherwise be the differentiator and is not a security property, so this selection must rest on security properties and record what it rejected."
+      ],
+      "reason": "It adds an npm runtime dependency and a network peer whose credentials the collector would have to hold, a credential boundary the non-production candidate has no authorization to own, and it would make the selection turn on operational availability rather than on a property the port needs."
+    },
+    "approach-application-encrypted-sqlite": {
+      "forces": [
+        "Encryption at rest is required and a backend that makes the data holder also hold the keys is disqualified, so the collector may hold, derive, and receive no key material."
+      ],
+      "reason": "The collector would hold, derive, or receive the key, which the ratified disqualification rule forbids outright: the data holder would also hold the keys."
+    },
+    "approach-in-memory-map": {
+      "forces": [
+        "The ratified semantics forbid a `persisted` acknowledgment ahead of a confirmed write, and the collector ingress is synchronous, so the backend's write confirmation must be synchronous and transactional for the ordering to be structural rather than disciplined.",
+        "Expiry must delete whole records irreversibly and no derived index may retain a copy of a deleted field, which rules out any backend whose indexes or log frames outlive the row."
+      ],
+      "reason": "It is not durable, so a `persisted` acknowledgment over it would be false, which is the one claim the semantics exist to prevent."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-persisted-only-after-confirmed-write",
+    "implementation-unconfirmed-write-releases-reservation",
+    "implementation-port-idempotent-and-scope-bound",
+    "implementation-deletion-leaves-no-residue-in-file",
+    "implementation-builtin-confined-to-backend",
+    "implementation-owners-required-at-construction",
+    "implementation-retention-and-scope-from-record",
+    "implementation-secret-free-storage-outcomes"
+  ],
+  "invariant_evidence": {
+    "implementation-persisted-only-after-confirmed-write": {
+      "task_ids": [
+        "2.3",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "written and duplicate port results yield persisted while failed, indeterminate, thrown, and unrecognised results reject with distinct storage diagnostics",
+        "a locked database yields failed and no persisted acknowledgment"
+      ]
+    },
+    "implementation-unconfirmed-write-releases-reservation": {
+      "task_ids": [
+        "2.3",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "a retry after a failed write is persisted rather than deduplicated",
+        "a retry after an indeterminate write that actually landed is persisted and leaves one record"
+      ]
+    },
+    "implementation-port-idempotent-and-scope-bound": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "repeated and retry-attempt-only writes are duplicate while different content is a conflict that leaves the stored record unchanged",
+        "reads under another tenant, another scope kind, or no scope return absent and another tenant's expiry deletes nothing"
+      ]
+    },
+    "implementation-deletion-leaves-no-residue-in-file": {
+      "task_ids": [
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "a marker unique to a deleted record is absent from the closed database file while the same probe finds it in a retained-record control file"
+      ]
+    },
+    "implementation-builtin-confined-to-backend": {
+      "task_ids": [
+        "2.4",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "node:sqlite imported from any other module fails the scope gate",
+        "a second built-in or a host global in the backend module fails the scope gate",
+        "the dependency gate requires exactly the one approved import"
+      ]
+    },
+    "implementation-owners-required-at-construction": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "missing, blank, non-string, and oversized owner roles each fail construction with a storage configuration error while named roles succeed"
+      ]
+    },
+    "implementation-retention-and-scope-from-record": {
+      "task_ids": [
+        "2.1",
+        "2.3",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "two collectors store the same expiry for one record",
+        "policy_governed and an unresolvable tenant scope are declined before the port is reached"
+      ]
+    },
+    "implementation-secret-free-storage-outcomes": {
+      "task_ids": [
+        "2.3",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "every storage failure result and counter is searched for payload, credential, and tenant markers and carries none"
+      ]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "ecfb5c63d97aa3670aad9dc5b01341fcc1e8140d"
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "A persisted acknowledgment follows only a confirmed write and conflicting content under a stored identity is rejected without replacing the record, so stored evidence is neither falsely claimed nor silently overwritten.",
+    "authentication_or_authorization": "Authentication remains the first stage and is unchanged; storage runs only for an authenticated, validated, first-seen submission and grants the sender no read or delete capability.",
+    "authority_provenance": "The backend selection, retention durations, and scope derivation are recorded as delegated to Claude under the owner's 2026-09-10 instruction and never as a human or exact-commit owner decision.",
+    "concurrency": "The ingress and the backend are synchronous, so no acknowledgment can be issued between a write and its confirmation; the ledger reservation still precedes the write and a failed write withdraws it.",
+    "confidentiality": "Stored bodies live only in the database file on a volume the key owner encrypts; results, diagnostics, and counters never carry payload, credential, sender, or tenant material.",
+    "cryptography": "No algorithm, key, hash, or signature is introduced; encryption at rest is the volume's under a separate key owner and occurrence comparison is exact rather than hashed.",
+    "error_disclosure": "Storage rejections use a closed code, category, and path vocabulary; backend errors are classified and discarded rather than echoed, so no SQLite message reaches a result.",
+    "external_security_integration": "No network peer, credential service, or third-party package is introduced; the one integration is the Node runtime's embedded SQLite, confined to one module by two gates.",
+    "fail_posture": "Every failure SQLite cannot guarantee had no effect is indeterminate and treated as not persisted, and a port that throws or returns an unknown value is indeterminate too.",
+    "lifecycle": "Storage is fixed at construction and fails construction without all three owners; the backend exposes close() for lifecycle and no background expiry timer exists.",
+    "mutation_ownership": "Changes are confined to the collector package paths listed in owned_paths, this change's artifacts, and the two canonical capabilities through the fold.",
+    "privacy_transformation": "No field is transformed or redacted in place; expiry deletes whole records and secure_delete overwrites them, and only synthetic data is authorized.",
+    "resource_retention": "Retention derives from the record's own class through fixed candidate durations no deployment can change, and policy_governed records are declined rather than retained for a guessed time.",
+    "retry_or_redelivery": "The port is idempotent on scope and identity and compares the retry-attempt-free occurrence key, so a retry after an indeterminate write persists once and never duplicates.",
+    "trust_boundary": "Storage is a new trust boundary behind the validated ingress; tenant scope is part of every key and statement so cross-tenant retrieval has no expressible form."
+  }
+}

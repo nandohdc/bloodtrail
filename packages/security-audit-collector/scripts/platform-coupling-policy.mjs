@@ -95,7 +95,10 @@ const TYPE_ONLY_KINDS = new Set([
 // The collector ingests a submission and validates it. Authored runtime code SHALL
 // import nothing: no node: built-ins and no packages — the ingress is pure language
 // behavior (JSON parsing, TextEncoder byte counting, the vendored validator loaded
-// through a relative specifier). The generated role covers src/generated/**: the
+// through a relative specifier). The single exception is the storage backend
+// selected by #115: exactly src/sqlite-storage.ts may import exactly node:sqlite,
+// so a second built-in, or node:sqlite anywhere else, still fails closed. The
+// generated role covers src/generated/**: the
 // byte-drift-gated vendored validator (bundled, dependency-free CJS) and the
 // generated bounds module. Generated artifacts have their module specifiers
 // classified (any non-relative specifier fails closed) but their free identifiers
@@ -120,6 +123,14 @@ export const PLATFORM_COUPLING_POLICY = Object.freeze({
       specifiers: Object.freeze([]),
       uninspectedCouplings: Object.freeze([]),
       classifyIdentifiers: false,
+    }),
+    backend: Object.freeze({
+      name: "backend",
+      path: "src/sqlite-storage.ts",
+      hostGlobals: Object.freeze({}),
+      specifiers: Object.freeze(["node:sqlite"]),
+      uninspectedCouplings: Object.freeze([]),
+      classifyIdentifiers: true,
     }),
   }),
 });
@@ -380,6 +391,7 @@ export async function inspectPlatformCoupling({ packageRoot, sourceRoot, tree })
   const inventory = {
     authored: { artifacts: 0, references: 0, hostGlobals: new Map() },
     generated: { artifacts: 0, references: 0, hostGlobals: new Map() },
+    backend: { artifacts: 0, references: 0, hostGlobals: new Map(), specifiers: new Map() },
   };
   let result = { inspected: artifacts.length, references: 0, violations: [], inventory };
 
@@ -439,9 +451,14 @@ async function inspectArtifact({ packageRoot, artifactPath, result }) {
   }
 }
 
-function classifySpecifier(specifier, { artifactPath, role, result }) {
+function classifySpecifier(specifier, { artifactPath, role, roleInventory, result }) {
   if (specifier.startsWith(".")) return;
-  if (role.specifiers.includes(specifier)) return;
+  if (role.specifiers.includes(specifier)) {
+    if (roleInventory.specifiers) {
+      roleInventory.specifiers.set(specifier, (roleInventory.specifiers.get(specifier) ?? 0) + 1);
+    }
+    return;
+  }
   result.violations.push(violation(artifactPath, specifier, "undeclared-specifier"));
 }
 
@@ -553,6 +570,7 @@ function isLabelReference(parent, node) {
 function roleForArtifact(artifactPath) {
   const { roles } = PLATFORM_COUPLING_POLICY;
   if (artifactPath.startsWith(roles.generated.prefix)) return roles.generated;
+  if (artifactPath === roles.backend.path) return roles.backend;
   return roles.authored;
 }
 

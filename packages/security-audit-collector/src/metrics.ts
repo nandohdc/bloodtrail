@@ -4,6 +4,7 @@
 
 export interface IngressMetrics {
   readonly accepted: number;
+  readonly persisted: number;
   readonly deduplicated: number;
   readonly rejectedAuthentication: number;
   readonly rejectedDeduplicationCapacity: number;
@@ -12,12 +13,18 @@ export interface IngressMetrics {
   readonly rejectedParse: number;
   readonly rejectedSchema: number;
   readonly rejectedVersion: number;
+  readonly rejectedRetentionDeclined: number;
+  readonly rejectedStorageScope: number;
+  readonly rejectedStorageConflict: number;
+  readonly rejectedStorageWrite: number;
+  readonly rejectedStorageIndeterminate: number;
 }
 
 export type MetricKey = keyof IngressMetrics;
 
 const METRIC_KEYS: readonly MetricKey[] = Object.freeze([
   "accepted",
+  "persisted",
   "deduplicated",
   "rejectedAuthentication",
   "rejectedDeduplicationCapacity",
@@ -26,6 +33,11 @@ const METRIC_KEYS: readonly MetricKey[] = Object.freeze([
   "rejectedParse",
   "rejectedSchema",
   "rejectedVersion",
+  "rejectedRetentionDeclined",
+  "rejectedStorageScope",
+  "rejectedStorageConflict",
+  "rejectedStorageWrite",
+  "rejectedStorageIndeterminate",
 ]);
 
 function zeroCounters(): Record<MetricKey, number> {

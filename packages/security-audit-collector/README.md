@@ -6,15 +6,21 @@ Bounded, **non-production** collector ingress for Bloodtrail security audit even
 > exists under strict scope — synthetic/isolated development and CI environments only,
 > synthetic non-sensitive adversarial fixtures only, a non-production authentication
 > interface with mock/synthetic credential verification, and no production
-> deployment, production collection, real-user data processing, storage, or
-> infrastructure. Production authorization: **none**.
+> deployment, production collection, real-user data processing, or infrastructure.
+> Production authorization: **none**.
+>
+> **Storage (issue #115):** optional persistence through SQLite (`node:sqlite`) was
+> added under the owner's 2026-09-10 instruction; the backend selection was
+> delegated to Claude and is not a human owner decision. It is equally
+> non-production: synthetic data only, no deployment, and no retention policy
+> for real evidence.
 
 ## Overview
 
 The ingress enforces the fixed stage order, each stage failing closed:
 
 ```
-authenticate → size → parse → schema → version → deduplicate → accept
+authenticate → size → parse → schema → version → deduplicate → [persist] → accept
 ```
 
 - **authenticate** — the configured `Authenticator` verifies the submission before
@@ -37,9 +43,14 @@ authenticate → size → parse → schema → version → deduplicate → accep
   five minutes. A byte-identical retry is a distinct `duplicate` outcome and
   is not admitted again; different bytes under a live pair are rejected as a
   conflict. Full live capacity rejects rather than evicting a live pair.
-- **accept** — acceptance is **admission only**: the occurrence enters
-  `admitted` with its event identity. No durability, delivery, retry, storage,
-  or downstream claim is made (delivery conformance contract, #102).
+- **persist** — runs only when storage is configured (see below). The
+  occurrence is acknowledged `persisted` only after the storage port confirms
+  the write; any other port outcome withdraws the deduplication reservation and
+  rejects with a distinct `storage` diagnostic.
+- **accept** — without storage, acceptance is **admission only**: the
+  occurrence enters `admitted` with its event identity. No durability,
+  delivery, retry, or downstream claim is made (delivery conformance
+  contract, #102).
 
 Rejection diagnostics are bounded triples `{ code, category, path }` from a
 closed vocabulary; counters are plain increments keyed by stable labels.
@@ -51,13 +62,65 @@ uses lazy expiry (no timer), is not durable or shared between collectors, and
 makes **no exactly-once, delivery, retry, storage, or production-retention
 claim**.
 
+## Storage
+
+Storage implements the ratified `collector-storage-semantics` capability (#114)
+through a three-operation port, `put` / `get` / `deleteExpired`, each returning a
+closed result union and never throwing across the port. `SqliteStorage` is the
+single selected backend.
+
+| Port result | Collector outcome |
+|---|---|
+| `written`, `duplicate` | `persisted` |
+| `failed` (`backend`) | rejected — `COLLECTOR_STORAGE_WRITE_FAILED` |
+| `failed` (`conflict`) | rejected — `COLLECTOR_STORAGE_CONFLICT` |
+| `indeterminate`, a throw, or an unrecognised result | rejected — `COLLECTOR_STORAGE_WRITE_INDETERMINATE` |
+
+- **Owners.** Construction throws `StorageConfigurationError` unless the data
+  owner, the retention and deletion authority, and the key owner are all named.
+  Naming them is an owner act; the collector only refuses to run without them.
+- **Retention** derives from the record's own `data.retention_class` through
+  fixed candidate durations no deployment can change (`operational_short` 30
+  days, `security_standard` 365, `security_elevated` 7 × 365).
+  `policy_governed` is declined with `COLLECTOR_RETENTION_CLASS_DECLINED`. These
+  are non-production values, not a legal retention policy.
+- **Tenancy.** A record's scope is its own `tenant.scope` plus, for `tenant` and
+  `cross_tenant`, its `effective_tenant_id`; a record whose scope cannot be
+  resolved is declined with `COLLECTOR_STORAGE_SCOPE_UNRESOLVED`. Every port
+  operation takes exactly one scope, and a read without one returns nothing.
+- **Deletion** removes whole records. The table is `WITHOUT ROWID`, so no
+  secondary index holds a copy of any column, and `secure_delete` overwrites
+  deleted content in the database file.
+- **Encryption at rest** is the volume's: the database file must live on an
+  encrypted volume whose keys the key owner holds. The collector holds, derives,
+  and receives no key material, and cannot verify that the volume is encrypted.
+
+What this does **not** establish: production durability, backup, key
+management, legal retention compliance, or deletion from media below the file
+system (journal blocks, SSD wear levelling). Volume encryption under a
+separate key owner is what bounds that residue.
+
+```ts
+import { CollectorIngress, SqliteStorage, SyntheticFixtureAuthenticator } from "@bloodtrail/security-audit-collector";
+
+const storage = new SqliteStorage({ location: "/encrypted-volume/collector.db" });
+const ingress = new CollectorIngress({
+  authenticator: new SyntheticFixtureAuthenticator(["fixture-token-a"]),
+  storage: {
+    port: storage,
+    owners: { dataOwner: "…", retentionAuthority: "…", keyOwner: "…" },
+  },
+});
+```
+
 ## Package boundaries
 
 - Standalone workspace: own `package.json` and `package-lock.json` (ADR 0009 topology).
 - Private, unlicensed (`private: true`, `license: "UNLICENSED"`), unpublished.
 - **Zero runtime dependencies** — the vendored generated validator is the only
   non-authored runtime artifact and is byte-drift-gated against the canonical
-  generated artifact.
+  generated artifact. The one built-in import, `node:sqlite`, is confined to
+  `src/sqlite-storage.ts` by both the scope and the dependency gates.
 - Engines: Node `>=24 <25 || >=26 <27`.
 - `packages/security-audit-sdk-core`, the frozen contract, and `research/` are
   never modified by this package.
@@ -80,10 +143,10 @@ const result = ingress.submit({
   body: JSON.stringify(canonicalEvent),
 });
 
-if (result.kind === "admitted") {
-  console.log("admitted", result.eventId, "from", result.senderIdentity);
+if (result.kind === "admitted" || result.kind === "persisted") {
+  console.log(result.kind, result.eventId, "from", result.senderIdentity);
 } else if (result.kind === "duplicate") {
-  console.log("duplicate", result.eventId);
+  console.log("duplicate", result.eventId, "first acknowledged as", result.acknowledgment);
 } else {
   console.log("rejected", result.diagnostic.code);
 }
@@ -95,6 +158,6 @@ const counters = ingress.metrics();
 
 ```sh
 npm run validate              # check:generated → typecheck → build → runtime → scope → dependencies → package
-npm run test:scope            # zero approved runtime couplings; fail-closed mutations
+npm run test:scope            # one approved runtime coupling (node:sqlite, backend only); fail-closed mutations
 npm run check:generated       # bounds regeneration check + validator byte-identity drift gate
 ```

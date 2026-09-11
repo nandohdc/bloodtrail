@@ -5,6 +5,8 @@
 // strict scope: synthetic/isolated development and CI environments only,
 // synthetic non-sensitive fixtures only, non-production authentication only,
 // and no production deployment, collection, or real-user processing.
+// Optional persistence (#115) selects SQLite through `node:sqlite` under the
+// owner's 2026-09-10 instruction; it is equally non-production.
 //
 // Authentication identifies a sender; it does not prove evidence truth.
 
@@ -16,9 +18,25 @@ export type {
   IngressRejection,
   IngressResult,
   ParseFunction,
+  PersistedAdmission,
   Submission,
   ValidateFunction,
 } from "./ingress.js";
+export type { Acknowledgment } from "./deduplication.js";
+export { RETENTION_MILLISECONDS, StorageConfigurationError } from "./storage.js";
+export type {
+  DeleteExpiredResult,
+  GetResult,
+  PutResult,
+  StorageConfiguration,
+  StorageOwners,
+  StoragePort,
+  StorageScope,
+  StoredRecord,
+  StoredRetentionClass,
+} from "./storage.js";
+export { SqliteStorage } from "./sqlite-storage.js";
+export type { SqliteStorageOptions } from "./sqlite-storage.js";
 export { SyntheticFixtureAuthenticator } from "./auth.js";
 export type {
   Authenticator,
