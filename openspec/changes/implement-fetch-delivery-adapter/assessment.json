@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.1",
+  "change_id": "implement-fetch-delivery-adapter",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "#113 requires every adapter to be named in an approved governed inventory, and none existed.",
+    "The HTTP handoff delegates the exchange to an injected function nobody supplies, so every consumer, including the #116 pilot, writes an ad-hoc exchange with its own untested timeout and failure mapping.",
+    "The sdk-node surface is frozen and widens only additively through a governed change that updates the frozen lists, the freeze record, and an ADR together.",
+    "The package's scope gate forbids every host global, so fetch must be admitted for one exact file rather than for the package.",
+    "A delivery peer is untrusted: it can stall, refuse, redirect, return malformed or unbounded bodies, and none of those may become an acknowledgment."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "integration",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/implement-fetch-delivery-adapter/.openspec.yaml",
+    "openspec/changes/implement-fetch-delivery-adapter/proposal.md",
+    "openspec/changes/implement-fetch-delivery-adapter/tasks.md",
+    "openspec/changes/implement-fetch-delivery-adapter/inventory.md",
+    "openspec/changes/implement-fetch-delivery-adapter/assessment.source.json",
+    "openspec/changes/implement-fetch-delivery-adapter/assessment.json",
+    "openspec/changes/implement-fetch-delivery-adapter/specs/security-audit-sdk-node/spec.md",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/src/fetch-exchange.ts",
+    "packages/security-audit-sdk-node/src/index.ts",
+    "packages/security-audit-sdk-node/scripts/platform-coupling-policy.mjs",
+    "packages/security-audit-sdk-node/scripts/check-scope.mjs",
+    "packages/security-audit-sdk-node/scripts/check-exports.mjs",
+    "packages/security-audit-sdk-node/compatibility.json",
+    "packages/security-audit-sdk-node/README.md",
+    "packages/security-audit-sdk-node/adr/003-governed-fetch-delivery-adapter.md",
+    "packages/security-audit-sdk-node/tests/fetch-exchange.test.ts",
+    "packages/security-audit-sdk-node/tests/delivery-classes.test.ts",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-fetch-exchange-adapter",
+      "kind": "direct_implementation",
+      "summary": "Approve one adapter in a governed inventory and implement it as an HttpExchange over the runtime's fetch that validates its origin, never follows redirects, bounds each attempt and each response body, maps native outcomes onto the existing outcome set without classifying, and runs the common conformance suite through a loopback socket; admit fetch and AbortSignal for that file alone.",
+      "forces_addressed": [
+        "#113 requires every adapter to be named in an approved governed inventory, and none existed.",
+        "The HTTP handoff delegates the exchange to an injected function nobody supplies, so every consumer, including the #116 pilot, writes an ad-hoc exchange with its own untested timeout and failure mapping.",
+        "The sdk-node surface is frozen and widens only additively through a governed change that updates the frozen lists, the freeze record, and an ADR together.",
+        "The package's scope gate forbids every host global, so fetch must be admitted for one exact file rather than for the package.",
+        "A delivery peer is untrusted: it can stall, refuse, redirect, return malformed or unbounded bodies, and none of those may become an acknowledgment."
+      ]
+    },
+    {
+      "id": "approach-node-http-client",
+      "kind": "alternative",
+      "summary": "Implement the exchange over node:http and node:https request APIs instead of fetch.",
+      "forces_addressed": [
+        "#113 requires every adapter to be named in an approved governed inventory, and none existed.",
+        "The HTTP handoff delegates the exchange to an injected function nobody supplies, so every consumer, including the #116 pilot, writes an ad-hoc exchange with its own untested timeout and failure mapping.",
+        "A delivery peer is untrusted: it can stall, refuse, redirect, return malformed or unbounded bodies, and none of those may become an acknowledgment."
+      ]
+    },
+    {
+      "id": "approach-otlp-exporter",
+      "kind": "alternative",
+      "summary": "Approve and implement an OTLP/HTTP log exporter as the first adapter.",
+      "forces_addressed": [
+        "#113 requires every adapter to be named in an approved governed inventory, and none existed."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-fetch-exchange-adapter",
+  "rejected_alternative_ids": [
+    "approach-node-http-client",
+    "approach-otlp-exporter"
+  ],
+  "rejection_reasons": {
+    "approach-node-http-client": {
+      "forces": [
+        "The package's scope gate forbids every host global, so fetch must be admitted for one exact file rather than for the package.",
+        "The HTTP handoff delegates the exchange to an injected function nobody supplies, so every consumer, including the #116 pilot, writes an ad-hoc exchange with its own untested timeout and failure mapping."
+      ],
+      "reason": "It would admit node:http and node:https, two built-ins the scope gate names as forbidden examples, and would reimplement redirect, timeout, and body handling that fetch already bounds, for the same observable mapping."
+    },
+    "approach-otlp-exporter": {
+      "forces": [
+        "The HTTP handoff delegates the exchange to an injected function nobody supplies, so every consumer, including the #116 pilot, writes an ad-hoc exchange with its own untested timeout and failure mapping.",
+        "The sdk-node surface is frozen and widens only additively through a governed change that updates the frozen lists, the freeze record, and an ADR together."
+      ],
+      "reason": "An exporter needs its own event-to-LogRecord mapping, semantic-convention pins, and endpoint authentication, so it is a new transport rather than an exchange for the existing handoff, and it leaves the handoff's missing exchange unsolved."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-adapter-passes-common-conformance",
+    "implementation-peer-output-never-acceptance",
+    "implementation-fetch-confined-to-adapter",
+    "implementation-surface-widened-additively"
+  ],
+  "invariant_evidence": {
+    "implementation-adapter-passes-common-conformance": {
+      "task_ids": [
+        "3.1"
+      ],
+      "evidence_ids": [
+        "the common per-class conformance suite runs through the adapter over a loopback socket with every assertion unchanged"
+      ]
+    },
+    "implementation-peer-output-never-acceptance": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "slow, refused, malformed, empty, shapeless, oversized, and redirecting peers map to timeout, transport_failure, or protocol_error and the redirect target receives nothing"
+      ]
+    },
+    "implementation-fetch-confined-to-adapter": {
+      "task_ids": [
+        "2.2"
+      ],
+      "evidence_ids": [
+        "fetch in any other source file and node:http in the adapter each fail the scope gate"
+      ]
+    },
+    "implementation-surface-widened-additively": {
+      "task_ids": [
+        "2.1"
+      ],
+      "evidence_ids": [
+        "the export check reports 18 value and 42 type exports with no core collision and the freeze record gains an amendment rather than a rewrite"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "b2f44804b6ff7c477a3a68a3afe7fedd95f3833c"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "2.1",
+    "2.2",
+    "3.1",
+    "4.1",
+    "4.2"
+  ]
+}
