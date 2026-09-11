@@ -1,0 +1,55 @@
+{
+  "envelope_versions": [
+    1
+  ],
+  "interaction_kinds": [
+    "navigation",
+    "form_submit",
+    "button_click",
+    "input",
+    "dialog_action",
+    "tab_switch",
+    "refresh",
+    "custom"
+  ],
+  "provenance_sources": [
+    "client_reported"
+  ],
+  "trust_levels": [
+    "client_claim"
+  ],
+  "platforms": [
+    "web_browser",
+    "react_native",
+    "unattested_client"
+  ],
+  "capture_scopes": [
+    "interaction_ephemeral"
+  ],
+  "forbidden_claim_names": [
+    "account_id",
+    "auth_token",
+    "cookie",
+    "credential",
+    "decision",
+    "device_id",
+    "dom_content",
+    "fingerprint",
+    "form_value",
+    "geolocation",
+    "hardware",
+    "ip",
+    "locale",
+    "location",
+    "path",
+    "query",
+    "risk_score",
+    "screen",
+    "session_id",
+    "timezone",
+    "url",
+    "user_agent",
+    "user_id",
+    "verdict"
+  ]
+}

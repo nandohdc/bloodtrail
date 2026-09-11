@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bloodtrail.dev/contracts/client-evidence-envelope/1.0.0/client-evidence-envelope.schema.json",
+  "title": "ClientEvidenceEnvelope",
+  "description": "Closed, versioned, low-assurance client evidence envelope for interaction-scoped correlation (P1). Attacker-controlled; all claims carry client_claim trust.",
+  "type": "object",
+  "additionalProperties": false,
+  "unevaluatedProperties": false,
+  "required": [
+    "envelope_version",
+    "interaction_id",
+    "interaction_kind",
+    "client_timestamp",
+    "provenance"
+  ],
+  "properties": {
+    "envelope_version": {
+      "description": "Envelope schema version discriminator. Explicitly 1 for v1.",
+      "type": "integer",
+      "const": 1
+    },
+    "interaction_id": {
+      "description": "Interaction-scoped correlation UUID v4 in canonical lowercase hyphenated format.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "minLength": 36,
+      "maxLength": 36
+    },
+    "interaction_kind": {
+      "description": "Closed vocabulary of at most 8 interaction categories.",
+      "type": "string",
+      "enum": [
+        "navigation",
+        "form_submit",
+        "button_click",
+        "input",
+        "dialog_action",
+        "tab_switch",
+        "refresh",
+        "custom"
+      ]
+    },
+    "client_timestamp": {
+      "description": "Client-observed millisecond epoch timestamp.",
+      "type": "integer",
+      "minimum": 1700000000000,
+      "maximum": 2500000000000
+    },
+    "provenance": {
+      "description": "Low-assurance client claim provenance metadata.",
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "source",
+        "trust_level",
+        "platform",
+        "capture_scope"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "const": "client_reported"
+        },
+        "trust_level": {
+          "type": "string",
+          "const": "client_claim"
+        },
+        "platform": {
+          "type": "string",
+          "enum": [
+            "web_browser",
+            "react_native",
+            "unattested_client"
+          ]
+        },
+        "capture_scope": {
+          "type": "string",
+          "const": "interaction_ephemeral"
+        }
+      }
+    },
+    "nonce": {
+      "description": "Mode A echoed server-issued nonce for freshness and single-use binding.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{32,64}$",
+      "minLength": 32,
+      "maxLength": 64
+    },
+    "claims": {
+      "description": "Bounded collection of unverified client-asserted claim key-value pairs.",
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "unevaluatedProperties": false,
+        "required": [
+          "name",
+          "trust_level",
+          "value"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,31}$",
+            "maxLength": 32,
+            "not": {
+              "enum": [
+                "account_id",
+                "auth_token",
+                "cookie",
+                "credential",
+                "decision",
+                "device_id",
+                "dom_content",
+                "fingerprint",
+                "form_value",
+                "geolocation",
+                "hardware",
+                "ip",
+                "locale",
+                "location",
+                "path",
+                "query",
+                "risk_score",
+                "screen",
+                "session_id",
+                "timezone",
+                "url",
+                "user_agent",
+                "user_id",
+                "verdict"
+              ]
+            }
+          },
+          "trust_level": {
+            "type": "string",
+            "const": "client_claim"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "transform_history": {
+      "description": "Bounded record of client-applied transformations.",
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "unevaluatedProperties": false,
+        "required": [
+          "transform",
+          "timestamp"
+        ],
+        "properties": {
+          "transform": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "timestamp": {
+            "type": "integer",
+            "minimum": 1700000000000,
+            "maximum": 2500000000000
+          }
+        }
+      }
+    }
+  }
+}
