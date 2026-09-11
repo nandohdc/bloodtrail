@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "contract": "security-audit@1.1.0",
+  "contract": "security-audit@2.0.0",
   "mode": "assessment",
   "disposition": "extend",
   "mechanism_references": ["registries.trust_levels"],

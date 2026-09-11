@@ -126,7 +126,7 @@ Expected validation and sink failures are returned as `AuditResult` values with 
 
 ## Contract compatibility
 
-This candidate implements exactly contract version `2.0.0`, bound to normative contract commit `183c93e55c45b607ac39a76bdf2797701e97750e`. `compatibility.json` is the machine-readable compatibility manifest and `contract-provenance.json` identifies all authoritative inputs. The SDK cannot silently change contract semantics. Unsupported versions, including `1.1.0` and `1.0.0`, fail safely. Contract changes require separate contract governance before SDK adaptation.
+This candidate implements exactly contract version `2.0.0`, bound to normative contract commit `b0bc2182668c488dd9997c43a0fa93f68ee32224`. `compatibility.json` is the machine-readable compatibility manifest and `contract-provenance.json` identifies all authoritative inputs. The SDK cannot silently change contract semantics. Unsupported versions, including `1.1.0` and `1.0.0`, fail safely. Contract changes require separate contract governance before SDK adaptation.
 
 The private, unpublished candidate is `0.3.0`. Every event carrying `risk` must carry `risk.model.provenance.trust_level` and a code-point-ordered `risk.model.provenance.derived_from` listing every material input. The declared trust must not exceed `derived_server`, the producer's transformation ceiling, nor the least trusted listed input, whose trust is read from the contract's field policy and never from the event; a violation fails with `DERIVED_FROM_TRUST_FLOOR_EXCEEDED`, pointing at the input by position. The floor proves consistency with the declared inputs only, not that an undeclared input was unused.
 

@@ -32,7 +32,7 @@
     "minimum": "2.0.0",
     "maximum": "2.0.0"
   },
-  "normativeTechnicalTarget": "183c93e55c45b607ac39a76bdf2797701e97750e",
+  "normativeTechnicalTarget": "b0bc2182668c488dd9997c43a0fa93f68ee32224",
   "generatedTypes": {
     "source": "contracts/security-audit/source/contract.source.json",
     "compatibility": "exact-contract-projection",

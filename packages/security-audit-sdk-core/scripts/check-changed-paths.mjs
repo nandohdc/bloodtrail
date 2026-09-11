@@ -49,7 +49,7 @@ const REVIEWED_PATH_RULES = Object.freeze([
 const GOVERNED_CONTRACT_CANDIDATE = Object.freeze({
   change: "enforce-derived-field-trust-floors",
   rangeBase: "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-  technicalCommit: "183c93e55c45b607ac39a76bdf2797701e97750e",
+  technicalCommit: "b0bc2182668c488dd9997c43a0fa93f68ee32224",
 });
 
 const requestedLifecycle = parseLifecycleArguments();
