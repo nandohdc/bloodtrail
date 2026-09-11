@@ -18,7 +18,7 @@
 
 ## 4. Delivery, fold, archive, and closure
 
-- [ ] 4.1 Open the implementation PR with the authorization posture, the delegated-decision provenance, the AI-not-approval statement, and the no-production boundary; merge only when all ten required checks are green on the exact head.
+- [x] 4.1 Open the implementation PR with the authorization posture, the delegated-decision provenance, the AI-not-approval statement, and the no-production boundary; merge only when all ten required checks are green on the exact head. — PR #475 merged as `d4bd9b6a63399cfdccbc7083474cb1dc8a76f067` with all ten required contexts green on head `77d1fd4f6e2a2d7889ce2a2f6db9045ff6065652`.
 - [ ] 4.2 Fold both deltas into their canonical specifications in a dedicated fold PR, proving each block is byte-identical and a second application is a no-op; merge only after its exact-head CI is green.
 - [ ] 4.3 Archive the change in its own PR with byte-preserving relocation and `archive-evidence.md`; merge with a merge commit.
 - [ ] 4.4 Close #115 with the storage evidence and tick it in #132's Wave 4 checklist after the archive merges.
