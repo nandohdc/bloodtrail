@@ -1,0 +1,173 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The 2026-07-31 owner outcome records no adoption of browser telemetry and forbids identity attribution, authentication use, risk-scoring input, enforcement, and real-user collection, and the owner's 2026-09-10 instruction delegates the client-evidence decisions to Claude.",
+    "A delegated purpose record exists for one purpose, P1 interaction-scoped audit correlation, whose minimum inventory adds almost nothing beyond what trace context already sends while lowering an overstated trust label.",
+    "Client evidence is attacker-controlled end to end — browser, host page, network — so every claim must stay client_claim, every envelope must be closed and bounded, and nothing may reach a risk, authentication, authorization, or enforcement path.",
+    "The plan requires the envelope to be independent of the audit contract, the SDK Core, and the delivery contract, and the browser package to have no Core dependency, no transport, and no collector credentials.",
+    "The wave is strictly sequential and each later issue depends on an earlier decision, so one long-lived change must keep architecture decisions, authorization, implementation, verification, and archive in separate ordered task groups."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior",
+      "canonical_capability_requirement",
+      "integration"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "client-evidence"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/add-client-evidence-capability/.openspec.yaml",
+    "openspec/changes/add-client-evidence-capability/proposal.md",
+    "openspec/changes/add-client-evidence-capability/design.md",
+    "openspec/changes/add-client-evidence-capability/tasks.md",
+    "openspec/changes/add-client-evidence-capability/assessment.source.json",
+    "openspec/changes/add-client-evidence-capability/assessment.json",
+    "openspec/changes/add-client-evidence-capability/specs/client-evidence/spec.md",
+    "openspec/changes/add-client-evidence-capability/decisions/117-client-evidence-purpose.md",
+    "openspec/changes/add-client-evidence-capability/decisions/118-success-and-stop-criteria.md",
+    "openspec/changes/add-client-evidence-capability/decisions/119-privacy-and-threat-review.md",
+    "openspec/changes/add-client-evidence-capability/decisions/121-implementation-authorization.md",
+    "openspec/changes/add-client-evidence-capability/decisions/122-correlation-field.md",
+    "openspec/specs/client-evidence/spec.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-separate-envelope-host-transmits",
+      "kind": "direct_implementation",
+      "summary": "One client-evidence capability bounded to P1: a separate closed versioned envelope contract, a Web-API-only browser package that builds envelopes and never transmits or persists, a bounded client_claim reference in the audit contract, fail-closed ingress, trust-preserving mapping, and a Mode A proof of concept that can end the wave, sequenced as ordered task groups.",
+      "forces_addressed": [
+        "The 2026-07-31 owner outcome records no adoption of browser telemetry and forbids identity attribution, authentication use, risk-scoring input, enforcement, and real-user collection, and the owner's 2026-09-10 instruction delegates the client-evidence decisions to Claude.",
+        "A delegated purpose record exists for one purpose, P1 interaction-scoped audit correlation, whose minimum inventory adds almost nothing beyond what trace context already sends while lowering an overstated trust label.",
+        "Client evidence is attacker-controlled end to end — browser, host page, network — so every claim must stay client_claim, every envelope must be closed and bounded, and nothing may reach a risk, authentication, authorization, or enforcement path.",
+        "The plan requires the envelope to be independent of the audit contract, the SDK Core, and the delivery contract, and the browser package to have no Core dependency, no transport, and no collector credentials.",
+        "The wave is strictly sequential and each later issue depends on an earlier decision, so one long-lived change must keep architecture decisions, authorization, implementation, verification, and archive in separate ordered task groups."
+      ]
+    },
+    {
+      "id": "approach-trace-context-only",
+      "kind": "alternative",
+      "summary": "Add no client-evidence capability and rely on propagated trace context for interaction grouping.",
+      "forces_addressed": [
+        "The 2026-07-31 owner outcome records no adoption of browser telemetry and forbids identity attribution, authentication use, risk-scoring input, enforcement, and real-user collection, and the owner's 2026-09-10 instruction delegates the client-evidence decisions to Claude.",
+        "Client evidence is attacker-controlled end to end — browser, host page, network — so every claim must stay client_claim, every envelope must be closed and bounded, and nothing may reach a risk, authentication, authorization, or enforcement path."
+      ]
+    },
+    {
+      "id": "approach-envelope-inside-audit-event",
+      "kind": "alternative",
+      "summary": "Define client claims as new fields of the security-audit event contract rather than as a separate envelope.",
+      "forces_addressed": [
+        "A delegated purpose record exists for one purpose, P1 interaction-scoped audit correlation, whose minimum inventory adds almost nothing beyond what trace context already sends while lowering an overstated trust label.",
+        "The wave is strictly sequential and each later issue depends on an earlier decision, so one long-lived change must keep architecture decisions, authorization, implementation, verification, and archive in separate ordered task groups."
+      ]
+    },
+    {
+      "id": "approach-transmitting-browser-sdk",
+      "kind": "alternative",
+      "summary": "Have the browser package send evidence to a collector endpoint itself.",
+      "forces_addressed": [
+        "A delegated purpose record exists for one purpose, P1 interaction-scoped audit correlation, whose minimum inventory adds almost nothing beyond what trace context already sends while lowering an overstated trust label."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-separate-envelope-host-transmits",
+  "rejected_alternative_ids": [
+    "approach-trace-context-only",
+    "approach-envelope-inside-audit-event",
+    "approach-transmitting-browser-sdk"
+  ],
+  "rejection_reasons": {
+    "approach-trace-context-only": {
+      "forces": [
+        "A delegated purpose record exists for one purpose, P1 interaction-scoped audit correlation, whose minimum inventory adds almost nothing beyond what trace context already sends while lowering an overstated trust label."
+      ],
+      "reason": "It records a client-chosen grouping as observed_transport, overstating it; it is kept alive as the #118 baseline, so if it performs as well the proof of concept ends the wave."
+    },
+    "approach-envelope-inside-audit-event": {
+      "forces": [
+        "The plan requires the envelope to be independent of the audit contract, the SDK Core, and the delivery contract, and the browser package to have no Core dependency, no transport, and no collector credentials.",
+        "Client evidence is attacker-controlled end to end — browser, host page, network — so every claim must stay client_claim, every envelope must be closed and bounded, and nothing may reach a risk, authentication, authorization, or enforcement path."
+      ],
+      "reason": "It couples an attacker-controlled, low-assurance structure to the canonical contract's version line, which the plan's independence requirement and #124's correction both forbid."
+    },
+    "approach-transmitting-browser-sdk": {
+      "forces": [
+        "The plan requires the envelope to be independent of the audit contract, the SDK Core, and the delivery contract, and the browser package to have no Core dependency, no transport, and no collector credentials.",
+        "Client evidence is attacker-controlled end to end — browser, host page, network — so every claim must stay client_claim, every envelope must be closed and bounded, and nothing may reach a risk, authentication, authorization, or enforcement path."
+      ],
+      "reason": "A transmitting package needs an endpoint and credentials inside an attacker-controlled page; letting the host send the envelope keeps the package credential-free and removes its outbound-network surface."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-purpose-bound-to-p1",
+    "implementation-claims-stay-client-claim",
+    "implementation-inventory-closed",
+    "implementation-wave-ordered"
+  ],
+  "invariant_evidence": {
+    "implementation-purpose-bound-to-p1": {
+      "task_ids": [
+        "1.1",
+        "8.1"
+      ],
+      "evidence_ids": [
+        "the purpose record names P1 only and a mapping mutation writing a client value into an authorization or enforcement field fails"
+      ]
+    },
+    "implementation-claims-stay-client-claim": {
+      "task_ids": [
+        "6.1",
+        "8.1"
+      ],
+      "evidence_ids": [
+        "a risk model listing a client-evidence input above client_claim fails the trust floor and a mapping labelling a client value derived_server fails"
+      ]
+    },
+    "implementation-inventory-closed": {
+      "task_ids": [
+        "4.1",
+        "5.1",
+        "7.1"
+      ],
+      "evidence_ids": [
+        "an envelope with any field outside the inventory is rejected and no identifier repeats or is persisted"
+      ]
+    },
+    "implementation-wave-ordered": {
+      "task_ids": [
+        "1.5",
+        "2.1",
+        "9.1"
+      ],
+      "evidence_ids": [
+        "no implementation task group starts before the #121 authorization record merges, and a #128 NO-GO ends the wave"
+      ]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "57814810a902538003e2df46e3e30bc02b73633b"
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Client claims are linked to audit records only as client_claim annotations and never overwrite server-owned fields, so the server's authoritative record is unchanged by anything a client says.",
+    "authentication_or_authorization": "Client evidence is never authentication or authorization evidence; its trust is below every authenticated level and no mapping writes it to a decision field.",
+    "authority_provenance": "Every record carries the delegated decision_source and states that the owner has not personally reviewed it, so no delegated decision reads as a human owner decision.",
+    "concurrency": "The proposal introduces no runtime; later ingress validation is synchronous and single-use nonce checks are atomic with acceptance.",
+    "confidentiality": "The inventory excludes every value a fingerprint or identity could be built from, and the browser package holds no credential or secret.",
+    "cryptography": "Only Web Crypto randomness for identifiers is planned; no key, signature, or keyed transform is introduced, and Mode B attestation is deferred to its own decision.",
+    "error_disclosure": "Ingress rejections are counted by stable class without raw payloads or identifiers, and are never audit evidence.",
+    "external_security_integration": "No external service is integrated; the browser package makes no network request and platform attestation is deferred to the Mode B decision.",
+    "fail_posture": "Unknown versions, unknown fields, oversized content, replayed nonces, and fabrication attempts are rejected, never repaired, and any #118 stop criterion ends the wave.",
+    "lifecycle": "Identifiers live for one interaction and are never persisted; the wave's task groups run strictly in order with authorization before implementation.",
+    "mutation_ownership": "This proposal adds only its own change directory; later groups own their exact paths through owned_paths updates.",
+    "privacy_transformation": "No transformation of personal data is planned because the inventory contains none beyond a per-interaction random identifier and a closed-vocabulary kind.",
+    "resource_retention": "Envelopes have no retention of their own and are deleted whole with the audit record they annotate; the SDK retains nothing past one interaction.",
+    "retry_or_redelivery": "A replayed envelope is rejected by single-use nonce in Mode A, and retries of the host request carry the same interaction identifier without creating new claims.",
+    "trust_boundary": "The browser, host page, and network are attacker-controlled; the backend ingress is the boundary and admits only closed, bounded, client_claim envelopes."
+  }
+}
