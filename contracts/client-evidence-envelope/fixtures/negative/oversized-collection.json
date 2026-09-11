@@ -1,0 +1,23 @@
+{
+  "envelope_version": 1,
+  "interaction_id": "9f8b4c20-4e12-4c2f-b6a1-2d7c8e9f0a1b",
+  "interaction_kind": "button_click",
+  "client_timestamp": 1773244800000,
+  "provenance": {
+    "source": "client_reported",
+    "trust_level": "client_claim",
+    "platform": "web_browser",
+    "capture_scope": "interaction_ephemeral"
+  },
+  "claims": [
+    { "name": "seq_1", "trust_level": "client_claim", "value": 1 },
+    { "name": "seq_2", "trust_level": "client_claim", "value": 2 },
+    { "name": "seq_3", "trust_level": "client_claim", "value": 3 },
+    { "name": "seq_4", "trust_level": "client_claim", "value": 4 },
+    { "name": "seq_5", "trust_level": "client_claim", "value": 5 },
+    { "name": "seq_6", "trust_level": "client_claim", "value": 6 },
+    { "name": "seq_7", "trust_level": "client_claim", "value": 7 },
+    { "name": "seq_8", "trust_level": "client_claim", "value": 8 },
+    { "name": "seq_9", "trust_level": "client_claim", "value": 9 }
+  ]
+}

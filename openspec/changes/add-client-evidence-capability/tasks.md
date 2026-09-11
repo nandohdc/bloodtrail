@@ -16,7 +16,7 @@
 
 ## 4. ClientEvidenceEnvelope v1
 
-- [ ] 4.1 Author the envelope source, generate its schema and validator, and add canonical and negative fixtures for unknown version, oversized collection, malformed provenance, and forbidden claim (#123).
+- [x] 4.1 Author the envelope source, generate its schema and validator, and add canonical and negative fixtures for unknown version, oversized collection, malformed provenance, and forbidden claim (#123).
 
 ## 5. Browser package
 

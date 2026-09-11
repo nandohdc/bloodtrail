@@ -1,0 +1,19 @@
+{
+  "envelope_version": 1,
+  "interaction_id": "9f8b4c20-4e12-4c2f-b6a1-2d7c8e9f0a1b",
+  "interaction_kind": "button_click",
+  "client_timestamp": 1773244800000,
+  "provenance": {
+    "source": "client_reported",
+    "trust_level": "client_claim",
+    "platform": "web_browser",
+    "capture_scope": "interaction_ephemeral"
+  },
+  "claims": [
+    {
+      "name": "interaction_marker",
+      "trust_level": "client_claim",
+      "value": "this_string_is_way_too_long_and_deliberately_exceeds_the_one_hundred_and_twenty_eight_character_maximum_bound_enforced_by_the_client_evidence_envelope_v1_specification"
+    }
+  ]
+}

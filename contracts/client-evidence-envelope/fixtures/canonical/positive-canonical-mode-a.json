@@ -1,0 +1,20 @@
+{
+  "envelope_version": 1,
+  "interaction_id": "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
+  "interaction_kind": "form_submit",
+  "client_timestamp": 1773244850000,
+  "provenance": {
+    "source": "client_reported",
+    "trust_level": "client_claim",
+    "platform": "web_browser",
+    "capture_scope": "interaction_ephemeral"
+  },
+  "nonce": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "claims": [
+    {
+      "name": "interaction_sequence",
+      "trust_level": "client_claim",
+      "value": 2
+    }
+  ]
+}

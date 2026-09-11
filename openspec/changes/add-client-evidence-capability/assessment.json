@@ -34,6 +34,8 @@
     "openspec/changes/add-client-evidence-capability/decisions/119-privacy-and-threat-review.md",
     "openspec/changes/add-client-evidence-capability/decisions/121-implementation-authorization.md",
     "openspec/changes/add-client-evidence-capability/decisions/122-correlation-field.md",
+    "openspec/changes/add-client-evidence-capability/contract-reuse.json",
+    "contracts/client-evidence-envelope/",
     "openspec/specs/client-evidence/spec.md"
   ],
   "candidate_approaches": [

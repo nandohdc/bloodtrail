@@ -1,0 +1,99 @@
+{
+  "$schema": "https://bloodtrail.dev/contracts/client-evidence-envelope/source.schema.json",
+  "authoritative_source": true,
+  "metadata": {
+    "contract": "client-evidence-envelope",
+    "schema_name": "io.bloodtrail.client-evidence.envelope",
+    "schema_version": "1.0.0",
+    "envelope_version": 1,
+    "schema_dialect": "https://json-schema.org/draft/2020-12/schema",
+    "schema_id": "https://bloodtrail.dev/contracts/client-evidence-envelope/1.0.0/client-evidence-envelope.schema.json",
+    "owner": "Bloodtrail project owner",
+    "decision_source": "delegated to Claude by the owner, 2026-09-10; not a human owner decision",
+    "generated_artifact_notice": "GENERATED FROM contracts/client-evidence-envelope/source/envelope.source.json. DO NOT EDIT BY HAND.",
+    "assurance_limitations": "Envelope validity proves syntax and declared provenance only, not genuine browser/device origin or truthful host-page execution. All claims carry client_claim trust.",
+    "canonical_boundary": "ClientEvidenceEnvelope is canonical for low-assurance client evidence and intentionally decoupled from security-audit event contract, SDK Core, and delivery adapters (PLAN-086)."
+  },
+  "bounds": {
+    "max_envelope_bytes": 4096,
+    "interaction_id_length": 36,
+    "max_interaction_kind_length": 32,
+    "min_nonce_length": 32,
+    "max_nonce_length": 64,
+    "max_claims": 8,
+    "max_claim_name_length": 32,
+    "max_claim_value_length": 128,
+    "max_transforms": 4,
+    "max_transform_name_length": 64,
+    "min_client_timestamp": 1700000000000,
+    "max_client_timestamp": 2500000000000
+  },
+  "registries": {
+    "envelope_versions": [1],
+    "interaction_kinds": [
+      "navigation",
+      "form_submit",
+      "button_click",
+      "input",
+      "dialog_action",
+      "tab_switch",
+      "refresh",
+      "custom"
+    ],
+    "provenance_sources": [
+      "client_reported"
+    ],
+    "trust_levels": [
+      "client_claim"
+    ],
+    "platforms": [
+      "web_browser",
+      "react_native",
+      "unattested_client"
+    ],
+    "capture_scopes": [
+      "interaction_ephemeral"
+    ],
+    "forbidden_claim_names": [
+      "account_id",
+      "auth_token",
+      "cookie",
+      "credential",
+      "decision",
+      "device_id",
+      "dom_content",
+      "fingerprint",
+      "form_value",
+      "geolocation",
+      "hardware",
+      "ip",
+      "locale",
+      "location",
+      "path",
+      "query",
+      "risk_score",
+      "screen",
+      "session_id",
+      "timezone",
+      "url",
+      "user_agent",
+      "user_id",
+      "verdict"
+    ]
+  },
+  "error_codes": {
+    "ENVELOPE_TOO_LARGE": "Serialized envelope size exceeds max_envelope_bytes (4096 bytes)",
+    "UNKNOWN_VERSION": "Envelope version is unsupported; only version 1 is supported",
+    "INVALID_INTERACTION_ID": "Interaction ID must be an RFC 4122 UUID version 4 in lowercase 36-character format",
+    "UNKNOWN_INTERACTION_KIND": "Interaction kind is not in the approved closed vocabulary of at most 8 values",
+    "INVALID_TIMESTAMP": "Client timestamp must be an integer millisecond epoch within permissible bounds",
+    "MALFORMED_PROVENANCE": "Provenance must carry client_reported source, client_claim trust, approved platform, and interaction_ephemeral scope",
+    "TRUST_ESCALATION_ATTEMPT": "Claimed trust level exceeds client_claim floor",
+    "OVERSIZED_COLLECTION": "Claims collection or transform history exceeds maximum items bound",
+    "FORBIDDEN_CLAIM": "Claim carries a prohibited property name from the privacy/fingerprinting inventory",
+    "OVERSIZED_STRING": "A string field exceeds its bounded maximum length",
+    "UNKNOWN_FIELD": "Envelope carries unrecognized fields outside the closed schema inventory",
+    "INVALID_NONCE": "Mode A nonce must be a lowercase hex string of 32 to 64 characters",
+    "MALFORMED_JSON": "Payload is not valid JSON"
+  }
+}
