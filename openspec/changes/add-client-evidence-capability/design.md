@@ -44,8 +44,11 @@ host page ──(its own request, header or body field)──► application ser
 - **#122:** the canonical correlation field's name, generation authority, lifetime, collision
   handling, cross-origin behaviour, and server mapping.
 - **#123:** the closed interaction-kind vocabulary (at most eight values) and the exact bounds.
-- **#125:** the reference's field path and whether the contract move is `2.0.0` → `2.1.0` or rides
-  a later move.
+- **#125:** decided: the audit record gains an optional `client_evidence` reference at
+  `client_claim` trust in the additive `2.0.0` → `2.1.0` move. When present it carries only
+  `interaction_id`, `interaction_kind`, `envelope_version`, and provenance fixed to
+  `client_reported` / `client_claim` / `web_browser` / `interaction_ephemeral`. It carries no raw
+  envelope, nonce, claim, transform history, client timestamp, or server-owned field.
 - **#129:** whether any attestation mechanism earns trust above `client_claim`. NO-GO is a
   legitimate outcome and closes #130 without implementation.
 

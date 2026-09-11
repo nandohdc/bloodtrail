@@ -24,7 +24,10 @@
 
 ## 6. Audit contract extension
 
-- [ ] 6.1 Add the bounded client-evidence reference to the security-audit contract at `client_claim` trust as a governed minor move, with every pin advanced and compatibility fixtures (#125).
+- [ ] 6.1 Add the optional, bounded `client_evidence` reference to the security-audit contract at
+  `client_claim` trust as the governed `2.0.0` → `2.1.0` minor move, with every exact-version pin
+  advanced and compatibility fixtures for absence, the v1 reference, invalid provenance, and unknown
+  envelope version (#125).
 
 ## 7. Backend ingress
 

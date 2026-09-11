@@ -2,24 +2,29 @@
   "schema_version": "1.0",
   "contract": "security-audit@2.0.0",
   "mode": "assessment",
-  "disposition": "new_contract",
-  "proposed_contract_id": "client-evidence-envelope",
-  "rationale": "The change introduces an independently versioned evidence envelope whose lifecycle, producers, and consumers are deliberately separate from the security-audit event contract, so no audit-contract mechanism can carry it.",
-  "trust_boundary": "Envelope producers sit outside the audit pipeline's trust boundary and their claims never enter the audit event stream; conflating the two would let unattested client evidence inherit audit-event authority.",
-  "transformation_ownership": "Envelope transformation is owned by the producing client layer end to end; the audit contract's privacy-transformation ownership does not extend across that boundary and is not asked to.",
+  "disposition": "extend",
+  "mechanism_references": ["registries.trust_levels", "derived_field_provenance.trust_path", "authority_matrix"],
+  "compatibility_classification": "minor",
+  "rationale": "The security-audit contract gains one optional, closed client_evidence reference at the existing client_claim trust level, governed by the existing claimed-identity authority row and floored by the existing derived-field trust path. The ClientEvidenceEnvelope itself stays a separate, independently versioned contract and is never embedded; only its interaction identifier, kind, and version cross. The move is minor because every 2.0.0 record stays valid.",
+  "trust_boundary": "The application server relays a client-chosen reference inside its own authenticated audit record, so the boundary stays the producer's request-input boundary where source.client_reported already enters. Provenance is fixed at client_reported and client_claim, and the trust floor stops any derived result that lists the reference from claiming more.",
+  "transformation_ownership": "The producer owns mapping a validated envelope into the reference and must not write a client value into any server-owned field. Contract validation owns the closed shape, fixed provenance, and bounds; downstream consumers gain no transformation responsibility, and the envelope's own transformation history never crosses.",
   "alternatives": [
     {
       "approach": "reuse",
-      "rejection_reason": "No audit-event mechanism models an independent envelope lifecycle; reusing one would silently attach audit semantics and delivery claims the envelope is not designed to honour."
+      "rejection_reason": "No existing field can carry the reference: source.client_reported is closed and describes request input rather than an interaction, and correlation.trace_id is labelled observed_transport, which would overstate a client-chosen value's trust."
     },
     {
-      "approach": "extend",
-      "rejection_reason": "Extending the audit contract would force envelope versioning, delivery, and ownership semantics into a contract that deliberately excludes them, weakening both boundaries at once."
+      "approach": "new_contract",
+      "rejection_reason": "The envelope already is the new contract. Carrying the audit-side reference in a third contract would split one audit record across two version lines and leave every consumer unable to validate the record as one unit."
     }
   ],
-  "author": { "name": "Fernando Homem da Costa (nandohdc)", "handle": "nandohdc" },
-  "evidence_references": ["openspec/changes/add-client-evidence-capability/design.md"],
+  "author": { "name": "Claude, under delegation from Fernando Homem da Costa (nandohdc)", "handle": "nandohdc" },
+  "evidence_references": [
+    "openspec/changes/add-client-evidence-capability/design.md",
+    "openspec/changes/add-client-evidence-capability/decisions/122-correlation-field.md"
+  ],
   "assurance_limitations": [
-    "The proposed contract identifier is a declared boundary, not an authorized contract; this record does not authorize implementing, publishing, or deploying the new contract."
+    "This assessment classifies the reference's relationship to the existing contract; it does not prove a browser produced the reference or that the producer did not fabricate it, and it records a decision delegated to Claude, not a human owner decision.",
+    "The record's earlier new_contract disposition described the envelope introduced by #123; that envelope remains a separate contract, and this revision describes the audit-contract extension #125 adds."
   ]
 }
