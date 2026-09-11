@@ -63,11 +63,11 @@ const SCHEMA_FORMATS = Object.freeze({
   uri: "uri"
 });
 const SCHEMA_PATTERNS = Object.freeze({
-  uuid: String.raw`^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`,
-  "uuid-v4": String.raw`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`,
+  uuid: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+  "uuid-v4": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
   semver: String.raw`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$`,
-  "w3c-trace-id": String.raw`^(?!0{32})[0-9a-f]{32}$`,
-  "w3c-span-id": String.raw`^(?!0{16})[0-9a-f]{16}$`
+  "w3c-trace-id": "^(?!0{32})[0-9a-f]{32}$",
+  "w3c-span-id": "^(?!0{16})[0-9a-f]{16}$"
 });
 
 function schemaForField(field) {
