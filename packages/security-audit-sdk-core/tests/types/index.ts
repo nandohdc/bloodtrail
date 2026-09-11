@@ -75,6 +75,17 @@ const authorization: SecurityAuditEvent["authorization"] = {
   enforcement_point: "pep",
 };
 const correlation: Partial<SecurityAuditEvent["correlation"]> = { correlation_id: "corr", operation_id: "op" };
+const clientEvidence: NonNullable<SecurityAuditEvent["client_evidence"]> = {
+  interaction_id: "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
+  interaction_kind: "form_submit",
+  envelope_version: 1,
+  provenance: {
+    source: "client_reported",
+    trust_level: "client_claim",
+    platform: "web_browser",
+    capture_scope: "interaction_ephemeral",
+  },
+};
 const issuedOperation = sdk.beginOperation();
 if (!issuedOperation.ok) throw new Error(issuedOperation.error.code);
 const operation = issuedOperation.value;
@@ -89,7 +100,7 @@ const authenticationSucceededInput: Omit<AuthenticationSucceededEventInput, "ope
   resource,
 };
 void authenticationSucceededInput;
-sdk.authenticationSucceeded(authenticationSucceededInput);
+sdk.authenticationSucceeded({ ...authenticationSucceededInput, client_evidence: clientEvidence });
 sdk.accountRegistrationAttempted({ actor, tenant, request: { id: "request" }, source, correlation });
 sdk.accountRegistrationCompleted({ actor, tenant, subject: { type: "account", id: "account" }, resource, correlation, operation });
 sdk.authenticationFailed({ actor, authentication, source, request: { id: "request" }, correlation });

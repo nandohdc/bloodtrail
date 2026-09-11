@@ -275,6 +275,7 @@ export type EventBuilderBaseInput<N extends EventName> = {
   readonly resource?: SecurityAuditEvent["resource"];
   readonly request?: SecurityAuditEvent["request"];
   readonly correlation?: Partial<SecurityAuditEvent["correlation"]>;
+  readonly client_evidence?: SecurityAuditEvent["client_evidence"];
   readonly risk?: SecurityAuditEvent["risk"];
   readonly data?: Partial<SecurityAuditEvent["data"]>;
   readonly integrity?: SecurityAuditEvent["integrity"];

@@ -39,7 +39,7 @@
 
 ## 8. Mapping
 
-- [ ] 8.1 Map validated claims to the audit record, preserving `client_claim` trust and never writing a server-owned field, with missing, ambiguous, conflicting, and fabrication tests (#127).
+- [x] 8.1 Map validated claims to the audit record, preserving `client_claim` trust and never writing a server-owned field, with missing, ambiguous, conflicting, and fabrication tests (#127). — `InteractionClaimMapper` builds the reference from the audit contract's own platform set and fixed provenance; absent, ambiguous, unadmitted, unsupported-platform, conflicting, and capacity outcomes map nothing (CM1–CM7). The Core carries a mapped reference and refuses a relabelled one, and the trust floor refuses a `derived_server` result over it.
 
 ## 9. Mode A proof of concept
 

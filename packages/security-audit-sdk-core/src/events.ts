@@ -121,6 +121,7 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
     resource: withDerivedOperationType(frame.resource, definition),
     request: frame.request,
     correlation: correlation.value,
+    client_evidence: normalizedInput.client_evidence,
     risk: frame.risk,
     data: envelopeDefaults.data,
     integrity: frame.integrity,

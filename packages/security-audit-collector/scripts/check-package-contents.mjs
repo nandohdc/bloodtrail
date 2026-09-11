@@ -46,6 +46,8 @@ const REQUIRED_FILES = [
   "dist/storage.d.ts",
   "dist/sqlite-storage.js",
   "dist/sqlite-storage.d.ts",
+  "dist/envelope-mapping.js",
+  "dist/envelope-mapping.d.ts",
   "dist/envelope-ingress.js",
   "dist/envelope-ingress.d.ts",
   "dist/envelope-nonces.js",
