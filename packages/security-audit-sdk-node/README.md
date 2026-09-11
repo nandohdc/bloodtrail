@@ -56,6 +56,36 @@ classified as `retryable`; permanent responses are `non_retryable`; malformed
 or ambiguous acknowledgments are terminal `protocol_error`. Capacity and
 shutdown behavior remain separately governed work.
 
+## Fetch delivery adapter (governed, #113)
+
+`createFetchHttpExchange` is the one delivery adapter the governed inventory approves. It supplies the
+`exchange` that `createHttpDeliveryHandoff` needs, over the Node runtime's `fetch`, and maps every native
+outcome onto the handoff's closed set:
+
+| Native outcome | Exchange outcome | Handoff classification |
+|---|---|---|
+| response with a body | `response` + parsed `acknowledgments` | decided by the handoff (acknowledged, retryable, permanent, protocol error) |
+| per-attempt deadline elapsed | `timeout` | `retryable` |
+| connection refused, reset, DNS failure | `transport_failure` | `retryable` |
+| unparseable, empty, shapeless, or oversized 2xx body | `response` with an unacceptable acknowledgment | `protocol_error` |
+| redirect | the 3xx itself, never followed | `protocol_error` |
+
+```ts
+import { createFetchHttpExchange, createHttpDeliveryHandoff } from "@bloodtrail/security-audit-sdk-node";
+
+const handoff = createHttpDeliveryHandoff({
+  path: "/v1/security-audit",
+  exchange: createFetchHttpExchange({ origin: "http://127.0.0.1:8080", timeoutMs: 2_000 }),
+});
+```
+
+The origin is a scheme, host, and optional port only; a path, query, fragment, credentials in the URL,
+or a non-HTTP scheme fails construction. Response bodies are read to at most `maxResponseBytes`
+(default 65536). Caller-supplied headers are the caller's credentials and the adapter never logs or
+echoes them. The scope gate lets `src/fetch-exchange.ts`, and nothing else, reach `fetch` and
+`AbortSignal`. **Non-production:** the adapter authorizes no deployment and no delivery infrastructure;
+it proves mapped observable behavior, not the peer's durability or security.
+
 ## Bounded delivery retry (provisional)
 
 `createBoundedDeliveryRetry` composes a `HttpDeliveryHandoff` with a bounded,

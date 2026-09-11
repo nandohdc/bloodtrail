@@ -22,6 +22,13 @@
         "adr": "adr/002-governed-widening-for-remaining-delivery-classes.md",
         "valueExportCount": 17,
         "typeExportCount": 41
+      },
+      {
+        "issue": 113,
+        "reason": "Governed additive widening for the one delivery adapter the governed inventory approves: createFetchHttpExchange over the runtime's fetch.",
+        "adr": "adr/003-governed-fetch-delivery-adapter.md",
+        "valueExportCount": 18,
+        "typeExportCount": 42
       }
     ]
   },

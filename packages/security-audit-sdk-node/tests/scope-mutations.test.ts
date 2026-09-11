@@ -20,7 +20,8 @@ const packageRoot = resolve(__dirname, "..");
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-sdk-node-scope-"));
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
 
-const BASELINE_INVENTORY = "platform coupling inventory: authored: 13 artifacts, 73 references, host couplings: [none]";
+const BASELINE_INVENTORY =
+  "platform coupling inventory: authored: 13 artifacts, 74 references, host couplings: [none]; fetchExchange: 1 artifacts, 9 references, host couplings: [AbortSignal (1 site), fetch (1 site)]";
 
 const PROBE_ARTIFACT = "src/probe.ts";
 
@@ -35,6 +36,14 @@ interface CouplingRejection {
 // specifier or identifier the gate must name back; `code` separates the two
 // classes so a specifier failure can never be mistaken for a global one.
 const COUPLING_REJECTIONS: ReadonlyArray<CouplingRejection> = [
+  {
+    // fetch is declared for src/fetch-exchange.ts alone (#113); anywhere else it
+    // is still an undeclared host global.
+    name: "the fetch adapter's host global fetch outside the adapter",
+    source: 'export function leak(): unknown { return fetch; }\n',
+    code: "undeclared-global",
+    detail: "fetch",
+  },
   {
     name: "unapproved Node built-in node:fs",
     source: 'import { readFileSync } from "node:fs";\nexport const x = readFileSync;\n',
@@ -155,7 +164,7 @@ interface CaseResult {
 
 function runCase(name: string, mutate?: (context: { copiedPackage: string; environment: NodeJS.ProcessEnv }) => void): CaseResult {
   const targetDir = resolve(suiteRoot, name, "packages/security-audit-sdk-node");
-  stageIsolatedPackage(packageRoot, targetDir);
+  stageIsolatedPackage({ sourceDir: packageRoot, targetDir });
   symlinkSync(resolve(packageRoot, "node_modules"), resolve(targetDir, "node_modules"), "dir");
   const env = { ...process.env };
   if (mutate) mutate({ copiedPackage: targetDir, environment: env });
@@ -168,9 +177,15 @@ function runCase(name: string, mutate?: (context: { copiedPackage: string; envir
   return { status: check.status, output: `${check.stdout}\n${check.stderr}` };
 }
 
-function runWithProbe(name: string, artifact: string, source: string): CaseResult {
-  return runCase(name, ({ copiedPackage }) => {
-    writeFileSync(resolve(copiedPackage, artifact), source, "utf8");
+interface ProbeCase {
+  readonly name: string;
+  readonly artifact: string;
+  readonly source: string;
+}
+
+function runWithProbe(probe: ProbeCase): CaseResult {
+  return runCase(probe.name, ({ copiedPackage }) => {
+    writeFileSync(resolve(copiedPackage, probe.artifact), probe.source, "utf8");
   });
 }
 
@@ -186,8 +201,8 @@ function slug(value: string): string {
   return value.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-").replaceAll(/(?:^-|-$)/g, "");
 }
 
-function stageIsolatedPackage(sourceDir: string, targetDir: string) {
-  cpSync(sourceDir, targetDir, {
+function stageIsolatedPackage(directories: { readonly sourceDir: string; readonly targetDir: string }) {
+  cpSync(directories.sourceDir, directories.targetDir, {
     recursive: true,
     force: true,
     filter: (entry) =>
@@ -201,16 +216,16 @@ function stageIsolatedPackage(sourceDir: string, targetDir: string) {
 test("unmutated sdk-node package passes the scope gate and reports declared coupling inventory", () => {
   const { output, status } = runCase("null-control");
   assert.equal(status, 0, `unmutated control failed:\n${output}`);
-  assert.match(output, /scope passed: 13 SDK source files/);
+  assert.match(output, /scope passed: 14 SDK source files/);
   const inventoryLine = output.split(/\r?\n/).find((line) => line.startsWith("platform coupling inventory:"));
   assert.equal(inventoryLine, BASELINE_INVENTORY, `null control inventory changed:\n${output}`);
 });
 
 test("positive control: approved Node capabilities and first-party Core dependency pass", () => {
-  const { output, status } = runWithProbe(
-    "approved-capabilities",
-    PROBE_ARTIFACT,
-    [
+  const { output, status } = runWithProbe({
+    name: "approved-capabilities",
+    artifact: PROBE_ARTIFACT,
+    source: [
       'import { AsyncLocalStorage } from "node:async_hooks";',
       'import { Buffer } from "node:buffer";',
       'import { randomUUID } from "node:crypto";',
@@ -220,21 +235,21 @@ test("positive control: approved Node capabilities and first-party Core dependen
       'export type SdkType = SecurityAuditSdk;',
       "",
     ].join("\n"),
-  );
+  });
   assert.equal(status, 0, `approved capabilities failed:\n${output}`);
-  assert.match(output, /scope passed: 14 SDK source files/);
+  assert.match(output, /scope passed: 15 SDK source files/);
 });
 
 for (const scenario of COUPLING_REJECTIONS) {
   test(`${scenario.name} is rejected`, () => {
-    const result = runWithProbe(slug(scenario.name), PROBE_ARTIFACT, scenario.source);
+    const result = runWithProbe({ name: slug(scenario.name), artifact: PROBE_ARTIFACT, source: scenario.source });
     verifyCouplingFailure(result, { code: scenario.code, artifact: PROBE_ARTIFACT, detail: scenario.detail });
   });
 }
 
 for (const scenario of FORBIDDEN_FILENAME_MUTATIONS) {
   test(`cross-package placement mutation: ${scenario.artifact} in sdk-node fails closed`, () => {
-    const result = runWithProbe(slug(scenario.artifact), scenario.artifact, scenario.source);
+    const result = runWithProbe({ name: slug(scenario.artifact), artifact: scenario.artifact, source: scenario.source });
     assert.notEqual(result.status, 0, `filename mutation unexpectedly passed:\n${result.output}`);
     assert.match(
       result.output,
@@ -262,21 +277,13 @@ for (const scenario of MANIFEST_MUTATIONS) {
 }
 
 test("negative control: locally bound identifier matching global name passes", () => {
-  const { output, status } = runWithProbe(
-    "locally-bound-identifier",
-    PROBE_ARTIFACT,
-    "export function processName(process: string): string { const Buffer = process.length; return `${process}:${Buffer}`; }\n",
-  );
+  const { output, status } = runWithProbe({ name: "locally-bound-identifier", artifact: PROBE_ARTIFACT, source: "export function processName(process: string): string { const Buffer = process.length; return `${process}:${Buffer}`; }\n" });
   assert.equal(status, 0, `negative control failed:\n${output}`);
   assert.match(output, /scope passed:/);
 });
 
 test("negative control: type-position references pass without false positive", () => {
-  const { output, status } = runWithProbe(
-    "type-positions",
-    PROBE_ARTIFACT,
-    "export type ProbeOptions = { bufferSize?: number; processId?: string; };\n",
-  );
+  const { output, status } = runWithProbe({ name: "type-positions", artifact: PROBE_ARTIFACT, source: "export type ProbeOptions = { bufferSize?: number; processId?: string; };\n" });
   assert.equal(status, 0, `type positions failed:\n${output}`);
   assert.match(output, /scope passed:/);
 });
@@ -288,4 +295,12 @@ test("empty source inventory fails closed", () => {
   });
   assert.notEqual(result.status, 0, `empty inventory mutation unexpectedly passed:\n${result.output}`);
   assert.match(result.output, /\[platform-coupling:empty-inventory\]/);
+});
+
+test("the fetch adapter importing a Node built-in beyond node:buffer fails closed", () => {
+  const result = runCase("fetch-adapter-extra-builtin", ({ copiedPackage }) => {
+    const adapterPath = resolve(copiedPackage, "src/fetch-exchange.ts");
+    writeFileSync(adapterPath, `import http from "node:http";\nexport const leak = http;\n${readFileSync(adapterPath, "utf8")}`, "utf8");
+  });
+  verifyCouplingFailure(result, { code: "undeclared-specifier", artifact: "src/fetch-exchange.ts", detail: "node:http" });
 });

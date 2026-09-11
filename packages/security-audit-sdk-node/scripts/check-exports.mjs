@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 const FROZEN_VALUE_EXPORTS = [
   "BEST_EFFORT_LOSS_CEILING", "NodeContextProvider", "createBestEffortDelivery",
   "createBoundedDeliveryBackpressure", "createBoundedDeliveryRetry", "createDeliveryShutdown",
-  "createHttpDeliveryHandoff", "createNodeSecurityAuditSdk", "createPolicyCriticalDelivery",
+  "createFetchHttpExchange", "createHttpDeliveryHandoff", "createNodeSecurityAuditSdk", "createPolicyCriticalDelivery",
   "createTransactionCriticalDelivery", "nodeByteLength", "nodeClock", "nodeContextProvider",
   "nodeIdentifiers", "nodePlatformProvider", "nodeSchemaRuntime", "nodeTimers",
 ];
@@ -24,7 +24,7 @@ const FROZEN_TYPE_EXPORTS = [
   "DeliveryRetry", "DeliveryRetryJitterSource", "DeliveryRetryObservability",
   "DeliveryRetryOptions", "DeliveryRetryResult", "DeliveryShutdown", "DeliveryShutdownOptions",
   "DeliveryShutdownReport", "DeliveryShutdownSubmission", "DeliveryShutdownSubmitResult",
-  "GovernedDeliveryClass", "HttpAcknowledgment", "HttpDeliveryHandoff",
+  "FetchHttpExchangeOptions", "GovernedDeliveryClass", "HttpAcknowledgment", "HttpDeliveryHandoff",
   "HttpDeliveryHandoffOptions", "HttpDeliveryHandoffResult", "HttpExchange", "HttpExchangeOutcome",
   "HttpExchangeRequest", "NodePlatformProvider", "NodeSecurityAuditSdkConfiguration",
   "NodeTimerHandle", "PolicyCriticalBehavior", "PolicyCriticalDelivery",
