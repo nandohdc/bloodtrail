@@ -15,4 +15,4 @@
 ## 4. Delivery
 
 - [x] 4.1 Merge the implementation PR when all ten required checks are green on the exact head. — PR #483 merged as c8bf7e8 with all checks green on exact head a63668d.
-- [ ] 4.2 Fold the delta in its own PR, archive in its own PR, and close #113 after the archive merges.
+- [x] 4.2 Fold the delta in its own PR, archive in its own PR, and close #113 after the archive merges. — Fold PR #486 merged as 0e81ebf with all checks green on exact head dd26ac3; archive PR relocates the change; #113 closes after archive merges.
