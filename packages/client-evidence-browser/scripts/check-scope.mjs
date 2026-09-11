@@ -61,26 +61,22 @@ async function collectFiles(dir) {
     .map((e) => resolve(e.parentPath || dir, e.name));
 }
 
+function checkForbiddenTerms(content, terms, rel, description) {
+  for (const term of terms) {
+    if (content.includes(term)) {
+      violations.push(`${rel}: ${description}: ${term}`);
+    }
+  }
+}
+
 function inspectFileContent(filePath, content) {
   const rel = relative(packageRoot, filePath);
   if (content.includes(FORBIDDEN_CORE_IMPORT)) {
     violations.push(`${rel}: forbidden import of SDK Core package (${FORBIDDEN_CORE_IMPORT})`);
   }
-  for (const term of FORBIDDEN_STORAGE_TERMS) {
-    if (content.includes(term)) {
-      violations.push(`${rel}: forbidden browser storage reference: ${term}`);
-    }
-  }
-  for (const term of FORBIDDEN_TRANSPORT_TERMS) {
-    if (content.includes(term)) {
-      violations.push(`${rel}: forbidden network transport reference: ${term}`);
-    }
-  }
-  for (const term of FORBIDDEN_NODE_MODULES) {
-    if (content.includes(term)) {
-      violations.push(`${rel}: forbidden Node built-in import: ${term}`);
-    }
-  }
+  checkForbiddenTerms(content, FORBIDDEN_STORAGE_TERMS, rel, "forbidden browser storage reference");
+  checkForbiddenTerms(content, FORBIDDEN_TRANSPORT_TERMS, rel, "forbidden network transport reference");
+  checkForbiddenTerms(content, FORBIDDEN_NODE_MODULES, rel, "forbidden Node built-in import");
 }
 
 checkPackageJson(packageJson);
