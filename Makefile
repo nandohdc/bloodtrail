@@ -29,6 +29,7 @@ runtime-gates:
 	@echo "Running fast product test loop across all workspaces ($(COST_RUNTIME_GATES))..."
 	npm run test:matrix --prefix packages/security-audit-sdk-core
 	npm run validate --prefix packages/security-audit-sdk-node
+	npm run validate --prefix packages/client-evidence-browser
 	npm run validate --prefix packages/security-audit-collector
 	npm run validate --prefix contracts/security-audit
 	npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry
@@ -39,6 +40,7 @@ governance-gates:
 	@echo "Running full governance-gate chains ($(COST_GOVERNANCE_GATES) across workspaces; dominant cost is SDK gate mutation testing, test:verification)..."
 	npm run validate --prefix packages/security-audit-sdk-core
 	npm run validate --prefix packages/security-audit-sdk-node
+	npm run validate --prefix packages/client-evidence-browser
 	npm run validate --prefix packages/security-audit-collector
 	npm run validate --prefix contracts/security-audit
 	npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry
@@ -48,17 +50,17 @@ sdk:
 	@echo "Running SDK product loop ($(COST_SDK))..."
 	npm run test:matrix --prefix packages/security-audit-sdk-core
 	npm run validate --prefix packages/security-audit-sdk-node
-	@echo "Notice: Partial run completed. Exercised SDK product loop only; packages/security-audit-collector, contracts/security-audit and research/browser-telemetry were NOT run."
+	@echo "Notice: Partial run completed. Exercised SDK product loop only; packages/client-evidence-browser, packages/security-audit-collector, contracts/security-audit and research/browser-telemetry were NOT run."
 
 contract:
 	@echo "Running contract validation ($(COST_CONTRACT))..."
 	npm run validate --prefix contracts/security-audit
-	@echo "Notice: Partial run completed. Exercised contract workspace only; packages/security-audit-sdk-core, packages/security-audit-sdk-node, packages/security-audit-collector, and research/browser-telemetry were NOT run."
+	@echo "Notice: Partial run completed. Exercised contract workspace only; packages/security-audit-sdk-core, packages/security-audit-sdk-node, packages/client-evidence-browser, packages/security-audit-collector, and research/browser-telemetry were NOT run."
 
 research:
 	@echo "Running research harness checks ($(COST_RESEARCH))..."
 	npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry
-	@echo "Notice: Partial run completed. Exercised research workspace only; packages/security-audit-sdk-core, packages/security-audit-sdk-node, packages/security-audit-collector, and contracts/security-audit were NOT run."
+	@echo "Notice: Partial run completed. Exercised research workspace only; packages/security-audit-sdk-core, packages/security-audit-sdk-node, packages/client-evidence-browser, packages/security-audit-collector, and contracts/security-audit were NOT run."
 
 help:
 	@echo "Bloodtrail command surface (delegating to workspace scripts):"

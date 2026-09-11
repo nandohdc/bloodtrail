@@ -55,6 +55,7 @@ jobs:
           cache-dependency-path: |
             packages/security-audit-sdk-core/package-lock.json
             packages/security-audit-sdk-node/package-lock.json
+            packages/client-evidence-browser/package-lock.json
             packages/security-audit-collector/package-lock.json
 
       - run: npm ci
@@ -84,6 +85,18 @@ jobs:
         run: node ../../.github/scripts/npm-audit-retry.mjs --audit-level=low
         working-directory: packages/security-audit-sdk-node
 
+      - name: Install client-evidence-browser dependencies
+        run: npm ci
+        working-directory: packages/client-evidence-browser
+
+      - name: Validate client-evidence-browser on Node 26.5.0
+        run: npm run validate
+        working-directory: packages/client-evidence-browser
+
+      - name: Audit client-evidence-browser
+        run: node ../../.github/scripts/npm-audit-retry.mjs --audit-level=low
+        working-directory: packages/client-evidence-browser
+
       - name: Install collector dependencies
         run: npm ci
         working-directory: packages/security-audit-collector
@@ -105,6 +118,7 @@ jobs:
           cache-dependency-path: |
             packages/security-audit-sdk-core/package-lock.json
             packages/security-audit-sdk-node/package-lock.json
+            packages/client-evidence-browser/package-lock.json
             packages/security-audit-collector/package-lock.json
 
       - name: Run matrix-safe product loop on Node 24.2.0
@@ -113,6 +127,10 @@ jobs:
       - name: Run test on Node 24.2.0 (sdk-node)
         run: npm run test
         working-directory: packages/security-audit-sdk-node
+
+      - name: Run test on Node 24.2.0 (client-evidence-browser)
+        run: npm run test
+        working-directory: packages/client-evidence-browser
 
       - name: Run test on Node 24.2.0 (collector)
         run: npm run test
@@ -222,6 +240,7 @@ jobs:
           cache-dependency-path: |
             packages/security-audit-sdk-core/package-lock.json
             packages/security-audit-sdk-node/package-lock.json
+            packages/client-evidence-browser/package-lock.json
             packages/security-audit-collector/package-lock.json
             research/browser-telemetry/package-lock.json
 
@@ -234,6 +253,11 @@ jobs:
         working-directory: packages/security-audit-sdk-node
       - run: npm run test:coverage
         working-directory: packages/security-audit-sdk-node
+
+      - run: npm ci
+        working-directory: packages/client-evidence-browser
+      - run: npm run test:coverage
+        working-directory: packages/client-evidence-browser
 
       - run: npm ci
         working-directory: packages/security-audit-collector
@@ -274,6 +298,7 @@ jobs:
           path: |
             packages/security-audit-sdk-core/coverage/lcov.info
             packages/security-audit-sdk-node/coverage/lcov.info
+            packages/client-evidence-browser/coverage/lcov.info
             packages/security-audit-collector/coverage/lcov.info
             research/browser-telemetry/coverage/lcov.info
           if-no-files-found: error
@@ -291,6 +316,7 @@ jobs:
           path: |
             packages/security-audit-sdk-core/coverage/lcov.info
             packages/security-audit-sdk-node/coverage/lcov.info
+            packages/client-evidence-browser/coverage/lcov.info
             packages/security-audit-collector/coverage/lcov.info
             research/browser-telemetry/coverage/lcov.info
           if-no-files-found: error
@@ -303,8 +329,8 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: packages/security-audit-sdk-core/coverage/lcov.info,packages/security-audit-sdk-node/coverage/lcov.info,packages/security-audit-collector/coverage/lcov.info,research/browser-telemetry/coverage/lcov.info
-          flags: sdk,sdk-node,collector,research
+          files: packages/security-audit-sdk-core/coverage/lcov.info,packages/security-audit-sdk-node/coverage/lcov.info,packages/client-evidence-browser/coverage/lcov.info,packages/security-audit-collector/coverage/lcov.info,research/browser-telemetry/coverage/lcov.info
+          flags: sdk,sdk-node,client-evidence-browser,collector,research
           fail_ci_if_error: false
 
       - name: Upload test results to Codecov
@@ -313,8 +339,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: test_results
-          files: packages/security-audit-sdk-core/coverage/junit.xml,packages/security-audit-sdk-node/coverage/junit.xml,packages/security-audit-collector/coverage/junit.xml,research/browser-telemetry/coverage/junit.xml
-          flags: sdk,sdk-node,collector,research
+          files: packages/security-audit-sdk-core/coverage/junit.xml,packages/security-audit-sdk-node/coverage/junit.xml,packages/client-evidence-browser/coverage/junit.xml,packages/security-audit-collector/coverage/junit.xml,research/browser-telemetry/coverage/junit.xml
+          flags: sdk,sdk-node,client-evidence-browser,collector,research
           disable_search: true
           fail_ci_if_error: false
 
@@ -368,6 +394,10 @@ jobs:
       # resolvable from its tsconfig.
       - name: Install SDK dependencies for type-aware analysis
         working-directory: packages/security-audit-sdk-core
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install client-evidence-browser dependencies for type-aware analysis
+        working-directory: packages/client-evidence-browser
         run: npm ci --ignore-scripts --no-audit --no-fund
 
       # The analyser jars and the provisioned JRE land here. Caching them keeps
