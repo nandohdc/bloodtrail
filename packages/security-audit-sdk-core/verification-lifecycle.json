@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "version": "2.0.0",
-    "normativeTechnicalTarget": "b0bc2182668c488dd9997c43a0fa93f68ee32224",
+    "version": "2.1.0",
+    "normativeTechnicalTarget": "342711fc284a3c1a94e0e1197c9bda0775e7fec0",
     "protectedPrefixes": [
       "contracts/security-audit/",
       "openspec/specs/security-audit-event-contract/",
@@ -12,11 +12,14 @@
       "contracts/security-audit/package-lock.json"
     ],
     "governedCandidate": {
-      "change": "enforce-derived-field-trust-floors",
+      "change": "add-client-evidence-capability",
       "rangeBase": "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-      "technicalCommit": "b0bc2182668c488dd9997c43a0fa93f68ee32224",
+      "technicalCommit": "342711fc284a3c1a94e0e1197c9bda0775e7fec0",
       "protectedPaths": [
+        "contracts/security-audit/adr/adr-009.md",
+        "contracts/security-audit/docs/authority-matrix.md",
         "contracts/security-audit/docs/field-policy.md",
+        "contracts/security-audit/docs/integrity-limits.md",
         "contracts/security-audit/docs/validation.md",
         "contracts/security-audit/examples/negative/all-negative.json",
         "contracts/security-audit/examples/negative/ambiguous-actor-attribution.json",
@@ -27,6 +30,12 @@
         "contracts/security-audit/examples/negative/browser-client-authority-claim.json",
         "contracts/security-audit/examples/negative/client-authority-escalation.json",
         "contracts/security-audit/examples/negative/client-claimed-authenticated-identity.json",
+        "contracts/security-audit/examples/negative/client-evidence-invalid-provenance.json",
+        "contracts/security-audit/examples/negative/client-evidence-missing-provenance.json",
+        "contracts/security-audit/examples/negative/client-evidence-oversized-interaction-id.json",
+        "contracts/security-audit/examples/negative/client-evidence-server-owned-member.json",
+        "contracts/security-audit/examples/negative/client-evidence-trust-escalation.json",
+        "contracts/security-audit/examples/negative/client-evidence-unknown-envelope-version.json",
         "contracts/security-audit/examples/negative/derived-from-absent.json",
         "contracts/security-audit/examples/negative/derived-from-astral-order.json",
         "contracts/security-audit/examples/negative/derived-from-cycle.json",
@@ -79,6 +88,7 @@
         "contracts/security-audit/examples/positive/bloodtrail.audit.session.revoked.json",
         "contracts/security-audit/examples/positive/bloodtrail.audit.tenant.context_violation.detected.json",
         "contracts/security-audit/fixtures/compatibility/compatibility-scenarios.json",
+        "contracts/security-audit/fixtures/integrity/negative-integrity-claims.json",
         "contracts/security-audit/fixtures/mappings/cloudevents-1.0.2.json",
         "contracts/security-audit/fixtures/mappings/negative-mapping-conflicts.json",
         "contracts/security-audit/fixtures/mappings/opentelemetry-1.59.0-semconv-1.43.0.json",

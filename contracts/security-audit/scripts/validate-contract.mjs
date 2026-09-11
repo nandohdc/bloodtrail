@@ -79,15 +79,22 @@ function enumValues(field) {
   return source.registries[field.enum] ?? null;
 }
 
+// The string formats a field may declare, keyed by its `fmt`. The generator
+// projects the same names into the schema, so the two validators agree.
+const FORMAT_CHECKS = Object.freeze({
+  uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+  "uuid-v4": /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+  semver: /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:[-+][0-9A-Za-z.-]+)?$/,
+  "date-time": /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+  uri: /^https?:\/\//,
+  "w3c-trace-id": /^(?!0{32})[0-9a-f]{32}$/,
+  "w3c-span-id": /^(?!0{16})[0-9a-f]{16}$/
+});
+
 function formatOk(field, value) {
-  if (value === undefined || typeof value !== "string") return true;
-  if (field.fmt === "uuid") return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
-  if (field.fmt === "semver") return /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$/.test(value);
-  if (field.fmt === "date-time") return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value);
-  if (field.fmt === "uri") return /^https?:\/\//.test(value);
-  if (field.fmt === "w3c-trace-id") return /^(?!0{32})[0-9a-f]{32}$/.test(value);
-  if (field.fmt === "w3c-span-id") return /^(?!0{16})[0-9a-f]{16}$/.test(value);
-  return true;
+  if (typeof value !== "string") return true;
+  if (!Object.hasOwn(FORMAT_CHECKS, field.fmt)) return true;
+  return FORMAT_CHECKS[field.fmt].test(value);
 }
 
 function typeBoundsError(event) {
@@ -446,6 +453,7 @@ function catalogMembershipError(event, catalog) {
 
 function missingRequiredFieldError(event) {
   for (const field of source.fields.filter((candidate) => candidate.r === "required")) {
+    if (field.required_with && get(event, field.required_with) === undefined) continue;
     if (get(event, field.p) === undefined) return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
   }
   return null;

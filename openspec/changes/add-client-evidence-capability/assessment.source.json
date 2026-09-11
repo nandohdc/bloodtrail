@@ -5,11 +5,12 @@
     "The 2026-07-31 owner outcome records no adoption of browser telemetry and forbids identity attribution, authentication use, risk-scoring input, enforcement, and real-user collection, and the owner's 2026-09-10 instruction delegates the client-evidence decisions to Claude.",
     "A delegated purpose record exists for one purpose, P1 interaction-scoped audit correlation, whose minimum inventory adds almost nothing beyond what trace context already sends while lowering an overstated trust label.",
     "Client evidence is attacker-controlled end to end — browser, host page, network — so every claim must stay client_claim, every envelope must be closed and bounded, and nothing may reach a risk, authentication, authorization, or enforcement path.",
-    "The plan requires the envelope to be independent of the audit contract, the SDK Core, and the delivery contract, and the browser package to have no Core dependency, no transport, and no collector credentials.",
+    "The envelope is independent of the audit contract, SDK Core, and delivery contract; the browser has no Core, transport, or credentials. The audit record is a bounded reference only, and its artifacts and exact-version consumers move together.",
     "The wave is strictly sequential and each later issue depends on an earlier decision, so one long-lived change must keep architecture decisions, authorization, implementation, verification, and archive in separate ordered task groups."
   ],
   "applicability": {
     "triggers_matched": [
+      "public_api",
       "security_sensitive_behavior",
       "canonical_capability_requirement",
       "governance_core_path",
@@ -17,7 +18,8 @@
     ],
     "material_capability_modification": true,
     "capabilities": [
-      "client-evidence"
+      "client-evidence",
+      "security-audit-event-contract"
     ]
   },
   "owned_paths": [
@@ -28,6 +30,7 @@
     "openspec/changes/add-client-evidence-capability/assessment.source.json",
     "openspec/changes/add-client-evidence-capability/assessment.json",
     "openspec/changes/add-client-evidence-capability/specs/client-evidence/spec.md",
+    "openspec/changes/add-client-evidence-capability/specs/security-audit-event-contract/spec.md",
     "openspec/changes/add-client-evidence-capability/decisions/117-client-evidence-purpose.md",
     "openspec/changes/add-client-evidence-capability/decisions/118-success-and-stop-criteria.md",
     "openspec/changes/add-client-evidence-capability/decisions/119-privacy-and-threat-review.md",
@@ -36,24 +39,36 @@
     "openspec/changes/add-client-evidence-capability/contract-reuse.json",
     "contracts/client-evidence-envelope/",
     "packages/client-evidence-browser/",
+    "contracts/security-audit/",
+    "packages/security-audit-sdk-core/",
+    "packages/security-audit-sdk-node/",
+    "packages/security-audit-collector/",
     ".github/scripts/check-package-discovery.mjs",
     ".github/scripts/check-package-discovery.test.mjs",
     "Makefile",
     "sonar-project.properties",
     ".github/workflows/ci.yml",
     "packages/security-audit-sdk-core/tests/verification/publication-path-mutations.test.mjs",
-    "openspec/specs/client-evidence/spec.md"
+    "openspec/specs/client-evidence/spec.md",
+    "openspec/specs/security-audit-event-contract/spec.md",
+    ".github/scripts/check-contract-version-currency.mjs",
+    "openspec/scripts/contract-reuse/check.mjs",
+    "openspec/governance/schemas/contract-reuse.schema.json",
+    "openspec/tests/contract-reuse/",
+    "CLAUDE.md",
+    "README.md",
+    "SECURITY.md"
   ],
   "candidate_approaches": [
     {
       "id": "approach-separate-envelope-host-transmits",
       "kind": "direct_implementation",
-      "summary": "One client-evidence capability bounded to P1: a separate closed versioned envelope contract, a Web-API-only browser package that builds envelopes and never transmits or persists, a bounded client_claim reference in the audit contract, fail-closed ingress, trust-preserving mapping, and a Mode A proof of concept that can end the wave, sequenced as ordered task groups.",
+      "summary": "One client-evidence capability bounded to P1: a separate closed versioned envelope contract, a Web-API-only browser package that builds envelopes and never transmits or persists, a bounded client_claim reference rather than the envelope in the audit contract, fail-closed ingress, trust-preserving mapping, and a Mode A proof of concept that can end the wave, sequenced as ordered task groups.",
       "forces_addressed": [
         "The 2026-07-31 owner outcome records no adoption of browser telemetry and forbids identity attribution, authentication use, risk-scoring input, enforcement, and real-user collection, and the owner's 2026-09-10 instruction delegates the client-evidence decisions to Claude.",
         "A delegated purpose record exists for one purpose, P1 interaction-scoped audit correlation, whose minimum inventory adds almost nothing beyond what trace context already sends while lowering an overstated trust label.",
         "Client evidence is attacker-controlled end to end — browser, host page, network — so every claim must stay client_claim, every envelope must be closed and bounded, and nothing may reach a risk, authentication, authorization, or enforcement path.",
-        "The plan requires the envelope to be independent of the audit contract, the SDK Core, and the delivery contract, and the browser package to have no Core dependency, no transport, and no collector credentials.",
+        "The envelope is independent of the audit contract, SDK Core, and delivery contract; the browser has no Core, transport, or credentials. The audit record is a bounded reference only, and its artifacts and exact-version consumers move together.",
         "The wave is strictly sequential and each later issue depends on an earlier decision, so one long-lived change must keep architecture decisions, authorization, implementation, verification, and archive in separate ordered task groups."
       ]
     },
@@ -99,14 +114,14 @@
     },
     "approach-envelope-inside-audit-event": {
       "forces": [
-        "The plan requires the envelope to be independent of the audit contract, the SDK Core, and the delivery contract, and the browser package to have no Core dependency, no transport, and no collector credentials.",
+        "The envelope is independent of the audit contract, SDK Core, and delivery contract; the browser has no Core, transport, or credentials. The audit record is a bounded reference only, and its artifacts and exact-version consumers move together.",
         "Client evidence is attacker-controlled end to end — browser, host page, network — so every claim must stay client_claim, every envelope must be closed and bounded, and nothing may reach a risk, authentication, authorization, or enforcement path."
       ],
       "reason": "It couples an attacker-controlled, low-assurance structure to the canonical contract's version line, which the plan's independence requirement and #124's correction both forbid."
     },
     "approach-transmitting-browser-sdk": {
       "forces": [
-        "The plan requires the envelope to be independent of the audit contract, the SDK Core, and the delivery contract, and the browser package to have no Core dependency, no transport, and no collector credentials.",
+        "The envelope is independent of the audit contract, SDK Core, and delivery contract; the browser has no Core, transport, or credentials. The audit record is a bounded reference only, and its artifacts and exact-version consumers move together.",
         "Client evidence is attacker-controlled end to end — browser, host page, network — so every claim must stay client_claim, every envelope must be closed and bounded, and nothing may reach a risk, authentication, authorization, or enforcement path."
       ],
       "reason": "A transmitting package needs an endpoint and credentials inside an attacker-controlled page; letting the host send the envelope keeps the package credential-free and removes its outbound-network surface."
@@ -142,10 +157,11 @@
       "task_ids": [
         "4.1",
         "5.1",
+        "6.1",
         "7.1"
       ],
       "evidence_ids": [
-        "an envelope with any field outside the inventory is rejected and no identifier repeats or is persisted"
+        "an envelope with any field outside the inventory is rejected and no identifier repeats or is persisted; the audit record admits only the closed v1 reference with fixed client provenance and trust"
       ]
     },
     "implementation-wave-ordered": {
@@ -174,7 +190,7 @@
     "external_security_integration": "No external service is integrated; the browser package makes no network request and platform attestation is deferred to the Mode B decision.",
     "fail_posture": "Unknown versions, unknown fields, oversized content, replayed nonces, and fabrication attempts are rejected, never repaired, and any #118 stop criterion ends the wave.",
     "lifecycle": "Identifiers live for one interaction and are never persisted; the wave's task groups run strictly in order with authorization before implementation.",
-    "mutation_ownership": "This proposal adds only its own change directory; later groups own their exact paths through owned_paths updates.",
+    "mutation_ownership": "The proposal adds only its own change directory; later groups own their exact paths through owned_paths updates. The contract move owns the canonical source, generated artifacts, exact-version consumer projections, and governed candidate bindings as one reviewed transition.",
     "privacy_transformation": "No transformation of personal data is planned because the inventory contains none beyond a per-interaction random identifier and a closed-vocabulary kind.",
     "resource_retention": "Envelopes have no retention of their own and are deleted whole with the audit record they annotate; the SDK retains nothing past one interaction.",
     "retry_or_redelivery": "A replayed envelope is rejected by single-use nonce in Mode A, and retries of the host request carry the same interaction identifier without creating new claims.",

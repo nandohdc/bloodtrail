@@ -1,6 +1,6 @@
 # Compatibility and migration policy
 
-This policy applies to `@bloodtrail/security-audit-sdk-core`. The package is currently a private, unpublished candidate at version `0.3.0`; this document defines compatibility rules without authorizing release or production use.
+This policy applies to `@bloodtrail/security-audit-sdk-core`. The package is currently a private, unpublished candidate at version `0.4.0`; this document defines compatibility rules without authorizing release or production use.
 
 ## Two independent version axes
 
@@ -13,9 +13,9 @@ An SDK version does not create or approve a contract version. The SDK implementa
 
 `compatibility.json` is the machine-readable source for this candidate's compatibility declaration:
 
-- package: `@bloodtrail/security-audit-sdk-core` `0.3.0`;
-- supported contract versions: exactly `2.0.0` (minimum and maximum are both `2.0.0`);
-- normative contract target: `b0bc2182668c488dd9997c43a0fa93f68ee32224`;
+- package: `@bloodtrail/security-audit-sdk-core` `0.4.0`;
+- supported contract versions: exactly `2.1.0` (minimum and maximum are both `2.1.0`);
+- normative contract target: `342711fc284a3c1a94e0e1197c9bda0775e7fec0`;
 - Node.js: majors `24` and `26` only; exact verification releases `24.2.0` and `26.5.0`;
 - TypeScript: `>=5.9.2 <6`; exact repository compiler `5.9.2`;
 - module policy: ESM public package with an internal generated CommonJS standalone-validator boundary;
@@ -147,6 +147,10 @@ Candidate `0.2.0` replaces its exact contract baseline with `1.1.0`; callers mus
 ## Contract 2.0.0 trust-floor enforcement
 
 Candidate `0.3.0` replaces its exact contract baseline with `2.0.0`; callers must update the construction literal from `"1.1.0"` to `"2.0.0"`. This is breaking. Every event carrying `risk` must now carry both `risk.model.provenance.trust_level` and `risk.model.provenance.derived_from`; omitting either fails with `DERIVED_FROM_MISSING`. The declared level may be `derived_server` or any less trusted level, but never more trusted than the least trusted listed input, whose trust is the contract's declared trust for that path — a violation fails with `DERIVED_FROM_TRUST_FLOOR_EXCEEDED` at `/risk/model/provenance/derived_from/<index>`. Levels above `derived_server` fail with `DERIVED_FROM_NON_DERIVED`, and any input under `risk` fails with `DERIVED_FROM_CYCLE`. A producer whose risk model reads a `client_claim` input declares `client_claim` rather than being unable to emit. This candidate remains private and unpublished and does not authorize release or production use.
+
+## Contract 2.1.0 client-evidence reference
+
+Candidate `0.4.0` replaces its exact contract baseline with `2.1.0`; callers must update the construction literal from `"2.0.0"` to `"2.1.0"`, and `"2.0.0"` now fails with `SDK_UNSUPPORTED_CONTRACT_VERSION`. The contract adds an optional, closed `client_evidence` reference: a lowercase UUID v4 `interaction_id`, one of eight `interaction_kind` values, `envelope_version` `1`, and provenance fixed to `client_reported`, `client_claim`, `web_browser`, and `interaction_ephemeral`. Events that omit it remain valid and mean nothing by its absence. The generated event type gains the optional member; this candidate's builders do not populate it, because mapping a validated client envelope into the reference is separate governed work. A risk model that lists `client_evidence.interaction_id` as a material input is floored at `client_claim`. This candidate remains private and unpublished and does not authorize release or production use.
 
 ## Contract-version upgrades
 

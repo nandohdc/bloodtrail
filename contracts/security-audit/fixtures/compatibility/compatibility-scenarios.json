@@ -10,6 +10,11 @@
     "expected": "compatible_with_absence_meaning"
   },
   {
+    "name": "minor-client-evidence-reference",
+    "change_class": "minor",
+    "expected": "compatible_with_absence_meaning"
+  },
+  {
     "name": "minor-derived-field-provenance",
     "change_class": "minor",
     "expected": "compatible_with_absence_meaning"

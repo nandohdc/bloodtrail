@@ -27,7 +27,7 @@ function copyProbeChannel() {
 
 function createInstance() {
   return sdk.createSecurityAuditSdk({
-    contractVersion: "2.0.0",
+    contractVersion: "2.1.0",
     producer: { name: "probe-channel-control", version: "1.0.0" },
     service: { name: "probe-channel" },
     environment: { name: "verification" },

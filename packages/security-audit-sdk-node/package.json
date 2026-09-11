@@ -1,6 +1,6 @@
 {
   "name": "@bloodtrail/security-audit-sdk-node",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Provisional Node.js platform binding for Bloodtrail security audit events",
   "type": "module",
   "private": true,

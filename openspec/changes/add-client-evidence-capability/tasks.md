@@ -24,7 +24,14 @@
 
 ## 6. Audit contract extension
 
-- [ ] 6.1 Add the bounded client-evidence reference to the security-audit contract at `client_claim` trust as a governed minor move, with every pin advanced and compatibility fixtures (#125).
+- [x] 6.1 Add the optional, bounded `client_evidence` reference to the security-audit contract at
+  `client_claim` trust as the governed `2.0.0` → `2.1.0` minor move, with every exact-version pin
+  advanced and compatibility fixtures for absence, the v1 reference, invalid provenance, and unknown
+  envelope version (#125). — Technical commit `342711fc284a3c1a94e0e1197c9bda0775e7fec0`, bound as
+  the cumulative governed candidate over range base `cdecd7f3` (84 protected paths). Six negative
+  fixtures cover invalid provenance, trust escalation, unknown envelope version, missing provenance,
+  an oversized identifier, and a server-owned member; each rejection is asserted in both the
+  canonical validator and the generated schema.
 
 ## 7. Backend ingress
 

@@ -31,7 +31,7 @@ privacy/legal review remains mandatory before any real-user use.
 - **New capability `client-evidence`**, bounded to P1. It covers the purpose and its prohibited
   uses; the closed minimum inventory; a separate, versioned `ClientEvidenceEnvelope` v1; a browser
   package that uses Web APIs only, has no Core dependency, and neither transmits nor persists; a
-  bounded client-evidence reference in the audit contract at `client_claim` trust; fail-closed
+  bounded `client_evidence` reference in audit contract `2.1.0` at `client_claim` trust; fail-closed
   backend ingress validation; mapping that never fabricates server evidence; a Mode A proof of
   concept judged by #118; a separate Mode B device-trust decision; and a React Native adapter.
 - **One capability, separately sequenced.** Browser and React Native share the envelope and the
@@ -53,16 +53,17 @@ privacy/legal review remains mandatory before any real-user use.
 
 ### Modified Capabilities
 
-None in this proposal. The audit-contract extension (#125) will carry its own
-`security-audit-event-contract` delta when its task group runs, because it is a contract version move
-with its own pins.
+- `security-audit-event-contract`: #125 adds an optional, closed `client_evidence` reference at
+  `client_claim` trust in the additive contract move `2.0.0` → `2.1.0`. It carries only the v1
+  interaction reference and fixed client provenance; it does not carry a raw envelope, claims,
+  nonce, timestamp, transform history, or a server-owned field.
 
 ## Impact
 
 - This proposal adds only `openspec/changes/add-client-evidence-capability/`.
-- Later task groups will add the new workspace `packages/client-evidence-browser/` (with its CI,
-  `make`, package-discovery, coverage, and Sonar wiring), a collector ingress stage, a contract minor
-  move for #125, and a React Native adapter workspace.
+- Later task groups add the new workspace `packages/client-evidence-browser/` (with its CI, `make`,
+  package-discovery, coverage, and Sonar wiring), the #125 contract minor move and exact-version
+  consumer projections, a collector ingress stage, and a React Native adapter workspace.
 
 ## Assurance limitations
 

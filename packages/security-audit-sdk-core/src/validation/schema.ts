@@ -47,6 +47,16 @@ const SCHEMA_VERSION_PATHS = new Set(["/schema/version", "/schema/name"]);
 const CATALOG_PATHS = new Set(["/event/name", "/event/category", "/event/action", "/event/delivery_class"]);
 const FIELD_LIMIT_KEYWORDS = new Set(["maxLength", "maximum", "maxItems"]);
 const DERIVED_FROM_POINTER = `/${DERIVED_FIELD_PROVENANCE.field_path.replaceAll(".", "/")}`;
+const CLIENT_EVIDENCE_POINTER = "/client_evidence";
+const CLIENT_EVIDENCE_REGISTRY_KEYWORDS = new Set(["enum", "additionalProperties", "unevaluatedProperties"]);
+
+// The optional client-evidence reference is closed and registry-bound. The canonical contract
+// validator reports an unregistered value or member inside it as UNKNOWN_CATALOG_VALUE and every
+// other failure there — type, bound, format, or a missing member — as FIELD_LIMIT_EXCEEDED.
+function matchClientEvidenceCode(error: StandaloneValidationError, path: string): string | undefined {
+  if (path !== CLIENT_EVIDENCE_POINTER && !path.startsWith(`${CLIENT_EVIDENCE_POINTER}/`)) return undefined;
+  return CLIENT_EVIDENCE_REGISTRY_KEYWORDS.has(error.keyword) ? "UNKNOWN_CATALOG_VALUE" : "FIELD_LIMIT_EXCEEDED";
+}
 
 function mapRequiredError(error: StandaloneValidationError): string {
   const missing = typeof error.params.missingProperty === "string" ? error.params.missingProperty : "";
@@ -95,7 +105,7 @@ function resolveErrorPath(error: StandaloneValidationError | undefined): string 
 function mapSchemaError(error: StandaloneValidationError | undefined): string {
   if (!error) return "SDK_SCHEMA_VALIDATION_FAILED";
   const path = resolveErrorPath(error);
-  const pathCode = matchPathCode(path);
+  const pathCode = matchPathCode(path) ?? matchClientEvidenceCode(error, path);
   if (pathCode !== undefined) return pathCode;
   return matchKeywordCode(error, path);
 }

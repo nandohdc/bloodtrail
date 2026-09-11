@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bloodtrail.dev/contracts/security-audit/2.0.0/security-audit-event.schema.json",
+  "$id": "https://bloodtrail.dev/contracts/security-audit/2.1.0/security-audit-event.schema.json",
   "$comment": "GENERATED FROM contracts/security-audit/source/contract.source.json. DO NOT EDIT BY HAND.",
   "title": "Bloodtrail Security Audit Event",
   "type": "object",
@@ -977,6 +977,92 @@
         }
       },
       "required": []
+    },
+    "client_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "interaction_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 36,
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "interaction_kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "enum": [
+            "navigation",
+            "form_submit",
+            "button_click",
+            "input",
+            "dialog_action",
+            "tab_switch",
+            "refresh",
+            "custom"
+          ]
+        },
+        "envelope_version": {
+          "type": "integer",
+          "minimum": 0,
+          "enum": [
+            1
+          ]
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "unevaluatedProperties": false,
+          "properties": {
+            "source": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "enum": [
+                "client_reported"
+              ]
+            },
+            "trust_level": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "enum": [
+                "client_claim"
+              ]
+            },
+            "platform": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "enum": [
+                "web_browser"
+              ]
+            },
+            "capture_scope": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "enum": [
+                "interaction_ephemeral"
+              ]
+            }
+          },
+          "required": [
+            "source",
+            "trust_level",
+            "platform",
+            "capture_scope"
+          ]
+        }
+      },
+      "required": [
+        "interaction_id",
+        "interaction_kind",
+        "envelope_version",
+        "provenance"
+      ]
     },
     "destination": {
       "type": "object",

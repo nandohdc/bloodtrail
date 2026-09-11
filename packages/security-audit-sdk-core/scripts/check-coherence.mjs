@@ -22,12 +22,12 @@ const originalArchiveRoot = lifecycle.originalArchive;
 const original = lifecycleMetadata.originalSdkChange;
 const remediation = lifecycleMetadata.remediationChange;
 const expected = Object.freeze({
-  contractVersion: "2.0.0",
-  normativeTarget: "b0bc2182668c488dd9997c43a0fa93f68ee32224",
-  proposalBaseline: "b0bc2182668c488dd9997c43a0fa93f68ee32224",
+  contractVersion: "2.1.0",
+  normativeTarget: "342711fc284a3c1a94e0e1197c9bda0775e7fec0",
+  proposalBaseline: "342711fc284a3c1a94e0e1197c9bda0775e7fec0",
   remediationBaseline: "b4206f92fc92c7355efaa80d9f878353cf794452",
   packageName: "@bloodtrail/security-audit-sdk-core",
-  packageVersion: "0.3.0",
+  packageVersion: "0.4.0",
   nodeEngines: ">=24 <25 || >=26 <27",
   nodeMajors: [24, 26],
   nodeCiVersions: ["24.2.0", "26.5.0"],

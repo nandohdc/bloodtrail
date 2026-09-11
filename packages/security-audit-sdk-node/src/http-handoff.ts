@@ -4,7 +4,7 @@ import { nodeByteLength } from "./byte-length.js";
 
 const MAX_REQUEST_BODY_BYTES = 65_536;
 const RETRYABLE_RESPONSE_STATUSES = new Set([408, 425, 429]);
-// Contract 2.0.0 bounds.retry_attempt_max — the wire ceiling on correlation.retry_attempt.
+// Contract 2.1.0 bounds.retry_attempt_max — the wire ceiling on correlation.retry_attempt.
 const RETRY_ATTEMPT_MAX = 1000;
 
 type AttemptIdentity = Readonly<{

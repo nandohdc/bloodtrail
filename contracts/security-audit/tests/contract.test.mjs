@@ -47,13 +47,18 @@ test("strict Draft 2020-12 schema is generated with strict object boundaries", a
   assert.equal(schema.properties.extensions.additionalProperties, false);
 });
 
-test("generated Draft 2020-12 schema validates all positive fixtures with a standards-compliant engine", async () => {
+async function compileGeneratedSchema() {
   const schema = await readJson("schema/security-audit-event.schema.json");
-  const events = await readJson("examples/positive/all-events.json");
   const ajv = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true });
   addFormats(ajv);
   const validate = ajv.compile(schema);
-  for (const event of events) assert.equal(validate(event), true, `${event.event.name}: ${ajv.errorsText(validate.errors)}`);
+  return { validate, errorsText: () => ajv.errorsText(validate.errors) };
+}
+
+test("generated Draft 2020-12 schema validates all positive fixtures with a standards-compliant engine", async () => {
+  const events = await readJson("examples/positive/all-events.json");
+  const { validate, errorsText } = await compileGeneratedSchema();
+  for (const event of events) assert.equal(validate(event), true, `${event.event.name}: ${errorsText()}`);
   const structurallyInvalid = structuredClone(events[0]);
   delete structurallyInvalid.schema.version;
   assert.equal(validate(structurallyInvalid), false);
@@ -109,6 +114,49 @@ test("positive fixtures validate and cover catalog, actor types, tenant scopes, 
   for (const phase of source.registries.lifecycle_phases) assert.ok(covered.phases.has(phase), phase);
   for (const outcome of ["success", "failure", "denied", "partial", "cancelled"]) assert.ok(covered.outcomes.has(outcome), outcome);
   for (const delivery of source.registries.delivery_classes) assert.ok(covered.delivery.has(delivery), delivery);
+});
+
+// Each rejection must hold in both the semantic validator and the generated
+// schema that every exact-version consumer vendors; either alone once let a
+// reference without provenance through.
+const CLIENT_EVIDENCE_MUTATIONS = Object.freeze({
+  "unknown envelope version": (reference) => { reference.envelope_version = 2; },
+  "oversized identifier": (reference) => { reference.interaction_id = "a".repeat(37); },
+  "non-v4 identifier": (reference) => { reference.interaction_id = "11111111-1111-1111-8111-111111111111"; },
+  "unapproved interaction kind": (reference) => { reference.interaction_kind = "keystroke"; },
+  "trust escalation": (reference) => { reference.provenance.trust_level = "authoritative_server"; },
+  "missing provenance": (reference) => { delete reference.provenance; },
+  "server-owned member": (reference) => { reference.risk = "high"; },
+  "raw envelope member": (reference) => { reference.nonce = "0".repeat(32); }
+});
+
+test("client-evidence references are optional, closed, and fixed at client_claim trust", async () => {
+  const events = await readJson("examples/positive/all-events.json");
+  const carriers = events.filter((event) => event.client_evidence !== undefined);
+  assert.equal(carriers.length, 1, "exactly one canonical fixture carries the v1 reference");
+  const [withReference] = carriers;
+  const serverOnly = structuredClone(withReference);
+  delete serverOnly.client_evidence;
+  const { validate, errorsText } = await compileGeneratedSchema();
+
+  for (const event of [serverOnly, withReference]) {
+    assert.deepEqual(validateCanonicalEvent(event), []);
+    assert.equal(validate(event), true, errorsText());
+  }
+
+  const floor = structuredClone(withReference);
+  floor.risk.model.provenance.derived_from = ["client_evidence.interaction_id", "event.name"];
+  floor.risk.model.provenance.trust_level = "client_claim";
+  assert.deepEqual(validateCanonicalEvent(floor), [], "client evidence can only lower a derived claim");
+  floor.risk.model.provenance.trust_level = "derived_server";
+  assert.deepEqual(validateCanonicalEvent(floor).map((error) => error.code), ["DERIVED_FROM_TRUST_FLOOR_EXCEEDED"]);
+
+  for (const [label, mutate] of Object.entries(CLIENT_EVIDENCE_MUTATIONS)) {
+    const invalid = structuredClone(withReference);
+    mutate(invalid.client_evidence);
+    assert.notDeepEqual(validateCanonicalEvent(invalid), [], `${label}: the semantic validator rejects it`);
+    assert.equal(validate(invalid), false, `${label}: the generated schema rejects it`);
+  }
 });
 
 test("negative fixtures reject with exact safe error codes and no secret echo", async () => {
@@ -221,6 +269,7 @@ test("CloudEvents remains optional envelope-only and rejects payload conflicts",
 
 test("compatibility, delivery, and integrity fixtures encode blocked and bounded claims", async () => {
   const compatibility = await readJson("fixtures/compatibility/compatibility-scenarios.json");
+  assert.ok(compatibility.some((fixture) => fixture.name === "minor-client-evidence-reference" && fixture.expected === "compatible_with_absence_meaning"));
   assert.ok(compatibility.some((fixture) => fixture.name === "major-authority-change" && fixture.expected === "breaking"));
   assert.ok(compatibility.some((fixture) => fixture.name === "unsupported-version" && fixture.expected_errors.includes("UNSUPPORTED_COMPATIBILITY_VERSION")));
   const delivery = await readJson("fixtures/delivery/delivery-scenarios.json");
