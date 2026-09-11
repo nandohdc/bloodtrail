@@ -10,7 +10,7 @@ function resolveCrypto(cryptoObj?: Crypto): Crypto | undefined {
   return undefined;
 }
 
-function hasGetRandomValues(cryptoInstance: Crypto | undefined | null): boolean {
+function hasGetRandomValues(cryptoInstance: Crypto | undefined | null): cryptoInstance is Crypto {
   if (!cryptoInstance) {
     return false;
   }
@@ -31,16 +31,23 @@ function formatUuid(bytes: Uint8Array): string {
   return `${p1}-${p2}-${p3}-${p4}-${p5}`;
 }
 
-export function generateInteractionId(cryptoObj?: Crypto): string {
-  const cryptoInstance = resolveCrypto(cryptoObj);
-  if (!hasGetRandomValues(cryptoInstance)) {
+function requireCrypto(cryptoObj?: Crypto): Crypto {
+  const instance = resolveCrypto(cryptoObj);
+  if (!hasGetRandomValues(instance)) {
     throw new CapabilityMissingError(
       "crypto.getRandomValues is required to generate secure interaction identifiers"
     );
   }
+  return instance;
+}
+
+export function generateInteractionId(cryptoObj?: Crypto): string {
+  const cryptoInstance = requireCrypto(cryptoObj);
   const bytes = new Uint8Array(16);
-  cryptoInstance!.getRandomValues(bytes);
-  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
-  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  cryptoInstance.getRandomValues(bytes);
+  const b6 = bytes[6] ?? 0;
+  const b8 = bytes[8] ?? 0;
+  bytes[6] = (b6 & 0x0f) | 0x40;
+  bytes[8] = (b8 & 0x3f) | 0x80;
   return formatUuid(bytes);
 }

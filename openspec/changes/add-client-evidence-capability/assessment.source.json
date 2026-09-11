@@ -41,6 +41,7 @@
     "Makefile",
     "sonar-project.properties",
     ".github/workflows/ci.yml",
+    "packages/security-audit-sdk-core/tests/verification/publication-path-mutations.test.mjs",
     "openspec/specs/client-evidence/spec.md"
   ],
   "candidate_approaches": [
