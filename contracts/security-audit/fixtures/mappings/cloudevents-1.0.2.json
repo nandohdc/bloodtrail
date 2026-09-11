@@ -5,7 +5,7 @@
     "source": "https://bloodtrail.dev/producers/registration-boundary",
     "type": "bloodtrail.audit.account.registration.attempted",
     "time": "2026-07-31T12:00:00.000Z",
-    "dataschema": "https://bloodtrail.dev/contracts/security-audit/1.1.0/security-audit-event.schema.json",
+    "dataschema": "https://bloodtrail.dev/contracts/security-audit/2.0.0/security-audit-event.schema.json",
     "subject": "resource:account",
     "data": {
       "event": {
@@ -25,7 +25,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.1.0"
+        "version": "2.0.0"
       },
       "producer": {
         "name": "registration-boundary",
@@ -172,7 +172,7 @@
       "data": {
         "classification": "confidential",
         "retention_class": "security_standard",
-        "field_policy_version": "1.1.0"
+        "field_policy_version": "2.0.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -204,7 +204,7 @@
     "source": "https://bloodtrail.dev/producers/account-transaction-owner",
     "type": "bloodtrail.audit.account.registration.completed",
     "time": "2026-07-31T12:01:00.000Z",
-    "dataschema": "https://bloodtrail.dev/contracts/security-audit/1.1.0/security-audit-event.schema.json",
+    "dataschema": "https://bloodtrail.dev/contracts/security-audit/2.0.0/security-audit-event.schema.json",
     "subject": "resource:account",
     "data": {
       "event": {
@@ -224,7 +224,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.1.0"
+        "version": "2.0.0"
       },
       "producer": {
         "name": "account-transaction-owner",
@@ -366,14 +366,18 @@
           "name": "fixture-risk",
           "version": "1.0.0",
           "provenance": {
-            "trust_level": "derived_server"
+            "trust_level": "client_claim",
+            "derived_from": [
+              "event.name",
+              "request.user_agent"
+            ]
           }
         }
       },
       "data": {
         "classification": "confidential",
         "retention_class": "security_elevated",
-        "field_policy_version": "1.1.0"
+        "field_policy_version": "2.0.0"
       },
       "integrity": {
         "transport_authentication": {
@@ -390,7 +394,7 @@
     "source": "https://bloodtrail.dev/producers/authentication-authority",
     "type": "bloodtrail.audit.authentication.succeeded",
     "time": "2026-07-31T12:02:00.000Z",
-    "dataschema": "https://bloodtrail.dev/contracts/security-audit/1.1.0/security-audit-event.schema.json",
+    "dataschema": "https://bloodtrail.dev/contracts/security-audit/2.0.0/security-audit-event.schema.json",
     "subject": "resource:credential",
     "data": {
       "event": {
@@ -410,7 +414,7 @@
       },
       "schema": {
         "name": "com.bloodtrail.security-audit.event",
-        "version": "1.1.0"
+        "version": "2.0.0"
       },
       "producer": {
         "name": "authentication-authority",
@@ -552,14 +556,18 @@
           "name": "fixture-risk",
           "version": "1.0.0",
           "provenance": {
-            "trust_level": "derived_server"
+            "trust_level": "derived_server",
+            "derived_from": [
+              "event.name",
+              "event.outcome"
+            ]
           }
         }
       },
       "data": {
         "classification": "confidential",
         "retention_class": "security_standard",
-        "field_policy_version": "1.1.0"
+        "field_policy_version": "2.0.0"
       },
       "integrity": {
         "transport_authentication": {

@@ -26,7 +26,7 @@ This document defines SDK-core trust boundaries. It does not authorize productio
 | Use `createCapturingAuditSink` or `createInMemoryAuditSink` in production | They have no durability, access-control, retention, rotation, retry, operational failure, or delivery guarantee | Keep test sinks in tests and local development only. A production sink/transport requires a separate OpenSpec change, privacy/security review, and explicit production authorization |
 | Treat `{ status: "accepted" }` as durable delivery | The result means only that the configured sink accepted the call; downstream loss or rejection can still occur | Define durability, retries, queues/outboxes, collector acceptance, storage, monitoring, and fail-open/fail-closed policy in separately governed future infrastructure |
 | Interpret transport authentication, signatures, attestations, or cryptographic integrity as proof that event claims are truthful | Integrity can show who sent bytes or whether bytes changed, but a compromised or incorrect producer can still emit false facts | Use integrity only for its stated transport/attestation scope; retain producer-truth limitations and validate application authority at the source |
-| Edit `src/generated/*`, copied validator output, catalog constants, or generated types by hand | Manual edits create silent divergence from the approved version `1.1.0` contract | Change no canonical semantics in this SDK. Run `npm run generate` from approved inputs and `npm run check:generated`; propose a separate governed contract version for genuine semantic changes |
+| Edit `src/generated/*`, copied validator output, catalog constants, or generated types by hand | Manual edits create silent divergence from the approved version `2.0.0` contract | Change no canonical semantics in this SDK. Run `npm run generate` from approved inputs and `npm run check:generated`; propose a separate governed contract version for genuine semantic changes |
 
 ## Authority-provider responsibility
 
@@ -87,7 +87,7 @@ The SDK rejects accessors without invoking them and translates reachable getter,
 
 ## Extensions
 
-Only generated registered namespaces and fields are accepted. The version `1.1.0` enrichment namespace has `downstream_enrichment` provenance and is non-authoritative. Extensions cannot introduce alternate event names, actors, tenants, resource ownership, authorization, outcomes, schema versions, delivery classes, or arbitrary payloads.
+Only generated registered namespaces and fields are accepted. The version `2.0.0` enrichment namespace has `downstream_enrichment` provenance and is non-authoritative. Extensions cannot introduce alternate event names, actors, tenants, resource ownership, authorization, outcomes, schema versions, delivery classes, or arbitrary payloads.
 
 ## Safe errors
 

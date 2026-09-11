@@ -16,7 +16,7 @@
   },
   "schema": {
     "name": "com.bloodtrail.security-audit.event",
-    "version": "1.1.0"
+    "version": "2.0.0"
   },
   "producer": {
     "name": "resource-access-owner",
@@ -158,14 +158,18 @@
       "name": "fixture-risk",
       "version": "1.0.0",
       "provenance": {
-        "trust_level": "derived_server"
+        "trust_level": "derived_server",
+        "derived_from": [
+          "event.name",
+          "event.outcome"
+        ]
       }
     }
   },
   "data": {
     "classification": "confidential",
     "retention_class": "security_elevated",
-    "field_policy_version": "1.1.0"
+    "field_policy_version": "2.0.0"
   },
   "integrity": {
     "transport_authentication": {

@@ -205,7 +205,7 @@ test("F-03 field-aware normalization freezes only SDK-owned values and preserves
   const deployment = { id: "deployment-one", region: "local", zone: "local-a" };
   const baseRequest = { id: "request-one", method: "POST", route: "/login" };
   const configuration: SecurityAuditSdkConfiguration = {
-    contractVersion: "1.1.0",
+    contractVersion: "2.0.0",
     producer,
     service,
     environment,
@@ -309,7 +309,7 @@ test("F-03 mutable class collaborators preserve receivers and accept sequential 
   const transformations: AuditFieldTransformationHook[] = [hook];
   const producer = { name: "behavior-producer", version: "0.1.0" };
   const configuration: SecurityAuditSdkConfiguration = {
-    contractVersion: "1.1.0",
+    contractVersion: "2.0.0",
     producer,
     service: { name: "behavior-service", version: "0.1.0" },
     environment: { name: "test" },
@@ -399,7 +399,7 @@ test("F-03 a pre-frozen sink and non-extensible provider remain usable when thei
   const identifierKeys = Reflect.ownKeys(identifiers);
 
   const sdk = createSecurityAuditSdk({
-    contractVersion: "1.1.0",
+    contractVersion: "2.0.0",
     producer: { name: "frozen-capability-producer", version: "0.1.0" },
     service: { name: "frozen-capability-service", version: "0.1.0" },
     environment: { name: "test" },
@@ -432,7 +432,7 @@ test("F-03 generic emit and current redelivery behavior do not freeze the caller
   assert.ok(event);
   const sink = new MutableClassSink();
   const sdk = createSecurityAuditSdk({
-    contractVersion: "1.1.0",
+    contractVersion: "2.0.0",
     producer: { name: "generic-boundary-producer", version: "0.1.0" },
     service: { name: "generic-boundary-service", version: "0.1.0" },
     environment: { name: "test" },

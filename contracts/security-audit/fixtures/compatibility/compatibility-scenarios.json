@@ -15,6 +15,11 @@
     "expected": "compatible_with_absence_meaning"
   },
   {
+    "name": "major-derived-field-trust-floor",
+    "change_class": "major",
+    "expected": "breaking"
+  },
+  {
     "name": "minor-catalog-addition",
     "change_class": "minor",
     "expected": "older_consumer_must_reject_or_quarantine_unknown_event"

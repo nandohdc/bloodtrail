@@ -22,8 +22,8 @@ async function positives(): Promise<SecurityAuditEvent[]> {
   return JSON.parse(await readFile(resolve(contractRoot, "examples/positive/all-events.json"), "utf8")) as SecurityAuditEvent[];
 }
 
-test("generated catalog binds exactly 24 contract 1.1.0 events", () => {
-  assert.equal(CONTRACT_VERSION, "1.1.0");
+test("generated catalog binds exactly 24 contract 2.0.0 events", () => {
+  assert.equal(CONTRACT_VERSION, "2.0.0");
   assert.equal(EVENT_CATALOG.length, 24);
   assert.equal(new Set(EVENT_CATALOG.map((entry) => entry.name)).size, 24);
   assert.equal(FIELD_POLICY.length, 135);
@@ -76,7 +76,7 @@ test("configuration snapshot is immutable and lifecycle is bounded", async () =>
   };
   const producer = { name: "test-producer", version: "1.0.0" };
   const sdk = createSecurityAuditSdk({
-    contractVersion: "1.1.0",
+    contractVersion: "2.0.0",
     producer,
     service: { name: "test-service", version: "1.0.0" },
     environment: { name: "test" },
@@ -105,7 +105,7 @@ test("invalid initialization returns a bounded safe structured error without inp
   const sink: AuditEventSink = { async emit() { return { status: "accepted" }; } };
   assert.throws(
     () => createSecurityAuditSdk({
-      contractVersion: "1.1.0",
+      contractVersion: "2.0.0",
       producer: { name: marker, version: "1.0.0" },
       service: { name: "service" },
       environment: { name: "test" },

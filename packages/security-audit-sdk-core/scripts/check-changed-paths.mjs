@@ -575,7 +575,7 @@ function validateGovernedContractCandidate(metadata) {
   assert(candidate.change === GOVERNED_CONTRACT_CANDIDATE.change, "contract.governedCandidate change is not the approved governed change");
   assert(candidate.rangeBase === GOVERNED_CONTRACT_CANDIDATE.rangeBase, "contract.governedCandidate range base is not the approved proposal baseline");
   assert(candidate.technicalCommit === GOVERNED_CONTRACT_CANDIDATE.technicalCommit, "contract.governedCandidate technical commit is not the approved candidate");
-  assert(metadata.contract.version === "1.1.0", "contract lifecycle version is not bound to the approved candidate");
+  assert(metadata.contract.version === "2.0.0", "contract lifecycle version is not bound to the approved candidate");
   assert(metadata.contract.normativeTechnicalTarget === candidate.technicalCommit, "contract lifecycle target is not bound to the approved candidate");
   assert(/^[0-9a-f]{40}$/.test(candidate.rangeBase), "contract.governedCandidate range base must be a full Git commit");
   assert(/^[0-9a-f]{40}$/.test(candidate.technicalCommit), "contract.governedCandidate technical commit must be a full Git commit");

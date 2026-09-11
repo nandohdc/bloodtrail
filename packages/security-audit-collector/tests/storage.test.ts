@@ -53,7 +53,7 @@ function event(overrides: Record<string, unknown> = {}): Record<string, unknown>
       observed_at: "2026-09-06T12:00:00.000Z",
       delivery_class: "security_significant",
     },
-    schema: { name: "security-audit-event", version: "1.1.0" },
+    schema: { name: "security-audit-event", version: "2.0.0" },
     producer: { name: "producer-fixture", version: "1.0.0" },
     environment: { name: "synthetic" },
     service: { name: "svc" },
@@ -62,7 +62,7 @@ function event(overrides: Record<string, unknown> = {}): Record<string, unknown>
     initiator: { type: "service", id: "init-1" },
     resource: { operation_type: "read" },
     correlation: { correlation_id: "c1", operation_id: "op1" },
-    data: { classification: "internal", retention_class: "security_standard", field_policy_version: "1.1.0" },
+    data: { classification: "internal", retention_class: "security_standard", field_policy_version: "2.0.0" },
     ...overrides,
   };
 }
@@ -117,7 +117,7 @@ test("S1 — a canonical valid record is persisted and retrieved byte-identicall
   assert.equal(stored.kind, "found");
   if (stored.kind !== "found") return;
   assert.equal(stored.record.body, text);
-  assert.equal(stored.record.schemaVersion, "1.1.0");
+  assert.equal(stored.record.schemaVersion, "2.0.0");
   assert.equal(stored.record.retentionClass, "security_standard");
   assert.equal(ingress.metrics().persisted, 1);
   assert.equal(ingress.metrics().accepted, 0, "a persisted occurrence is not also reported as bare admission");
@@ -229,7 +229,7 @@ test("S9 — retention derives from the record's class, identically in two deplo
 test("S10 — a declined retention class is an explicit rejection, never a shorter retention", () => {
   const storage = memoryStorage();
   const ingress = persistingIngress(storage);
-  const declined = body({ data: { classification: "internal", retention_class: "policy_governed", field_policy_version: "1.1.0" } });
+  const declined = body({ data: { classification: "internal", retention_class: "policy_governed", field_policy_version: "2.0.0" } });
   const result = submit(ingress, declined);
   expectRejection(result, DIAGNOSTIC_CODES.RETENTION_CLASS_DECLINED);
   assert.equal(result.kind === "rejected" && result.diagnostic.path, "/data/retention_class");
@@ -317,7 +317,7 @@ test("S16 — a stored record outside the reader's supported set is distinguisha
   assert.equal(writer.put(TENANT_ALPHA, recordFor(body())).kind, "written");
   writer.close();
   const reader = new SqliteStorage({ location, supportedVersions: ["9.9.9"] });
-  assert.deepEqual(reader.get(TENANT_ALPHA, EVENT_ID), { kind: "unsupported_version", schemaVersion: "1.1.0" });
+  assert.deepEqual(reader.get(TENANT_ALPHA, EVENT_ID), { kind: "unsupported_version", schemaVersion: "2.0.0" });
   assert.equal(reader.get(TENANT_ALPHA, "00000000-0000-4000-8000-000000000999").kind, "absent");
   reader.close();
 });
@@ -396,7 +396,7 @@ function recordFor(text: string): StoredRecord {
   const { retry_attempt: _attempt, ...correlation } = parsed.correlation;
   return {
     eventId: EVENT_ID,
-    schemaVersion: "1.1.0",
+    schemaVersion: "2.0.0",
     retentionClass: "security_standard",
     admittedAt: ADMITTED_AT,
     expiresAt: ADMITTED_AT + RETENTION_MILLISECONDS.security_standard,

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "version": "1.1.0",
+    "version": "2.0.0",
     "normativeTechnicalTarget": "eeebae6d73e5a26db3e6778f56ee95756fa146c6",
     "protectedPrefixes": [
       "contracts/security-audit/",

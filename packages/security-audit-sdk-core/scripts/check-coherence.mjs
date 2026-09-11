@@ -22,12 +22,12 @@ const originalArchiveRoot = lifecycle.originalArchive;
 const original = lifecycleMetadata.originalSdkChange;
 const remediation = lifecycleMetadata.remediationChange;
 const expected = Object.freeze({
-  contractVersion: "1.1.0",
+  contractVersion: "2.0.0",
   normativeTarget: "eeebae6d73e5a26db3e6778f56ee95756fa146c6",
   proposalBaseline: "eeebae6d73e5a26db3e6778f56ee95756fa146c6",
   remediationBaseline: "b4206f92fc92c7355efaa80d9f878353cf794452",
   packageName: "@bloodtrail/security-audit-sdk-core",
-  packageVersion: "0.2.0",
+  packageVersion: "0.3.0",
   nodeEngines: ">=24 <25 || >=26 <27",
   nodeMajors: [24, 26],
   nodeCiVersions: ["24.2.0", "26.5.0"],
@@ -134,7 +134,7 @@ rule("lock-root", "package-lock.json", lock.packages?.[""]?.version === pkg.vers
 rule("lock-runtime-dependencies", "package-lock.json", Object.keys(lock.packages?.[""]?.dependencies ?? {}).every((dep) => dep.startsWith("@bloodtrail/")), "lockfile declares a third-party runtime dependency");
 
 rule("compat-package", "compatibility.json", compatibility.package?.name === pkg.name && compatibility.package?.version === pkg.version, "compatibility package identity differs from package.json");
-rule("compat-contract", "compatibility.json", compatibility.contractVersion === expected.contractVersion && same(compatibility.supportedContractVersions, [expected.contractVersion]), "compatibility contract range is not exactly 1.1.0");
+rule("compat-contract", "compatibility.json", compatibility.contractVersion === expected.contractVersion && same(compatibility.supportedContractVersions, [expected.contractVersion]), `compatibility contract range is not exactly ${expected.contractVersion}`);
 rule("compat-target", "compatibility.json", compatibility.normativeTechnicalTarget === expected.normativeTarget, "compatibility normative target differs from the approved contract commit");
 rule("compat-node", "compatibility.json", compatibility.node?.engines === expected.nodeEngines && same(compatibility.node?.supportedMajors, expected.nodeMajors) && same(compatibility.node?.ciVersions, expected.nodeCiVersions), "Node support/evidence metadata differs from policy");
 rule("compat-typescript", "compatibility.json", compatibility.typescript?.supported === expected.typescriptRange && compatibility.typescript?.ciVersion === expected.typescriptCiVersion, "TypeScript support metadata differs from policy");
@@ -152,7 +152,7 @@ rule("ci-node-26-pinned", ".github/workflows/ci.yml", ciWorkflow.includes(`node-
 rule("ci-node-24-executed", ".github/workflows/ci.yml", ciWorkflow.includes(`node-version: "${expected.nodeCiVersions[0]}"`), "CI workflow does not execute declared Node 24 leg");
 rule("ci-node-no-floating-major", ".github/workflows/ci.yml", !/node-version:\s*["']\d+["']/.test(ciWorkflow), "CI workflow uses floating Node major tag");
 
-rule("provenance-version", "contract-provenance.json", provenance.contractVersion === expected.contractVersion, "contract provenance version differs from 1.1.0");
+rule("provenance-version", "contract-provenance.json", provenance.contractVersion === expected.contractVersion, `contract provenance version differs from ${expected.contractVersion}`);
 rule("provenance-target", "contract-provenance.json", provenance.normativeTechnicalTarget === expected.normativeTarget, "contract provenance target differs from the approved commit");
 rule("proposal-baseline", "contract-provenance.json", provenance.proposalBaseline === expected.proposalBaseline, "proposal baseline differs from the real proposal commit");
 const authorization = provenance.authorization ?? {};
@@ -203,7 +203,7 @@ for (const name of adrFiles) {
 }
 const allAdrs = adrTexts.join("\n");
 rule("adr-runtime", "adr", includesAll(allAdrs, [expected.packageName, "Node.js majors 24 and 26", expected.typescriptRange, "runtime dependencies remain zero"]), "ADR runtime/package policy is incomplete");
-rule("adr-contract", "adr", includesAll(allAdrs, [expected.normativeTarget, "contract `1.1.0`"]), "ADR contract version/target binding is incomplete");
+rule("adr-contract", "adr", includesAll(allAdrs, [expected.normativeTarget, `contract \`${expected.contractVersion}\``]), "ADR contract version/target binding is incomplete");
 rule("adr-validator-format", "adr/003-runtime-schema-validation.md", allAdrs.includes("standalone CommonJS output") && !allAdrs.includes("standalone ESM output"), "validator module-format decision is stale or contradictory");
 rule("adr-baseline", "adr/010-canonical-verification-and-scope.md", allAdrs.includes(expected.remediationBaseline) && !/94dc4fcfb267777817c0f1894b02d542670f5c79/.test(allAdrs), "ADR changed-path baseline is stale or contradictory");
 
@@ -233,7 +233,7 @@ const unresolvedCandidateOpenSpec = governedCandidateDeclared ? "" : openSpec;
 const governedCandidateOpenSpec = governedCandidateRoot
   ? await readGovernedCandidateOpenSpec(governedCandidateRoot)
   : unresolvedCandidateOpenSpec;
-rule("openspec-contract", governedCandidateRoot ? relative(repositoryRoot, governedCandidateRoot) : relative(repositoryRoot, changeRoot), governedCandidateOpenSpec.includes(expected.contractVersion), "governed contract transition does not remain bound to contract 1.1.0");
+rule("openspec-contract", governedCandidateRoot ? relative(repositoryRoot, governedCandidateRoot) : relative(repositoryRoot, changeRoot), governedCandidateOpenSpec.includes(expected.contractVersion), `governed contract transition does not remain bound to contract ${expected.contractVersion}`);
 rule("openspec-production", relative(repositoryRoot, changeRoot), includesAll(openSpec, ["browser telemetry", "production", "transport"]), "governed change lacks explicit production/transport/browser boundaries");
 
 const tasks = texts.get("tasks") ?? "";

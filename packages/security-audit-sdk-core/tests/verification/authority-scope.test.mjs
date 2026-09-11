@@ -89,7 +89,7 @@ test("authority-scope enumeration: exactly 35 exported constructors and 19 Audit
 
 function createInstance(sink) {
   return sdk.createSecurityAuditSdk({
-    contractVersion: "1.1.0",
+    contractVersion: "2.0.0",
     producer: { name: "authority-scope-verification", version: "1.0.0" },
     service: { name: "authority-scope" },
     environment: { name: "verification" },
@@ -425,7 +425,7 @@ function probeSource({ validatorIndex, foreignIndex, idPrefix }) {
     `assert.notEqual(contextValidator, contextForeign, "${idPrefix} fixture resolved a single module copy");`,
     `const sinkValidator = testingValidator.createCapturingAuditSink();`,
     `const instanceValidator = validator.createSecurityAuditSdk({`,
-    `  contractVersion: "1.1.0",`,
+    `  contractVersion: "2.0.0",`,
     `  producer: { name: "authority-scope-${idPrefix}", version: "1.0.0" },`,
     `  service: { name: "${idPrefix}" },`,
     `  environment: { name: "verification" },`,

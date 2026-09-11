@@ -191,8 +191,10 @@ function actor(type, scope) {
   return base;
 }
 
+// From 2.0.0 every risk result lists its material inputs. The second fixture derives from a
+// client_claim input and so declares client_claim: the floor admits a truthful lower claim.
 function fixtureRisk(entry, index) {
-  const derivedFrom = index === 0 ? ["event.name", "event.outcome"] : undefined;
+  const clientDerived = index === 1;
   const policyCritical = entry.delivery === "policy_critical";
   return {
     level: policyCritical ? "high" : "low",
@@ -202,8 +204,8 @@ function fixtureRisk(entry, index) {
       name: "fixture-risk",
       version: "1.0.0",
       provenance: {
-        trust_level: "derived_server",
-        ...(derivedFrom ? { derived_from: derivedFrom } : {})
+        trust_level: clientDerived ? "client_claim" : "derived_server",
+        derived_from: clientDerived ? ["event.name", "request.user_agent"] : ["event.name", "event.outcome"]
       }
     }
   };
@@ -386,6 +388,10 @@ function negativeFixtures(positive) {
   add("derived-from-empty", provenance.error_codes.empty, (e) => { setDerivedInputs(e, []); });
   add("derived-from-non-derived", provenance.error_codes.non_derived, (e) => { e.risk.model.provenance.trust_level = "observed_transport"; setDerivedInputs(e, ["event.name", "event.outcome"]); });
   add("derived-from-cycle", provenance.error_codes.cycle, (e) => { setDerivedInputs(e, [provenance.field_path]); });
+  add("derived-from-risk-cycle", provenance.error_codes.cycle, (e) => { setDerivedInputs(e, ["event.name", "risk.score"]); });
+  add("derived-from-missing", provenance.error_codes.missing, (e) => { delete e.risk.model.provenance.derived_from; });
+  add("derived-from-missing-trust-level", provenance.error_codes.missing, (e) => { delete e.risk.model.provenance.trust_level; });
+  add("derived-from-trust-floor", provenance.error_codes.trust_floor, (e) => { setDerivedInputs(e, ["event.name", "request.user_agent"]); });
   return fixtures;
 }
 
@@ -490,6 +496,7 @@ async function main() {
     { name: "patch-documentation-correction", change_class: "patch", expected: "compatible" },
     { name: "minor-optional-field-addition", change_class: "minor", expected: "compatible_with_absence_meaning" },
     { name: "minor-derived-field-provenance", change_class: "minor", expected: "compatible_with_absence_meaning" },
+    { name: "major-derived-field-trust-floor", change_class: "major", expected: "breaking" },
     { name: "minor-catalog-addition", change_class: "minor", expected: "older_consumer_must_reject_or_quarantine_unknown_event" },
     { name: "minor-enum-addition", change_class: "minor", expected: "compatible_only_when registry version is supported" },
     { name: "minor-deprecation", change_class: "minor", expected: "compatible_during_support_window" },

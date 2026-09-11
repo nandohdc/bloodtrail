@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "package": {
     "name": "@bloodtrail/security-audit-sdk-core",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "status": "isolated-candidate-not-published"
   },
   "node": {
@@ -26,11 +26,11 @@
   ],
   "extensionNamespaces": ["bloodtrail.audit.enrichment.v1"],
   "packageExports": [".", "./testing"],
-  "contractVersion": "1.1.0",
-  "supportedContractVersions": ["1.1.0"],
+  "contractVersion": "2.0.0",
+  "supportedContractVersions": ["2.0.0"],
   "contractVersionRange": {
-    "minimum": "1.1.0",
-    "maximum": "1.1.0"
+    "minimum": "2.0.0",
+    "maximum": "2.0.0"
   },
   "normativeTechnicalTarget": "eeebae6d73e5a26db3e6778f56ee95756fa146c6",
   "generatedTypes": {
@@ -165,5 +165,5 @@
   },
   "deprecationPolicy": "Document deprecation in a minor release; removal requires a major release unless an immediate security correction is explicitly governed.",
   "migrationDocument": "MIGRATION.md",
-  "unsupportedContractVersions": ["0.9.0", "1.0.0", "2.0.0"]
+  "unsupportedContractVersions": ["0.9.0", "1.0.0", "1.1.0", "3.0.0"]
 }

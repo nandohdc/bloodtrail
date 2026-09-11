@@ -16,7 +16,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "account",
@@ -25,7 +25,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000001"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -47,7 +47,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "account",
@@ -56,7 +56,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000002"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -78,7 +78,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "authentication",
@@ -87,7 +87,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000003"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -109,7 +109,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "authentication",
@@ -118,7 +118,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000004"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -140,7 +140,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "authentication",
@@ -149,7 +149,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000005"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -171,7 +171,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "authentication",
@@ -180,7 +180,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000006"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -202,7 +202,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "session",
@@ -211,7 +211,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000007"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -233,7 +233,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "session",
@@ -242,7 +242,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000008"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -264,7 +264,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "account",
@@ -273,7 +273,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000009"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -295,7 +295,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "account",
@@ -304,7 +304,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000010"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -326,7 +326,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "authorization",
@@ -335,7 +335,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000011"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -357,7 +357,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "authorization",
@@ -366,7 +366,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000012"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -388,7 +388,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "authorization",
@@ -397,7 +397,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000013"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -419,7 +419,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "authorization",
@@ -428,7 +428,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000014"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -450,7 +450,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "privilege",
@@ -459,7 +459,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000015"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -481,7 +481,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "administration",
@@ -490,7 +490,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000016"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -512,7 +512,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "administration",
@@ -521,7 +521,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000017"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -543,7 +543,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "data_access",
@@ -552,7 +552,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000018"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -574,7 +574,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "data_access",
@@ -583,7 +583,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000019"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -605,7 +605,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "data_access",
@@ -614,7 +614,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000020"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -636,7 +636,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "data_access",
@@ -645,7 +645,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000021"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -667,7 +667,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "data_access",
@@ -676,7 +676,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000022"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -698,7 +698,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "security_configuration",
@@ -707,7 +707,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000023"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."
@@ -729,7 +729,7 @@
     },
     "instrumentation_scope": {
       "name": "com.bloodtrail.security-audit.contract",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "attributes": {
       "bloodtrail.audit.category": "tenant_security",
@@ -738,7 +738,7 @@
     },
     "body": {
       "schema_name": "com.bloodtrail.security-audit.event",
-      "schema_version": "1.1.0",
+      "schema_version": "2.0.0",
       "event_id": "11111111-1111-4111-8111-000000000024"
     },
     "body_policy": "Canonical event may be in structured Body only with size/privacy checks; native authority fields must not conflict with attributes/body duplicates."

@@ -158,7 +158,7 @@ test("F-05 all exported raw-value authority factories share the bounded normaliz
 
 test("F-05 configuration, context-frame, and operation factories do not leak caller exceptions", () => {
   const baseConfig = {
-    contractVersion: "1.1.0" as const,
+    contractVersion: "2.0.0" as const,
     producer: { name: "service", version: "1.0.0" },
     service: { name: "service", version: "1.0.0" },
     environment: { name: "test" },
@@ -188,7 +188,7 @@ test("F-05/F-12 generic emit normalizes hostile values, classifies serialization
   const base = await canonicalFixture();
   let sinkCalls = 0;
   const sdk = createSecurityAuditSdk({
-    contractVersion: "1.1.0",
+    contractVersion: "2.0.0",
     producer: base.producer,
     service: base.service,
     environment: base.environment,
@@ -228,7 +228,7 @@ test("F-05 getter, Proxy traps, and toJSON behavior are bounded and non-disclosi
   const base = await canonicalFixture();
   let sinkCalls = 0;
   const sdk = createSecurityAuditSdk({
-    contractVersion: "1.1.0",
+    contractVersion: "2.0.0",
     producer: base.producer,
     service: base.service,
     environment: base.environment,
@@ -265,7 +265,7 @@ test("F-12 genuine size violations remain field-limit failures while valid canon
   const base = await canonicalFixture();
   let sinkCalls = 0;
   const sdk = createSecurityAuditSdk({
-    contractVersion: "1.1.0",
+    contractVersion: "2.0.0",
     producer: base.producer,
     service: base.service,
     environment: base.environment,
@@ -302,7 +302,7 @@ test("F-05/F-12 named failure does not invoke the sink or consume terminal compl
   assert.ok(method);
   let sinkCalls = 0;
   const sdk = createSecurityAuditSdk({
-    contractVersion: "1.1.0",
+    contractVersion: "2.0.0",
     producer: fixture.producer,
     service: fixture.service,
     environment: fixture.environment,

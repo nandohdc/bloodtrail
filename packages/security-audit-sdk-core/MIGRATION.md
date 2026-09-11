@@ -1,6 +1,6 @@
 # Compatibility and migration policy
 
-This policy applies to `@bloodtrail/security-audit-sdk-core`. The package is currently a private, unpublished candidate at version `0.2.0`; this document defines compatibility rules without authorizing release or production use.
+This policy applies to `@bloodtrail/security-audit-sdk-core`. The package is currently a private, unpublished candidate at version `0.3.0`; this document defines compatibility rules without authorizing release or production use.
 
 ## Two independent version axes
 
@@ -13,8 +13,8 @@ An SDK version does not create or approve a contract version. The SDK implementa
 
 `compatibility.json` is the machine-readable source for this candidate's compatibility declaration:
 
-- package: `@bloodtrail/security-audit-sdk-core` `0.2.0`;
-- supported contract versions: exactly `1.1.0` (minimum and maximum are both `1.1.0`);
+- package: `@bloodtrail/security-audit-sdk-core` `0.3.0`;
+- supported contract versions: exactly `2.0.0` (minimum and maximum are both `2.0.0`);
 - normative contract target: `eeebae6d73e5a26db3e6778f56ee95756fa146c6`;
 - Node.js: majors `24` and `26` only; exact verification releases `24.2.0` and `26.5.0`;
 - TypeScript: `>=5.9.2 <6`; exact repository compiler `5.9.2`;
@@ -143,6 +143,10 @@ No migration is required for callers that omit `retention`, because both default
 ## Contract 1.1.0 provenance transition
 
 Candidate `0.2.0` replaces its exact contract baseline with `1.1.0`; callers must update the construction literal from `"1.0.0"` to `"1.1.0"`. The contract adds optional `risk.model.provenance.derived_from` for code-point-ordered material input paths of `derived_server` risk models. Existing events that omit the field remain valid. Supplied paths are rejected when malformed, duplicated, unordered, unresolvable, absent from the event, non-derived, or cyclic. This candidate remains private and unpublished and does not authorize release or production use.
+
+## Contract 2.0.0 trust-floor enforcement
+
+Candidate `0.3.0` replaces its exact contract baseline with `2.0.0`; callers must update the construction literal from `"1.1.0"` to `"2.0.0"`. This is breaking. Every event carrying `risk` must now carry both `risk.model.provenance.trust_level` and `risk.model.provenance.derived_from`; omitting either fails with `DERIVED_FROM_MISSING`. The declared level may be `derived_server` or any less trusted level, but never more trusted than the least trusted listed input, whose trust is the contract's declared trust for that path — a violation fails with `DERIVED_FROM_TRUST_FLOOR_EXCEEDED` at `/risk/model/provenance/derived_from/<index>`. Levels above `derived_server` fail with `DERIVED_FROM_NON_DERIVED`, and any input under `risk` fails with `DERIVED_FROM_CYCLE`. A producer whose risk model reads a `client_claim` input declares `client_claim` rather than being unable to emit. This candidate remains private and unpublished and does not authorize release or production use.
 
 ## Contract-version upgrades
 

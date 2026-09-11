@@ -1,4 +1,4 @@
-import { CONTRACT_SCHEMA_NAME, CONTRACT_VERSION, DERIVED_FIELD_PROVENANCE, EVENT_CATALOG, EXTENSION_NAMESPACES, FIELD_POLICY } from "../generated/contract.generated.js";
+import { CONTRACT_SCHEMA_NAME, CONTRACT_VERSION, DERIVED_FIELD_PROVENANCE, EVENT_CATALOG, EXTENSION_NAMESPACES, FIELD_POLICY, REGISTRIES } from "../generated/contract.generated.js";
 import type { EventDefinition, EventSemantic, SecurityAuditEvent } from "../generated/contract.generated.js";
 import type { AuditResult } from "../errors.js";
 import { failure, normalizeCanonicalInput } from "../errors.js";
@@ -10,6 +10,15 @@ const canonicalFieldPaths: ReadonlySet<string> = new Set(FIELD_POLICY.map((field
 const derivedFromPath = DERIVED_FIELD_PROVENANCE.field_path;
 const derivedFromPointer = `/${derivedFromPath.replaceAll(".", "/")}`;
 const derivedProvenanceCodes = DERIVED_FIELD_PROVENANCE.error_codes;
+const derivedTrustPointer = `/${DERIVED_FIELD_PROVENANCE.trust_path.replaceAll(".", "/")}`;
+// The canonical trust order, most trusted first, and the trust the contract declares for each
+// field and extension namespace. An input's trust is read from here, never from the event, so a
+// producer cannot supply the value its own floor is compared against.
+const trustOrder: readonly string[] = REGISTRIES.trust_levels;
+const fieldTrustByPath: ReadonlyMap<string, string> = new Map(FIELD_POLICY.map((field) => [field.path, field.trust]));
+const extensionTrustByNamespace: ReadonlyMap<string, string> = new Map(
+  EXTENSION_NAMESPACES.map((entry) => [entry.namespace, entry.trust]),
+);
 const asyncCompletionSemantics = new Set(["account_registration_completed", "password_reset_completed"]);
 const resourceIdentityRequiredSemantics = new Set([
   "sensitive_resource_viewed",
@@ -87,16 +96,43 @@ function validateEventSemantics(event: SecurityAuditEvent, definition: EventDefi
   return { ok: true, value: undefined };
 }
 
+// From contract 2.0.0 every event carrying risk declares its provenance, the declared level stays
+// at or below the producer's transformation ceiling, and it stays at or below the least trusted
+// material input. This is the single trust-floor implementation every construction path reaches.
 function validateDerivedFieldProvenance(event: SecurityAuditEvent): AuditResult<void> {
+  if (valueAtPath(event, DERIVED_FIELD_PROVENANCE.required_with) === undefined) return { ok: true, value: undefined };
+  const declared = valueAtPath(event, DERIVED_FIELD_PROVENANCE.trust_path);
+  if (declared === undefined) return failure(derivedProvenanceCodes.missing, "validation", derivedTrustPointer);
   const inputs = valueAtPath(event, derivedFromPath);
-  if (inputs === undefined) return { ok: true, value: undefined };
+  if (inputs === undefined) return failure(derivedProvenanceCodes.missing, "validation", derivedFromPointer);
   const shape = derivedInputShape(inputs);
   if ("code" in shape) return failure(shape.code, "validation", derivedFromPointer);
-  if (valueAtPath(event, DERIVED_FIELD_PROVENANCE.trust_path) !== DERIVED_FIELD_PROVENANCE.required_trust) {
+  if (isMoreTrusted(declared, DERIVED_FIELD_PROVENANCE.transformation_ceiling)) {
     return failure(derivedProvenanceCodes.non_derived, "validation", derivedFromPointer);
   }
   const referenceCode = derivedInputReferenceCode(event, shape.inputs);
-  return referenceCode ? failure(referenceCode, "validation", derivedFromPointer) : { ok: true, value: undefined };
+  if (referenceCode) return failure(referenceCode, "validation", derivedFromPointer);
+  return trustFloorResult(declared, shape.inputs);
+}
+
+// A level outside the order ranks above every level, so an unregistered value fails closed.
+function isMoreTrusted(left: unknown, right: string): boolean {
+  return trustOrder.indexOf(left as string) < trustOrder.indexOf(right);
+}
+
+function inputTrust(input: string): string {
+  return fieldTrustByPath.get(input) ?? extensionTrustByNamespace.get(input.slice("extensions.".length)) ?? "unknown";
+}
+
+// Points at the first input, in canonical order, carrying the least trusted level — by position,
+// so the caller-supplied path is never echoed in the diagnostic.
+function trustFloorResult(declared: unknown, inputs: readonly string[]): AuditResult<void> {
+  let floorIndex = 0;
+  for (let index = 1; index < inputs.length; index += 1) {
+    if (isMoreTrusted(inputTrust(inputs[floorIndex]!), inputTrust(inputs[index]!))) floorIndex = index;
+  }
+  if (!isMoreTrusted(declared, inputTrust(inputs[floorIndex]!))) return { ok: true, value: undefined };
+  return failure(derivedProvenanceCodes.trust_floor, "validation", `${derivedFromPointer}/${floorIndex}`);
 }
 
 function derivedInputShape(inputs: unknown): { readonly code: string } | { readonly inputs: string[] } {
@@ -152,7 +188,7 @@ function compareByCodePoint(left: string, right: string): number {
 }
 
 function derivedInputResolutionCode(event: SecurityAuditEvent, input: string): string | null {
-  if (input === derivedFromPath) return derivedProvenanceCodes.cycle;
+  if (input === derivedFromPath || input.startsWith(DERIVED_FIELD_PROVENANCE.cycle_prefix)) return derivedProvenanceCodes.cycle;
   if (canonicalFieldPaths.has(input)) return valueAtPath(event, input) === undefined ? derivedProvenanceCodes.absent : null;
   if (!isRegisteredExtensionPath(input)) return derivedProvenanceCodes.unresolvable;
   const namespace = input.slice("extensions.".length);
