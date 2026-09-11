@@ -717,7 +717,7 @@ test("incorrect original SDK archive path is rejected", () => {
 
 test("incompatible package metadata is rejected", () => {
   const root = caseRepository("package-metadata");
-  replace(root, "packages/security-audit-sdk-core/package.json", '"version": "0.2.0"', '"version": "9.0.0"');
+  replace(root, "packages/security-audit-sdk-core/package.json", '"version": "0.3.0"', '"version": "9.0.0"');
   fails(root, "scripts/check-coherence.mjs", ["--mode", "active"], "package-version");
 });
 

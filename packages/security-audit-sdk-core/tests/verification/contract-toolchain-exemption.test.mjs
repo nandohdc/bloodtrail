@@ -1,8 +1,8 @@
 import test, { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { packageRoot, repositoryRoot } from "../../scripts/verification-helpers.mjs";
 import { disposableGitEnvironment, runDisposableGit } from "./disposable-git.mjs";
@@ -195,23 +195,48 @@ describe("governed candidate coherence", () => {
   const manifestPath = () => resolve(candidateRoot(), ".openspec.yaml");
   const contractSpecPath = () => resolve(candidateRoot(), "specs/security-audit-event-contract/spec.md");
   const pristineManifest = readFileSync(resolve(candidateRoot(), ".openspec.yaml"), "utf8");
+  const pristineContractSpec = existsSync(contractSpecPath()) ? readFileSync(contractSpecPath(), "utf8") : null;
+  const syntheticContractSpec = "## ADDED Requirements\n\n### Requirement: Synthetic delta\n\nThe contract SHALL be synthetic.\n\n#### Scenario: Synthetic\n- **WHEN** a synthetic delta is read\n- **THEN** it is synthetic\n";
 
   beforeEach(() => {
     writeFileSync(lifecyclePath, pristineLifecycle, "utf8");
     writeFileSync(manifestPath(), pristineManifest, "utf8");
+    if (pristineContractSpec === null) rmSync(contractSpecPath(), { force: true });
+    else writeContractSpec(pristineContractSpec);
   });
+
+  function writeContractSpec(text) {
+    mkdirSync(dirname(contractSpecPath()), { recursive: true });
+    writeFileSync(contractSpecPath(), text, "utf8");
+  }
+
+  // A governed candidate either declares skip_specs and ships no contract delta,
+  // or ships its contract delta. Each arm builds the shape it tests, so no arm
+  // depends on which shape the currently governed candidate happens to have:
+  // #96's candidate ships a delta where #423's declared skip_specs, and arms
+  // that read the live shape went vacuous on that move.
+  function makeDeltaLess(manifest) {
+    rmSync(contractSpecPath(), { force: true });
+    writeFileSync(manifestPath(), manifest, "utf8");
+  }
 
   // Asserts the spec-delta rule alone rather than the whole run: the disposable
   // clone has no built `dist`, so an all-rules assertion here would report an
   // unrelated environmental failure and say nothing about the subject.
   it("raises no missing-contract-delta failure for a candidate that declares skip_specs", () => {
-    assert.match(pristineManifest, /^skip_specs:[ \t]*true[ \t]*$/m,
-      "this control is vacuous unless the candidate really declares skip_specs");
-    assert.equal(existsSync(contractSpecPath()), false,
-      "this control is vacuous unless the candidate really ships no contract delta");
+    makeDeltaLess("schema: spec-driven\nskip_specs: true\ncreated: 2026-09-09\n");
+    assert.equal(existsSync(contractSpecPath()), false, "this control is vacuous unless the candidate ships no contract delta");
     const result = runCoherence();
     assert.doesNotMatch(result.output, /governed-candidate-contract-spec/,
       "a declared delta-less candidate must not be reported as missing its contract delta");
+  });
+
+  it("raises no missing-contract-delta failure for a candidate that ships its contract delta", () => {
+    writeFileSync(manifestPath(), "schema: spec-driven\ncreated: 2026-09-10\n", "utf8");
+    writeContractSpec(pristineContractSpec ?? syntheticContractSpec);
+    const result = runCoherence();
+    assert.doesNotMatch(result.output, /governed-candidate-contract-spec/,
+      "a candidate carrying its contract delta must not be reported as missing it");
   });
 
   // The relaxation above is legitimate only because the change declares it has no
@@ -222,7 +247,7 @@ describe("governed candidate coherence", () => {
     ["the declaration is negated", "schema: spec-driven\nskip_specs: false\ncreated: 2026-09-09\n"],
   ]) {
     it(`rejects a candidate with no contract delta when ${label}`, () => {
-      writeFileSync(manifestPath(), manifest, "utf8");
+      makeDeltaLess(manifest);
       const result = runCoherence();
       assert.equal(result.passed, false, `expected the undeclared missing delta to fail:\n${result.output}`);
       assert.match(result.output, /governed-candidate-contract-spec is missing or unreadable/);
