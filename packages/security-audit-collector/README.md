@@ -43,10 +43,12 @@ authenticate → size → parse → schema → version → deduplicate → [pers
   five minutes. A byte-identical retry is a distinct `duplicate` outcome and
   is not admitted again; different bytes under a live pair are rejected as a
   conflict. Full live capacity rejects rather than evicting a live pair.
-- **persist** — runs only when storage is configured (see below). The
-  occurrence is acknowledged `persisted` only after the storage port confirms
-  the write; any other port outcome withdraws the deduplication reservation and
-  rejects with a distinct `storage` diagnostic.
+- **persist** — runs only when storage is configured (see below), and then
+  replaces the in-memory deduplicate stage: the storage port decides duplicate
+  identity durably on the record's scope and event identity. The occurrence is
+  acknowledged `persisted` only after the port confirms the write; a port
+  `duplicate` is the distinct duplicate outcome acknowledged `persisted`; any
+  other port outcome rejects with a distinct `storage` diagnostic (#478).
 - **accept** — without storage, acceptance is **admission only**: the
   occurrence enters `admitted` with its event identity. No durability,
   delivery, retry, or downstream claim is made (delivery conformance
@@ -57,10 +59,12 @@ closed vocabulary; counters are plain increments keyed by stable labels.
 No diagnostic or metric carries payload content, credentials, or secrets, and
 no failure emits an audit event.
 
-Duplicate recognition is an in-memory, instance-local synthetic control. It
-uses lazy expiry (no timer), is not durable or shared between collectors, and
-makes **no exactly-once, delivery, retry, storage, or production-retention
-claim**.
+Duplicate recognition without storage is an in-memory, instance-local
+synthetic control. It uses lazy expiry (no timer), is not durable or shared
+between collectors, and makes **no exactly-once, delivery, retry, storage, or
+production-retention claim**. With storage configured it is not consulted at
+all: the storage port's durable identity decision replaces it, so its
+32-record capacity does not bound persisted throughput (#478).
 
 ## Storage
 
@@ -71,7 +75,8 @@ single selected backend.
 
 | Port result | Collector outcome |
 |---|---|
-| `written`, `duplicate` | `persisted` |
+| `written` | `persisted` |
+| `duplicate` | `duplicate`, acknowledged `persisted` |
 | `failed` (`backend`) | rejected — `COLLECTOR_STORAGE_WRITE_FAILED` |
 | `failed` (`conflict`) | rejected — `COLLECTOR_STORAGE_CONFLICT` |
 | `indeterminate`, a throw, or an unrecognised result | rejected — `COLLECTOR_STORAGE_WRITE_INDETERMINATE` |

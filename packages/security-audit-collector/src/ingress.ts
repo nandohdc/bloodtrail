@@ -2,12 +2,14 @@
 //   authenticate → size → parse → schema → version → deduplicate → [persist] → accept
 // where every stage fails closed. A rejection at any stage terminates before
 // any later stage runs, before admission, and before any capacity is
-// consumed. Without storage, acceptance is admission only: the occurrence
-// enters `admitted` with its event identity and the sender identity recorded
-// at the authentication boundary, and no durability claim is made (delivery
-// conformance contract, #102). With storage configured, the persist stage runs
-// and the only acknowledgment is `persisted`, issued after the storage port
-// confirms the write and never ahead of it (collector-storage-semantics, #114).
+// consumed. Without storage, the in-memory ledger decides duplicates and
+// acceptance is admission only: the occurrence enters `admitted` with its
+// event identity and the sender identity recorded at the authentication
+// boundary, and no durability claim is made (delivery conformance contract,
+// #102). With storage configured, the storage port decides duplicates within
+// the persist stage, and the only acknowledgment is `persisted`, issued after
+// the port confirms the write and never ahead of it (collector-storage-
+// semantics, #114; #478).
 
 import type { Authenticator } from "./auth.js";
 import { EVENT_MAX_BYTES } from "./bounds.js";
@@ -157,13 +159,16 @@ export class CollectorIngress {
       eventId: eventIdOf(parsed.value),
       dedupKey: deduplicationKeyOf(parsed.value),
     };
+    // With storage configured the port is the deduplication authority: it is
+    // durable, idempotent on the record's scope and identity, and conflict-
+    // detecting, so the in-memory ledger would add only its capacity cap (#478).
+    if (this.#storage !== null) {
+      return this.#persist(this.#storage, parsed.value, identity, submission.body);
+    }
+
     const deduplicated = this.#deduplicate(identity);
     if (deduplicated !== null) {
       return deduplicated;
-    }
-
-    if (this.#storage !== null) {
-      return this.#persist(this.#storage, parsed.value, identity, submission.body);
     }
 
     const admission = accept(parsed.value, authentication.identity);
@@ -171,23 +176,25 @@ export class CollectorIngress {
     return admission;
   }
 
-  // The persist stage. `persisted` is returned only for a write the port has
-  // confirmed; every other outcome withdraws the first-seen reservation and
-  // rejects, so a retry is written again rather than answered as a duplicate
-  // of evidence that was never stored.
+  // The persist stage, which with storage configured is also the deduplicate
+  // stage. `persisted` is returned only for a write the port has confirmed; a
+  // port duplicate is the distinct duplicate outcome, acknowledged `persisted`
+  // because the record is durable; every other outcome rejects and leaves
+  // nothing behind, so a retry reaches the port again.
   #persist(port: StoragePort, value: unknown, identity: DeduplicationInput, body: string): IngressResult {
     const prepared = prepareRecord(value, identity, body, this.#now());
     if (prepared.kind === "rejected") {
-      this.#deduplication.release(identity.senderIdentity, identity.eventId);
       return reject(prepared.diagnostic, this.#metrics, prepared.metric);
     }
     const written = putWithoutThrowing(port, prepared.scope, prepared.record);
-    if (written.kind === "written" || written.kind === "duplicate") {
-      this.#deduplication.confirmPersisted(identity.senderIdentity, identity.eventId);
+    if (written.kind === "written") {
       this.#metrics.increment("persisted");
       return { kind: "persisted", eventId: identity.eventId, senderIdentity: identity.senderIdentity };
     }
-    this.#deduplication.release(identity.senderIdentity, identity.eventId);
+    if (written.kind === "duplicate") {
+      this.#metrics.increment("deduplicated");
+      return { kind: "duplicate", eventId: identity.eventId, senderIdentity: identity.senderIdentity, acknowledgment: "persisted" };
+    }
     const failure = writeFailure(written);
     return reject(failure.diagnostic, this.#metrics, failure.metric);
   }
@@ -206,7 +213,8 @@ export class CollectorIngress {
         kind: "duplicate",
         eventId: input.eventId,
         senderIdentity: input.senderIdentity,
-        acknowledgment: this.#deduplication.acknowledgmentOf(input.senderIdentity, input.eventId),
+        // Only reachable without storage, so the first-seen occurrence was admitted, never persisted.
+        acknowledgment: "admitted",
       };
     }
     if (decision === "conflict") {
