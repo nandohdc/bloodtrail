@@ -4,11 +4,11 @@
 - [x] 1.2 Record success, stop, baseline, rollback, non-expansion, and decision-authority criteria for P1 (#118).
 - [x] 1.3 Record the technical privacy and threat-model review with outcome APPROVE FOR PROPOSAL, stating that the qualified privacy/legal review remains outstanding (#119).
 - [x] 1.4 Write the proposal, design, `client-evidence` capability, and task graph; validate strictly; generate the full assessment (#120).
-- [ ] 1.5 Merge this proposal in its own PR with all ten required checks green on the exact head.
+- [x] 1.5 Merge this proposal in its own PR with all ten required checks green on the exact head.
 
 ## 2. Owner authorization
 
-- [ ] 2.1 Record the implementation authorization (#121) against the exact merged versions of the purpose, criteria, review, and proposal artifacts, stating platforms, data categories, environments, and task scope, with production, publication, and deployment separately unauthorized.
+- [x] 2.1 Record the implementation authorization (#121) against the exact merged versions of the purpose, criteria, review, and proposal artifacts, stating platforms, data categories, environments, and task scope, with production, publication, and deployment separately unauthorized.
 
 ## 3. Correlation field decision
 
