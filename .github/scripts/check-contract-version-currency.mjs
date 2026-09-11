@@ -165,6 +165,31 @@ export const RECORDED_HISTORICAL_REFERENCES = Object.freeze([
     quote: "places than `npm run generate` reaches",
     reason: "names the 1.0.0 to 1.1.0 move itself, which is a historical event",
   },
+  {
+    path: "packages/security-audit-sdk-core/src/validation/semantic.ts",
+    quote: "From contract 2.0.0 every event carrying risk declares its provenance",
+    reason: "names the 2.0.0 move that made provenance mandatory, which is a historical event and still holds",
+  },
+  {
+    path: "research/browser-telemetry/DEPENDENCIES.md",
+    quote: "`@fingerprintjs/botd`",
+    reason: "BotD's own package version, unrelated to the canonical contract",
+  },
+  {
+    path: "research/browser-telemetry/README.md",
+    quote: "BotD 2.0.0",
+    reason: "BotD's own package version, unrelated to the canonical contract",
+  },
+  {
+    path: "research/browser-telemetry/source-evidence.md",
+    quote: "Research package is BotD 2.0.0",
+    reason: "BotD's own package version, unrelated to the canonical contract",
+  },
+  {
+    path: "research/browser-telemetry/source-evidence.md",
+    quote: "High for 2.0.0 under forced sampling",
+    reason: "BotD's own package version, unrelated to the canonical contract",
+  },
 ]);
 
 function fail(diagnostics) {

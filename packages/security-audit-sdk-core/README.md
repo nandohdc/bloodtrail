@@ -1,6 +1,6 @@
 # @bloodtrail/security-audit-sdk-core
 
-Framework-independent ESM TypeScript SDK core for constructing and validating events that conform to Bloodtrail Security Audit Event Contract version `2.0.0`.
+Framework-independent ESM TypeScript SDK core for constructing and validating events that conform to Bloodtrail Security Audit Event Contract version `2.1.0`.
 
 ## Status and authorization boundary
 
@@ -69,7 +69,7 @@ import { createCapturingAuditSink } from "@bloodtrail/security-audit-sdk-core/te
 
 const sink = createCapturingAuditSink(); // test/development only
 const audit = createSecurityAuditSdk({
-  contractVersion: "2.0.0",
+  contractVersion: "2.1.0",
   producer: { name: "synthetic-audit-producer", version: "0.1.0" },
   service: { name: "synthetic-service", version: "0.1.0" },
   environment: { name: "test" },
@@ -126,9 +126,9 @@ Expected validation and sink failures are returned as `AuditResult` values with 
 
 ## Contract compatibility
 
-This candidate implements exactly contract version `2.0.0`, bound to normative contract commit `b0bc2182668c488dd9997c43a0fa93f68ee32224`. `compatibility.json` is the machine-readable compatibility manifest and `contract-provenance.json` identifies all authoritative inputs. The SDK cannot silently change contract semantics. Unsupported versions, including `1.1.0` and `1.0.0`, fail safely. Contract changes require separate contract governance before SDK adaptation.
+This candidate implements exactly contract version `2.1.0`, bound to normative contract commit `74ccbcfd26a28c91fe6f98f8a066c8b25b883a3e`. `compatibility.json` is the machine-readable compatibility manifest and `contract-provenance.json` identifies all authoritative inputs. The SDK cannot silently change contract semantics. Unsupported versions, including `2.0.0`, `1.1.0`, and `1.0.0`, fail safely. Contract changes require separate contract governance before SDK adaptation.
 
-The private, unpublished candidate is `0.3.0`. Every event carrying `risk` must carry `risk.model.provenance.trust_level` and a code-point-ordered `risk.model.provenance.derived_from` listing every material input. The declared trust must not exceed `derived_server`, the producer's transformation ceiling, nor the least trusted listed input, whose trust is read from the contract's field policy and never from the event; a violation fails with `DERIVED_FROM_TRUST_FLOOR_EXCEEDED`, pointing at the input by position. The floor proves consistency with the declared inputs only, not that an undeclared input was unused.
+The private, unpublished candidate is `0.4.0`. An event may carry one optional, closed `client_evidence` reference at `client_claim` trust; this candidate validates it but its builders never populate it. Every event carrying `risk` must carry `risk.model.provenance.trust_level` and a code-point-ordered `risk.model.provenance.derived_from` listing every material input. The declared trust must not exceed `derived_server`, the producer's transformation ceiling, nor the least trusted listed input, whose trust is read from the contract's field policy and never from the event; a violation fails with `DERIVED_FROM_TRUST_FLOOR_EXCEEDED`, pointing at the input by position. The floor proves consistency with the declared inputs only, not that an undeclared input was unused.
 
 F-11 changes no public signature, root export, contract version, package version, or runtime dependency. Public complete-event acceptance remains source-compatible. Revalidation plus fixed metadata and operation/transaction/correlation enforcement for named `redelivery.event` is a behavioral security/lifecycle tightening. The package remains private and unpublished at `0.1.0`; this classification is not release, production, or publication authorization.
 

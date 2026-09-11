@@ -1,6 +1,6 @@
 # API reference
 
-This reference describes the supported exports of `@bloodtrail/security-audit-sdk-core` candidate version `0.3.0`. It is not a production integration or deployment guide.
+This reference describes the supported exports of `@bloodtrail/security-audit-sdk-core` candidate version `0.4.0`. It is not a production integration or deployment guide.
 
 ## Factory and configuration
 
@@ -11,7 +11,7 @@ import {
 } from "@bloodtrail/security-audit-sdk-core";
 
 const configuration: SecurityAuditSdkConfiguration = {
-  contractVersion: "2.0.0",
+  contractVersion: "2.1.0",
   producer: { name: "synthetic-producer", version: "0.1.0" },
   service: { name: "synthetic-service", version: "0.1.0" },
   environment: { name: "test" },
@@ -32,7 +32,7 @@ const audit = createSecurityAuditSdk(configuration);
 
 Required configuration:
 
-- `contractVersion`: exactly `"2.0.0"`; other values, including `"1.1.0"` and `"1.0.0"`, fail with `SDK_UNSUPPORTED_CONTRACT_VERSION` before readiness.
+- `contractVersion`: exactly `"2.1.0"`; other values, including `"2.0.0"`, `"1.1.0"`, and `"1.0.0"`, fail with `SDK_UNSUPPORTED_CONTRACT_VERSION` before readiness.
 - `producer`: canonical producer name and version established by the application.
 - `service`: canonical service identity.
 - `environment`: deployment environment label.

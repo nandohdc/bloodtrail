@@ -1,8 +1,8 @@
 {
   "contractName": "Bloodtrail Security Audit Event Contract",
-  "contractVersion": "2.0.0",
-  "normativeTechnicalTarget": "b0bc2182668c488dd9997c43a0fa93f68ee32224",
-  "proposalBaseline": "b0bc2182668c488dd9997c43a0fa93f68ee32224",
+  "contractVersion": "2.1.0",
+  "normativeTechnicalTarget": "74ccbcfd26a28c91fe6f98f8a066c8b25b883a3e",
+  "proposalBaseline": "74ccbcfd26a28c91fe6f98f8a066c8b25b883a3e",
   "canonicalCapability": "openspec/specs/security-audit-event-contract/spec.md",
   "archivedChange": "openspec/changes/archive/2026-07-31-define-security-audit-event-contract",
   "sources": {

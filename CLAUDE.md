@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A contract-bound security audit event system: one canonical event contract (`contracts/security-audit/`, version `2.0.0`, frozen) plus a framework-independent TypeScript SDK core (`packages/security-audit-sdk-core/`) whose types, constants, catalog, and schema validator are **generated** from the contract.
+A contract-bound security audit event system: one canonical event contract (`contracts/security-audit/`, version `2.1.0`, frozen) plus a framework-independent TypeScript SDK core (`packages/security-audit-sdk-core/`) whose types, constants, catalog, and schema validator are **generated** from the contract.
 
 The contract is the product; the SDK is a projection of it. Two boundaries govern everything:
 
@@ -20,7 +20,7 @@ The contract is the product; the SDK is a projection of it. Two boundaries gover
 | `packages/security-audit-sdk-core/` | `>=24 <25 \|\| >=26 <27` | the platform-neutral SDK core (`@bloodtrail/security-audit-sdk-core`, private, `UNLICENSED`, never published) |
 | `packages/security-audit-sdk-node/` | `>=24 <25 \|\| >=26 <27` | the Node binding and delivery primitives; public API frozen (#111), widened only through a governed change |
 | `packages/security-audit-collector/` | `>=24 <25 \|\| >=26 <27` | the synthetic collector ingress; acceptance is admission only, no storage |
-| `contracts/security-audit/` | `>=26.5.0` | the canonical contract, frozen at `2.0.0` |
+| `contracts/security-audit/` | `>=26.5.0` | the canonical contract, frozen at `2.1.0` |
 | `research/browser-telemetry/` | `>=26.5.0` | isolated investigation, not shipping code |
 
 **Five workspaces, and `make` runs all five.** `.github/scripts/check-package-discovery.mjs` asserts
