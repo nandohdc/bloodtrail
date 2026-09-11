@@ -24,5 +24,5 @@
 
 ## 5. Canonicalization and closure
 
-- [x] 5.1 Fold the four deltas into their canonical specifications in a dedicated PR, rebinding the governed candidate to the fold commit and moving the CRA pin to `security-audit@2.0.0`; verify the pin fails against a `1.1.0` baseline and passes against `2.0.0`. — Four deltas folded in commit `b0bc2182668c488dd9997c43a0fa93f68ee32224`, governed candidate rebound in commit `3c16130`, CRA pin advanced to `security-audit@2.0.0` with 73/73 tests passing in commit `9962caa`.
-- [ ] 5.2 Archive the change by byte-preserving relocation in its own PR; close #96 and tick it in #132 only after the archive merges.
+- [x] 5.1 Fold the four deltas into their canonical specifications in a dedicated PR, rebinding the governed candidate to the fold commit and moving the CRA pin to `security-audit@2.0.0`; verify the pin fails against a `1.1.0` baseline and passes against `2.0.0`. — PR #484 merged as `8be9d5ed70c1d410ec62a4b0d177cb447f4ffd1b` with all ten required contexts green on head `8e6e7f4affeddfe15a0d0dee6d11c245d22ac11c`; four deltas folded in commit `b0bc2182668c488dd9997c43a0fa93f68ee32224`, governed candidate rebound in commit `3c16130`, CRA pin advanced to `security-audit@2.0.0` with 73/73 tests passing in commit `9962caa` and record updated in commit `8e6e7f4`.
+- [x] 5.2 Archive the change by byte-preserving relocation in its own PR; close #96 and tick it in #132 only after the archive merges.
