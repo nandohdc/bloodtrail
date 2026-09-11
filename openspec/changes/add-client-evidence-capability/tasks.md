@@ -12,7 +12,7 @@
 
 ## 3. Correlation field decision
 
-- [ ] 3.1 Record the canonical correlation field decision (#122): name, semantics, generation authority, lifetime, format, cardinality, collision handling, cross-origin and cross-device behaviour, server mapping, retention, compatibility, and rejected alternatives.
+- [x] 3.1 Record the canonical correlation field decision (#122): name, semantics, generation authority, lifetime, format, cardinality, collision handling, cross-origin and cross-device behaviour, server mapping, retention, compatibility, and rejected alternatives.
 
 ## 4. ClientEvidenceEnvelope v1
 
