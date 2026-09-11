@@ -11,5 +11,5 @@
 
 ## 3. Closure
 
-- [ ] 3.1 Merge each PR with all ten required checks green on the exact head.
-- [ ] 3.2 Archive the change in its own PR; close #116 with the closure report, stating that it authorizes nothing further.
+- [x] 3.1 Merge each PR with all ten required checks green on the exact head. — PR #494 merged as `20af795de1288efe1e04cd6bf579ebc97a175d19` with all ten required contexts green on head `02ab4bbb5e`.
+- [x] 3.2 Archive the change in its own PR; close #116 with the closure report, stating that it authorizes nothing further. — This archive is its own PR; #116 closes with the closure report after it merges.
