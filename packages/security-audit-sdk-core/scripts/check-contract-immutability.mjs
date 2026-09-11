@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process";
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(packageRoot, "../..");
 const manifest = JSON.parse(await readFile(resolve(packageRoot, "contract-provenance.json"), "utf8"));
-if (manifest.contractVersion !== "2.1.0" || manifest.normativeTechnicalTarget !== "74ccbcfd26a28c91fe6f98f8a066c8b25b883a3e") {
+if (manifest.contractVersion !== "2.1.0" || manifest.normativeTechnicalTarget !== "8df20d3d0a6b23c108f1b70dde2250729dcef102") {
   throw new Error("contract provenance is not bound to approved version 2.1.0");
 }
 const protectedPaths = [

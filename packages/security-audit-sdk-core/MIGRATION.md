@@ -15,7 +15,7 @@ An SDK version does not create or approve a contract version. The SDK implementa
 
 - package: `@bloodtrail/security-audit-sdk-core` `0.4.0`;
 - supported contract versions: exactly `2.1.0` (minimum and maximum are both `2.1.0`);
-- normative contract target: `74ccbcfd26a28c91fe6f98f8a066c8b25b883a3e`;
+- normative contract target: `8df20d3d0a6b23c108f1b70dde2250729dcef102`;
 - Node.js: majors `24` and `26` only; exact verification releases `24.2.0` and `26.5.0`;
 - TypeScript: `>=5.9.2 <6`; exact repository compiler `5.9.2`;
 - module policy: ESM public package with an internal generated CommonJS standalone-validator boundary;

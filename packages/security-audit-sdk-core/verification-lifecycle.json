@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": {
     "version": "2.1.0",
-    "normativeTechnicalTarget": "74ccbcfd26a28c91fe6f98f8a066c8b25b883a3e",
+    "normativeTechnicalTarget": "8df20d3d0a6b23c108f1b70dde2250729dcef102",
     "protectedPrefixes": [
       "contracts/security-audit/",
       "openspec/specs/security-audit-event-contract/",
@@ -14,7 +14,7 @@
     "governedCandidate": {
       "change": "add-client-evidence-capability",
       "rangeBase": "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-      "technicalCommit": "74ccbcfd26a28c91fe6f98f8a066c8b25b883a3e",
+      "technicalCommit": "8df20d3d0a6b23c108f1b70dde2250729dcef102",
       "protectedPaths": [
         "contracts/security-audit/adr/adr-009.md",
         "contracts/security-audit/docs/authority-matrix.md",

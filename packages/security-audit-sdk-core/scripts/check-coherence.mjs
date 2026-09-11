@@ -23,8 +23,8 @@ const original = lifecycleMetadata.originalSdkChange;
 const remediation = lifecycleMetadata.remediationChange;
 const expected = Object.freeze({
   contractVersion: "2.1.0",
-  normativeTarget: "74ccbcfd26a28c91fe6f98f8a066c8b25b883a3e",
-  proposalBaseline: "74ccbcfd26a28c91fe6f98f8a066c8b25b883a3e",
+  normativeTarget: "8df20d3d0a6b23c108f1b70dde2250729dcef102",
+  proposalBaseline: "8df20d3d0a6b23c108f1b70dde2250729dcef102",
   remediationBaseline: "b4206f92fc92c7355efaa80d9f878353cf794452",
   packageName: "@bloodtrail/security-audit-sdk-core",
   packageVersion: "0.4.0",
