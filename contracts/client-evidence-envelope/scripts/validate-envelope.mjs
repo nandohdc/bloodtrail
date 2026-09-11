@@ -48,19 +48,26 @@ const FORBIDDEN_CLAIMS_SET = new Set(REGISTRIES.forbidden_claim_names);
 const INTERACTION_KINDS_SET = new Set(REGISTRIES.interaction_kinds);
 const PLATFORMS_SET = new Set(REGISTRIES.platforms);
 
+function isRecord(value) {
+  if (value === null) return false;
+  if (typeof value !== "object") return false;
+  if (Array.isArray(value)) return false;
+  return true;
+}
+
 function parsePayload(input, fail) {
   if (typeof input !== "string" && !Buffer.isBuffer(input)) {
     return input;
   }
-  const rawBuffer = Buffer.isBuffer(input) ? input : Buffer.from(input, "utf8");
-  if (rawBuffer.byteLength > BOUNDS.max_envelope_bytes) {
-    fail("ENVELOPE_TOO_LARGE", "$", `Serialized size ${rawBuffer.byteLength} exceeds maximum allowed ${BOUNDS.max_envelope_bytes} bytes`);
+  const raw = Buffer.isBuffer(input) ? input : Buffer.from(input, "utf8");
+  if (raw.byteLength > BOUNDS.max_envelope_bytes) {
+    fail("ENVELOPE_TOO_LARGE", "$", "Serialized size exceeds bound");
     return null;
   }
   try {
-    return JSON.parse(rawBuffer.toString("utf8"));
-  } catch (parseError) {
-    fail("MALFORMED_JSON", "$", "Invalid JSON syntax: " + parseError.message);
+    return JSON.parse(raw.toString("utf8"));
+  } catch {
+    fail("MALFORMED_JSON", "$", "Invalid JSON syntax");
     return null;
   }
 }
@@ -68,103 +75,154 @@ function parsePayload(input, fail) {
 function validateRootFields(envelope, fail) {
   for (const key of Object.keys(envelope)) {
     if (!ALLOWED_ROOT_FIELDS.has(key)) {
-      fail("UNKNOWN_FIELD", `$.${key}`, `Unknown property "${key}" not permitted in closed schema`);
+      fail("UNKNOWN_FIELD", `$.${key}`, `Unknown property "${key}"`);
     }
   }
 }
 
 function validateVersion(envelope, fail) {
   if (envelope.envelope_version !== 1) {
-    fail("UNKNOWN_VERSION", "$.envelope_version", `Unsupported envelope version: ${envelope.envelope_version}; must be 1`);
+    fail("UNKNOWN_VERSION", "$.envelope_version", "Unsupported envelope version");
   }
 }
 
+function isInvalidId(id) {
+  if (typeof id !== "string") return true;
+  if (id.length !== BOUNDS.interaction_id_length) return true;
+  return !UUID_V4_REGEX.test(id);
+}
+
 function validateInteractionId(envelope, fail) {
-  const id = envelope.interaction_id;
-  const isString = typeof id === "string";
-  const isExactLength = isString && id.length === BOUNDS.interaction_id_length;
-  if (!isExactLength || !UUID_V4_REGEX.test(id)) {
-    fail("INVALID_INTERACTION_ID", "$.interaction_id", "interaction_id must be a lowercase RFC 4122 UUID v4 of length 36");
+  if (isInvalidId(envelope.interaction_id)) {
+    fail("INVALID_INTERACTION_ID", "$.interaction_id", "Invalid interaction ID");
   }
 }
 
 function validateInteractionKind(envelope, fail) {
   const kind = envelope.interaction_kind;
-  if (typeof kind !== "string" || !INTERACTION_KINDS_SET.has(kind)) {
-    fail("UNKNOWN_INTERACTION_KIND", "$.interaction_kind", `Unknown interaction_kind "${kind}"`);
+  if (typeof kind !== "string") {
+    fail("UNKNOWN_INTERACTION_KIND", "$.interaction_kind", "Invalid interaction kind type");
+    return;
+  }
+  if (!INTERACTION_KINDS_SET.has(kind)) {
+    fail("UNKNOWN_INTERACTION_KIND", "$.interaction_kind", "Unknown interaction kind");
   }
 }
 
+function isInvalidTimestamp(ts) {
+  if (typeof ts !== "number") return true;
+  if (!Number.isInteger(ts)) return true;
+  if (ts < BOUNDS.min_client_timestamp) return true;
+  if (ts > BOUNDS.max_client_timestamp) return true;
+  return false;
+}
+
 function validateTimestamp(envelope, fail) {
-  const ts = envelope.client_timestamp;
-  const isInteger = typeof ts === "number" && Number.isInteger(ts);
-  const inBounds = isInteger && ts >= BOUNDS.min_client_timestamp && ts <= BOUNDS.max_client_timestamp;
-  if (!inBounds) {
-    fail("INVALID_TIMESTAMP", "$.client_timestamp", "client_timestamp must be an integer millisecond epoch within allowed bounds");
+  if (isInvalidTimestamp(envelope.client_timestamp)) {
+    fail("INVALID_TIMESTAMP", "$.client_timestamp", "Invalid client timestamp");
+  }
+}
+
+function checkProvenanceFields(prov, fail) {
+  for (const key of Object.keys(prov)) {
+    if (!ALLOWED_PROVENANCE_FIELDS.has(key)) {
+      fail("UNKNOWN_FIELD", `$.provenance.${key}`, "Unknown provenance property");
+    }
+  }
+}
+
+function checkProvenanceValues(prov, fail) {
+  if (prov.source !== "client_reported") {
+    fail("MALFORMED_PROVENANCE", "$.provenance.source", "Invalid source");
+  }
+  if (prov.trust_level !== "client_claim") {
+    fail("TRUST_ESCALATION_ATTEMPT", "$.provenance.trust_level", "Invalid trust level");
+  }
+  if (!PLATFORMS_SET.has(prov.platform)) {
+    fail("MALFORMED_PROVENANCE", "$.provenance.platform", "Invalid platform");
+  }
+  if (prov.capture_scope !== "interaction_ephemeral") {
+    fail("MALFORMED_PROVENANCE", "$.provenance.capture_scope", "Invalid capture scope");
   }
 }
 
 function validateProvenance(envelope, fail) {
   const prov = envelope.provenance;
-  if (!prov || typeof prov !== "object" || Array.isArray(prov)) {
-    fail("MALFORMED_PROVENANCE", "$.provenance", "provenance must be a non-null object");
+  if (!isRecord(prov)) {
+    fail("MALFORMED_PROVENANCE", "$.provenance", "provenance must be an object");
     return;
   }
-  for (const key of Object.keys(prov)) {
-    if (!ALLOWED_PROVENANCE_FIELDS.has(key)) {
-      fail("UNKNOWN_FIELD", `$.provenance.${key}`, `Unknown provenance property "${key}"`);
-    }
-  }
-  if (prov.source !== "client_reported") {
-    fail("MALFORMED_PROVENANCE", "$.provenance.source", `source must be "client_reported", got "${prov.source}"`);
-  }
-  if (prov.trust_level !== "client_claim") {
-    fail("TRUST_ESCALATION_ATTEMPT", "$.provenance.trust_level", `trust_level must be "client_claim", got "${prov.trust_level}"`);
-  }
-  if (typeof prov.platform !== "string" || !PLATFORMS_SET.has(prov.platform)) {
-    fail("MALFORMED_PROVENANCE", "$.provenance.platform", `platform "${prov.platform}" not in approved platforms`);
-  }
-  if (prov.capture_scope !== "interaction_ephemeral") {
-    fail("MALFORMED_PROVENANCE", "$.provenance.capture_scope", `capture_scope must be "interaction_ephemeral", got "${prov.capture_scope}"`);
-  }
+  checkProvenanceFields(prov, fail);
+  checkProvenanceValues(prov, fail);
+}
+
+function isInvalidNonce(nonce) {
+  if (typeof nonce !== "string") return true;
+  if (nonce.length < BOUNDS.min_nonce_length) return true;
+  if (nonce.length > BOUNDS.max_nonce_length) return true;
+  return !HEX_NONCE_REGEX.test(nonce);
 }
 
 function validateNonce(envelope, fail) {
   if (envelope.nonce === undefined) return;
-  const nonce = envelope.nonce;
-  const isString = typeof nonce === "string";
-  const inLength = isString && nonce.length >= BOUNDS.min_nonce_length && nonce.length <= BOUNDS.max_nonce_length;
-  if (!inLength || !HEX_NONCE_REGEX.test(nonce)) {
-    fail("INVALID_NONCE", "$.nonce", "nonce must be a lowercase hex string between 32 and 64 characters");
+  if (isInvalidNonce(envelope.nonce)) {
+    fail("INVALID_NONCE", "$.nonce", "Invalid nonce");
   }
 }
 
-function validateSingleClaim(claim, claimPath, fail) {
-  if (!claim || typeof claim !== "object" || Array.isArray(claim)) {
-    fail("MALFORMED_JSON", claimPath, "Each claim must be an object");
-    return;
-  }
+function checkClaimProperties(claim, claimPath, fail) {
   for (const key of Object.keys(claim)) {
     if (!ALLOWED_CLAIM_FIELDS.has(key)) {
-      fail("UNKNOWN_FIELD", `${claimPath}.${key}`, `Unknown property "${key}" in claim`);
+      fail("UNKNOWN_FIELD", `${claimPath}.${key}`, "Unknown claim property");
     }
   }
-  if (typeof claim.name !== "string" || !CLAIM_NAME_REGEX.test(claim.name) || claim.name.length > BOUNDS.max_claim_name_length) {
-    fail("OVERSIZED_STRING", `${claimPath}.name`, `Claim name is invalid or exceeds ${BOUNDS.max_claim_name_length} chars`);
-  } else if (FORBIDDEN_CLAIMS_SET.has(claim.name)) {
-    fail("FORBIDDEN_CLAIM", `${claimPath}.name`, `Claim "${claim.name}" is forbidden under privacy/fingerprinting inventory`);
+}
+
+function checkClaimName(name, claimPath, fail) {
+  if (typeof name !== "string") {
+    fail("OVERSIZED_STRING", `${claimPath}.name`, "Invalid claim name");
+    return;
   }
-  if (claim.trust_level !== "client_claim") {
-    fail("TRUST_ESCALATION_ATTEMPT", `${claimPath}.trust_level`, `Claim trust_level must be "client_claim", got "${claim.trust_level}"`);
+  if (name.length > BOUNDS.max_claim_name_length) {
+    fail("OVERSIZED_STRING", `${claimPath}.name`, "Claim name too long");
+    return;
   }
-  const valType = typeof claim.value;
-  if (valType === "string") {
-    if (claim.value.length > BOUNDS.max_claim_value_length) {
-      fail("OVERSIZED_STRING", `${claimPath}.value`, `Claim value exceeds maximum length of ${BOUNDS.max_claim_value_length} chars`);
+  if (!CLAIM_NAME_REGEX.test(name)) {
+    fail("OVERSIZED_STRING", `${claimPath}.name`, "Invalid claim name format");
+    return;
+  }
+  if (FORBIDDEN_CLAIMS_SET.has(name)) {
+    fail("FORBIDDEN_CLAIM", `${claimPath}.name`, "Forbidden claim name");
+  }
+}
+
+function checkClaimTrust(trust, claimPath, fail) {
+  if (trust !== "client_claim") {
+    fail("TRUST_ESCALATION_ATTEMPT", `${claimPath}.trust_level`, "Invalid claim trust");
+  }
+}
+
+function checkClaimValue(value, claimPath, fail) {
+  if (typeof value === "string") {
+    if (value.length > BOUNDS.max_claim_value_length) {
+      fail("OVERSIZED_STRING", `${claimPath}.value`, "Claim value too long");
     }
-  } else if (valType !== "number" && valType !== "boolean") {
-    fail("MALFORMED_JSON", `${claimPath}.value`, "Claim value must be string, number, or boolean");
+    return;
   }
+  if (typeof value === "number") return;
+  if (typeof value === "boolean") return;
+  fail("MALFORMED_JSON", `${claimPath}.value`, "Invalid claim value type");
+}
+
+function validateSingleClaim(claim, claimPath, fail) {
+  if (!isRecord(claim)) {
+    fail("MALFORMED_JSON", claimPath, "Claim must be an object");
+    return;
+  }
+  checkClaimProperties(claim, claimPath, fail);
+  checkClaimName(claim.name, claimPath, fail);
+  checkClaimTrust(claim.trust_level, claimPath, fail);
+  checkClaimValue(claim.value, claimPath, fail);
 }
 
 function validateClaims(envelope, fail) {
@@ -174,7 +232,7 @@ function validateClaims(envelope, fail) {
     return;
   }
   if (envelope.claims.length > BOUNDS.max_claims) {
-    fail("OVERSIZED_COLLECTION", "$.claims", `claims count ${envelope.claims.length} exceeds maximum bound of ${BOUNDS.max_claims}`);
+    fail("OVERSIZED_COLLECTION", "$.claims", "claims count exceeds bound");
     return;
   }
   for (let i = 0; i < envelope.claims.length; i++) {
@@ -182,25 +240,38 @@ function validateClaims(envelope, fail) {
   }
 }
 
-function validateSingleTransform(item, itemPath, fail) {
-  if (!item || typeof item !== "object" || Array.isArray(item)) {
-    fail("MALFORMED_JSON", itemPath, "Each transform_history entry must be an object");
-    return;
-  }
+function checkTransformProperties(item, itemPath, fail) {
   for (const key of Object.keys(item)) {
     if (!ALLOWED_TRANSFORM_FIELDS.has(key)) {
-      fail("UNKNOWN_FIELD", `${itemPath}.${key}`, `Unknown property "${key}" in transform_history`);
+      fail("UNKNOWN_FIELD", `${itemPath}.${key}`, "Unknown transform property");
     }
   }
-  if (typeof item.transform !== "string" || item.transform.length > BOUNDS.max_transform_name_length) {
-    fail("OVERSIZED_STRING", `${itemPath}.transform`, `transform name exceeds ${BOUNDS.max_transform_name_length} chars`);
+}
+
+function checkTransformName(name, itemPath, fail) {
+  if (typeof name !== "string") {
+    fail("OVERSIZED_STRING", `${itemPath}.transform`, "Invalid transform name");
+    return;
   }
-  const ts = item.timestamp;
-  const isInteger = typeof ts === "number" && Number.isInteger(ts);
-  const inBounds = isInteger && ts >= BOUNDS.min_client_timestamp && ts <= BOUNDS.max_client_timestamp;
-  if (!inBounds) {
-    fail("INVALID_TIMESTAMP", `${itemPath}.timestamp`, "transform timestamp out of valid bounds");
+  if (name.length > BOUNDS.max_transform_name_length) {
+    fail("OVERSIZED_STRING", `${itemPath}.transform`, "Transform name too long");
   }
+}
+
+function checkTransformTimestamp(ts, itemPath, fail) {
+  if (isInvalidTimestamp(ts)) {
+    fail("INVALID_TIMESTAMP", `${itemPath}.timestamp`, "Invalid transform timestamp");
+  }
+}
+
+function validateSingleTransform(item, itemPath, fail) {
+  if (!isRecord(item)) {
+    fail("MALFORMED_JSON", itemPath, "Transform must be an object");
+    return;
+  }
+  checkTransformProperties(item, itemPath, fail);
+  checkTransformName(item.transform, itemPath, fail);
+  checkTransformTimestamp(item.timestamp, itemPath, fail);
 }
 
 function validateTransformHistory(envelope, fail) {
@@ -210,7 +281,7 @@ function validateTransformHistory(envelope, fail) {
     return;
   }
   if (envelope.transform_history.length > BOUNDS.max_transforms) {
-    fail("OVERSIZED_COLLECTION", "$.transform_history", `transform_history count ${envelope.transform_history.length} exceeds maximum bound of ${BOUNDS.max_transforms}`);
+    fail("OVERSIZED_COLLECTION", "$.transform_history", "transform_history count exceeds bound");
     return;
   }
   for (let i = 0; i < envelope.transform_history.length; i++) {
@@ -239,8 +310,8 @@ export function validateEnvelope(input) {
   if (envelope === null) {
     return { valid: false, errors };
   }
-  if (typeof envelope !== "object" || Array.isArray(envelope)) {
-    fail("MALFORMED_JSON", "$", "Envelope must be a JSON object");
+  if (!isRecord(envelope)) {
+    fail("MALFORMED_JSON", "$", "Envelope must be an object");
     return { valid: false, errors };
   }
 
