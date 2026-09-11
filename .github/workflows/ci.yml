@@ -155,6 +155,10 @@ jobs:
       - run: npm ci
 
       - run: npm run validate
+      # ClientEvidenceEnvelope v1 (#123) is a separate contract with no package of its own. Its
+      # drift check and fixture tests need only Node, so they run here beside the audit contract
+      # rather than nowhere, which is what happened until #126 found it.
+      - run: node --test ../client-evidence-envelope/tests/*.test.mjs
 
       - run: node ../../.github/scripts/npm-audit-retry.mjs --audit-level=high
 
