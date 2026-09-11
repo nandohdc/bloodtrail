@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@1.1.0",
+  "mode": "assessment",
+  "disposition": "extend",
+  "mechanism_references": ["registries.trust_levels"],
+  "compatibility_classification": "major",
+  "rationale": "The change enforces, inside the existing security-audit contract, the trust floor its own ratified derived-field semantics already define, using the contract's registered trust order and the trust each field and extension namespace already declares. It extends the existing derived risk provenance rather than creating a parallel evidence boundary, and it is major because events valid under 1.1.0 become invalid.",
+  "trust_boundary": "The producer's derived risk result is the boundary: its declared trust is bounded by the contract's declared trust for each listed input and by the producer's derived_server ceiling. No trust value is read from the event, and no new producer, authority, or cross-process boundary is introduced.",
+  "transformation_ownership": "The producer remains responsible for listing every material input honestly and for declaring a trust level within the floor. Contract validation and the SDK semantic kernel own the mandatory, ceiling, cycle, and floor checks; downstream consumers gain no transformation responsibility.",
+  "alternatives": [
+    {
+      "approach": "reuse",
+      "rejection_reason": "The 1.1.0 contract already carries the provenance field but checks it against nothing, and leaves it optional, so reusing it unchanged keeps both gaps the floor exists to close: an unlisted input and an over-claimed level both stay valid."
+    },
+    {
+      "approach": "new_contract",
+      "rejection_reason": "The floor bounds a field of the existing risk model using the existing trust registry and the existing field policy; a separate contract would split one event's derivation semantics across two version lines."
+    }
+  ],
+  "author": { "name": "Claude, under delegation from Fernando Homem da Costa (nandohdc)", "handle": "nandohdc" },
+  "evidence_references": ["openspec/changes/enforce-derived-field-trust-floors/design.md"],
+  "assurance_limitations": [
+    "This assessment classifies the semantic relationship to the existing contract; it does not replace generated-artifact validation, exact-version binding, protected-path review, or security review, and it records a decision delegated to Claude, not a human owner decision."
+  ]
+}

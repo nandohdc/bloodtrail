@@ -1,0 +1,255 @@
+{
+  "schema_version": "1.1",
+  "change_id": "enforce-derived-field-trust-floors",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Contract 1.1.0 lets a derived risk result declare derived_server while its only material input is a client_claim, and lets it omit derived_from entirely, so neither an over-claimed level nor an unlisted input is detectable.",
+    "The ratified derived-field-trust-semantics capability fixes maximum output trust as the lesser of the least trusted material input in the closure and the transformation ceiling, and classifies mandatory provenance with an enforced floor as a breaking major contract move.",
+    "Input trust must come from somewhere the producer cannot choose, or the producer supplies the number the floor compares against; the contract already declares a trust for every field and every extension namespace.",
+    "The risk model is the contract's only provenance carrier, so the transitive-closure rule is only complete if a self-referencing input is excluded rather than expanded.",
+    "1.1.0 admits derived_from only beside derived_server, which leaves a model whose floor is client_claim with no truthful representation once the floor is enforced.",
+    "Two validators implement the provenance outcomes from one generated block — the SDK semantic kernel and the contract fixture validator — and #423 showed they drift unless both move in the same change.",
+    "A contract version move touches more pins than regeneration reaches, and #95 left four behind in areas its owned paths already partly claimed; the inventory in CLAUDE.md is the list this move must advance.",
+    "SDK errors carry a code, category, and bounded path and never caller data, while the ratified rule says the floor diagnostic names the input that set it."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "integration",
+      "security_sensitive_behavior",
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-event-contract",
+      "derived-field-trust-semantics",
+      "security-audit-sdk-core",
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/enforce-derived-field-trust-floors/.openspec.yaml",
+    "openspec/changes/enforce-derived-field-trust-floors/proposal.md",
+    "openspec/changes/enforce-derived-field-trust-floors/design.md",
+    "openspec/changes/enforce-derived-field-trust-floors/tasks.md",
+    "openspec/changes/enforce-derived-field-trust-floors/assessment.source.json",
+    "openspec/changes/enforce-derived-field-trust-floors/assessment.json",
+    "openspec/changes/enforce-derived-field-trust-floors/contract-reuse.json",
+    "openspec/changes/enforce-derived-field-trust-floors/specs/security-audit-event-contract/spec.md",
+    "openspec/changes/enforce-derived-field-trust-floors/specs/derived-field-trust-semantics/spec.md",
+    "openspec/changes/enforce-derived-field-trust-floors/specs/security-audit-sdk-core/spec.md",
+    "openspec/changes/enforce-derived-field-trust-floors/specs/security-audit-sdk-node/spec.md",
+    "openspec/specs/security-audit-event-contract/spec.md",
+    "openspec/specs/derived-field-trust-semantics/spec.md",
+    "openspec/specs/security-audit-sdk-core/spec.md",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "contracts/security-audit/",
+    "packages/security-audit-sdk-core/src/generated/",
+    "packages/security-audit-sdk-core/src/validation/semantic.ts",
+    "packages/security-audit-sdk-core/src/sdk.ts",
+    "packages/security-audit-sdk-core/tests/",
+    "packages/security-audit-sdk-core/package.json",
+    "packages/security-audit-sdk-core/package-lock.json",
+    "packages/security-audit-sdk-core/compatibility.json",
+    "packages/security-audit-sdk-core/contract-provenance.json",
+    "packages/security-audit-sdk-core/verification-lifecycle.json",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-core/scripts/check-compatibility.mjs",
+    "packages/security-audit-sdk-core/scripts/check-contract-immutability.mjs",
+    "packages/security-audit-sdk-core/scripts/check-changed-paths.mjs",
+    "packages/security-audit-sdk-core/API.md",
+    "packages/security-audit-sdk-core/MIGRATION.md",
+    "packages/security-audit-sdk-core/README.md",
+    "packages/security-audit-sdk-core/SECURITY.md",
+    "packages/security-audit-sdk-core/adr/",
+    "packages/security-audit-sdk-node/package.json",
+    "packages/security-audit-sdk-node/package-lock.json",
+    "packages/security-audit-sdk-node/compatibility.json",
+    "packages/security-audit-sdk-node/src/",
+    "packages/security-audit-sdk-node/tests/",
+    "packages/security-audit-sdk-node/README.md",
+    "packages/security-audit-collector/src/generated/",
+    "packages/security-audit-collector/scripts/check-package-contents.mjs",
+    "packages/security-audit-collector/compatibility.json",
+    "packages/security-audit-collector/README.md",
+    "packages/security-audit-collector/tests/",
+    "openspec/scripts/contract-reuse/check.mjs",
+    "openspec/governance/schemas/contract-reuse.schema.json",
+    "openspec/tests/contract-reuse/",
+    "CLAUDE.md",
+    "README.md",
+    "SECURITY.md",
+    "RELEASING.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-mandatory-provenance-contract-declared-floor",
+      "kind": "direct_implementation",
+      "summary": "Move the contract to 2.0.0: require trust_level and derived_from on every event carrying risk; read each input's trust from the contract's field policy or extension namespace; reject declarations above the derived_server ceiling or above the least trusted input, pointing at the floor input by position; treat inputs under risk as cycles; implement the rules in the SDK semantic kernel and the contract validator from the generated provenance block; advance every version pin.",
+      "forces_addressed": [
+        "Contract 1.1.0 lets a derived risk result declare derived_server while its only material input is a client_claim, and lets it omit derived_from entirely, so neither an over-claimed level nor an unlisted input is detectable.",
+        "The ratified derived-field-trust-semantics capability fixes maximum output trust as the lesser of the least trusted material input in the closure and the transformation ceiling, and classifies mandatory provenance with an enforced floor as a breaking major contract move.",
+        "Input trust must come from somewhere the producer cannot choose, or the producer supplies the number the floor compares against; the contract already declares a trust for every field and every extension namespace.",
+        "The risk model is the contract's only provenance carrier, so the transitive-closure rule is only complete if a self-referencing input is excluded rather than expanded.",
+        "1.1.0 admits derived_from only beside derived_server, which leaves a model whose floor is client_claim with no truthful representation once the floor is enforced.",
+        "Two validators implement the provenance outcomes from one generated block — the SDK semantic kernel and the contract fixture validator — and #423 showed they drift unless both move in the same change.",
+        "A contract version move touches more pins than regeneration reaches, and #95 left four behind in areas its owned paths already partly claimed; the inventory in CLAUDE.md is the list this move must advance.",
+        "SDK errors carry a code, category, and bounded path and never caller data, while the ratified rule says the floor diagnostic names the input that set it."
+      ]
+    },
+    {
+      "id": "approach-floor-on-optional-provenance",
+      "kind": "alternative",
+      "summary": "Keep contract 1.1.0 and enforce the floor only when derived_from happens to be present.",
+      "forces_addressed": [
+        "Input trust must come from somewhere the producer cannot choose, or the producer supplies the number the floor compares against; the contract already declares a trust for every field and every extension namespace.",
+        "Two validators implement the provenance outcomes from one generated block — the SDK semantic kernel and the contract fixture validator — and #423 showed they drift unless both move in the same change."
+      ]
+    },
+    {
+      "id": "approach-event-carried-input-trust",
+      "kind": "alternative",
+      "summary": "Compute each input's trust from trust values the event instance carries, such as actor.provenance.trust_level, rather than from the contract.",
+      "forces_addressed": [
+        "Contract 1.1.0 lets a derived risk result declare derived_server while its only material input is a client_claim, and lets it omit derived_from entirely, so neither an over-claimed level nor an unlisted input is detectable.",
+        "1.1.0 admits derived_from only beside derived_server, which leaves a model whose floor is client_claim with no truthful representation once the floor is enforced."
+      ]
+    },
+    {
+      "id": "approach-schema-encoded-floor",
+      "kind": "alternative",
+      "summary": "Encode the mandatory and floor rules in the generated JSON Schema so the structural validator enforces them.",
+      "forces_addressed": [
+        "Contract 1.1.0 lets a derived risk result declare derived_server while its only material input is a client_claim, and lets it omit derived_from entirely, so neither an over-claimed level nor an unlisted input is detectable.",
+        "Two validators implement the provenance outcomes from one generated block — the SDK semantic kernel and the contract fixture validator — and #423 showed they drift unless both move in the same change."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-mandatory-provenance-contract-declared-floor",
+  "rejected_alternative_ids": [
+    "approach-floor-on-optional-provenance",
+    "approach-event-carried-input-trust",
+    "approach-schema-encoded-floor"
+  ],
+  "rejection_reasons": {
+    "approach-floor-on-optional-provenance": {
+      "forces": [
+        "Contract 1.1.0 lets a derived risk result declare derived_server while its only material input is a client_claim, and lets it omit derived_from entirely, so neither an over-claimed level nor an unlisted input is detectable.",
+        "The ratified derived-field-trust-semantics capability fixes maximum output trust as the lesser of the least trusted material input in the closure and the transformation ceiling, and classifies mandatory provenance with an enforced floor as a breaking major contract move."
+      ],
+      "reason": "Omitting derived_from would still escape the floor, so the unlisted-input gap stays open, and the ratified capability classifies enforcement as a breaking major move: changing which 1.1.0 events are valid without changing the version misstates the contract."
+    },
+    "approach-event-carried-input-trust": {
+      "forces": [
+        "Input trust must come from somewhere the producer cannot choose, or the producer supplies the number the floor compares against; the contract already declares a trust for every field and every extension namespace."
+      ],
+      "reason": "The producer would supply the comparison value, so a producer could raise its own floor by raising the trust it reports for an input — the escalation the floor exists to prevent."
+    },
+    "approach-schema-encoded-floor": {
+      "forces": [
+        "Two validators implement the provenance outcomes from one generated block — the SDK semantic kernel and the contract fixture validator — and #423 showed they drift unless both move in the same change.",
+        "SDK errors carry a code, category, and bounded path and never caller data, while the ratified rule says the floor diagnostic names the input that set it."
+      ],
+      "reason": "The floor needs the declared trust of each listed path, which the structural validator would have to embed per path; distinct semantic outcomes would collapse into one schema failure, and the collector's byte-identical vendored validator would gain semantic judgment it is specified not to hold."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-provenance-mandatory-with-risk",
+    "implementation-input-trust-from-contract",
+    "implementation-floor-and-ceiling-enforced",
+    "implementation-risk-inputs-are-cycles",
+    "implementation-validators-agree",
+    "implementation-every-version-pin-advanced",
+    "implementation-diagnostics-name-no-caller-data"
+  ],
+  "invariant_evidence": {
+    "implementation-provenance-mandatory-with-risk": {
+      "task_ids": [
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "an event with risk and no trust_level or no derived_from is rejected as DERIVED_FROM_MISSING while an event without risk is unaffected"
+      ]
+    },
+    "implementation-input-trust-from-contract": {
+      "task_ids": [
+        "2.2"
+      ],
+      "evidence_ids": [
+        "an event-carried trust value for an input does not change the floor computed for it"
+      ]
+    },
+    "implementation-floor-and-ceiling-enforced": {
+      "task_ids": [
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "lowering one input's trust under an unchanged derived_server claim fails with DERIVED_FROM_TRUST_FLOOR_EXCEEDED while a client_claim declaration over the same inputs passes",
+        "authoritative_server, verified_assertion, and observed_transport declarations fail as DERIVED_FROM_NON_DERIVED"
+      ]
+    },
+    "implementation-risk-inputs-are-cycles": {
+      "task_ids": [
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "an input under risk is rejected as DERIVED_FROM_CYCLE with a non-risk null control accepted"
+      ]
+    },
+    "implementation-validators-agree": {
+      "task_ids": [
+        "2.2",
+        "2.3"
+      ],
+      "evidence_ids": [
+        "every positive and negative contract fixture is decided identically by the contract validator and the SDK semantic kernel"
+      ]
+    },
+    "implementation-every-version-pin-advanced": {
+      "task_ids": [
+        "3.1",
+        "3.2",
+        "3.3",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "contract, Core, Node, and collector validation pass at 2.0.0 and the currency gate finds no current-tense 1.1.0 statement",
+        "Core construction with 1.1.0 fails before readiness"
+      ]
+    },
+    "implementation-diagnostics-name-no-caller-data": {
+      "task_ids": [
+        "2.2"
+      ],
+      "evidence_ids": [
+        "the floor diagnostic path is a positional pointer and never contains the input path string"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "ecfb5c63d97aa3670aad9dc5b01341fcc1e8140d"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3",
+    "4.1",
+    "4.2",
+    "4.3",
+    "5.1",
+    "5.2"
+  ]
+}
