@@ -27,7 +27,7 @@
 - [x] 6.1 Add the optional, bounded `client_evidence` reference to the security-audit contract at
   `client_claim` trust as the governed `2.0.0` → `2.1.0` minor move, with every exact-version pin
   advanced and compatibility fixtures for absence, the v1 reference, invalid provenance, and unknown
-  envelope version (#125). — Technical commit `8df20d3d0a6b23c108f1b70dde2250729dcef102`, bound as
+  envelope version (#125). — Technical commit `8c6d52eb4322bfb6c4077c73584f7d7962a0a9ec`, bound as
   the cumulative governed candidate over range base `cdecd7f3` (84 protected paths). Six negative
   fixtures cover invalid provenance, trust escalation, unknown envelope version, missing provenance,
   an oversized identifier, and a server-owned member; each rejection is asserted in both the

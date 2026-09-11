@@ -49,7 +49,7 @@ const REVIEWED_PATH_RULES = Object.freeze([
 const GOVERNED_CONTRACT_CANDIDATE = Object.freeze({
   change: "add-client-evidence-capability",
   rangeBase: "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-  technicalCommit: "8df20d3d0a6b23c108f1b70dde2250729dcef102",
+  technicalCommit: "8c6d52eb4322bfb6c4077c73584f7d7962a0a9ec",
 });
 
 const requestedLifecycle = parseLifecycleArguments();
