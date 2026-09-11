@@ -1,0 +1,135 @@
+{
+  "schema_version": "1.1",
+  "change_id": "run-non-production-delivery-pilot",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The delivery chain (#109) and collector storage (#115) exist, but nothing has run them together over a real socket with real storage for a bounded, authorized interval.",
+    "A pilot needs a written authorization naming environment, exact versions, data classification, duration, and owners, with stop and rollback criteria that are testable before execution rather than asserted.",
+    "The collector package's scope gate forbids a server or listener, so any HTTP listener the pilot needs must live outside the shipped package.",
+    "The pilot runs synthetic data only and must prove that no credential or payload content reaches any output, and that an acknowledged event is actually stored under its own tenant."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "integration",
+      "persistence",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-collector"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/run-non-production-delivery-pilot/.openspec.yaml",
+    "openspec/changes/run-non-production-delivery-pilot/proposal.md",
+    "openspec/changes/run-non-production-delivery-pilot/tasks.md",
+    "openspec/changes/run-non-production-delivery-pilot/assessment.source.json",
+    "openspec/changes/run-non-production-delivery-pilot/assessment.json",
+    "openspec/changes/run-non-production-delivery-pilot/pilot-authorization.md",
+    "openspec/changes/run-non-production-delivery-pilot/harness/pilot.mjs",
+    "openspec/changes/run-non-production-delivery-pilot/harness/evidence.md",
+    "openspec/changes/run-non-production-delivery-pilot/harness/run-1-output.json",
+    "openspec/changes/run-non-production-delivery-pilot/harness/run-2-output.json"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-loopback-harness-with-proven-stops",
+      "kind": "direct_implementation",
+      "summary": "A harness in the change directory that runs the real producer stack against the real collector with SqliteStorage over a loopback HTTP socket and fetch, proves every stop criterion and the rollback in a preflight before traffic, evaluates the criteria throughout, and rolls back unconditionally.",
+      "forces_addressed": [
+        "The delivery chain (#109) and collector storage (#115) exist, but nothing has run them together over a real socket with real storage for a bounded, authorized interval.",
+        "A pilot needs a written authorization naming environment, exact versions, data classification, duration, and owners, with stop and rollback criteria that are testable before execution rather than asserted.",
+        "The collector package's scope gate forbids a server or listener, so any HTTP listener the pilot needs must live outside the shipped package.",
+        "The pilot runs synthetic data only and must prove that no credential or payload content reaches any output, and that an acknowledged event is actually stored under its own tenant."
+      ]
+    },
+    {
+      "id": "approach-in-process-exchange",
+      "kind": "alternative",
+      "summary": "Reuse #109's in-process fake exchange with storage added, with no socket.",
+      "forces_addressed": [
+        "A pilot needs a written authorization naming environment, exact versions, data classification, duration, and owners, with stop and rollback criteria that are testable before execution rather than asserted.",
+        "The collector package's scope gate forbids a server or listener, so any HTTP listener the pilot needs must live outside the shipped package.",
+        "The pilot runs synthetic data only and must prove that no credential or payload content reaches any output, and that an acknowledged event is actually stored under its own tenant."
+      ]
+    },
+    {
+      "id": "approach-deployed-environment",
+      "kind": "alternative",
+      "summary": "Run the pilot in a deployed non-production environment such as a cluster namespace.",
+      "forces_addressed": [
+        "The delivery chain (#109) and collector storage (#115) exist, but nothing has run them together over a real socket with real storage for a bounded, authorized interval.",
+        "The pilot runs synthetic data only and must prove that no credential or payload content reaches any output, and that an acknowledged event is actually stored under its own tenant."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-loopback-harness-with-proven-stops",
+  "rejected_alternative_ids": [
+    "approach-in-process-exchange",
+    "approach-deployed-environment"
+  ],
+  "rejection_reasons": {
+    "approach-in-process-exchange": {
+      "forces": [
+        "The delivery chain (#109) and collector storage (#115) exist, but nothing has run them together over a real socket with real storage for a bounded, authorized interval."
+      ],
+      "reason": "It would repeat #109 with storage attached and exercise no real socket, timeout, or fetch failure, so the pilot would prove nothing #109 did not."
+    },
+    "approach-deployed-environment": {
+      "forces": [
+        "A pilot needs a written authorization naming environment, exact versions, data classification, duration, and owners, with stop and rollback criteria that are testable before execution rather than asserted.",
+        "The collector package's scope gate forbids a server or listener, so any HTTP listener the pilot needs must live outside the shipped package."
+      ],
+      "reason": "A deployed environment is infrastructure the authorization boundary forbids, would need a listener inside or beside the shipped collector, and would widen the environment an authorization must name beyond one process on one host."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-stop-criteria-proven-before-traffic",
+    "implementation-rollback-unconditional",
+    "implementation-pilot-outputs-secret-free"
+  ],
+  "invariant_evidence": {
+    "implementation-stop-criteria-proven-before-traffic": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "the preflight asserts each of six stop criteria fires on a planted defect and stays silent on the null control before any request is sent"
+      ]
+    },
+    "implementation-rollback-unconditional": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "rollback runs in a finally block and the run asserts the pilot directory is absent; run 1 rolled back after a stop criterion"
+      ]
+    },
+    "implementation-pilot-outputs-secret-free": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "SC1 scans every log line, metric, and outcome for both credentials and the planted payload marker, and the final report is asserted marker-free"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "d4bd9b6a63399cfdccbc7083474cb1dc8a76f067"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2"
+  ]
+}

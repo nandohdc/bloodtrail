@@ -1,0 +1,141 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The delivery chain (#109) and collector storage (#115) exist, but nothing has run them together over a real socket with real storage for a bounded, authorized interval.",
+    "A pilot needs a written authorization naming environment, exact versions, data classification, duration, and owners, with stop and rollback criteria that are testable before execution rather than asserted.",
+    "The collector package's scope gate forbids a server or listener, so any HTTP listener the pilot needs must live outside the shipped package.",
+    "The pilot runs synthetic data only and must prove that no credential or payload content reaches any output, and that an acknowledged event is actually stored under its own tenant."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "integration",
+      "persistence",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-collector"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/run-non-production-delivery-pilot/.openspec.yaml",
+    "openspec/changes/run-non-production-delivery-pilot/proposal.md",
+    "openspec/changes/run-non-production-delivery-pilot/tasks.md",
+    "openspec/changes/run-non-production-delivery-pilot/assessment.source.json",
+    "openspec/changes/run-non-production-delivery-pilot/assessment.json",
+    "openspec/changes/run-non-production-delivery-pilot/pilot-authorization.md",
+    "openspec/changes/run-non-production-delivery-pilot/harness/pilot.mjs",
+    "openspec/changes/run-non-production-delivery-pilot/harness/evidence.md",
+    "openspec/changes/run-non-production-delivery-pilot/harness/run-1-output.json",
+    "openspec/changes/run-non-production-delivery-pilot/harness/run-2-output.json"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-loopback-harness-with-proven-stops",
+      "kind": "direct_implementation",
+      "summary": "A harness in the change directory that runs the real producer stack against the real collector with SqliteStorage over a loopback HTTP socket and fetch, proves every stop criterion and the rollback in a preflight before traffic, evaluates the criteria throughout, and rolls back unconditionally.",
+      "forces_addressed": [
+        "The delivery chain (#109) and collector storage (#115) exist, but nothing has run them together over a real socket with real storage for a bounded, authorized interval.",
+        "A pilot needs a written authorization naming environment, exact versions, data classification, duration, and owners, with stop and rollback criteria that are testable before execution rather than asserted.",
+        "The collector package's scope gate forbids a server or listener, so any HTTP listener the pilot needs must live outside the shipped package.",
+        "The pilot runs synthetic data only and must prove that no credential or payload content reaches any output, and that an acknowledged event is actually stored under its own tenant."
+      ]
+    },
+    {
+      "id": "approach-in-process-exchange",
+      "kind": "alternative",
+      "summary": "Reuse #109's in-process fake exchange with storage added, with no socket.",
+      "forces_addressed": [
+        "A pilot needs a written authorization naming environment, exact versions, data classification, duration, and owners, with stop and rollback criteria that are testable before execution rather than asserted.",
+        "The collector package's scope gate forbids a server or listener, so any HTTP listener the pilot needs must live outside the shipped package.",
+        "The pilot runs synthetic data only and must prove that no credential or payload content reaches any output, and that an acknowledged event is actually stored under its own tenant."
+      ]
+    },
+    {
+      "id": "approach-deployed-environment",
+      "kind": "alternative",
+      "summary": "Run the pilot in a deployed non-production environment such as a cluster namespace.",
+      "forces_addressed": [
+        "The delivery chain (#109) and collector storage (#115) exist, but nothing has run them together over a real socket with real storage for a bounded, authorized interval.",
+        "The pilot runs synthetic data only and must prove that no credential or payload content reaches any output, and that an acknowledged event is actually stored under its own tenant."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-loopback-harness-with-proven-stops",
+  "rejected_alternative_ids": [
+    "approach-in-process-exchange",
+    "approach-deployed-environment"
+  ],
+  "rejection_reasons": {
+    "approach-in-process-exchange": {
+      "forces": [
+        "The delivery chain (#109) and collector storage (#115) exist, but nothing has run them together over a real socket with real storage for a bounded, authorized interval."
+      ],
+      "reason": "It would repeat #109 with storage attached and exercise no real socket, timeout, or fetch failure, so the pilot would prove nothing #109 did not."
+    },
+    "approach-deployed-environment": {
+      "forces": [
+        "A pilot needs a written authorization naming environment, exact versions, data classification, duration, and owners, with stop and rollback criteria that are testable before execution rather than asserted.",
+        "The collector package's scope gate forbids a server or listener, so any HTTP listener the pilot needs must live outside the shipped package."
+      ],
+      "reason": "A deployed environment is infrastructure the authorization boundary forbids, would need a listener inside or beside the shipped collector, and would widen the environment an authorization must name beyond one process on one host."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-stop-criteria-proven-before-traffic",
+    "implementation-rollback-unconditional",
+    "implementation-pilot-outputs-secret-free"
+  ],
+  "invariant_evidence": {
+    "implementation-stop-criteria-proven-before-traffic": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "the preflight asserts each of six stop criteria fires on a planted defect and stays silent on the null control before any request is sent"
+      ]
+    },
+    "implementation-rollback-unconditional": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "rollback runs in a finally block and the run asserts the pilot directory is absent; run 1 rolled back after a stop criterion"
+      ]
+    },
+    "implementation-pilot-outputs-secret-free": {
+      "task_ids": [
+        "1.2",
+        "2.1"
+      ],
+      "evidence_ids": [
+        "SC1 scans every log line, metric, and outcome for both credentials and the planted payload marker, and the final report is asserted marker-free"
+      ]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "d4bd9b6a63399cfdccbc7083474cb1dc8a76f067"
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "SC2 compares every acknowledged event against storage, so any acknowledgment without a stored record stops the run.",
+    "authentication_or_authorization": "Only synthetic fixture tokens exist; the run proves an unissued token is rejected before storage and grants no real credential.",
+    "authority_provenance": "The authorization and the owner naming are recorded as delegated to Claude under the owner's 2026-09-10 instruction, never as a human owner act.",
+    "concurrency": "One process runs the producer and collector; the saturation burst exercises the producer's bounded backpressure, and the collector's synchronous ingress is unchanged.",
+    "confidentiality": "Every value is synthetic, a planted payload marker proves content never reaches outputs, and the listener binds to 127.0.0.1 only.",
+    "cryptography": "No key, signature, or hash is introduced; identifiers come from randomUUID for synthetic events only.",
+    "error_disclosure": "The report carries only counts, codes, and timings, and is asserted free of credentials and the payload marker before it is printed.",
+    "external_security_integration": "No external system is contacted: loopback only, a temporary file, and no network egress.",
+    "fail_posture": "Any stop criterion or error ends the run and rolls it back; a failing preflight prevents the run from starting.",
+    "lifecycle": "The run is bounded to 120 seconds and 600 steady events plus fixed extras, and ends with the listener and database closed and the directory deleted.",
+    "mutation_ownership": "The change adds only its own directory; no package, contract, or workflow is modified.",
+    "privacy_transformation": "No personal data exists to transform; the data classification is synthetic and non-sensitive.",
+    "resource_retention": "Stored records live only in a temporary database deleted at the end of every run; expiry is exercised by advancing the clock.",
+    "retry_or_redelivery": "Injected timeouts exercise the producer's bounded retry, and the run records retries and exhaustions without claiming delivery for any exhausted event.",
+    "trust_boundary": "The collector's authenticated, validated ingress remains the boundary; the harness's listener is a test adapter in the change directory, not shipped code."
+  }
+}
