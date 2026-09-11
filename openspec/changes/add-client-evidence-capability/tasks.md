@@ -43,7 +43,7 @@
 
 ## 9. Mode A proof of concept
 
-- [ ] 9.1 Run the synthetic Mode A proof of concept against every #118 metric and stop criterion, attempting replay, substitution, collision, and fabrication, and record GO, NO-GO, or REVISE (#128).
+- [x] 9.1 Run the synthetic Mode A proof of concept against every #118 metric and stop criterion, attempting replay, substitution, collision, and fabrication, and record GO, NO-GO, or REVISE (#128). — **REVISE**. 1,112 interactions: U1 1.0000, U2 0.3552 over a best-case baseline of 0.6448, C1 1.0000, V1 1.0000, V2 0, L2 0.049 ms p95, no inventory or linkage violation, and every adversarial attempt deterministically refused. L1 is unmet at 357 B and unreachable as written; filed as #498 rather than revised here.
 
 ## 10. Mode B
 
