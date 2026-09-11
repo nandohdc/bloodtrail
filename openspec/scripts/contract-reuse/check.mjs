@@ -273,7 +273,7 @@ function hasSupportedContract(record, recordPath, sink) {
 
 function rejectUnsupportedContract(recordPath, sink) {
   sink.fail("cra-contract-unsupported", recordPath,
-    "the CRA checker supports exactly security-audit@1.1.0 and selects no other contract source");
+    `the CRA checker supports exactly ${REQUIRED_CONTRACT} and selects no other contract source`);
   return false;
 }
 
