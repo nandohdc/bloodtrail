@@ -7,7 +7,7 @@
 ## 2. Runs
 
 - [x] 2.1 Run 1 at `main` `d4bd9b6`: record the result. It terminated on `SC4-deadline` after the deduplication ledger capped persisted throughput at 32 identities, and it was rolled back. File the finding (#478).
-- [ ] 2.2 After #478's fix merges, run 2 at the exact `main` commit, record every metric and the rollback check in `harness/evidence.md`, and confirm no stop criterion fired.
+- [x] 2.2 After #478's fix merges, run 2 at the exact `main` commit, record every metric and the rollback check in `harness/evidence.md`, and confirm no stop criterion fired. — Run 2 at `main` `93e4f49`: no stop criterion fired; 600/600 valid deliveries acknowledged, 616 persisted and read back, 0 capacity rejections; rolled back.
 
 ## 3. Closure
 
