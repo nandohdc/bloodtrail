@@ -360,8 +360,19 @@ jobs:
 
       - name: Install dirmngr (required by SonarScanner GPG verification)
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq dirmngr
+          if command -v dirmngr >/dev/null 2>&1; then
+            echo "dirmngr is already installed"
+            exit 0
+          fi
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt: updating package list and installing dirmngr..."
+            if sudo apt-get update -qq && sudo apt-get install -y -qq dirmngr; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Failed to install dirmngr after 3 attempts"
+          exit 1
 
       - uses: actions/setup-node@v7
         with:

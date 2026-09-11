@@ -6,7 +6,7 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const entryUrl = pathToFileURL(resolve(packageRoot, "dist/index.js")).href;
 
 const mod = await import(entryUrl);
-const exportedKeys = Object.keys(mod).sort();
+const exportedKeys = Object.keys(mod).sort((a, b) => a.localeCompare(b));
 
 const expectedExports = [
   "BoundsExceededError",
@@ -18,7 +18,7 @@ const expectedExports = [
   "InvalidNonceError",
   "buildClientEvidenceEnvelope",
   "startInteraction"
-].sort();
+].sort((a, b) => a.localeCompare(b));
 
 assert.deepEqual(
   exportedKeys,

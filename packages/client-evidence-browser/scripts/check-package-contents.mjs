@@ -1,12 +1,9 @@
-import { execFileSync } from "node:child_process";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
+import { packageRoot, runChecked } from "./verification-helpers.mjs";
 
-const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const output = execFileSync("npm", ["pack", "--dry-run", "--json"], {
+const output = runChecked("npm", ["pack", "--dry-run", "--json"], {
   cwd: packageRoot,
-  encoding: "utf8"
+  capture: true
 });
 
 const [result] = JSON.parse(output);
