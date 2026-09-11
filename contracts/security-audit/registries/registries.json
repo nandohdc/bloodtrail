@@ -71,6 +71,31 @@
     "client_claim",
     "unknown"
   ],
+  "client_evidence_envelope_versions": [
+    1
+  ],
+  "client_evidence_interaction_kinds": [
+    "navigation",
+    "form_submit",
+    "button_click",
+    "input",
+    "dialog_action",
+    "tab_switch",
+    "refresh",
+    "custom"
+  ],
+  "client_evidence_sources": [
+    "client_reported"
+  ],
+  "client_evidence_trust_levels": [
+    "client_claim"
+  ],
+  "client_evidence_platforms": [
+    "web_browser"
+  ],
+  "client_evidence_capture_scopes": [
+    "interaction_ephemeral"
+  ],
   "field_policy_values": [
     "allowed",
     "conditionally_allowed",

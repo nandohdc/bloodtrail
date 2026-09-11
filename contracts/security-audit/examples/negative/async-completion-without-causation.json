@@ -21,7 +21,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "2.0.0"
+      "version": "2.1.0"
     },
     "producer": {
       "name": "account-transaction-owner",
@@ -172,7 +172,7 @@
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "2.0.0"
+      "field_policy_version": "2.1.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -185,6 +185,17 @@
       "type": "human_user",
       "id": "principal_5",
       "issuer": "https://idp.example.test"
+    },
+    "client_evidence": {
+      "interaction_id": "11111111-1111-4111-8111-111111111111",
+      "interaction_kind": "button_click",
+      "envelope_version": 1,
+      "provenance": {
+        "source": "client_reported",
+        "trust_level": "client_claim",
+        "platform": "web_browser",
+        "capture_scope": "interaction_ephemeral"
+      }
     }
   }
 }

@@ -92,6 +92,13 @@
 | source.observed.proxy_chain | array | optional | network_observation | observed_transport | restricted | conditionally_allowed | operational_short | stable |
 | source.client_reported.user_agent_family | string | optional | claimed_identity | client_claim | restricted | conditionally_allowed | operational_short | additive |
 | source.client_reported.user_agent_version | string | optional | claimed_identity | client_claim | restricted | conditionally_allowed | operational_short | additive |
+| client_evidence.interaction_id | string | required | claimed_identity | client_claim | confidential | conditionally_allowed | security_standard | additive |
+| client_evidence.interaction_kind | string | required | claimed_identity | client_claim | internal | allowed | security_standard | additive |
+| client_evidence.envelope_version | integer | required | claimed_identity | client_claim | internal | allowed | security_standard | additive |
+| client_evidence.provenance.source | string | required | claimed_identity | client_claim | internal | allowed | security_standard | additive |
+| client_evidence.provenance.trust_level | string | required | claimed_identity | client_claim | internal | allowed | security_standard | additive |
+| client_evidence.provenance.platform | string | required | claimed_identity | client_claim | internal | allowed | security_standard | additive |
+| client_evidence.provenance.capture_scope | string | required | claimed_identity | client_claim | internal | allowed | security_standard | additive |
 | destination.service | string | conditional | network_observation | authoritative_server | internal | allowed | security_standard | registry |
 | destination.address | string | optional | network_observation | observed_transport | confidential | conditionally_allowed | operational_short | stable |
 | destination.port | integer | optional | network_observation | observed_transport | confidential | conditionally_allowed | operational_short | stable |

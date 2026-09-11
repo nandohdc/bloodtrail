@@ -79,6 +79,7 @@ function schemaForField(field) {
     if (field.fmt === "date-time") schema.format = "date-time";
     if (field.fmt === "uri") schema.format = "uri";
     if (field.fmt === "uuid") schema.pattern = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
+    if (field.fmt === "uuid-v4") schema.pattern = "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
     if (field.fmt === "semver") schema.pattern = "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$";
     if (field.fmt === "w3c-trace-id") schema.pattern = "^(?!0{32})[0-9a-f]{32}$";
     if (field.fmt === "w3c-span-id") schema.pattern = "^(?!0{16})[0-9a-f]{16}$";
@@ -97,20 +98,27 @@ function schemaForArrayItem(item) {
   return { type: ["string", "object"], additionalProperties: true };
 }
 
+function markRequired(node, part) {
+  node.required ??= [];
+  if (!node.required.includes(part)) node.required.push(part);
+}
+
 function addField(rootSchema, field) {
   const parts = field.p.split(".");
+  // A required member of an optional object makes every intermediate object
+  // between that anchor and the member required too, so a present anchor can
+  // never omit a nested object whose members the contract requires.
+  const anchorDepth = field.required_with ? field.required_with.split(".").length : parts.length;
   let node = rootSchema;
   for (const [i, part] of parts.entries()) {
     const last = i === parts.length - 1;
     node.properties ??= {};
     if (last) {
       node.properties[part] = schemaForField(field);
-      if (field.r === "required") {
-        node.required ??= [];
-        node.required.push(part);
-      }
+      if (field.r === "required") markRequired(node, part);
     } else {
       node.properties[part] ??= { type: "object", additionalProperties: false, unevaluatedProperties: false, properties: {}, required: [] };
+      if (field.r === "required" && i >= anchorDepth) markRequired(node, part);
       node = node.properties[part];
     }
   }
@@ -211,6 +219,23 @@ function fixtureRisk(entry, index) {
   };
 }
 
+// From 2.1.0 a record may carry one bounded v1 client-evidence reference. Every
+// value comes from the closed registries, so the fixture tracks the source.
+function clientEvidenceReference() {
+  const registries = source.registries;
+  return {
+    interaction_id: "11111111-1111-4111-8111-111111111111",
+    interaction_kind: "button_click",
+    envelope_version: registries.client_evidence_envelope_versions[0],
+    provenance: {
+      source: registries.client_evidence_sources[0],
+      trust_level: registries.client_evidence_trust_levels[0],
+      platform: registries.client_evidence_platforms[0],
+      capture_scope: registries.client_evidence_capture_scopes[0]
+    }
+  };
+}
+
 function makeEvent(entry, index) {
   const ex = entry.example;
   const phase = ex.phase ?? entry.phase[0];
@@ -295,6 +320,9 @@ function makeEvent(entry, index) {
       retry_attempt: 0,
       original_event_id: phase === "compensating" || entry.semantic.endsWith("_completed") ? id(Math.max(1, index)) : undefined
     },
+    // Exactly one canonical fixture carries the optional v1 reference. The
+    // remaining fixtures deliberately omit it, preserving absence semantics.
+    ...(index === 1 ? { client_evidence: clientEvidenceReference() } : {}),
     risk: fixtureRisk(entry, index),
     data: { classification: entry.retention === "policy_governed" ? "restricted" : "confidential", retention_class: entry.retention, field_policy_version: source.metadata.field_policy_version },
     integrity: { transport_authentication: { method: "mtls", verified: true, peer: "producer-registry/ref" } }
@@ -371,6 +399,30 @@ function negativeFixtures(positive) {
   add("invalid-delegation", "INVALID_DELEGATION", (e) => { e.authentication.impersonated = true; e.delegation = { mode: "impersonation" }; });
   add("unsupported-extension", "UNKNOWN_EXTENSION", (e) => { e.extensions = { "evil.vendor.v1": { actor: { id: "tenant_conflict" } } }; });
   add("browser-client-authority-claim", "AUTHORITY_ESCALATION", (e) => { e.actor.provenance = { trust_level: "client_claim", source: "browser" }; });
+  add("client-evidence-invalid-provenance", "UNKNOWN_CATALOG_VALUE", (e) => {
+    e.client_evidence = clientEvidenceReference();
+    e.client_evidence.provenance.source = "server_observed";
+  });
+  add("client-evidence-trust-escalation", "UNKNOWN_CATALOG_VALUE", (e) => {
+    e.client_evidence = clientEvidenceReference();
+    e.client_evidence.provenance.trust_level = "authoritative_server";
+  });
+  add("client-evidence-unknown-envelope-version", "UNKNOWN_CATALOG_VALUE", (e) => {
+    e.client_evidence = clientEvidenceReference();
+    e.client_evidence.envelope_version = 2;
+  });
+  add("client-evidence-missing-provenance", "FIELD_LIMIT_EXCEEDED", (e) => {
+    e.client_evidence = clientEvidenceReference();
+    delete e.client_evidence.provenance;
+  });
+  add("client-evidence-oversized-interaction-id", "FIELD_LIMIT_EXCEEDED", (e) => {
+    e.client_evidence = clientEvidenceReference();
+    e.client_evidence.interaction_id = `${e.client_evidence.interaction_id}0`;
+  });
+  add("client-evidence-server-owned-member", "UNKNOWN_CATALOG_VALUE", (e) => {
+    e.client_evidence = clientEvidenceReference();
+    e.client_evidence.risk = { level: "low" };
+  });
   add("arbitrary-object-body", "PROHIBITED_DATA", (e) => { e.request.full_request = { arbitrary: "object" }; });
   add("ambiguous-actor-attribution", "MISSING_REQUIRED_ACTOR", (e) => { e.actor = {}; });
   const provenance = source.derived_field_provenance;
@@ -495,6 +547,7 @@ async function main() {
   await emit("fixtures/compatibility/compatibility-scenarios.json", stableJson([
     { name: "patch-documentation-correction", change_class: "patch", expected: "compatible" },
     { name: "minor-optional-field-addition", change_class: "minor", expected: "compatible_with_absence_meaning" },
+    { name: "minor-client-evidence-reference", change_class: "minor", expected: "compatible_with_absence_meaning" },
     { name: "minor-derived-field-provenance", change_class: "minor", expected: "compatible_with_absence_meaning" },
     { name: "major-derived-field-trust-floor", change_class: "major", expected: "breaking" },
     { name: "minor-catalog-addition", change_class: "minor", expected: "older_consumer_must_reject_or_quarantine_unknown_event" },

@@ -1,5 +1,5 @@
 // GENERATED FILE. DO NOT EDIT.
-// Contract: Bloodtrail Security Audit Event Contract 2.0.0
+// Contract: Bloodtrail Security Audit Event Contract 2.1.0
 // Sources: contracts/security-audit/source/contract.source.json and generated contract artifacts.
 export type SecurityAuditEvent = {
   readonly "event": {
@@ -138,6 +138,17 @@ export type SecurityAuditEvent = {
       readonly "user_agent_version"?: string;
     };
   };
+  readonly "client_evidence"?: {
+    readonly "interaction_id": string;
+    readonly "interaction_kind": "navigation" | "form_submit" | "button_click" | "input" | "dialog_action" | "tab_switch" | "refresh" | "custom";
+    readonly "envelope_version": 1;
+    readonly "provenance": {
+      readonly "source": "client_reported";
+      readonly "trust_level": "client_claim";
+      readonly "platform": "web_browser";
+      readonly "capture_scope": "interaction_ephemeral";
+    };
+  };
   readonly "destination"?: {
     readonly "service"?: string;
     readonly "address"?: string;
@@ -224,11 +235,11 @@ export type SecurityAuditEvent = {
   };
 };
 
-export const CONTRACT_VERSION = "2.0.0" as const;
+export const CONTRACT_VERSION = "2.1.0" as const;
 
 export const CONTRACT_SCHEMA_NAME = "com.bloodtrail.security-audit.event" as const;
 
-export const CONTRACT_SCHEMA_ID = "https://bloodtrail.dev/contracts/security-audit/2.0.0/security-audit-event.schema.json" as const;
+export const CONTRACT_SCHEMA_ID = "https://bloodtrail.dev/contracts/security-audit/2.1.0/security-audit-event.schema.json" as const;
 
 export const REGISTRIES = {
   "actions": [
@@ -282,6 +293,31 @@ export const REGISTRIES = {
     "data_access",
     "security_configuration",
     "tenant_security"
+  ],
+  "client_evidence_capture_scopes": [
+    "interaction_ephemeral"
+  ],
+  "client_evidence_envelope_versions": [
+    1
+  ],
+  "client_evidence_interaction_kinds": [
+    "navigation",
+    "form_submit",
+    "button_click",
+    "input",
+    "dialog_action",
+    "tab_switch",
+    "refresh",
+    "custom"
+  ],
+  "client_evidence_platforms": [
+    "web_browser"
+  ],
+  "client_evidence_sources": [
+    "client_reported"
+  ],
+  "client_evidence_trust_levels": [
+    "client_claim"
   ],
   "commit_states": [
     "not_applicable",
@@ -2230,6 +2266,76 @@ export const FIELD_POLICY = [
     "privacy": "restricted",
     "policy": "conditionally_allowed",
     "retention": "operational_short",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.interaction_id",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.interaction_kind",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.envelope_version",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.provenance.source",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.provenance.trust_level",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.provenance.platform",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.provenance.capture_scope",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
     "redaction": "role and tenant access policy",
     "compatibility": "additive"
   },

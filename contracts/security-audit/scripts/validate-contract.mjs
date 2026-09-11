@@ -82,6 +82,7 @@ function enumValues(field) {
 function formatOk(field, value) {
   if (value === undefined || typeof value !== "string") return true;
   if (field.fmt === "uuid") return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
+  if (field.fmt === "uuid-v4") return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
   if (field.fmt === "semver") return /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$/.test(value);
   if (field.fmt === "date-time") return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value);
   if (field.fmt === "uri") return /^https?:\/\//.test(value);
@@ -446,6 +447,7 @@ function catalogMembershipError(event, catalog) {
 
 function missingRequiredFieldError(event) {
   for (const field of source.fields.filter((candidate) => candidate.r === "required")) {
+    if (field.required_with && get(event, field.required_with) === undefined) continue;
     if (get(event, field.p) === undefined) return diagnostic("FIELD_LIMIT_EXCEEDED", field.p, event);
   }
   return null;

@@ -95,7 +95,7 @@ export function createPaperConsumerSdk(sink: AuditEventSink): SecurityAuditSdk {
   const platform = new WebPlatformProvider();
   const contextProvider = new WebContextProvider();
   return createSecurityAuditSdk({
-    contractVersion: "2.0.0",
+    contractVersion: "2.1.0",
     producer: { name: "paper-consumer", version: "1.0.0" },
     service: { name: "browser-service", version: "1.0.0" },
     environment: { name: "browser" },

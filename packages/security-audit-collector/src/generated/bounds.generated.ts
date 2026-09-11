@@ -14,5 +14,5 @@ export const RETRY_ATTEMPT_MAX = 1000 as const;
 // per the ratified asymmetric version policy (#75/#76): the producer binds EXACT_ONE while
 // a separately authorized collector MAY support an explicit finite set for migration.
 export const SUPPORTED_CONTRACT_VERSIONS: readonly string[] = [
-  "2.0.0",
+  "2.1.0",
 ];

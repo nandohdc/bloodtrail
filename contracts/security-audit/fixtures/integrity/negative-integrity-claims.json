@@ -54,5 +54,19 @@
     "established": "legal identity key-control process outside this contract",
     "not_established": "legal non-repudiation from contract conformance alone",
     "expected": "valid_integrity_metadata_does_not_upgrade_producer_truth_or_completeness"
+  },
+  {
+    "name": "client_evidence_origin-does-not-prove-truth-or-completeness",
+    "mechanism_valid": true,
+    "established": "an authenticated producer relayed one bounded v1 interaction reference at client_claim trust",
+    "not_established": "that a real browser produced it, that the interaction occurred, or that the producer did not fabricate it",
+    "expected": "valid_integrity_metadata_does_not_upgrade_producer_truth_or_completeness"
+  },
+  {
+    "name": "keyed_transformation-does-not-prove-truth-or-completeness",
+    "mechanism_valid": true,
+    "established": "a bounded transform output and key identifier are present and well formed",
+    "not_established": "that the declared HMAC or keyed transform actually ran, or ran with the named key",
+    "expected": "valid_integrity_metadata_does_not_upgrade_producer_truth_or_completeness"
   }
 ]

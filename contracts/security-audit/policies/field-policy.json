@@ -880,6 +880,76 @@
     "compatibility": "additive"
   },
   {
+    "path": "client_evidence.interaction_id",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "confidential",
+    "policy": "conditionally_allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.interaction_kind",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.envelope_version",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.provenance.source",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.provenance.trust_level",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.provenance.platform",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
+    "path": "client_evidence.provenance.capture_scope",
+    "authority": "claimed_identity",
+    "trust": "client_claim",
+    "privacy": "internal",
+    "policy": "allowed",
+    "retention": "security_standard",
+    "redaction": "role and tenant access policy",
+    "compatibility": "additive"
+  },
+  {
     "path": "destination.service",
     "authority": "network_observation",
     "trust": "authoritative_server",

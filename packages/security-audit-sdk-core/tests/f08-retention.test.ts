@@ -301,7 +301,7 @@ function createSdk(
   sink: AuditEventSink = acceptedSink,
 ): SecurityAuditSdk {
   return createSecurityAuditSdk({
-    contractVersion: "2.0.0",
+    contractVersion: "2.1.0",
     producer: { name: "f08-test", version: "1.0.0" },
     service: { name: "f08-test", version: "1.0.0" },
     environment: { name: "test" },

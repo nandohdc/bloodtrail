@@ -4,12 +4,12 @@
   "metadata": {
     "contract": "bloodtrail-security-audit-event",
     "schema_name": "com.bloodtrail.security-audit.event",
-    "schema_version": "2.0.0",
-    "catalog_version": "2.0.0",
-    "field_policy_version": "2.0.0",
+    "schema_version": "2.1.0",
+    "catalog_version": "2.1.0",
+    "field_policy_version": "2.1.0",
     "schema_dialect": "https://json-schema.org/draft/2020-12/schema",
-    "schema_id": "https://bloodtrail.dev/contracts/security-audit/2.0.0/security-audit-event.schema.json",
-    "catalog_id": "https://bloodtrail.dev/contracts/security-audit/2.0.0/catalog.json",
+    "schema_id": "https://bloodtrail.dev/contracts/security-audit/2.1.0/security-audit-event.schema.json",
+    "catalog_id": "https://bloodtrail.dev/contracts/security-audit/2.1.0/catalog.json",
     "owner": "Bloodtrail project owner",
     "generated_artifact_notice": "GENERATED FROM contracts/security-audit/source/contract.source.json. DO NOT EDIT BY HAND.",
     "retrieval_date": "2026-07-31",
@@ -375,6 +375,31 @@
       "client_claim",
       "unknown"
     ],
+    "client_evidence_envelope_versions": [
+      1
+    ],
+    "client_evidence_interaction_kinds": [
+      "navigation",
+      "form_submit",
+      "button_click",
+      "input",
+      "dialog_action",
+      "tab_switch",
+      "refresh",
+      "custom"
+    ],
+    "client_evidence_sources": [
+      "client_reported"
+    ],
+    "client_evidence_trust_levels": [
+      "client_claim"
+    ],
+    "client_evidence_platforms": [
+      "web_browser"
+    ],
+    "client_evidence_capture_scopes": [
+      "interaction_ephemeral"
+    ],
     "field_policy_values": [
       "allowed",
       "conditionally_allowed",
@@ -689,6 +714,7 @@
       "fields": [
         "tenant.claimed_tenant_id",
         "source.client_reported.*",
+        "client_evidence.*",
         "request.user_agent"
       ],
       "authoritative_producer": "request input boundary",
@@ -1996,6 +2022,103 @@
       "privacy": "restricted",
       "policy": "conditionally_allowed",
       "retention": "operational_short",
+      "max": 32,
+      "compat": "additive"
+    },
+    {
+      "p": "client_evidence.interaction_id",
+      "t": "string",
+      "fmt": "uuid-v4",
+      "r": "required",
+      "required_with": "client_evidence",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "confidential",
+      "policy": "conditionally_allowed",
+      "retention": "security_standard",
+      "max": 36,
+      "compat": "additive"
+    },
+    {
+      "p": "client_evidence.interaction_kind",
+      "t": "string",
+      "enum": "client_evidence_interaction_kinds",
+      "r": "required",
+      "required_with": "client_evidence",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "additive"
+    },
+    {
+      "p": "client_evidence.envelope_version",
+      "t": "integer",
+      "enum": "client_evidence_envelope_versions",
+      "r": "required",
+      "required_with": "client_evidence",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "compat": "additive"
+    },
+    {
+      "p": "client_evidence.provenance.source",
+      "t": "string",
+      "enum": "client_evidence_sources",
+      "r": "required",
+      "required_with": "client_evidence",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "additive"
+    },
+    {
+      "p": "client_evidence.provenance.trust_level",
+      "t": "string",
+      "enum": "client_evidence_trust_levels",
+      "r": "required",
+      "required_with": "client_evidence",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "additive"
+    },
+    {
+      "p": "client_evidence.provenance.platform",
+      "t": "string",
+      "enum": "client_evidence_platforms",
+      "r": "required",
+      "required_with": "client_evidence",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
+      "max": 32,
+      "compat": "additive"
+    },
+    {
+      "p": "client_evidence.provenance.capture_scope",
+      "t": "string",
+      "enum": "client_evidence_capture_scopes",
+      "r": "required",
+      "required_with": "client_evidence",
+      "a": "claimed_identity",
+      "trust": "client_claim",
+      "privacy": "internal",
+      "policy": "allowed",
+      "retention": "security_standard",
       "max": 32,
       "compat": "additive"
     },
@@ -4103,6 +4226,16 @@
       "claim": "non_repudiation",
       "can_establish": "legal identity key-control process outside this contract",
       "cannot_establish": "legal non-repudiation from contract conformance alone"
+    },
+    {
+      "claim": "client_evidence_origin",
+      "can_establish": "an authenticated producer relayed one bounded v1 interaction reference at client_claim trust",
+      "cannot_establish": "that a real browser produced it, that the interaction occurred, or that the producer did not fabricate it"
+    },
+    {
+      "claim": "keyed_transformation",
+      "can_establish": "a bounded transform output and key identifier are present and well formed",
+      "cannot_establish": "that the declared HMAC or keyed transform actually ran, or ran with the named key"
     }
   ],
   "adrs": [
@@ -4208,6 +4341,21 @@
       ],
       "unresolved": [
         "Removal windows need project-owner policy before release."
+      ]
+    },
+    {
+      "id": "ADR-009",
+      "title": "Bounded client-evidence reference",
+      "decision": "From 2.1.0 a record may carry one optional client_evidence reference: a ClientEvidenceEnvelope v1 interaction identifier, interaction kind, and envelope version, with provenance fixed to client_reported, client_claim, web_browser, and interaction_ephemeral. The envelope itself stays a separate contract and is never embedded.",
+      "status": "accepted_for_contract_review",
+      "consequences": [
+        "Absence carries no security meaning, and server-only records remain valid unchanged.",
+        "The reference is a correlation annotation; it never overwrites, elevates, or evidences a server-owned field.",
+        "A risk model that lists a client-evidence input is floored at client_claim by the derived-field trust floor."
+      ],
+      "unresolved": [
+        "Mode A client origin is unverified and relayed by an authenticated producer; nothing in the contract proves a browser existed or that the producer did not fabricate the reference.",
+        "Device-originated trust above client_claim requires a separate Mode B decision; until one exists no platform other than web_browser is admitted."
       ]
     }
   ]
