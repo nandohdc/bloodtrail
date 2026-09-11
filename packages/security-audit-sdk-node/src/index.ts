@@ -14,6 +14,7 @@ export {
   type HttpExchangeOutcome,
   type HttpExchangeRequest,
 } from "./http-handoff.js";
+export { createFetchHttpExchange, type FetchHttpExchangeOptions } from "./fetch-exchange.js";
 export {
   createBoundedDeliveryRetry,
   type DeliveryRetry,

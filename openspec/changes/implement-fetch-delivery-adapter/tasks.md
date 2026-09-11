@@ -5,12 +5,12 @@
 
 ## 2. Implementation
 
-- [ ] 2.1 Implement `createFetchHttpExchange` with origin, deadline, and response-bound validation, no redirects, bounded reads, and the native-to-exchange mapping; export it with ADR-NODE-003, the frozen lists, and a `freezeRecord` amendment.
-- [ ] 2.2 Add the per-file `fetchExchange` coupling role and confinement arms for `fetch` outside the adapter and an extra built-in inside it.
+- [x] 2.1 Implement `createFetchHttpExchange` with origin, deadline, and response-bound validation, no redirects, bounded reads, and the native-to-exchange mapping; export it with ADR-NODE-003, the frozen lists, and a `freezeRecord` amendment.
+- [x] 2.2 Add the per-file `fetchExchange` coupling role and confinement arms for `fetch` outside the adapter and an extra built-in inside it.
 
 ## 3. Verification
 
-- [ ] 3.1 Parameterize the common per-class conformance suite by transport and run it through A1 over loopback; add the adapter-specific arms; run `npm run validate --prefix packages/security-audit-sdk-node`, strict OpenSpec validation, the governance phases, and `cs delta`.
+- [x] 3.1 Parameterize the common per-class conformance suite by transport and run it through A1 over loopback; add the adapter-specific arms; run `npm run validate --prefix packages/security-audit-sdk-node`, strict OpenSpec validation, the governance phases, and `cs delta`.
 
 ## 4. Delivery
 

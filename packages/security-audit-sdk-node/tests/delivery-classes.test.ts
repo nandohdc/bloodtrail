@@ -14,13 +14,15 @@
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { describe, it } from "node:test";
+import { createServer, type Server } from "node:http";
+import { after, describe, it } from "node:test";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
 import {
   BEST_EFFORT_LOSS_CEILING,
   createBestEffortDelivery,
+  createFetchHttpExchange,
   createHttpDeliveryHandoff,
   createPolicyCriticalDelivery,
   createTransactionCriticalDelivery,
@@ -74,6 +76,39 @@ function acknowledgingHandoff(event: SecurityAuditEvent) {
   return handoffReturning(acknowledgingExchange, event);
 }
 
+// The same acknowledging peer over a real loopback socket, reached through the
+// governed fetch adapter (#113), so the common suite below proves the adapter
+// conforms rather than a second suite restating it.
+const acknowledgingServer: Server = createServer((request, response) => {
+  const chunks: Buffer[] = [];
+  request.on("data", (chunk: Buffer) => chunks.push(chunk));
+  request.on("end", () => {
+    const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as SecurityAuditEvent;
+    response.writeHead(202, { "content-type": "application/json" });
+    response.end(JSON.stringify({ acknowledgments: [{ event_id: body.event.id, outcome: "accepted" }] }));
+  });
+});
+await new Promise<void>((resolveListen) => acknowledgingServer.listen(0, "127.0.0.1", resolveListen));
+after(() => new Promise<void>((resolveClose) => acknowledgingServer.close(() => resolveClose())));
+const address = acknowledgingServer.address();
+assert.ok(address && typeof address === "object");
+const acknowledgingOrigin = `http://127.0.0.1:${address.port}`;
+
+function fetchAcknowledgingHandoff(_event: SecurityAuditEvent) {
+  const attempts: number[] = [];
+  const exchange = createFetchHttpExchange({ origin: acknowledgingOrigin, timeoutMs: 5_000 });
+  const handoff = createHttpDeliveryHandoff({
+    path: "/v1/security-audit",
+    exchange: async (request) => {
+      attempts.push(request.attempt);
+      return exchange(request);
+    },
+  });
+  return { handoff, attempts };
+}
+
+type AcknowledgingHandoffFactory = typeof acknowledgingHandoff;
+
 function failingHandoff(event: SecurityAuditEvent) {
   return handoffReturning(() => ({ kind: "transport_failure" }), event);
 }
@@ -124,9 +159,9 @@ interface ClassArm {
   readonly guarantees: { readonly semantic: string; readonly claimsAtLeastOnce: boolean };
 }
 
-function bestEffortArm(): ClassArm {
+function bestEffortArm(acknowledging: AcknowledgingHandoffFactory): ClassArm {
   const event = eventForClass("best_effort");
-  const { handoff, attempts } = acknowledgingHandoff(event);
+  const { handoff, attempts } = acknowledging(event);
   const binding = createBestEffortDelivery({ handoff });
   return {
     deliveryClass: "best_effort",
@@ -142,9 +177,9 @@ function bestEffortArm(): ClassArm {
   };
 }
 
-function transactionCriticalArm(): ClassArm {
+function transactionCriticalArm(acknowledging: AcknowledgingHandoffFactory): ClassArm {
   const event = eventForClass("transaction_critical");
-  const { handoff, attempts } = acknowledgingHandoff(event);
+  const { handoff, attempts } = acknowledging(event);
   const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: async () => true });
   let transaction = 0;
   return {
@@ -162,9 +197,9 @@ function transactionCriticalArm(): ClassArm {
   };
 }
 
-function policyCriticalArm(): ClassArm {
+function policyCriticalArm(acknowledging: AcknowledgingHandoffFactory): ClassArm {
   const event = eventForClass("policy_critical");
-  const { handoff, attempts } = acknowledgingHandoff(event);
+  const { handoff, attempts } = acknowledging(event);
   const binding = createPolicyCriticalDelivery({ handoff, policyDecision: APPROVED_POLICY });
   return {
     deliveryClass: "policy_critical",
@@ -180,10 +215,21 @@ function policyCriticalArm(): ClassArm {
   };
 }
 
-const IMPLEMENTED_ARMS: readonly (() => ClassArm)[] = [bestEffortArm, transactionCriticalArm, policyCriticalArm];
+const IMPLEMENTED_ARMS: readonly ((acknowledging: AcknowledgingHandoffFactory) => ClassArm)[] = [
+  bestEffortArm,
+  transactionCriticalArm,
+  policyCriticalArm,
+];
 
-describe("Common per-class delivery conformance", () => {
-  for (const makeArm of IMPLEMENTED_ARMS) {
+const TRANSPORTS: readonly (readonly [string, AcknowledgingHandoffFactory])[] = [
+  ["in-process exchange", acknowledgingHandoff],
+  ["fetch adapter over loopback", fetchAcknowledgingHandoff],
+];
+
+for (const [transport, acknowledging] of TRANSPORTS) {
+  describe(`Common per-class delivery conformance (${transport})`, () => {
+  for (const makeClassArm of IMPLEMENTED_ARMS) {
+    const makeArm = () => makeClassArm(acknowledging);
     const { deliveryClass } = makeArm();
 
     it(`${deliveryClass}: delivers its own catalog event in one attempt against an acknowledging peer`, async () => {
@@ -223,7 +269,8 @@ describe("Common per-class delivery conformance", () => {
       assert.equal(refusedCode, "unknown_event_name");
     });
   }
-});
+  });
+}
 
 // ---------------------------------------------------------------------------
 // best_effort

@@ -105,6 +105,26 @@ export const PLATFORM_COUPLING_POLICY = Object.freeze({
       ]),
       uninspectedCouplings: Object.freeze([]),
     }),
+    // The governed delivery adapter (#113) is the one artifact that may reach
+    // the runtime's fetch. Every other artifact keeps the total host-global ban.
+    fetchExchange: Object.freeze({
+      name: "fetchExchange",
+      prefix: "src/fetch-exchange.ts",
+      hostGlobals: Object.freeze({
+        fetch: Object.freeze({
+          name: "fetch",
+          reason: "The governed fetch delivery adapter (issue #113) performs one HTTP exchange per attempt through the runtime's fetch; it follows no redirect and reads a bounded response.",
+          boundary: "fetch delivery adapter",
+        }),
+        AbortSignal: Object.freeze({
+          name: "AbortSignal",
+          reason: "Bounds each fetch exchange by the configured per-attempt deadline through AbortSignal.timeout.",
+          boundary: "fetch delivery adapter",
+        }),
+      }),
+      specifiers: Object.freeze(["node:buffer"]),
+      uninspectedCouplings: Object.freeze([]),
+    }),
   }),
 });
 
@@ -368,6 +388,7 @@ export async function inspectPlatformCoupling({ packageRoot, sourceRoot, tree })
 
   const inventory = {
     authored: { artifacts: 0, references: 0, hostGlobals: new Map() },
+    fetchExchange: { artifacts: 0, references: 0, hostGlobals: new Map() },
   };
   let result = { inspected: artifacts.length, references: 0, violations: [], inventory };
 
@@ -536,7 +557,10 @@ function isLabelReference(parent, node) {
   return "label" in parent && parent.label === node;
 }
 
-function roleForArtifact(_artifactPath) {
+function roleForArtifact(artifactPath) {
+  if (artifactPath === PLATFORM_COUPLING_POLICY.roles.fetchExchange.prefix) {
+    return PLATFORM_COUPLING_POLICY.roles.fetchExchange;
+  }
   return PLATFORM_COUPLING_POLICY.roles.authored;
 }
 
