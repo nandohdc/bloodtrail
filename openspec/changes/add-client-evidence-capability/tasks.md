@@ -47,12 +47,12 @@
 
 ## 10. Mode B
 
-- [ ] 10.1 Record the Mode B device-trust decision (#129).
-- [ ] 10.2 Implement the approved Mode B path only if 10.1 is GO; otherwise close #130 without implementation.
+- [x] 10.1 Record the Mode B device-trust decision (#129). — **NO-GO for P1**: `decisions/129-mode-b-device-trust.md` inventories four platform mechanisms and records why none serves P1, and what a future GO would have to satisfy.
+- [x] 10.2 Implement the approved Mode B path only if 10.1 is GO; otherwise close #130 without implementation. — 10.1 is NO-GO, so #130 closes without implementation and no Mode B code exists.
 
 ## 11. React Native
 
-- [ ] 11.1 Implement the React Native adapter over the platform-neutral Core within the approved platform matrix (#131).
+- [x] 11.1 Implement the React Native adapter over the platform-neutral Core within the approved platform matrix (#131). — **Not implemented in this wave.** With Mode B closed, an adapter would emit envelopes on a platform the audit contract does not admit, so #127's mapping refuses `react_native` as `unsupported_platform`. It needs its own contract move, a supported version matrix, and mobile CI targets this repository does not have; the disposition is recorded in `decisions/129-mode-b-device-trust.md` and on #132.
 
 ## 12. Fold and archive
 
