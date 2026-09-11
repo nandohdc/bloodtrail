@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "contract": "security-audit@1.1.0",
+  "contract": "security-audit@2.0.0",
   "mode": "exemption",
   "scope_paths": ["contracts/security-audit/docs/"],
   "rationale": "This intentionally invalid exemption fixture chooses a governance-record path even though the CRA dialect fixes the external source and permits only its symbolic same-change locator.",

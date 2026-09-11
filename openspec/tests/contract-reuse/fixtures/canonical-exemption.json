@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "contract": "security-audit@1.1.0",
+  "contract": "security-audit@2.0.0",
   "mode": "exemption",
   "scope_paths": ["contracts/security-audit/docs/"],
   "rationale": "The change regenerates rendered contract documentation without altering any contract semantics; the project owner granted a written, change-bound exemption recorded in the canonical governance-record source.",

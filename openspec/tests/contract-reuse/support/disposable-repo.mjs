@@ -117,14 +117,14 @@ function seedRepository(repository) {
 }
 
 function seedSupportedContractBaseline(repository) {
-  // These fixtures exercise CRA records for security-audit@1.1.0, the version the
+  // These fixtures exercise CRA records for security-audit@2.0.0, the version the
   // checker currently supports. Pin the seeded baseline explicitly rather than
   // copying whatever the live source happens to say: a future governed version
   // move would otherwise silently retarget every fixture baseline, and the
   // fixtures would stop testing the version their records name.
   repository.mutateJson("contracts/security-audit/source/contract.source.json", (source) => ({
     ...source,
-    metadata: { ...source.metadata, schema_version: "1.1.0" },
+    metadata: { ...source.metadata, schema_version: "2.0.0" },
   }));
 }
 

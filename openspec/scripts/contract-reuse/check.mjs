@@ -33,7 +33,7 @@ import { loadCraSchema, validateCraRecord } from "./schema.mjs";
 const CRA_RECORD_NAME = "contract-reuse.json";
 const GOVERNANCE_RECORD_PATH = "packages/security-audit-sdk-core/verification-lifecycle.json";
 const CANONICAL_CONTRACT_PATH = "contracts/security-audit/source/contract.source.json";
-const REQUIRED_CONTRACT = "security-audit@1.1.0";
+const REQUIRED_CONTRACT = "security-audit@2.0.0";
 const SUPPORTED_CONTRACT_VERSION = REQUIRED_CONTRACT.slice(REQUIRED_CONTRACT.indexOf("@") + 1);
 const PROJECT_OWNER = "Fernando Homem da Costa (nandohdc)";
 const CHANGE_ID = /^[a-z0-9][a-z0-9-]{2,99}$/;
