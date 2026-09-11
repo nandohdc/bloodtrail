@@ -21,9 +21,10 @@ import {
 
 test("check-package-discovery: enumerateGitPackages discovers all tracked packages", () => {
   const enumerated = enumerateGitPackages();
-  assert.equal(enumerated.length, 5);
+  assert.equal(enumerated.length, 6);
   assert.deepEqual(enumerated, [
     "contracts/security-audit/package.json",
+    "packages/client-evidence-browser/package.json",
     "packages/security-audit-collector/package.json",
     "packages/security-audit-sdk-core/package.json",
     "packages/security-audit-sdk-node/package.json",
@@ -33,9 +34,9 @@ test("check-package-discovery: enumerateGitPackages discovers all tracked packag
 
 test("check-package-discovery: passing verification on exact declared package list", () => {
   const result = assertPackageDiscovery();
-  assert.equal(result.packageCount, 5);
-  assert.equal(result.packages.length, 5);
-  assert.match(result.message, /package discovery completeness passed: 5 declared package\(s\)/);
+  assert.equal(result.packageCount, 6);
+  assert.equal(result.packages.length, 6);
+  assert.match(result.message, /package discovery completeness passed: 6 declared package\(s\)/);
 });
 
 test("check-package-discovery: fails closed when discovered package count is zero", () => {
@@ -92,7 +93,7 @@ test("check-package-discovery: Makefile runs every declared workspace in every c
   const result = assertMakefileCoverage();
   assert.deepEqual(result.targets, ["runtime-gates", "governance-gates"]);
   assert.equal(result.workspaceCount, DECLARED_PACKAGES.length);
-  assert.match(result.message, /each run all 5 declared workspace\(s\)/);
+  assert.match(result.message, /each run all 6 declared workspace\(s\)/);
 });
 
 test("check-package-discovery: fails closed when a covering target skips a declared workspace", () => {
@@ -102,12 +103,14 @@ test("check-package-discovery: fails closed when a covering target skips a decla
     "runtime-gates:",
     "\tnpm run test:matrix --prefix packages/security-audit-sdk-core",
     "\tnpm run validate --prefix packages/security-audit-sdk-node",
+    "\tnpm run validate --prefix packages/client-evidence-browser",
     "\tnpm run validate --prefix contracts/security-audit",
     "\tnpm test --prefix research/browser-telemetry",
     "",
     "governance-gates:",
     "\tnpm run validate --prefix packages/security-audit-sdk-core",
     "\tnpm run validate --prefix packages/security-audit-sdk-node",
+    "\tnpm run validate --prefix packages/client-evidence-browser",
     "\tnpm run validate --prefix packages/security-audit-collector",
     "\tnpm run validate --prefix contracts/security-audit",
     "\tnpm test --prefix research/browser-telemetry",
@@ -308,14 +311,14 @@ test("check-package-discovery: the analysis scope covers every declared package"
   const result = assertSonarScopeCoversDeclaredPackages();
 
   assert.equal(result.workspaceCount, DECLARED_PACKAGES.length);
-  assert.match(result.message, /covering all 5 declared package\(s\)/);
+  assert.match(result.message, /covering all 6 declared package\(s\)/);
 });
 
 test("check-package-discovery: fails closed when a declared package is absent from the scope", () => {
   // The exact defect this arm exists for: the collector declared, and the
   // analyser never told to look at it.
   const properties = [
-    "sonar.sources=packages/security-audit-sdk-core/src,packages/security-audit-sdk-node/src,contracts/security-audit/scripts,research/browser-telemetry/lib",
+    "sonar.sources=packages/security-audit-sdk-core/src,packages/security-audit-sdk-node/src,packages/client-evidence-browser/src,contracts/security-audit/scripts,research/browser-telemetry/lib",
     "",
   ].join("\n");
 
@@ -327,7 +330,7 @@ test("check-package-discovery: fails closed when a declared package is absent fr
 
 test("check-package-discovery: fails closed on a scope entry under no declared package", () => {
   const properties = [
-    "sonar.sources=packages/security-audit-sdk-core/src,packages/security-audit-sdk-node/src,packages/security-audit-collector/src,contracts/security-audit/scripts,research/browser-telemetry/lib,packages/removed-workspace/src",
+    "sonar.sources=packages/security-audit-sdk-core/src,packages/security-audit-sdk-node/src,packages/client-evidence-browser/src,packages/security-audit-collector/src,contracts/security-audit/scripts,research/browser-telemetry/lib,packages/removed-workspace/src",
     "",
   ].join("\n");
 
@@ -339,7 +342,7 @@ test("check-package-discovery: fails closed on a scope entry under no declared p
 
 test("check-package-discovery: a recorded exception is tolerated, an unrecorded one is not", () => {
   const properties = [
-    "sonar.sources=packages/security-audit-sdk-core/src,packages/security-audit-sdk-node/src,packages/security-audit-collector/src,contracts/security-audit/scripts,research/browser-telemetry/lib,openspec/scripts",
+    "sonar.sources=packages/security-audit-sdk-core/src,packages/security-audit-sdk-node/src,packages/client-evidence-browser/src,packages/security-audit-collector/src,contracts/security-audit/scripts,research/browser-telemetry/lib,openspec/scripts",
     "",
   ].join("\n");
 
@@ -349,7 +352,7 @@ test("check-package-discovery: a recorded exception is tolerated, an unrecorded 
   );
   assert.match(
     assertSonarScopeCoversDeclaredPackages(properties, DECLARED_PACKAGES, ["openspec/scripts"]).message,
-    /covering all 5 declared package\(s\)/,
+    /covering all 6 declared package\(s\)/,
   );
 });
 

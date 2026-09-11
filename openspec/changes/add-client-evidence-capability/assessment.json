@@ -14,6 +14,7 @@
     "triggers_matched": [
       "security_sensitive_behavior",
       "canonical_capability_requirement",
+      "governance_core_path",
       "integration"
     ],
     "material_capability_modification": true,
@@ -36,6 +37,13 @@
     "openspec/changes/add-client-evidence-capability/decisions/122-correlation-field.md",
     "openspec/changes/add-client-evidence-capability/contract-reuse.json",
     "contracts/client-evidence-envelope/",
+    "packages/client-evidence-browser/",
+    ".github/scripts/check-package-discovery.mjs",
+    ".github/scripts/check-package-discovery.test.mjs",
+    "Makefile",
+    "sonar-project.properties",
+    ".github/workflows/ci.yml",
+    "packages/security-audit-sdk-core/tests/verification/publication-path-mutations.test.mjs",
     "openspec/specs/client-evidence/spec.md"
   ],
   "candidate_approaches": [

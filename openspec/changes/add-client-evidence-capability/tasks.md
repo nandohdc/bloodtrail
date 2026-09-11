@@ -20,7 +20,7 @@
 
 ## 5. Browser package
 
-- [ ] 5.1 Create `packages/client-evidence-browser/` with Web APIs only, no Core dependency, no storage, and no transport; wire it into CI, `make`, package discovery, coverage, and Sonar; add supported, missing-capability, malicious-host, bounds, and serialization tests (#124).
+- [x] 5.1 Create `packages/client-evidence-browser/` with Web APIs only, no Core dependency, no storage, and no transport; wire it into CI, `make`, package discovery, coverage, and Sonar; add supported, missing-capability, malicious-host, bounds, and serialization tests (#124).
 
 ## 6. Audit contract extension
 
