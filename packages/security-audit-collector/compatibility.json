@@ -47,6 +47,7 @@
     "productionAuthorization": "none",
     "authorizationRecord": "issue-343",
     "persistStage": "runs-only-when-storage-is-configured",
+    "deduplicationAuthority": "in-memory-ledger-without-storage; storage-port-with-storage",
     "storage": {
       "backend": "node:sqlite",
       "backendModule": "src/sqlite-storage.ts",

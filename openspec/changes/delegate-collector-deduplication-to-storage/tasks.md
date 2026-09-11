@@ -4,12 +4,12 @@
 
 ## 2. Implementation
 
-- [ ] 2.1 With storage configured, route every validated submission to the persist stage without consulting the in-memory ledger; map `written` to `persisted`, `duplicate` to the duplicate outcome acknowledged `persisted`, and keep every failure diagnostic; remove the ledger's release, persisted-flag, and acknowledgment plumbing.
-- [ ] 2.2 Update the README and `compatibility.json` to state which authority decides duplicates in each mode.
+- [x] 2.1 With storage configured, route every validated submission to the persist stage without consulting the in-memory ledger; map `written` to `persisted`, `duplicate` to the duplicate outcome acknowledged `persisted`, and keep every failure diagnostic; remove the ledger's release, persisted-flag, and acknowledgment plumbing.
+- [x] 2.2 Update the README and `compatibility.json` to state which authority decides duplicates in each mode.
 
 ## 3. Verification
 
-- [ ] 3.1 Prove more than 32 distinct identities persist within one window with storage, while the ledger's capacity rejection still fires without it; prove a second sender's resubmission of a stored occurrence is a persisted duplicate and different content is a storage conflict; run `npm run validate --prefix packages/security-audit-collector`, strict OpenSpec validation, the governance phases, and `cs delta`.
+- [x] 3.1 Prove more than 32 distinct identities persist within one window with storage, while the ledger's capacity rejection still fires without it; prove a second sender's resubmission of a stored occurrence is a persisted duplicate and different content is a storage conflict; run `npm run validate --prefix packages/security-audit-collector`, strict OpenSpec validation, the governance phases, and `cs delta`.
 
 ## 4. Delivery
 

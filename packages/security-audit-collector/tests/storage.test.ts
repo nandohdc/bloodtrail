@@ -168,21 +168,23 @@ test("S5 — a retry after an indeterminate write leaves one record and is then 
   const ingress = persistingIngress(lossy);
   expectRejection(submit(ingress, body()), DIAGNOSTIC_CODES.STORAGE_WRITE_INDETERMINATE);
   const retry = submit(ingress, body({ correlation: { correlation_id: "c1", operation_id: "op1", retry_attempt: 1 } }));
-  assert.equal(retry.kind, "persisted", "the released reservation lets the retry reach the port again");
+  // The first write landed, so the retry finds it: the port's duplicate, acknowledged persisted.
+  assert.deepEqual(retry, { kind: "duplicate", eventId: EVENT_ID, senderIdentity: SENDER, acknowledgment: "persisted" });
   assert.equal(storage.put(TENANT_ALPHA, recordFor(body())).kind, "duplicate", "exactly one record exists");
   storage.close();
 });
 
-test("S6 — a live byte-identical retry is a duplicate acknowledged as persisted, never more", () => {
+test("S6 — a byte-identical retry is the port's duplicate outcome, acknowledged as persisted", () => {
   const storage = memoryStorage();
   const ingress = persistingIngress(storage);
   assert.equal(submit(ingress, body()).kind, "persisted");
-  assert.deepEqual(submit(ingress, body()), {
-    kind: "duplicate",
-    eventId: EVENT_ID,
-    senderIdentity: SENDER,
-    acknowledgment: "persisted",
-  });
+  const expected = { kind: "duplicate", eventId: EVENT_ID, senderIdentity: SENDER, acknowledgment: "persisted" };
+  assert.deepEqual(submit(ingress, body()), expected);
+  // A genuine retry that only advances correlation.retry_attempt is the same occurrence.
+  const retry = body({ correlation: { correlation_id: "c1", operation_id: "op1", retry_attempt: 1 } });
+  assert.deepEqual(submit(ingress, retry), expected);
+  assert.equal(ingress.metrics().persisted, 1);
+  assert.equal(ingress.metrics().deduplicated, 2);
   storage.close();
 });
 
@@ -433,4 +435,50 @@ test("S21 — the compatibility manifest states the shipped version set and stag
     "persist",
     "accept",
   ]);
+});
+
+test("S22 — storage-backed deduplication is not bounded by the in-memory ledger's capacity (#478)", () => {
+  const storage = memoryStorage();
+  const ingress = persistingIngress(storage);
+  const distinct = 200;
+  for (let index = 0; index < distinct; index += 1) {
+    const id = `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`;
+    const result = submit(ingress, body({ event: { ...(event().event as Record<string, unknown>), id } }));
+    assert.equal(result.kind, "persisted", `identity ${index} was not persisted: ${JSON.stringify(result)}`);
+  }
+  assert.equal(ingress.metrics().persisted, distinct);
+  assert.equal(ingress.metrics().rejectedDeduplicationCapacity, 0);
+  // Null control: without storage the ledger's 32-identity capacity still rejects.
+  const admissionOnly = new CollectorIngress({ authenticator: new SyntheticFixtureAuthenticator([TOKEN]), now: () => ADMITTED_AT });
+  const kinds = new Set<string>();
+  for (let index = 0; index < 33; index += 1) {
+    const id = `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`;
+    kinds.add(submit(admissionOnly, body({ event: { ...(event().event as Record<string, unknown>), id } })).kind);
+  }
+  assert.deepEqual([...kinds].sort(), ["admitted", "rejected"]);
+  assert.equal(admissionOnly.metrics().rejectedDeduplicationCapacity, 1);
+  storage.close();
+});
+
+test("S23 — with storage the identity is the record's scope and event id, whichever sender submits it", () => {
+  const storage = memoryStorage();
+  const ingress = new CollectorIngress({
+    authenticator: new SyntheticFixtureAuthenticator([TOKEN, "fixture-token-b"]),
+    now: () => ADMITTED_AT,
+    storage: { port: storage, owners: OWNERS },
+  });
+  assert.equal(submit(ingress, body()).kind, "persisted");
+  const sameOccurrence = ingress.submit({ credentials: { credential: "fixture-token-b" }, body: body() });
+  assert.deepEqual(sameOccurrence, {
+    kind: "duplicate",
+    eventId: EVENT_ID,
+    senderIdentity: "synthetic:fixture-token-b",
+    acknowledgment: "persisted",
+  });
+  const differentContent = ingress.submit({
+    credentials: { credential: "fixture-token-b" },
+    body: body({ service: { name: "other-service" } }),
+  });
+  expectRejection(differentContent, DIAGNOSTIC_CODES.STORAGE_CONFLICT);
+  storage.close();
 });
