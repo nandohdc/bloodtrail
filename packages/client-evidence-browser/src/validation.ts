@@ -2,6 +2,7 @@ import { APPROVED_INTERACTION_KINDS, BOUNDS, FORBIDDEN_CLAIM_NAMES } from "./con
 import {
   BoundsExceededError,
   ForbiddenClaimError,
+  InvalidClaimValueError,
   InvalidInteractionKindError,
   InvalidNonceError
 } from "./errors.js";
@@ -14,11 +15,8 @@ export function isApprovedInteractionKind(kind: string): kind is InteractionKind
 }
 
 export function validateInteractionKind(kind: unknown): asserts kind is InteractionKind {
-  if (typeof kind !== "string") {
+  if (typeof kind !== "string" || !isApprovedInteractionKind(kind)) {
     throw new InvalidInteractionKindError(String(kind));
-  }
-  if (!isApprovedInteractionKind(kind)) {
-    throw new InvalidInteractionKindError(kind);
   }
 }
 
@@ -38,10 +36,7 @@ export function validateNonce(nonce: unknown): asserts nonce is string {
 }
 
 export function validateClaimName(name: string): void {
-  if (name.length === 0) {
-    throw new BoundsExceededError("claim name length", BOUNDS.maxClaimNameLength, 0);
-  }
-  if (name.length > BOUNDS.maxClaimNameLength) {
+  if (name.length === 0 || name.length > BOUNDS.maxClaimNameLength) {
     throw new BoundsExceededError("claim name length", BOUNDS.maxClaimNameLength, name.length);
   }
   if (FORBIDDEN_CLAIM_NAMES.has(name)) {
@@ -54,18 +49,13 @@ export function validateClaimValue(value: unknown): asserts value is string | nu
     if (value.length > BOUNDS.maxClaimValueLength) {
       throw new BoundsExceededError("claim value length", BOUNDS.maxClaimValueLength, value.length);
     }
-    return;
-  }
-  if (typeof value === "number") {
+  } else if (typeof value === "number") {
     if (!Number.isFinite(value)) {
       throw new BoundsExceededError("claim value is non-finite number", 0, 0);
     }
-    return;
+  } else if (typeof value !== "boolean") {
+    throw new InvalidClaimValueError("Claim value must be a string, number, or boolean");
   }
-  if (typeof value === "boolean") {
-    return;
-  }
-  throw new Error("Claim value must be a string, number, or boolean");
 }
 
 export function validateClaim(name: string, value: unknown): asserts value is string | number | boolean {

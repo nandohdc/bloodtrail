@@ -7,5 +7,7 @@ for (const path of ["dist", "dist-tests", ".test-dist", ".verification-output"])
   await rm(resolve(packageRoot, path), { recursive: true, force: true });
 }
 for (const entry of await readdir(packageRoot)) {
-  if (entry.endsWith(".tgz")) await rm(resolve(packageRoot, entry), { force: true });
+  if (entry.endsWith(".tgz")) {
+    await rm(resolve(packageRoot, entry), { force: true });
+  }
 }

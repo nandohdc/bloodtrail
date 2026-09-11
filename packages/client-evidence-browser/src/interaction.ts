@@ -30,7 +30,7 @@ export class ClientInteraction {
   readonly #nonce?: string | undefined;
   readonly #claims: Map<string, ClientClaim> = new Map();
 
-  public constructor(
+  constructor(
     kind: InteractionKind,
     options?: ClientInteractionOptions | undefined,
     cryptoObj?: Crypto
@@ -61,39 +61,37 @@ export class ClientInteraction {
     }
   }
 
-  public get id(): string {
+  get id(): string {
     return this.#interactionId;
   }
 
-  public get interactionId(): string {
+  get interactionId(): string {
     return this.#interactionId;
   }
 
-  public get interactionKind(): InteractionKind {
+  get interactionKind(): InteractionKind {
     return this.#interactionKind;
   }
 
-  public get clientTimestamp(): number {
+  get clientTimestamp(): number {
     return this.#clientTimestamp;
   }
 
-  public get platform(): ClientPlatform {
+  get platform(): ClientPlatform {
     return this.#platform;
   }
 
-  public get nonce(): string | undefined {
+  get nonce(): string | undefined {
     return this.#nonce;
   }
 
-  public get claims(): readonly ClientClaim[] {
+  get claims(): readonly ClientClaim[] {
     return Array.from(this.#claims.values());
   }
 
-  public addClaim(name: string, value: string | number | boolean): this {
-    if (!this.#claims.has(name)) {
-      if (this.#claims.size >= BOUNDS.maxClaims) {
-        throw new BoundsExceededError("claims collection", BOUNDS.maxClaims, this.#claims.size + 1);
-      }
+  addClaim(name: string, value: string | number | boolean): this {
+    if (!this.#claims.has(name) && this.#claims.size >= BOUNDS.maxClaims) {
+      throw new BoundsExceededError("claims collection", BOUNDS.maxClaims, this.#claims.size + 1);
     }
     validateClaim(name, value);
     this.#claims.set(name, {
@@ -104,7 +102,7 @@ export class ClientInteraction {
     return this;
   }
 
-  public toEnvelope(): ClientEvidenceEnvelope {
+  toEnvelope(): ClientEvidenceEnvelope {
     const envelope: ClientEvidenceEnvelope = {
       envelope_version: 1,
       interaction_id: this.#interactionId,
@@ -122,7 +120,7 @@ export class ClientInteraction {
     return envelope;
   }
 
-  public serialize(): string {
+  serialize(): string {
     const json = JSON.stringify(this.toEnvelope());
     const byteLength = getUtf8ByteLength(json);
     if (byteLength > BOUNDS.maxEnvelopeBytes) {

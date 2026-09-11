@@ -23,7 +23,9 @@ try {
 
 function quotedSpecifierAt(text, start) {
   const quote = text[start];
-  if (quote !== "\"" && quote !== "'") return null;
+  if (quote !== "\"" && quote !== "'") {
+    return null;
+  }
   const end = text.indexOf(quote, start + 1);
   return end > start + 1 ? text.slice(start + 1, end) : null;
 }
@@ -32,12 +34,16 @@ function staticImportSpecifier(line) {
   const declaration = line.trimStart();
   const isImport = declaration.startsWith("import ");
   const isExport = declaration.startsWith("export ");
-  if (!isImport && !isExport) return null;
+  if (!isImport && !isExport) {
+    return null;
+  }
 
   const bareSpecifier = isImport
     ? quotedSpecifierAt(declaration, "import ".length)
     : null;
-  if (bareSpecifier !== null) return bareSpecifier;
+  if (bareSpecifier !== null) {
+    return bareSpecifier;
+  }
 
   const fromIndex = declaration.lastIndexOf(" from ");
   return fromIndex === -1

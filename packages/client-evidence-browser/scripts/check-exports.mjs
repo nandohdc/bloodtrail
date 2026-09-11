@@ -13,6 +13,7 @@ const expectedExports = [
   "CapabilityMissingError",
   "ClientInteraction",
   "ForbiddenClaimError",
+  "InvalidClaimValueError",
   "InvalidInteractionKindError",
   "InvalidNonceError",
   "buildClientEvidenceEnvelope",

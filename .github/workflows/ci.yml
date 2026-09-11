@@ -485,6 +485,13 @@ jobs:
             echo "no failed conditions parsed; raw response:"
             cat gate.json
           fi
+          project_key="$(sed -n 's/^projectKey=//p' "${report}")"
+          if [ -n "${project_key}" ]; then
+            echo "--- SonarQube issues in new code ---"
+            curl -sS -u "${SONAR_TOKEN}:" \
+              "${base}/api/issues/search?componentKeys=${project_key}&inNewCodePeriod=true&resolved=false" \
+              | jq -r '.issues[]? | "\(.severity) \(.rule): \(.component):\(.line) \(.message)"'
+          fi
 
   # CodeScene delta analysis — gates on newly introduced code health issues.
   # Runs only on PRs: push-to-main coverage comes from the SaaS project analysis,

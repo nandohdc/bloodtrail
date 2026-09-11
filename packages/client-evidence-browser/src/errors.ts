@@ -1,39 +1,53 @@
 export class CapabilityMissingError extends Error {
-  public override readonly name = "CapabilityMissingError";
+  override readonly name = "CapabilityMissingError";
 
-  public constructor(message: string) {
+  constructor(message: string) {
     super(message);
+    this.name = "CapabilityMissingError";
   }
 }
 
 export class ForbiddenClaimError extends Error {
-  public override readonly name = "ForbiddenClaimError";
+  override readonly name = "ForbiddenClaimError";
 
-  public constructor(claimName: string) {
+  constructor(claimName: string) {
     super(`Claim '${claimName}' is forbidden by the client evidence privacy inventory`);
+    this.name = "ForbiddenClaimError";
   }
 }
 
 export class BoundsExceededError extends Error {
-  public override readonly name = "BoundsExceededError";
+  override readonly name = "BoundsExceededError";
 
-  public constructor(boundary: string, limit: number, actual: number) {
+  constructor(boundary: string, limit: number, actual: number) {
     super(`Bound exceeded for ${boundary}: limit is ${limit}, actual is ${actual}`);
+    this.name = "BoundsExceededError";
   }
 }
 
 export class InvalidInteractionKindError extends Error {
-  public override readonly name = "InvalidInteractionKindError";
+  override readonly name = "InvalidInteractionKindError";
 
-  public constructor(kind: string) {
+  constructor(kind: string) {
     super(`Invalid interaction kind '${kind}'; must be one of the approved vocabulary`);
+    this.name = "InvalidInteractionKindError";
   }
 }
 
 export class InvalidNonceError extends Error {
-  public override readonly name = "InvalidNonceError";
+  override readonly name = "InvalidNonceError";
 
-  public constructor(reason: string) {
+  constructor(reason: string) {
     super(`Invalid Mode A nonce: ${reason}`);
+    this.name = "InvalidNonceError";
+  }
+}
+
+export class InvalidClaimValueError extends Error {
+  override readonly name = "InvalidClaimValueError";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidClaimValueError";
   }
 }

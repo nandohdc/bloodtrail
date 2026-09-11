@@ -4,6 +4,7 @@ import {
   BoundsExceededError,
   CapabilityMissingError,
   ForbiddenClaimError,
+  InvalidClaimValueError,
   InvalidInteractionKindError,
   InvalidNonceError,
   buildClientEvidenceEnvelope,
@@ -262,7 +263,7 @@ describe("client-evidence-browser SDK", () => {
       const interaction = startInteraction("custom");
       assert.throws(
         () => interaction.addClaim("obj", { evil: true } as unknown as string),
-        /Claim value must be a string, number, or boolean/
+        InvalidClaimValueError
       );
     });
 

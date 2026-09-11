@@ -2,6 +2,7 @@ export {
   BoundsExceededError,
   CapabilityMissingError,
   ForbiddenClaimError,
+  InvalidClaimValueError,
   InvalidInteractionKindError,
   InvalidNonceError
 } from "./errors.js";
