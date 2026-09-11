@@ -95,8 +95,12 @@ function precedence(rejectionClass: EnvelopeRejectionClass): number {
 function classify(codes: readonly EnvelopeCode[], envelope: EnvelopeRecord | null): EnvelopeRejectionClass | null {
   const classes: EnvelopeRejectionClass[] = codes.map((code) => CLASS_BY_CODE[code]);
   if (envelope !== null && Object.keys(envelope).some((key) => AUDIT_MEMBERS.has(key))) classes.push("fabrication");
-  if (classes.length === 0) return null;
-  return classes.reduce((first, next) => (precedence(next) < precedence(first) ? next : first));
+  const [firstClass] = classes;
+  if (!firstClass) return null;
+  return classes.reduce(
+    (first, next) => (precedence(next) < precedence(first) ? next : first),
+    firstClass
+  );
 }
 
 function admit(envelope: EnvelopeRecord): AdmittedEnvelope {

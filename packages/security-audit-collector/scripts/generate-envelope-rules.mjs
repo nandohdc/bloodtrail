@@ -80,8 +80,12 @@ function render(envelope, contract) {
     "",
   ];
   for (const registry of REGISTRY_CONSTANTS) lines.push(...renderRegistry(registries, registry));
-  lines.push("", "export const AUDIT_RECORD_MEMBERS: readonly string[] = [");
-  lines.push(...auditRecordMembers(contract).map((member) => `  ${JSON.stringify(member)},`), "];");
+  lines.push(
+    "",
+    "export const AUDIT_RECORD_MEMBERS: readonly string[] = [",
+    ...auditRecordMembers(contract).map((member) => `  ${JSON.stringify(member)},`),
+    "];"
+  );
   return `${lines.join("\n")}\n`;
 }
 
