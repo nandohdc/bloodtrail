@@ -1,0 +1,146 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The #116 pilot persisted 32 of 600 synthetic events: with storage configured the in-memory ledger's 32-identity, 300-second capacity rejected 1,254 submissions before they reached the storage port.",
+    "The storage port is idempotent on scope and event identity, durable, shared across collector instances, and conflict-detecting, so it answers the ledger's question with stronger authority.",
+    "Without storage the ledger is the ratified admission-only control and its 32-record, 300-second, capacity-rejecting behaviour must stay exactly as it is.",
+    "A duplicate outcome must never claim more durability than the stored occurrence has, and a storage failure must never leave state that answers a retry as a duplicate of evidence never stored."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "lifecycle_or_state",
+      "persistence",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-collector"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/delegate-collector-deduplication-to-storage/.openspec.yaml",
+    "openspec/changes/delegate-collector-deduplication-to-storage/proposal.md",
+    "openspec/changes/delegate-collector-deduplication-to-storage/design.md",
+    "openspec/changes/delegate-collector-deduplication-to-storage/tasks.md",
+    "openspec/changes/delegate-collector-deduplication-to-storage/assessment.source.json",
+    "openspec/changes/delegate-collector-deduplication-to-storage/assessment.json",
+    "openspec/changes/delegate-collector-deduplication-to-storage/specs/security-audit-collector/spec.md",
+    "openspec/specs/security-audit-collector/spec.md",
+    "packages/security-audit-collector/src/ingress.ts",
+    "packages/security-audit-collector/src/deduplication.ts",
+    "packages/security-audit-collector/README.md",
+    "packages/security-audit-collector/compatibility.json",
+    "packages/security-audit-collector/tests/storage.test.ts"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-port-decides-duplicates-with-storage",
+      "kind": "direct_implementation",
+      "summary": "With storage configured, route validated submissions straight to the persist stage and let the storage port's idempotent put decide duplicates, reporting a port duplicate as the duplicate outcome acknowledged persisted; keep the ledger unchanged without storage and remove its storage-only plumbing.",
+      "forces_addressed": [
+        "The #116 pilot persisted 32 of 600 synthetic events: with storage configured the in-memory ledger's 32-identity, 300-second capacity rejected 1,254 submissions before they reached the storage port.",
+        "The storage port is idempotent on scope and event identity, durable, shared across collector instances, and conflict-detecting, so it answers the ledger's question with stronger authority.",
+        "Without storage the ledger is the ratified admission-only control and its 32-record, 300-second, capacity-rejecting behaviour must stay exactly as it is.",
+        "A duplicate outcome must never claim more durability than the stored occurrence has, and a storage failure must never leave state that answers a retry as a duplicate of evidence never stored."
+      ]
+    },
+    {
+      "id": "approach-raise-ledger-capacity",
+      "kind": "alternative",
+      "summary": "Keep the ledger in front of the port and raise its capacity.",
+      "forces_addressed": [
+        "Without storage the ledger is the ratified admission-only control and its 32-record, 300-second, capacity-rejecting behaviour must stay exactly as it is.",
+        "A duplicate outcome must never claim more durability than the stored occurrence has, and a storage failure must never leave state that answers a retry as a duplicate of evidence never stored."
+      ]
+    },
+    {
+      "id": "approach-fall-through-when-full",
+      "kind": "alternative",
+      "summary": "Keep the ledger and let submissions fall through to the port when it is full instead of rejecting.",
+      "forces_addressed": [
+        "The #116 pilot persisted 32 of 600 synthetic events: with storage configured the in-memory ledger's 32-identity, 300-second capacity rejected 1,254 submissions before they reached the storage port.",
+        "Without storage the ledger is the ratified admission-only control and its 32-record, 300-second, capacity-rejecting behaviour must stay exactly as it is."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-port-decides-duplicates-with-storage",
+  "rejected_alternative_ids": [
+    "approach-raise-ledger-capacity",
+    "approach-fall-through-when-full"
+  ],
+  "rejection_reasons": {
+    "approach-raise-ledger-capacity": {
+      "forces": [
+        "The #116 pilot persisted 32 of 600 synthetic events: with storage configured the in-memory ledger's 32-identity, 300-second capacity rejected 1,254 submissions before they reached the storage port.",
+        "The storage port is idempotent on scope and event identity, durable, shared across collector instances, and conflict-detecting, so it answers the ledger's question with stronger authority."
+      ],
+      "reason": "It moves the ceiling without removing it and keeps two answers to one question, one instance-local and five minutes long, so the pilot's finding recurs at the new number."
+    },
+    "approach-fall-through-when-full": {
+      "forces": [
+        "The storage port is idempotent on scope and event identity, durable, shared across collector instances, and conflict-detecting, so it answers the ledger's question with stronger authority.",
+        "A duplicate outcome must never claim more durability than the stored occurrence has, and a storage failure must never leave state that answers a retry as a duplicate of evidence never stored."
+      ],
+      "reason": "Whether a retry is answered by the ledger or the port would depend on how full an unrelated cache is, so two collectors handed the same retry could answer differently, and the release plumbing that keeps the ledger honest after a failed write stays necessary."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-storage-throughput-unbounded-by-ledger",
+    "implementation-ledger-unchanged-without-storage",
+    "implementation-duplicate-claims-only-stored-durability"
+  ],
+  "invariant_evidence": {
+    "implementation-storage-throughput-unbounded-by-ledger": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "200 distinct identities persist within one window with zero deduplication-capacity rejections"
+      ]
+    },
+    "implementation-ledger-unchanged-without-storage": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "the 33rd distinct identity without storage is rejected with the capacity diagnostic, and every existing ledger arm passes unchanged"
+      ]
+    },
+    "implementation-duplicate-claims-only-stored-durability": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "a port duplicate is acknowledged persisted, a second sender's different content is a storage conflict, and a retry after a failed write reaches the port again"
+      ]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "57814810a902538003e2df46e3e30bc02b73633b"
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "The storage port's idempotent identity decision replaces an instance-local cache, so one occurrence is stored once across collectors and different content under a stored identity is still rejected as a conflict.",
+    "authentication_or_authorization": "Authentication is unchanged and still precedes every stage; with storage, a second authenticated sender's resubmission is recognised as the stored occurrence but gains no read or overwrite capability.",
+    "authority_provenance": "The design choice is recorded as delegated to Claude under the owner's 2026-09-10 instruction and never as a human or exact-commit owner decision.",
+    "concurrency": "The ingress and the SQLite port are synchronous and put is one atomic statement keyed on identity, so two re-entrant submissions of one identity yield one written and one duplicate.",
+    "confidentiality": "No new data is held; removing the ledger from storage mode removes an in-memory copy of each body, and diagnostics and counters still carry no payload, credential, sender, or tenant material.",
+    "cryptography": "No algorithm, key, hash, or signature is introduced; occurrence comparison remains exact.",
+    "error_disclosure": "Diagnostic codes are unchanged; a port duplicate is a non-rejection result and a port conflict keeps its closed storage-conflict code.",
+    "external_security_integration": "No external system, dependency, or network peer is introduced.",
+    "fail_posture": "Every storage failure still rejects with a distinct diagnostic and, with no ledger record to withdraw, can leave no state that answers a retry as a duplicate.",
+    "lifecycle": "Mode is fixed at construction; no timer, background task, or shutdown behaviour changes.",
+    "mutation_ownership": "Changes are confined to the collector paths listed in owned_paths and the canonical collector capability through the fold.",
+    "privacy_transformation": "No field is transformed; only synthetic data is authorized.",
+    "resource_retention": "With storage the in-memory ledger holds nothing; without storage its 32-record, 300-second bound is unchanged.",
+    "retry_or_redelivery": "A retry after an indeterminate write that landed is the port's duplicate acknowledged persisted, and after a failed write it reaches the port again, so no retry is answered from stale cache state.",
+    "trust_boundary": "The validated ingress and the storage port boundaries are unchanged; the only boundary removed is an internal cache between them."
+  }
+}
