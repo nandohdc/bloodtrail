@@ -116,6 +116,20 @@ test("positive fixtures validate and cover catalog, actor types, tenant scopes, 
   for (const delivery of source.registries.delivery_classes) assert.ok(covered.delivery.has(delivery), delivery);
 });
 
+// Each rejection must hold in both the semantic validator and the generated
+// schema that every exact-version consumer vendors; either alone once let a
+// reference without provenance through.
+const CLIENT_EVIDENCE_MUTATIONS = Object.freeze({
+  "unknown envelope version": (reference) => { reference.envelope_version = 2; },
+  "oversized identifier": (reference) => { reference.interaction_id = "a".repeat(37); },
+  "non-v4 identifier": (reference) => { reference.interaction_id = "11111111-1111-1111-8111-111111111111"; },
+  "unapproved interaction kind": (reference) => { reference.interaction_kind = "keystroke"; },
+  "trust escalation": (reference) => { reference.provenance.trust_level = "authoritative_server"; },
+  "missing provenance": (reference) => { delete reference.provenance; },
+  "server-owned member": (reference) => { reference.risk = "high"; },
+  "raw envelope member": (reference) => { reference.nonce = "0".repeat(32); }
+});
+
 test("client-evidence references are optional, closed, and fixed at client_claim trust", async () => {
   const events = await readJson("examples/positive/all-events.json");
   const carriers = events.filter((event) => event.client_evidence !== undefined);
@@ -137,21 +151,9 @@ test("client-evidence references are optional, closed, and fixed at client_claim
   floor.risk.model.provenance.trust_level = "derived_server";
   assert.deepEqual(validateCanonicalEvent(floor).map((error) => error.code), ["DERIVED_FROM_TRUST_FLOOR_EXCEEDED"]);
 
-  // Each rejection must hold in both the semantic validator and the generated
-  // schema that every exact-version consumer vendors; either alone once let a
-  // reference without provenance through.
-  for (const [label, mutate] of [
-    ["unknown envelope version", (event) => { event.client_evidence.envelope_version = 2; }],
-    ["oversized identifier", (event) => { event.client_evidence.interaction_id = "a".repeat(37); }],
-    ["non-v4 identifier", (event) => { event.client_evidence.interaction_id = "11111111-1111-1111-8111-111111111111"; }],
-    ["unapproved interaction kind", (event) => { event.client_evidence.interaction_kind = "keystroke"; }],
-    ["trust escalation", (event) => { event.client_evidence.provenance.trust_level = "authoritative_server"; }],
-    ["missing provenance", (event) => { delete event.client_evidence.provenance; }],
-    ["server-owned member", (event) => { event.client_evidence.risk = "high"; }],
-    ["raw envelope member", (event) => { event.client_evidence.nonce = "0".repeat(32); }],
-  ]) {
+  for (const [label, mutate] of Object.entries(CLIENT_EVIDENCE_MUTATIONS)) {
     const invalid = structuredClone(withReference);
-    mutate(invalid);
+    mutate(invalid.client_evidence);
     assert.notDeepEqual(validateCanonicalEvent(invalid), [], `${label}: the semantic validator rejects it`);
     assert.equal(validate(invalid), false, `${label}: the generated schema rejects it`);
   }

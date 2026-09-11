@@ -56,6 +56,20 @@ function enumValues(name) {
   return source.registries[name] ?? [];
 }
 
+// String formats a field may declare, keyed by its `fmt`. validate-contract.mjs
+// interprets the same names, so the schema and the canonical validator agree.
+const SCHEMA_FORMATS = Object.freeze({
+  "date-time": "date-time",
+  uri: "uri"
+});
+const SCHEMA_PATTERNS = Object.freeze({
+  uuid: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+  "uuid-v4": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+  semver: "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$",
+  "w3c-trace-id": "^(?!0{32})[0-9a-f]{32}$",
+  "w3c-span-id": "^(?!0{16})[0-9a-f]{16}$"
+});
+
 function schemaForField(field) {
   const schema = {};
   if (field.t === "integer") {
@@ -76,13 +90,8 @@ function schemaForField(field) {
     schema.type = "string";
     schema.minLength = 1;
     schema.maxLength = field.max ?? source.bounds.default_string_max;
-    if (field.fmt === "date-time") schema.format = "date-time";
-    if (field.fmt === "uri") schema.format = "uri";
-    if (field.fmt === "uuid") schema.pattern = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
-    if (field.fmt === "uuid-v4") schema.pattern = "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
-    if (field.fmt === "semver") schema.pattern = "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$";
-    if (field.fmt === "w3c-trace-id") schema.pattern = "^(?!0{32})[0-9a-f]{32}$";
-    if (field.fmt === "w3c-span-id") schema.pattern = "^(?!0{16})[0-9a-f]{16}$";
+    if (Object.hasOwn(SCHEMA_FORMATS, field.fmt)) schema.format = SCHEMA_FORMATS[field.fmt];
+    if (Object.hasOwn(SCHEMA_PATTERNS, field.fmt)) schema.pattern = SCHEMA_PATTERNS[field.fmt];
   }
   if (field.enum) schema.enum = enumValues(field.enum);
   return schema;
@@ -105,23 +114,30 @@ function markRequired(node, part) {
 
 function addField(rootSchema, field) {
   const parts = field.p.split(".");
-  // A required member of an optional object makes every intermediate object
-  // between that anchor and the member required too, so a present anchor can
-  // never omit a nested object whose members the contract requires.
-  const anchorDepth = field.required_with ? field.required_with.split(".").length : parts.length;
-  let node = rootSchema;
-  for (const [i, part] of parts.entries()) {
-    const last = i === parts.length - 1;
+  const parent = parts.slice(0, -1).reduce((node, part) => {
     node.properties ??= {};
-    if (last) {
-      node.properties[part] = schemaForField(field);
-      if (field.r === "required") markRequired(node, part);
-    } else {
-      node.properties[part] ??= { type: "object", additionalProperties: false, unevaluatedProperties: false, properties: {}, required: [] };
-      if (field.r === "required" && i >= anchorDepth) markRequired(node, part);
-      node = node.properties[part];
-    }
-  }
+    node.properties[part] ??= { type: "object", additionalProperties: false, unevaluatedProperties: false, properties: {}, required: [] };
+    return node.properties[part];
+  }, rootSchema);
+  parent.properties ??= {};
+  parent.properties[parts.at(-1)] = schemaForField(field);
+  if (field.r === "required") markRequiredPath(rootSchema, parts, requiredFromDepth(field, parts));
+}
+
+// A required member of an optional object makes every intermediate object
+// between that anchor and the member required too, so a present anchor can
+// never omit a nested object whose members the contract requires. Without an
+// anchor only the member itself is required, in its own parent.
+function requiredFromDepth(field, parts) {
+  return field.required_with ? field.required_with.split(".").length : parts.length - 1;
+}
+
+function markRequiredPath(rootSchema, parts, fromDepth) {
+  let node = rootSchema;
+  parts.forEach((part, depth) => {
+    if (depth >= fromDepth) markRequired(node, part);
+    node = node.properties[part];
+  });
 }
 
 function buildSchema() {
@@ -236,6 +252,12 @@ function clientEvidenceReference() {
   };
 }
 
+// Exactly one canonical fixture carries the optional v1 reference. The remaining
+// fixtures deliberately omit it, preserving absence semantics.
+function fixtureClientEvidence(index) {
+  return index === 1 ? clientEvidenceReference() : undefined;
+}
+
 function makeEvent(entry, index) {
   const ex = entry.example;
   const phase = ex.phase ?? entry.phase[0];
@@ -320,9 +342,7 @@ function makeEvent(entry, index) {
       retry_attempt: 0,
       original_event_id: phase === "compensating" || entry.semantic.endsWith("_completed") ? id(Math.max(1, index)) : undefined
     },
-    // Exactly one canonical fixture carries the optional v1 reference. The
-    // remaining fixtures deliberately omit it, preserving absence semantics.
-    ...(index === 1 ? { client_evidence: clientEvidenceReference() } : {}),
+    client_evidence: fixtureClientEvidence(index),
     risk: fixtureRisk(entry, index),
     data: { classification: entry.retention === "policy_governed" ? "restricted" : "confidential", retention_class: entry.retention, field_policy_version: source.metadata.field_policy_version },
     integrity: { transport_authentication: { method: "mtls", verified: true, peer: "producer-registry/ref" } }
