@@ -122,7 +122,10 @@ describe("CRA trigger and required-record outcomes", () => {
 
   it("rejects a record that selects an unsupported contract version", () => {
     const repository = fixture();
-    writeReuseRecord(repository, (record) => ({ ...record, contract: "security-audit@2.0.0" }));
+    // A recorded version the schema accepts but the pin does not, so the checker's
+    // own pin decides rather than the schema enum — and it stays unsupported after
+    // the pin advances past it.
+    writeReuseRecord(repository, (record) => ({ ...record, contract: "security-audit@1.0.0" }));
     addTrigger(repository, "contract");
     repository.commit("feat: unsupported CRA contract");
 

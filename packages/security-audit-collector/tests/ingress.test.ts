@@ -29,7 +29,7 @@ const VALID_EVENT = Object.freeze({
     observed_at: "2026-09-06T12:00:00.000Z",
     delivery_class: "security_significant",
   },
-  schema: { name: "security-audit-event", version: "1.1.0" },
+  schema: { name: "security-audit-event", version: "2.0.0" },
   producer: { name: "producer-fixture", version: "1.0.0" },
   environment: { name: "synthetic" },
   service: { name: "svc" },
@@ -41,7 +41,7 @@ const VALID_EVENT = Object.freeze({
   data: {
     classification: "internal",
     retention_class: "security_standard",
-    field_policy_version: "1.1.0",
+    field_policy_version: "2.0.0",
   },
 });
 
@@ -197,7 +197,7 @@ test("E6 — schema-invalid body is rejected with the generated validator's boun
 
 test("E7 — an unsupported contract version is rejected distinctly from a schema rejection", () => {
   const { ingress } = ingressWithCountingParse();
-  const unsupported = JSON.stringify({ ...VALID_EVENT, schema: { name: "security-audit-event", version: "2.0.0" } });
+  const unsupported = JSON.stringify({ ...VALID_EVENT, schema: { name: "security-audit-event", version: "3.0.0" } });
   const result = ingress.submit(authenticated(unsupported));
   assert.equal(result.kind, "rejected");
   if (result.kind !== "rejected") return;
@@ -256,7 +256,7 @@ test("N0 — null control: distinct event identities are both admitted", () => {
 });
 
 test("supported contract versions are exactly the derived canonical set", () => {
-  assert.deepEqual(SUPPORTED_CONTRACT_VERSIONS, ["1.1.0"]);
+  assert.deepEqual(SUPPORTED_CONTRACT_VERSIONS, ["2.0.0"]);
 });
 
 test("admission makes no delivery or durability claim", () => {
@@ -317,7 +317,7 @@ test("D4 — every stage before deduplication rejects without reserving identity
     authenticated("a".repeat(65_537)),
     authenticated("{not json"),
     authenticated(bodyWithEvent({ outcome: "not-an-enum-value" })),
-    authenticated(JSON.stringify({ ...VALID_EVENT, schema: { name: "security-audit-event", version: "2.0.0" } })),
+    authenticated(JSON.stringify({ ...VALID_EVENT, schema: { name: "security-audit-event", version: "3.0.0" } })),
   ];
   for (const submission of failedSubmissions) {
     assert.equal(ingress.submit(submission).kind, "rejected");

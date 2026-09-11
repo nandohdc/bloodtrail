@@ -50,6 +50,7 @@
     "packages/security-audit-sdk-core/src/validation/semantic.ts",
     "packages/security-audit-sdk-core/src/sdk.ts",
     "packages/security-audit-sdk-core/tests/",
+    "packages/security-audit-sdk-core/examples/support.ts",
     "packages/security-audit-sdk-core/package.json",
     "packages/security-audit-sdk-core/package-lock.json",
     "packages/security-audit-sdk-core/compatibility.json",

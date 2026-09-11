@@ -234,7 +234,9 @@
     "DERIVED_FROM_ABSENT_INPUT",
     "DERIVED_FROM_EMPTY_INPUT",
     "DERIVED_FROM_NON_DERIVED",
-    "DERIVED_FROM_CYCLE"
+    "DERIVED_FROM_CYCLE",
+    "DERIVED_FROM_MISSING",
+    "DERIVED_FROM_TRUST_FLOOR_EXCEEDED"
   ],
   "extension_namespaces": [
     "bloodtrail.audit.enrichment.v1"

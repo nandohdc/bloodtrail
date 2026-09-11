@@ -18,7 +18,7 @@ Read that file to learn what the SDK does and does not guarantee; read this one 
 Only the most recent `0.x` release receives security fixes. Once `1.0.0` ships, the `0.x` series
 will be unsupported.
 
-The canonical contract at `contracts/security-audit/` is frozen at version `1.1.0` and is
+The canonical contract at `contracts/security-audit/` is frozen at version `2.0.0` and is
 versioned independently of the SDK. A defect in canonical semantics is not a patch — it requires
 a separately governed contract version. See
 [`packages/security-audit-sdk-core/MIGRATION.md`](packages/security-audit-sdk-core/MIGRATION.md).

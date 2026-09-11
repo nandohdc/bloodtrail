@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "package": {
     "name": "@bloodtrail/security-audit-sdk-node",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "status": "frozen-not-published"
   },
   "apiStability": "frozen",
@@ -46,8 +46,8 @@
     "@bloodtrail/security-audit-sdk-core"
   ],
   "coreContract": {
-    "packageVersion": "0.2.0",
-    "contractVersion": "1.1.0"
+    "packageVersion": "0.3.0",
+    "contractVersion": "2.0.0"
   },
   "packageExports": [
     "."

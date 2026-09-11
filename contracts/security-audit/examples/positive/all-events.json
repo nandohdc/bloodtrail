@@ -17,7 +17,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "registration-boundary",
@@ -164,7 +164,7 @@
     "data": {
       "classification": "confidential",
       "retention_class": "security_standard",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -207,7 +207,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "account-transaction-owner",
@@ -349,14 +349,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "client_claim",
+          "derived_from": [
+            "event.name",
+            "request.user_agent"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -384,7 +388,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "authentication-authority",
@@ -526,14 +530,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_standard",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -566,7 +574,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "authentication-authority",
@@ -698,14 +706,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_standard",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -733,7 +745,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "mfa-account-authority",
@@ -876,14 +888,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -916,7 +932,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "mfa-account-authority",
@@ -1060,14 +1076,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -1100,7 +1120,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "session-authority",
@@ -1242,14 +1262,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_standard",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -1282,7 +1306,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "session-authority",
@@ -1427,14 +1451,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -1467,7 +1495,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "recovery-authority",
@@ -1609,14 +1637,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_standard",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -1644,7 +1676,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "recovery-transaction-owner",
@@ -1793,14 +1825,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -1833,7 +1869,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "policy-enforcement-point",
@@ -1975,14 +2011,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "operational_short",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -2015,7 +2055,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "policy-enforcement-point",
@@ -2157,14 +2197,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_standard",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -2197,7 +2241,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "authorization-transaction-owner",
@@ -2340,14 +2384,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -2380,7 +2428,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "authorization-transaction-owner",
@@ -2523,14 +2571,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -2563,7 +2615,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "privilege-authority",
@@ -2704,14 +2756,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "restricted",
       "retention_class": "policy_governed",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -2760,7 +2816,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "impersonation-authority",
@@ -2904,14 +2960,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "restricted",
       "retention_class": "policy_governed",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -2960,7 +3020,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "impersonation-session-authority",
@@ -3104,14 +3164,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "restricted",
       "retention_class": "policy_governed",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -3160,7 +3224,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "resource-access-owner",
@@ -3302,14 +3366,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -3342,7 +3410,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "resource-transaction-owner",
@@ -3485,14 +3553,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -3525,7 +3597,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "resource-transaction-owner",
@@ -3669,14 +3741,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -3709,7 +3785,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "resource-transaction-owner",
@@ -3858,14 +3934,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -3898,7 +3978,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "export-transaction-owner",
@@ -4051,14 +4131,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "restricted",
       "retention_class": "policy_governed",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -4107,7 +4191,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "configuration-transaction-owner",
@@ -4248,14 +4332,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {
@@ -4288,7 +4376,7 @@
     },
     "schema": {
       "name": "com.bloodtrail.security-audit.event",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     "producer": {
       "name": "tenant-enforcement-boundary",
@@ -4429,14 +4517,18 @@
         "name": "fixture-risk",
         "version": "1.0.0",
         "provenance": {
-          "trust_level": "derived_server"
+          "trust_level": "derived_server",
+          "derived_from": [
+            "event.name",
+            "event.outcome"
+          ]
         }
       }
     },
     "data": {
       "classification": "confidential",
       "retention_class": "security_elevated",
-      "field_policy_version": "1.1.0"
+      "field_policy_version": "2.0.0"
     },
     "integrity": {
       "transport_authentication": {

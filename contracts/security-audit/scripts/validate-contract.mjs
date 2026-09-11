@@ -9,6 +9,11 @@ const catalogByName = new Map(source.catalog.map((entry) => [entry.name, entry])
 const eventNames = new Set(source.catalog.map((entry) => entry.name));
 const fieldByPath = new Map(source.fields.map((field) => [field.p, field]));
 const derivedFieldProvenance = source.derived_field_provenance;
+// The canonical trust order, most trusted first, and each extension namespace's declared trust.
+// An input's trust is read from here, never from the event, so a producer cannot supply the value
+// its own floor is compared against.
+const trustOrder = source.registries.trust_levels;
+const extensionTrust = new Map(source.extension_namespaces.map((entry) => [entry.namespace, entry.trust]));
 const allowedParents = new Set();
 for (const field of source.fields) {
   const parts = field.p.split(".");
@@ -124,16 +129,40 @@ function valueExceedsBound(field, value) {
   return false;
 }
 
+// From 2.0.0 every event carrying risk must declare its provenance, the declared level must not
+// exceed the producer's transformation ceiling, and it must not exceed the least trusted input.
 function derivedFieldProvenanceError(event) {
-  const inputs = get(event, derivedFieldProvenance.field_path);
-  if (inputs === undefined) return null;
+  if (get(event, derivedFieldProvenance.required_with) === undefined) return null;
   const { error_codes: codes } = derivedFieldProvenance;
+  const declared = get(event, derivedFieldProvenance.trust_path);
+  if (declared === undefined) return diagnostic(codes.missing, derivedFieldProvenance.trust_path, event);
+  const inputs = get(event, derivedFieldProvenance.field_path);
+  if (inputs === undefined) return provenanceDiagnostic(codes.missing, event);
   const shapeCode = derivedInputShapeCode(inputs, codes);
   if (shapeCode) return provenanceDiagnostic(shapeCode, event);
-  if (get(event, derivedFieldProvenance.trust_path) !== derivedFieldProvenance.required_trust) {
-    return provenanceDiagnostic(codes.non_derived, event);
+  if (isMoreTrusted(declared, derivedFieldProvenance.transformation_ceiling)) return provenanceDiagnostic(codes.non_derived, event);
+  return derivedInputReferenceError(event, inputs, codes) ?? trustFloorError(event, declared, inputs, codes);
+}
+
+// A level outside the order ranks above every level, so an unregistered value fails closed.
+function isMoreTrusted(left, right) {
+  return trustOrder.indexOf(left) < trustOrder.indexOf(right);
+}
+
+function inputTrust(input) {
+  if (fieldByPath.has(input)) return fieldByPath.get(input).trust;
+  return extensionTrust.get(input.slice("extensions.".length)) ?? "unknown";
+}
+
+// Points at the first input, in canonical order, that carries the least trusted level — by
+// position, so the caller-supplied path is never echoed.
+function trustFloorError(event, declared, inputs, codes) {
+  let floorIndex = 0;
+  for (let index = 1; index < inputs.length; index += 1) {
+    if (isMoreTrusted(inputTrust(inputs[floorIndex]), inputTrust(inputs[index]))) floorIndex = index;
   }
-  return derivedInputReferenceError(event, inputs, codes);
+  if (!isMoreTrusted(declared, inputTrust(inputs[floorIndex]))) return null;
+  return diagnostic(codes.trust_floor, `${derivedFieldProvenance.field_path}[${floorIndex}]`, event);
 }
 
 function derivedInputShapeCode(inputs, codes) {
@@ -210,6 +239,7 @@ function firstProvenanceDiagnostic(event, codes) {
 
 function derivedInputResolutionCode(event, input, codes) {
   if (input === derivedFieldProvenance.field_path) return codes.cycle;
+  if (input.startsWith(derivedFieldProvenance.cycle_prefix)) return codes.cycle;
   if (fieldByPath.has(input)) return get(event, input) === undefined ? codes.absent : null;
   if (isPresentRegisteredExtension(event, input)) return null;
   return isRegisteredExtensionInput(input) ? codes.absent : codes.unresolvable;

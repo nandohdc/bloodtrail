@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bloodtrail.dev/contracts/security-audit/1.1.0/security-audit-event.schema.json",
+  "$id": "https://bloodtrail.dev/contracts/security-audit/2.0.0/security-audit-event.schema.json",
   "$comment": "GENERATED FROM contracts/security-audit/source/contract.source.json. DO NOT EDIT BY HAND.",
   "title": "Bloodtrail Security Audit Event",
   "type": "object",

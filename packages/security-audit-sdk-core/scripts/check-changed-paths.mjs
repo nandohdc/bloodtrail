@@ -47,9 +47,9 @@ const REVIEWED_PATH_RULES = Object.freeze([
 // last wrote protected content. Narrowing the base to the newest correction
 // would reopen every protected path the earlier candidate already admitted.
 const GOVERNED_CONTRACT_CANDIDATE = Object.freeze({
-  change: "fix-derived-input-code-point-order",
+  change: "enforce-derived-field-trust-floors",
   rangeBase: "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-  technicalCommit: "eeebae6d73e5a26db3e6778f56ee95756fa146c6",
+  technicalCommit: "183c93e55c45b607ac39a76bdf2797701e97750e",
 });
 
 const requestedLifecycle = parseLifecycleArguments();
@@ -575,7 +575,7 @@ function validateGovernedContractCandidate(metadata) {
   assert(candidate.change === GOVERNED_CONTRACT_CANDIDATE.change, "contract.governedCandidate change is not the approved governed change");
   assert(candidate.rangeBase === GOVERNED_CONTRACT_CANDIDATE.rangeBase, "contract.governedCandidate range base is not the approved proposal baseline");
   assert(candidate.technicalCommit === GOVERNED_CONTRACT_CANDIDATE.technicalCommit, "contract.governedCandidate technical commit is not the approved candidate");
-  assert(metadata.contract.version === "1.1.0", "contract lifecycle version is not bound to the approved candidate");
+  assert(metadata.contract.version === "2.0.0", "contract lifecycle version is not bound to the approved candidate");
   assert(metadata.contract.normativeTechnicalTarget === candidate.technicalCommit, "contract lifecycle target is not bound to the approved candidate");
   assert(/^[0-9a-f]{40}$/.test(candidate.rangeBase), "contract.governedCandidate range base must be a full Git commit");
   assert(/^[0-9a-f]{40}$/.test(candidate.technicalCommit), "contract.governedCandidate technical commit must be a full Git commit");

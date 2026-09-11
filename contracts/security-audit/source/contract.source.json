@@ -4,12 +4,12 @@
   "metadata": {
     "contract": "bloodtrail-security-audit-event",
     "schema_name": "com.bloodtrail.security-audit.event",
-    "schema_version": "1.1.0",
-    "catalog_version": "1.1.0",
-    "field_policy_version": "1.1.0",
+    "schema_version": "2.0.0",
+    "catalog_version": "2.0.0",
+    "field_policy_version": "2.0.0",
     "schema_dialect": "https://json-schema.org/draft/2020-12/schema",
-    "schema_id": "https://bloodtrail.dev/contracts/security-audit/1.1.0/security-audit-event.schema.json",
-    "catalog_id": "https://bloodtrail.dev/contracts/security-audit/1.1.0/catalog.json",
+    "schema_id": "https://bloodtrail.dev/contracts/security-audit/2.0.0/security-audit-event.schema.json",
+    "catalog_id": "https://bloodtrail.dev/contracts/security-audit/2.0.0/catalog.json",
     "owner": "Bloodtrail project owner",
     "generated_artifact_notice": "GENERATED FROM contracts/security-audit/source/contract.source.json. DO NOT EDIT BY HAND.",
     "retrieval_date": "2026-07-31",
@@ -31,7 +31,9 @@
   "derived_field_provenance": {
     "field_path": "risk.model.provenance.derived_from",
     "trust_path": "risk.model.provenance.trust_level",
-    "required_trust": "derived_server",
+    "required_with": "risk",
+    "transformation_ceiling": "derived_server",
+    "cycle_prefix": "risk.",
     "minimum_inputs": 1,
     "maximum_inputs": 32,
     "maximum_input_length": 256,
@@ -44,7 +46,9 @@
       "absent": "DERIVED_FROM_ABSENT_INPUT",
       "empty": "DERIVED_FROM_EMPTY_INPUT",
       "non_derived": "DERIVED_FROM_NON_DERIVED",
-      "cycle": "DERIVED_FROM_CYCLE"
+      "cycle": "DERIVED_FROM_CYCLE",
+      "missing": "DERIVED_FROM_MISSING",
+      "trust_floor": "DERIVED_FROM_TRUST_FLOOR_EXCEEDED"
     }
   },
   "standards": [
@@ -534,7 +538,9 @@
       "DERIVED_FROM_ABSENT_INPUT",
       "DERIVED_FROM_EMPTY_INPUT",
       "DERIVED_FROM_NON_DERIVED",
-      "DERIVED_FROM_CYCLE"
+      "DERIVED_FROM_CYCLE",
+      "DERIVED_FROM_MISSING",
+      "DERIVED_FROM_TRUST_FLOOR_EXCEEDED"
     ],
     "extension_namespaces": [
       "bloodtrail.audit.enrichment.v1"
@@ -2478,7 +2484,7 @@
         "min": 1,
         "max": 256
       },
-      "r": "optional",
+      "r": "conditional",
       "a": "risk_enrichment",
       "trust": "derived_server",
       "privacy": "internal",

@@ -1,5 +1,5 @@
 // GENERATED FILE. DO NOT EDIT.
-// Contract: Bloodtrail Security Audit Event Contract 1.1.0
+// Contract: Bloodtrail Security Audit Event Contract 2.0.0
 // Sources: contracts/security-audit/source/contract.source.json and generated contract artifacts.
 interface StandaloneValidationError {
   readonly instancePath: string;

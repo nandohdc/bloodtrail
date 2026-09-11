@@ -42,6 +42,8 @@ Validation error codes:
 - DERIVED_FROM_EMPTY_INPUT
 - DERIVED_FROM_NON_DERIVED
 - DERIVED_FROM_CYCLE
+- DERIVED_FROM_MISSING
+- DERIVED_FROM_TRUST_FLOOR_EXCEEDED
 
 Diagnostics include bounded metadata only: code, path, safe event name, schema version, and producer. Rejected values and full payloads are never echoed.
 

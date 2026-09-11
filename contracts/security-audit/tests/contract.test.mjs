@@ -140,6 +140,55 @@ test("derived provenance ordering compares Unicode code points rather than UTF-1
   );
 });
 
+test("derived provenance is mandatory and bounded by the least trusted input and the ceiling", async () => {
+  const positive = await readJson("examples/positive/all-events.json");
+  const base = positive.find((event) => event.risk?.model?.provenance?.trust_level === "derived_server" && event.actor?.id);
+  const codes = (mutate) => {
+    const event = structuredClone(base);
+    mutate(event.risk.model.provenance, event);
+    return validateCanonicalEvent(event).map((error) => error.code);
+  };
+  assert.deepEqual(codes(() => {}), [], "null control: an authoritative-input derived_server claim is accepted");
+
+  // Lowering one input's trust under an unchanged claim fails, pointing at that input by position.
+  const floor = structuredClone(base);
+  floor.risk.model.provenance.derived_from = ["event.name", "request.user_agent"];
+  const [floorError] = validateCanonicalEvent(floor);
+  assert.equal(floorError.code, "DERIVED_FROM_TRUST_FLOOR_EXCEEDED");
+  assert.equal(floorError.path, "risk.model.provenance.derived_from[1]");
+  assert.ok(!JSON.stringify(floorError).includes("request.user_agent"), "the floor diagnostic must not echo the input path");
+
+  // The same inputs admit a truthful lower claim.
+  assert.deepEqual(codes((provenance) => {
+    provenance.derived_from = ["event.name", "request.user_agent"];
+    provenance.trust_level = "client_claim";
+  }), []);
+
+  // Input trust comes from the contract: raising an event-carried trust changes nothing.
+  assert.deepEqual(codes((provenance, event) => {
+    provenance.derived_from = ["actor.id", "event.name"];
+    event.actor.provenance.trust_level = "authoritative_server";
+  }), []);
+
+  // An extension input carries its namespace's declared downstream_enrichment trust.
+  const enriched = positive.find((event) => event.extensions);
+  const extension = structuredClone(enriched);
+  extension.risk.model.provenance.derived_from = ["event.name", "extensions.bloodtrail.audit.enrichment.v1"];
+  assert.deepEqual(validateCanonicalEvent(extension).map((error) => error.code), ["DERIVED_FROM_TRUST_FLOOR_EXCEEDED"]);
+  extension.risk.model.provenance.trust_level = "downstream_enrichment";
+  assert.deepEqual(validateCanonicalEvent(extension).map((error) => error.code), []);
+
+  for (const level of ["authoritative_server", "verified_assertion", "observed_transport"]) {
+    assert.deepEqual(codes((provenance) => { provenance.trust_level = level; }), ["DERIVED_FROM_NON_DERIVED"], level);
+  }
+  assert.deepEqual(codes((provenance) => { delete provenance.derived_from; }), ["DERIVED_FROM_MISSING"]);
+  assert.deepEqual(codes((provenance) => { delete provenance.trust_level; }), ["DERIVED_FROM_MISSING"]);
+  assert.deepEqual(codes((provenance) => { provenance.derived_from = ["event.name", "risk.level"]; }), ["DERIVED_FROM_CYCLE"]);
+  const withoutRisk = structuredClone(base);
+  delete withoutRisk.risk;
+  assert.deepEqual(validateCanonicalEvent(withoutRisk), [], "an event without risk needs no provenance");
+});
+
 test("OCSF mapping is export-only, version-pinned, event-complete, and bounded", async () => {
   const rows = await readJson("fixtures/mappings/ocsf-1.8.0.json");
   assert.equal(rows.length, 24);

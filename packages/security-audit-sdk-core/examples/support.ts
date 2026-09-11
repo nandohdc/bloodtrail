@@ -41,7 +41,7 @@ export function createExampleHarness(
     get: () => als.getStore(),
   };
   const audit = createSecurityAuditSdk({
-    contractVersion: "1.1.0",
+    contractVersion: "2.0.0",
     producer: {
       name: "synthetic-audit-producer",
       version: "0.1.0",

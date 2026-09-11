@@ -1,5 +1,5 @@
 // GENERATED FILE. DO NOT EDIT.
-// Contract: Bloodtrail Security Audit Event Contract 1.1.0
+// Contract: Bloodtrail Security Audit Event Contract 2.0.0
 // Sources: contracts/security-audit/source/contract.source.json and generated contract artifacts.
 export type SecurityAuditEvent = {
   readonly "event": {
@@ -224,11 +224,11 @@ export type SecurityAuditEvent = {
   };
 };
 
-export const CONTRACT_VERSION = "1.1.0" as const;
+export const CONTRACT_VERSION = "2.0.0" as const;
 
 export const CONTRACT_SCHEMA_NAME = "com.bloodtrail.security-audit.event" as const;
 
-export const CONTRACT_SCHEMA_ID = "https://bloodtrail.dev/contracts/security-audit/1.1.0/security-audit-event.schema.json" as const;
+export const CONTRACT_SCHEMA_ID = "https://bloodtrail.dev/contracts/security-audit/2.0.0/security-audit-event.schema.json" as const;
 
 export const REGISTRIES = {
   "actions": [
@@ -469,7 +469,9 @@ export const REGISTRIES = {
     "DERIVED_FROM_ABSENT_INPUT",
     "DERIVED_FROM_EMPTY_INPUT",
     "DERIVED_FROM_NON_DERIVED",
-    "DERIVED_FROM_CYCLE"
+    "DERIVED_FROM_CYCLE",
+    "DERIVED_FROM_MISSING",
+    "DERIVED_FROM_TRUST_FLOOR_EXCEEDED"
   ]
 } as const;
 
@@ -1328,21 +1330,25 @@ export const EXTENSION_NAMESPACES = [
 
 export const DERIVED_FIELD_PROVENANCE = {
   "canonical_order": "code_point_ascending",
+  "cycle_prefix": "risk.",
   "error_codes": {
     "absent": "DERIVED_FROM_ABSENT_INPUT",
     "cycle": "DERIVED_FROM_CYCLE",
     "duplicate": "DERIVED_FROM_DUPLICATE_INPUT",
     "empty": "DERIVED_FROM_EMPTY_INPUT",
     "malformed": "DERIVED_FROM_MALFORMED_INPUT",
+    "missing": "DERIVED_FROM_MISSING",
     "non_derived": "DERIVED_FROM_NON_DERIVED",
     "noncanonical_order": "DERIVED_FROM_NONCANONICAL_ORDER",
+    "trust_floor": "DERIVED_FROM_TRUST_FLOOR_EXCEEDED",
     "unresolvable": "DERIVED_FROM_UNRESOLVABLE_INPUT"
   },
   "field_path": "risk.model.provenance.derived_from",
   "maximum_input_length": 256,
   "maximum_inputs": 32,
   "minimum_inputs": 1,
-  "required_trust": "derived_server",
+  "required_with": "risk",
+  "transformation_ceiling": "derived_server",
   "trust_path": "risk.model.provenance.trust_level"
 } as const;
 
