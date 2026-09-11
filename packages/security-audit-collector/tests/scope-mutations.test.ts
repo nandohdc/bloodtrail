@@ -20,7 +20,10 @@ const packageRoot = resolve(__dirname, "..");
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-collector-scope-"));
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
 
-const BASELINE_INVENTORY = /scope passed: \d+ collector source files, zero approved runtime couplings/;
+const BASELINE_INVENTORY =
+  /scope passed: \d+ collector source files, one approved runtime coupling \(node:sqlite in src\/sqlite-storage\.ts only\)/;
+const BACKEND_INVENTORY = /backend: 1 artifacts, specifiers: \[node:sqlite \(1 site\)\]/;
+const BACKEND_ARTIFACT = "src/sqlite-storage.ts";
 
 const PROBE_ARTIFACT = "src/probe.ts";
 
@@ -32,9 +35,16 @@ interface CouplingRejection {
 }
 
 // A single probe module carrying exactly one unapproved coupling. The collector
-// approves NO runtime specifier and NO host global: authored runtime code must
-// be pure language behavior.
+// approves NO host global and exactly one runtime specifier, node:sqlite, in the
+// storage backend alone; everywhere else authored runtime code must be pure
+// language behavior.
 const COUPLING_REJECTIONS: ReadonlyArray<CouplingRejection> = [
+  {
+    name: "the approved backend specifier node:sqlite outside the backend module",
+    source: 'import { DatabaseSync } from "node:sqlite";\nexport const x = DatabaseSync;\n',
+    code: "undeclared-specifier",
+    detail: "node:sqlite",
+  },
   {
     name: "unapproved Node built-in node:fs",
     source: 'import { readFileSync } from "node:fs";\nexport const x = readFileSync;\n',
@@ -108,7 +118,8 @@ const COUPLING_REJECTIONS: ReadonlyArray<CouplingRejection> = [
 // server, storage, transport and friends are.
 const FORBIDDEN_FILENAME_MUTATIONS: ReadonlyArray<{ readonly artifact: string; readonly source: string }> = [
   { artifact: "src/transport.ts", source: "export const transport = {};\n" },
-  { artifact: "src/storage.ts", source: "export const storage = {};\n" },
+  { artifact: "src/record-storage.ts", source: "export const storage = {};\n" },
+  { artifact: "src/storage-exporter.ts", source: "export const exporter = {};\n" },
   { artifact: "src/server.ts", source: "export const server = {};\n" },
   { artifact: "src/telemetry-exporter.ts", source: "export const exporter = {};\n" },
   { artifact: "src/http-client.ts", source: "export const httpClient = {};\n" },
@@ -163,11 +174,29 @@ function slug(value: string): string {
   return value.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-").replaceAll(/(?:^-|-$)/g, "");
 }
 
-test("unmutated collector package passes the scope gate and reports zero approved couplings", () => {
+test("unmutated collector package passes the scope gate and reports its one approved coupling", () => {
   const { output, status } = runCase("null-control");
   assert.equal(status, 0, `unmutated control failed:\n${output}`);
   assert.match(output, BASELINE_INVENTORY);
+  assert.match(output, BACKEND_INVENTORY);
   assert.ok(output.includes("host couplings: [none]"), `unexpected host couplings:\n${output}`);
+});
+
+test("the storage backend importing a second built-in fails closed", () => {
+  const result = runCase("backend-second-builtin", ({ copiedPackage }) => {
+    const backendPath = resolve(copiedPackage, BACKEND_ARTIFACT);
+    const source = readFileSync(backendPath, "utf8");
+    writeFileSync(backendPath, `import { readFileSync } from "node:fs";\nexport const leak = readFileSync;\n${source}`, "utf8");
+  });
+  verifyCouplingFailure(result, { code: "undeclared-specifier", artifact: BACKEND_ARTIFACT, detail: "node:fs" });
+});
+
+test("the storage backend reaching a host global fails closed", () => {
+  const result = runCase("backend-host-global", ({ copiedPackage }) => {
+    const backendPath = resolve(copiedPackage, BACKEND_ARTIFACT);
+    writeFileSync(backendPath, `${readFileSync(backendPath, "utf8")}\nexport const pid = process.pid;\n`, "utf8");
+  });
+  verifyCouplingFailure(result, { code: "undeclared-global", artifact: BACKEND_ARTIFACT, detail: "process" });
 });
 
 test("positive control: language globals stay approved without false positives", () => {

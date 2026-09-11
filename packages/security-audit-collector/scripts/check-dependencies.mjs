@@ -10,7 +10,8 @@ assert(pkg.license === "UNLICENSED", "package license must remain UNLICENSED");
 
 // The collector ships ZERO runtime dependencies: no first-party and no
 // third-party runtime imports. Authored runtime code imports only relative
-// modules (the vendored generated validator).
+// modules (the vendored generated validator), except the storage backend
+// selected by #115, whose one built-in import is pinned below.
 assert(
   Object.keys(pkg.dependencies ?? {}).length === 0,
   "runtime dependencies must remain empty; the collector has zero runtime dependencies",
@@ -75,17 +76,30 @@ function staticImportSpecifiers(content) {
     .filter((specifier) => specifier !== null);
 }
 
+// The single non-relative import any shipped artifact may carry: the Node
+// runtime's embedded SQLite, from the one backend module and nowhere else.
+const APPROVED_BUILTIN_IMPORTS = new Map([["sqlite-storage.js", "node:sqlite"]]);
+let approvedBuiltinImports = 0;
+
 for (const file of codeFiles) {
   if (file.startsWith("generated/")) continue;
   const content = await readFile(resolve(distDir, file), "utf8");
   for (const specifier of staticImportSpecifiers(content)) {
     inspectedSpecifiers += 1;
+    if (APPROVED_BUILTIN_IMPORTS.get(file) === specifier) {
+      approvedBuiltinImports += 1;
+      continue;
+    }
     assert(
       specifier.startsWith("."),
       `unapproved import specifier "${specifier}" found in ${file}; authored runtime code must import only relative modules`,
     );
   }
 }
+assert(
+  approvedBuiltinImports === APPROVED_BUILTIN_IMPORTS.size,
+  "the storage backend must carry exactly its one approved built-in import",
+);
 
 // Verify the production dependency tree has zero dependencies at all.
 const productionTree = JSON.parse(
@@ -101,5 +115,5 @@ assert(
 );
 
 process.stdout.write(
-  `dependency policy passed: 0 runtime dependencies, ${codeFiles.length} shipped artifacts with ${inspectedSpecifiers} inspected authored specifiers, zero third-party runtime dependencies\n`,
+  `dependency policy passed: 0 runtime dependencies, ${codeFiles.length} shipped artifacts with ${inspectedSpecifiers} inspected authored specifiers (${approvedBuiltinImports} approved node:sqlite import), zero third-party runtime dependencies\n`,
 );

@@ -45,6 +45,25 @@ const VALID_EVENT = Object.freeze({
   },
 });
 
+// The closed counter vocabulary, storage outcomes included (#115).
+const EXPECTED_METRIC_KEYS: ReadonlyArray<string> = [
+  "accepted",
+  "persisted",
+  "deduplicated",
+  "rejectedAuthentication",
+  "rejectedDeduplicationCapacity",
+  "rejectedDuplicateConflict",
+  "rejectedParse",
+  "rejectedSchema",
+  "rejectedSize",
+  "rejectedVersion",
+  "rejectedRetentionDeclined",
+  "rejectedStorageScope",
+  "rejectedStorageConflict",
+  "rejectedStorageWrite",
+  "rejectedStorageIndeterminate",
+];
+
 function validBody(): string {
   return JSON.stringify(VALID_EVENT);
 }
@@ -218,20 +237,7 @@ test("E8 — diagnostics and metrics carry no secrets or payloads", () => {
   assert.equal(metrics.accepted, 1);
   const metricText = JSON.stringify(metrics);
   assert.ok(!metricText.includes(marker), "metric labels or values leaked submission material");
-  assert.deepEqual(
-    Object.keys(metrics).sort(),
-    [
-      "accepted",
-      "deduplicated",
-      "rejectedAuthentication",
-      "rejectedDeduplicationCapacity",
-      "rejectedDuplicateConflict",
-      "rejectedParse",
-      "rejectedSchema",
-      "rejectedSize",
-      "rejectedVersion",
-    ].sort(),
-  );
+  assert.deepEqual(Object.keys(metrics).sort(), [...EXPECTED_METRIC_KEYS].sort());
 });
 
 test("N0 — null control: distinct event identities are both admitted", () => {
@@ -246,17 +252,7 @@ test("N0 — null control: distinct event identities are both admitted", () => {
   assert.equal(ingress.metrics().rejectedParse, 0);
   assert.equal(ingress.metrics().rejectedSchema, 0);
   assert.equal(ingress.metrics().rejectedVersion, 0);
-  assert.deepEqual(Object.keys(ingress.metrics()).sort(), [
-    "accepted",
-    "deduplicated",
-    "rejectedAuthentication",
-    "rejectedDeduplicationCapacity",
-    "rejectedDuplicateConflict",
-    "rejectedParse",
-    "rejectedSchema",
-    "rejectedSize",
-    "rejectedVersion",
-  ].sort());
+  assert.deepEqual(Object.keys(ingress.metrics()).sort(), [...EXPECTED_METRIC_KEYS].sort());
 });
 
 test("supported contract versions are exactly the derived canonical set", () => {
@@ -282,6 +278,7 @@ test("D1 — a byte-identical retry from the same sender has a distinct duplicat
     kind: "duplicate",
     eventId: "00000000-0000-4000-8000-000000000001",
     senderIdentity: `synthetic:${FIXTURE_TOKEN}`,
+    acknowledgment: "admitted",
   });
   assert.equal(ingress.metrics().accepted, 1);
   assert.equal(JSON.stringify(ingress.metrics()).includes('"deduplicated":1'), true);
@@ -406,6 +403,7 @@ test("D9 — a retry that only advances correlation.retry_attempt is a duplicate
     kind: "duplicate",
     eventId: "00000000-0000-4000-8000-000000000001",
     senderIdentity: `synthetic:${FIXTURE_TOKEN}`,
+    acknowledgment: "admitted",
   });
   assert.equal(ingress.metrics().accepted, 1);
   assert.equal(JSON.stringify(ingress.metrics()).includes('"deduplicated":1'), true);

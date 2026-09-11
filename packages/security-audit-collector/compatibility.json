@@ -9,8 +9,14 @@
   "apiFrozen": false,
   "freezeOwnership": "wave-4-delivery-vertical",
   "node": {
-    "supportedMajors": [24, 26],
-    "ciVersions": ["24.2.0", "26.5.0"],
+    "supportedMajors": [
+      24,
+      26
+    ],
+    "ciVersions": [
+      "24.2.0",
+      "26.5.0"
+    ],
     "engines": ">=24 <25 || >=26 <27"
   },
   "typescript": {
@@ -20,12 +26,44 @@
   "runtimeDependencyCount": 0,
   "thirdPartyRuntimeDependencies": 0,
   "firstPartyDependencies": [],
-  "packageExports": ["."],
+  "packageExports": [
+    "."
+  ],
   "collector": {
-    "supportedContractVersions": ["1.0.0"],
-    "ingressOrder": ["authenticate", "size", "parse", "schema", "version", "accept"],
+    "supportedContractVersions": [
+      "1.1.0"
+    ],
+    "ingressOrder": [
+      "authenticate",
+      "size",
+      "parse",
+      "schema",
+      "version",
+      "deduplicate",
+      "persist",
+      "accept"
+    ],
     "authentication": "non-production-synthetic-fixture-only",
     "productionAuthorization": "none",
-    "authorizationRecord": "issue-343"
+    "authorizationRecord": "issue-343",
+    "persistStage": "runs-only-when-storage-is-configured",
+    "storage": {
+      "backend": "node:sqlite",
+      "backendModule": "src/sqlite-storage.ts",
+      "port": [
+        "put",
+        "get",
+        "deleteExpired"
+      ],
+      "acknowledgments": [
+        "admitted",
+        "persisted"
+      ],
+      "declinedRetentionClasses": [
+        "policy_governed"
+      ],
+      "authorizationRecord": "issue-115",
+      "productionAuthorization": "none"
+    }
   }
 }

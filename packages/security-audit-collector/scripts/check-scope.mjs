@@ -23,13 +23,16 @@ const FORBIDDEN_NAME_TERMS = [
   "telemetry", "framework", "express", "nestjs", "fastify", "nextjs",
   "cryptographic-chain", "server", "socket", "http", "client",
 ];
-const forbiddenFileName = new RegExp(
-  `(?:^|[./_-])(${FORBIDDEN_NAME_TERMS.join("|")})(?:[./_-]|$)`,
-  "i",
-);
+const forbiddenFileName = forbiddenNamePattern(FORBIDDEN_NAME_TERMS);
+// #115 selects and implements one storage backend under its own governed change.
+// Exactly these two files may carry the storage token, and no other forbidden
+// token; any other storage-named file is still an incidental integration.
+const AUTHORIZED_STORAGE_FILES = new Set(["src/storage.ts", "src/sqlite-storage.ts"]);
+const forbiddenExceptStorage = forbiddenNamePattern(FORBIDDEN_NAME_TERMS.filter((term) => term !== "storage"));
 for (const file of sourceTree.files) {
   const relativePath = relative(packageRoot, file).split(sep).join("/");
-  if (forbiddenFileName.test(relativePath)) violations.push(`${relativePath}: forbidden production integration filename`);
+  const pattern = AUTHORIZED_STORAGE_FILES.has(relativePath) ? forbiddenExceptStorage : forbiddenFileName;
+  if (pattern.test(relativePath)) violations.push(`${relativePath}: forbidden production integration filename`);
 }
 
 if (Object.keys(packageJson.dependencies ?? {}).length > 0) {
@@ -55,12 +58,17 @@ if (violations.length > 0) {
 }
 
 process.stdout.write(
-  `scope passed: ${sourceTree.files.length} collector source files, zero approved runtime couplings, no production integration or runtime dependency\n${formatInventory(coupling.inventory)}\n`,
+  `scope passed: ${sourceTree.files.length} collector source files, one approved runtime coupling (node:sqlite in src/sqlite-storage.ts only), no other production integration or runtime dependency\n${formatInventory(coupling.inventory)}\n`,
 );
+
+function forbiddenNamePattern(terms) {
+  return new RegExp(`(?:^|[./_-])(${terms.join("|")})(?:[./_-]|$)`, "i");
+}
 
 function formatInventory(inventory) {
   const authoredGlobals = formatHostGlobals(inventory.authored.hostGlobals);
-  return `platform coupling inventory: authored: ${inventory.authored.artifacts} artifacts, ${inventory.authored.references} references, host couplings: [${authoredGlobals}]; generated: ${inventory.generated.artifacts} artifacts, ${inventory.generated.references} references (byte-drift-gated)`;
+  const backendSpecifiers = formatHostGlobals(inventory.backend.specifiers);
+  return `platform coupling inventory: authored: ${inventory.authored.artifacts} artifacts, ${inventory.authored.references} references, host couplings: [${authoredGlobals}]; backend: ${inventory.backend.artifacts} artifacts, specifiers: [${backendSpecifiers}]; generated: ${inventory.generated.artifacts} artifacts, ${inventory.generated.references} references (byte-drift-gated)`;
 }
 
 function formatHostGlobals(map) {
