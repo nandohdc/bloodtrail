@@ -35,7 +35,7 @@
 
 ## 7. Backend ingress
 
-- [ ] 7.1 Add the fail-closed envelope stage to collector ingress, with replay, fabrication, bounds, and version rejection and privacy-safe counters (#126).
+- [x] 7.1 Add the fail-closed envelope stage to collector ingress, with replay, fabrication, bounds, and version rejection and privacy-safe counters (#126). — `ClientEvidenceIngress` and `InteractionNonceLedger` in the collector: eight stable rejection classes, code-for-code parity with the envelope contract's validator over every fixture (CE2), and arms for every class, replay, expiry, substitution, and the nonce-free `unbound` case (CE1–CE11). The envelope contract's own tests now run in CI (#495).
 
 ## 8. Mapping
 
