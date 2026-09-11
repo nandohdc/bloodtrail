@@ -6,7 +6,7 @@ import test from "node:test";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 
-import { validateEnvelope, BOUNDS, REGISTRIES } from "../scripts/validate-envelope.mjs";
+import { validateEnvelope, REGISTRIES } from "../scripts/validate-envelope.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");

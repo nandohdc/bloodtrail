@@ -21,7 +21,7 @@ async function emit(relPath, content) {
     let existing;
     try {
       existing = await readFile(full, "utf8");
-    } catch (err) {
+    } catch {
       assert.fail(`${relPath} is missing; run node contracts/client-evidence-envelope/scripts/generate-artifacts.mjs`);
     }
     assert.equal(existing, content, `${relPath} is stale; run node contracts/client-evidence-envelope/scripts/generate-artifacts.mjs`);
@@ -29,6 +29,143 @@ async function emit(relPath, content) {
   }
   await mkdir(dirname(full), { recursive: true });
   await writeFile(full, content, "utf8");
+}
+
+function buildProvenanceSchema(regs) {
+  return {
+    description: "Low-assurance client claim provenance metadata.",
+    type: "object",
+    additionalProperties: false,
+    unevaluatedProperties: false,
+    required: ["source", "trust_level", "platform", "capture_scope"],
+    properties: {
+      source: {
+        type: "string",
+        const: "client_reported"
+      },
+      trust_level: {
+        type: "string",
+        const: "client_claim"
+      },
+      platform: {
+        type: "string",
+        enum: regs.platforms
+      },
+      capture_scope: {
+        type: "string",
+        const: "interaction_ephemeral"
+      }
+    }
+  };
+}
+
+function buildSingleClaimSchema(bounds, regs) {
+  return {
+    type: "object",
+    additionalProperties: false,
+    unevaluatedProperties: false,
+    required: ["name", "trust_level", "value"],
+    properties: {
+      name: {
+        type: "string",
+        pattern: "^[a-z][a-z0-9_]{1,31}$",
+        maxLength: bounds.max_claim_name_length,
+        not: {
+          enum: regs.forbidden_claim_names
+        }
+      },
+      trust_level: {
+        type: "string",
+        const: "client_claim"
+      },
+      value: {
+        oneOf: [
+          {
+            type: "string",
+            maxLength: bounds.max_claim_value_length
+          },
+          {
+            type: "number"
+          },
+          {
+            type: "boolean"
+          }
+        ]
+      }
+    }
+  };
+}
+
+function buildClaimsProperty(bounds, regs) {
+  return {
+    description: "Bounded collection of unverified client-asserted claim key-value pairs.",
+    type: "array",
+    maxItems: bounds.max_claims,
+    items: buildSingleClaimSchema(bounds, regs)
+  };
+}
+
+function buildTransformHistoryProperty(bounds) {
+  return {
+    description: "Bounded record of client-applied transformations.",
+    type: "array",
+    maxItems: bounds.max_transforms,
+    items: {
+      type: "object",
+      additionalProperties: false,
+      unevaluatedProperties: false,
+      required: ["transform", "timestamp"],
+      properties: {
+        transform: {
+          type: "string",
+          maxLength: bounds.max_transform_name_length
+        },
+        timestamp: {
+          type: "integer",
+          minimum: bounds.min_client_timestamp,
+          maximum: bounds.max_client_timestamp
+        }
+      }
+    }
+  };
+}
+
+function buildRootProperties(bounds, regs) {
+  return {
+    envelope_version: {
+      description: "Envelope schema version discriminator. Explicitly 1 for v1.",
+      type: "integer",
+      const: 1
+    },
+    interaction_id: {
+      description: "Interaction-scoped correlation UUID v4 in canonical lowercase hyphenated format.",
+      type: "string",
+      pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      minLength: bounds.interaction_id_length,
+      maxLength: bounds.interaction_id_length
+    },
+    interaction_kind: {
+      description: "Closed vocabulary of at most 8 interaction categories.",
+      type: "string",
+      enum: regs.interaction_kinds
+    },
+    client_timestamp: {
+      description: "Client-observed millisecond epoch timestamp.",
+      type: "integer",
+      minimum: bounds.min_client_timestamp,
+      maximum: bounds.max_client_timestamp
+    },
+    provenance: buildProvenanceSchema(regs),
+    nonce: {
+      description: "Mode A echoed server-issued nonce for freshness and single-use binding.",
+      type: "string",
+      pattern: "^[0-9a-f]{32,64}$",
+      minLength: bounds.min_nonce_length,
+      maxLength: bounds.max_nonce_length
+    },
+    claims: buildClaimsProperty(bounds, regs),
+    transform_history: buildTransformHistoryProperty(bounds)
+  };
 }
 
 function buildJsonSchema(src) {
@@ -51,124 +188,7 @@ function buildJsonSchema(src) {
       "client_timestamp",
       "provenance"
     ],
-    properties: {
-      envelope_version: {
-        description: "Envelope schema version discriminator. Explicitly 1 for v1.",
-        type: "integer",
-        const: 1
-      },
-      interaction_id: {
-        description: "Interaction-scoped correlation UUID v4 in canonical lowercase hyphenated format.",
-        type: "string",
-        pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-        minLength: bounds.interaction_id_length,
-        maxLength: bounds.interaction_id_length
-      },
-      interaction_kind: {
-        description: "Closed vocabulary of at most 8 interaction categories.",
-        type: "string",
-        enum: regs.interaction_kinds
-      },
-      client_timestamp: {
-        description: "Client-observed millisecond epoch timestamp.",
-        type: "integer",
-        minimum: bounds.min_client_timestamp,
-        maximum: bounds.max_client_timestamp
-      },
-      provenance: {
-        description: "Low-assurance client claim provenance metadata.",
-        type: "object",
-        additionalProperties: false,
-        unevaluatedProperties: false,
-        required: ["source", "trust_level", "platform", "capture_scope"],
-        properties: {
-          source: {
-            type: "string",
-            const: "client_reported"
-          },
-          trust_level: {
-            type: "string",
-            const: "client_claim"
-          },
-          platform: {
-            type: "string",
-            enum: regs.platforms
-          },
-          capture_scope: {
-            type: "string",
-            const: "interaction_ephemeral"
-          }
-        }
-      },
-      nonce: {
-        description: "Mode A echoed server-issued nonce for freshness and single-use binding.",
-        type: "string",
-        pattern: "^[0-9a-f]{32,64}$",
-        minLength: bounds.min_nonce_length,
-        maxLength: bounds.max_nonce_length
-      },
-      claims: {
-        description: "Bounded collection of unverified client-asserted claim key-value pairs.",
-        type: "array",
-        maxItems: bounds.max_claims,
-        items: {
-          type: "object",
-          additionalProperties: false,
-          unevaluatedProperties: false,
-          required: ["name", "trust_level", "value"],
-          properties: {
-            name: {
-              type: "string",
-              pattern: "^[a-z][a-z0-9_]{1,31}$",
-              maxLength: bounds.max_claim_name_length,
-              not: {
-                enum: regs.forbidden_claim_names
-              }
-            },
-            trust_level: {
-              type: "string",
-              const: "client_claim"
-            },
-            value: {
-              oneOf: [
-                {
-                  type: "string",
-                  maxLength: bounds.max_claim_value_length
-                },
-                {
-                  type: "number"
-                },
-                {
-                  type: "boolean"
-                }
-              ]
-            }
-          }
-        }
-      },
-      transform_history: {
-        description: "Bounded record of client-applied transformations.",
-        type: "array",
-        maxItems: bounds.max_transforms,
-        items: {
-          type: "object",
-          additionalProperties: false,
-          unevaluatedProperties: false,
-          required: ["transform", "timestamp"],
-          properties: {
-            transform: {
-              type: "string",
-              maxLength: bounds.max_transform_name_length
-            },
-            timestamp: {
-              type: "integer",
-              minimum: bounds.min_client_timestamp,
-              maximum: bounds.max_client_timestamp
-            }
-          }
-        }
-      }
-    }
+    properties: buildRootProperties(bounds, regs)
   };
 }
 
