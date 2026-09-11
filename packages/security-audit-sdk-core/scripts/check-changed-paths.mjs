@@ -47,9 +47,9 @@ const REVIEWED_PATH_RULES = Object.freeze([
 // last wrote protected content. Narrowing the base to the newest correction
 // would reopen every protected path the earlier candidate already admitted.
 const GOVERNED_CONTRACT_CANDIDATE = Object.freeze({
-  change: "fix-derived-input-code-point-order",
+  change: "enforce-derived-field-trust-floors",
   rangeBase: "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-  technicalCommit: "eeebae6d73e5a26db3e6778f56ee95756fa146c6",
+  technicalCommit: "183c93e55c45b607ac39a76bdf2797701e97750e",
 });
 
 const requestedLifecycle = parseLifecycleArguments();

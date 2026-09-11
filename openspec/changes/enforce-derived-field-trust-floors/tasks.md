@@ -14,12 +14,12 @@
 
 - [x] 3.1 Regenerate the Core projection; move Core and Node from `0.2.0` to `0.3.0` and bind both to exact `2.0.0`; verify `1.1.0` fails before readiness.
 - [x] 3.2 Advance every pin in the version-move inventory, including the collector's supported set, packed probe, and compatibility manifest, and every current-tense statement the currency gate names.
-- [ ] 3.3 Rebind `contract-provenance.json`, `check-contract-immutability.mjs`, and the cumulative governed candidate in `verification-lifecycle.json` and `check-changed-paths.mjs` to this change's technical commit.
+- [x] 3.3 Rebind `contract-provenance.json`, `check-contract-immutability.mjs`, and the cumulative governed candidate in `verification-lifecycle.json` and `check-changed-paths.mjs` to this change's technical commit. — Bound to technical commit `183c93e55c45b607ac39a76bdf2797701e97750e` over the cumulative range base `cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb`, 74 protected paths.
 
 ## 4. Verification and delivery
 
-- [ ] 4.1 Run `npm run validate` for the contract, Core, Node, and collector workspaces, the Core generated and compatibility checks, and record each result, naming any step delegated to CI.
-- [ ] 4.2 Run strict OpenSpec validation, the assessment and final governance phases, the CRA loop over every active change, and `git diff --check`.
+- [x] 4.1 Run `npm run validate` for the contract, Core, Node, and collector workspaces, the Core generated and compatibility checks, and record each result, naming any step delegated to CI. — Contract: 91 generated artifacts current, validation passed, 16 tests. Core: `test:matrix` passed (121 runtime tests, 15 example scenarios, compatibility, scope, dependencies), plus `test:contract-immutability`, `test:changed-paths`, `test:coherence`, `test:governance-history`, and `test:archive-attestations`. Node: `validate` passed, 103 tests, binding `0.3.0` to contract `2.0.0`. Collector: `validate` passed, 70 tests. Delegated to CI: Core `test:verification` and the governance dual check, which this host cannot hold in memory.
+- [x] 4.2 Run strict OpenSpec validation, the assessment and final governance phases, the CRA loop over every active change, and `git diff --check`. — Also the contract-version currency gate (73 files, no stale statement) and the repository script suite (98 tests).
 - [ ] 4.3 Open the implementation PR with the provenance and AI-not-approval statements; merge with a merge commit only when all ten required checks are green on the exact head.
 
 ## 5. Canonicalization and closure

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": {
     "version": "2.0.0",
-    "normativeTechnicalTarget": "eeebae6d73e5a26db3e6778f56ee95756fa146c6",
+    "normativeTechnicalTarget": "183c93e55c45b607ac39a76bdf2797701e97750e",
     "protectedPrefixes": [
       "contracts/security-audit/",
       "openspec/specs/security-audit-event-contract/",
@@ -12,9 +12,9 @@
       "contracts/security-audit/package-lock.json"
     ],
     "governedCandidate": {
-      "change": "fix-derived-input-code-point-order",
+      "change": "enforce-derived-field-trust-floors",
       "rangeBase": "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-      "technicalCommit": "eeebae6d73e5a26db3e6778f56ee95756fa146c6",
+      "technicalCommit": "183c93e55c45b607ac39a76bdf2797701e97750e",
       "protectedPaths": [
         "contracts/security-audit/docs/field-policy.md",
         "contracts/security-audit/docs/validation.md",
@@ -33,7 +33,11 @@
         "contracts/security-audit/examples/negative/derived-from-duplicate.json",
         "contracts/security-audit/examples/negative/derived-from-empty.json",
         "contracts/security-audit/examples/negative/derived-from-malformed.json",
+        "contracts/security-audit/examples/negative/derived-from-missing-trust-level.json",
+        "contracts/security-audit/examples/negative/derived-from-missing.json",
         "contracts/security-audit/examples/negative/derived-from-non-derived.json",
+        "contracts/security-audit/examples/negative/derived-from-risk-cycle.json",
+        "contracts/security-audit/examples/negative/derived-from-trust-floor.json",
         "contracts/security-audit/examples/negative/derived-from-unordered.json",
         "contracts/security-audit/examples/negative/derived-from-unresolvable.json",
         "contracts/security-audit/examples/negative/forged-tenant-attribution.json",
