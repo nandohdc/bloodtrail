@@ -118,6 +118,28 @@ const ingress = new CollectorIngress({
 });
 ```
 
+## Client-evidence envelope stage
+
+`ClientEvidenceIngress` (#126) validates a ClientEvidenceEnvelope v1 fail-closed before
+anything can be mapped into an audit record. It is a separate entry point, not a stage of
+`submit()`: the audit record carries only a bounded reference, never the envelope.
+
+- **Validation** reports the envelope contract validator's exact codes; a parity test holds the
+  two together over every envelope fixture. Bounds and vocabularies are generated from
+  `contracts/client-evidence-envelope/source/envelope.source.json` and drift-gated.
+- **Mode A nonce.** `InteractionNonceLedger` issues a single-use nonce bound to a
+  server-authoritative context reference, for 60 seconds (#122's interaction timeout), up to
+  1,024 live records. Randomness is injected, so this package gains no platform coupling. A
+  nonce presented under another context is burned.
+- **Rejections are counted by stable class only** — `fabrication`, `version`, `bounds`,
+  `vocabulary`, `structure`, `unbound`, `replay`, `substitution` — with that precedence when an
+  envelope fails several ways. No result or counter carries a payload, identifier, nonce, or
+  binding, and the counters are not audit evidence. An absent envelope carries no meaning.
+- **An admitted envelope is a client claim.** It proves a well-formed claim arrived with a live
+  nonce under the context it was issued to; it does not prove a browser produced it, that the
+  interaction happened, or that the claim is true. `isAdmittedEnvelope` recognises only values
+  the stage itself admitted.
+
 ## Package boundaries
 
 - Standalone workspace: own `package.json` and `package-lock.json` (ADR 0009 topology).

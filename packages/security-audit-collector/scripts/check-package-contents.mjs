@@ -46,8 +46,16 @@ const REQUIRED_FILES = [
   "dist/storage.d.ts",
   "dist/sqlite-storage.js",
   "dist/sqlite-storage.d.ts",
+  "dist/envelope-ingress.js",
+  "dist/envelope-ingress.d.ts",
+  "dist/envelope-nonces.js",
+  "dist/envelope-nonces.d.ts",
+  "dist/envelope-validation.js",
+  "dist/envelope-validation.d.ts",
   "dist/generated/bounds.generated.js",
   "dist/generated/bounds.generated.d.ts",
+  "dist/generated/envelope-rules.generated.js",
+  "dist/generated/envelope-rules.generated.d.ts",
   "dist/generated/schema-validator.generated.cjs",
 ];
 
