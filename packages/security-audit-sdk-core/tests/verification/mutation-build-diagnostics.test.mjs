@@ -114,10 +114,11 @@ test("assertSubprocessSuccess passes on clean zero exit status", () => {
 test("runMutationStep correctly reports timeout on real child process execution", () => {
   assert.throws(
     () =>
-      runMutationStep("M-REAL-TIMEOUT", "sleep step", process.execPath, [
-        "-e",
-        "setTimeout(() => {}, 10000)",
-      ], {
+      runMutationStep({
+        name: "M-REAL-TIMEOUT",
+        step: "sleep step",
+        command: process.execPath,
+        args: ["-e", "setTimeout(() => {}, 10000)"],
         timeout: 150,
       }),
     (error) => {
@@ -134,10 +135,11 @@ test("runMutationStep correctly reports timeout on real child process execution"
 test("runMutationStep correctly reports non-zero exit code on real child process execution", () => {
   assert.throws(
     () =>
-      runMutationStep("M-REAL-FAIL", "compile step", process.execPath, [
-        "-e",
-        "console.error('simulated tsc failure'); process.exit(1)",
-      ], {
+      runMutationStep({
+        name: "M-REAL-FAIL",
+        step: "compile step",
+        command: process.execPath,
+        args: ["-e", "console.error('simulated tsc failure'); process.exit(1)"],
         timeout: 5000,
       }),
     (error) => {

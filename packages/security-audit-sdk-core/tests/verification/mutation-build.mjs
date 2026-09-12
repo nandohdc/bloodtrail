@@ -27,36 +27,52 @@ export const MUTATION_TIMEOUT_MS = Number.parseInt(process.env.MUTATION_TIMEOUT_
  * Instead, fail fast with an unambiguous diagnostic distinguishing timeout from build failure (#464).
  */
 
+function isTimeout(result) {
+  if (result.error?.code === "ETIMEDOUT") {
+    return true;
+  }
+  return result.status === null && Boolean(result.signal);
+}
+
+function formatTimeoutMessage({ name, step, result, elapsedMs, timeoutMs }) {
+  const signalStr = result.signal ? `killed by ${result.signal}` : "timed out";
+  const elapsedStr = elapsedMs !== undefined ? ` after ${elapsedMs}ms` : "";
+  const timeoutStr = timeoutMs !== undefined ? `, configured timeout: ${timeoutMs}ms` : "";
+  return (
+    `${name} ${step} timed out (${signalStr}${elapsedStr}${timeoutStr}); ` +
+    `most likely runner cgroup pressure (#306), not a defect:\n` +
+    `${result.stdout ?? ""}\n${result.stderr ?? ""}`
+  );
+}
+
+function formatExitCodeMessage({ name, step, result }) {
+  return (
+    `${name} ${step} failed with exit code ${result.status}:\n` +
+    `${result.stdout ?? ""}\n${result.stderr ?? ""}`
+  );
+}
+
 /**
  * Asserts that a subprocess result completed successfully.
  * Distinguishes timeouts/signals from legitimate compiler non-zero exit failures.
  */
 export function assertSubprocessSuccess(result, { name, step, elapsedMs, timeoutMs }) {
-  if (result.error?.code === "ETIMEDOUT" || (result.status === null && Boolean(result.signal))) {
-    const signalStr = result.signal ? `killed by ${result.signal}` : "timed out";
-    const elapsedStr = elapsedMs !== undefined ? ` after ${elapsedMs}ms` : "";
-    const timeoutStr = timeoutMs !== undefined ? `, configured timeout: ${timeoutMs}ms` : "";
-    assert.fail(
-      `${name} ${step} timed out (${signalStr}${elapsedStr}${timeoutStr}); ` +
-      `most likely runner cgroup pressure (#306), not a defect:\n` +
-      `${result.stdout ?? ""}\n${result.stderr ?? ""}`
-    );
+  if (isTimeout(result)) {
+    assert.fail(formatTimeoutMessage({ name, step, result, elapsedMs, timeoutMs }));
   }
   if (result.error) {
     throw result.error;
   }
   if (result.status !== 0) {
-    assert.fail(
-      `${name} ${step} failed with exit code ${result.status}:\n` +
-      `${result.stdout ?? ""}\n${result.stderr ?? ""}`
-    );
+    assert.fail(formatExitCodeMessage({ name, step, result }));
   }
 }
 
 /**
  * Executes a mutation subprocess step (e.g. build or test compilation) and asserts success.
  */
-export function runMutationStep(name, step, command, args, { cwd, timeout = MUTATION_TIMEOUT_MS, env }) {
+export function runMutationStep(options) {
+  const { name, step, command, args, cwd, timeout = MUTATION_TIMEOUT_MS, env } = options;
   const start = performance.now();
   const result = spawnSync(command, args, { cwd, encoding: "utf8", timeout, env });
   const elapsedMs = Math.round(performance.now() - start);
@@ -68,7 +84,21 @@ export function runMutationStep(name, step, command, args, { cwd, timeout = MUTA
  * Executes standard mutation build and test compilation in target root.
  */
 export function buildAndCompileMutation(root, mutationName, { timeout = MUTATION_TIMEOUT_MS } = {}) {
-  runMutationStep(mutationName, "build", "npm", ["run", "build"], { cwd: root, timeout });
+  runMutationStep({
+    name: mutationName,
+    step: "build",
+    command: "npm",
+    args: ["run", "build"],
+    cwd: root,
+    timeout,
+  });
   const tscPath = resolve(packageRoot, "node_modules/typescript/bin/tsc");
-  runMutationStep(mutationName, "test compilation", process.execPath, [tscPath, "-p", "tsconfig.test.json"], { cwd: root, timeout });
+  runMutationStep({
+    name: mutationName,
+    step: "test compilation",
+    command: process.execPath,
+    args: [tscPath, "-p", "tsconfig.test.json"],
+    cwd: root,
+    timeout,
+  });
 }
