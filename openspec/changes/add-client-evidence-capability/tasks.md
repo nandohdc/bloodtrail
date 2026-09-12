@@ -56,5 +56,5 @@
 
 ## 12. Fold and archive
 
-- [ ] 12.1 Fold the `client-evidence` capability in its own PR.
+- [x] 12.1 Fold the `client-evidence` capability in its own PR.
 - [ ] 12.2 Archive the change in its own PR, then record each wave issue's disposition on #132.
