@@ -6,9 +6,9 @@
 
 ## 2. Browser SDK Regression Coverage
 
-- [ ] 2.1 Add unit test in `packages/client-evidence-browser/tests/browser.test.ts` asserting that Mode A serialized envelopes across all 8 approved interaction kinds with 64-character hex nonces satisfy the L1 budget of ≤ 384 bytes.
-- [ ] 2.2 Verify that `npm test --prefix packages/client-evidence-browser` passes cleanly with the new L1 budget test.
-- [ ] 2.3 Verify repository runtime gates with `make runtime-gates`.
+- [x] 2.1 Add unit test in `packages/client-evidence-browser/tests/browser.test.ts` asserting that Mode A serialized envelopes across all 8 approved interaction kinds with 64-character hex nonces satisfy the L1 budget of ≤ 384 bytes.
+- [x] 2.2 Verify that `npm test --prefix packages/client-evidence-browser` passes cleanly with the new L1 budget test.
+- [x] 2.3 Verify repository runtime gates with `make runtime-gates`.
 
 ## 3. Specification Fold & Change Archive
 
