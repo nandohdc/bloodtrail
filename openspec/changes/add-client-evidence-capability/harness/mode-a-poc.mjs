@@ -54,37 +54,37 @@ function seededRandom(seed) {
   };
 }
 
-function populateRequestsForInteraction(interaction, requests, start, between, random) {
+function populateRequestsForInteraction(interaction, start, ctx) {
   let at = start;
-  const requestCount = between(WORKLOAD.requestsPerInteraction);
+  const requestCount = ctx.between(WORKLOAD.requestsPerInteraction);
   for (let step = 0; step < requestCount; step += 1) {
-    interaction.requests.push(pushRequest(requests, interaction, at));
-    if (random() < WORKLOAD.retryProbability) {
+    interaction.requests.push(pushRequest(ctx.requests, interaction, at));
+    if (ctx.random() < WORKLOAD.retryProbability) {
       at += 40;
-      interaction.requests.push(pushRequest(requests, interaction, at));
+      interaction.requests.push(pushRequest(ctx.requests, interaction, at));
     }
-    at += between(WORKLOAD.requestGapMs);
+    at += ctx.between(WORKLOAD.requestGapMs);
   }
   return at;
 }
 
-function generateSession(session, clock, random, between, interactions, requests) {
+function generateSession(session, clock, ctx) {
   const sessionId = `session_${String(session).padStart(4, "0")}`;
-  const stickyTrace = traceId(random);
+  const stickyTrace = traceId(ctx.random);
   let start = clock;
   let maxAt = clock;
-  const count = between(WORKLOAD.interactionsPerSession);
+  const count = ctx.between(WORKLOAD.interactionsPerSession);
   for (let index = 0; index < count; index += 1) {
     const interaction = {
       key: `${sessionId}:${index}`,
       sessionId,
-      kind: INTERACTION_KINDS[Math.floor(random() * INTERACTION_KINDS.length)],
-      trace: random() < WORKLOAD.traceReuseProbability ? stickyTrace : traceId(random),
+      kind: INTERACTION_KINDS[Math.floor(ctx.random() * INTERACTION_KINDS.length)],
+      trace: ctx.random() < WORKLOAD.traceReuseProbability ? stickyTrace : traceId(ctx.random),
       requests: [],
     };
-    const at = populateRequestsForInteraction(interaction, requests, start, between, random);
-    interactions.push(interaction);
-    start += between(WORKLOAD.interactionStartGapMs);
+    const at = populateRequestsForInteraction(interaction, start, ctx);
+    ctx.interactions.push(interaction);
+    start += ctx.between(WORKLOAD.interactionStartGapMs);
     maxAt = Math.max(maxAt, at);
   }
   return maxAt + WORKLOAD.sessionGapMs;
@@ -95,10 +95,11 @@ function makeWorkload() {
   const between = ([low, high]) => low + Math.floor(random() * (high - low + 1));
   const interactions = [];
   const requests = [];
+  const ctx = { random, between, interactions, requests };
   let clock = 1_780_000_000_000;
 
   for (let session = 0; session < WORKLOAD.sessions; session += 1) {
-    clock = generateSession(session, clock, random, between, interactions, requests);
+    clock = generateSession(session, clock, ctx);
   }
   // One session's requests interleave by time, exactly as concurrent interactions arrive.
   requests.sort((left, right) => (left.sessionId === right.sessionId ? left.at - right.at : 0));
