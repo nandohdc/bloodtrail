@@ -54,6 +54,42 @@ function seededRandom(seed) {
   };
 }
 
+function populateRequestsForInteraction(interaction, requests, start, between, random) {
+  let at = start;
+  const requestCount = between(WORKLOAD.requestsPerInteraction);
+  for (let step = 0; step < requestCount; step += 1) {
+    interaction.requests.push(pushRequest(requests, interaction, at));
+    if (random() < WORKLOAD.retryProbability) {
+      at += 40;
+      interaction.requests.push(pushRequest(requests, interaction, at));
+    }
+    at += between(WORKLOAD.requestGapMs);
+  }
+  return at;
+}
+
+function generateSession(session, clock, random, between, interactions, requests) {
+  const sessionId = `session_${String(session).padStart(4, "0")}`;
+  const stickyTrace = traceId(random);
+  let start = clock;
+  let maxAt = clock;
+  const count = between(WORKLOAD.interactionsPerSession);
+  for (let index = 0; index < count; index += 1) {
+    const interaction = {
+      key: `${sessionId}:${index}`,
+      sessionId,
+      kind: INTERACTION_KINDS[Math.floor(random() * INTERACTION_KINDS.length)],
+      trace: random() < WORKLOAD.traceReuseProbability ? stickyTrace : traceId(random),
+      requests: [],
+    };
+    const at = populateRequestsForInteraction(interaction, requests, start, between, random);
+    interactions.push(interaction);
+    start += between(WORKLOAD.interactionStartGapMs);
+    maxAt = Math.max(maxAt, at);
+  }
+  return maxAt + WORKLOAD.sessionGapMs;
+}
+
 function makeWorkload() {
   const random = seededRandom(WORKLOAD.seed);
   const between = ([low, high]) => low + Math.floor(random() * (high - low + 1));
@@ -62,34 +98,7 @@ function makeWorkload() {
   let clock = 1_780_000_000_000;
 
   for (let session = 0; session < WORKLOAD.sessions; session += 1) {
-    const sessionId = `session_${String(session).padStart(4, "0")}`;
-    const stickyTrace = traceId(random);
-    let start = clock;
-    const count = between(WORKLOAD.interactionsPerSession);
-    for (let index = 0; index < count; index += 1) {
-      const interaction = {
-        key: `${sessionId}:${index}`,
-        sessionId,
-        kind: INTERACTION_KINDS[Math.floor(random() * INTERACTION_KINDS.length)],
-        // Reused traces are what the baseline cannot separate; distinct ones are what it can.
-        trace: random() < WORKLOAD.traceReuseProbability ? stickyTrace : traceId(random),
-        requests: [],
-      };
-      let at = start;
-      const requestCount = between(WORKLOAD.requestsPerInteraction);
-      for (let step = 0; step < requestCount; step += 1) {
-        interaction.requests.push(pushRequest(requests, interaction, at));
-        if (random() < WORKLOAD.retryProbability) {
-          at += 40;
-          interaction.requests.push(pushRequest(requests, interaction, at));
-        }
-        at += between(WORKLOAD.requestGapMs);
-      }
-      interactions.push(interaction);
-      start += between(WORKLOAD.interactionStartGapMs);
-      clock = Math.max(clock, at);
-    }
-    clock += WORKLOAD.sessionGapMs;
+    clock = generateSession(session, clock, random, between, interactions, requests);
   }
   // One session's requests interleave by time, exactly as concurrent interactions arrive.
   requests.sort((left, right) => (left.sessionId === right.sessionId ? left.at - right.at : 0));
@@ -149,6 +158,27 @@ async function emitAuditEvent(sdk, request, reference) {
   assert.equal(result.ok, true, `audit emission failed: ${JSON.stringify(result.error ?? {})}`);
 }
 
+function mapInstrumentedRequest(request, ctx) {
+  const outcome = request.first
+    ? admitFirstRequest({
+        ingress: ctx.ingress,
+        nonces: ctx.nonces,
+        mapper: ctx.mapper,
+        request,
+        identifiers: ctx.identifiers,
+        envelopeBytes: ctx.envelopeBytes,
+        validationMs: ctx.validationMs,
+        inventoryViolations: ctx.inventoryViolations,
+      })
+    : ctx.mapper.recall(binding(request.sessionId), ctx.identifiers.get(request.interactionKey) ?? "");
+
+  if (request.first) {
+    ctx.stats.submitted += 1;
+    if (outcome.kind !== "mapped") ctx.stats.rejected += 1;
+  }
+  return outcome.kind === "mapped" ? outcome.reference : null;
+}
+
 /**
  * Runs the whole workload. With `instrumented`, the first request of each interaction carries a
  * full envelope bound to a server-issued nonce and every later request carries the identifier
@@ -165,30 +195,29 @@ async function runArm(workload, instrumented) {
   const envelopeBytes = [];
   const validationMs = [];
   const inventoryViolations = [];
-  let wellFormedSubmitted = 0;
-  let wellFormedRejected = 0;
+  const stats = { submitted: 0, rejected: 0 };
   const eventInteraction = new Map();
+  const ctx = { ingress, nonces, mapper, identifiers, envelopeBytes, validationMs, inventoryViolations, stats };
 
   for (const request of workload.requests) {
     clock = request.at;
-    let reference = null;
-    if (instrumented) {
-      const outcome = request.first
-        ? admitFirstRequest({ ingress, nonces, mapper, request, identifiers, envelopeBytes, validationMs, inventoryViolations })
-        : mapper.recall(binding(request.sessionId), identifiers.get(request.interactionKey) ?? "");
-      if (request.first) {
-        wellFormedSubmitted += 1;
-        if (outcome.kind !== "mapped") wellFormedRejected += 1;
-      }
-      reference = outcome.kind === "mapped" ? outcome.reference : null;
-    }
+    const reference = instrumented ? mapInstrumentedRequest(request, ctx) : null;
     const before = captured.length;
     await emitAuditEvent(sdk, request, reference);
     const emitted = captured[before];
     eventInteraction.set(emitted.event.id, request.interactionKey);
   }
 
-  return { captured, eventInteraction, envelopeBytes, validationMs, inventoryViolations, wellFormedSubmitted, wellFormedRejected, identifiers };
+  return {
+    captured,
+    eventInteraction,
+    envelopeBytes,
+    validationMs,
+    inventoryViolations,
+    wellFormedSubmitted: stats.submitted,
+    wellFormedRejected: stats.rejected,
+    identifiers,
+  };
 }
 
 function binding(sessionId) {
