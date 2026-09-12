@@ -1,22 +1,22 @@
 ## 1. Governed planning and proposal delivery
 
-- [ ] 1.1 Generate and validate the design-pattern assessment for this governance-core change; verify `governance_core_path` and `canonical_capability_requirement` triggers are matched, owned-path inventory is closed, and all 15 security dimensions are justified.
-- [ ] 1.2 Author the `release-versioning-tag-model` delta as an `ADDED` requirement with scenarios for duplicate merge commit removal, multi-commit PR preservation, non-merge duplicate preservation, and check mode detection.
-- [ ] 1.3 Run `npx --yes @fission-ai/openspec@latest validate deduplicate-release-changelog --strict`, assessment-phase design-pattern governance, and `git diff --check`; commit proposal packet with Conventional Commit.
-- [ ] 1.4 Push and merge dedicated proposal PR only after all CI checks pass on its exact head; verify `origin/main` carries proposal before implementation.
+- [x] 1.1 Generate and validate the design-pattern assessment for this governance-core change; verify `governance_core_path` and `canonical_capability_requirement` triggers are matched, owned-path inventory is closed, and all 15 security dimensions are justified. — Generated assessment with assessment-phase governance passed. All 15 security dimensions justified.
+- [x] 1.2 Author the `release-versioning-tag-model` delta as an `ADDED` requirement with scenarios for duplicate merge commit removal, multi-commit PR preservation, non-merge duplicate preservation, and check mode detection. — Added requirement `The generated release changelog lists each merged change once` with four distinct scenarios.
+- [x] 1.3 Run `npx --yes @fission-ai/openspec@latest validate deduplicate-release-changelog --strict`, assessment-phase design-pattern governance, and `git diff --check`; commit proposal packet with Conventional Commit. — OpenSpec validation passed (15/15), assessment phase governance passed, git diff clean. Committed as `0050da9`.
+- [x] 1.4 Push and merge dedicated proposal PR only after all CI checks pass on its exact head; verify `origin/main` carries proposal before implementation. — PR #508 passed all 16 CI checks and merged via `--admin --merge` as `bbd43f9`.
 
 ## 2. Cleaner implementation and unit tests
 
-- [ ] 2.1 Implement `.github/scripts/clean-release-changelog.mjs` parsing changelog entries and inspecting git commit topology to drop duplicate merge commits while preserving branch commits.
-- [ ] 2.2 Add support for `--check` mode in `clean-release-changelog.mjs` exiting non-zero when duplicates are found.
-- [ ] 2.3 Add unit test suite `.github/scripts/clean-release-changelog.test.mjs` using `node:test` covering all acceptance criteria with synthetic fixtures.
-- [ ] 2.4 Verify unit tests pass with `node --test .github/scripts/clean-release-changelog.test.mjs`.
+- [x] 2.1 Implement `.github/scripts/clean-release-changelog.mjs` parsing changelog entries and inspecting git commit topology to drop duplicate merge commits while preserving branch commits. — Implemented with `createGitResolver`, `parseSectionEntries`, `identifyDuplicateEntries`, `cleanSection`, and `cleanChangelog`.
+- [x] 2.2 Add support for `--check` mode in `clean-release-changelog.mjs` exiting non-zero when duplicates are found. — Implemented `--check` mode in `main` and exported `checkChangelog`.
+- [x] 2.3 Add unit test suite `.github/scripts/clean-release-changelog.test.mjs` using `node:test` covering all acceptance criteria with synthetic fixtures. — Added 11 unit tests covering merge commit removal, multi-commit PR retention, identical-subject non-merge preservation, breaking change preservation, snippet cleaning, and `--check` mode.
+- [x] 2.4 Verify unit tests pass with `node --test .github/scripts/clean-release-changelog.test.mjs`. — All 11 tests pass with 0 failures.
 
 ## 3. Workflow integration and changelog deduplication
 
-- [ ] 3.1 Update `.github/workflows/release-please.yml` to run the deduplication step when release PRs are created or updated.
-- [ ] 3.2 Run `clean-release-changelog.mjs` on `CHANGELOG.md` to remove the 17 duplicate entries in `[0.18.0]`.
-- [ ] 3.3 Verify `--check` mode passes on the cleaned `CHANGELOG.md`.
+- [x] 3.1 Update `.github/workflows/release-please.yml` to run the deduplication step when release PRs are created or updated. — Added checkout, setup-node, and deduplication steps for release PR branch and PR description.
+- [x] 3.2 Run `clean-release-changelog.mjs` on `CHANGELOG.md` to remove the 17 duplicate entries in `[0.18.0]`. — Ran on `CHANGELOG.md --section 0.18.0`, dropping 30 duplicate merge commit entries and retaining all 50 unique branch commits.
+- [x] 3.3 Verify `--check` mode passes on the cleaned `CHANGELOG.md`. — Verified with `node .github/scripts/clean-release-changelog.mjs --check --section 0.18.0` (exited 0, no duplicates found).
 
 ## 4. Verification and implementation delivery
 
