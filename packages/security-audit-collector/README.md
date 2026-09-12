@@ -140,6 +140,24 @@ anything can be mapped into an audit record. It is a separate entry point, not a
   interaction happened, or that the claim is true. `isAdmittedEnvelope` recognises only values
   the stage itself admitted.
 
+## Mapping an admitted envelope
+
+`InteractionClaimMapper` (#127) turns one admitted envelope into the audit record's
+`client_evidence` reference and writes nothing else. The platform set and the fixed provenance are
+generated from the audit contract, so a mapping cannot name a value the contract does not admit.
+
+- **Correlation is server-authoritative.** A mapping runs under the binding the nonce was issued
+  to, over that request's admitted envelopes. No envelope is `absent` and means nothing; more than
+  one is `ambiguous`; an unbranded value is `unadmitted`; a platform the contract does not admit is
+  `unsupported_platform`; an interaction that returns claiming a different kind is a `conflict`;
+  and the bounded ledger reports `capacity`. Each maps nothing.
+- **Later requests of one interaction recall.** A Mode A nonce is single-use, so only the first
+  request of an interaction carries an envelope. `recall()` maps the rest from the identifier alone,
+  and only for a pair this mapper admitted under this context and has not expired.
+- **The collector validates structurally by ratified design.** A derived result that over-claims
+  trust over the reference is refused where the trust floor is enforced — the contract validator and
+  the producer SDK — not here.
+
 ## Package boundaries
 
 - Standalone workspace: own `package.json` and `package-lock.json` (ADR 0009 topology).

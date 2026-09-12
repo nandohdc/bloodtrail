@@ -68,6 +68,16 @@ export const FORBIDDEN_CLAIM_NAMES: readonly string[] = [
   "verdict",
 ];
 
+export const AUDIT_CLIENT_EVIDENCE_PLATFORMS: readonly string[] = [
+  "web_browser",
+];
+
+export const AUDIT_CLIENT_EVIDENCE_PROVENANCE = Object.freeze({
+  source: "client_reported",
+  trust_level: "client_claim",
+  capture_scope: "interaction_ephemeral",
+});
+
 export const AUDIT_RECORD_MEMBERS: readonly string[] = [
   "actor",
   "authenticated_principal",

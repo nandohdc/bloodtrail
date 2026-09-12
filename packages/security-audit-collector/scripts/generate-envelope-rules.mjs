@@ -59,6 +59,38 @@ function renderRegistry(registries, [key, name, type]) {
   return [`export const ${name}: readonly ${type}[] = [`, ...values.map((value) => `  ${JSON.stringify(value)},`), "];"];
 }
 
+// The audit contract's own client-evidence reference: the platforms it admits and the
+// provenance every reference must declare. A mapping builds the reference from these, so it
+// cannot name a value the contract does not admit, and cannot drift from the contract silently.
+// Platform is the one provenance member a mapping fills in from the admitted envelope; the
+// rest are fixed by the contract, so a reference cannot declare anything else.
+const REFERENCE_FIXED_PROVENANCE = Object.freeze(["source", "trust_level", "capture_scope"]);
+
+function referenceRegistry(contract, member) {
+  const field = contract.fields.find((candidate) => candidate.p === `client_evidence.provenance.${member}`);
+  const values = contract.registries?.[field?.enum];
+  if (!isTypedList(values, "string")) {
+    throw new TypeError(`contract source has no registry for client_evidence.provenance.${member}`);
+  }
+  return values;
+}
+
+function renderReference(contract) {
+  const lines = ["export const AUDIT_CLIENT_EVIDENCE_PLATFORMS: readonly string[] = ["];
+  for (const platform of referenceRegistry(contract, "platform")) lines.push(`  ${JSON.stringify(platform)},`);
+  lines.push("];", "", "export const AUDIT_CLIENT_EVIDENCE_PROVENANCE = Object.freeze({");
+  for (const member of REFERENCE_FIXED_PROVENANCE) {
+    lines.push(`  ${member}: ${JSON.stringify(exactlyOne(referenceRegistry(contract, member), member))},`);
+  }
+  lines.push("});");
+  return lines;
+}
+
+function exactlyOne(values, member) {
+  if (values.length !== 1) throw new TypeError(`client_evidence.provenance.${member} must admit exactly one value`);
+  return values[0];
+}
+
 // Every top-level member of a security-audit record, in code-point order. An envelope that
 // addresses one of them is trying to write server-owned material, not describing an interaction.
 function auditRecordMembers(contract) {
@@ -81,6 +113,8 @@ function render(envelope, contract) {
   ];
   for (const registry of REGISTRY_CONSTANTS) lines.push(...renderRegistry(registries, registry));
   lines.push(
+    "",
+    ...renderReference(contract),
     "",
     "export const AUDIT_RECORD_MEMBERS: readonly string[] = [",
     ...auditRecordMembers(contract).map((member) => `  ${JSON.stringify(member)},`),

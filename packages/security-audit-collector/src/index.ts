@@ -22,6 +22,8 @@ export type {
   EnvelopeRejectionClass,
   EnvelopeSubmission,
 } from "./envelope-ingress.js";
+export { CLAIM_MAX_RECORDS, InteractionClaimMapper } from "./envelope-mapping.js";
+export type { ClaimMapperOptions, ClaimMapping, ClientEvidenceReference, UnmappedReason } from "./envelope-mapping.js";
 export {
   InteractionNonceLedger,
   NONCE_BINDING_MAX_LENGTH,
