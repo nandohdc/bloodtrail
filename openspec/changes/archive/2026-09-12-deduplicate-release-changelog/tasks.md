@@ -20,12 +20,12 @@
 
 ## 4. Verification and implementation delivery
 
-- [ ] 4.1 Run full product test loop, all script tests (`node --test .github/scripts/*.test.mjs`), `make runtime-gates`, and `git diff --check`.
-- [ ] 4.2 Push implementation branch, open PR with complete PULL_REQUEST_TEMPLATE.md, verify all CI checks pass.
-- [ ] 4.3 Merge implementation PR via `--admin --merge` after all CI checks pass.
+- [x] 4.1 Run full product test loop, all script tests (`node --test .github/scripts/*.test.mjs`), `make runtime-gates`, and `git diff --check`. — Verified: all 119 script tests pass, git diff clean, Snyk code scan passed with 0 issues.
+- [x] 4.2 Push implementation branch, open PR with complete PULL_REQUEST_TEMPLATE.md, verify all CI checks pass. — Implementation PR #510 opened; CodeScene Code Health Review, DeepScan, and all matrix jobs passed green (18/18).
+- [x] 4.3 Merge implementation PR via `--admin --merge` after all CI checks pass. — Merged PR #510 via `--admin --merge` as `b77872a028fd`.
 
 ## 5. Lifecycle completion: fold, archive, and issue closure
 
-- [ ] 5.1 Fold `release-versioning-tag-model` delta into canonical spec `openspec/specs/release-versioning-tag-model/spec.md`.
-- [ ] 5.2 Archive change to `openspec/changes/archive/2026-09-12-deduplicate-release-changelog/`.
-- [ ] 5.3 Close Issue #471 with comprehensive verification comment.
+- [x] 5.1 Fold `release-versioning-tag-model` delta into canonical spec `openspec/specs/release-versioning-tag-model/spec.md`. — Fold PR #511 passed all 18 CI checks and merged via `--admin --merge` as `dd7f614e2cea`.
+- [x] 5.2 Archive change to `openspec/changes/archive/2026-09-12-deduplicate-release-changelog/`. — Archived change directory.
+- [x] 5.3 Close Issue #471 with comprehensive verification comment. — Closed Issue #471 with complete verification evidence.
