@@ -1,0 +1,142 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Mode A proof of concept in #128 met all utility, coverage, validation, and privacy thresholds, but L1 (envelope size budget of <= 256 B) was unmet (measured 357 B max, 354 B median over 1,112 interactions) (#498).",
+    "The structural floor of a minimal ClientEvidenceEnvelope v1 in Mode A with zero claims, 32-64 byte hex nonce, and fixed provenance block is 323-359 B, making 256 B physically unreachable as written.",
+    "Option 1 (omitting provenance from envelopes) would break ADR-009, violate frozen contract security-audit requirements, and destabilize ClientEvidenceEnvelope v1 schema.",
+    "Option 2 (revising L1 threshold to <= 384 B) accurately reflects the structural floor plus 27 B headroom, preserves frozen contracts, keeps browser and collector implementations stable, and resolves the PoC outcome to GO.",
+    "The revised L1 threshold must be verified by both the synthetic Mode A proof-of-concept harness and regression tests in @bloodtrail/client-evidence-browser."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "client-evidence"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/revise-mode-a-envelope-size-budget/.openspec.yaml",
+    "openspec/changes/revise-mode-a-envelope-size-budget/proposal.md",
+    "openspec/changes/revise-mode-a-envelope-size-budget/design.md",
+    "openspec/changes/revise-mode-a-envelope-size-budget/tasks.md",
+    "openspec/changes/revise-mode-a-envelope-size-budget/assessment.source.json",
+    "openspec/changes/revise-mode-a-envelope-size-budget/assessment.json",
+    "openspec/changes/revise-mode-a-envelope-size-budget/decisions/498-revise-l1-size-budget.md",
+    "openspec/changes/revise-mode-a-envelope-size-budget/harness/mode-a-poc.mjs",
+    "openspec/changes/revise-mode-a-envelope-size-budget/harness/mode-a-evidence.md",
+    "openspec/changes/revise-mode-a-envelope-size-budget/harness/mode-a-run-2.json",
+    "openspec/changes/revise-mode-a-envelope-size-budget/specs/client-evidence/spec.md",
+    "openspec/specs/client-evidence/spec.md",
+    "packages/client-evidence-browser/tests/browser.test.ts"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-revise-l1-threshold",
+      "kind": "direct_implementation",
+      "summary": "Revise the L1 envelope size threshold from <= 256 B to <= 384 B, ratify decision #498 under delegated authority, re-evaluate the Mode A PoC harness to achieve GO, and add regression tests in @bloodtrail/client-evidence-browser.",
+      "forces_addressed": [
+        "Mode A proof of concept in #128 met all utility, coverage, validation, and privacy thresholds, but L1 (envelope size budget of <= 256 B) was unmet (measured 357 B max, 354 B median over 1,112 interactions) (#498).",
+        "The structural floor of a minimal ClientEvidenceEnvelope v1 in Mode A with zero claims, 32-64 byte hex nonce, and fixed provenance block is 323-359 B, making 256 B physically unreachable as written.",
+        "Option 2 (revising L1 threshold to <= 384 B) accurately reflects the structural floor plus 27 B headroom, preserves frozen contracts, keeps browser and collector implementations stable, and resolves the PoC outcome to GO.",
+        "The revised L1 threshold must be verified by both the synthetic Mode A proof-of-concept harness and regression tests in @bloodtrail/client-evidence-browser."
+      ]
+    },
+    {
+      "id": "approach-revise-envelope-schema-omit-provenance",
+      "kind": "alternative",
+      "summary": "Revise ClientEvidenceEnvelope v1 schema to omit the provenance block from envelopes, assuming version 1 implies constant provenance.",
+      "forces_addressed": [
+        "Mode A proof of concept in #128 met all utility, coverage, validation, and privacy thresholds, but L1 (envelope size budget of <= 256 B) was unmet (measured 357 B max, 354 B median over 1,112 interactions) (#498)."
+      ]
+    },
+    {
+      "id": "approach-compress-envelope-payload",
+      "kind": "alternative",
+      "summary": "Apply gzip or brotli compression to envelopes in transit to artificially force serialized bytes under 256 B.",
+      "forces_addressed": [
+        "Mode A proof of concept in #128 met all utility, coverage, validation, and privacy thresholds, but L1 (envelope size budget of <= 256 B) was unmet (measured 357 B max, 354 B median over 1,112 interactions) (#498)."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-revise-l1-threshold",
+  "rejected_alternative_ids": [
+    "approach-revise-envelope-schema-omit-provenance",
+    "approach-compress-envelope-payload"
+  ],
+  "rejection_reasons": {
+    "approach-revise-envelope-schema-omit-provenance": {
+      "forces": [
+        "Option 1 (omitting provenance from envelopes) would break ADR-009, violate frozen contract security-audit requirements, and destabilize ClientEvidenceEnvelope v1 schema."
+      ],
+      "reason": "Omitting provenance violates ADR-009, conflicts with frozen contracts/security-audit expectations, destroys the self-describing closed boundary of client claims, and requires breaking contract modifications for cosmetic adherence to an outdated number."
+    },
+    "approach-compress-envelope-payload": {
+      "forces": [
+        "The structural floor of a minimal ClientEvidenceEnvelope v1 in Mode A with zero claims, 32-64 byte hex nonce, and fixed provenance block is 323-359 B, making 256 B physically unreachable as written."
+      ],
+      "reason": "Applying compression to ~350-byte payloads adds client CPU overhead, introduces binary compression framing complexities, and violates the plain JSON envelope design requirement."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-mode-a-envelope-size-budget-384-bytes",
+    "implementation-mode-a-poc-evaluated-go",
+    "implementation-client-evidence-envelope-v1-schema-preserved"
+  ],
+  "invariant_evidence": {
+    "implementation-mode-a-envelope-size-budget-384-bytes": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "packages/client-evidence-browser/tests/browser.test.ts asserts that Mode A envelopes across all 8 interaction kinds with 64-char nonces satisfy <= 384 bytes"
+      ]
+    },
+    "implementation-mode-a-poc-evaluated-go": {
+      "task_ids": [
+        "1.3"
+      ],
+      "evidence_ids": [
+        "mode-a-poc.mjs executed over 1,112 interactions produces recommendation GO with all 9 thresholds met in mode-a-run-2.json"
+      ]
+    },
+    "implementation-client-evidence-envelope-v1-schema-preserved": {
+      "task_ids": [
+        "1.2"
+      ],
+      "evidence_ids": [
+        "node --test contracts/client-evidence-envelope/tests/*.test.mjs asserts that envelope source, schema, and fixtures remain valid and unchanged"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "trust_boundary": "Preserves existing trust boundaries without alteration. All claims in ClientEvidenceEnvelope v1 remain strictly bounded at client_claim trust and are mapped fail-closed without elevating to server evidence.",
+    "authority_provenance": "Decision #498 explicitly records delegated authority under #118: decision_source = 'delegated to Claude by the owner, 2026-09-11; not a human owner decision'.",
+    "authentication_or_authorization": "Does not touch authentication, authorization, credentials, or enforcement paths; client evidence remains forbidden from reaching risk models or auth decisions.",
+    "audit_integrity": "Preserves audit event integrity. Admitted client evidence is linked solely as low-assurance correlation context under client_claim trust without altering server audit fields.",
+    "confidentiality": "The envelope inventory remains strictly minimal and closed (UUID v4, interaction kind, timestamp, provenance, nonce); no PII, URLs, cookies, or storage identifiers are admitted.",
+    "mutation_ownership": "Mutations are strictly confined to specification, decision record, proof-of-concept harness, and browser package tests; no production runtime code is mutated.",
+    "fail_posture": "Fails closed. Ingress continues to reject oversized envelopes exceeding bounds, unknown versions, unadmitted bindings, and replayed or substituted nonces deterministically.",
+    "error_disclosure": "Diagnostics and rejection classes report bounded constants (bounds, version, replay, fabrication) without reflecting untrusted payloads or internal system state.",
+    "concurrency": "Synthetic proof-of-concept and browser SDK operations execute statelessly or under explicit single-use nonce ledgers with no asynchronous race conditions.",
+    "lifecycle": "Revises the synthetic evaluation metric L1 from <= 256 B to <= 384 B, concluding the Mode A evaluation phase with GO while maintaining all stop criteria.",
+    "resource_retention": "Preserves ephemeral capture scope; no interaction identifiers or client claims are persisted in browser storage APIs (localStorage, IndexedDB, cookies).",
+    "retry_or_redelivery": "Retried requests inside an interaction reuse the interaction identifier without generating new envelopes or re-spending burned nonces.",
+    "cryptography": "Preserves standard cryptographic generation of 128-bit random interaction IDs via crypto.getRandomValues and 32-to-64 character hexadecimal server nonces.",
+    "privacy_transformation": "Enforces zero inventory violations and zero identifier reuse across distinct interactions, prohibiting browser fingerprinting or persistent cross-interaction tracking.",
+    "external_security_integration": "The browser package makes no network requests and imports no runtime dependencies; the envelope is transmitted solely by the host application's existing channels."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "8ad5175aedddcb97b6b15e0e0e85f13caec7f53b"
+  },
+  "verification_task_ids": [
+    "2.2",
+    "2.3",
+    "3.3"
+  ]
+}
