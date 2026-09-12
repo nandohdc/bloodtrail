@@ -91,6 +91,30 @@ describe("client-evidence-browser SDK", () => {
       assert.equal(parsed.interaction_kind, "custom");
     });
 
+    it("Mode A envelope satisfies the L1 size budget (<= 384 bytes)", () => {
+      const kinds = [
+        "navigation",
+        "form_submit",
+        "button_click",
+        "input",
+        "dialog_action",
+        "tab_switch",
+        "refresh",
+        "custom"
+      ] as const;
+      for (const kind of kinds) {
+        const interaction = startInteraction(kind, {
+          nonce: VALID_NONCE_64
+        });
+        const serialized = interaction.serialize();
+        const byteLength = Buffer.byteLength(serialized, "utf8");
+        assert.ok(
+          byteLength <= 384,
+          `Mode A envelope for ${kind} with 64-char nonce exceeded 384 bytes: ${byteLength}`
+        );
+      }
+    });
+
     it("generates unique interaction IDs across invocations without reuse", () => {
       const ids = new Set<string>();
       for (let i = 0; i < 50; i++) {
