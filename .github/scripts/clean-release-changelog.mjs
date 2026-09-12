@@ -5,16 +5,6 @@
  * Resolves Issue #471: Release Please duplicates changelog entries because GitHub
  * merge commits repeat pull request titles in their bodies, causing Release Please
  * to parse both the merge commit and the branch's individual commits.
- *
- * Rules:
- * 1. Identifies merge commits by git topology (parentCount > 1 and subject starting with "Merge ").
- * 2. When an entry with a merge commit SHA duplicates the subject of a branch commit
- *    in the same release section, drops the merge commit entry and retains the branch commit.
- * 3. When a merge commit's merged branch commits are already present in the release section,
- *    drops the redundant merge commit entry.
- * 4. Preserves all intermediate commits of a multi-commit pull request.
- * 5. Preserves genuine duplicate commits sharing identical subjects when neither is a merge commit.
- * 6. Supports --check mode to fail closed in CI when uncleaned duplicates exist.
  */
 
 import { execFileSync } from "node:child_process";
@@ -23,23 +13,56 @@ import { isAbsolute, normalize, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const ENTRY_REGEX = /^(\s*\*\s+)(.*?)\s*\(\[([a-f0-9]+)\]\(([^)]+)\)\)\s*$/;
-export const SECTION_HEADER_REGEX = /^## (?:\[([0-9]+\.[0-9]+\.[0-9]+)\]|([0-9]+\.[0-9]+\.[0-9]+))/m;
 
 /**
  * Resolves a file path safely within rootDir, rejecting path traversal attempts.
  */
 export function safeResolvePath(filePath, rootDir = process.cwd()) {
-  if (typeof filePath !== "string" || filePath.includes("..") || isAbsolute(filePath)) {
-    throw new Error(`Invalid path: "${filePath}" must be a relative path without parent segments`);
+  if (typeof filePath !== "string") {
+    throw new Error("Invalid path: must be a string");
   }
+  if (filePath.includes("..")) {
+    throw new Error(`Invalid path: "${filePath}" contains parent segments`);
+  }
+  if (isAbsolute(filePath)) {
+    throw new Error(`Invalid path: "${filePath}" must be a relative path`);
+  }
+
   const root = resolve(rootDir);
-  const normalized = normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, "");
+  const normalized = normalize(filePath);
   const target = resolve(root, normalized);
   const relativeToRoot = relative(root, target);
-  if (relativeToRoot.startsWith("..") || isAbsolute(relativeToRoot)) {
+
+  if (relativeToRoot.startsWith("..")) {
     throw new Error(`Path traversal rejected: "${filePath}" resolves outside root "${root}"`);
   }
+  if (isAbsolute(relativeToRoot)) {
+    throw new Error(`Path traversal rejected: "${filePath}" resolves outside root "${root}"`);
+  }
+
   return target;
+}
+
+function inspectCommitDetails(sha, execGit) {
+  try {
+    const out = execGit(["log", "-1", "--format=%H%x00%P%x00%s", sha]).trim();
+    const [fullSha, rawParents, subject] = out.split("\0");
+    const parents = rawParents ? rawParents.split(/\s+/).filter(Boolean) : [];
+    const isMerge = parents.length > 1 && (subject?.startsWith("Merge ") ?? false);
+    return { fullSha: fullSha || sha, parents, subject: subject || "", isMerge };
+  } catch {
+    return { fullSha: sha, parents: [], subject: "", isMerge: false };
+  }
+}
+
+function inspectMergedCommits(parents, execGit) {
+  if (parents.length < 2) return [];
+  try {
+    const revList = execGit(["rev-list", `${parents[0]}..${parents[1]}`]).trim();
+    return revList ? revList.split("\n").filter(Boolean) : [];
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -64,40 +87,15 @@ export function createGitResolver(options = {}) {
       return cache.get(sha);
     }
 
-    try {
-      const out = execGit(["log", "-1", "--format=%H%x00%P%x00%s", sha]).trim();
-      const [fullSha, rawParents, subject] = out.split("\0");
-      const parents = rawParents ? rawParents.split(/\s+/).filter(Boolean) : [];
-      const isMerge = parents.length > 1 && (subject?.startsWith("Merge ") ?? false);
+    const details = inspectCommitDetails(sha, execGit);
+    const mergedCommits = details.isMerge ? inspectMergedCommits(details.parents, execGit) : [];
+    const info = { ...details, sha: details.fullSha, mergedCommits };
 
-      let mergedCommits = [];
-      if (isMerge && parents.length >= 2) {
-        try {
-          const revList = execGit(["rev-list", `${parents[0]}..${parents[1]}`]).trim();
-          mergedCommits = revList ? revList.split("\n").filter(Boolean) : [];
-        } catch {
-          mergedCommits = [];
-        }
-      }
-
-      const info = {
-        sha: fullSha || sha,
-        parents,
-        subject: subject || "",
-        isMerge,
-        mergedCommits
-      };
-
-      cache.set(sha, info);
-      if (fullSha && fullSha !== sha) {
-        cache.set(fullSha, info);
-      }
-      return info;
-    } catch {
-      const fallback = { sha, parents: [], subject: "", isMerge: false, mergedCommits: [] };
-      cache.set(sha, fallback);
-      return fallback;
+    cache.set(sha, info);
+    if (details.fullSha !== sha) {
+      cache.set(details.fullSha, info);
     }
+    return info;
   };
 }
 
@@ -126,6 +124,45 @@ export function parseSectionEntries(lines) {
   return entries;
 }
 
+function groupEntriesBySubject(entries) {
+  const bySubject = new Map();
+  for (const entry of entries) {
+    let group = bySubject.get(entry.subject);
+    if (!group) {
+      group = [];
+      bySubject.set(entry.subject, group);
+    }
+    group.push(entry);
+  }
+  return bySubject;
+}
+
+function findSubjectMergeDuplicates(bySubject, resolveCommit) {
+  const toDrop = new Set();
+  for (const group of bySubject.values()) {
+    if (group.length <= 1) continue;
+    const mergeEntries = group.filter((e) => resolveCommit(e.fullSha).isMerge);
+    const nonMergeCount = group.length - mergeEntries.length;
+    if (mergeEntries.length > 0 && nonMergeCount > 0) {
+      for (const m of mergeEntries) toDrop.add(m);
+    }
+  }
+  return toDrop;
+}
+
+function findMergedBranchDuplicates(entries, sectionShas, resolveCommit, alreadyDropped) {
+  const toDrop = new Set();
+  for (const entry of entries) {
+    if (alreadyDropped.has(entry)) continue;
+    const info = resolveCommit(entry.fullSha);
+    if (!info.isMerge || info.mergedCommits.length === 0) continue;
+    if (info.mergedCommits.some((c) => sectionShas.has(c))) {
+      toDrop.add(entry);
+    }
+  }
+  return toDrop;
+}
+
 /**
  * Identifies duplicate merge commit entries to drop within a release section.
  */
@@ -136,42 +173,15 @@ export function identifyDuplicateEntries(entries, resolveCommit) {
     sectionShas.add(entry.shortSha);
   }
 
-  const bySubject = new Map();
-  for (const entry of entries) {
-    if (!bySubject.has(entry.subject)) {
-      bySubject.set(entry.subject, []);
-    }
-    bySubject.get(entry.subject).push(entry);
+  const bySubject = groupEntriesBySubject(entries);
+  const droppedBySubject = findSubjectMergeDuplicates(bySubject, resolveCommit);
+  const droppedByMerged = findMergedBranchDuplicates(entries, sectionShas, resolveCommit, droppedBySubject);
+
+  const combined = new Set(droppedBySubject);
+  for (const item of droppedByMerged) {
+    combined.add(item);
   }
-
-  const toDrop = new Set();
-
-  // Pass 1: exact subject duplicates with mixed merge / non-merge commits
-  for (const [, group] of bySubject) {
-    if (group.length > 1) {
-      const mergeEntries = group.filter((e) => resolveCommit(e.fullSha).isMerge);
-      const nonMergeEntries = group.filter((e) => !resolveCommit(e.fullSha).isMerge);
-      if (mergeEntries.length > 0 && nonMergeEntries.length > 0) {
-        for (const m of mergeEntries) {
-          toDrop.add(m);
-        }
-      }
-    }
-  }
-
-  // Pass 2: merge commits whose merged branch commits are already in this section
-  for (const entry of entries) {
-    if (toDrop.has(entry)) continue;
-    const info = resolveCommit(entry.fullSha);
-    if (info.isMerge && info.mergedCommits.length > 0) {
-      const present = info.mergedCommits.some((c) => sectionShas.has(c));
-      if (present) {
-        toDrop.add(entry);
-      }
-    }
-  }
-
-  return toDrop;
+  return combined;
 }
 
 /**
@@ -235,6 +245,12 @@ export function splitChangelogSections(content) {
   return sections;
 }
 
+function shouldCleanSection(sec, { cleanAll, isSnippet, targetSection, firstCleaned }) {
+  if (cleanAll || isSnippet) return true;
+  if (targetSection !== null) return sec.version === targetSection;
+  return !firstCleaned;
+}
+
 /**
  * Cleans release changelog content across targeted sections.
  */
@@ -247,18 +263,14 @@ export function cleanChangelog(content, options = {}) {
   const allDropped = [];
   let firstCleaned = false;
 
-  const isStandaloneSnippet = sections.length === 1 && !sections[0].version;
+  const isSnippet = sections.length === 1 && !sections[0].version;
 
   const cleanedSections = sections.map((sec) => {
-    if (!sec.version && !isStandaloneSnippet) {
+    if (!sec.version && !isSnippet) {
       return sec.lines.join("\n");
     }
 
-    const shouldClean = cleanAll
-      || isStandaloneSnippet
-      || (targetSection !== null && sec.version === targetSection)
-      || (targetSection === null && !cleanAll && !firstCleaned);
-
+    const shouldClean = shouldCleanSection(sec, { cleanAll, isSnippet, targetSection, firstCleaned });
     if (!shouldClean) {
       return sec.lines.join("\n");
     }
@@ -314,6 +326,21 @@ export function cleanPullRequestBody(prNumber, resolveCommit) {
   }
 }
 
+const CLI_FLAG_HANDLERS = {
+  "--file": (opts, val) => { opts.filePath = val; return 1; },
+  "-f": (opts, val) => { opts.filePath = val; return 1; },
+  "--check": (opts) => { opts.checkOnly = true; return 0; },
+  "-c": (opts) => { opts.checkOnly = true; return 0; },
+  "--all": (opts) => { opts.all = true; return 0; },
+  "-a": (opts) => { opts.all = true; return 0; },
+  "--section": (opts, val) => { opts.targetSection = val; return 1; },
+  "-s": (opts, val) => { opts.targetSection = val; return 1; },
+  "--pr": (opts, val) => { opts.prNumber = val; return 1; },
+  "-p": (opts, val) => { opts.prNumber = val; return 1; },
+  "--help": (opts) => { opts.showHelp = true; return 0; },
+  "-h": (opts) => { opts.showHelp = true; return 0; },
+};
+
 /**
  * Parses CLI arguments.
  */
@@ -327,23 +354,41 @@ export function parseArgs(args) {
     showHelp: false
   };
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (arg === "--file" || arg === "-f") {
-      options.filePath = args[++i];
-    } else if (arg === "--check" || arg === "-c") {
-      options.checkOnly = true;
-    } else if (arg === "--all" || arg === "-a") {
-      options.all = true;
-    } else if (arg === "--section" || arg === "-s") {
-      options.targetSection = args[++i];
-    } else if (arg === "--pr" || arg === "-p") {
-      options.prNumber = args[++i];
-    } else if (arg === "--help" || arg === "-h") {
-      options.showHelp = true;
+  let i = 0;
+  while (i < args.length) {
+    const handler = CLI_FLAG_HANDLERS[args[i]];
+    if (handler) {
+      i += 1 + handler(options, args[i + 1]);
+    } else {
+      i += 1;
     }
   }
   return options;
+}
+
+function processCheckResults(droppedEntries) {
+  if (droppedEntries.length > 0) {
+    console.error(`Changelog check failed: found ${droppedEntries.length} duplicate merge commit entry(ies):`);
+    for (const d of droppedEntries) {
+      console.error(`  - [${d.version || "candidate"}] ${d.shortSha}: ${d.subject}`);
+    }
+    return 1;
+  }
+  console.log("Changelog check passed: no duplicate release entries found.");
+  return 0;
+}
+
+function processCleanResults(fullPath, filePath, cleanedContent, droppedEntries) {
+  if (droppedEntries.length > 0) {
+    writeFileSync(fullPath, cleanedContent, "utf8");
+    console.log(`Cleaned ${droppedEntries.length} duplicate merge commit entry(ies) in ${filePath}:`);
+    for (const d of droppedEntries) {
+      console.log(`  - [${d.version || "candidate"}] dropped merge commit ${d.shortSha}: ${d.subject}`);
+    }
+  } else {
+    console.log("Changelog is already clean: no duplicate entries found.");
+  }
+  return 0;
 }
 
 /**
@@ -358,6 +403,7 @@ Options:
   -f, --file <path>       Path to changelog file (default: CHANGELOG.md)
   -c, --check             Fail with non-zero exit if uncleaned duplicates exist
   -s, --section <version> Target a specific release version (e.g. 0.18.0)
+  -p, --pr <number>       Clean release notes in pull request body via gh CLI
   -a, --all               Process all release sections
   -h, --help              Show this help message`);
     return 0;
@@ -387,32 +433,15 @@ Options:
   });
 
   if (options.checkOnly) {
-    if (droppedEntries.length > 0) {
-      console.error(`Changelog check failed: found ${droppedEntries.length} duplicate merge commit entry(ies):`);
-      for (const d of droppedEntries) {
-        console.error(`  - [${d.version || "candidate"}] ${d.shortSha}: ${d.subject}`);
-      }
-      return 1;
-    }
-    console.log("Changelog check passed: no duplicate release entries found.");
-    return 0;
+    return processCheckResults(droppedEntries);
   }
 
-  if (droppedEntries.length > 0) {
-    writeFileSync(fullPath, cleanedContent, "utf8");
-    console.log(`Cleaned ${droppedEntries.length} duplicate merge commit entry(ies) in ${options.filePath}:`);
-    for (const d of droppedEntries) {
-      console.log(`  - [${d.version || "candidate"}] dropped merge commit ${d.shortSha}: ${d.subject}`);
-    }
-  } else {
-    console.log("Changelog is already clean: no duplicate entries found.");
-  }
-
+  const exitCode = processCleanResults(fullPath, options.filePath, cleanedContent, droppedEntries);
   if (options.prNumber) {
     cleanPullRequestBody(options.prNumber, resolveCommit);
   }
 
-  return 0;
+  return exitCode;
 }
 
 const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);

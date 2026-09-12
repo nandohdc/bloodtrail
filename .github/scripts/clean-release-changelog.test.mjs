@@ -5,39 +5,51 @@ import {
   checkChangelog,
   cleanChangelog,
   cleanSection,
-  createGitResolver,
-  identifyDuplicateEntries,
-  parseSectionEntries,
-  splitChangelogSections
+  createGitResolver
 } from "./clean-release-changelog.mjs";
+
+function makeEntry(scope, desc, shortSha, issue = null) {
+  const fullSha = shortSha.padEnd(40, shortSha.slice(-1));
+  const issuePart = issue ? ` ([#${issue}](https://github.com/nandohdc/bloodtrail/issues/${issue}))` : "";
+  return `* **${scope}:** ${desc}${issuePart} ([${shortSha}](https://github.com/nandohdc/bloodtrail/commit/${fullSha}))`;
+}
+
+function createMockResolver(overrides = {}) {
+  return (sha) => {
+    for (const [prefix, val] of Object.entries(overrides)) {
+      if (sha === prefix || sha.startsWith(prefix)) {
+        return typeof val === "function" ? val(sha) : val;
+      }
+    }
+    const isMerge = sha.startsWith("a");
+    return {
+      sha,
+      parents: isMerge ? ["p1", "p2"] : ["p0"],
+      subject: isMerge ? "Merge pull request #10 from feat/branch" : "branch commit",
+      isMerge,
+      mergedCommits: isMerge ? ["b111111111111111111111111111111111111111"] : []
+    };
+  };
+}
 
 test("cleanSection drops duplicate merge commits and retains branch commits", () => {
   const sectionText = `## [1.0.0] (2026-09-12)
 
 ### Features
 
-* **core:** add primary feature ([#10](https://github.com/nandohdc/bloodtrail/issues/10)) ([a111111](https://github.com/nandohdc/bloodtrail/commit/a111111111111111111111111111111111111111))
-* **core:** add primary feature ([#10](https://github.com/nandohdc/bloodtrail/issues/10)) ([b111111](https://github.com/nandohdc/bloodtrail/commit/b111111111111111111111111111111111111111))
+${makeEntry("core", "add primary feature", "a111111", 10)}
+${makeEntry("core", "add primary feature", "b111111", 10)}
 `;
 
-  const mockResolver = (sha) => {
-    if (sha.startsWith("a111111")) {
-      return {
-        sha,
-        parents: ["p1", "p2"],
-        subject: "Merge pull request #10 from feat/feature",
-        isMerge: true,
-        mergedCommits: ["b111111111111111111111111111111111111111"]
-      };
-    }
-    return {
-      sha,
+  const mockResolver = createMockResolver({
+    b111111: {
+      sha: "b111111",
       parents: ["p1"],
       subject: "feat(core): add primary feature (#10)",
       isMerge: false,
       mergedCommits: []
-    };
-  };
+    }
+  });
 
   const { cleanedText, droppedEntries } = cleanSection(sectionText, mockResolver);
 
@@ -52,37 +64,28 @@ test("cleanSection preserves intermediate commits in multi-commit PRs", () => {
 
 ### Features
 
-* **core:** add primary feature ([#10](https://github.com/nandohdc/bloodtrail/issues/10)) ([a111111](https://github.com/nandohdc/bloodtrail/commit/a111111111111111111111111111111111111111))
-* **core:** add primary feature ([#10](https://github.com/nandohdc/bloodtrail/issues/10)) ([b111111](https://github.com/nandohdc/bloodtrail/commit/b111111111111111111111111111111111111111))
+${makeEntry("core", "add primary feature", "a111111", 10)}
+${makeEntry("core", "add primary feature", "b111111", 10)}
 
 ### Bug Fixes
 
-* **core:** fix edge case in parser ([#10](https://github.com/nandohdc/bloodtrail/issues/10)) ([b222222](https://github.com/nandohdc/bloodtrail/commit/b222222222222222222222222222222222222222))
-* **core:** eliminate unused helper ([#10](https://github.com/nandohdc/bloodtrail/issues/10)) ([b333333](https://github.com/nandohdc/bloodtrail/commit/b33333333333333333333333333333333333333))
+${makeEntry("core", "fix edge case in parser", "b222222", 10)}
+${makeEntry("core", "eliminate unused helper", "b333333", 10)}
 `;
 
-  const mockResolver = (sha) => {
-    if (sha.startsWith("a111111")) {
-      return {
-        sha,
-        parents: ["p1", "p2"],
-        subject: "Merge pull request #10 from feat/feature",
-        isMerge: true,
-        mergedCommits: [
-          "b111111111111111111111111111111111111111",
-          "b222222222222222222222222222222222222222",
-          "b33333333333333333333333333333333333333"
-        ]
-      };
+  const mockResolver = createMockResolver({
+    a111111: {
+      sha: "a111111",
+      parents: ["p1", "p2"],
+      subject: "Merge pull request #10 from feat/feature",
+      isMerge: true,
+      mergedCommits: [
+        "b111111111111111111111111111111111111111",
+        "b222222222222222222222222222222222222222",
+        "b33333333333333333333333333333333333333"
+      ]
     }
-    return {
-      sha,
-      parents: ["p0"],
-      subject: "branch commit",
-      isMerge: false,
-      mergedCommits: []
-    };
-  };
+  });
 
   const { cleanedText, droppedEntries } = cleanSection(sectionText, mockResolver);
 
@@ -99,12 +102,12 @@ test("cleanSection preserves distinct non-merge commits with identical subjects"
 
 ### Bug Fixes
 
-* **docs:** update readme instructions ([#5](https://github.com/nandohdc/bloodtrail/issues/5)) ([b111111](https://github.com/nandohdc/bloodtrail/commit/b111111111111111111111111111111111111111))
-* **docs:** update readme instructions ([#5](https://github.com/nandohdc/bloodtrail/issues/5)) ([b222222](https://github.com/nandohdc/bloodtrail/commit/b222222222222222222222222222222222222222))
+${makeEntry("docs", "update readme instructions", "b111111", 5)}
+${makeEntry("docs", "update readme instructions", "b222222", 5)}
 `;
 
-  const mockResolver = (sha) => ({
-    sha,
+  const mockResolver = () => ({
+    sha: "b",
     parents: ["p0"],
     subject: "docs: update readme instructions",
     isMerge: false,
@@ -123,28 +126,26 @@ test("cleanSection drops merge commits whose merged commits are already in secti
 
 ### Features
 
-* **collector:** add fail-closed client-evidence envelope stage ([#126](https://github.com/nandohdc/bloodtrail/issues/126)) ([c499499](https://github.com/nandohdc/bloodtrail/commit/c49949999999999999999999999999999999999))
-* **collector:** add the fail-closed client-evidence envelope stage ([#126](https://github.com/nandohdc/bloodtrail/issues/126)) ([b111111](https://github.com/nandohdc/bloodtrail/commit/b111111111111111111111111111111111111111))
+${makeEntry("collector", "add fail-closed client-evidence envelope stage", "c499499", 126)}
+${makeEntry("collector", "add the fail-closed client-evidence envelope stage", "b111111", 126)}
 `;
 
-  const mockResolver = (sha) => {
-    if (sha.startsWith("c499499")) {
-      return {
-        sha,
-        parents: ["p1", "p2"],
-        subject: "Merge pull request #499 from feat/client-evidence-ingress",
-        isMerge: true,
-        mergedCommits: ["b111111111111111111111111111111111111111"]
-      };
-    }
-    return {
-      sha,
+  const mockResolver = createMockResolver({
+    c499499: {
+      sha: "c499499",
+      parents: ["p1", "p2"],
+      subject: "Merge pull request #499 from feat/client-evidence-ingress",
+      isMerge: true,
+      mergedCommits: ["b111111111111111111111111111111111111111"]
+    },
+    b111111: {
+      sha: "b111111",
       parents: ["p0"],
       subject: "feat(collector): add the fail-closed client-evidence envelope stage (#126)",
       isMerge: false,
       mergedCommits: []
-    };
-  };
+    }
+  });
 
   const { cleanedText, droppedEntries } = cleanSection(sectionText, mockResolver);
 
@@ -159,11 +160,11 @@ test("cleanSection retains merge commits when no merged commits are in the secti
 
 ### Features
 
-* **core:** squash-merged feature ([#20](https://github.com/nandohdc/bloodtrail/issues/20)) ([c202020](https://github.com/nandohdc/bloodtrail/commit/c202020202020202020202020202020202020202))
+${makeEntry("core", "squash-merged feature", "c202020", 20)}
 `;
 
-  const mockResolver = (sha) => ({
-    sha,
+  const mockResolver = () => ({
+    sha: "c202020",
     parents: ["p1", "p2"],
     subject: "Merge pull request #20 from feat/squashed",
     isMerge: true,
@@ -181,25 +182,31 @@ test("cleanChangelog cleans only target section when specified", () => {
 
 ## [2.0.0] (2026-09-12)
 
-* **core:** feat A ([a111111](https://github.com/nandohdc/bloodtrail/commit/a111111111111111111111111111111111111111))
-* **core:** feat A ([b111111](https://github.com/nandohdc/bloodtrail/commit/b111111111111111111111111111111111111111))
+${makeEntry("core", "feat A", "a111111")}
+${makeEntry("core", "feat A", "b111111")}
 
 ## [1.0.0] (2026-09-01)
 
-* **core:** feat B ([a222222](https://github.com/nandohdc/bloodtrail/commit/a222222222222222222222222222222222222222))
-* **core:** feat B ([b222222](https://github.com/nandohdc/bloodtrail/commit/b222222222222222222222222222222222222222))
+${makeEntry("core", "feat B", "a222222")}
+${makeEntry("core", "feat B", "b222222")}
 `;
 
-  const mockResolver = (sha) => {
-    const isMerge = sha.startsWith("a");
-    return {
-      sha,
-      parents: isMerge ? ["p1", "p2"] : ["p1"],
-      subject: isMerge ? "Merge pull request #..." : "feat",
-      isMerge,
+  const mockResolver = createMockResolver({
+    a111111: {
+      sha: "a111111",
+      parents: ["p1", "p2"],
+      subject: "Merge pull request #...",
+      isMerge: true,
       mergedCommits: []
-    };
-  };
+    },
+    a222222: {
+      sha: "a222222",
+      parents: ["p1", "p2"],
+      subject: "Merge pull request #...",
+      isMerge: true,
+      mergedCommits: []
+    }
+  });
 
   const { cleanedContent, droppedEntries } = cleanChangelog(content, {
     resolveCommit: mockResolver,
@@ -209,7 +216,7 @@ test("cleanChangelog cleans only target section when specified", () => {
   assert.equal(droppedEntries.length, 1);
   assert.equal(droppedEntries[0].shortSha, "a111111");
   assert.ok(!cleanedContent.includes("a111111"));
-  assert.ok(cleanedContent.includes("a222222")); // 1.0.0 untouched
+  assert.ok(cleanedContent.includes("a222222"));
 });
 
 test("cleanChangelog on actual CHANGELOG.md 0.18.0 asserts clean status", () => {
@@ -223,30 +230,20 @@ test("cleanChangelog on actual CHANGELOG.md 0.18.0 asserts clean status", () => 
 
   assert.equal(clean, true);
   assert.equal(droppedEntries.length, 0);
-  assert.ok(!realContent.includes("bbe79f7")); // merge commit dropped
-  assert.ok(realContent.includes("cbd45d4"));  // branch commit retained
-  assert.ok(!realContent.includes("a4b22dc")); // merge commit dropped
-  assert.ok(realContent.includes("b1caaa1"));  // branch commit retained
+  assert.ok(!realContent.includes("bbe79f7"));
+  assert.ok(realContent.includes("cbd45d4"));
+  assert.ok(!realContent.includes("a4b22dc"));
+  assert.ok(realContent.includes("b1caaa1"));
 });
 
 test("checkChangelog returns clean: false and dropped entries when duplicates exist", () => {
   const content = `## [1.0.0] (2026-09-12)
 
-* **feat:** duplicate entry ([a111111](https://github.com/nandohdc/bloodtrail/commit/a111111111111111111111111111111111111111))
-* **feat:** duplicate entry ([b111111](https://github.com/nandohdc/bloodtrail/commit/b111111111111111111111111111111111111111))
+${makeEntry("feat", "duplicate entry", "a111111")}
+${makeEntry("feat", "duplicate entry", "b111111")}
 `;
 
-  const mockResolver = (sha) => {
-    const isMerge = sha.startsWith("a");
-    return {
-      sha,
-      parents: isMerge ? ["p1", "p2"] : ["p1"],
-      subject: isMerge ? "Merge pull request #..." : "feat",
-      isMerge,
-      mergedCommits: isMerge ? ["b111111111111111111111111111111111111111"] : []
-    };
-  };
-
+  const mockResolver = createMockResolver();
   const result = checkChangelog(content, { resolveCommit: mockResolver });
   assert.equal(result.clean, false);
   assert.equal(result.droppedEntries.length, 1);
@@ -256,11 +253,11 @@ test("checkChangelog returns clean: false and dropped entries when duplicates ex
 test("checkChangelog returns clean: true when no duplicates exist", () => {
   const content = `## [1.0.0] (2026-09-12)
 
-* **feat:** clean entry ([b111111](https://github.com/nandohdc/bloodtrail/commit/b111111111111111111111111111111111111111))
+${makeEntry("feat", "clean entry", "b111111")}
 `;
 
-  const mockResolver = (sha) => ({
-    sha,
+  const mockResolver = () => ({
+    sha: "b111111",
     parents: ["p1"],
     subject: "feat",
     isMerge: false,
@@ -281,21 +278,11 @@ test("cleanSection preserves breaking changes without commit links", () => {
 
 ### Features
 
-* **core:** feature ([a111111](https://github.com/nandohdc/bloodtrail/commit/a111111111111111111111111111111111111111))
-* **core:** feature ([b111111](https://github.com/nandohdc/bloodtrail/commit/b111111111111111111111111111111111111111))
+${makeEntry("core", "feature", "a111111")}
+${makeEntry("core", "feature", "b111111")}
 `;
 
-  const mockResolver = (sha) => {
-    const isMerge = sha.startsWith("a");
-    return {
-      sha,
-      parents: isMerge ? ["p1", "p2"] : ["p1"],
-      subject: isMerge ? "Merge pull request #..." : "feat",
-      isMerge,
-      mergedCommits: ["b111111111111111111111111111111111111111"]
-    };
-  };
-
+  const mockResolver = createMockResolver();
   const { cleanedText, droppedEntries } = cleanSection(sectionText, mockResolver);
   assert.equal(droppedEntries.length, 1);
   assert.ok(cleanedText.includes("### ⚠ BREAKING CHANGES"));
@@ -305,21 +292,11 @@ test("cleanSection preserves breaking changes without commit links", () => {
 test("cleanChangelog cleans standalone release notes snippet without version header", () => {
   const snippet = `### Features
 
-* **core:** feature ([a111111](https://github.com/nandohdc/bloodtrail/commit/a111111111111111111111111111111111111111))
-* **core:** feature ([b111111](https://github.com/nandohdc/bloodtrail/commit/b111111111111111111111111111111111111111))
+${makeEntry("core", "feature", "a111111")}
+${makeEntry("core", "feature", "b111111")}
 `;
 
-  const mockResolver = (sha) => {
-    const isMerge = sha.startsWith("a");
-    return {
-      sha,
-      parents: isMerge ? ["p1", "p2"] : ["p1"],
-      subject: isMerge ? "Merge pull request #..." : "feat",
-      isMerge,
-      mergedCommits: ["b111111111111111111111111111111111111111"]
-    };
-  };
-
+  const mockResolver = createMockResolver();
   const { cleanedContent, droppedEntries } = cleanChangelog(snippet, { resolveCommit: mockResolver });
   assert.equal(droppedEntries.length, 1);
   assert.ok(cleanedContent.includes("b111111"));
