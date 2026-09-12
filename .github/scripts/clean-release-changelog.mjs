@@ -14,10 +14,7 @@ import { fileURLToPath } from "node:url";
 
 export const ENTRY_REGEX = /^(\s*\*\s+)(.*?)\s*\(\[([a-f0-9]+)\]\(([^)]+)\)\)\s*$/;
 
-/**
- * Resolves a file path safely within rootDir, rejecting path traversal attempts.
- */
-export function safeResolvePath(filePath, rootDir = process.cwd()) {
+function validateRelativePath(filePath) {
   if (typeof filePath !== "string") {
     throw new Error("Invalid path: must be a string");
   }
@@ -27,16 +24,19 @@ export function safeResolvePath(filePath, rootDir = process.cwd()) {
   if (isAbsolute(filePath)) {
     throw new Error(`Invalid path: "${filePath}" must be a relative path`);
   }
+}
+
+/**
+ * Resolves a file path safely within rootDir, rejecting path traversal attempts.
+ */
+export function safeResolvePath(filePath, rootDir = process.cwd()) {
+  validateRelativePath(filePath);
 
   const root = resolve(rootDir);
-  const normalized = normalize(filePath);
-  const target = resolve(root, normalized);
+  const target = resolve(root, normalize(filePath));
   const relativeToRoot = relative(root, target);
 
-  if (relativeToRoot.startsWith("..")) {
-    throw new Error(`Path traversal rejected: "${filePath}" resolves outside root "${root}"`);
-  }
-  if (isAbsolute(relativeToRoot)) {
+  if (relativeToRoot.startsWith("..") || isAbsolute(relativeToRoot)) {
     throw new Error(`Path traversal rejected: "${filePath}" resolves outside root "${root}"`);
   }
 
@@ -137,14 +137,18 @@ function groupEntriesBySubject(entries) {
   return bySubject;
 }
 
+function extractDuplicateMergeEntries(group, resolveCommit) {
+  if (group.length <= 1) return [];
+  const mergeEntries = group.filter((e) => resolveCommit(e.fullSha).isMerge);
+  const hasNonMerge = mergeEntries.length < group.length;
+  return (mergeEntries.length > 0 && hasNonMerge) ? mergeEntries : [];
+}
+
 function findSubjectMergeDuplicates(bySubject, resolveCommit) {
   const toDrop = new Set();
   for (const group of bySubject.values()) {
-    if (group.length <= 1) continue;
-    const mergeEntries = group.filter((e) => resolveCommit(e.fullSha).isMerge);
-    const nonMergeCount = group.length - mergeEntries.length;
-    if (mergeEntries.length > 0 && nonMergeCount > 0) {
-      for (const m of mergeEntries) toDrop.add(m);
+    for (const entry of extractDuplicateMergeEntries(group, resolveCommit)) {
+      toDrop.add(entry);
     }
   }
   return toDrop;
