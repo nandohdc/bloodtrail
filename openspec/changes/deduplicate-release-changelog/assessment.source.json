@@ -1,0 +1,185 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Release Please produces duplicate entries for every merged pull request in CHANGELOG.md when merge commits repeat PR titles, as observed in [0.18.0] where 17 duplicate entry pairs were generated (#471).",
+    "GitHub Repo API rejects merge_commit_message: 'BLANK' with HTTP 422 invalid_merge_commit_setting_combo, precluding upstream repository configuration fixes.",
+    "Upstream Release Please maintainers closed issue #2476 refusing to support merge commits natively and recommending squash-only, which violates Bloodtrail governance requirements for merge commit auditability.",
+    "The changelog must preserve intermediate commits in multi-commit PRs and preserve genuine duplicate commit subjects when neither commit is a merge commit.",
+    "The release workflow automation and CI must mechanically assert that release changelog sections remain clean and deduplicated."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "governance_core_path"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "release-versioning-tag-model"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/deduplicate-release-changelog/.openspec.yaml",
+    "openspec/changes/deduplicate-release-changelog/proposal.md",
+    "openspec/changes/deduplicate-release-changelog/design.md",
+    "openspec/changes/deduplicate-release-changelog/tasks.md",
+    "openspec/changes/deduplicate-release-changelog/assessment.source.json",
+    "openspec/changes/deduplicate-release-changelog/assessment.json",
+    "openspec/changes/deduplicate-release-changelog/specs/release-versioning-tag-model/spec.md",
+    "openspec/specs/release-versioning-tag-model/spec.md",
+    ".github/scripts/clean-release-changelog.mjs",
+    ".github/scripts/clean-release-changelog.test.mjs",
+    ".github/workflows/release-please.yml",
+    "CHANGELOG.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-clean-release-changelog-script",
+      "kind": "direct_implementation",
+      "summary": "Implement .github/scripts/clean-release-changelog.mjs to parse changelog entries, query git commit topology to drop duplicate merge commit entries while retaining branch commits, support --check mode, integrate into release-please.yml, and clean CHANGELOG.md [0.18.0] historical duplicates.",
+      "forces_addressed": [
+        "Release Please produces duplicate entries for every merged pull request in CHANGELOG.md when merge commits repeat PR titles, as observed in [0.18.0] where 17 duplicate entry pairs were generated (#471).",
+        "GitHub Repo API rejects merge_commit_message: 'BLANK' with HTTP 422 invalid_merge_commit_setting_combo, precluding upstream repository configuration fixes.",
+        "Upstream Release Please maintainers closed issue #2476 refusing to support merge commits natively and recommending squash-only, which violates Bloodtrail governance requirements for merge commit auditability.",
+        "The changelog must preserve intermediate commits in multi-commit PRs and preserve genuine duplicate commit subjects when neither commit is a merge commit.",
+        "The release workflow automation and CI must mechanically assert that release changelog sections remain clean and deduplicated."
+      ]
+    },
+    {
+      "id": "approach-github-repo-blank-merge-commits",
+      "kind": "alternative",
+      "summary": "Configure GitHub repository API merge_commit_message to BLANK to omit the PR title from the merge commit body.",
+      "forces_addressed": [
+        "Release Please produces duplicate entries for every merged pull request in CHANGELOG.md when merge commits repeat PR titles, as observed in [0.18.0] where 17 duplicate entry pairs were generated (#471)."
+      ]
+    },
+    {
+      "id": "approach-release-please-squash-only",
+      "kind": "alternative",
+      "summary": "Change the repository merge strategy to squash-and-merge, adopting the upstream Release Please recommendation.",
+      "forces_addressed": [
+        "Release Please produces duplicate entries for every merged pull request in CHANGELOG.md when merge commits repeat PR titles, as observed in [0.18.0] where 17 duplicate entry pairs were generated (#471)."
+      ]
+    },
+    {
+      "id": "approach-manual-changelog-edits",
+      "kind": "alternative",
+      "summary": "Manually edit CHANGELOG.md on release branches before merging release PRs.",
+      "forces_addressed": [
+        "Release Please produces duplicate entries for every merged pull request in CHANGELOG.md when merge commits repeat PR titles, as observed in [0.18.0] where 17 duplicate entry pairs were generated (#471)."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-clean-release-changelog-script",
+  "rejected_alternative_ids": [
+    "approach-github-repo-blank-merge-commits",
+    "approach-release-please-squash-only",
+    "approach-manual-changelog-edits"
+  ],
+  "rejection_reasons": {
+    "approach-github-repo-blank-merge-commits": {
+      "forces": [
+        "GitHub Repo API rejects merge_commit_message: 'BLANK' with HTTP 422 invalid_merge_commit_setting_combo, precluding upstream repository configuration fixes."
+      ],
+      "reason": "The GitHub Repository API returns HTTP 422 invalid_merge_commit_setting_combo because GitHub forbids setting merge_commit_message to BLANK when merge_commit_title is PR_TITLE; only PR_BODY or MERGE_MESSAGE is supported."
+    },
+    "approach-release-please-squash-only": {
+      "forces": [
+        "Upstream Release Please maintainers closed issue #2476 refusing to support merge commits natively and recommending squash-only, which violates Bloodtrail governance requirements for merge commit auditability."
+      ],
+      "reason": "Squash merges destroy individual commit provenance, cryptographic signatures, and granular audit history, violating repository governance rules requiring merge commits."
+    },
+    "approach-manual-changelog-edits": {
+      "forces": [
+        "The release workflow automation and CI must mechanically assert that release changelog sections remain clean and deduplicated."
+      ],
+      "reason": "Manual changelog editing is error-prone, unasserted, delays autonomous release workflows, and is prone to recurring human error."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-merge-commit-duplicates-dropped",
+    "implementation-multi-commit-pr-intermediate-commits-preserved",
+    "implementation-distinct-identical-subject-commits-preserved",
+    "implementation-changelog-check-fails-on-duplicates",
+    "implementation-existing-changelog-cleaned"
+  ],
+  "invariant_evidence": {
+    "implementation-merge-commit-duplicates-dropped": {
+      "task_ids": [
+        "2.1",
+        "2.3",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs asserts that duplicate merge commit entries are dropped while branch commit entries are preserved"
+      ]
+    },
+    "implementation-multi-commit-pr-intermediate-commits-preserved": {
+      "task_ids": [
+        "2.1",
+        "2.3",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs asserts all intermediate commits of a multi-commit PR are retained"
+      ]
+    },
+    "implementation-distinct-identical-subject-commits-preserved": {
+      "task_ids": [
+        "2.1",
+        "2.3",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs asserts that non-merge commits with identical subjects are both preserved"
+      ]
+    },
+    "implementation-changelog-check-fails-on-duplicates": {
+      "task_ids": [
+        "2.2",
+        "2.3",
+        "2.4",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "clean-release-changelog.mjs --check exits with code 1 and reports duplicates on uncleaned changelog sections, and passes with code 0 on clean sections"
+      ]
+    },
+    "implementation-existing-changelog-cleaned": {
+      "task_ids": [
+        "3.2",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "CHANGELOG.md [0.18.0] section has 17 duplicate merge commit lines removed and passes --check verification"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "trust_boundary": "No trust boundary is defined, moved, or crossed. The cleaner operates solely on release changelog markdown text and local git commit graph metadata.",
+    "authority_provenance": "No authority or identity credentials are altered. The cleaner preserves original branch commit hashes and commit author provenance in CHANGELOG.md while eliminating redundant merge commit links.",
+    "authentication_or_authorization": "Does not modify, bypass, or interact with any authentication or authorization mechanisms or API permissions.",
+    "audit_integrity": "Improves audit integrity by eliminating duplicate entries in CHANGELOG.md, ensuring each change is attributed accurately to its authoring commit without duplication.",
+    "confidentiality": "Operates exclusively on public git commit messages, hashes, and public CHANGELOG.md markdown; no secrets or confidential data are accessed or disclosed.",
+    "mutation_ownership": "Mutations are strictly confined to CHANGELOG.md and release PR branch descriptions; no production code, manifests, or version files are modified.",
+    "fail_posture": "Fails closed in --check mode with non-zero exit code if uncleaned duplicate entries are detected; refuses to drop entries if commit resolution is ambiguous.",
+    "error_disclosure": "Diagnostics print public commit hashes and changelog subject lines without disclosing internal system paths, environment secrets, or credentials.",
+    "concurrency": "Executes synchronously during workflow execution with no concurrent race conditions or asynchronous state sharing.",
+    "lifecycle": "Operates during the release PR creation and update lifecycle, ensuring release PRs carry clean changelogs before review and merge.",
+    "resource_retention": "Retains no persistent buffers, memory leaks, or open handles beyond process termination.",
+    "retry_or_redelivery": "Deterministic idempotency; running the cleaner repeatedly on an already cleaned changelog produces identical output with no modifications.",
+    "cryptography": "Does not introduce, alter, or rely upon cryptographic algorithms, keys, or signature verification.",
+    "privacy_transformation": "Does not process user telemetry, personal data, or sensitive operational payloads.",
+    "external_security_integration": "Operates independently without external network connections, APIs, or third-party security services."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "92546ff68910ed73354a40a5b9caf7b6a7b9ad9d"
+  },
+  "verification_task_ids": [
+    "4.1",
+    "4.2",
+    "4.3"
+  ]
+}
