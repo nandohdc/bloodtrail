@@ -5,6 +5,7 @@ import { basename, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { packageRoot, repositoryRoot } from "../../scripts/verification-helpers.mjs";
+import { buildAndCompileMutation } from "./mutation-build.mjs";
 
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-f07-mutations-"));
 
@@ -56,14 +57,7 @@ for (const mutation of mutations) {
     symlinkSync(resolve(packageRoot, "node_modules"), resolve(root, "node_modules"), "dir");
     replace(resolve(root, "src/sdk.ts"), mutation.oldText, mutation.newText);
 
-    const build = spawnSync("npm", ["run", "build"], { cwd: root, encoding: "utf8", timeout: 60_000 });
-    assert.equal(build.status, 0, `${mutation.name} did not build:\n${build.stdout}\n${build.stderr}`);
-    const compile = spawnSync(process.execPath, [resolve(packageRoot, "node_modules/typescript/bin/tsc"), "-p", "tsconfig.test.json"], {
-      cwd: root,
-      encoding: "utf8",
-      timeout: 60_000,
-    });
-    assert.equal(compile.status, 0, `${mutation.name} tests did not compile:\n${compile.stdout}\n${compile.stderr}`);
+    buildAndCompileMutation(root, mutation.name);
     const childEnvironment = { ...process.env };
     delete childEnvironment.NODE_TEST_CONTEXT;
     const result = spawnSync(process.execPath, [
