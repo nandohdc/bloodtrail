@@ -12,12 +12,12 @@
 
 ## 3. Implementation Verification & Delivery
 
-- [ ] 3.1 Verify implementation governance with `node openspec/scripts/check-design-pattern-governance.mjs --phase implementation`.
-- [ ] 3.2 Push implementation branch, open PR with complete PULL_REQUEST_TEMPLATE.md, verify all CI checks pass on the updated runner shape (recording `availableParallelism() = 4` and cache hits for `setup-node`).
-- [ ] 3.3 Merge implementation PR via `--admin --merge` after all CI checks pass.
+- [x] 3.1 Verify implementation governance with `node openspec/scripts/check-design-pattern-governance.mjs --phase implementation`.
+- [x] 3.2 Push implementation branch, open PR with complete PULL_REQUEST_TEMPLATE.md, verify all CI checks pass on the updated runner shape (recording `availableParallelism() = 4` and cache hits for `setup-node`).
+- [x] 3.3 Merge implementation PR via `--admin --merge` after all CI checks pass.
 
 ## 4. Lifecycle Completion: Archival & Issue Closure
 
-- [ ] 4.1 Archive change `record-runner-shape-diagnostics` to `openspec/changes/archive/`.
-- [ ] 4.2 Verify final governance and OpenSpec validation (`node openspec/scripts/check-design-pattern-governance.mjs --phase final`).
-- [ ] 4.3 Merge archive PR, post verification results and comparative metrics to GitHub Issue #306, and close Issue #306.
+- [x] 4.1 Archive change `record-runner-shape-diagnostics` to `openspec/changes/archive/`.
+- [x] 4.2 Verify final governance and OpenSpec validation (`node openspec/scripts/check-design-pattern-governance.mjs --phase final`).
+- [x] 4.3 Merge archive PR, post verification results and comparative metrics to GitHub Issue #306, and close Issue #306.
