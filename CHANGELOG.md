@@ -5,23 +5,16 @@
 
 ### Added
 
-* **ci:** deduplicate release please changelog entries ([#471](https://github.com/nandohdc/bloodtrail/issues/471)) ([b77872a](https://github.com/nandohdc/bloodtrail/commit/b77872a028fd1344bca1060fd5324309df6090cf))
 * **ci:** deduplicate release please changelog entries ([#471](https://github.com/nandohdc/bloodtrail/issues/471)) ([ad7e4ab](https://github.com/nandohdc/bloodtrail/commit/ad7e4ab3495a11d75c8f248646b0c2c346677a1b))
 
 
 ### Documentation
 
-* **archive:** archive completed change deduplicate-release-changelog ([#471](https://github.com/nandohdc/bloodtrail/issues/471)) ([8ad5175](https://github.com/nandohdc/bloodtrail/commit/8ad5175aedddcb97b6b15e0e0e85f13caec7f53b))
 * **archive:** archive completed change deduplicate-release-changelog ([#471](https://github.com/nandohdc/bloodtrail/issues/471)) ([630e4f2](https://github.com/nandohdc/bloodtrail/commit/630e4f2d439437c56e6e40873739a66359f6446e))
-* **openspec:** archive revise-mode-a-envelope-size-budget ([#498](https://github.com/nandohdc/bloodtrail/issues/498)) ([798ce15](https://github.com/nandohdc/bloodtrail/commit/798ce158cbeadc0b40aa2c1c2d56b9c340f32a63))
 * **openspec:** archive revise-mode-a-envelope-size-budget ([#498](https://github.com/nandohdc/bloodtrail/issues/498)) ([9897d54](https://github.com/nandohdc/bloodtrail/commit/9897d5461e050592112a33d570dc014ac7f7ab30))
-* **openspec:** fold revise-mode-a-envelope-size-budget ([#498](https://github.com/nandohdc/bloodtrail/issues/498)) ([a21fe24](https://github.com/nandohdc/bloodtrail/commit/a21fe24300b4f5d4127e9df3e0344c732e0cd3d0))
 * **openspec:** fold revise-mode-a-envelope-size-budget ([#498](https://github.com/nandohdc/bloodtrail/issues/498)) ([4c036da](https://github.com/nandohdc/bloodtrail/commit/4c036dafc8284999334a903f435416be326dfb5b))
-* **openspec:** propose deduplicating release changelog entries ([#471](https://github.com/nandohdc/bloodtrail/issues/471)) ([bbd43f9](https://github.com/nandohdc/bloodtrail/commit/bbd43f9d838272747e304242ae7bd23d9d21f98b))
 * **openspec:** propose deduplicating release changelog entries ([#471](https://github.com/nandohdc/bloodtrail/issues/471)) ([0050da9](https://github.com/nandohdc/bloodtrail/commit/0050da9c073b483e6c8364e276a9fd3a94c1a812))
-* **openspec:** propose revise-mode-a-envelope-size-budget ([#498](https://github.com/nandohdc/bloodtrail/issues/498)) ([ce82499](https://github.com/nandohdc/bloodtrail/commit/ce824993ae49b314fac419f565e80a64291ddf8b))
 * **openspec:** propose revise-mode-a-envelope-size-budget ([#498](https://github.com/nandohdc/bloodtrail/issues/498)) ([efda512](https://github.com/nandohdc/bloodtrail/commit/efda51236e7ccfc2d57a8f17bb1e825b1d8eb917))
-* **specs:** fold deduplicate-release-changelog requirement into release-versioning-tag-model ([#471](https://github.com/nandohdc/bloodtrail/issues/471)) ([dd7f614](https://github.com/nandohdc/bloodtrail/commit/dd7f614e2cea290abe22b19b63c12d1560dcdab5))
 * **specs:** fold deduplicate-release-changelog requirement into release-versioning-tag-model ([#471](https://github.com/nandohdc/bloodtrail/issues/471)) ([4285bcb](https://github.com/nandohdc/bloodtrail/commit/4285bcbbaa5bd4c4ad12cc5ceb3db6498dc84edb))
 
 ## [0.18.0](https://github.com/nandohdc/bloodtrail/compare/v0.17.7...v0.18.0) (2026-09-12)
