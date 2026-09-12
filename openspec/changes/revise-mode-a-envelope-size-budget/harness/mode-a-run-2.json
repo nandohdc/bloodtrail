@@ -1,0 +1,74 @@
+{
+  "workload": {
+    "seed": 128,
+    "sessions": 140,
+    "interactionsPerSession": [
+      7,
+      9
+    ],
+    "requestsPerInteraction": [
+      1,
+      5
+    ],
+    "traceReuseProbability": 0.35,
+    "retryProbability": 0.15,
+    "requestGapMs": [
+      120,
+      1800
+    ],
+    "interactionStartGapMs": [
+      200,
+      2500
+    ],
+    "sessionGapMs": 600000,
+    "interactions": 1112,
+    "requests": 3836,
+    "events_per_arm": 3836,
+    "reused_trace_interactions": 274
+  },
+  "metrics": {
+    "U1_grouping_accuracy": 1,
+    "U2_incremental_utility": 0.3552,
+    "baseline_accuracy": 0.6448,
+    "baseline_best_gap_threshold_ms": 250,
+    "C1_coverage": 1,
+    "V1_rejection_completeness": 1,
+    "V2_false_rejection": 0,
+    "L1_envelope_bytes_max": 357,
+    "L1_envelope_bytes_p50": 354,
+    "L2_validation_ms_p95": 0.0435,
+    "P1_inventory_violations": 0,
+    "P1_identifier_reuse": 0
+  },
+  "thresholds": {
+    "U1": true,
+    "U2": true,
+    "C1": true,
+    "V1": true,
+    "V2": true,
+    "L1": true,
+    "L2": true,
+    "P1-inv": true,
+    "P1-link": true
+  },
+  "unmet": [],
+  "adversarial": {
+    "first_submission": "admitted",
+    "replay_same_context": "rejected:replay",
+    "claim_substitution": "rejected:substitution",
+    "substituted_nonce_is_burned": "rejected:replay",
+    "forged_nonce": "rejected:replay",
+    "server_field_fabrication": "rejected:fabrication",
+    "audit_member_fabrication": "rejected:fabrication",
+    "trust_escalation": "rejected:fabrication",
+    "unknown_version": "rejected:version",
+    "oversized": "rejected:bounds",
+    "malformed": "rejected:structure",
+    "mapping_an_unadmitted_value": "unadmitted",
+    "recalling_an_unadmitted_identifier": "unadmitted",
+    "correlation_collision": "both mapped as independent claims under their own context",
+    "conflicting_kind_for_one_interaction": "unmapped:conflict"
+  },
+  "stops": [],
+  "recommendation": "GO"
+}
