@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.1",
+  "change_id": "record-runner-shape-diagnostics",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Issue #306 requires mechanical observation of os.availableParallelism() on the runner pod rather than inferring from Helm values or VM settings.",
+    "Issue #306 requires verifying that actions/setup-node finds declared Node versions in /opt/hostedtoolcache without downloading.",
+    "The verification suite and pipeline makespan must be baselined and compared before and after the runner shape changes.",
+    "packages/client-evidence-browser produces untracked build artifacts (dist/, dist-tests/) during standard make or test runs due to missing .gitignore."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/record-runner-shape-diagnostics/.openspec.yaml",
+    "openspec/changes/record-runner-shape-diagnostics/proposal.md",
+    "openspec/changes/record-runner-shape-diagnostics/design.md",
+    "openspec/changes/record-runner-shape-diagnostics/tasks.md",
+    "openspec/changes/record-runner-shape-diagnostics/assessment.source.json",
+    "openspec/changes/record-runner-shape-diagnostics/assessment.json",
+    ".github/workflows/ci.yml",
+    "packages/client-evidence-browser/.gitignore"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-ci-diagnostics-and-gitignore",
+      "kind": "direct_implementation",
+      "summary": "Add a lightweight diagnostic step to .github/workflows/ci.yml in the sdk job and add .gitignore to packages/client-evidence-browser.",
+      "forces_addressed": [
+        "Issue #306 requires mechanical observation of os.availableParallelism() on the runner pod rather than inferring from Helm values or VM settings.",
+        "Issue #306 requires verifying that actions/setup-node finds declared Node versions in /opt/hostedtoolcache without downloading.",
+        "The verification suite and pipeline makespan must be baselined and compared before and after the runner shape changes.",
+        "packages/client-evidence-browser produces untracked build artifacts (dist/, dist-tests/) during standard make or test runs due to missing .gitignore."
+      ]
+    },
+    {
+      "id": "approach-test-suite-reporter-logging",
+      "kind": "alternative",
+      "summary": "Log runner parallelism and tool cache environment from inside test:verification or sdk test runner hooks.",
+      "forces_addressed": [
+        "Issue #306 requires mechanical observation of os.availableParallelism() on the runner pod rather than inferring from Helm values or VM settings."
+      ]
+    },
+    {
+      "id": "approach-infer-runner-shape-from-helm",
+      "kind": "alternative",
+      "summary": "Infer runner shape and parallelism from doks-platform Helm values without CI mechanical diagnostics.",
+      "forces_addressed": [
+        "Issue #306 requires mechanical observation of os.availableParallelism() on the runner pod rather than inferring from Helm values or VM settings."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-ci-diagnostics-and-gitignore",
+  "rejected_alternative_ids": [
+    "approach-test-suite-reporter-logging",
+    "approach-infer-runner-shape-from-helm"
+  ],
+  "rejection_reasons": {
+    "approach-test-suite-reporter-logging": {
+      "forces": [
+        "Issue #306 requires mechanical observation of os.availableParallelism() on the runner pod rather than inferring from Helm values or VM settings."
+      ],
+      "reason": "Embedding environment diagnostics inside test assertion files pollutes structured test reporter output, couples CI infrastructure diagnostics to SDK test suites, and runs after test runner initialization rather than upfront."
+    },
+    "approach-infer-runner-shape-from-helm": {
+      "forces": [
+        "Issue #306 requires mechanical observation of os.availableParallelism() on the runner pod rather than inferring from Helm values or VM settings."
+      ],
+      "reason": "Inference from Helm values fails to satisfy issue #306 acceptance criteria, which mandates direct measurement of os.availableParallelism() and cache hits on the runner pod itself."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-runner-shape-diagnostics-in-ci",
+    "implementation-client-evidence-browser-gitignore"
+  ],
+  "invariant_evidence": {
+    "implementation-runner-shape-diagnostics-in-ci": {
+      "task_ids": [
+        "2.2"
+      ],
+      "evidence_ids": [
+        ".github/workflows/ci.yml contains Runner shape diagnostics step executing node -e to log hostname, CPU count, availableParallelism(), and RUNNER_TOOL_CACHE"
+      ]
+    },
+    "implementation-client-evidence-browser-gitignore": {
+      "task_ids": [
+        "2.1"
+      ],
+      "evidence_ids": [
+        "packages/client-evidence-browser/.gitignore ignores dist/, dist-tests/, coverage/, and *.tgz"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "Maintains complete auditability. Adds explicit diagnostic logging of runner execution environment in CI logs and preserves all governance checks.",
+    "authentication_or_authorization": "Does not modify, touch, or interact with any authentication, authorization, or token validation mechanisms.",
+    "authority_provenance": "Derives public change and runner diagnostics only; no cryptographic signing or identity authority logic is altered.",
+    "concurrency": "Executes synchronously during workflow step execution with no concurrent race conditions or shared mutable state.",
+    "confidentiality": "Diagnostic step logs only non-sensitive runner properties (hostname, CPU count, available parallelism, and cache directory path); no secrets or tokens are exposed.",
+    "cryptography": "Does not introduce, alter, or interact with cryptographic operations or key material.",
+    "error_disclosure": "Diagnostic logging prints basic hardware parallelism and cache paths; no internal credentials, tokens, or system secrets are disclosed.",
+    "external_security_integration": "Operates independently using local Node.js os module and built-in runner cache; makes no external network calls or security service integrations.",
+    "fail_posture": "Fails closed if the diagnostic script encounters an error; build ignore patterns prevent unvetted build artifacts from entering version control.",
+    "lifecycle": "Diagnostic step executes once during the sdk CI job setup lifecycle before test execution commences.",
+    "mutation_ownership": "Confined strictly to CI workflow configuration and client-evidence-browser .gitignore; introduces no runtime or production code mutations.",
+    "privacy_transformation": "Does not process or transform user telemetry, personal data, or sensitive operational payloads.",
+    "resource_retention": "Retains no persistent buffers, memory handles, or connections beyond the execution of the diagnostic command.",
+    "retry_or_redelivery": "Deterministic and idempotent; re-running the diagnostic step produces identical reporting without side effects.",
+    "trust_boundary": "Runs entirely within the runner execution environment and does not alter any trust boundaries or permission perimeters."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "63be5de46cc7f29ae3a55d1548a4d733fd32a259"
+  },
+  "verification_task_ids": [
+    "2.3",
+    "3.1",
+    "3.2"
+  ]
+}
