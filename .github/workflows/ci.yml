@@ -58,6 +58,10 @@ jobs:
             packages/client-evidence-browser/package-lock.json
             packages/security-audit-collector/package-lock.json
 
+      - name: Runner shape diagnostics
+        run: |
+          node -e "const os = require('node:os'); console.log({ hostname: os.hostname(), cpus: os.cpus().length, availableParallelism: os.availableParallelism(), RUNNER_TOOL_CACHE: process.env.RUNNER_TOOL_CACHE });"
+
       - run: npm ci
 
       # Before validate: validate runs `generate` first, which rewrites src/generated/

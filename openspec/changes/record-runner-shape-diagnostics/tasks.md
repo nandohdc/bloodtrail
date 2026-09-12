@@ -1,14 +1,14 @@
 ## 1. Governed Planning and Proposal Delivery
 
-- [ ] 1.1 Author proposal, design, and assessment for `record-runner-shape-diagnostics` declaring `governance_core_path` trigger, full 15-dimension security justification, and closed path inventory.
-- [ ] 1.2 Validate change artifacts with `npx --yes @fission-ai/openspec@latest validate record-runner-shape-diagnostics --strict` and `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment`.
-- [ ] 1.3 Push dedicated proposal branch `openspec/propose-record-runner-shape-diagnostics`, create PR, verify all CI checks pass, and merge with `--admin --merge`.
+- [x] 1.1 Author proposal, design, and assessment for `record-runner-shape-diagnostics` declaring `governance_core_path` trigger, full 15-dimension security justification, and closed path inventory.
+- [x] 1.2 Validate change artifacts with `npx --yes @fission-ai/openspec@latest validate record-runner-shape-diagnostics --strict` and `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment`.
+- [x] 1.3 Push dedicated proposal branch `openspec/propose-record-runner-shape-diagnostics`, create PR, verify all CI checks pass, and merge with `--admin --merge`.
 
 ## 2. Diagnostics & Workspace Hygiene Implementation
 
-- [ ] 2.1 Add `packages/client-evidence-browser/.gitignore` to ignore build artifacts (`dist/`, `dist-tests/`, `coverage/`, `*.tgz`).
-- [ ] 2.2 Add `Runner shape diagnostics` step in `.github/workflows/ci.yml` under `sdk` job reporting runner hostname, CPU count, `availableParallelism()`, and `RUNNER_TOOL_CACHE`.
-- [ ] 2.3 Verify repository runtime gates with `make runtime-gates`.
+- [x] 2.1 Add `packages/client-evidence-browser/.gitignore` to ignore build artifacts (`dist/`, `dist-tests/`, `coverage/`, `*.tgz`).
+- [x] 2.2 Add `Runner shape diagnostics` step in `.github/workflows/ci.yml` under `sdk` job reporting runner hostname, CPU count, `availableParallelism()`, and `RUNNER_TOOL_CACHE`.
+- [x] 2.3 Verify repository runtime gates with `make runtime-gates`.
 
 ## 3. Implementation Verification & Delivery
 
