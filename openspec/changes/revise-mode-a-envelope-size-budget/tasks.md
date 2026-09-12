@@ -12,6 +12,6 @@
 
 ## 3. Specification Fold & Change Archive
 
-- [ ] 3.1 Fold the revised requirement and scenario from `specs/client-evidence/spec.md` into canonical specification `openspec/specs/client-evidence/spec.md`.
+- [x] 3.1 Fold the revised requirement and scenario from `specs/client-evidence/spec.md` into canonical specification `openspec/specs/client-evidence/spec.md`.
 - [ ] 3.2 Relocate active change `openspec/changes/revise-mode-a-envelope-size-budget/` to `openspec/changes/archive/2026-09-12-revise-mode-a-envelope-size-budget/`.
 - [ ] 3.3 Verify full OpenSpec validation and governance checks pass (`npx --yes @fission-ai/openspec@latest validate --all --strict` and `node openspec/scripts/check-design-pattern-governance.mjs --phase final`).
