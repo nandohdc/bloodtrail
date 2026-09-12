@@ -5,15 +5,12 @@
 
 ### Added
 
-* **ci:** record runner shape diagnostics in sdk workflow ([#306](https://github.com/nandohdc/bloodtrail/issues/306)) ([7df6838](https://github.com/nandohdc/bloodtrail/commit/7df6838619f5664e5bba05acc11d941ef984c4ee))
 * **ci:** record runner shape diagnostics in sdk workflow ([#306](https://github.com/nandohdc/bloodtrail/issues/306)) ([7783553](https://github.com/nandohdc/bloodtrail/commit/778355371fef7b681dfd7009f470ee458efefdcb))
 
 
 ### Documentation
 
-* **openspec:** archive record-runner-shape-diagnostics ([#306](https://github.com/nandohdc/bloodtrail/issues/306)) ([e4f7572](https://github.com/nandohdc/bloodtrail/commit/e4f757267d9dd1edd85dde060f48660332ada6be))
 * **openspec:** archive record-runner-shape-diagnostics ([#306](https://github.com/nandohdc/bloodtrail/issues/306)) ([c2d1cad](https://github.com/nandohdc/bloodtrail/commit/c2d1cad8f0dc262f84eac015e5c826a850edcb22))
-* **openspec:** propose record-runner-shape-diagnostics ([#306](https://github.com/nandohdc/bloodtrail/issues/306)) ([5063609](https://github.com/nandohdc/bloodtrail/commit/5063609283d397bcecc8bd69e4ecd554e589c90c))
 * **openspec:** propose record-runner-shape-diagnostics ([#306](https://github.com/nandohdc/bloodtrail/issues/306)) ([1bc62f8](https://github.com/nandohdc/bloodtrail/commit/1bc62f855253a5b839767ad02fa4ca03f787e578))
 
 ## [0.19.0](https://github.com/nandohdc/bloodtrail/compare/v0.18.0...v0.19.0) (2026-09-12)
