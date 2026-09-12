@@ -28,5 +28,5 @@
 ## 5. Delivery and lifecycle completion
 
 - [x] 5.1 Push proposal and deliver Proposal PR for #464. — Landed in PR #505 (merge commit 8c26aee076307ea222befc9a0f8b2fac25d50ef5).
-- [ ] 5.2 Implement, verify, and deliver Implementation PR for #464.
-- [ ] 5.3 Archive change in dedicated Archive PR and close #464 with completion evidence.
+- [x] 5.2 Implement, verify, and deliver Implementation PR for #464. — Landed in PR #506 (merge commit 8e48ab18bb080a1c9a66b02dd4dc382aceff1777).
+- [x] 5.3 Archive change in dedicated Archive PR and close #464 with completion evidence. — Archived to 2026-09-12-distinguish-mutation-build-timeouts.
