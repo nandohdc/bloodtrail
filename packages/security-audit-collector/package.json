@@ -36,8 +36,8 @@
   ],
   "scripts": {
     "clean": "node scripts/clean.mjs",
-    "generate": "node scripts/generate-bounds.mjs",
-    "check:generated": "node scripts/generate-bounds.mjs --check && node scripts/check-validator-drift.mjs",
+    "generate": "node scripts/generate-bounds.mjs && node scripts/generate-envelope-rules.mjs",
+    "check:generated": "node scripts/generate-bounds.mjs --check && node scripts/generate-envelope-rules.mjs --check && node scripts/check-validator-drift.mjs",
     "copy:generated": "node scripts/copy-generated.mjs",
     "build": "npm run clean && tsc -p tsconfig.build.json && npm run copy:generated",
     "typecheck": "tsc -p tsconfig.json --noEmit",

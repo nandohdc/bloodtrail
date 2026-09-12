@@ -32,6 +32,7 @@ runtime-gates:
 	npm run validate --prefix packages/client-evidence-browser
 	npm run validate --prefix packages/security-audit-collector
 	npm run validate --prefix contracts/security-audit
+	node --test contracts/client-evidence-envelope/tests/*.test.mjs
 	npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry
 	@echo "Product test loop passed across every declared workspace ($(COST_RUNTIME_GATES))."
 	@echo "Notice: Full governance-gate chains ($(COST_GOVERNANCE_GATES)) were NOT run. Run 'make governance-gates' before pushing."
@@ -43,6 +44,7 @@ governance-gates:
 	npm run validate --prefix packages/client-evidence-browser
 	npm run validate --prefix packages/security-audit-collector
 	npm run validate --prefix contracts/security-audit
+	node --test contracts/client-evidence-envelope/tests/*.test.mjs
 	npm run lint --prefix research/browser-telemetry && npm test --prefix research/browser-telemetry
 	@echo "Full governance-gate chains passed across every declared workspace ($(COST_GOVERNANCE_GATES))."
 
@@ -55,6 +57,7 @@ sdk:
 contract:
 	@echo "Running contract validation ($(COST_CONTRACT))..."
 	npm run validate --prefix contracts/security-audit
+	node --test contracts/client-evidence-envelope/tests/*.test.mjs
 	@echo "Notice: Partial run completed. Exercised contract workspace only; packages/security-audit-sdk-core, packages/security-audit-sdk-node, packages/client-evidence-browser, packages/security-audit-collector, and research/browser-telemetry were NOT run."
 
 research:

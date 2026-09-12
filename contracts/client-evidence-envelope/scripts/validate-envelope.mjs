@@ -55,6 +55,10 @@ function isRecord(value) {
   return true;
 }
 
+// A parse failure must be distinguishable from a payload that parses to null, which is a
+// well-formed JSON value and must still be rejected as a non-object with its own code.
+const PARSE_FAILED = Symbol("parse-failed");
+
 function parsePayload(input, fail) {
   if (typeof input !== "string" && !Buffer.isBuffer(input)) {
     return input;
@@ -62,13 +66,13 @@ function parsePayload(input, fail) {
   const raw = Buffer.isBuffer(input) ? input : Buffer.from(input, "utf8");
   if (raw.byteLength > BOUNDS.max_envelope_bytes) {
     fail("ENVELOPE_TOO_LARGE", "$", "Serialized size exceeds bound");
-    return null;
+    return PARSE_FAILED;
   }
   try {
     return JSON.parse(raw.toString("utf8"));
   } catch {
     fail("MALFORMED_JSON", "$", "Invalid JSON syntax");
-    return null;
+    return PARSE_FAILED;
   }
 }
 
@@ -307,7 +311,7 @@ export function validateEnvelope(input) {
   }
 
   const envelope = parsePayload(input, fail);
-  if (envelope === null) {
+  if (envelope === PARSE_FAILED) {
     return { valid: false, errors };
   }
   if (!isRecord(envelope)) {

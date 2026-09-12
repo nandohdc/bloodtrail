@@ -186,3 +186,11 @@ test("rejection is fail-closed: oversized data is never truncated or repaired", 
   assert.equal(res.valid, false);
   assert.ok(res.errors.some((e) => e.code === "OVERSIZED_STRING"));
 });
+
+test("a payload that parses to a non-object is rejected with MALFORMED_JSON, never without a code", () => {
+  for (const payload of ["null", "[]", "42", "\"envelope\"", null]) {
+    const res = validateEnvelope(payload);
+    assert.equal(res.valid, false);
+    assert.deepEqual(res.errors.map((e) => e.code), ["MALFORMED_JSON"], String(payload));
+  }
+});

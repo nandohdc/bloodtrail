@@ -9,6 +9,26 @@
 // owner's 2026-09-10 instruction; it is equally non-production.
 //
 // Authentication identifies a sender; it does not prove evidence truth.
+// The ClientEvidenceEnvelope v1 stage (#126) is equally non-production and synthetic, under
+// the owner's 2026-09-11 instruction; an admitted envelope is a client claim, never evidence.
+
+export { ClientEvidenceIngress, ENVELOPE_REJECTION_CLASSES, isAdmittedEnvelope } from "./envelope-ingress.js";
+export type {
+  AdmittedEnvelope,
+  EnvelopeAdmissionResult,
+  EnvelopeIngressMetrics,
+  EnvelopeIngressOptions,
+  EnvelopeRejection,
+  EnvelopeRejectionClass,
+  EnvelopeSubmission,
+} from "./envelope-ingress.js";
+export {
+  InteractionNonceLedger,
+  NONCE_BINDING_MAX_LENGTH,
+  NONCE_LIFETIME_MILLISECONDS,
+  NONCE_MAX_RECORDS,
+} from "./envelope-nonces.js";
+export type { NonceDecision, NonceIssue, NonceLedgerOptions, NonceSource } from "./envelope-nonces.js";
 
 export { CollectorIngress } from "./ingress.js";
 export type {

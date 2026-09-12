@@ -33,7 +33,7 @@ import { loadCraSchema, validateCraRecord } from "./schema.mjs";
 const CRA_RECORD_NAME = "contract-reuse.json";
 const GOVERNANCE_RECORD_PATH = "packages/security-audit-sdk-core/verification-lifecycle.json";
 const CANONICAL_CONTRACT_PATH = "contracts/security-audit/source/contract.source.json";
-const REQUIRED_CONTRACT = "security-audit@2.0.0";
+const REQUIRED_CONTRACT = "security-audit@2.1.0";
 const SUPPORTED_CONTRACT_VERSION = REQUIRED_CONTRACT.slice(REQUIRED_CONTRACT.indexOf("@") + 1);
 const PROJECT_OWNER = "Fernando Homem da Costa (nandohdc)";
 const CHANGE_ID = /^[a-z0-9][a-z0-9-]{2,99}$/;
@@ -355,7 +355,7 @@ function readCanonicalContractAtBase(repositoryRoot, base, sink) {
 
 function rejectCanonicalSource(sink) {
   sink.fail("cra-contract-source-unavailable", CANONICAL_CONTRACT_PATH,
-    "the reviewed range baseline is not the authoritative security-audit source at schema version 1.1.0");
+    `the reviewed range baseline is not the authoritative security-audit source at schema version ${SUPPORTED_CONTRACT_VERSION}`);
   return null;
 }
 
