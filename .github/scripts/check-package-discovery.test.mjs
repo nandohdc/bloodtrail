@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   DECLARED_PACKAGES,
   assertCostFiguresAreVariables,
+  assertReleaseVersionTableCoversDeclaredPackages,
   assertSonarCpdExclusions,
   assertSonarScopeCoversDeclaredPackages,
   assertMakefileCoverage,
@@ -16,6 +17,7 @@ import {
   recipeCommandLines,
   recipeMessageLines,
   repositoryRoot,
+  releaseVersionRows,
   sonarPropertyFor,
 } from "./check-package-discovery.mjs";
 
@@ -398,4 +400,111 @@ test("check-package-discovery: fails closed when the CPD exception is absent or 
     () => assertSonarCpdExclusions("sonar.cpd.exclusions=**/scripts/**\n"),
     /\[sonar-cpd-exclusion-missing\].*packages\/\*\/scripts\/\*\*.*\[sonar-cpd-exclusion-unexpected\].*\*\*\/scripts\/\*\*/s,
   );
+});
+
+
+/**
+ * Controls for the release version table assertion (#462).
+ *
+ * Each failing arm is paired with the healthy input that must still pass. The
+ * fixtures carry the document's *other* table too, because scoping the parse to
+ * the named table is itself one of the properties under test — a pattern that
+ * matched any backticked first cell read the commit-signal table's `feat:` as a
+ * workspace.
+ */
+
+const DECLARED_FIXTURE = Object.freeze([
+  "packages/alpha/package.json",
+  "packages/beta/package.json",
+]);
+
+const FIXTURE_VERSIONS = Object.freeze({ "packages/alpha": "0.2.0", "packages/beta": "0.1.0" });
+const fixtureVersion = (workspace) => FIXTURE_VERSIONS[workspace];
+
+function releaseDocument(rows) {
+  return [
+    "## What the version actually versions",
+    "",
+    "| Workspace | Version | Governed by |",
+    "| --- | --- | --- |",
+    ...rows,
+    "",
+    "Commit subjects drive all of it:",
+    "",
+    "| Commit signal | Release impact | Changelog section |",
+    "| --- | --- | --- |",
+    "| `feat:` | minor | Added |",
+    "| `fix:` | patch | Fixed |",
+    "",
+  ].join("\n");
+}
+
+const HEALTHY_ROWS = [
+  "| `packages/alpha` | `0.2.0` | frozen until an owner release authorization |",
+  "| `packages/beta` | `0.1.0` | frozen until an owner release authorization |",
+];
+
+function runTable(rows, declared = DECLARED_FIXTURE) {
+  return assertReleaseVersionTableCoversDeclaredPackages(releaseDocument(rows), declared, fixtureVersion);
+}
+
+test("the release version table assertion passes on a complete, accurate table", () => {
+  const result = runTable(HEALTHY_ROWS);
+  assert.equal(result.rowCount, 2);
+  assert.equal(result.workspaceCount, 2);
+});
+
+test("the parse is bounded to the named table, so another table's rows are not read as workspaces", () => {
+  const rows = releaseVersionRows(releaseDocument(HEALTHY_ROWS));
+  assert.deepEqual(rows.map((row) => row.workspace), ["packages/alpha", "packages/beta"]);
+});
+
+test("a declared package with no row fails, naming it", () => {
+  assert.throws(() => runTable([HEALTHY_ROWS[0]]), /release-table-uncovered.*packages\/beta/s);
+  assert.doesNotThrow(() => runTable(HEALTHY_ROWS));
+});
+
+test("a row naming no declared package fails, naming the stray row", () => {
+  const stray = "| `packages/gamma` | `9.9.9` | not a declared package |";
+  assert.throws(() => runTable([...HEALTHY_ROWS, stray]), /release-table-stray.*packages\/gamma/s);
+  assert.doesNotThrow(() => runTable(HEALTHY_ROWS));
+});
+
+test("a row whose version differs from its package.json fails, naming both versions", () => {
+  const drifted = "| `packages/alpha` | `0.1.0` | frozen until an owner release authorization |";
+  assert.throws(
+    () => runTable([drifted, HEALTHY_ROWS[1]]),
+    /release-table-version-drift.*states 0\.1\.0 for packages\/alpha.*carries 0\.2\.0/s,
+  );
+  assert.doesNotThrow(() => runTable(HEALTHY_ROWS));
+});
+
+test("a row with no backticked version fails rather than being skipped", () => {
+  const unversioned = "| `packages/alpha` | 0.2.0 | the version is not backticked |";
+  assert.throws(() => runTable([unversioned, HEALTHY_ROWS[1]]), /release-table-unparsed/);
+  assert.doesNotThrow(() => runTable(HEALTHY_ROWS));
+});
+
+test("a row whose workspace cell cannot be read fails on its own arm", () => {
+  const unreadable = "| `packages/alpha | `0.2.0` | the workspace backtick is unterminated |";
+  assert.throws(() => runTable([unreadable, HEALTHY_ROWS[1]]), /release-table-unreadable/);
+  assert.doesNotThrow(() => runTable(HEALTHY_ROWS));
+});
+
+test("adding a declared package without adding a row fails", () => {
+  const sixth = [...DECLARED_FIXTURE, "packages/gamma/package.json"];
+  assert.throws(() => runTable(HEALTHY_ROWS, sixth), /release-table-uncovered.*packages\/gamma/s);
+});
+
+test("a document with no version table at all fails", () => {
+  assert.throws(
+    () => assertReleaseVersionTableCoversDeclaredPackages("# no table here\n", DECLARED_FIXTURE, fixtureVersion),
+    /release-table-absent/,
+  );
+});
+
+test("the repository's own release document passes, against its own manifests", () => {
+  const result = assertReleaseVersionTableCoversDeclaredPackages();
+  assert.equal(result.workspaceCount, DECLARED_PACKAGES.length);
+  assert.equal(result.rowCount, DECLARED_PACKAGES.length);
 });

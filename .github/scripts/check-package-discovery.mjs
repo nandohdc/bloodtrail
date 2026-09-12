@@ -428,6 +428,135 @@ function strayDiagnostics(sources, workspaces, exceptions) {
   ];
 }
 
+/** The release document whose table states what a release versions. */
+const RELEASE_DOCUMENT = "RELEASING.md";
+
+/** Parses one Markdown table row into its backticked workspace and version cells. */
+function releaseRowFrom(line) {
+  const cells = line.split("|").map((cell) => cell.trim());
+  if (cells.length < 4) return null;
+  const workspace = /^`([^`]+)`$/.exec(cells[1]);
+  if (workspace === null) return null;
+  const version = /^`([^`]+)`$/.exec(cells[2]);
+  return { workspace: workspace[1], version: version === null ? null : version[1], line };
+}
+
+/** The header that opens the version table, and the only table this assertion reads. */
+const RELEASE_TABLE_HEADER = "| Workspace | Version | Governed by |";
+
+/**
+ * The rows of the version table, bounded by the table itself rather than found
+ * by pattern across the whole document.
+ *
+ * The bound matters: `RELEASING.md` also carries a commit-signal table whose
+ * first cell is a backticked `feat:`, and a pattern that matched any backticked
+ * first cell read those as workspaces. Reading from the header until the table
+ * ends is what keeps this assertion about the table it names.
+ *
+ * A row this cannot read is carried through with a null workspace and fails as
+ * `[release-table-unreadable]`; a row whose workspace reads but whose version
+ * cell is not backticked fails separately as `[release-table-unparsed]`. Two
+ * codes rather than one, because a single code let a control pass while the arm
+ * it was meant to exercise was neutered — the other path produced the same
+ * diagnostic. A skipped row is how an assertion stays green while checking
+ * nothing.
+ */
+export function releaseVersionRows(documentText) {
+  const lines = documentText.split(/\r?\n/);
+  const start = lines.findIndex((line) => line.trim() === RELEASE_TABLE_HEADER);
+  if (start === -1) return [];
+
+  const rows = [];
+  for (const line of lines.slice(start + 1)) {
+    if (!line.startsWith("|")) break;
+    if (!line.startsWith("| `")) continue; // the alignment row
+    rows.push(releaseRowFrom(line) ?? { workspace: null, version: null, line });
+  }
+  return rows;
+}
+
+/** One diagnostic per declared workspace with no row, else none. */
+function uncoveredRowDiagnostics(workspaces, rows) {
+  const listed = rows.map((row) => row.workspace);
+  const uncovered = workspaces.filter((workspace) => !listed.includes(workspace));
+  if (uncovered.length === 0) return [];
+  return [`[release-table-uncovered] declared package(s) absent from the ${RELEASE_DOCUMENT} version table: ${uncovered.join(", ")}`];
+}
+
+/** One diagnostic per row naming no declared workspace, else none. */
+function strayRowDiagnostics(rows, workspaces) {
+  const stray = rows.filter((row) => !workspaces.includes(row.workspace));
+  if (stray.length === 0) return [];
+  return [`[release-table-stray] ${RELEASE_DOCUMENT} version table row(s) naming no declared package: ${stray.map((row) => row.workspace).join(", ")}`];
+}
+
+/** One diagnostic per row whose stated version is absent or differs from its own manifest. */
+function versionDriftDiagnostics(rows, workspaces, readVersion) {
+  const diagnostics = [];
+  for (const row of rows) {
+    if (!workspaces.includes(row.workspace)) continue;
+    if (row.version === null) {
+      diagnostics.push(`[release-table-unparsed] ${RELEASE_DOCUMENT} row for ${row.workspace} states no backticked version`);
+      continue;
+    }
+    const actual = readVersion(row.workspace);
+    if (actual !== row.version) {
+      diagnostics.push(`[release-table-version-drift] ${RELEASE_DOCUMENT} states ${row.version} for ${row.workspace}, but its package.json carries ${actual}`);
+    }
+  }
+  return diagnostics;
+}
+
+/**
+ * Asserts that the document stating what a release versions enumerates every
+ * declared package, and states the version each one's own manifest carries.
+ *
+ * The table named `0.1.0` for a candidate that had moved to `0.2.0` and listed
+ * three workspaces where there are five, while the clause that would have
+ * caught the first — "compatibility.json asserts this exact value" — was part
+ * of the same stale text (#462). It is the same hand-maintained-set defect as
+ * the `make` recipes (#412), their notices (#441) and the analysis scope
+ * (#452), so it gets the same treatment: fail closed in both directions, and
+ * read the version from the manifest rather than from a second copy.
+ */
+export function assertReleaseVersionTableCoversDeclaredPackages(
+  documentText = null,
+  declaredPackages = DECLARED_PACKAGES,
+  readVersion = (workspace) => JSON.parse(readFileSync(resolve(repositoryRoot, workspace, "package.json"), "utf8")).version,
+) {
+  const text = documentText ?? readFileSync(resolve(repositoryRoot, RELEASE_DOCUMENT), "utf8");
+  const workspaces = workspacesFrom(declaredPackages);
+  const rows = releaseVersionRows(text);
+
+  if (rows.length === 0) {
+    throw new Error(
+      `Release version table assertion failed:\n  [release-table-absent] ${RELEASE_DOCUMENT} declares no version table rows under ${RELEASE_TABLE_HEADER}`,
+    );
+  }
+
+  const unreadable = rows.filter((row) => row.workspace === null);
+  if (unreadable.length > 0) {
+    throw new Error(
+      `Release version table assertion failed:\n  [release-table-unreadable] ${unreadable.length} row(s) in ${RELEASE_DOCUMENT} name no readable workspace: ${unreadable.map((row) => row.line.trim()).join(" / ")}`,
+    );
+  }
+
+  const failures = [
+    ...uncoveredRowDiagnostics(workspaces, rows),
+    ...strayRowDiagnostics(rows, workspaces),
+    ...versionDriftDiagnostics(rows, workspaces, readVersion),
+  ];
+  if (failures.length > 0) {
+    throw new Error(`Release version table assertion failed:\n  ${failures.join("\n  ")}`);
+  }
+
+  return {
+    rowCount: rows.length,
+    workspaceCount: workspaces.length,
+    message: `Release version table passed: ${rows.length} row(s) covering all ${workspaces.length} declared package(s), each version matching its own package.json\n`,
+  };
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const result = assertPackageDiscovery();
@@ -437,6 +566,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.stdout.write(assertCostFiguresAreVariables().message);
     process.stdout.write(assertSonarScopeCoversDeclaredPackages().message);
     process.stdout.write(assertSonarCpdExclusions().message);
+    process.stdout.write(assertReleaseVersionTableCoversDeclaredPackages().message);
   } catch (err) {
     process.stderr.write(`${err.message}\n`);
     process.exit(1);
