@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.20.0](https://github.com/nandohdc/bloodtrail/compare/v0.19.0...v0.20.0) (2026-09-12)
+
+
+### Added
+
+* **ci:** record runner shape diagnostics in sdk workflow ([#306](https://github.com/nandohdc/bloodtrail/issues/306)) ([7783553](https://github.com/nandohdc/bloodtrail/commit/778355371fef7b681dfd7009f470ee458efefdcb))
+
+
+### Documentation
+
+* **openspec:** archive record-runner-shape-diagnostics ([#306](https://github.com/nandohdc/bloodtrail/issues/306)) ([c2d1cad](https://github.com/nandohdc/bloodtrail/commit/c2d1cad8f0dc262f84eac015e5c826a850edcb22))
+* **openspec:** propose record-runner-shape-diagnostics ([#306](https://github.com/nandohdc/bloodtrail/issues/306)) ([1bc62f8](https://github.com/nandohdc/bloodtrail/commit/1bc62f855253a5b839767ad02fa4ca03f787e578))
+
 ## [0.19.0](https://github.com/nandohdc/bloodtrail/compare/v0.18.0...v0.19.0) (2026-09-12)
 
 
