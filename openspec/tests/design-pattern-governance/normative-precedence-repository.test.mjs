@@ -109,15 +109,18 @@ function fullActivationRecord() {
 }
 
 test("REPO-001 permitted delegated encoding detail passes", () => withRepository(({ root, policy }) => {
+  const source = JSON.parse(readFileSync(resolve(root, policy.contract.source_path), "utf8"));
+  source.$schema = "https://bloodtrail.dev/contracts/security-audit/source/contract-source.schema.json";
+  write(root, policy.contract.source_path, `${JSON.stringify(source, null, 2)}\n`);
   const result = inspectRepository(root, policy, { stage: "candidate" });
   assert.deepEqual(result.diagnostics, []);
 }));
 
 test("REPO-002 prohibited source-only semantic addition fails", () => withRepository(({ root, policy, source }) => {
-  source.unauthorized_security_behavior = { mode: "allow" };
+  source.fields[0].unauthorized_security_behavior = "allow";
   write(root, policy.contract.source_path, `${JSON.stringify(source, null, 2)}\n`);
   const result = inspectRepository(root, policy, { stage: "candidate" });
-  assert.ok(result.diagnostics.some((entry) => entry.code === "source-section-ownership-missing"));
+  assert.ok(result.diagnostics.some((entry) => entry.code === "source-property-ownership-missing"));
 }));
 
 test("REPO-003 authorized active candidate delta is discovered separately", () => withRepository(({ root, policy }) => {

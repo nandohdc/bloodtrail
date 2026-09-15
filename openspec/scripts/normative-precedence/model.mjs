@@ -469,8 +469,20 @@ export function validateActivation(record, context) {
   if (record.authorizing_decision_object === context.activationRecordObject) {
     diagnostics.push(diagnostic("activation-self-authorized", "activation.authorizing_decision_object", "activation evidence cannot authorize itself"));
   }
+  if (context.authorizingDecisionObject && record.authorizing_decision_object !== context.authorizingDecisionObject) {
+    diagnostics.push(diagnostic("activation-decision-binding-mismatch", "activation.authorizing_decision_object", "record does not bind the independently reviewed decision object"));
+  }
   if (record.activated_commit !== context.mergeCommit || record.parent_commit !== context.mergeCommit || context.parentCount !== 1) {
     diagnostics.push(diagnostic("activation-parentage-invalid", "activation.parent_commit", "activation must be a dedicated direct child of the exact merge"));
+  }
+  if (context.mergeTree && record.activated_tree !== context.mergeTree) {
+    diagnostics.push(diagnostic("activation-tree-binding-mismatch", "activation.activated_tree", "record does not bind the activated merge tree"));
+  }
+  if (context.reviewedObjects && JSON.stringify(record.governed_path_objects) !== JSON.stringify(context.reviewedObjects)) {
+    diagnostics.push(diagnostic("activation-governed-objects-mismatch", "activation.governed_path_objects", "activation must bind the complete reviewed object set"));
+  }
+  if (context.allowedRecordPaths && context.changedPaths?.some((path) => !context.allowedRecordPaths.includes(path))) {
+    diagnostics.push(diagnostic("activation-record-scope-invalid", "activation.commit", "dedicated activation commit changed a non-record path"));
   }
   for (const field of ["activated_commit", "activated_tree", "parent_commit", "authorizing_decision_object"]) {
     if (typeof record[field] !== "string" || !/^[0-9a-f]{40}$/.test(record[field])) {
