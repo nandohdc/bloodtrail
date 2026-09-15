@@ -1,0 +1,150 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Candidate A contains conflicting current semantic statements, yet the repository has no machine-resolvable rule separating capability-owned semantic intent from source-owned concrete representation.",
+    "Active candidate deltas must authorize bounded candidate work without becoming activated production semantics, while archived deltas must remain historical evidence only.",
+    "Change-record progress and contract-version activation are orthogonal lifecycles; conflating them makes archive, merge, activation, and release imply authority they do not possess.",
+    "Review, freeze, provenance, and activation evidence must bind exact content and must become stale mechanically when any governed content changes.",
+    "An activation record cannot authorize itself, and a candidate governance checker cannot make itself trusted merely by reporting success.",
+    "Repository enforcement must discover applicable capabilities and real source conflicts rather than only validate a self-consistent abstract table.",
+    "The correction must remain governance-only so later semantic remediation cannot hide inside the authority decision that controls it."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior",
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-event-contract",
+      "change-governance",
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/define-normative-precedence-lifecycle/",
+    "openspec/governance/normative-source-precedence.json",
+    "openspec/governance/schemas/normative-source-precedence.schema.json",
+    "openspec/scripts/check-normative-precedence.mjs",
+    "openspec/scripts/normative-precedence/",
+    "openspec/tests/design-pattern-governance/normative-precedence-policy.test.mjs",
+    "openspec/tests/design-pattern-governance/normative-precedence-repository.test.mjs",
+    "openspec/tests/design-pattern-governance/fixtures/normative-precedence/",
+    "openspec/CONTEXT.md",
+    ".github/workflows/ci.yml"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-domain-specific-authority-and-two-lifecycles",
+      "kind": "direct_implementation",
+      "summary": "Define a domain-specific partial order, default-deny semantic delegation, distinct change-record and contract-candidate lifecycles, exact content bindings, and a repository-aware checker introduced under the existing trusted governance baseline.",
+      "forces_addressed": [
+        "Candidate A contains conflicting current semantic statements, yet the repository has no machine-resolvable rule separating capability-owned semantic intent from source-owned concrete representation.",
+        "Active candidate deltas must authorize bounded candidate work without becoming activated production semantics, while archived deltas must remain historical evidence only.",
+        "Change-record progress and contract-version activation are orthogonal lifecycles; conflating them makes archive, merge, activation, and release imply authority they do not possess.",
+        "Review, freeze, provenance, and activation evidence must bind exact content and must become stale mechanically when any governed content changes.",
+        "An activation record cannot authorize itself, and a candidate governance checker cannot make itself trusted merely by reporting success.",
+        "Repository enforcement must discover applicable capabilities and real source conflicts rather than only validate a self-consistent abstract table."
+      ]
+    },
+    {
+      "id": "approach-flat-global-precedence",
+      "kind": "alternative",
+      "summary": "Assign every repository artifact class one global rank and let the highest-ranked artifact win every semantic, governance, compatibility, activation, and provenance dispute.",
+      "forces_addressed": [
+        "Candidate A contains conflicting current semantic statements, yet the repository has no machine-resolvable rule separating capability-owned semantic intent from source-owned concrete representation."
+      ]
+    },
+    {
+      "id": "approach-source-always-wins",
+      "kind": "alternative",
+      "summary": "Declare contract.source.json the universal authority and treat capabilities, compatibility rules, governance decisions, and lifecycle records as advisory documentation.",
+      "forces_addressed": [
+        "Repository enforcement must discover applicable capabilities and real source conflicts rather than only validate a self-consistent abstract table."
+      ]
+    },
+    {
+      "id": "approach-candidate-checker-self-bootstrap",
+      "kind": "alternative",
+      "summary": "Let the newly proposed repository checker validate its own policy, trust transition, and activation without an independently trusted baseline or exact owner decision.",
+      "forces_addressed": [
+        "An activation record cannot authorize itself, and a candidate governance checker cannot make itself trusted merely by reporting success."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-domain-specific-authority-and-two-lifecycles",
+  "rejected_alternative_ids": [
+    "approach-flat-global-precedence",
+    "approach-source-always-wins",
+    "approach-candidate-checker-self-bootstrap"
+  ],
+  "rejection_reasons": {
+    "approach-flat-global-precedence": {
+      "forces": [
+        "Candidate A contains conflicting current semantic statements, yet the repository has no machine-resolvable rule separating capability-owned semantic intent from source-owned concrete representation.",
+        "Change-record progress and contract-version activation are orthogonal lifecycles; conflating them makes archive, merge, activation, and release imply authority they do not possess."
+      ],
+      "reason": "Semantic intent, change validity, compatibility classification, content identity, and activation authority answer different questions. A global rank lets an artifact authoritative in one domain override an unrelated domain and therefore recreates hidden policy rather than resolving it."
+    },
+    "approach-source-always-wins": {
+      "forces": [
+        "Candidate A contains conflicting current semantic statements, yet the repository has no machine-resolvable rule separating capability-owned semantic intent from source-owned concrete representation.",
+        "The correction must remain governance-only so later semantic remediation cannot hide inside the authority decision that controls it."
+      ],
+      "reason": "The source is the sole generation input and complete concrete representation, but allowing it to invent undelegated behavior would bypass current capability intent, compatibility classification, review, and activation governance."
+    },
+    "approach-candidate-checker-self-bootstrap": {
+      "forces": [
+        "An activation record cannot authorize itself, and a candidate governance checker cannot make itself trusted merely by reporting success.",
+        "Review, freeze, provenance, and activation evidence must bind exact content and must become stale mechanically when any governed content changes."
+      ],
+      "reason": "A candidate checker asserting its own validity is circular. The current trusted baseline must constrain the change perimeter and evidence ordering, while independent adversarial tests and an exact owner decision bind the candidate checker before it can become trusted."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-semantic-delegation-default-deny",
+    "implementation-active-and-archived-deltas-distinct",
+    "implementation-lifecycles-orthogonal",
+    "implementation-exact-bindings-invalidate-on-change",
+    "implementation-activation-authority-not-evidence",
+    "implementation-repository-conflicts-fail-closed",
+    "implementation-checker-trust-not-self-authorized"
+  ],
+  "invariant_evidence": {
+    "implementation-semantic-delegation-default-deny": {
+      "task_ids": ["2.1", "3.2", "4.2"],
+      "evidence_ids": ["a permitted delegated encoding detail passes while an unclassified source-only semantic addition is rejected"]
+    },
+    "implementation-active-and-archived-deltas-distinct": {
+      "task_ids": ["2.2", "3.2", "4.2"],
+      "evidence_ids": ["an in-scope active candidate delta participates in candidate validation while an archived delta cannot override current semantics"]
+    },
+    "implementation-lifecycles-orthogonal": {
+      "task_ids": ["2.3", "3.3", "4.2"],
+      "evidence_ids": ["legal transitions in each state machine pass independently and a cross-lifecycle or illegal transition is rejected"]
+    },
+    "implementation-exact-bindings-invalidate-on-change": {
+      "task_ids": ["2.3", "3.2", "4.2"],
+      "evidence_ids": ["partial reviewed-path bindings and post-review governed blob mutations are rejected"]
+    },
+    "implementation-activation-authority-not-evidence": {
+      "task_ids": ["2.3", "3.2", "4.2"],
+      "evidence_ids": ["an activation record without an independently authorized exact owner decision is rejected"]
+    },
+    "implementation-repository-conflicts-fail-closed": {
+      "task_ids": ["3.2", "3.5", "4.2"],
+      "evidence_ids": ["the repository checker discovers applicable current capabilities and rejects an unclassified or contradictory source assertion at the correct lifecycle stage"]
+    },
+    "implementation-checker-trust-not-self-authorized": {
+      "task_ids": ["3.4", "4.3", "4.4"],
+      "evidence_ids": ["the trusted-baseline result, candidate-checker result, and all eight adversarial controls are reported independently"]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "b8122751342b0a2591a69a728ea58a99ca37dd0f"
+  },
+  "security_sensitive": true
+}
