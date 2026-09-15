@@ -3,7 +3,7 @@
 - [x] 1.1 Materialize proposal, design, and three capability deltas and verify `openspec status --change define-normative-precedence-lifecycle` reports every planning artifact done.
 - [x] 1.2 Create a full security-sensitive design-governance assessment covering governance-core paths and verify the generated assessment is byte-stable.
 - [x] 1.3 Run strict OpenSpec validation and record a zero exit before committing the proposal/assessment baseline.
-- [ ] 1.4 Record bounded project-owner apply authorization for groups 2 through 5 against the exact proposal commit/tree; keep review, merge, activation, fold, archive, production, and publication withheld.
+- [x] 1.4 Record bounded project-owner apply authorization for groups 2 through 5 against the exact proposal commit/tree; keep review, merge, activation, fold, archive, production, and publication withheld.
 
 ## 2. Authority and lifecycle policy
 
