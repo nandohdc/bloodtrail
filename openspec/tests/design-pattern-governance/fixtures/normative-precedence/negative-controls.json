@@ -1,0 +1,10 @@
+[
+  {"id":"NC-001","description":"generated artifact overrides source","kind":"policy_case","rule_id":"CR-005","mutation":{"field":"result","value":"PASS"}},
+  {"id":"NC-002","description":"archived delta promoted to current authority","kind":"policy_case","rule_id":"CR-004","mutation":{"field":"result","value":"PASS"}},
+  {"id":"NC-003","description":"implementation overrides normative source","kind":"policy_case","rule_id":"CR-008","mutation":{"field":"result","value":"PASS"}},
+  {"id":"NC-004","description":"current/current conflict stops blocking release","kind":"policy_case","rule_id":"CR-013","mutation":{"field":"release","value":"ALLOW"}},
+  {"id":"NC-005","description":"unclassified source-only semantic addition becomes representation","kind":"policy","mutation":{"path":"default_unclassified_dimension","value":"REPRESENTATION_DETAIL"},"expected_code":"semantic-default-not-deny"},
+  {"id":"NC-006","description":"post-review normative mutation is permitted","kind":"policy","mutation":{"path":"review_binding.partial_bindings_forbidden","value":false},"expected_code":"review-binding-not-exact"},
+  {"id":"NC-007","description":"activation record may self-authorize","kind":"policy","mutation":{"path":"activation.record_cannot_self_authorize","value":false},"expected_code":"activation-model-unsafe"},
+  {"id":"NC-008","description":"unclassified material compatibility transition is allowed","kind":"policy_case","rule_id":"CR-010","mutation":{"field":"result","value":"PASS"}}
+]

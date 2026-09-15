@@ -205,6 +205,12 @@ jobs:
       - name: Governance checker
         run: node openspec/scripts/check-design-pattern-governance.mjs --phase final
 
+      # This remains candidate evidence until an exact project-owner decision and
+      # dedicated activation make it part of the trusted governance baseline.
+      # The existing checker and dual check above/below remain independent.
+      - name: Normative precedence candidate checker
+        run: node openspec/scripts/check-normative-precedence.mjs --stage candidate --base "${{ github.event.pull_request.base.sha || github.event.before }}"
+
       # Baseline plus candidate. A candidate checker is never the sole judge of
       # whether it weakened itself, so the merge-base version is run against the
       # candidate's data as well.
