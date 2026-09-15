@@ -69,27 +69,52 @@
   ],
   "delegation_values": ["NONE", "CONCRETE_PARAMETER", "REPRESENTATION_DETAIL"],
   "default_unclassified_dimension": "SEMANTIC_REQUIREMENT",
+  "governance_authorities": {
+    "apply_authority_identity": "Fernando Homem da Costa (nandohdc)",
+    "review_authority_identity": "Fernando Homem da Costa (nandohdc)",
+    "review_authority_role": "PROJECT_OWNER",
+    "activation_grant": "activate-normative-precedence-policy",
+    "merge_grant": "merge-define-normative-precedence-lifecycle"
+  },
+  "repository_evidence": {
+    "active_changes_root": "openspec/changes",
+    "archive_root": "openspec/changes/archive",
+    "apply_authorization_file": "revision-2-apply-authorization.md",
+    "lifecycle_evidence_file": "lifecycle-evidence.json",
+    "review_record_path": "openspec/governance/records/define-normative-precedence-lifecycle.json",
+    "activation_record_path": "openspec/governance/normative-precedence-activation.json",
+    "protected_reference": "refs/heads/main",
+    "governance_record_only_paths": [
+      "openspec/governance/records/define-normative-precedence-lifecycle.json",
+      "openspec/governance/normative-precedence-activation.json"
+    ]
+  },
   "capabilities": [
-    {"id":"security-audit-event-contract","path":"openspec/specs/security-audit-event-contract/spec.md","domains":["contract_identity","field_model","catalog","registries","privacy","extensions","compatibility","integrity","interoperability","validation"],"versions":["*"],"path_prefixes":["contracts/security-audit/"]},
+    {"id":"security-audit-event-contract","path":"openspec/specs/security-audit-event-contract/spec.md","domains":["contract_identity","field_model","authority_trust","catalog","registries","privacy","derivation","extensions","compatibility","delivery","integrity","interoperability","validation"],"versions":["*"],"path_prefixes":["contracts/security-audit/"]},
     {"id":"client-evidence","path":"openspec/specs/client-evidence/spec.md","domains":["client_evidence"],"versions":["*"],"path_prefixes":["research/browser-telemetry/","contracts/security-audit/"]},
     {"id":"derived-field-trust-semantics","path":"openspec/specs/derived-field-trust-semantics/spec.md","domains":["authority_trust","derivation"],"versions":["*"],"path_prefixes":["contracts/security-audit/"]},
     {"id":"delivery-conformance-contract","path":"openspec/specs/delivery-conformance-contract/spec.md","domains":["delivery"],"versions":["*"],"path_prefixes":["contracts/security-audit/"]}
   ],
   "requirement_ownership": [
-    {"domain":"representation_metadata","capability_ids":["security-audit-event-contract"],"source_sections":["$schema"],"delegation":"REPRESENTATION_DETAIL"},
-    {"domain":"contract_identity","capability_ids":["security-audit-event-contract"],"source_sections":["metadata","authoritative_source","adrs"],"delegation":"CONCRETE_PARAMETER"},
-    {"domain":"field_model","capability_ids":["security-audit-event-contract"],"source_sections":["fields","bounds"],"delegation":"CONCRETE_PARAMETER"},
-    {"domain":"authority_trust","capability_ids":["security-audit-event-contract","derived-field-trust-semantics"],"source_sections":["authority_matrix"],"delegation":"NONE"},
-    {"domain":"catalog","capability_ids":["security-audit-event-contract"],"source_sections":["catalog"],"delegation":"CONCRETE_PARAMETER"},
-    {"domain":"registries","capability_ids":["security-audit-event-contract"],"source_sections":["registries"],"delegation":"CONCRETE_PARAMETER"},
-    {"domain":"privacy","capability_ids":["security-audit-event-contract"],"source_sections":["privacy_transformations","prohibited_data"],"delegation":"NONE"},
-    {"domain":"derivation","capability_ids":["security-audit-event-contract","derived-field-trust-semantics"],"source_sections":["derived_field_provenance"],"delegation":"NONE"},
-    {"domain":"extensions","capability_ids":["security-audit-event-contract"],"source_sections":["extension_namespaces"],"delegation":"CONCRETE_PARAMETER"},
-    {"domain":"compatibility","capability_ids":["security-audit-event-contract"],"source_sections":["compatibility_policy"],"delegation":"NONE"},
-    {"domain":"delivery","capability_ids":["security-audit-event-contract","delivery-conformance-contract"],"source_sections":["delivery_class_contracts"],"delegation":"NONE"},
-    {"domain":"integrity","capability_ids":["security-audit-event-contract"],"source_sections":["integrity_claims"],"delegation":"NONE"},
-    {"domain":"interoperability","capability_ids":["security-audit-event-contract"],"source_sections":["standards","standards_matrix","mapping_policy"],"delegation":"NONE"},
-    {"domain":"validation","capability_ids":["security-audit-event-contract"],"source_sections":["validation_layers"],"delegation":"NONE"}
+    {"domain":"representation_metadata","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Contract artifacts are machine-readable and reviewable"}],"source_sections":["$schema"],"delegation":"REPRESENTATION_DETAIL","overlap":"SINGLE_OWNER"},
+    {"domain":"contract_identity","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Schema governance is explicit and compatibility-tested"}],"source_sections":["metadata","authoritative_source","adrs"],"delegation":"CONCRETE_PARAMETER","overlap":"SINGLE_OWNER"},
+    {"domain":"field_model","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Canonical event envelope is complete and typed"}],"source_sections":["fields","bounds"],"delegation":"CONCRETE_PARAMETER","overlap":"SINGLE_OWNER"},
+    {"domain":"authority_trust","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Every field category declares authority and trust"},{"capability_id":"derived-field-trust-semantics","requirement_heading":"Trust levels form a total order with unknown as the floor"}],"source_sections":["authority_matrix"],"delegation":"NONE","overlap":"COMPATIBLE_JOINT_OWNERSHIP"},
+    {"domain":"catalog","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Initial event catalog covers the minimum security lifecycle"}],"source_sections":["catalog"],"delegation":"CONCRETE_PARAMETER","overlap":"SINGLE_OWNER"},
+    {"domain":"registries","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Event identity and vocabulary are controlled"}],"source_sections":["registries"],"delegation":"CONCRETE_PARAMETER","overlap":"SINGLE_OWNER"},
+    {"domain":"privacy","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Sensitive-data policy is enforceable"}],"source_sections":["privacy_transformations","prohibited_data"],"delegation":"NONE","overlap":"SINGLE_OWNER"},
+    {"domain":"derivation","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Derived-field material inputs have a mandatory, floor-enforced provenance representation"},{"capability_id":"derived-field-trust-semantics","requirement_heading":"Material derivation inputs are defined by counterfactual and are listed exhaustively"}],"source_sections":["derived_field_provenance"],"delegation":"NONE","overlap":"COMPATIBLE_JOINT_OWNERSHIP"},
+    {"domain":"extensions","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Extension fields are governed and non-escalating"}],"source_sections":["extension_namespaces"],"delegation":"CONCRETE_PARAMETER","overlap":"SINGLE_OWNER"},
+    {"domain":"compatibility","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Schema governance is explicit and compatibility-tested"}],"source_sections":["compatibility_policy"],"delegation":"NONE","overlap":"SINGLE_OWNER"},
+    {"domain":"delivery","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Delivery expectations are classified per event"},{"capability_id":"delivery-conformance-contract","requirement_heading":"Delivery conformance derives exclusively from the frozen delivery class contract"}],"source_sections":["delivery_class_contracts"],"delegation":"NONE","overlap":"COMPATIBLE_JOINT_OWNERSHIP"},
+    {"domain":"integrity","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Integrity claims remain bounded"}],"source_sections":["integrity_claims"],"delegation":"NONE","overlap":"SINGLE_OWNER"},
+    {"domain":"interoperability","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Interoperability mappings preserve canonical semantics"}],"source_sections":["standards","standards_matrix","mapping_policy"],"delegation":"NONE","overlap":"SINGLE_OWNER"},
+    {"domain":"validation","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Validation is layered and misuse-resistant"}],"source_sections":["validation_layers"],"delegation":"NONE","overlap":"SINGLE_OWNER"}
+  ],
+  "capability_overlaps": [
+    {"id":"overlap-authority-trust","domain":"authority_trust","capability_objects":{"security-audit-event-contract":"d33b916244279c348b9cda83f55b3b5d160590cf","derived-field-trust-semantics":"3134f3f2d615fe7f3922f10c0208f75a50da66d3"},"classification":"COMPATIBLE_OVERLAP","rule":"all requirements apply; neither capability overrides the other; a contradiction requires governed reconciliation"},
+    {"id":"overlap-derivation","domain":"derivation","capability_objects":{"security-audit-event-contract":"d33b916244279c348b9cda83f55b3b5d160590cf","derived-field-trust-semantics":"3134f3f2d615fe7f3922f10c0208f75a50da66d3"},"classification":"COMPATIBLE_OVERLAP","rule":"the event capability owns contract representation while the derived-field capability constrains semantics; both must be satisfied"},
+    {"id":"overlap-delivery","domain":"delivery","capability_objects":{"security-audit-event-contract":"d33b916244279c348b9cda83f55b3b5d160590cf","delivery-conformance-contract":"75d03ffa3e3825483271f92ce04293ecb9ba33f7"},"classification":"COMPATIBLE_OVERLAP","rule":"catalog delivery class assignment and delivery conformance semantics are cumulative, with no override"}
   ],
   "semantic_delegation": [
     {"dimension":"requiredness","classification":"SEMANTIC_REQUIREMENT","source_patterns":["/fields/*/r","/fields/*/required_with","/catalog/*/required_context"],"capability_ids":["security-audit-event-contract"],"delegation":"NONE"},
@@ -164,7 +189,9 @@
         ".github/workflows/ci.yml",
         "openspec/CONTEXT.md",
         "openspec/changes/define-normative-precedence-lifecycle/",
+        "openspec/governance/design-pattern-policy.json",
         "openspec/governance/normative-source-precedence.json",
+        "openspec/governance/records/define-normative-precedence-lifecycle.json",
         "openspec/governance/schemas/normative-source-precedence.schema.json",
         "openspec/scripts/check-normative-precedence.mjs",
         "openspec/scripts/normative-precedence/",
@@ -179,35 +206,52 @@
   "change_record_lifecycle": {
     "states": ["PROPOSED","VALIDATED","APPLY_AUTHORIZED","IMPLEMENTED","VERIFIED","FOLDED","ARCHIVED","REJECTED","WITHDRAWN","SUPERSEDED"],
     "transitions": [
-      ["PROPOSED","VALIDATED"],["PROPOSED","REJECTED"],["PROPOSED","WITHDRAWN"],
-      ["VALIDATED","APPLY_AUTHORIZED"],["VALIDATED","REJECTED"],["VALIDATED","WITHDRAWN"],
-      ["APPLY_AUTHORIZED","IMPLEMENTED"],["APPLY_AUTHORIZED","WITHDRAWN"],
-      ["IMPLEMENTED","VERIFIED"],["IMPLEMENTED","WITHDRAWN"],
-      ["VERIFIED","FOLDED"],["VERIFIED","SUPERSEDED"],
-      ["FOLDED","ARCHIVED"],["SUPERSEDED","ARCHIVED"],["REJECTED","ARCHIVED"],["WITHDRAWN","ARCHIVED"]
+      {"from":"PROPOSED","to":"VALIDATED","entering_authority":"TRUSTED_OPENSPEC_VALIDATOR","required_evidence":["strict OpenSpec validation"],"permitted_operations":["request apply authorization"],"semantic_claim":"proposal is structurally valid, not authorized","invalidation":"proposal change requires revalidation"},
+      {"from":"PROPOSED","to":"REJECTED","entering_authority":"PROJECT_OWNER","required_evidence":["scoped rejection"],"permitted_operations":["archive as rejected"],"semantic_claim":"proposal is not authorized","invalidation":"new proposal identity required"},
+      {"from":"PROPOSED","to":"WITHDRAWN","entering_authority":"CHANGE_OWNER","required_evidence":["withdrawal record"],"permitted_operations":["archive as withdrawn"],"semantic_claim":"proposal is no longer active","invalidation":"new proposal identity required"},
+      {"from":"VALIDATED","to":"APPLY_AUTHORIZED","entering_authority":"PROJECT_OWNER","required_evidence":["exact proposal commit/tree/subtree","bounded path and capability scope","granted and withheld authority"],"permitted_operations":["implement authorized task groups"],"semantic_claim":"candidate work is authorized only within scope","invalidation":"proposal or authorized-scope change requires new authorization"},
+      {"from":"VALIDATED","to":"REJECTED","entering_authority":"PROJECT_OWNER","required_evidence":["scoped rejection"],"permitted_operations":["archive as rejected"],"semantic_claim":"validated proposal is rejected","invalidation":"new proposal identity required"},
+      {"from":"VALIDATED","to":"WITHDRAWN","entering_authority":"CHANGE_OWNER","required_evidence":["withdrawal record"],"permitted_operations":["archive as withdrawn"],"semantic_claim":"validated proposal is withdrawn","invalidation":"new proposal identity required"},
+      {"from":"APPLY_AUTHORIZED","to":"IMPLEMENTED","entering_authority":"AUTHORIZED_IMPLEMENTER","required_evidence":["changed paths within exact apply scope"],"permitted_operations":["run candidate verification"],"semantic_claim":"implementation exists but is not approved or operative","invalidation":"out-of-scope change returns to authorization"},
+      {"from":"APPLY_AUTHORIZED","to":"WITHDRAWN","entering_authority":"PROJECT_OWNER_OR_CHANGE_OWNER_WITHIN_POLICY","required_evidence":["withdrawal record"],"permitted_operations":["discard candidate"],"semantic_claim":"authorization is no longer exercised","invalidation":"new authorization required to resume"},
+      {"from":"IMPLEMENTED","to":"VERIFIED","entering_authority":"TRUSTED_AND_CANDIDATE_CHECKERS","required_evidence":["required technical verification","failure-sensitive controls"],"permitted_operations":["freeze candidate"],"semantic_claim":"implementation has technical evidence, not owner approval","invalidation":"governed content change requires re-verification"},
+      {"from":"IMPLEMENTED","to":"WITHDRAWN","entering_authority":"PROJECT_OWNER_OR_CHANGE_OWNER_WITHIN_POLICY","required_evidence":["withdrawal record"],"permitted_operations":["discard implementation"],"semantic_claim":"implementation is not progressing","invalidation":"new authorization required to resume"},
+      {"from":"VERIFIED","to":"FOLDED","entering_authority":"AUTHORIZED_FOLD","required_evidence":["exact verified delta","current capability byte comparison","identity-preserving governed fold"],"permitted_operations":["request folded-content review"],"semantic_claim":"delta is materialized in current capability but not activated","invalidation":"folded capability change requires re-fold and re-review"},
+      {"from":"VERIFIED","to":"SUPERSEDED","entering_authority":"PROJECT_OWNER","required_evidence":["superseding change identity"],"permitted_operations":["archive as superseded"],"semantic_claim":"another change replaces this candidate intent","invalidation":"superseding identity controls"},
+      {"from":"FOLDED","to":"ARCHIVED","entering_authority":"AUTHORIZED_ARCHIVE","required_evidence":["activated contract identity","byte-identical archive movement","archive attestation"],"permitted_operations":["retain historical evidence"],"semantic_claim":"record is historical; activated contract remains operative","invalidation":"archive mutation fails immutable-history checks"},
+      {"from":"SUPERSEDED","to":"ARCHIVED","entering_authority":"AUTHORIZED_ARCHIVE","required_evidence":["supersession evidence","archive attestation"],"permitted_operations":["retain historical evidence"],"semantic_claim":"superseded change is historical","invalidation":"archive mutation fails immutable-history checks"},
+      {"from":"REJECTED","to":"ARCHIVED","entering_authority":"AUTHORIZED_ARCHIVE","required_evidence":["rejection evidence","archive attestation"],"permitted_operations":["retain historical evidence"],"semantic_claim":"rejected change is historical","invalidation":"archive mutation fails immutable-history checks"},
+      {"from":"WITHDRAWN","to":"ARCHIVED","entering_authority":"AUTHORIZED_ARCHIVE","required_evidence":["withdrawal evidence","archive attestation"],"permitted_operations":["retain historical evidence"],"semantic_claim":"withdrawn change is historical","invalidation":"archive mutation fails immutable-history checks"}
     ]
   },
   "contract_candidate_lifecycle": {
     "states": ["AUTHORED_CANDIDATE","GENERATED_CANDIDATE","TECHNICALLY_VERIFIED_FROZEN","REVIEWED_DECIDED","MERGE_READY","MERGED","ACTIVATED","RELEASED","SUPERSEDED","ABANDONED"],
     "transitions": [
-      ["AUTHORED_CANDIDATE","GENERATED_CANDIDATE"],["AUTHORED_CANDIDATE","ABANDONED"],
-      ["GENERATED_CANDIDATE","TECHNICALLY_VERIFIED_FROZEN"],["GENERATED_CANDIDATE","ABANDONED"],
-      ["TECHNICALLY_VERIFIED_FROZEN","REVIEWED_DECIDED"],["TECHNICALLY_VERIFIED_FROZEN","ABANDONED"],
-      ["REVIEWED_DECIDED","MERGE_READY"],["REVIEWED_DECIDED","ABANDONED"],
-      ["MERGE_READY","MERGED"],["MERGE_READY","ABANDONED"],
-      ["MERGED","ACTIVATED"],["MERGED","ABANDONED"],
-      ["ACTIVATED","RELEASED"],["ACTIVATED","SUPERSEDED"],
-      ["RELEASED","SUPERSEDED"]
+      {"from":"AUTHORED_CANDIDATE","to":"GENERATED_CANDIDATE","entering_authority":"AUTHORIZED_IMPLEMENTER","required_evidence":["aligned semantic owners","authoritative source candidate","complete regeneration"],"permitted_operations":["technical validation"],"semantic_claim":"candidate representation and derived tree exist","invalidation":"source or generator change requires regeneration"},
+      {"from":"AUTHORED_CANDIDATE","to":"ABANDONED","entering_authority":"PROJECT_OWNER_OR_CHANGE_OWNER_WITHIN_POLICY","required_evidence":["abandonment record"],"permitted_operations":["discard candidate"],"semantic_claim":"candidate is not operative","invalidation":"new candidate identity required"},
+      {"from":"GENERATED_CANDIDATE","to":"TECHNICALLY_VERIFIED_FROZEN","entering_authority":"TRUSTED_AND_CANDIDATE_CHECKERS","required_evidence":["exact commit","root tree","contract version","complete governed path objects","required test evidence"],"permitted_operations":["exact-content review"],"semantic_claim":"candidate bytes are frozen but not approved","invalidation":"any bound-object change creates a new candidate"},
+      {"from":"GENERATED_CANDIDATE","to":"ABANDONED","entering_authority":"PROJECT_OWNER_OR_CHANGE_OWNER_WITHIN_POLICY","required_evidence":["abandonment record"],"permitted_operations":["discard generated tree"],"semantic_claim":"candidate is not operative","invalidation":"new candidate identity required"},
+      {"from":"TECHNICALLY_VERIFIED_FROZEN","to":"REVIEWED_DECIDED","entering_authority":"PROJECT_OWNER_REVIEWER","required_evidence":["signed exact-content decision","complete governed bindings","granted and withheld scope"],"permitted_operations":["prepare merge or revise candidate"],"semantic_claim":"only recorded grants are approved","invalidation":"non-allowlisted post-review change invalidates review"},
+      {"from":"TECHNICALLY_VERIFIED_FROZEN","to":"ABANDONED","entering_authority":"PROJECT_OWNER_OR_CHANGE_OWNER_WITHIN_POLICY","required_evidence":["abandonment record"],"permitted_operations":["discard frozen candidate"],"semantic_claim":"frozen candidate is not operative","invalidation":"new candidate identity required"},
+      {"from":"REVIEWED_DECIDED","to":"MERGE_READY","entering_authority":"TRUSTED_MERGE_GATES","required_evidence":["exact review remains fresh","required CI at exact head","merge grant"],"permitted_operations":["identity-preserving merge"],"semantic_claim":"candidate may merge but is not activated","invalidation":"head or required-check change invalidates merge readiness"},
+      {"from":"REVIEWED_DECIDED","to":"ABANDONED","entering_authority":"PROJECT_OWNER","required_evidence":["withdrawn decision"],"permitted_operations":["discard candidate"],"semantic_claim":"reviewed candidate will not proceed","invalidation":"new review required to resume"},
+      {"from":"MERGE_READY","to":"MERGED","entering_authority":"AUTHORIZED_MERGER","required_evidence":["identity-preserving merge or fast-forward","protected-reference identity"],"permitted_operations":["fold and re-review if current capabilities change","prepare activation"],"semantic_claim":"content is on protected history but not activated","invalidation":"rewritten identity blocks activation"},
+      {"from":"MERGE_READY","to":"ABANDONED","entering_authority":"PROJECT_OWNER","required_evidence":["merge authorization withdrawn"],"permitted_operations":["close without merge"],"semantic_claim":"candidate is not operative","invalidation":"new exact review required"},
+      {"from":"MERGED","to":"ACTIVATED","entering_authority":"ACTIVATING_AUTHORITY","required_evidence":["all affected deltas folded","exact folded-content review","dedicated direct-child activation record","complete reviewed objects"],"permitted_operations":["claim operative semantics"],"semantic_claim":"named scope/version becomes operative at activation commit","invalidation":"activation mismatch fails closed; correction requires a new candidate"},
+      {"from":"MERGED","to":"ABANDONED","entering_authority":"PROJECT_OWNER","required_evidence":["explicit non-activation decision"],"permitted_operations":["leave merged content non-operative or revert through governance"],"semantic_claim":"merged content is not operative","invalidation":"new activation grant required"},
+      {"from":"ACTIVATED","to":"RELEASED","entering_authority":"RELEASE_AUTHORITY","required_evidence":["activated exact identity","release authorization","compatibility declarations"],"permitted_operations":["publish declared release"],"semantic_claim":"release may claim the activated scope/version","invalidation":"release correction requires governed successor"},
+      {"from":"ACTIVATED","to":"SUPERSEDED","entering_authority":"ACTIVATING_AUTHORITY","required_evidence":["activated successor identity"],"permitted_operations":["retain prior version per compatibility policy"],"semantic_claim":"successor is operative","invalidation":"history remains immutable"},
+      {"from":"RELEASED","to":"SUPERSEDED","entering_authority":"RELEASE_AND_ACTIVATION_AUTHORITIES","required_evidence":["released activated successor","transition classification"],"permitted_operations":["deprecate prior release"],"semantic_claim":"prior release is no longer current","invalidation":"history remains immutable"}
     ]
   },
   "lifecycle_relationships": [
     {"change_state":"IMPLEMENTED","candidate_state":"GENERATED_CANDIDATE","relation":"implementation may produce a candidate but does not activate it"},
     {"change_state":"VERIFIED","candidate_state":"TECHNICALLY_VERIFIED_FROZEN","relation":"verification freezes exact candidate content"},
-    {"change_state":"FOLDED","candidate_state":"ACTIVATED","relation":"fold records current canonical capability after activation; neither state implies the other"},
+    {"change_state":"FOLDED","candidate_state":"MERGED","relation":"every affected delta is folded and folded content is re-frozen and reviewed before activation"},
     {"change_state":"ARCHIVED","candidate_state":"ANY","relation":"archiving records change completion and does not supersede or activate a contract version"}
   ],
   "review_binding": {
-    "required_fields": ["technical_commit","tree","governed_path_objects","contract_version","decision_scope","reviewer_identity","reviewer_authority","authorization_granted","authorization_withheld","decision_timestamp"],
+    "required_fields": ["base_commit","technical_commit","tree","governed_path_objects","contract_version","decision_scope","reviewer_identity","reviewer_authority","authorization_granted","authorization_withheld","decision_timestamp"],
     "governed_path_partition": ["normative","generated","compatibility_relevant","governance_record_only"],
     "post_review_allowlist": ["governance_record_only"],
     "invalidation_rule": "any bound object change or missing governed path invalidates freeze and review; an allowed record-only child may not alter a bound object",
@@ -218,7 +262,7 @@
     "mechanism": "DEDICATED_POST_MERGE_DIRECT_CHILD_RECORD",
     "activating_authority": "signed project-owner reviewed decision granting activation for the exact frozen candidate",
     "activation_evidence": "dedicated activation record committed as the direct child of the identity-preserving merge",
-    "required_fields": ["authorizing_decision_object","activated_commit","activated_tree","governed_path_objects","contract_version","scope","effective_event","parent_commit","authorization_granted","authorization_withheld"],
+    "required_fields": ["authorizing_decision_object","activated_commit","activated_tree","reviewed_technical_commit","reviewed_tree","governed_path_objects","contract_version","scope","protected_reference","required_check_evidence","effective_event","parent_commit","authorization_granted","authorization_withheld"],
     "record_cannot_self_authorize": true,
     "branch_or_version_only_forbidden": true,
     "parentage": "activation record commit has exactly one parent equal to activated merge commit"

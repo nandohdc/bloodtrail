@@ -1,0 +1,44 @@
+{
+  "schema": "bloodtrail.normative-precedence.lifecycle-evidence",
+  "change_id": "define-normative-precedence-lifecycle",
+  "change_record": {
+    "current_state": "VERIFIED",
+    "transitions": [
+      {
+        "from": "PROPOSED",
+        "to": "VALIDATED",
+        "evidence_paths": [
+          "openspec/changes/define-normative-precedence-lifecycle/proposal.md",
+          "openspec/changes/define-normative-precedence-lifecycle/assessment.json"
+        ]
+      },
+      {
+        "from": "VALIDATED",
+        "to": "APPLY_AUTHORIZED",
+        "evidence_paths": [
+          "openspec/changes/define-normative-precedence-lifecycle/revision-2-apply-authorization.md"
+        ]
+      },
+      {
+        "from": "APPLY_AUTHORIZED",
+        "to": "IMPLEMENTED",
+        "evidence_paths": [
+          "openspec/governance/normative-source-precedence.json",
+          "openspec/scripts/check-normative-precedence.mjs"
+        ]
+      },
+      {
+        "from": "IMPLEMENTED",
+        "to": "VERIFIED",
+        "evidence_paths": [
+          "openspec/tests/design-pattern-governance/normative-precedence-policy.test.mjs",
+          "openspec/tests/design-pattern-governance/normative-precedence-repository.test.mjs"
+        ]
+      }
+    ]
+  },
+  "contract_candidate": {
+    "applicability": "NOT_APPLICABLE",
+    "reason": "This change alters governance policy, checker, tests, CI, glossary, and capability deltas only; it changes no authored contract source or derived contract output, so it produces no contract candidate."
+  }
+}

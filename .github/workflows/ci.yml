@@ -208,8 +208,15 @@ jobs:
       # This remains candidate evidence until an exact project-owner decision and
       # dedicated activation make it part of the trusted governance baseline.
       # The existing checker and dual check above/below remain independent.
+      # A pull request asks to merge, so it is checked at the merge stage; a push
+      # to main is already merged and is checked at the candidate stage.
       - name: Normative precedence candidate checker
-        run: node openspec/scripts/check-normative-precedence.mjs --stage candidate --base "${{ github.event.pull_request.base.sha || github.event.before }}"
+        run: |
+          stage=candidate
+          if test "${{ github.event_name }}" = "pull_request"; then
+            stage=merge
+          fi
+          node openspec/scripts/check-normative-precedence.mjs --stage "$stage" --base "${{ github.event.pull_request.base.sha || github.event.before }}"
 
       # Baseline plus candidate. A candidate checker is never the sole judge of
       # whether it weakened itself, so the merge-base version is run against the
