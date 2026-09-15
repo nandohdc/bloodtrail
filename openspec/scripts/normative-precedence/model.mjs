@@ -126,7 +126,17 @@ function typeMatches(value, type) {
   return typeof value === type;
 }
 
-export function validatePolicySchema(value, schema, path = "$") {
+function resolveSchemaReference(schema, root) {
+  if (typeof schema.$ref !== "string") return schema;
+  if (!schema.$ref.startsWith("#/")) throw new Error(`unsupported schema reference ${schema.$ref}`);
+  const resolved = schema.$ref.slice(2).split("/")
+    .reduce((node, token) => node?.[token.replaceAll("~1", "/").replaceAll("~0", "~")], root);
+  if (!resolved || typeof resolved !== "object") throw new Error(`unresolved schema reference ${schema.$ref}`);
+  return resolved;
+}
+
+export function validatePolicySchema(value, rawSchema, path = "$", root = rawSchema) {
+  const schema = resolveSchemaReference(rawSchema, root);
   const diagnostics = [];
   if (schema.const !== undefined && JSON.stringify(value) !== JSON.stringify(schema.const)) {
     diagnostics.push(diagnostic("policy-schema-const", path, "value differs from schema const"));
@@ -148,13 +158,13 @@ export function validatePolicySchema(value, schema, path = "$") {
       }
     }
     for (const [key, childSchema] of Object.entries(schema.properties ?? {})) {
-      if (key in value) diagnostics.push(...validatePolicySchema(value[key], childSchema, `${path}.${key}`));
+      if (key in value) diagnostics.push(...validatePolicySchema(value[key], childSchema, `${path}.${key}`, root));
     }
   }
   if (schema.type === "array") {
     if (schema.minItems !== undefined && value.length < schema.minItems) diagnostics.push(diagnostic("policy-schema-min-items", path, `minimum is ${schema.minItems}`));
     if (schema.uniqueItems && !unique(value.map((entry) => JSON.stringify(entry)))) diagnostics.push(diagnostic("policy-schema-unique", path, "items must be unique"));
-    if (schema.items) value.forEach((entry, index) => diagnostics.push(...validatePolicySchema(entry, schema.items, `${path}[${index}]`)));
+    if (schema.items) value.forEach((entry, index) => diagnostics.push(...validatePolicySchema(entry, schema.items, `${path}[${index}]`, root)));
   }
   if (schema.type === "string") {
     if (schema.minLength !== undefined && value.length < schema.minLength) diagnostics.push(diagnostic("policy-schema-min-length", path, `minimum length is ${schema.minLength}`));
@@ -233,8 +243,8 @@ export function validatePolicy(policy, schema = null) {
       if (overlaps.length !== 1) {
         diagnostics.push(diagnostic("capability-overlap-unclassified", `requirement_ownership.${ownership.domain}`, "joint ownership requires one exact overlap classification"));
       } else {
-        const expectedIds = requirements.map((entry) => entry.capability_id).sort();
-        const boundIds = Object.keys(overlaps[0].capability_objects ?? {}).sort();
+        const expectedIds = requirements.map((entry) => entry.capability_id).sort(byCodePoint);
+        const boundIds = Object.keys(overlaps[0].capability_objects ?? {}).sort(byCodePoint);
         if (JSON.stringify(expectedIds) !== JSON.stringify(boundIds)) {
           diagnostics.push(diagnostic("capability-overlap-binding-incomplete", `capability_overlaps.${overlaps[0].id}`, "overlap binding must cover every joint owner exactly"));
         }
@@ -371,7 +381,7 @@ function isAncestorCommit(repoRoot, ancestor, descendant) {
  * Returns null when the change carries no authorization or proposal; otherwise
  * every generic binding failure is listed in `diagnostics`.
  */
-export function readApplyAuthorization(changeDir, repoRoot, policy) {
+export function readApplyAuthorization(changeDir, repoRoot, policy, { changePath = relative(repoRoot, changeDir), verifyRecord = true } = {}) {
   const authorizationPath = resolve(changeDir, policy.repository_evidence.apply_authorization_file);
   if (!existsSync(authorizationPath) || !existsSync(resolve(changeDir, "proposal.md"))) return null;
   const text = readFileSync(authorizationPath, "utf8");
@@ -394,13 +404,35 @@ export function readApplyAuthorization(changeDir, repoRoot, policy) {
   const problems = authorization.diagnostics;
   if (!commit || !authorization.proposal_tree || !authorization.change_subtree) problems.push("apply authorization lacks exact proposal commit, tree, or subtree");
   if (commit && gitStdout(repoRoot, ["rev-parse", `${commit}^{tree}`]) !== authorization.proposal_tree) problems.push("authorized proposal tree does not match commit");
-  if (commit && gitStdout(repoRoot, ["rev-parse", `${commit}:${relative(repoRoot, changeDir)}`]) !== authorization.change_subtree) problems.push("authorized change subtree does not match proposal commit");
+  if (commit && gitStdout(repoRoot, ["rev-parse", `${commit}:${changePath}`]) !== authorization.change_subtree) problems.push("authorized change subtree does not match proposal commit");
   if (commit && !isAncestorCommit(repoRoot, commit, "HEAD")) problems.push("authorized proposal is not an ancestor of HEAD");
   if (commit && authorization.candidate_base && !isAncestorCommit(repoRoot, authorization.candidate_base, commit)) problems.push("authorized candidate base is not an ancestor of the proposal commit");
   if (authorization.authorizing_party !== `${policy.governance_authorities.apply_authority_identity}, project owner`) problems.push("apply authority identity is not the governed project owner");
   if (!authorization.granted?.toLowerCase().includes("implement") || !authorization.withheld?.toLowerCase().includes("activation")) problems.push("apply grant/withheld scope is incomplete");
   if (authorization.paths.length === 0) problems.push("apply authorization has no bounded path allowlist");
+  if (!authorization.candidate_base) problems.push("apply authorization lacks an exact candidate base");
+  // An archived authorization was relocated by the archive commit, so its
+  // recording provenance is judged only while the change is active.
+  if (verifyRecord) problems.push(...authorizationRecordProblems(repoRoot, relative(repoRoot, authorizationPath)));
   return authorization;
+}
+
+/**
+ * The authorization's scope is its content, so that content must be the bytes
+ * first recorded by a commit that changed nothing else, and never edited since.
+ */
+function authorizationRecordProblems(repoRoot, path) {
+  const introduced = introducingCommit(repoRoot, path);
+  if (introduced === null || gitObject(repoRoot, path) !== gitObjectAt(repoRoot, "HEAD", path)) {
+    return ["apply authorization is not committed"];
+  }
+  const problems = [];
+  if (gitObjectAt(repoRoot, `${introduced}^`, path) !== null) problems.push("apply authorization was modified after it was first recorded");
+  const parentLine = gitStdout(repoRoot, ["show", "-s", "--format=%P", introduced]);
+  const parents = parentLine ? parentLine.split(" ").filter(Boolean) : [];
+  const changed = parents.length === 1 ? gitPathsBetween(repoRoot, parents[0], introduced) : null;
+  if (!changed || changed.some((entry) => entry !== path)) problems.push("apply authorization was not recorded in a dedicated commit");
+  return problems;
 }
 
 function activeDeltaEvidence(changeDir, capabilityId, repoRoot, policy) {
@@ -533,7 +565,7 @@ export function changedJsonPointers(before, after, path = "") {
   }
   if (before && after && typeof before === "object" && typeof after === "object") {
     const changes = [];
-    for (const key of [...new Set([...Object.keys(before), ...Object.keys(after)])].sort()) {
+    for (const key of [...new Set([...Object.keys(before), ...Object.keys(after)])].sort(byCodePoint)) {
       changes.push(...changedJsonPointers(before[key], after[key], `${path}/${pointerToken(key)}`));
     }
     return changes;
@@ -564,16 +596,77 @@ function authorizedPathMatches(path, declared) {
 function governedChangeScope(repoRoot, policy) {
   const evidence = policy.repository_evidence;
   const changeRoot = `${evidence.active_changes_root}/${policy.change_id}`;
-  const changeDir = resolve(repoRoot, changeRoot);
-  const active = existsSync(changeDir);
-  const authorization = active ? readApplyAuthorization(changeDir, repoRoot, policy) : null;
-  const foldTargets = active ? discoverDeltaSpecs(changeDir, repoRoot).map((delta) => `openspec/specs/${delta.capability_id}/spec.md`) : [];
+  const archivedRoot = archivedChangeRoot(repoRoot, policy);
+  const active = existsSync(resolve(repoRoot, changeRoot));
+  const evidenceRoot = active ? changeRoot : archivedRoot;
+  const authorization = evidenceRoot
+    ? readApplyAuthorization(resolve(repoRoot, evidenceRoot), repoRoot, policy, { changePath: changeRoot, verifyRecord: active })
+    : null;
+  const foldTargets = evidenceRoot
+    ? discoverDeltaSpecs(resolve(repoRoot, evidenceRoot), repoRoot).map((delta) => `openspec/specs/${delta.capability_id}/spec.md`)
+    : [];
+  const recordPaths = [evidence.review_record_path, evidence.activation_record_path];
   return {
     active,
     changeRoot,
+    archivedRoot,
+    evidenceRoot,
     authorization,
-    patterns: [`${changeRoot}/**`, ...(authorization?.paths ?? []), ...foldTargets, evidence.review_record_path, evidence.activation_record_path]
+    recordPaths,
+    patterns: [`${changeRoot}/**`, ...(authorization?.paths ?? []), ...foldTargets, ...recordPaths]
   };
+}
+
+/** The single dated archive directory of the governed change, or null when there is none or more than one. */
+function archivedChangeRoot(repoRoot, policy) {
+  const archiveRoot = policy.repository_evidence.archive_root;
+  const matches = walkDirectories(resolve(repoRoot, archiveRoot))
+    .map((path) => basename(path))
+    .filter((name) => name === `${name.slice(0, 11)}${policy.change_id}` && /^\d{4}-\d{2}-\d{2}-$/.test(name.slice(0, 11)));
+  return matches.length === 1 ? `${archiveRoot}/${matches[0]}` : null;
+}
+
+/**
+ * A path only this change owns: its change or archive directory, its records,
+ * or an in-scope path that did not exist at the authorized candidate base.
+ * Shared files the change also edits (CI, glossary, fold targets) do not place
+ * an unrelated range inside the change's scope.
+ */
+function changeExclusivePath(repoRoot, path, scope) {
+  if (authorizedPathMatches(path, `${scope.changeRoot}/**`) || scope.recordPaths.includes(path)) return true;
+  if (scope.archivedRoot && authorizedPathMatches(path, `${scope.archivedRoot}/**`)) return true;
+  const base = scope.authorization?.candidate_base;
+  return Boolean(base) && inGovernedScope(path, scope) && gitObjectAt(repoRoot, base, path) === null;
+}
+
+/** Maps an active change path to its archived location while the change is being archived. */
+function relocatedPath(path, scope) {
+  if (scope.active || !scope.archivedRoot || !path.startsWith(`${scope.changeRoot}/`)) return path;
+  return `${scope.archivedRoot}${path.slice(scope.changeRoot.length)}`;
+}
+
+/** The activated merge must contain the reviewed commit and objects and be reachable from the protected reference. */
+function activatedContentDiagnostics(repoRoot, policy, path, mergeCommit, review) {
+  if (!mergeCommit || !review) return [];
+  const diagnostics = [];
+  const technical = review.binding.technical_commit;
+  if (typeof technical !== "string" || !isAncestorCommit(repoRoot, technical, mergeCommit)) {
+    diagnostics.push(diagnostic("activation-merge-lacks-reviewed-commit", path, "the activated merge does not contain the reviewed technical commit"));
+  }
+  for (const [boundPath, boundObject] of Object.entries(review.expectedObjects)) {
+    if (gitObjectAt(repoRoot, mergeCommit, boundPath) !== boundObject) {
+      diagnostics.push(diagnostic("activation-merge-content-mismatch", boundPath, "the activated merge does not carry the reviewed object"));
+    }
+  }
+  const protectedReference = policy.repository_evidence.protected_reference;
+  const remoteReference = protectedReference.replace(/^refs\/heads\//, "refs/remotes/origin/");
+  const reachable = [protectedReference, remoteReference].some((reference) =>
+    gitStdout(repoRoot, ["rev-parse", "--verify", "--quiet", reference]) !== null
+    && isAncestorCommit(repoRoot, mergeCommit, reference));
+  if (!reachable) {
+    diagnostics.push(diagnostic("activation-protected-reference-unreachable", path, `the activated merge is not reachable from ${protectedReference}`));
+  }
+  return diagnostics;
 }
 
 function inGovernedScope(path, scope) {
@@ -614,18 +707,26 @@ export function classifySourceChanges(policy, before, after, activeDeltas, sourc
       results.push({ pointer, classification: "REPRESENTATION_DETAIL", authorized_by: [] });
       continue;
     }
-    const requiredCapabilities = new Set(semanticRows.flatMap((row) => row.capability_ids));
-    const authorizers = activeDeltas.filter((delta) =>
-      delta.class === "ACTIVE_CANDIDATE_DELTA"
-      && requiredCapabilities.has(delta.capability_id)
-      && delta.authorized_paths.some((entry) => authorizedPathMatches(sourcePath, entry))
-      && semanticRows.some((row) => delta.authorized_semantic_dimensions.includes(row.dimension))
-      && delta.authorized_source_pointers.some((pattern) => pointerPatternCovers(pattern, pointer))
-    );
+    // Every owning capability needs its own apply-authorized delta that names
+    // every matched dimension it owns and covers this exact pointer.
+    const requiredCapabilities = [...new Set(semanticRows.flatMap((row) => row.capability_ids))].sort(byCodePoint);
+    const authorizers = [];
+    const missing = [];
+    for (const capabilityId of requiredCapabilities) {
+      const ownedDimensions = semanticRows.filter((row) => row.capability_ids.includes(capabilityId)).map((row) => row.dimension);
+      const delta = activeDeltas.find((entry) =>
+        entry.class === "ACTIVE_CANDIDATE_DELTA"
+        && entry.capability_id === capabilityId
+        && entry.authorized_paths.some((declared) => authorizedPathMatches(sourcePath, declared))
+        && ownedDimensions.every((dimension) => entry.authorized_semantic_dimensions.includes(dimension))
+        && entry.authorized_source_pointers.some((pattern) => pointerPatternCovers(pattern, pointer)));
+      if (delta) authorizers.push(delta);
+      else missing.push(`${capabilityId} (${ownedDimensions.join(", ")})`);
+    }
     if (semanticRows.length === 0) {
       diagnostics.push(diagnostic("source-semantic-classification-missing", `${sourcePath}#${pointer}`, "changed source property defaults to semantic and has no explicit owner/delegation mapping"));
-    } else if (authorizers.length === 0) {
-      diagnostics.push(diagnostic("source-semantic-change-unauthorized", `${sourcePath}#${pointer}`, `semantic change requires an exact apply-authorized delta for ${[...requiredCapabilities].join(", ")}`));
+    } else if (missing.length > 0) {
+      diagnostics.push(diagnostic("source-semantic-change-unauthorized", `${sourcePath}#${pointer}`, `semantic change requires exact apply-authorized deltas for ${missing.join("; ")}`));
     }
     results.push({
       pointer,
@@ -692,6 +793,13 @@ export function validateLifecycleEvidence(evidence, policy) {
       diagnostics.push(diagnostic("lifecycle-evidence-shape-invalid", `lifecycle.${field}`, "current state and transition evidence are required"));
       continue;
     }
+    const initial = lifecycle.states[0];
+    if (declared.transitions.length === 0 && declared.current_state !== initial) {
+      diagnostics.push(diagnostic("lifecycle-evidence-initial-state-missing", `lifecycle.${field}`, `${declared.current_state} requires evidenced transitions from ${initial}`));
+    }
+    if (declared.transitions.length > 0 && declared.transitions[0]?.from !== initial) {
+      diagnostics.push(diagnostic("lifecycle-evidence-initial-state-missing", `lifecycle.${field}.transitions[0]`, `transition evidence must start at ${initial}`));
+    }
     let previous = null;
     for (const [index, transition] of declared.transitions.entries()) {
       if (previous !== null && transition.from !== previous) {
@@ -712,8 +820,8 @@ export function validateLifecycleEvidence(evidence, policy) {
   return diagnostics;
 }
 
-function inspectLifecycleEvidence(repoRoot, policy, { stage, changes }, diagnostics, observations) {
-  const path = `${policy.repository_evidence.active_changes_root}/${policy.change_id}/${policy.repository_evidence.lifecycle_evidence_file}`;
+function inspectLifecycleEvidence(repoRoot, policy, { stage, changes, scope }, diagnostics, observations) {
+  const path = `${scope.evidenceRoot}/${policy.repository_evidence.lifecycle_evidence_file}`;
   if (!existsSync(resolve(repoRoot, path))) {
     const entry = diagnostic("lifecycle-evidence-pending", path, "repository lifecycle evidence is not yet recorded");
     if (stage === "candidate") observations.push(entry);
@@ -725,7 +833,7 @@ function inspectLifecycleEvidence(repoRoot, policy, { stage, changes }, diagnost
   for (const machine of [evidence.change_record, evidence.contract_candidate]) {
     for (const transition of machine?.transitions ?? []) {
       for (const evidencePath of transition.evidence_paths ?? []) {
-        if (!existsSync(resolve(repoRoot, evidencePath))) {
+        if (!existsSync(resolve(repoRoot, relocatedPath(evidencePath, scope)))) {
           diagnostics.push(diagnostic("lifecycle-transition-evidence-unavailable", evidencePath, "declared transition evidence path does not exist"));
         }
       }
@@ -770,7 +878,7 @@ function contractCandidateApplicability(policy, path, changes) {
     .map((entry) => diagnostic("lifecycle-contract-candidate-required", entry, "the range changes contract source or derived output, so the contract-candidate lifecycle applies"));
 }
 
-function inspectReviewEvidence(repoRoot, policy, { stage, scope }, diagnostics, observations) {
+function inspectReviewEvidence(repoRoot, policy, { stage, scope, rangeChanges }, diagnostics, observations) {
   const path = policy.repository_evidence.review_record_path;
   if (!existsSync(resolve(repoRoot, path))) {
     const entry = diagnostic("review-binding-pending", path, "exact project-owner review record is not yet stored");
@@ -790,10 +898,6 @@ function inspectReviewEvidence(repoRoot, policy, { stage, scope }, diagnostics, 
   const recordOnly = policy.repository_evidence.governance_record_only_paths;
   const governedPaths = (changed ?? []).filter((entry) => !recordOnly.includes(entry));
   const expectedObjects = Object.fromEntries(governedPaths.map((entry) => [entry, gitObjectAt(repoRoot, technicalCommit, entry)]));
-  const postReview = technicalCommit ? gitPathsBetween(repoRoot, technicalCommit, "HEAD") : null;
-  if (technicalCommit && postReview === null) {
-    diagnostics.push(diagnostic("review-binding-history-unavailable", path, "cannot enumerate changes after the reviewed technical commit"));
-  }
   diagnostics.push(...validateReviewBinding(binding, {
     requiredFields: policy.review_binding.required_fields,
     paths: governedPaths,
@@ -805,15 +909,16 @@ function inspectReviewEvidence(repoRoot, policy, { stage, scope }, diagnostics, 
       decision_scope: [policy.change_id],
       reviewer_identity: policy.governance_authorities.review_authority_identity,
       reviewer_authority: policy.governance_authorities.review_authority_role
-    },
-    // Only the governed change's own paths or its reviewed set can stale the
-    // review; unrelated protected-history commits after merge cannot.
-    changedPaths: (postReview ?? []).filter((entry) => inGovernedScope(entry, scope) || governedPaths.includes(entry)),
-    allowedRecordPaths: recordOnly
+    }
   }));
-  for (const [boundPath, boundObject] of Object.entries(expectedObjects)) {
-    if (gitObjectAt(repoRoot, "HEAD", boundPath) !== boundObject) {
-      diagnostics.push(diagnostic("review-binding-post-review-change", `review.governed_path_objects.${boundPath}`, "a reviewed object differs at HEAD"));
+  // Freshness is judged over the change's own inspected range: every path that
+  // range changes inside the governed scope or reviewed set must still carry its
+  // reviewed object (after any archive relocation). Base-side and unrelated
+  // protected-history commits are outside that range and cannot stale the review.
+  for (const changed of rangeChanges ?? []) {
+    if (recordOnly.includes(changed) || !(inGovernedScope(changed, scope) || Object.hasOwn(expectedObjects, changed))) continue;
+    if (gitObjectAt(repoRoot, "HEAD", relocatedPath(changed, scope)) !== expectedObjects[changed]) {
+      diagnostics.push(diagnostic("review-binding-post-review-change", changed, "the range changes a governed path away from its reviewed object"));
     }
   }
   if (binding.change_id !== policy.change_id || binding.signed !== true) diagnostics.push(diagnostic("review-binding-authority-invalid", path, "review must be a signed decision for this exact change"));
@@ -835,8 +940,13 @@ function reviewComparisonBase(repoRoot, binding, scope, diagnostics) {
     return null;
   }
   const authorizedBase = scope.authorization?.candidate_base ?? null;
-  if (authorizedBase && base !== authorizedBase) {
+  if (authorizedBase === null) {
+    diagnostics.push(diagnostic("review-binding-base-unauthorized", "review.base_commit", "the review base must equal an exact apply-authorized candidate base"));
+    return null;
+  }
+  if (base !== authorizedBase) {
     diagnostics.push(diagnostic("review-binding-value-mismatch", "review.base_commit", "review base differs from the apply-authorized candidate base"));
+    return null;
   }
   if (typeof binding.technical_commit === "string" && !isAncestorCommit(repoRoot, base, binding.technical_commit)) {
     diagnostics.push(diagnostic("review-binding-base-unavailable", "review.base_commit", "review base is not an ancestor of the reviewed technical commit"));
@@ -891,6 +1001,7 @@ function inspectActivationEvidence(repoRoot, policy, stage, review, diagnostics,
     changedPaths: changed ?? [],
     expectedValues
   }));
+  diagnostics.push(...activatedContentDiagnostics(repoRoot, policy, path, mergeCommit, review));
   if (record.required_check_evidence?.verified !== true) diagnostics.push(diagnostic("activation-required-check-unverified", `${path}#required_check_evidence`, "required-check enforcement must be verified"));
   return record;
 }
@@ -993,7 +1104,7 @@ export function inspectRepository(repoRoot, policy, { stage = "candidate", schem
     if (!requirement.includes(`\`${String(value)}\``)) {
       const sourceObject = gitObject(repoRoot, sourcePath);
       const debt = baselineDebtFor(policy, assertion, sourceObject, capability.object);
-      if (debtAllowedAtStage(debt, stage, repositoryChanges ?? [])) {
+      if (debtAllowedAtStage(debt, stage, baseCommit ? repositoryChanges : null)) {
         observations.push(diagnostic("baseline-conflict-bounded", assertion.id, `${debt.id} is unchanged, scope-bounded, and blocks activation/release`));
       } else {
         diagnostics.push(diagnostic(debt ? "baseline-conflict-stage-block" : "source-capability-conflict", assertion.id, `source value ${JSON.stringify(value)} is not authorized by ${assertion.capability_id}`));
@@ -1023,27 +1134,36 @@ export function inspectRepository(repoRoot, policy, { stage = "candidate", schem
   }
   const scope = governedChangeScope(repoRoot, policy);
   const rangeChanges = baseCommit && Array.isArray(repositoryChanges) ? repositoryChanges : null;
-  const rangeTouchesChange = rangeChanges !== null && rangeChanges.some((path) => inGovernedScope(path, scope));
+  const rangeTouchesChange = rangeChanges !== null && rangeChanges.some((path) => changeExclusivePath(repoRoot, path, scope));
+  const activeAtBase = rangeChanges !== null
+    && gitStdout(repoRoot, ["rev-parse", "--verify", "--quiet", `${baseCommit}:${scope.changeRoot}`]) !== null;
+  // A range that removes the active change must archive it, and archiving
+  // requires the activated state, so removal cannot switch evidence checks off.
+  const removal = !scope.active && activeAtBase && rangeTouchesChange;
   let lifecycle = null;
   let review = null;
   let activation = null;
-  if (scope.active) {
-    if (rangeTouchesChange) {
+  if (removal && scope.archivedRoot === null) {
+    diagnostics.push(diagnostic("governed-change-removed-without-archive", scope.changeRoot, "the range removes the active governed change without exactly one dated archive"));
+  } else if (scope.active || removal) {
+    if (rangeTouchesChange && !removal) {
       diagnostics.push(...applyScopeDiagnostics(rangeChanges, scope));
-    } else if (stage !== "candidate") {
-      observations.push(diagnostic("governed-change-out-of-range", scope.changeRoot, `the inspected range does not touch ${policy.change_id}; its ${stage}-stage evidence requirements do not apply`));
+    } else if (!rangeTouchesChange && stage === "merge") {
+      observations.push(diagnostic("governed-change-out-of-range", scope.changeRoot, `the inspected range does not touch ${policy.change_id}; its merge-stage evidence requirements do not apply`));
     }
-    // A range that does not touch the governed change cannot be blocked by that
-    // change's stage requirements, but its existing records are still verified.
-    const evidenceStage = rangeTouchesChange ? stage : "candidate";
+    // Merge requirements belong to the change's own range; activation and
+    // release requirements apply to any range that claims those stages.
+    let evidenceStage = stage;
+    if (removal) evidenceStage = "activation";
+    else if (stage === "merge" && !rangeTouchesChange) evidenceStage = "candidate";
     let lifecycleChanges = false;
     if (rangeTouchesChange) lifecycleChanges = rangeChanges;
     else if (rangeChanges === null) lifecycleChanges = null;
-    lifecycle = inspectLifecycleEvidence(repoRoot, policy, { stage: evidenceStage, changes: lifecycleChanges }, diagnostics, observations);
-    review = inspectReviewEvidence(repoRoot, policy, { stage: evidenceStage, scope }, diagnostics, observations);
+    lifecycle = inspectLifecycleEvidence(repoRoot, policy, { stage: evidenceStage, changes: lifecycleChanges, scope }, diagnostics, observations);
+    review = inspectReviewEvidence(repoRoot, policy, { stage: evidenceStage, scope, rangeChanges: rangeTouchesChange ? rangeChanges : null }, diagnostics, observations);
     activation = inspectActivationEvidence(repoRoot, policy, evidenceStage, review, diagnostics, observations);
   } else {
-    observations.push(diagnostic("governed-change-inactive", scope.changeRoot, "change-specific lifecycle, review, and activation evidence applies only while the governed change is active"));
+    observations.push(diagnostic("governed-change-inactive", scope.changeRoot, "change-specific lifecycle, review, and activation evidence applies only while the governed change is active or being archived"));
   }
   const applicableCount = discovered.current.filter((entry) => entry.applies).length;
   const authorizedDeltaCount = discovered.active.filter((entry) => entry.class === "ACTIVE_CANDIDATE_DELTA").length;
@@ -1069,16 +1189,16 @@ export function validateReviewBinding(binding, expected) {
   }
   for (const field of ["decision_scope", "authorization_granted", "authorization_withheld"]) {
     if (expected.values && field in expected.values) {
-      const actual = Array.isArray(binding[field]) ? [...binding[field]].sort() : binding[field];
-      const wanted = Array.isArray(expected.values[field]) ? [...expected.values[field]].sort() : expected.values[field];
+      const actual = Array.isArray(binding[field]) ? [...binding[field]].sort(byCodePoint) : binding[field];
+      const wanted = Array.isArray(expected.values[field]) ? [...expected.values[field]].sort(byCodePoint) : expected.values[field];
       if (JSON.stringify(actual) !== JSON.stringify(wanted)) {
         diagnostics.push(diagnostic("review-binding-value-mismatch", `review.${field}`, "bound set differs from the exact reviewed expectation"));
       }
     }
   }
   const entries = binding.governed_path_objects ?? {};
-  const expectedPaths = [...(expected.paths ?? [])].sort();
-  const actualPaths = Object.keys(entries).sort();
+  const expectedPaths = [...(expected.paths ?? [])].sort(byCodePoint);
+  const actualPaths = Object.keys(entries).sort(byCodePoint);
   if (JSON.stringify(actualPaths) !== JSON.stringify(expectedPaths)) {
     diagnostics.push(diagnostic("review-binding-partial", "review.governed_path_objects", "complete governed path membership is required"));
   }
@@ -1103,8 +1223,8 @@ export function validateActivation(record, context) {
   }
   if (!record) return diagnostics;
   for (const [field, expected] of Object.entries(context.expectedValues ?? {})) {
-    const actual = Array.isArray(record[field]) ? [...record[field]].sort() : record[field];
-    const wanted = Array.isArray(expected) ? [...expected].sort() : expected;
+    const actual = Array.isArray(record[field]) ? [...record[field]].sort(byCodePoint) : record[field];
+    const wanted = Array.isArray(expected) ? [...expected].sort(byCodePoint) : expected;
     if (JSON.stringify(actual) !== JSON.stringify(wanted)) {
       diagnostics.push(diagnostic("activation-binding-mismatch", `activation.${field}`, "activation value differs from the exact authorized expectation"));
     }
@@ -1126,8 +1246,8 @@ export function validateActivation(record, context) {
     diagnostics.push(diagnostic("activation-tree-binding-mismatch", "activation.activated_tree", "record does not bind the activated merge tree"));
   }
   if (context.reviewedObjects) {
-    const expectedEntries = Object.entries(context.reviewedObjects).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0);
-    const actualEntries = Object.entries(record.governed_path_objects ?? {}).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0);
+    const expectedEntries = Object.entries(context.reviewedObjects).sort(([left], [right]) => byCodePoint(left, right));
+    const actualEntries = Object.entries(record.governed_path_objects ?? {}).sort(([left], [right]) => byCodePoint(left, right));
     if (JSON.stringify(actualEntries) !== JSON.stringify(expectedEntries)) {
       diagnostics.push(diagnostic("activation-governed-objects-mismatch", "activation.governed_path_objects", "activation must bind the complete reviewed object set"));
     }

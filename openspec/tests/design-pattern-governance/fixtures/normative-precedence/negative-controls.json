@@ -8,5 +8,6 @@
   {"id":"NC-007","description":"activation record may self-authorize","kind":"policy","mutation":{"path":"activation.record_cannot_self_authorize","value":false},"expected_code":"activation-model-unsafe"},
   {"id":"NC-008","description":"unclassified material compatibility transition is allowed","kind":"policy_case","rule_id":"CR-010","mutation":{"field":"result","value":"PASS"}},
   {"id":"NC-009","description":"record-only allowlist widened to cover the authored contract source","kind":"policy","mutation":{"path":"repository_evidence.governance_record_only_paths","value":["openspec/governance/records/define-normative-precedence-lifecycle.json","openspec/governance/normative-precedence-activation.json","contracts/security-audit/source/contract.source.json"]},"expected_code":"record-only-allowlist-overbroad"},
-  {"id":"NC-010","description":"multi-owner semantic dimension loses its declared overlap","kind":"policy","mutation":{"path":"capability_overlaps","value":[]},"expected_code":"semantic-delegation-overlap-undeclared"}
+  {"id":"NC-010","description":"multi-owner semantic dimension loses its declared overlap","kind":"policy","mutation":{"path":"capability_overlaps","value":[]},"expected_code":"semantic-delegation-overlap-undeclared"},
+  {"id":"NC-011","description":"lifecycle transition escapes its referenced schema definition","kind":"policy","with_schema":true,"mutation":{"path":"change_record_lifecycle.transitions.0.bogus","value":true},"expected_code":"policy-schema-additional"}
 ]

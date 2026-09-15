@@ -205,19 +205,6 @@ jobs:
       - name: Governance checker
         run: node openspec/scripts/check-design-pattern-governance.mjs --phase final
 
-      # This remains candidate evidence until an exact project-owner decision and
-      # dedicated activation make it part of the trusted governance baseline.
-      # The existing checker and dual check above/below remain independent.
-      # A pull request asks to merge, so it is checked at the merge stage; a push
-      # to main is already merged and is checked at the candidate stage.
-      - name: Normative precedence candidate checker
-        run: |
-          stage=candidate
-          if test "${{ github.event_name }}" = "pull_request"; then
-            stage=merge
-          fi
-          node openspec/scripts/check-normative-precedence.mjs --stage "$stage" --base "${{ github.event.pull_request.base.sha || github.event.before }}"
-
       # Baseline plus candidate. A candidate checker is never the sole judge of
       # whether it weakened itself, so the merge-base version is run against the
       # candidate's data as well.
@@ -241,6 +228,19 @@ jobs:
 
       - name: Governance test suite
         run: node --test openspec/tests/design-pattern-governance/*.test.mjs
+
+      # This remains candidate evidence until an exact project-owner decision and
+      # dedicated activation make it part of the trusted governance baseline. It
+      # runs last so its failure cannot skip the independent checks above.
+      # A pull request asks to merge, so it is checked at the merge stage; a push
+      # to main is already merged and is checked at the candidate stage.
+      - name: Normative precedence candidate checker
+        run: |
+          stage=candidate
+          if test "${{ github.event_name }}" = "pull_request"; then
+            stage=merge
+          fi
+          node openspec/scripts/check-normative-precedence.mjs --stage "$stage" --base "${{ github.event.pull_request.base.sha || github.event.before }}"
 
   # Line coverage for the workspaces that have product code behind tests.
   # Runs on 26.5.0 because research/browser-telemetry declares `>=26.5.0`, the

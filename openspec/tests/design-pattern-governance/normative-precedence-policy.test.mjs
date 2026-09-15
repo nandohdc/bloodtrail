@@ -47,7 +47,7 @@ for (const control of controls) {
     const mutant = clone(policy);
     if (control.kind === "policy") {
       setPath(mutant, control.mutation.path, control.mutation.value);
-      assert.ok(validatePolicy(mutant).some((entry) => entry.code === control.expected_code));
+      assert.ok(validatePolicy(mutant, control.with_schema ? schema : null).some((entry) => entry.code === control.expected_code));
       return;
     }
     const rule = mutant.conflict_rules.find((entry) => entry.id === control.rule_id);

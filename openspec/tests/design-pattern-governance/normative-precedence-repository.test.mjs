@@ -29,8 +29,10 @@ const objectA = "a".repeat(40);
 const objectB = "b".repeat(40);
 const objectC = "c".repeat(40);
 const DELTA_CHANGE = "openspec/changes/change-a";
-const MODIFIED_PROPOSAL = "## Capabilities\n\n### Modified Capabilities\n\n- `security-audit-event-contract`: bounded authority change\n";
+const CO_OWNERS = ["derived-field-trust-semantics", "security-audit-event-contract"];
 const GENERATED_FIXTURE = "contracts/security-audit/schema/fixture.schema.json";
+const FIXTURE_CHECKER = "openspec/scripts/normative-precedence/fixture-checker.mjs";
+const SHARED_CI = ".github/workflows/ci.yml";
 
 function write(root, path, content) {
   const absolute = resolve(root, path);
@@ -75,7 +77,7 @@ function runCli(root, stage, base) {
 
 function makeRepository() {
   const root = mkdtempSync(resolve(tmpdir(), "bloodtrail-precedence-"));
-  git(root, ["init", "-q"]);
+  git(root, ["init", "-q", "-b", "main"]);
   git(root, ["config", "user.email", "fixture@example.invalid"]);
   git(root, ["config", "user.name", "Fixture"]);
   const policy = structuredClone(basePolicy);
@@ -85,6 +87,7 @@ function makeRepository() {
   write(root, policy.contract.source_path, json(source));
   write(root, "openspec/governance/normative-source-precedence.json", json(policy));
   write(root, "openspec/governance/schemas/normative-source-precedence.schema.json", readFileSync(resolve(liveRoot, "openspec/governance/schemas/normative-source-precedence.schema.json"), "utf8"));
+  write(root, SHARED_CI, "name: fixture\n");
   for (const capability of policy.capabilities) {
     write(root, capability.path, readFileSync(resolve(liveRoot, capability.path), "utf8"));
   }
@@ -146,22 +149,30 @@ function commitProposal(root, changeDir, proposal, extraFiles = {}) {
   };
 }
 
-function authorizeDelta({ root, policy }, proposalText = MODIFIED_PROPOSAL) {
-  const proposal = commitProposal(root, DELTA_CHANGE, proposalText, {
-    [`${DELTA_CHANGE}/specs/security-audit-event-contract/spec.md`]: "## MODIFIED Requirements\n"
-  });
-  write(root, `${DELTA_CHANGE}/${policy.repository_evidence.apply_authorization_file}`, authorizationMarkdown({
+function modifiedProposal(capabilities) {
+  return `## Capabilities\n\n### Modified Capabilities\n\n${capabilities.map((id) => `- \`${id}\`: bounded authority change`).join("\n")}\n`;
+}
+
+function authorizeDelta({ root, policy, base }, { capabilities = CO_OWNERS, proposalText = null, extraAuthorizationFiles = {} } = {}) {
+  const specs = Object.fromEntries(capabilities.map((id) => [`${DELTA_CHANGE}/specs/${id}/spec.md`, "## MODIFIED Requirements\n"]));
+  const proposal = commitProposal(root, DELTA_CHANGE, proposalText ?? modifiedProposal(capabilities), specs);
+  const authorizationPath = `${DELTA_CHANGE}/${policy.repository_evidence.apply_authorization_file}`;
+  write(root, authorizationPath, authorizationMarkdown({
     ...proposal,
-    capabilities: ["security-audit-event-contract"],
+    base,
+    capabilities,
     dimensions: ["authority"],
     pointers: ["/fields/*/a"],
     paths: [policy.contract.source_path]
   }));
+  for (const [path, content] of Object.entries(extraAuthorizationFiles)) write(root, path, content);
+  commitAll(root, "apply authorization");
+  return authorizationPath;
 }
 
-function authorizeGovernedChange({ root, policy, base }, paths) {
+function authorizeGovernedChange({ root, policy, base }, paths, { withBase = true } = {}) {
   const proposal = commitProposal(root, changeRoot(policy), "## Capabilities\n\n### Modified Capabilities\n\nNone.\n");
-  write(root, `${changeRoot(policy)}/${policy.repository_evidence.apply_authorization_file}`, authorizationMarkdown({ ...proposal, base, paths }));
+  write(root, `${changeRoot(policy)}/${policy.repository_evidence.apply_authorization_file}`, authorizationMarkdown({ ...proposal, base: withBase ? base : null, paths }));
   commitAll(root, "apply authorization");
 }
 
@@ -193,13 +204,25 @@ function lifecycleEvidence(changeState = "FOLDED", contractState = "MERGED") {
   return evidence;
 }
 
+function mutateSource(root, policy, suffix) {
+  const source = JSON.parse(readFileSync(resolve(root, policy.contract.source_path), "utf8"));
+  source.$schema = `${source.$schema}${suffix}`;
+  write(root, policy.contract.source_path, json(source));
+  return source;
+}
+
 function prepareReviewedRepository(fixture, { grants = null, technicalFiles = {} } = {}) {
   const { root, policy, base } = fixture;
-  authorizeGovernedChange(fixture, [policy.contract.source_path, `${changeRoot(policy)}/**`, "contracts/security-audit/schema/"]);
+  authorizeGovernedChange(fixture, [
+    policy.contract.source_path,
+    `${changeRoot(policy)}/**`,
+    "contracts/security-audit/schema/",
+    "openspec/scripts/normative-precedence/",
+    SHARED_CI
+  ]);
   write(root, lifecyclePath(policy), json(lifecycleEvidence("FOLDED", "MERGED")));
-  const source = JSON.parse(readFileSync(resolve(root, policy.contract.source_path), "utf8"));
-  source.$schema = `${source.$schema}#reviewed`;
-  write(root, policy.contract.source_path, json(source));
+  const source = mutateSource(root, policy, "#reviewed");
+  write(root, SHARED_CI, "name: fixture\n# reviewed candidate step\n");
   for (const [path, content] of Object.entries(technicalFiles)) write(root, path, content);
   const technicalCommit = commitAll(root, "technical candidate");
   const tree = gitText(root, ["rev-parse", "HEAD^{tree}"]);
@@ -229,7 +252,7 @@ function prepareReviewedRepository(fixture, { grants = null, technicalFiles = {}
 function commitActivation({ root, policy }, reviewed, overrides = {}) {
   const mergeCommit = gitText(root, ["rev-parse", "HEAD"]);
   const record = {
-    authorizing_decision_object: gitText(root, ["hash-object", policy.repository_evidence.review_record_path]),
+    authorizing_decision_object: overrides.authorizing_decision_object ?? gitText(root, ["hash-object", policy.repository_evidence.review_record_path]),
     activated_commit: mergeCommit,
     activated_tree: gitText(root, ["rev-parse", "HEAD^{tree}"]),
     reviewed_technical_commit: reviewed.technicalCommit,
@@ -250,10 +273,11 @@ function commitActivation({ root, policy }, reviewed, overrides = {}) {
   return record;
 }
 
-function mutateSource(root, policy, suffix) {
-  const source = JSON.parse(readFileSync(resolve(root, policy.contract.source_path), "utf8"));
-  source.$schema = `${source.$schema}${suffix}`;
-  write(root, policy.contract.source_path, json(source));
+function archiveGovernedChange({ root, policy }) {
+  const archiveRoot = `${policy.repository_evidence.archive_root}/2099-01-01-${policy.change_id}`;
+  mkdirSync(resolve(root, policy.repository_evidence.archive_root), { recursive: true });
+  git(root, ["mv", changeRoot(policy), archiveRoot]);
+  return commitAll(root, "archive governed change");
 }
 
 function fullReviewBinding(objects = { "contract.source.json": objectA, "schema.json": objectB }) {
@@ -286,6 +310,10 @@ function fullActivationRecord() {
   };
 }
 
+function deltaFor(root, policy, capabilityId = "security-audit-event-contract") {
+  return discoverRepositorySources(root, policy).active.find((entry) => entry.change_id === "change-a" && entry.capability_id === capabilityId);
+}
+
 // Repository enforcement cases: each runs against a disposable Git repository.
 
 test("REPO-001 permitted delegated encoding detail passes", () => withRepository(({ root, policy, base }) => {
@@ -313,13 +341,12 @@ test("REPO-002a recognized semantic property change requires an authorized delta
 
 test("REPO-003 authorized active candidate delta is discovered separately", () => withRepository((fixture) => {
   authorizeDelta(fixture);
-  const result = discoverRepositorySources(fixture.root, fixture.policy);
-  assert.equal(result.active.find((entry) => entry.change_id === "change-a")?.class, "ACTIVE_CANDIDATE_DELTA");
+  assert.equal(deltaFor(fixture.root, fixture.policy)?.class, "ACTIVE_CANDIDATE_DELTA");
 }));
 
 test("REPO-003a negative proposal prose cannot create active capability scope", () => withRepository((fixture) => {
-  authorizeDelta(fixture, "## Capabilities\n\nThis change MUST NOT modify `security-audit-event-contract`.\n");
-  const delta = discoverRepositorySources(fixture.root, fixture.policy).active.find((entry) => entry.change_id === "change-a");
+  authorizeDelta(fixture, { proposalText: "## Capabilities\n\nThis change MUST NOT modify `security-audit-event-contract`.\n" });
+  const delta = deltaFor(fixture.root, fixture.policy);
   assert.equal(delta?.class, "PROPOSED_CANDIDATE_DELTA");
   assert.ok(delta?.diagnostics.includes("capability is not in the structured proposal scope"));
 }));
@@ -333,7 +360,34 @@ test("REPO-003b authorized semantic pointer change is accepted only within exact
   const result = inspectRepository(root, policy, { stage: "candidate", baseCommit: base });
   assert.equal(codes(result.diagnostics).includes("source-semantic-change-unauthorized"), false);
   assert.equal(codes(result.diagnostics).includes("compatibility-transition-unclassified"), false);
-  assert.deepEqual(result.sourceChange.changes.find((entry) => entry.pointer === "/fields/0/a")?.authorized_by, ["change-a:security-audit-event-contract"]);
+  assert.deepEqual(result.sourceChange.changes.find((entry) => entry.pointer === "/fields/0/a")?.authorized_by, CO_OWNERS.map((id) => `change-a:${id}`));
+}));
+
+test("REPO-003c one co-owner's delta cannot authorize a co-owned semantic pointer", () => withRepository((fixture) => {
+  const { root, policy, source, base } = fixture;
+  authorizeDelta(fixture, { capabilities: ["security-audit-event-contract"] });
+  write(root, `${DELTA_CHANGE}/compatibility-decision.json`, json({ material_semantic_change: true, compatibility_classification: "breaking", compatibility_policy_rule: "fixture" }));
+  source.fields[0].a = "client_claim";
+  write(root, policy.contract.source_path, json(source));
+  const result = inspectRepository(root, policy, { stage: "candidate", baseCommit: base });
+  assert.ok(result.diagnostics.some((entry) => entry.code === "source-semantic-change-unauthorized" && entry.message.includes("derived-field-trust-semantics")));
+}));
+
+test("REPO-003d an apply authorization edited after it was recorded authorizes nothing", () => withRepository((fixture) => {
+  const { root, policy } = fixture;
+  const authorizationPath = authorizeDelta(fixture);
+  write(root, authorizationPath, readFileSync(resolve(root, authorizationPath), "utf8").replace("`/fields/*/a`", "`/fields/*/a`, `/fields/*/trust`"));
+  commitAll(root, "widen authorized pointers");
+  const delta = deltaFor(root, policy);
+  assert.equal(delta?.class, "PROPOSED_CANDIDATE_DELTA");
+  assert.ok(delta?.diagnostics.includes("apply authorization was modified after it was first recorded"));
+}));
+
+test("REPO-003e an apply authorization recorded alongside other changes authorizes nothing", () => withRepository((fixture) => {
+  authorizeDelta(fixture, { extraAuthorizationFiles: { [`${DELTA_CHANGE}/notes.md`]: "bundled with the authorization\n" } });
+  const delta = deltaFor(fixture.root, fixture.policy);
+  assert.equal(delta?.class, "PROPOSED_CANDIDATE_DELTA");
+  assert.ok(delta?.diagnostics.includes("apply authorization was not recorded in a dedicated commit"));
 }));
 
 test("REPO-004 archived change remains historical", () => withRepository(({ root, policy }) => {
@@ -375,7 +429,7 @@ test("REPO-007 post-review governed blob mutation invalidates review", () => wit
   mutateSource(fixture.root, fixture.policy, "#after-review");
   commitAll(fixture.root, "post-review source mutation");
   const result = inspectRepository(fixture.root, fixture.policy, { stage: "merge", baseCommit: fixture.base });
-  assert.ok(codes(result.diagnostics).includes("review-binding-post-review-change"));
+  assert.ok(result.diagnostics.some((entry) => entry.code === "review-binding-post-review-change" && entry.path === fixture.policy.contract.source_path));
 }));
 
 test("REPO-008 partial reviewed-path binding fails", () => withRepository((fixture) => {
@@ -422,12 +476,22 @@ test("REPO-012 illegal or cross-machine lifecycle transition fails repository in
   assert.ok(codes(result.diagnostics).includes("lifecycle-transition-illegal"));
 }));
 
+test("REPO-012b lifecycle evidence cannot claim a later state without the chain from the initial state", () => withRepository(({ root, policy, base }) => {
+  write(root, lifecyclePath(policy), json({
+    change_id: policy.change_id,
+    change_record: { current_state: "FOLDED", transitions: [] },
+    contract_candidate: { current_state: "MERGED", transitions: [] }
+  }));
+  const result = inspectRepository(root, policy, { stage: "candidate", baseCommit: base });
+  assert.ok(codes(result.diagnostics).includes("lifecycle-evidence-initial-state-missing"));
+}));
+
 test("REPO-013 frozen generated artifact mutation requires a new candidate identity", () => withRepository((fixture) => {
   prepareReviewedRepository(fixture, { technicalFiles: { [GENERATED_FIXTURE]: "{\"generated\":true}\n" } });
   write(fixture.root, GENERATED_FIXTURE, "{\"generated\":false}\n");
   commitAll(fixture.root, "post-review generated mutation");
   const result = inspectRepository(fixture.root, fixture.policy, { stage: "merge", baseCommit: fixture.base });
-  assert.ok(result.diagnostics.some((entry) => entry.code === "review-binding-post-review-change" && entry.path.endsWith(GENERATED_FIXTURE)));
+  assert.ok(result.diagnostics.some((entry) => entry.code === "review-binding-post-review-change" && entry.path === GENERATED_FIXTURE));
 }));
 
 test("REPO-014 every normative precedence policy/checker path is governance core", () => {
@@ -488,15 +552,38 @@ test("REPO-019 an unrelated range after the governed merge is not blocked by tha
   assert.ok(codes(result.observations).includes("governed-change-out-of-range"));
 }));
 
-test("REPO-020 an archived governed change no longer carries change-specific evidence requirements", () => withRepository((fixture) => {
-  prepareReviewedRepository(fixture);
-  const archiveRoot = `${fixture.policy.repository_evidence.archive_root}/2099-01-01-${fixture.policy.change_id}`;
-  mkdirSync(resolve(fixture.root, fixture.policy.repository_evidence.archive_root), { recursive: true });
-  git(fixture.root, ["mv", changeRoot(fixture.policy), archiveRoot]);
-  const archiveCommit = commitAll(fixture.root, "archive governed change");
-  const result = inspectRepository(fixture.root, fixture.policy, { stage: "merge", baseCommit: gitText(fixture.root, ["rev-parse", `${archiveCommit}^`]) });
+test("REPO-019b an unrelated later edit to a shared reviewed file neither scopes the range nor stales the review", () => withRepository((fixture) => {
+  const reviewed = prepareReviewedRepository(fixture);
+  write(fixture.root, SHARED_CI, "name: fixture\n# reviewed candidate step\n# unrelated later step\n");
+  commitAll(fixture.root, "unrelated CI change");
+  const result = inspectRepository(fixture.root, fixture.policy, { stage: "merge", baseCommit: reviewed.reviewCommit });
   assert.deepEqual(result.diagnostics, []);
-  assert.ok(codes(result.observations).includes("governed-change-inactive"));
+  assert.ok(codes(result.observations).includes("governed-change-out-of-range"));
+}));
+
+test("REPO-020 a completed change archives byte-identically after activation while its contract stays activated", () => withRepository((fixture) => {
+  const reviewed = prepareReviewedRepository(fixture);
+  commitActivation(fixture, reviewed);
+  const activationCommit = gitText(fixture.root, ["rev-parse", "HEAD"]);
+  archiveGovernedChange(fixture);
+  assert.equal(transitionAllowed(fixture.policy.change_record_lifecycle, "FOLDED", "ARCHIVED"), true);
+  const result = inspectRepository(fixture.root, fixture.policy, { stage: "merge", baseCommit: activationCommit });
+  assert.deepEqual(result.diagnostics, []);
+}));
+
+test("REPO-020a archiving the governed change before activation fails", () => withRepository((fixture) => {
+  const reviewed = prepareReviewedRepository(fixture);
+  archiveGovernedChange(fixture);
+  const result = inspectRepository(fixture.root, fixture.policy, { stage: "merge", baseCommit: reviewed.reviewCommit });
+  assert.ok(codes(result.diagnostics).includes("activation-evidence-pending"));
+}));
+
+test("REPO-020b removing the governed change without an archive fails", () => withRepository((fixture) => {
+  const reviewed = prepareReviewedRepository(fixture);
+  git(fixture.root, ["rm", "-r", "-q", changeRoot(fixture.policy)]);
+  commitAll(fixture.root, "delete governed change");
+  const result = inspectRepository(fixture.root, fixture.policy, { stage: "merge", baseCommit: reviewed.reviewCommit });
+  assert.ok(codes(result.diagnostics).includes("governed-change-removed-without-archive"));
 }));
 
 test("REPO-021 a not-applicable contract candidate is rejected when the range changes contract source", () => withRepository((fixture) => {
@@ -519,9 +606,33 @@ test("REPO-022 a changed path outside the apply-authorized scope fails", () => w
   assert.ok(result.diagnostics.some((entry) => entry.code === "apply-scope-exceeded" && entry.path === "packages/unrelated/file.txt"));
 }));
 
+test("REPO-022b a change cannot widen its own apply authorization in a later commit", () => withRepository((fixture) => {
+  const { root, policy, base } = fixture;
+  authorizeGovernedChange(fixture, [`${changeRoot(policy)}/**`]);
+  const authorizationPath = `${changeRoot(policy)}/${policy.repository_evidence.apply_authorization_file}`;
+  write(root, authorizationPath, readFileSync(resolve(root, authorizationPath), "utf8").replace("```text\n", "```text\npackages/\n"));
+  write(root, lifecyclePath(policy), json(lifecycleEvidence("VERIFIED", null)));
+  write(root, "packages/unrelated/file.txt", "self-widened scope\n");
+  commitAll(root, "self-widened authorization");
+  const result = inspectRepository(root, policy, { stage: "candidate", baseCommit: base });
+  assert.ok(result.diagnostics.some((entry) => entry.code === "apply-authorization-invalid" && entry.message === "apply authorization was modified after it was first recorded"));
+}));
+
 test("REPO-023 merge stage without an exact comparison base fails closed", () => withRepository(({ root, policy }) => {
   const result = inspectRepository(root, policy, { stage: "merge" });
   assert.ok(codes(result.diagnostics).includes("comparison-base-required"));
+}));
+
+test("REPO-023b release stage enforces activation even when the range does not touch the change", () => withRepository((fixture) => {
+  const { root, policy } = fixture;
+  authorizeGovernedChange(fixture, [`${changeRoot(policy)}/**`]);
+  write(root, lifecyclePath(policy), json(lifecycleEvidence("VERIFIED", null)));
+  const verified = commitAll(root, "verified governance-only change");
+  write(root, "docs/release-notes.md", "Release notes.\n");
+  commitAll(root, "release preparation");
+  const result = inspectRepository(root, policy, { stage: "release", baseCommit: verified });
+  assert.ok(codes(result.diagnostics).includes("activation-evidence-pending"));
+  assert.ok(codes(result.diagnostics).includes("lifecycle-stage-not-ready"));
 }));
 
 test("REPO-024 overlap classes are reported distinctly", () => withRepository(({ root, policy, base }) => {
@@ -554,6 +665,53 @@ test("REPO-025 activation evidence is located from history when CI checks out a 
   git(root, ["merge", "-q", "--no-ff", "-m", "synthetic pull request merge", activationTip]);
   const result = inspectRepository(root, policy, { stage: "activation", baseCommit: mainTip });
   assert.deepEqual(result.diagnostics, []);
+}));
+
+test("REPO-026 activation whose parent lacks the reviewed content fails", () => withRepository((fixture) => {
+  const { root, policy, base } = fixture;
+  const reviewed = prepareReviewedRepository(fixture);
+  const reviewObject = gitText(root, ["hash-object", policy.repository_evidence.review_record_path]);
+  git(root, ["checkout", "-q", "-b", "side", base]);
+  commitActivation(fixture, reviewed, { authorizing_decision_object: reviewObject });
+  git(root, ["checkout", "-q", "main"]);
+  git(root, ["merge", "-q", "--no-ff", "-m", "merge side activation", "side"]);
+  const result = inspectRepository(root, policy, { stage: "activation", baseCommit: reviewed.reviewCommit });
+  assert.ok(codes(result.diagnostics).includes("activation-merge-lacks-reviewed-commit"));
+  assert.ok(codes(result.diagnostics).includes("activation-merge-content-mismatch"));
+}));
+
+test("REPO-027 a post-review checker change invalidates review", () => withRepository((fixture) => {
+  prepareReviewedRepository(fixture, { technicalFiles: { [FIXTURE_CHECKER]: "export const checker = 1;\n" } });
+  write(fixture.root, FIXTURE_CHECKER, "export const checker = 2;\n");
+  commitAll(fixture.root, "post-review checker change");
+  const result = inspectRepository(fixture.root, fixture.policy, { stage: "merge", baseCommit: fixture.base });
+  assert.ok(result.diagnostics.some((entry) => entry.code === "review-binding-post-review-change" && entry.path === FIXTURE_CHECKER));
+}));
+
+test("REPO-028 a review cannot choose its own base without an authorized candidate base", () => withRepository((fixture) => {
+  const { root, policy, base, source } = fixture;
+  authorizeGovernedChange(fixture, [`${changeRoot(policy)}/**`], { withBase: false });
+  write(root, lifecyclePath(policy), json(lifecycleEvidence("VERIFIED", null)));
+  const technical = commitAll(root, "technical candidate");
+  write(root, policy.repository_evidence.review_record_path, json({
+    schema: "bloodtrail.normative-precedence.review",
+    change_id: policy.change_id,
+    base_commit: technical,
+    technical_commit: technical,
+    tree: gitText(root, ["rev-parse", "HEAD^{tree}"]),
+    governed_path_objects: {},
+    contract_version: source.metadata.schema_version,
+    decision_scope: [policy.change_id],
+    reviewer_identity: policy.governance_authorities.review_authority_identity,
+    reviewer_authority: policy.governance_authorities.review_authority_role,
+    authorization_granted: [policy.governance_authorities.merge_grant],
+    authorization_withheld: ["activation"],
+    decision_timestamp: "2026-09-15T00:00:00Z",
+    signed: true
+  }));
+  commitAll(root, "self-based review");
+  const result = inspectRepository(root, policy, { stage: "merge", baseCommit: base });
+  assert.ok(codes(result.diagnostics).includes("review-binding-base-unauthorized"));
 }));
 
 // Binding-function unit cases: they exercise one validator's field comparison
