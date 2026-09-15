@@ -130,4 +130,3 @@ release. No unbound, new, changed, or broadened contradiction receives that exce
 - **WHEN** a recorded contradiction binds exact baseline objects, the candidate changes neither
   side, and its scope cannot resolve that semantic conflict
 - **THEN** merge may proceed while activation and release remain blocked and the debt remains visible
-

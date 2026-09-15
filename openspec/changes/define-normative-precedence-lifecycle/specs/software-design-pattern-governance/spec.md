@@ -76,4 +76,3 @@ mechanism.
 - **WHEN** a governance-core candidate reaches exact review
 - **THEN** its record distinguishes baseline source and result from candidate source and result, and
   neither result is represented as project-owner approval
-

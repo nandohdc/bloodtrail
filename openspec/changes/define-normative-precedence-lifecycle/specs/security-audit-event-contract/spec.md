@@ -60,4 +60,3 @@ NOT establish semantics absent from the applicable capability and authored-sourc
   remain contradictory
 - **THEN** the contradiction remains unresolved and governance blocks progression rather than
   adopting the executable interpretation
-
