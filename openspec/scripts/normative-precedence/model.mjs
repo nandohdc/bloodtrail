@@ -269,11 +269,23 @@ function discoverDeltaSpecs(changeDir, repoRoot) {
     }));
 }
 
-function activeDeltaAuthorized(changeDir, capabilityId) {
+function gitStdout(repoRoot, args) {
+  const result = spawnSync("git", args, { cwd: repoRoot, encoding: "utf8" });
+  return result.status === 0 ? result.stdout.trim() : null;
+}
+
+function activeDeltaAuthorized(changeDir, capabilityId, repoRoot) {
   const authorization = resolve(changeDir, "apply-authorization.md");
   const proposal = resolve(changeDir, "proposal.md");
   if (!existsSync(authorization) || !existsSync(proposal)) return false;
-  return readFileSync(proposal, "utf8").includes(`\`${capabilityId}\``);
+  const authorizationText = readFileSync(authorization, "utf8");
+  const proposalCommit = authorizationText.match(/Authorized proposal commit \| `([0-9a-f]{40})`/)?.[1];
+  const proposalTree = authorizationText.match(/Repository tree(?: at that commit)? \| `([0-9a-f]{40})`/)?.[1];
+  if (!proposalCommit || !proposalTree) return false;
+  if (gitStdout(repoRoot, ["rev-parse", `${proposalCommit}^{tree}`]) !== proposalTree) return false;
+  if (spawnSync("git", ["merge-base", "--is-ancestor", proposalCommit, "HEAD"], { cwd: repoRoot }).status !== 0) return false;
+  const proposalAtCommit = gitStdout(repoRoot, ["show", `${proposalCommit}:${relative(repoRoot, proposal)}`]);
+  return proposalAtCommit?.includes(`\`${capabilityId}\``) === true;
 }
 
 export function discoverRepositorySources(repoRoot, policy) {
@@ -286,7 +298,7 @@ export function discoverRepositorySources(repoRoot, policy) {
     discoverDeltaSpecs(changeDir, repoRoot).map((delta) => ({
       ...delta,
       change_id: basename(changeDir),
-      class: activeDeltaAuthorized(changeDir, delta.capability_id)
+      class: activeDeltaAuthorized(changeDir, delta.capability_id, repoRoot)
         ? "ACTIVE_CANDIDATE_DELTA"
         : "PROPOSED_CANDIDATE_DELTA"
     }))
@@ -478,8 +490,12 @@ export function validateActivation(record, context) {
   if (context.mergeTree && record.activated_tree !== context.mergeTree) {
     diagnostics.push(diagnostic("activation-tree-binding-mismatch", "activation.activated_tree", "record does not bind the activated merge tree"));
   }
-  if (context.reviewedObjects && JSON.stringify(record.governed_path_objects) !== JSON.stringify(context.reviewedObjects)) {
-    diagnostics.push(diagnostic("activation-governed-objects-mismatch", "activation.governed_path_objects", "activation must bind the complete reviewed object set"));
+  if (context.reviewedObjects) {
+    const expectedEntries = Object.entries(context.reviewedObjects).sort(([left], [right]) => left.localeCompare(right));
+    const actualEntries = Object.entries(record.governed_path_objects ?? {}).sort(([left], [right]) => left.localeCompare(right));
+    if (JSON.stringify(actualEntries) !== JSON.stringify(expectedEntries)) {
+      diagnostics.push(diagnostic("activation-governed-objects-mismatch", "activation.governed_path_objects", "activation must bind the complete reviewed object set"));
+    }
   }
   if (context.allowedRecordPaths && context.changedPaths?.some((path) => !context.allowedRecordPaths.includes(path))) {
     diagnostics.push(diagnostic("activation-record-scope-invalid", "activation.commit", "dedicated activation commit changed a non-record path"));

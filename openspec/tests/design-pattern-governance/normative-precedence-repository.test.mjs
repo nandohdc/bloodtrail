@@ -40,6 +40,12 @@ function git(root, args) {
   assert.equal(result.status, 0, result.stderr);
 }
 
+function gitText(root, args) {
+  const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
 function makeRepository() {
   const root = mkdtempSync(resolve(tmpdir(), "bloodtrail-precedence-"));
   git(root, ["init", "-q"]);
@@ -125,8 +131,12 @@ test("REPO-002 prohibited source-only semantic addition fails", () => withReposi
 
 test("REPO-003 authorized active candidate delta is discovered separately", () => withRepository(({ root, policy }) => {
   write(root, "openspec/changes/change-a/proposal.md", "## Capabilities\n\n- `security-audit-event-contract`\n");
-  write(root, "openspec/changes/change-a/apply-authorization.md", "# Bounded apply authorization\n");
   write(root, "openspec/changes/change-a/specs/security-audit-event-contract/spec.md", "## ADDED Requirements\n");
+  git(root, ["add", "."]);
+  git(root, ["commit", "-q", "-m", "candidate proposal"]);
+  const commit = gitText(root, ["rev-parse", "HEAD"]);
+  const tree = gitText(root, ["rev-parse", "HEAD^{tree}"]);
+  write(root, "openspec/changes/change-a/apply-authorization.md", `| Authorized proposal commit | \`${commit}\` |\n| Repository tree | \`${tree}\` |\n`);
   const result = discoverRepositorySources(root, policy);
   assert.equal(result.active.find((entry) => entry.change_id === "change-a")?.class, "ACTIVE_CANDIDATE_DELTA");
 }));

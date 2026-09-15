@@ -24,7 +24,7 @@
 - [x] 4.1 Preserve all 26 policy-model cases in repository tests and verify 7 valid cases pass and 19 invalid cases fail for their declared policy reason.
 - [x] 4.2 Add repository enforcement cases for delegation, delta classification, applicability, review/freeze binding, compatibility presence, activation authority, and lifecycle legality using disposable Git repositories.
 - [x] 4.3 Prove negative controls NC-001 through NC-008 are detected, including source-only semantics, post-review mutation, activation self-authorization, and unclassified compatibility change.
-- [ ] 4.4 Run the trusted baseline checker and candidate checker separately and record their exact commands, exits, and diagnostics without treating either as owner approval.
+- [x] 4.4 Run the trusted baseline checker and candidate checker separately and record their exact commands, exits, and diagnostics without treating either as owner approval.
 
 ## 5. Technical verification and Revision 2 evidence
 
