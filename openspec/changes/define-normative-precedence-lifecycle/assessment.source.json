@@ -135,7 +135,7 @@
       "evidence_ids": ["an activation record without an independently authorized exact owner decision is rejected"]
     },
     "implementation-repository-conflicts-fail-closed": {
-      "task_ids": ["3.2", "3.5", "4.2"],
+      "task_ids": ["3.2", "3.3", "4.2"],
       "evidence_ids": ["the repository checker discovers applicable current capabilities and rejects an unclassified or contradictory source assertion at the correct lifecycle stage"]
     },
     "implementation-checker-trust-not-self-authorized": {

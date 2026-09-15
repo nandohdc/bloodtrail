@@ -26,7 +26,8 @@ None.
 
 ## Impact
 
-- Adds governance policy and schema files under `openspec/governance/`.
+- Adds governance policy and schema files under `openspec/governance/` and registers the new policy,
+  checker, and module paths in the existing governance-core perimeter.
 - Adds a dependency-free repository checker and focused tests under `openspec/scripts/` and `openspec/tests/design-pattern-governance/`.
 - Adds one required governance-CI invocation and records the resolved authority/lifecycle vocabulary in `openspec/CONTEXT.md`.
 - Creates no contract or SDK semantic change and does not select Candidate B.

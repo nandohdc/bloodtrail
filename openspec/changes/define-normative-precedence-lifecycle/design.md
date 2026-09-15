@@ -165,8 +165,10 @@ while preventing an unrelated edit from laundering the defect.
 2. Record bounded apply authorization for governance implementation only.
 3. Add policy, schema, checker, tests, glossary terms, and minimal CI invocation.
 4. Freeze the exact technical commit and request project-owner review; do not mark it approved.
-5. After approval, follow the existing identity-preserving signed-record, merge, direct-child
-   activation, fold, and archive sequence.
+5. After approval, follow the existing identity-preserving signed-record and merge sequence, fold
+   every affected delta into the current capabilities, freeze and review the exact folded content,
+   and only then create the separately authorized direct-child activation record and archive the
+   byte-identical change record.
 6. Keep all Candidate A semantic debts activation/release-blocking until their dependent CB changes
    remove them and a later exact Candidate B is intentionally frozen.
 

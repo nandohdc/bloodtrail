@@ -35,5 +35,5 @@
 
 - [ ] 6.1 Obtain project-owner review bound to the exact technical commit/tree, complete governed objects, scope, and policy/checker hashes; keep `NORMATIVE_PRECEDENCE_DECISION_STATUS=NEEDS_REVIEW` until granted.
 - [ ] 6.2 After approval only, create the signed governance record, re-run exact-head required checks, and establish merge readiness without starting CB-002.
-- [ ] 6.3 Land through identity-preserving merge and the separately authorized dedicated activation record; verify the activation record is the merge's direct child and cannot self-authorize.
-- [ ] 6.4 Fold all three capability deltas while the change remains active, validate the fold independently, then archive the byte-identical completed change in a separate governed step.
+- [ ] 6.3 Land through identity-preserving merge, fold all three capability deltas while the change remains active, validate the fold independently, and freeze/review the exact folded content.
+- [ ] 6.4 After the folded-content review grants activation, store the separately authorized dedicated direct-child activation record, verify it cannot self-authorize, then archive the byte-identical completed change in a separate governed step.

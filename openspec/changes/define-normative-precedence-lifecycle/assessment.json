@@ -169,7 +169,7 @@
     "implementation-repository-conflicts-fail-closed": {
       "task_ids": [
         "3.2",
-        "3.5",
+        "3.3",
         "4.2"
       ],
       "evidence_ids": [
@@ -204,7 +204,6 @@
     "3.2",
     "3.3",
     "3.4",
-    "3.5",
     "4.1",
     "4.2",
     "4.3",
