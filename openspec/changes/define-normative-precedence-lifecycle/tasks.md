@@ -28,7 +28,7 @@
 
 ## 5. Technical verification and Revision 2 evidence
 
-- [ ] 5.1 Run strict OpenSpec validation, policy-model tests, repository enforcement tests, the candidate checker, the trusted/candidate dual check, and `git diff --check`; record exact results.
+- [x] 5.1 Run strict OpenSpec validation, policy-model tests, repository enforcement tests, the candidate checker, the trusted/candidate dual check, and `git diff --check`; record exact results.
 - [ ] 5.2 Produce the external CB-001 Revision 2 evidence package, blocker-closure table, artifact hashes, and exact technical commit/tree without modifying Candidate A.
 
 ## 6. Review and governed landing
