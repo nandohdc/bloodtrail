@@ -34,7 +34,8 @@
     "openspec/tests/design-pattern-governance/normative-precedence-repository.test.mjs",
     "openspec/tests/design-pattern-governance/fixtures/normative-precedence/",
     "openspec/CONTEXT.md",
-    ".github/workflows/ci.yml"
+    ".github/workflows/ci.yml",
+    "openspec/governance/records/define-normative-precedence-lifecycle.json"
   ],
   "candidate_approaches": [
     {
