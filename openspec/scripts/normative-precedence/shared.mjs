@@ -48,12 +48,17 @@ export function loadPolicy(repoRoot, policyPath = POLICY_RELATIVE_PATH) {
   return { path: absolute, policy, schemaPath, schema: readJson(schemaPath) };
 }
 
+function holdsPointerToken(value, key) {
+  if (value === null || typeof value !== "object") return false;
+  return key in value;
+}
+
 export function getJsonPointer(document, pointer) {
   if (pointer === "") return document;
   if (!pointer.startsWith("/")) throw new Error(`invalid JSON pointer ${pointer}`);
   return pointer.slice(1).split("/").reduce((value, token) => {
     const key = token.replaceAll("~1", "/").replaceAll("~0", "~");
-    if (value === null || typeof value !== "object" || !(key in value)) {
+    if (!holdsPointerToken(value, key)) {
       throw new Error(`missing JSON pointer ${pointer}`);
     }
     return value[key];

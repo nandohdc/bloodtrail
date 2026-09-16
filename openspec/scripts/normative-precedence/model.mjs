@@ -121,8 +121,12 @@ function parseApplyAuthorization(text) {
   };
 }
 
+function bindsExactProposalObjects(authorization) {
+  return ["proposal_commit", "proposal_tree", "change_subtree"].every((field) => Boolean(authorization[field]));
+}
+
 function authorizationIdentityProblems(authorization) {
-  if (authorization.proposal_commit && authorization.proposal_tree && authorization.change_subtree) return [];
+  if (bindsExactProposalObjects(authorization)) return [];
   return ["apply authorization lacks exact proposal commit, tree, or subtree"];
 }
 
@@ -135,10 +139,12 @@ function authorizationObjectProblems(authorization, repoRoot, changePath) {
 }
 
 function authorizationAncestryProblems(authorization, repoRoot) {
-  const problems = [];
   const commit = authorization.proposal_commit;
-  if (commit && !isAncestorCommit(repoRoot, commit, "HEAD")) problems.push("authorized proposal is not an ancestor of HEAD");
-  if (commit && authorization.candidate_base && !isAncestorCommit(repoRoot, authorization.candidate_base, commit)) problems.push("authorized candidate base is not an ancestor of the proposal commit");
+  if (!commit) return [];
+  const problems = [];
+  if (!isAncestorCommit(repoRoot, commit, "HEAD")) problems.push("authorized proposal is not an ancestor of HEAD");
+  const base = authorization.candidate_base;
+  if (base && !isAncestorCommit(repoRoot, base, commit)) problems.push("authorized candidate base is not an ancestor of the proposal commit");
   return problems;
 }
 
@@ -335,9 +341,15 @@ function changeExclusivePath(repoRoot, path, scope) {
   return Boolean(base) && inGovernedScope(path, scope) && gitObjectAt(repoRoot, base, path) === null;
 }
 
+function isRelocatedByArchive(path, scope) {
+  if (scope.active) return false;
+  if (!scope.archivedRoot) return false;
+  return path.startsWith(`${scope.changeRoot}/`);
+}
+
 /** Maps an active change path to its archived location while the change is being archived. */
 function relocatedPath(path, scope) {
-  if (scope.active || !scope.archivedRoot || !path.startsWith(`${scope.changeRoot}/`)) return path;
+  if (!isRelocatedByArchive(path, scope)) return path;
   return `${scope.archivedRoot}${path.slice(scope.changeRoot.length)}`;
 }
 
@@ -565,14 +577,20 @@ function buildReviewExpectation({ repoRoot, policy, binding, scope, diagnostics,
   };
 }
 
-function reviewFreshnessDiagnostics({ repoRoot, rangeChanges, scope, recordOnly, expectedObjects }) {
+function isFreshnessGoverned(changed, { scope, recordOnly, expectedObjects }) {
+  if (recordOnly.includes(changed)) return false;
+  return inGovernedScope(changed, scope) || Object.hasOwn(expectedObjects, changed);
+}
+
+function reviewFreshnessDiagnostics(context) {
+  const { repoRoot, rangeChanges, scope, expectedObjects } = context;
   const diagnostics = [];
   // Freshness is judged over the change's own inspected range: every path that
   // range changes inside the governed scope or reviewed set must still carry its
   // reviewed object (after any archive relocation). Base-side and unrelated
   // protected-history commits are outside that range and cannot stale the review.
   for (const changed of rangeChanges ?? []) {
-    if (recordOnly.includes(changed) || !(inGovernedScope(changed, scope) || Object.hasOwn(expectedObjects, changed))) continue;
+    if (!isFreshnessGoverned(changed, context)) continue;
     if (gitObjectAt(repoRoot, "HEAD", relocatedPath(changed, scope)) !== expectedObjects[changed]) {
       diagnostics.push(diagnostic("review-binding-post-review-change", changed, "the range changes a governed path away from its reviewed object"));
     }
@@ -748,11 +766,11 @@ function inspectComparisonBase(context) {
 function inspectSourceSections(context) {
   const { policy, sourcePath, source, diagnostics, observations } = context;
   const covered = sourceSections(policy);
-  for (const key of Object.keys(source)) {
-    if (!covered.has(key)) diagnostics.push(diagnostic("source-section-ownership-missing", `${sourcePath}#/${key}`, "source section has no governed semantic owner/delegation"));
+  for (const key of Object.keys(source).filter((key) => !covered.has(key))) {
+    diagnostics.push(diagnostic("source-section-ownership-missing", `${sourcePath}#/${key}`, "source section has no governed semantic owner/delegation"));
   }
-  for (const key of covered) {
-    if (!(key in source)) observations.push(diagnostic("owned-source-section-absent", `${sourcePath}#/${key}`, "owned section is not present in this source revision"));
+  for (const key of [...covered].filter((key) => !(key in source))) {
+    observations.push(diagnostic("owned-source-section-absent", `${sourcePath}#/${key}`, "owned section is not present in this source revision"));
   }
 }
 

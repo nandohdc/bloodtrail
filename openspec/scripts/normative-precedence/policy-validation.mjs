@@ -11,21 +11,23 @@ function transitionEndpointsAreValid(lifecycle, edge) {
   return lifecycle.states.includes(edge.from) && lifecycle.states.includes(edge.to);
 }
 
+function missingTextFields(edge, fields) {
+  return fields.filter((field) => typeof edge[field] !== "string" || edge[field].length === 0);
+}
+
+function missingListFields(edge, fields) {
+  return fields.filter((field) => !Array.isArray(edge[field]) || edge[field].length === 0);
+}
+
 function validateTransitionFields(edge, transitionPath) {
-  const diagnostics = [];
-  for (const field of ["entering_authority", "semantic_claim", "invalidation"]) {
-    const value = edge[field];
-    if (typeof value !== "string" || value.length === 0) {
-      diagnostics.push(diagnostic("lifecycle-transition-evidence-incomplete", `${transitionPath}.${field}`, "transition governance field is required"));
-    }
-  }
-  for (const field of ["required_evidence", "permitted_operations"]) {
-    const value = edge[field];
-    if (!Array.isArray(value) || value.length === 0) {
-      diagnostics.push(diagnostic("lifecycle-transition-evidence-incomplete", `${transitionPath}.${field}`, "transition governance list is required"));
-    }
-  }
-  return diagnostics;
+  const missing = [
+    ...missingTextFields(edge, ["entering_authority", "semantic_claim", "invalidation"])
+      .map((field) => [field, "transition governance field is required"]),
+    ...missingListFields(edge, ["required_evidence", "permitted_operations"])
+      .map((field) => [field, "transition governance list is required"])
+  ];
+  return missing.map(([field, message]) =>
+    diagnostic("lifecycle-transition-evidence-incomplete", `${transitionPath}.${field}`, message));
 }
 
 function validateTransition({ lifecycle, path, index, edge, edges }) {
@@ -41,9 +43,14 @@ function validateTransition({ lifecycle, path, index, edge, edges }) {
   return diagnostics;
 }
 
+function hasLifecycleShape(lifecycle) {
+  if (!lifecycle) return false;
+  return Array.isArray(lifecycle.states) && Array.isArray(lifecycle.transitions);
+}
+
 export function validateLifecycle(name, lifecycle) {
   const path = `${name}`;
-  if (!lifecycle || !Array.isArray(lifecycle.states) || !Array.isArray(lifecycle.transitions)) {
+  if (!hasLifecycleShape(lifecycle)) {
     return [diagnostic("lifecycle-shape-invalid", path, "states and transitions are required")];
   }
   const diagnostics = [];
@@ -160,11 +167,16 @@ function validateClassInventory(domains, classes) {
   return diagnostics;
 }
 
+function violatesNonAuthorityClass(entry) {
+  if (!entry) return true;
+  return Boolean(entry.may_define_semantics || entry.may_override_semantics);
+}
+
 function validateNonAuthorityClasses(classes) {
   const diagnostics = [];
   for (const id of ["AUTHORITATIVE_AUTHORED_CONTRACT", "DERIVED_CONTRACT_ARTIFACT", "DERIVED_SDK_ARTIFACT", "SEMANTIC_IMPLEMENTATION", "TEST_EVIDENCE", "CANDIDATE_GOVERNANCE_CHECKER", "ACTIVATION_EVIDENCE"]) {
     const entry = classes.find((candidate) => candidate.id === id);
-    if (!entry || entry.may_define_semantics || entry.may_override_semantics) {
+    if (violatesNonAuthorityClass(entry)) {
       diagnostics.push(diagnostic("non-authority-can-define-semantics", `source_classes.${id}`, `${id} must not define or override semantics`));
     }
   }
@@ -221,24 +233,30 @@ function validateRequirementReference(ownership, requirement, capabilities, capa
   return diagnostics;
 }
 
+function validateJointOwnershipOverlap(overlaps, requirements, path) {
+  if (overlaps.length !== 1) {
+    return [diagnostic("capability-overlap-unclassified", path, "joint ownership requires one exact overlap classification")];
+  }
+  const expectedIds = requirements.map((entry) => entry.capability_id).sort(byCodePoint);
+  const boundIds = Object.keys(overlaps[0].capability_objects ?? {}).sort(byCodePoint);
+  if (JSON.stringify(expectedIds) === JSON.stringify(boundIds)) return [];
+  return [diagnostic("capability-overlap-binding-incomplete", `capability_overlaps.${overlaps[0].id}`, "overlap binding must cover every joint owner exactly")];
+}
+
 function validateOwnershipOverlap(policy, ownership, requirements) {
-  const diagnostics = [];
   const path = `requirement_ownership.${ownership.domain}`;
   const overlaps = (policy.capability_overlaps ?? []).filter((entry) => entry.domain === ownership.domain);
   if (ownership.overlap === "COMPATIBLE_JOINT_OWNERSHIP") {
-    if (overlaps.length !== 1) {
-      diagnostics.push(diagnostic("capability-overlap-unclassified", path, "joint ownership requires one exact overlap classification"));
-    } else {
-      const expectedIds = requirements.map((entry) => entry.capability_id).sort(byCodePoint);
-      const boundIds = Object.keys(overlaps[0].capability_objects ?? {}).sort(byCodePoint);
-      if (JSON.stringify(expectedIds) !== JSON.stringify(boundIds)) {
-        diagnostics.push(diagnostic("capability-overlap-binding-incomplete", `capability_overlaps.${overlaps[0].id}`, "overlap binding must cover every joint owner exactly"));
-      }
-    }
-  } else if (overlaps.length !== 0) {
-    diagnostics.push(diagnostic("capability-overlap-unexpected", path, "single-owner domain must not carry an overlap classification"));
+    return validateJointOwnershipOverlap(overlaps, requirements, path);
   }
-  return diagnostics;
+  if (overlaps.length === 0) return [];
+  return [diagnostic("capability-overlap-unexpected", path, "single-owner domain must not carry an overlap classification")];
+}
+
+function ownerCountMatchesOverlap(ownership, requirements) {
+  if (ownership.overlap === "SINGLE_OWNER") return requirements.length === 1;
+  if (ownership.overlap === "COMPATIBLE_JOINT_OWNERSHIP") return requirements.length >= 2;
+  return true;
 }
 
 function validateOwnershipRow(policy, ownership, capabilities, capabilityIds) {
@@ -248,8 +266,7 @@ function validateOwnershipRow(policy, ownership, capabilities, capabilityIds) {
     diagnostics.push(diagnostic("delegation-value-unknown", path, ownership.delegation));
   }
   const requirements = ownership.capability_requirements ?? [];
-  if ((ownership.overlap === "SINGLE_OWNER" && requirements.length !== 1)
-    || (ownership.overlap === "COMPATIBLE_JOINT_OWNERSHIP" && requirements.length < 2)) {
+  if (!ownerCountMatchesOverlap(ownership, requirements)) {
     diagnostics.push(diagnostic("capability-overlap-unclassified", path, "owner count does not match the explicit overlap class"));
   }
   for (const requirement of requirements) {
@@ -307,17 +324,27 @@ function validateSemanticDelegation(policy, capabilityIds) {
   return diagnostics;
 }
 
+function bindsReviewExactly(binding) {
+  if (!binding?.floating_references_forbidden) return false;
+  if (!binding?.partial_bindings_forbidden) return false;
+  return JSON.stringify(binding?.post_review_allowlist) === JSON.stringify(["governance_record_only"]);
+}
+
 function validateReviewBindingModel(policy) {
-  if (!policy.review_binding?.floating_references_forbidden
-    || !policy.review_binding?.partial_bindings_forbidden
-    || JSON.stringify(policy.review_binding?.post_review_allowlist) !== JSON.stringify(["governance_record_only"])) {
+  if (!bindsReviewExactly(policy.review_binding)) {
     return [diagnostic("review-binding-not-exact", "review_binding", "floating and partial bindings must be forbidden")];
   }
   return [];
 }
 
+function usesExactActivationMechanism(activation) {
+  if (activation?.mechanism !== "DEDICATED_POST_MERGE_DIRECT_CHILD_RECORD") return false;
+  if (!activation?.record_cannot_self_authorize) return false;
+  return Boolean(activation?.branch_or_version_only_forbidden);
+}
+
 function validateActivationModel(policy) {
-  if (policy.activation?.mechanism !== "DEDICATED_POST_MERGE_DIRECT_CHILD_RECORD" || !policy.activation?.record_cannot_self_authorize || !policy.activation?.branch_or_version_only_forbidden) {
+  if (!usesExactActivationMechanism(policy.activation)) {
     return [diagnostic("activation-model-unsafe", "activation", "activation must use an exact authorized direct-child record")];
   }
   return [];
@@ -364,6 +391,10 @@ function validateSemanticOverlapBindings(policy) {
   return diagnostics;
 }
 
+function conflictRuleIsComplete(rule) {
+  return ["controlling", "merge", "activation", "release"].every((field) => Boolean(rule[field]));
+}
+
 function validateConflictRules(policy) {
   const diagnostics = [];
   const rules = policy.conflict_rules ?? [];
@@ -371,7 +402,7 @@ function validateConflictRules(policy) {
     diagnostics.push(diagnostic("conflict-rule-inventory-invalid", "conflict_rules", "exactly 26 unique rules are required"));
   }
   for (const rule of rules) {
-    if (!rule.controlling || !rule.merge || !rule.activation || !rule.release) {
+    if (!conflictRuleIsComplete(rule)) {
       diagnostics.push(diagnostic("conflict-rule-incomplete", `conflict_rules.${rule.id}`, "controlling source and stage effects are required"));
     }
   }

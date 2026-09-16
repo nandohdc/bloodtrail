@@ -20,10 +20,15 @@ function validateReviewObjectIds(binding) {
   return diagnostics;
 }
 
+function expectsExactValue(expected, field) {
+  if (!expected.values) return false;
+  return field in expected.values;
+}
+
 function validateReviewScalarValues(binding, expected) {
   const diagnostics = [];
   for (const field of ["technical_commit", "tree", "contract_version", "reviewer_identity", "reviewer_authority"]) {
-    if (expected.values && field in expected.values && JSON.stringify(binding[field]) !== JSON.stringify(expected.values[field])) {
+    if (expectsExactValue(expected, field) && JSON.stringify(binding[field]) !== JSON.stringify(expected.values[field])) {
       diagnostics.push(diagnostic("review-binding-value-mismatch", `review.${field}`, "bound value differs from the exact reviewed expectation"));
     }
   }
@@ -33,7 +38,7 @@ function validateReviewScalarValues(binding, expected) {
 function validateReviewSetValues(binding, expected) {
   const diagnostics = [];
   for (const field of ["decision_scope", "authorization_granted", "authorization_withheld"]) {
-    if (!expected.values || !(field in expected.values)) continue;
+    if (!expectsExactValue(expected, field)) continue;
     const actual = Array.isArray(binding[field]) ? [...binding[field]].sort(byCodePoint) : binding[field];
     const wanted = Array.isArray(expected.values[field]) ? [...expected.values[field]].sort(byCodePoint) : expected.values[field];
     if (JSON.stringify(actual) !== JSON.stringify(wanted)) {
@@ -126,9 +131,14 @@ function validateActivationAuthority(record, context) {
   ];
 }
 
+function isDedicatedDirectChild(record, context) {
+  if (context.parentCount !== 1) return false;
+  return record.activated_commit === context.mergeCommit && record.parent_commit === context.mergeCommit;
+}
+
 function validateActivationParentage(record, context) {
   const diagnostics = [];
-  if (record.activated_commit !== context.mergeCommit || record.parent_commit !== context.mergeCommit || context.parentCount !== 1) {
+  if (!isDedicatedDirectChild(record, context)) {
     diagnostics.push(diagnostic("activation-parentage-invalid", "activation.parent_commit", "activation must be a dedicated direct child of the exact merge"));
   }
   if (context.mergeTree && record.activated_tree !== context.mergeTree) {
