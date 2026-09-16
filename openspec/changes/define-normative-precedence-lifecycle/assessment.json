@@ -27,6 +27,7 @@
   },
   "owned_paths": [
     "openspec/changes/define-normative-precedence-lifecycle/",
+    "openspec/governance/design-pattern-policy.json",
     "openspec/governance/normative-source-precedence.json",
     "openspec/governance/schemas/normative-source-precedence.schema.json",
     "openspec/scripts/check-normative-precedence.mjs",
