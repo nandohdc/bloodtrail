@@ -13,15 +13,30 @@ const defaultRoot = resolve(scriptDir, "../..");
 
 function parseArgs(args) {
   const options = { repoRoot: defaultRoot, policyPath: undefined, stage: "candidate", baseCommit: null, json: false };
+  const valueOptions = new Map([
+    ["--repo", (value) => { options.repoRoot = resolve(value); }],
+    ["--policy", (value) => { options.policyPath = value; }],
+    ["--stage", (value) => { options.stage = value; }],
+    ["--base", (value) => { options.baseCommit = value; }]
+  ]);
+  const flagOptions = new Map([
+    ["--json", () => { options.json = true; }],
+    ["--help", () => { options.help = true; }],
+    ["-h", () => { options.help = true; }]
+  ]);
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
-    if (arg === "--repo") options.repoRoot = resolve(args[++index]);
-    else if (arg === "--policy") options.policyPath = args[++index];
-    else if (arg === "--stage") options.stage = args[++index];
-    else if (arg === "--base") options.baseCommit = args[++index];
-    else if (arg === "--json") options.json = true;
-    else if (arg === "--help" || arg === "-h") options.help = true;
-    else throw new Error(`unknown argument ${arg}`);
+    const valueHandler = valueOptions.get(arg);
+    if (valueHandler) {
+      valueHandler(args[++index]);
+      continue;
+    }
+    const flagHandler = flagOptions.get(arg);
+    if (flagHandler) {
+      flagHandler();
+      continue;
+    }
+    throw new Error(`unknown argument ${arg}`);
   }
   return options;
 }
