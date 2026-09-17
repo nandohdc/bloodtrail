@@ -3,8 +3,8 @@
   "change_id": "define-normative-precedence-lifecycle",
   "signed": true,
   "base_commit": "b8122751342b0a2591a69a728ea58a99ca37dd0f",
-  "technical_commit": "3c6b4729537065a88cd7d0e049651f158dfbd6eb",
-  "tree": "525faf841bb3548a0b5f5dd6d942d7207691ef6a",
+  "technical_commit": "40c67cdacbe099cf85c18a040a4a88a6474fb9cd",
+  "tree": "f6656e88fa1e0f0950fc0702827b13a472dd424d",
   "contract_version": "2.1.0",
   "decision_scope": [
     "define-normative-precedence-lifecycle"
@@ -20,7 +20,7 @@
     "implement-normative-precedence-revision-3",
     "begin-cb-002"
   ],
-  "decision_timestamp": "2026-09-17T00:39:21Z",
+  "decision_timestamp": "2026-09-17T02:21:48Z",
   "governed_path_objects": {
     ".github/workflows/ci.yml": "b75ce86d7d83025698d51763b15e9a4f64418f1b",
     "openspec/CONTEXT.md": "a1c6fcfbd251bffc7f2f1a4ad4ff33a6425ff428",
@@ -30,6 +30,7 @@
     "openspec/changes/define-normative-precedence-lifecycle/assessment.json": "d375358a5a15c1ea078fbb0fe2d47bd18acac62e",
     "openspec/changes/define-normative-precedence-lifecycle/assessment.source.json": "1d68f779a8a78cff08b3735fff52016491d52e67",
     "openspec/changes/define-normative-precedence-lifecycle/contract-reuse.json": "879f14b097e63ac6ba51380bed00efd1b9ef6fe9",
+    "openspec/changes/define-normative-precedence-lifecycle/deepscan-cleanup-apply-authorization.md": "bf7ad774576b319a22cec25a73e2a55328e6ed6f",
     "openspec/changes/define-normative-precedence-lifecycle/design.md": "12487434c657b9dbb0ccf07ac854ca62e679eaa9",
     "openspec/changes/define-normative-precedence-lifecycle/lifecycle-evidence.json": "c9b0a423d68f1be029552d325d8b6523d509b460",
     "openspec/changes/define-normative-precedence-lifecycle/proposal.md": "b25ecebfa7f5ed79376d406769e3d6396006b2e7",
@@ -44,7 +45,7 @@
     "openspec/governance/schemas/normative-source-precedence.schema.json": "c384c1f28e9b761c661a90b9007ac6bd1de68fa8",
     "openspec/scripts/check-normative-precedence.mjs": "4ff6be5a9274d9c62379f9bb0764cd3d5f974a80",
     "openspec/scripts/normative-precedence/binding-validation.mjs": "4982b8ce0a70abf521a8ef0bbd1748cf8403c02b",
-    "openspec/scripts/normative-precedence/model.mjs": "4a98005fb98fd9a5f8058ea97c9d409662e461b2",
+    "openspec/scripts/normative-precedence/model.mjs": "8badd769e952aa9a4e6c55af27168ae8f8752d94",
     "openspec/scripts/normative-precedence/policy-validation.mjs": "7e66980b6778abdff1f2de98f82b9022e0f9fe56",
     "openspec/scripts/normative-precedence/shared.mjs": "670c4981b1cbe467b835d3da02955ccff913114e",
     "openspec/scripts/normative-precedence/source-classification.mjs": "a914147ca7b3e39ac1b43db0c60803009b1ff3cb",
