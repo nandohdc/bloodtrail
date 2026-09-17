@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bloodtrail.dev/governance/normative-source-precedence.schema.json",
+  "title": "Bloodtrail normative source precedence policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema", "schema", "policy_version", "status", "change_id", "contract",
+    "authority_domains", "source_classes", "semantic_dimensions", "delegation_values",
+    "default_unclassified_dimension", "governance_authorities", "repository_evidence",
+    "capabilities", "requirement_ownership", "capability_overlaps", "semantic_delegation", "source_shape",
+    "semantic_assertions", "baseline_conflicts", "change_record_lifecycle",
+    "contract_candidate_lifecycle", "lifecycle_relationships", "review_binding",
+    "activation", "checker_trust", "conflict_rules"
+  ],
+  "properties": {
+    "$schema": {"type":"string","minLength":1},
+    "schema": {"const":"bloodtrail.normative-source-precedence.policy"},
+    "policy_version": {"type":"string","minLength":1},
+    "status": {"enum":["candidate_requires_exact_owner_review","activated"]},
+    "change_id": {"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"},
+    "contract": {"type":"object"},
+    "authority_domains": {"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string"}},
+    "source_classes": {"type":"array","minItems":1,"items":{"type":"object","required":["id","domain","may_define_semantics","may_override_semantics","may_authorize_transition","binds_exact_content"]}},
+    "semantic_dimensions": {"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string"}},
+    "delegation_values": {"const":["NONE","CONCRETE_PARAMETER","REPRESENTATION_DETAIL"]},
+    "default_unclassified_dimension": {"const":"SEMANTIC_REQUIREMENT"},
+    "governance_authorities": {
+      "type":"object","additionalProperties":false,
+      "required":["apply_authority_identity","review_authority_identity","review_authority_role","activation_grant","merge_grant"],
+      "properties": {
+        "apply_authority_identity":{"type":"string","minLength":1},
+        "review_authority_identity":{"type":"string","minLength":1},
+        "review_authority_role":{"type":"string","minLength":1},
+        "activation_grant":{"type":"string","minLength":1},
+        "merge_grant":{"type":"string","minLength":1}
+      }
+    },
+    "repository_evidence": {
+      "type":"object","additionalProperties":false,
+      "required":["active_changes_root","archive_root","apply_authorization_file","lifecycle_evidence_file","review_record_path","activation_record_path","protected_reference","governance_record_only_paths"],
+      "properties": {
+        "active_changes_root":{"type":"string","minLength":1},
+        "archive_root":{"type":"string","minLength":1},
+        "apply_authorization_file":{"type":"string","minLength":1},
+        "lifecycle_evidence_file":{"type":"string","minLength":1},
+        "review_record_path":{"type":"string","minLength":1},
+        "activation_record_path":{"type":"string","minLength":1},
+        "protected_reference":{"type":"string","pattern":"^refs/heads/"},
+        "governance_record_only_paths":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}}
+      }
+    },
+    "capabilities": {"type":"array","minItems":1,"items":{"type":"object","required":["id","path","domains","versions","path_prefixes"]}},
+    "requirement_ownership": {
+      "type":"array","minItems":1,
+      "items": {
+        "type":"object","additionalProperties":false,
+        "required":["domain","capability_requirements","source_sections","delegation","overlap"],
+        "properties": {
+          "domain":{"type":"string","minLength":1},
+          "capability_requirements":{
+            "type":"array","minItems":1,
+            "items":{
+              "type":"object","additionalProperties":false,
+              "required":["capability_id","requirement_heading"],
+              "properties":{
+                "capability_id":{"type":"string","minLength":1},
+                "requirement_heading":{"type":"string","minLength":1}
+              }
+            }
+          },
+          "source_sections":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+          "delegation":{"enum":["NONE","CONCRETE_PARAMETER","REPRESENTATION_DETAIL"]},
+          "overlap":{"enum":["SINGLE_OWNER","COMPATIBLE_JOINT_OWNERSHIP"]}
+        }
+      }
+    },
+    "capability_overlaps": {
+      "type":"array",
+      "items":{
+        "type":"object","additionalProperties":false,
+        "required":["id","domain","capability_objects","classification","rule"],
+        "properties":{
+          "id":{"type":"string","minLength":1},
+          "domain":{"type":"string","minLength":1},
+          "capability_objects":{"type":"object"},
+          "classification":{"enum":["COMPATIBLE_OVERLAP","DUPLICATE_CONSISTENT","CONTRADICTORY"]},
+          "rule":{"type":"string","minLength":1}
+        }
+      }
+    },
+    "semantic_delegation": {"type":"array","minItems":1,"items":{"type":"object","required":["dimension","classification","source_patterns","capability_ids","delegation"]}},
+    "source_shape": {"type":"array","minItems":1,"items":{"type":"object","required":["path","allowed_keys"]}},
+    "semantic_assertions": {"type":"array","items":{"type":"object","required":["id","domain","source_pointer","capability_id","requirement_heading","adapter"]}},
+    "baseline_conflicts": {"type":"array","items":{"type":"object"}},
+    "change_record_lifecycle": {"$ref":"#/$defs/lifecycle"},
+    "contract_candidate_lifecycle": {"$ref":"#/$defs/lifecycle"},
+    "lifecycle_relationships": {"type":"array","items":{"type":"object"}},
+    "review_binding": {"type":"object","required":["required_fields","governed_path_partition","post_review_allowlist","invalidation_rule","floating_references_forbidden","partial_bindings_forbidden"]},
+    "activation": {"type":"object","required":["mechanism","activating_authority","activation_evidence","required_fields","record_cannot_self_authorize","branch_or_version_only_forbidden","parentage"]},
+    "checker_trust": {"type":"object","required":["trusted_baseline","candidate_checker","candidate_cannot_self_authorize","transition"]},
+    "conflict_rules": {"type":"array","minItems":26,"items":{"type":"object","required":["id","result","controlling","merge","activation","release"]}}
+  },
+  "$defs": {
+    "lifecycle": {
+      "type":"object","additionalProperties":false,"required":["states","transitions"],
+      "properties": {
+        "states":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+        "transitions":{
+          "type":"array","minItems":1,
+          "items":{
+            "type":"object","additionalProperties":false,
+            "required":["from","to","entering_authority","required_evidence","permitted_operations","semantic_claim","invalidation"],
+            "properties":{
+              "from":{"type":"string","minLength":1},
+              "to":{"type":"string","minLength":1},
+              "entering_authority":{"type":"string","minLength":1},
+              "required_evidence":{"type":"array","minItems":1,"items":{"type":"string","minLength":1}},
+              "permitted_operations":{"type":"array","minItems":1,"items":{"type":"string","minLength":1}},
+              "semantic_claim":{"type":"string","minLength":1},
+              "invalidation":{"type":"string","minLength":1}
+            }
+          }
+        }
+      }
+    }
+  }
+}

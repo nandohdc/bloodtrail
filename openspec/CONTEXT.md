@@ -2,6 +2,81 @@
 
 This context defines the evidence-bearing concepts used to govern repository changes. It distinguishes an author’s architectural reasoning from technical review, project-owner decisions, and implementation authorization.
 
+## Normative Authority and Lifecycle
+
+**Current canonical capability**:
+An activated capability specification under `openspec/specs/` that owns current semantic intent for
+its declared domain and applicability. Two applicable current capabilities that contradict one
+another have no automatic winner.
+_Avoid_: newest prose wins, implementation-defined meaning
+
+**Active candidate delta**:
+An in-scope delta under an active OpenSpec change with bounded apply authorization. It may define
+proposed semantic intent for candidate construction and validation, but is not activated production
+semantics and cannot override current semantics outside its declared scope.
+_Avoid_: current capability, archived change record
+
+**Archived change record**:
+Immutable historical rationale and evidence for a completed, rejected, withdrawn, or superseded
+change. Its semantics are current only to the extent they were folded into a current capability and
+activated; the archive does not independently override current state.
+_Avoid_: active candidate delta, current capability
+
+**Authoritative authored contract**:
+The complete concrete machine-readable representation and sole contract-generation input. It owns
+only representational details or concrete parameters explicitly delegated by applicable semantic
+authority; an unclassified dimension defaults to a semantic requirement and may not originate here.
+_Avoid_: universal semantic authority, generated schema
+
+**Semantic requirement**:
+A behavioral, security, authorization, privacy, retention, delivery, compatibility,
+interoperability, lifecycle, trust, validation, requiredness, or other conformance obligation.
+Ambiguous source content is classified as semantic unless governance explicitly delegates it.
+_Avoid_: serialization detail, source implementation choice
+
+**Representation detail**:
+An encoding, serialization, identifier spelling, machine-readable structure, or other concrete form
+whose allowable freedom is explicitly delegated by the owning semantic capability. It cannot alter
+accepted behavior or conformance obligations.
+_Avoid_: requiredness, validation behavior, trust classification
+
+**Binding derived conformance surface**:
+A generated contract or SDK artifact consumers may rely on for conformance, while its semantic
+authority remains upstream. Divergence makes the derived surface invalid; it does not create a new
+source of truth.
+_Avoid_: authored authority, advisory output
+
+**Change-record lifecycle**:
+The state machine governing proposal, validation, apply authorization, implementation,
+verification, folding, and archival of one governed change record. It does not activate or
+supersede a contract version by implication.
+_Avoid_: contract-candidate lifecycle
+
+**Contract-candidate lifecycle**:
+The independent state machine governing authored and generated candidates, exact technical freeze,
+review, merge readiness, merge, activation, release, and supersession of contract content.
+_Avoid_: OpenSpec archive status, change-record lifecycle
+
+**Activating authority**:
+The independently authorized project-owner decision that grants activation for an exact reviewed
+candidate identity and scope. It is not created by the activation record it authorizes.
+_Avoid_: activation evidence, merge commit
+
+**Activation evidence**:
+The dedicated, content-addressed direct-child record that records an already authorized activation
+decision for an exact merged candidate. Its existence cannot authorize itself.
+_Avoid_: activating authority, release tag
+
+**Trusted governance checker**:
+An activated checker in the protected governance baseline. It enforces governance rules but cannot
+define contract semantics.
+_Avoid_: semantic authority, candidate governance checker
+
+**Candidate governance checker**:
+A proposed checker under an active change. It supplies evidence only until the trusted baseline,
+independent adversarial tests, exact owner review, and activation establish it as trusted.
+_Avoid_: self-validating checker, trusted baseline
+
 ## Contract Reuse Assessment
 
 **Contract Reuse Assessment (CRA)**:

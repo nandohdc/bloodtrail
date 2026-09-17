@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@2.1.0",
+  "mode": "assessment",
+  "disposition": "reuse",
+  "mechanism_references": [
+    "metadata.contract",
+    "metadata.schema_version",
+    "compatibility_policy"
+  ],
+  "rationale": "CB-001 Revision 2 changes governance over how the existing security-audit contract is authored, reviewed, activated, and checked. It does not add, remove, reinterpret, or repair a contract field, event, registry, validator rule, generated artifact, or compatibility classification, so security-audit@2.1.0 is reused exactly as the frozen Candidate A input.",
+  "trust_boundary": "The new boundary is governance evidence: a candidate checker may inspect contract and capability content but cannot become semantic authority, owner approval, or trusted policy merely by passing. Existing contract producer, consumer, tenant, authority, trust, privacy, and delivery boundaries remain unchanged.",
+  "transformation_ownership": "The authoritative source remains the sole contract-generation input and every existing contract generator retains its current ownership. PR-B01 adds only governance classification and read-only inspection; it neither generates contract artifacts nor moves a contract transformation into governance code.",
+  "alternatives": [
+    {
+      "approach": "extend",
+      "rejection_reason": "Treating the governance rule as a security-audit contract extension would falsely claim a new event semantic and require a compatibility classification even though no contract input or output changes."
+    },
+    {
+      "approach": "new_contract",
+      "rejection_reason": "The machine-readable precedence policy is governance configuration for the repository, not a producer-consumer data contract or independently versioned audit-event payload surface."
+    }
+  ],
+  "author": {
+    "name": "Codex, under direct instruction from Fernando Homem da Costa",
+    "handle": "nandohdc"
+  },
+  "evidence_references": [
+    "openspec/changes/define-normative-precedence-lifecycle/proposal.md",
+    "openspec/changes/define-normative-precedence-lifecycle/design.md",
+    "openspec/changes/define-normative-precedence-lifecycle/specs/security-audit-event-contract/spec.md"
+  ],
+  "assurance_limitations": [
+    "This CRA classifies only reuse of security-audit@2.1.0; it is not owner approval of the precedence policy and does not resolve any Candidate A semantic defect.",
+    "The candidate governance checker remains untrusted until exact-content review and dedicated activation under the currently trusted baseline."
+  ]
+}

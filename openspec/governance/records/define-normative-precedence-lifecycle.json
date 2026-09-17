@@ -1,0 +1,57 @@
+{
+  "schema": "bloodtrail.normative-precedence.review-decision",
+  "change_id": "define-normative-precedence-lifecycle",
+  "signed": true,
+  "base_commit": "b8122751342b0a2591a69a728ea58a99ca37dd0f",
+  "technical_commit": "40c67cdacbe099cf85c18a040a4a88a6474fb9cd",
+  "tree": "f6656e88fa1e0f0950fc0702827b13a472dd424d",
+  "contract_version": "2.1.0",
+  "decision_scope": [
+    "define-normative-precedence-lifecycle"
+  ],
+  "reviewer_identity": "Fernando Homem da Costa (nandohdc)",
+  "reviewer_authority": "PROJECT_OWNER",
+  "authorization_granted": [
+    "merge-define-normative-precedence-lifecycle"
+  ],
+  "authorization_withheld": [
+    "activate-normative-precedence-policy",
+    "release-normative-precedence-policy",
+    "implement-normative-precedence-revision-3",
+    "begin-cb-002"
+  ],
+  "decision_timestamp": "2026-09-17T02:21:48Z",
+  "governed_path_objects": {
+    ".github/workflows/ci.yml": "b75ce86d7d83025698d51763b15e9a4f64418f1b",
+    "openspec/CONTEXT.md": "a1c6fcfbd251bffc7f2f1a4ad4ff33a6425ff428",
+    "openspec/changes/define-normative-precedence-lifecycle/.openspec.yaml": "96db9a43b670927e35c44f196854ffc84081fc1b",
+    "openspec/changes/define-normative-precedence-lifecycle/apply-authorization.md": "9041c60cec59552378d6c164c396660ef254c8da",
+    "openspec/changes/define-normative-precedence-lifecycle/assessment-scope-apply-authorization.md": "3c75ffb3649d664b3d0d743363f94ade5134c02f",
+    "openspec/changes/define-normative-precedence-lifecycle/assessment.json": "d375358a5a15c1ea078fbb0fe2d47bd18acac62e",
+    "openspec/changes/define-normative-precedence-lifecycle/assessment.source.json": "1d68f779a8a78cff08b3735fff52016491d52e67",
+    "openspec/changes/define-normative-precedence-lifecycle/contract-reuse.json": "879f14b097e63ac6ba51380bed00efd1b9ef6fe9",
+    "openspec/changes/define-normative-precedence-lifecycle/deepscan-cleanup-apply-authorization.md": "bf7ad774576b319a22cec25a73e2a55328e6ed6f",
+    "openspec/changes/define-normative-precedence-lifecycle/design.md": "12487434c657b9dbb0ccf07ac854ca62e679eaa9",
+    "openspec/changes/define-normative-precedence-lifecycle/lifecycle-evidence.json": "c9b0a423d68f1be029552d325d8b6523d509b460",
+    "openspec/changes/define-normative-precedence-lifecycle/proposal.md": "b25ecebfa7f5ed79376d406769e3d6396006b2e7",
+    "openspec/changes/define-normative-precedence-lifecycle/review-record-ownership-apply-authorization.md": "b33d7113ddbc92fef5981dd6af742fffb62c573e",
+    "openspec/changes/define-normative-precedence-lifecycle/revision-2-apply-authorization.md": "b77c3a0c1cfc58de0af3ef86e3cac6a9c4fc3ff9",
+    "openspec/changes/define-normative-precedence-lifecycle/specs/change-governance/spec.md": "b3c554a607a79b091874dc9a7b6746d4edde6204",
+    "openspec/changes/define-normative-precedence-lifecycle/specs/security-audit-event-contract/spec.md": "28302b2b00f42e026a01a795fd5c7a110723d12a",
+    "openspec/changes/define-normative-precedence-lifecycle/specs/software-design-pattern-governance/spec.md": "1e5231e037f3a4339744dad5dca378b7ae95161b",
+    "openspec/changes/define-normative-precedence-lifecycle/tasks.md": "5f6c4e805607ff24aa5e7f923c9a432466a94bac",
+    "openspec/governance/design-pattern-policy.json": "19729910191ecf8b40afd51de55dd3a3c7f5dced",
+    "openspec/governance/normative-source-precedence.json": "6f4bf3a955f377499af5487ff5945baacbecac47",
+    "openspec/governance/schemas/normative-source-precedence.schema.json": "c384c1f28e9b761c661a90b9007ac6bd1de68fa8",
+    "openspec/scripts/check-normative-precedence.mjs": "4ff6be5a9274d9c62379f9bb0764cd3d5f974a80",
+    "openspec/scripts/normative-precedence/binding-validation.mjs": "4982b8ce0a70abf521a8ef0bbd1748cf8403c02b",
+    "openspec/scripts/normative-precedence/model.mjs": "8badd769e952aa9a4e6c55af27168ae8f8752d94",
+    "openspec/scripts/normative-precedence/policy-validation.mjs": "7e66980b6778abdff1f2de98f82b9022e0f9fe56",
+    "openspec/scripts/normative-precedence/shared.mjs": "670c4981b1cbe467b835d3da02955ccff913114e",
+    "openspec/scripts/normative-precedence/source-classification.mjs": "a914147ca7b3e39ac1b43db0c60803009b1ff3cb",
+    "openspec/tests/design-pattern-governance/fixtures/normative-precedence/negative-controls.json": "823d3db9cc703223810acea987e5bde874a7a4dc",
+    "openspec/tests/design-pattern-governance/fixtures/normative-precedence/policy-cases.json": "17e52644888ad2110937dc697e5f9fa8c9254c6c",
+    "openspec/tests/design-pattern-governance/normative-precedence-policy.test.mjs": "89f14bad04e7e54a1944223846024e88a291968c",
+    "openspec/tests/design-pattern-governance/normative-precedence-repository.test.mjs": "7777ec110092424a606363287f3a8484eef00f3e"
+  }
+}
