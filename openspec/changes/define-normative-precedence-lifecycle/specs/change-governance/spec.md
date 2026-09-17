@@ -130,3 +130,85 @@ release. No unbound, new, changed, or broadened contradiction receives that exce
 - **WHEN** a recorded contradiction binds exact baseline objects, the candidate changes neither
   side, and its scope cannot resolve that semantic conflict
 - **THEN** merge may proceed while activation and release remain blocked and the debt remains visible
+
+### Requirement: Historical governance bindings are immutable and folded states receive new pins
+
+Existing applicability, overlap, debt, authorization, freeze, review, activation, and provenance
+bindings SHALL remain immutable historical evidence. A fold SHALL NOT edit, delete, reinterpret, or
+reuse an existing binding to describe a new canonical object graph. Every folded capability state
+SHALL receive a new immutable pin set bound to the exact authored source, current capability objects,
+ownership and selector inputs, recomputed applicability, recomputed overlap classifications,
+recomputed debt, and lineage to the historical evidence it supersedes or rebinds.
+
+Exactly one current pin set SHALL match a governed repository state. A missing, duplicate, floating,
+self-referential, object-mismatched, or stale pin set SHALL block fold, review, activation, and
+release. The exact-content review SHALL bind the pin-set object and every other governed fold object.
+
+#### Scenario: Fold attempts to mutate a historical pin
+- **WHEN** a fold edits or relabels an existing applicability, overlap, or debt binding so it names a
+  newly materialized canonical object
+- **THEN** governance rejects the fold and preserves the old binding as historical evidence
+
+#### Scenario: Folded state has one new exact pin set
+- **WHEN** a fold materializes new canonical capability objects and recomputes every required binding
+- **THEN** governance accepts the new pin set only when it uniquely matches the complete exact object
+  graph and preserves lineage to prior evidence
+
+### Requirement: Operation authorization is discovered per change and cannot self-authorize
+
+Governance SHALL discover operation-specific authorization records through a governed schema and
+repository convention rather than a change-specific filename, identifier, or grant literal. Each
+record SHALL bind its change, requested operation, exact base and proposal objects, governed scope,
+paths, principal and role, grant, withheld authorities, introducing event, and predecessor,
+amendment, revocation, or supersession relation.
+
+Zero applicable valid current records SHALL mean unauthorized. Multiple consistent records MAY be
+evaluated only through an explicit coherent-chain rule. Conflicting current records SHALL fail
+closed. Revoked, superseded, withdrawn, archive-only, and archived-change records SHALL NOT authorize
+current work. Authority verification SHALL use a protected-baseline authority registry; a candidate
+SHALL NOT enroll or modify the principal or signing key used to authorize itself.
+
+Merge, fold, activation, release, and archive authority SHALL remain independent. No grant for one
+operation SHALL imply another.
+
+#### Scenario: Change has no valid current fold authorization
+- **WHEN** a verified change requests fold and discovery finds no applicable valid current `FOLD`
+  authorization
+- **THEN** the change remains unfolded and governance reports it unauthorized
+
+#### Scenario: Authorization chains conflict
+- **WHEN** two otherwise valid current records grant conflicting scope or authority for the same
+  change and operation
+- **THEN** governance blocks the operation rather than choosing a record by filename or order
+
+#### Scenario: Candidate enrolls its own authorizer
+- **WHEN** a candidate modifies the registry entry used to validate that candidate's authorization
+- **THEN** governance rejects the circular trust transition
+
+### Requirement: Verified revisions and folds use distinct exact transitions
+
+A verified, active, not-yet-folded change MAY enter a bounded revision only through
+`VERIFIED → APPLY_AUTHORIZED → IMPLEMENTED → VERIFIED` with fresh exact apply authorization. Entry
+SHALL make the prior verification historical and SHALL NOT grant fold.
+
+`VERIFIED → FOLDED` SHALL require a distinct independently verifiable fold authorization, exact
+verified delta inputs, a deterministic canonical fold preview, strict OpenSpec validation, immutable
+historical pins, a newly recomputed current pin set, exact lifecycle evidence, and a new technical
+commit/tree with complete governed path-to-object bindings. Changed canonical capabilities,
+lifecycle evidence, the new pin-set object, and exact delta inputs SHALL receive a fresh exact-content
+review. A lifecycle field naming `FOLDED`, merge authority, or successful tests SHALL NOT prove fold.
+
+#### Scenario: Merge authority is offered as fold authority
+- **WHEN** a merged verified change has no distinct current exact fold authorization
+- **THEN** governance keeps the change in `VERIFIED` and rejects fold
+
+#### Scenario: Fold uses pins bound to verified objects
+- **WHEN** lifecycle evidence claims `FOLDED` but selects a pin set bound to the pre-fold canonical
+  objects
+- **THEN** governance rejects the stale fold evidence
+
+#### Scenario: Exact fold receives fresh review
+- **WHEN** all authorized deltas are materialized, strict validation passes, and recomputed evidence
+  binds the new object graph
+- **THEN** the fold creates a new technical identity that requires a fresh exact-content review and
+  grants no activation authority

@@ -10,7 +10,11 @@
     "Review, freeze, provenance, and activation evidence must bind exact content and must become stale mechanically when any governed content changes.",
     "An activation record cannot authorize itself, and a candidate governance checker cannot make itself trusted merely by reporting success.",
     "Repository enforcement must discover applicable capabilities and real source conflicts rather than only validate a self-consistent abstract table.",
-    "The correction must remain governance-only so later semantic remediation cannot hide inside the authority decision that controls it."
+    "The correction must remain governance-only so later semantic remediation cannot hide inside the authority decision that controls it.",
+    "Canonical folding changes exact capability objects, so applicability, overlap, debt, pin, freeze, and review evidence must be recomputed and rebound without mutating historical evidence.",
+    "Authorization discovery must be per change and operation, independently rooted, and fail closed for missing, conflicting, revoked, superseded, or archive-only records.",
+    "CR-F16 requires one most-specific governed path classification so record-only validation cannot become either a blanket exemption or an accidental implementation-association requirement.",
+    "Mutation assurance must prove that all 22 approved mutants still apply and are killed before a kill rate can be interpreted."
   ],
   "applicability": {
     "triggers_matched": [
@@ -30,10 +34,21 @@
     "openspec/governance/design-pattern-policy.json",
     "openspec/governance/normative-source-precedence.json",
     "openspec/governance/schemas/normative-source-precedence.schema.json",
+    "openspec/governance/schemas/change-authorization.schema.json",
+    "openspec/governance/schemas/normative-precedence-pin-set.schema.json",
+    "openspec/governance/schemas/governance-authority-registry.schema.json",
+    "openspec/governance/governance-authority-registry.json",
+    "openspec/governance/normative-precedence-pins/",
     "openspec/scripts/check-normative-precedence.mjs",
     "openspec/scripts/normative-precedence/",
+    "openspec/scripts/check-design-pattern-governance.mjs",
+    "openspec/scripts/design-pattern-governance/perimeter.mjs",
+    "openspec/scripts/design-pattern-governance/paths.mjs",
+    "openspec/scripts/verify-normative-precedence-mutations.mjs",
     "openspec/tests/design-pattern-governance/normative-precedence-policy.test.mjs",
     "openspec/tests/design-pattern-governance/normative-precedence-repository.test.mjs",
+    "openspec/tests/design-pattern-governance/path-classification.test.mjs",
+    "openspec/tests/design-pattern-governance/mutation-assurance.test.mjs",
     "openspec/tests/design-pattern-governance/fixtures/normative-precedence/",
     "openspec/CONTEXT.md",
     ".github/workflows/ci.yml",
@@ -43,14 +58,18 @@
     {
       "id": "approach-domain-specific-authority-and-two-lifecycles",
       "kind": "direct_implementation",
-      "summary": "Define a domain-specific partial order, default-deny semantic delegation, distinct change-record and contract-candidate lifecycles, exact content bindings, and a repository-aware checker introduced under the existing trusted governance baseline.",
+      "summary": "Extend the domain-specific authority model with immutable historical pins, exact folded-state pin sets, fold-time applicability/overlap/debt recomputation, per-change authorization discovery, most-specific CR-F16 association, and closed 22-mutant assurance under the existing trusted governance baseline.",
       "forces_addressed": [
         "Candidate A contains conflicting current semantic statements, yet the repository has no machine-resolvable rule separating capability-owned semantic intent from source-owned concrete representation.",
         "Active candidate deltas must authorize bounded candidate work without becoming activated production semantics, while archived deltas must remain historical evidence only.",
         "Change-record progress and contract-version activation are orthogonal lifecycles; conflating them makes archive, merge, activation, and release imply authority they do not possess.",
         "Review, freeze, provenance, and activation evidence must bind exact content and must become stale mechanically when any governed content changes.",
         "An activation record cannot authorize itself, and a candidate governance checker cannot make itself trusted merely by reporting success.",
-        "Repository enforcement must discover applicable capabilities and real source conflicts rather than only validate a self-consistent abstract table."
+        "Repository enforcement must discover applicable capabilities and real source conflicts rather than only validate a self-consistent abstract table.",
+        "Canonical folding changes exact capability objects, so applicability, overlap, debt, pin, freeze, and review evidence must be recomputed and rebound without mutating historical evidence.",
+        "Authorization discovery must be per change and operation, independently rooted, and fail closed for missing, conflicting, revoked, superseded, or archive-only records.",
+        "CR-F16 requires one most-specific governed path classification so record-only validation cannot become either a blanket exemption or an accidental implementation-association requirement.",
+        "Mutation assurance must prove that all 22 approved mutants still apply and are killed before a kill rate can be interpreted."
       ]
     },
     {
@@ -115,7 +134,13 @@
     "implementation-exact-bindings-invalidate-on-change",
     "implementation-activation-authority-not-evidence",
     "implementation-repository-conflicts-fail-closed",
-    "implementation-checker-trust-not-self-authorized"
+    "implementation-checker-trust-not-self-authorized",
+    "implementation-historical-pins-immutable",
+    "implementation-fold-evidence-recomputed",
+    "implementation-per-change-authorization-discovery",
+    "implementation-fold-authority-distinct",
+    "implementation-most-specific-path-association",
+    "implementation-mutation-count-fail-closed"
   ],
   "invariant_evidence": {
     "implementation-semantic-delegation-default-deny": {
@@ -187,17 +212,84 @@
       "evidence_ids": [
         "the trusted-baseline result, candidate-checker result, and all eight adversarial controls are reported independently"
       ]
+    },
+    "implementation-historical-pins-immutable": {
+      "task_ids": [
+        "8.2",
+        "9.1"
+      ],
+      "evidence_ids": [
+        "Revision 2 pin, authorization, freeze, and review objects remain byte-identical while exactly one new pin set selects each new governed object state"
+      ]
+    },
+    "implementation-fold-evidence-recomputed": {
+      "task_ids": [
+        "9.2",
+        "9.3",
+        "9.4",
+        "9.5"
+      ],
+      "evidence_ids": [
+        "fold preview recomputes applicability, overlap, and debt against new exact objects and stale pre-fold evidence fails"
+      ]
+    },
+    "implementation-per-change-authorization-discovery": {
+      "task_ids": [
+        "8.1",
+        "8.3",
+        "8.4"
+      ],
+      "evidence_ids": [
+        "zero authorization is unauthorized, conflicting chains block, inactive records grant nothing, and no candidate can enroll its own verifier"
+      ]
+    },
+    "implementation-fold-authority-distinct": {
+      "task_ids": [
+        "9.5",
+        "12.1",
+        "12.2"
+      ],
+      "evidence_ids": [
+        "merge does not authorize fold, fold does not authorize activation, and folded objects require a new exact identity and review"
+      ]
+    },
+    "implementation-most-specific-path-association": {
+      "task_ids": [
+        "10.1",
+        "10.2"
+      ],
+      "evidence_ids": [
+        "association uses one most-specific classification and record-only paths receive dedicated validation without exempting nearby governance implementation"
+      ]
+    },
+    "implementation-mutation-count-fail-closed": {
+      "task_ids": [
+        "11.2",
+        "11.3",
+        "11.4"
+      ],
+      "evidence_ids": [
+        "all 22 mutant anchors resolve uniquely, all 22 apply, all 22 are killed, null controls are clean, and restoration is byte-identical"
+      ]
     }
   },
   "security_sensitive": true,
   "ordering": {
-    "proposal_baseline_commit": "b8122751342b0a2591a69a728ea58a99ca37dd0f"
+    "proposal_baseline_commit": "49ab0c255a41cc99328ff2cd5d442ffbc80b1bb1"
   },
   "verification_task_ids": [
     "1.1",
     "1.2",
     "1.3",
     "1.4",
+    "10.1",
+    "10.2",
+    "11.1",
+    "11.2",
+    "11.3",
+    "11.4",
+    "12.1",
+    "12.2",
     "2.1",
     "2.2",
     "2.3",
@@ -215,6 +307,17 @@
     "6.1",
     "6.2",
     "6.3",
-    "6.4"
+    "6.4",
+    "7.1",
+    "7.2",
+    "8.1",
+    "8.2",
+    "8.3",
+    "8.4",
+    "9.1",
+    "9.2",
+    "9.3",
+    "9.4",
+    "9.5"
   ]
 }
