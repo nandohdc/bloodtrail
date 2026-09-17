@@ -393,10 +393,6 @@ function applyScopeDiagnostics(changes, scope) {
   ];
 }
 
-function pathCoveredBy(path, boundPath) {
-  return path === boundPath || path.startsWith(`${boundPath}/`);
-}
-
 function validateEvidenceTransitions(field, lifecycle, declared) {
   const diagnostics = [];
   let previous = null;
@@ -853,7 +849,7 @@ function recordSemanticConflict({ assertion, capability, requirement, value, con
 }
 
 function inspectSemanticAssertion(assertion, context) {
-  const { repoRoot, sourcePath, discovered, diagnostics } = context;
+  const { repoRoot, discovered, diagnostics } = context;
   const capability = discovered.current.find((entry) => entry.id === assertion.capability_id);
   if (!capability?.applies || !capability.exists) return;
   const markdown = readFileSync(resolve(repoRoot, capability.path), "utf8");
@@ -892,7 +888,7 @@ function inspectSourceChange(context) {
 
 function inspectCompatibilityDecision(context, sourceChange) {
   if (!sourceChange.materialSemanticChange) return;
-  const { repoRoot, policy, sourcePath, diagnostics } = context;
+  const { repoRoot, sourcePath, diagnostics } = context;
   const decisions = activeChangeDirectories(repoRoot)
     .map((changeDir) => resolve(changeDir, "compatibility-decision.json"))
     .filter(existsSync)
@@ -900,7 +896,7 @@ function inspectCompatibilityDecision(context, sourceChange) {
   if (decisions.length !== 1) {
     diagnostics.push(diagnostic("compatibility-transition-unclassified", sourcePath, "a changed authoritative source requires exactly one active compatibility decision"));
   } else {
-    diagnostics.push(...validateCompatibilityTransition(decisions[0], policy));
+    diagnostics.push(...validateCompatibilityTransition(decisions[0]));
   }
 }
 
