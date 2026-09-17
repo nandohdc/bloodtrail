@@ -18,6 +18,7 @@ import {
   validateActivation,
   validateReviewBinding
 } from "../../scripts/normative-precedence/model.mjs";
+import { recomputePinEvidence } from "../../scripts/normative-precedence/pin-sets.mjs";
 import { isGovernanceCore } from "../../scripts/design-pattern-governance/perimeter.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -75,27 +76,72 @@ function runCli(root, stage, base) {
   ], { encoding: "utf8" });
 }
 
-function makeRepository() {
+function makeRepository({ overlapClassification = null } = {}) {
   const root = mkdtempSync(resolve(tmpdir(), "bloodtrail-precedence-"));
   git(root, ["init", "-q", "-b", "main"]);
   git(root, ["config", "user.email", "fixture@example.invalid"]);
   git(root, ["config", "user.name", "Fixture"]);
+  const signingKey = resolve(root, ".git/fixture-signing-key");
+  const keygen = spawnSync("ssh-keygen", ["-q", "-t", "ed25519", "-N", "", "-f", signingKey], { encoding: "utf8" });
+  assert.equal(keygen.status, 0, keygen.stderr);
+  git(root, ["config", "gpg.format", "ssh"]);
+  git(root, ["config", "user.signingkey", signingKey]);
+  git(root, ["config", "commit.gpgsign", "true"]);
   const policy = structuredClone(basePolicy);
-  policy.baseline_conflicts = [];
+  policy.debt_rules = [];
   policy.semantic_assertions = [];
+  if (overlapClassification) policy.overlap_rules[0].classification = overlapClassification;
   const source = structuredClone(contractSource);
+  const publicKey = readFileSync(`${signingKey}.pub`, "utf8").trim();
+  const fingerprintResult = spawnSync("ssh-keygen", ["-lf", `${signingKey}.pub`, "-E", "sha256"], { encoding: "utf8" });
+  assert.equal(fingerprintResult.status, 0, fingerprintResult.stderr);
+  const fingerprint = fingerprintResult.stdout.trim().split(/\s+/)[1];
+  const registry = {
+    $schema: "./schemas/governance-authority-registry.schema.json",
+    schema: "bloodtrail.governance-authority-registry.v1",
+    registry_version: 1,
+    bootstrap: {
+      authorization_commit: "0".repeat(40),
+      authorization_path: "fixture-bootstrap.md",
+      authorized_proposal_commit: "0".repeat(40),
+      expected_parent: "0".repeat(40),
+      mechanism: "SIGNED_DIRECT_CHILD_APPLY_AUTHORIZATION"
+    },
+    principals: [{
+      id: "fixture-owner",
+      display_name: "Fixture Owner",
+      roles: ["PROJECT_OWNER"],
+      ssh_signing_keys: [{ fingerprint, public_key: publicKey, status: "ACTIVE" }]
+    }]
+  };
   write(root, policy.contract.source_path, json(source));
   write(root, "openspec/governance/normative-source-precedence.json", json(policy));
   write(root, "openspec/governance/schemas/normative-source-precedence.schema.json", readFileSync(resolve(liveRoot, "openspec/governance/schemas/normative-source-precedence.schema.json"), "utf8"));
+  for (const path of [
+    "openspec/governance/schemas/change-authorization.schema.json",
+    "openspec/governance/schemas/governance-authority-registry.schema.json",
+    "openspec/governance/schemas/normative-precedence-pin-set.schema.json"
+  ]) write(root, path, readFileSync(resolve(liveRoot, path), "utf8"));
+  write(root, policy.repository_evidence.authority_registry_path, json(registry));
   write(root, SHARED_CI, "name: fixture\n");
   for (const capability of policy.capabilities) {
     write(root, capability.path, readFileSync(resolve(liveRoot, capability.path), "utf8"));
   }
-  return { root, policy, source, base: commitAll(root, "fixture baseline") };
+  const pin = {
+    $schema: "../schemas/normative-precedence-pin-set.schema.json",
+    schema: "bloodtrail.normative-precedence.pin-set.v1",
+    id: "fixture-current",
+    status: "CURRENT",
+    ...recomputePinEvidence(root, policy),
+    lineage: ["fixture-baseline"],
+    created_for: { change_id: policy.change_id, lifecycle_state: "PROPOSED", fold_executed: false }
+  };
+  write(root, `${policy.repository_evidence.pin_sets_root}/fixture-current.json`, json(pin));
+  return { root, policy, source, signingKey, base: commitAll(root, "fixture baseline") };
 }
 
-function withRepository(callback) {
-  const fixture = makeRepository();
+function withRepository(callback, options = {}) {
+  const fixture = makeRepository(options);
   try {
     callback(fixture);
   } finally {
@@ -111,31 +157,34 @@ function lifecyclePath(policy) {
   return `${changeRoot(policy)}/${policy.repository_evidence.lifecycle_evidence_file}`;
 }
 
-function authorizationMarkdown({ commit, tree, subtree, base = null, capabilities = [], dimensions = [], pointers = [], paths }) {
-  const code = (values) => (values.length === 0 ? "`none`" : values.map((value) => `\`${value}\``).join(", "));
-  return [
-    "# Apply Authorization",
-    "",
-    "| Field | Value |",
-    "| --- | --- |",
-    `| Authorized proposal commit | \`${commit}\` |`,
-    `| Repository tree | \`${tree}\` |`,
-    `| Change subtree object | \`${subtree}\` |`,
-    ...(base ? [`| Candidate A base | \`${base}\` |`] : []),
-    "| Authorizing party | Fernando Homem da Costa (nandohdc), project owner |",
-    `| Authorized capabilities | ${code(capabilities)} |`,
-    `| Authorized semantic dimensions | ${code(dimensions)} |`,
-    `| Authorized source pointers | ${code(pointers)} |`,
-    "| Granted | Implement the bounded change |",
-    "| Withheld | Merge and activation |",
-    "",
-    "## Changed-path allowlist",
-    "",
-    "```text",
-    ...paths,
-    "```",
-    ""
-  ].join("\n");
+function authorizationRecord({ policy, changeId, proposal, base, baseTree, operation = "IMPLEMENT", id = "fixture-implement", grant = policy.governance_authorities.implementation_grant, capabilities = [], dimensions = [], pointers = [], paths }) {
+  const deltaObjects = Object.fromEntries(capabilities.map((capabilityId) => [
+    capabilityId,
+    gitText(proposal.root, ["rev-parse", `${proposal.commit}:openspec/changes/${changeId}/specs/${capabilityId}/spec.md`])
+  ]));
+  return {
+    $schema: "../../../governance/schemas/change-authorization.schema.json",
+    schema: "bloodtrail.change-authorization.v1",
+    id,
+    change_id: changeId,
+    operation,
+    status: "CURRENT",
+    authorization_scope: `${changeId}-implementation`,
+    principal_id: "fixture-owner",
+    authority_role: "PROJECT_OWNER",
+    grant,
+    withheld: ["FOLD", "ACTIVATE", "RELEASE", "ARCHIVE"].filter((entry) => entry !== operation),
+    authorized_base_commit: base,
+    authorized_base_tree: baseTree,
+    authorized_proposal_commit: proposal.commit,
+    authorized_proposal_tree: proposal.tree,
+    authorized_change_subtree: proposal.subtree,
+    scope_paths: paths,
+    authorized_capabilities: capabilities,
+    authorized_delta_objects: deltaObjects,
+    authorized_semantic_dimensions: dimensions,
+    authorized_source_pointers: pointers
+  };
 }
 
 function commitProposal(root, changeDir, proposal, extraFiles = {}) {
@@ -143,6 +192,7 @@ function commitProposal(root, changeDir, proposal, extraFiles = {}) {
   write(root, `${changeDir}/proposal.md`, proposal);
   const commit = commitAll(root, "proposal");
   return {
+    root,
     commit,
     tree: gitText(root, ["rev-parse", "HEAD^{tree}"]),
     subtree: gitText(root, ["rev-parse", `${commit}:${changeDir}`])
@@ -156,15 +206,18 @@ function modifiedProposal(capabilities) {
 function authorizeDelta({ root, policy, base }, { capabilities = CO_OWNERS, proposalText = null, extraAuthorizationFiles = {} } = {}) {
   const specs = Object.fromEntries(capabilities.map((id) => [`${DELTA_CHANGE}/specs/${id}/spec.md`, "## MODIFIED Requirements\n"]));
   const proposal = commitProposal(root, DELTA_CHANGE, proposalText ?? modifiedProposal(capabilities), specs);
-  const authorizationPath = `${DELTA_CHANGE}/${policy.repository_evidence.apply_authorization_file}`;
-  write(root, authorizationPath, authorizationMarkdown({
-    ...proposal,
+  const authorizationPath = `${DELTA_CHANGE}/${policy.repository_evidence.authorization_records_directory}/implement.json`;
+  write(root, authorizationPath, json(authorizationRecord({
+    policy,
+    changeId: "change-a",
+    proposal,
     base,
+    baseTree: gitText(root, ["rev-parse", `${base}^{tree}`]),
     capabilities,
     dimensions: ["authority"],
     pointers: ["/fields/*/a"],
     paths: [policy.contract.source_path]
-  }));
+  })));
   for (const [path, content] of Object.entries(extraAuthorizationFiles)) write(root, path, content);
   commitAll(root, "apply authorization");
   return authorizationPath;
@@ -172,8 +225,34 @@ function authorizeDelta({ root, policy, base }, { capabilities = CO_OWNERS, prop
 
 function authorizeGovernedChange({ root, policy, base }, paths, { withBase = true } = {}) {
   const proposal = commitProposal(root, changeRoot(policy), "## Capabilities\n\n### Modified Capabilities\n\nNone.\n");
-  write(root, `${changeRoot(policy)}/${policy.repository_evidence.apply_authorization_file}`, authorizationMarkdown({ ...proposal, base: withBase ? base : null, paths }));
+  const authorizationPath = `${changeRoot(policy)}/${policy.repository_evidence.authorization_records_directory}/implement.json`;
+  const authorization = authorizationRecord({
+    policy,
+    changeId: policy.change_id,
+    proposal,
+    base: withBase ? base : "0".repeat(40),
+    baseTree: withBase ? gitText(root, ["rev-parse", `${base}^{tree}`]) : "0".repeat(40),
+    paths
+  });
+  write(root, authorizationPath, json(authorization));
   commitAll(root, "apply authorization");
+  return { proposal, authorization };
+}
+
+function authorizeOperation({ root, policy, base }, { proposal, paths, operation, grant }) {
+  const authorization = authorizationRecord({
+    policy,
+    changeId: policy.change_id,
+    proposal,
+    base,
+    baseTree: gitText(root, ["rev-parse", `${base}^{tree}`]),
+    operation,
+    id: `fixture-${operation.toLowerCase()}`,
+    grant,
+    paths
+  });
+  write(root, `${changeRoot(policy)}/${policy.repository_evidence.authorization_records_directory}/${operation.toLowerCase()}.json`, json(authorization));
+  commitAll(root, `${operation.toLowerCase()} authorization`);
 }
 
 function lifecycleEvidence(changeState = "FOLDED", contractState = "MERGED") {
@@ -213,13 +292,20 @@ function mutateSource(root, policy, suffix) {
 
 function prepareReviewedRepository(fixture, { grants = null, technicalFiles = {} } = {}) {
   const { root, policy, base } = fixture;
-  authorizeGovernedChange(fixture, [
+  const scopePaths = [
     policy.contract.source_path,
     `${changeRoot(policy)}/**`,
     "contracts/security-audit/schema/",
     "openspec/scripts/normative-precedence/",
     SHARED_CI
-  ]);
+  ];
+  const governed = authorizeGovernedChange(fixture, scopePaths);
+  authorizeOperation(fixture, {
+    proposal: governed.proposal,
+    paths: scopePaths,
+    operation: "ACTIVATE",
+    grant: policy.governance_authorities.activation_grant
+  });
   write(root, lifecyclePath(policy), json(lifecycleEvidence("FOLDED", "MERGED")));
   const source = mutateSource(root, policy, "#reviewed");
   write(root, SHARED_CI, "name: fixture\n# reviewed candidate step\n");
@@ -311,7 +397,8 @@ function fullActivationRecord() {
 }
 
 function deltaFor(root, policy, capabilityId = "security-audit-event-contract") {
-  return discoverRepositorySources(root, policy).active.find((entry) => entry.change_id === "change-a" && entry.capability_id === capabilityId);
+  const baseCommit = gitText(root, ["rev-list", "--max-parents=0", "HEAD"]);
+  return discoverRepositorySources(root, policy, { baseCommit }).active.find((entry) => entry.change_id === "change-a" && entry.capability_id === capabilityId);
 }
 
 // Repository enforcement cases: each runs against a disposable Git repository.
@@ -376,18 +463,20 @@ test("REPO-003c one co-owner's delta cannot authorize a co-owned semantic pointe
 test("REPO-003d an apply authorization edited after it was recorded authorizes nothing", () => withRepository((fixture) => {
   const { root, policy } = fixture;
   const authorizationPath = authorizeDelta(fixture);
-  write(root, authorizationPath, readFileSync(resolve(root, authorizationPath), "utf8").replace("`/fields/*/a`", "`/fields/*/a`, `/fields/*/trust`"));
+  const authorization = JSON.parse(readFileSync(resolve(root, authorizationPath), "utf8"));
+  authorization.authorized_source_pointers.push("/fields/*/trust");
+  write(root, authorizationPath, json(authorization));
   commitAll(root, "widen authorized pointers");
   const delta = deltaFor(root, policy);
   assert.equal(delta?.class, "PROPOSED_CANDIDATE_DELTA");
-  assert.ok(delta?.diagnostics.includes("apply authorization was modified after it was first recorded"));
+  assert.ok(delta?.diagnostics.some((entry) => entry.includes("authorization-record-history-mismatch")));
 }));
 
 test("REPO-003e an apply authorization recorded alongside other changes authorizes nothing", () => withRepository((fixture) => {
   authorizeDelta(fixture, { extraAuthorizationFiles: { [`${DELTA_CHANGE}/notes.md`]: "bundled with the authorization\n" } });
   const delta = deltaFor(fixture.root, fixture.policy);
   assert.equal(delta?.class, "PROPOSED_CANDIDATE_DELTA");
-  assert.ok(delta?.diagnostics.includes("apply authorization was not recorded in a dedicated commit"));
+  assert.ok(delta?.diagnostics.some((entry) => entry.includes("authorization-record-not-dedicated")));
 }));
 
 test("REPO-004 archived change remains historical", () => withRepository(({ root, policy }) => {
@@ -419,7 +508,9 @@ test("REPO-006a changed overlapping capability invalidates its exact compatibili
 }));
 
 test("REPO-006b explicitly contradictory current capabilities have no automatic winner", () => withRepository(({ root, policy, base }) => {
-  policy.capability_overlaps[0].classification = "CONTRADICTORY";
+  const pin = JSON.parse(readFileSync(resolve(root, `${policy.repository_evidence.pin_sets_root}/fixture-current.json`), "utf8"));
+  pin.overlaps[0].classification = "CONTRADICTORY";
+  write(root, `${policy.repository_evidence.pin_sets_root}/fixture-current.json`, json(pin));
   const result = inspectRepository(root, policy, { stage: "candidate", baseCommit: base });
   assert.ok(codes(result.diagnostics).includes("applicable-current-capability-conflict"));
 }));
@@ -609,13 +700,15 @@ test("REPO-022 a changed path outside the apply-authorized scope fails", () => w
 test("REPO-022b a change cannot widen its own apply authorization in a later commit", () => withRepository((fixture) => {
   const { root, policy, base } = fixture;
   authorizeGovernedChange(fixture, [`${changeRoot(policy)}/**`]);
-  const authorizationPath = `${changeRoot(policy)}/${policy.repository_evidence.apply_authorization_file}`;
-  write(root, authorizationPath, readFileSync(resolve(root, authorizationPath), "utf8").replace("```text\n", "```text\npackages/\n"));
+  const authorizationPath = `${changeRoot(policy)}/${policy.repository_evidence.authorization_records_directory}/implement.json`;
+  const authorization = JSON.parse(readFileSync(resolve(root, authorizationPath), "utf8"));
+  authorization.scope_paths.push("packages/");
+  write(root, authorizationPath, json(authorization));
   write(root, lifecyclePath(policy), json(lifecycleEvidence("VERIFIED", null)));
   write(root, "packages/unrelated/file.txt", "self-widened scope\n");
   commitAll(root, "self-widened authorization");
   const result = inspectRepository(root, policy, { stage: "candidate", baseCommit: base });
-  assert.ok(result.diagnostics.some((entry) => entry.code === "apply-authorization-invalid" && entry.message === "apply authorization was modified after it was first recorded"));
+  assert.ok(result.diagnostics.some((entry) => entry.code === "authorization-record-history-mismatch"));
 }));
 
 test("REPO-023 merge stage without an exact comparison base fails closed", () => withRepository(({ root, policy }) => {
@@ -641,11 +734,11 @@ test("REPO-024 overlap classes are reported distinctly", () => withRepository(({
   assert.equal(baseline.observations.find((entry) => entry.code === "capability-overlap-summary")?.message, "NO_OVERLAP=11 COMPATIBLE_OVERLAP=3 DUPLICATE_CONSISTENT=0 CONTRADICTORY=0");
   assert.equal(codes(baseline.observations).filter((code) => code === "capability-overlap-compatible").length, 3);
 
-  const duplicate = structuredClone(policy);
-  duplicate.capability_overlaps[0].classification = "DUPLICATE_CONSISTENT";
-  const duplicateResult = inspectRepository(root, duplicate, { stage: "candidate", baseCommit: base });
-  assert.deepEqual(duplicateResult.diagnostics, []);
-  assert.ok(codes(duplicateResult.observations).includes("capability-overlap-duplicate-consistent"));
+  withRepository(({ root: duplicateRoot, policy: duplicatePolicy, base: duplicateBase }) => {
+    const duplicateResult = inspectRepository(duplicateRoot, duplicatePolicy, { stage: "candidate", baseCommit: duplicateBase });
+    assert.deepEqual(duplicateResult.diagnostics, []);
+    assert.ok(codes(duplicateResult.observations).includes("capability-overlap-duplicate-consistent"));
+  }, { overlapClassification: "DUPLICATE_CONSISTENT" });
 
   const ambiguous = structuredClone(policy);
   ambiguous.requirement_ownership.push(structuredClone(ambiguous.requirement_ownership.find((entry) => entry.domain === "catalog")));

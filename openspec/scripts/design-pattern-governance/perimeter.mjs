@@ -12,7 +12,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { carriesRelocatedArtifact } from "./archive-relocation.mjs";
-import { longestMatch, matchesAny } from "./paths.mjs";
+import { longestMatch, matchesAny, matchesSegmentPattern } from "./paths.mjs";
 import { blobAt, changedPaths, commitsBetween, pathsChangedByCommit, untrackedPaths } from "./git.mjs";
 
 export const UNCLASSIFIED = "unclassified";
@@ -47,17 +47,31 @@ export function classifyPaths(paths, policy) {
 }
 
 export function isGovernanceCore(paths, policy) {
-  return paths.some((path) => matchesAny(path, policy.governance_core_artifacts ?? []));
+  return paths.some((path) => classifyPath(path, policy) === "governance_core");
 }
 
 export function isGovernanceRecordOnly(paths, policy) {
   if (paths.length === 0) return false;
-  return paths.every((path) => matchesAny(path, policy.governance_record_only_paths ?? []));
+  return paths.every((path) => classifyPath(path, policy) === "governance_record_only");
 }
 
 export function touchesNormativePath(paths, policy) {
   return paths.some((path) => matchesAny(path, policy.normative_paths ?? [])
-    && !matchesAny(path, policy.governance_record_only_paths ?? []));
+    && classifyPath(path, policy) !== "governance_record_only");
+}
+
+/**
+ * Returns whether a path requires active-change ownership association.
+ *
+ * Classification happens before the planning-artifact carve-out. This is
+ * intentionally different from flattening all governed patterns into one
+ * include list: a narrow governance-record-only rule must outrank a broad
+ * governance-core parent, while nearby policy/checker paths remain associated.
+ */
+export function requiresOpenSpecAssociation(path, policy) {
+  const cls = classifyPath(path, policy);
+  if (cls !== "governance_core" && cls !== "governed_implementation") return false;
+  return !(policy.planning_artifact_patterns ?? []).some((pattern) => matchesSegmentPattern(path, pattern));
 }
 
 /**

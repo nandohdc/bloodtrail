@@ -1,0 +1,108 @@
+{
+  "schema": "bloodtrail.normative-precedence.authorization-index.v1",
+  "change_id": "define-normative-precedence-lifecycle",
+  "records": [
+    {
+      "id": "revision-1-apply",
+      "path": "openspec/changes/define-normative-precedence-lifecycle/apply-authorization.md",
+      "object": "9041c60cec59552378d6c164c396660ef254c8da",
+      "introducing_commit": "6d1273d03c33e5b8e7ce59924424f9d1cf2b3a53",
+      "operation": "IMPLEMENT",
+      "status": "HISTORICAL",
+      "record_format": "LEGACY_MARKDOWN",
+      "authorization_scope": "CB-001-REVISION-1-IMPLEMENTATION",
+      "legacy_effect": "NONE"
+    },
+    {
+      "id": "revision-2-apply",
+      "path": "openspec/changes/define-normative-precedence-lifecycle/revision-2-apply-authorization.md",
+      "object": "b77c3a0c1cfc58de0af3ef86e3cac6a9c4fc3ff9",
+      "introducing_commit": "6eecbedd774d2d91426877a12e7a2476e85c0e17",
+      "operation": "IMPLEMENT",
+      "status": "HISTORICAL",
+      "record_format": "LEGACY_MARKDOWN",
+      "authorization_scope": "CB-001-REVISION-2-IMPLEMENTATION",
+      "legacy_effect": "SUPERSEDED_BY_REVISION_3"
+    },
+    {
+      "id": "revision-2-assessment-scope-correction",
+      "path": "openspec/changes/define-normative-precedence-lifecycle/assessment-scope-apply-authorization.md",
+      "object": "3c75ffb3649d664b3d0d743363f94ade5134c02f",
+      "introducing_commit": "ec5c3a880341f9fd55f11a74583fba53e90d2aa4",
+      "operation": "IMPLEMENT",
+      "status": "HISTORICAL",
+      "record_format": "LEGACY_MARKDOWN",
+      "authorization_scope": "CB-001-R2-DESIGN-PATTERN-POLICY-OWNERSHIP-CORRECTION",
+      "legacy_effect": "NONE"
+    },
+    {
+      "id": "revision-2-review-record-ownership",
+      "path": "openspec/changes/define-normative-precedence-lifecycle/review-record-ownership-apply-authorization.md",
+      "object": "b33d7113ddbc92fef5981dd6af742fffb62c573e",
+      "introducing_commit": "ae897b85db01eb05b82992e89e780c2b7dfafd11",
+      "operation": "IMPLEMENT",
+      "status": "HISTORICAL",
+      "record_format": "LEGACY_MARKDOWN",
+      "authorization_scope": "CB-001-R2-REVIEW-RECORD-OWNERSHIP-CORRECTION",
+      "legacy_effect": "NONE"
+    },
+    {
+      "id": "revision-2-deepscan-cleanup",
+      "path": "openspec/changes/define-normative-precedence-lifecycle/deepscan-cleanup-apply-authorization.md",
+      "object": "bf7ad774576b319a22cec25a73e2a55328e6ed6f",
+      "introducing_commit": "eb90dd6cae0bdd0e957a57f362c03e47160db26b",
+      "operation": "IMPLEMENT",
+      "status": "HISTORICAL",
+      "record_format": "LEGACY_MARKDOWN",
+      "authorization_scope": "CB-001-R2-DEEPSCAN-CODE-HEALTH-CLEANUP",
+      "legacy_effect": "NONE"
+    },
+    {
+      "id": "revision-3-apply",
+      "path": "openspec/changes/define-normative-precedence-lifecycle/revision-3-apply-authorization.md",
+      "object": "6a28fa55077610447300e6976d80ff760d97a778",
+      "introducing_commit": "e417de5bb96a30ef64a9f6d0145ef840a06bc820",
+      "operation": "IMPLEMENT",
+      "status": "CURRENT",
+      "record_format": "SIGNED_MARKDOWN_BOOTSTRAP",
+      "authorization_scope": "CB-001-REVISION-3-IMPLEMENTATION",
+      "principal_id": "nandohdc",
+      "authority_role": "PROJECT_OWNER",
+      "authorized_base_commit": "49ab0c255a41cc99328ff2cd5d442ffbc80b1bb1",
+      "authorized_base_tree": "d608182899cb981403201c746ac7a18ddbc1d8c9",
+      "authorized_proposal_commit": "5a4957255f2e4830ceb15b38764e6bdb9824cae9",
+      "authorized_proposal_tree": "e0d41c104e779aa326180213d3e3f2ba361ca3ba",
+      "authorized_change_subtree": "509ce431381d224b81f4ad1d90c31992963cf8f1",
+      "scope_paths": [
+        ".github/workflows/ci.yml",
+        "openspec/changes/define-normative-precedence-lifecycle/",
+        "openspec/governance/design-pattern-policy.json",
+        "openspec/governance/governance-authority-registry.json",
+        "openspec/governance/normative-precedence-pins/",
+        "openspec/governance/normative-source-precedence.json",
+        "openspec/governance/schemas/change-authorization.schema.json",
+        "openspec/governance/schemas/governance-authority-registry.schema.json",
+        "openspec/governance/schemas/normative-precedence-pin-set.schema.json",
+        "openspec/governance/schemas/normative-source-precedence.schema.json",
+        "openspec/scripts/check-design-pattern-governance.mjs",
+        "openspec/scripts/check-normative-precedence.mjs",
+        "openspec/scripts/design-pattern-governance/",
+        "openspec/scripts/normative-precedence/",
+        "openspec/scripts/verify-normative-precedence-mutations.mjs",
+        "openspec/tests/design-pattern-governance/"
+      ],
+      "authorized_capabilities": [
+        "change-governance",
+        "security-audit-event-contract",
+        "software-design-pattern-governance"
+      ],
+      "authorized_delta_objects": {
+        "change-governance": "8e59a7f260f1b35fc3fd49074a5587af17a163fa",
+        "security-audit-event-contract": "28302b2b00f42e026a01a795fd5c7a110723d12a",
+        "software-design-pattern-governance": "131cac4a631339a3ebf73117979555975b7d5224"
+      },
+      "withheld_operations": ["FOLD", "ACTIVATE", "RELEASE", "ARCHIVE", "BEGIN_CB_002", "IMPLEMENT_CB_018", "IMPLEMENT_CB_019"],
+      "legacy_effect": "NONE"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bloodtrail.dev/governance/governance-authority-registry.schema.json",
+  "title": "Bloodtrail governance authority registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema", "registry_version", "bootstrap", "principals"],
+  "properties": {
+    "$schema": {"type":"string","minLength":1},
+    "schema": {"const":"bloodtrail.governance-authority-registry.v1"},
+    "registry_version": {"const":1},
+    "bootstrap": {
+      "type":"object","additionalProperties":false,
+      "required":["authorization_commit","authorization_path","authorized_proposal_commit","expected_parent","mechanism"],
+      "properties":{
+        "authorization_commit":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+        "authorization_path":{"type":"string","minLength":1},
+        "authorized_proposal_commit":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+        "expected_parent":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+        "mechanism":{"const":"SIGNED_DIRECT_CHILD_APPLY_AUTHORIZATION"}
+      }
+    },
+    "principals": {
+      "type":"array","minItems":1,
+      "items":{
+        "type":"object","additionalProperties":false,
+        "required":["id","display_name","roles","ssh_signing_keys"],
+        "properties":{
+          "id":{"type":"string","minLength":1},
+          "display_name":{"type":"string","minLength":1},
+          "roles":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+          "ssh_signing_keys":{
+            "type":"array","minItems":1,
+            "items":{
+              "type":"object","additionalProperties":false,
+              "required":["fingerprint","public_key","status"],
+              "properties":{
+                "fingerprint":{"type":"string","pattern":"^SHA256:"},
+                "public_key":{"type":"string","pattern":"^ssh-ed25519 "},
+                "status":{"enum":["ACTIVE","REVOKED"]}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

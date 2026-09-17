@@ -16,6 +16,9 @@ import {
 } from "./shared.mjs";
 import { transitionAllowed, validatePolicy } from "./policy-validation.mjs";
 import { validateActivation, validateCompatibilityTransition, validateReviewBinding } from "./binding-validation.mjs";
+import { authorizationCoversDelta, discoverAuthorizations } from "./authorization-discovery.mjs";
+import { inspectFold } from "./fold-validation.mjs";
+import { selectCurrentPinSet } from "./pin-sets.mjs";
 import {
   baselineDebtFor,
   changedPaths,
@@ -209,32 +212,34 @@ function emptyActiveDeltaEvidence() {
 
 function activeDeltaProblems(changeDir, capabilityId, repoRoot, authorization) {
   const problems = [];
-  const commit = authorization.proposal_commit;
+  const commit = authorization.authorized_proposal_commit;
   const proposalPath = relative(repoRoot, resolve(changeDir, "proposal.md"));
   const proposalAtCommit = commit ? gitStdout(repoRoot, ["show", `${commit}:${proposalPath}`]) : null;
   if (!proposalAtCommit || !proposalCapabilities(proposalAtCommit).includes(capabilityId)) problems.push("capability is not in the structured proposal scope");
-  if (!authorization.capabilities.includes(capabilityId)) problems.push("capability is not in the exact apply authorization scope");
   const deltaPath = relative(repoRoot, resolve(changeDir, "specs", capabilityId, "spec.md"));
-  const authorizedDeltaObject = commit ? gitStdout(repoRoot, ["rev-parse", `${commit}:${deltaPath}`]) : null;
-  if (!authorizedDeltaObject || authorizedDeltaObject !== gitObject(repoRoot, deltaPath)) problems.push("active delta differs from the exact apply-authorized object");
+  const deltaObject = gitObject(repoRoot, deltaPath);
+  if (!authorizationCoversDelta(authorization, capabilityId, deltaObject)) {
+    problems.push("active delta differs from the exact operation-authorized object");
+  }
   return problems;
 }
 
-function activeDeltaEvidence(changeDir, capabilityId, repoRoot, policy) {
+function activeDeltaEvidence(changeDir, capabilityId, { repoRoot, policy, baseCommit }) {
   const evidence = emptyActiveDeltaEvidence();
-  const authorization = readApplyAuthorization(changeDir, repoRoot, policy);
+  const discovered = discoverAuthorizations(changeDir, repoRoot, policy, { operation: "IMPLEMENT", baseCommit });
+  const authorization = discovered.current;
+  evidence.diagnostics.push(...discovered.diagnostics.map((entry) => `${entry.code}: ${entry.message}`));
   if (authorization === null) return evidence;
-  evidence.authorized_capabilities = authorization.capabilities;
-  evidence.authorized_semantic_dimensions = authorization.semantic_dimensions;
-  evidence.authorized_source_pointers = authorization.source_pointers;
-  evidence.authorized_paths = authorization.paths;
-  evidence.diagnostics.push(...authorization.diagnostics);
+  evidence.authorized_capabilities = authorization.authorized_capabilities ?? [];
+  evidence.authorized_semantic_dimensions = authorization.authorized_semantic_dimensions ?? [];
+  evidence.authorized_source_pointers = authorization.authorized_source_pointers ?? [];
+  evidence.authorized_paths = authorization.scope_paths ?? [];
   evidence.diagnostics.push(...activeDeltaProblems(changeDir, capabilityId, repoRoot, authorization));
   evidence.authorized = evidence.diagnostics.length === 0;
   evidence.lifecycle_state = evidence.authorized ? "APPLY_AUTHORIZED" : "PROPOSED";
-  evidence.proposal_commit = authorization.proposal_commit;
-  evidence.proposal_tree = authorization.proposal_tree;
-  evidence.change_subtree = authorization.change_subtree;
+  evidence.proposal_commit = authorization.authorized_proposal_commit;
+  evidence.proposal_tree = authorization.authorized_proposal_tree;
+  evidence.change_subtree = authorization.authorized_change_subtree;
   return evidence;
 }
 
@@ -242,7 +247,7 @@ function versionApplies(version, declared) {
   return declared.includes("*") || declared.includes(version);
 }
 
-export function discoverRepositorySources(repoRoot, policy, { sourcePath = policy.contract?.source_path, contractVersion = null } = {}) {
+export function discoverRepositorySources(repoRoot, policy, { sourcePath = policy.contract?.source_path, contractVersion = null, baseCommit = null } = {}) {
   const current = (policy.capabilities ?? []).map((capability) => ({
     ...capability,
     exists: existsSync(resolve(repoRoot, capability.path)),
@@ -252,7 +257,7 @@ export function discoverRepositorySources(repoRoot, policy, { sourcePath = polic
   }));
   const active = activeChangeDirectories(repoRoot).flatMap((changeDir) =>
     discoverDeltaSpecs(changeDir, repoRoot).map((delta) => {
-      const evidence = activeDeltaEvidence(changeDir, delta.capability_id, repoRoot, policy);
+      const evidence = activeDeltaEvidence(changeDir, delta.capability_id, { repoRoot, policy, baseCommit });
       return {
         ...delta,
         ...evidence,
@@ -295,18 +300,40 @@ function authorizedPathMatches(path, declared) {
  * directory, its exact apply-authorized allowlist, the current capability
  * specifications its deltas fold into, and its review and activation records.
  */
-function governedChangeScope(repoRoot, policy) {
+function normalizedAuthorization(record, diagnostics = []) {
+  if (!record) return null;
+  return {
+    candidate_base: record.authorized_base_commit,
+    proposal_commit: record.authorized_proposal_commit,
+    proposal_tree: record.authorized_proposal_tree,
+    change_subtree: record.authorized_change_subtree,
+    paths: record.scope_paths ?? [],
+    diagnostics
+  };
+}
+
+function scopeAuthorization(repoRoot, policy, { evidenceRoot, active, baseCommit }) {
+  if (!evidenceRoot) return { discovered: { current: null, diagnostics: [] }, authorization: normalizedAuthorization(null, []) };
+  const discovered = discoverAuthorizations(resolve(repoRoot, evidenceRoot), repoRoot, policy, { operation: "IMPLEMENT", baseCommit });
+  if (active) return { discovered, authorization: normalizedAuthorization(discovered.current, discovered.diagnostics) };
+  const historical = (discovered.records ?? []).find((record) => record.operation === "IMPLEMENT" && record.status === "CURRENT");
+  return { discovered, authorization: normalizedAuthorization(discovered.current ?? historical, []) };
+}
+
+function scopeFoldTargets(repoRoot, evidenceRoot) {
+  if (!evidenceRoot) return [];
+  return discoverDeltaSpecs(resolve(repoRoot, evidenceRoot), repoRoot)
+    .map((delta) => `openspec/specs/${delta.capability_id}/spec.md`);
+}
+
+function governedChangeScope(repoRoot, policy, baseCommit) {
   const evidence = policy.repository_evidence;
   const changeRoot = `${evidence.active_changes_root}/${policy.change_id}`;
   const archivedRoot = archivedChangeRoot(repoRoot, policy);
   const active = existsSync(resolve(repoRoot, changeRoot));
   const evidenceRoot = active ? changeRoot : archivedRoot;
-  const authorization = evidenceRoot
-    ? readApplyAuthorization(resolve(repoRoot, evidenceRoot), repoRoot, policy, { changePath: changeRoot, verifyRecord: active })
-    : null;
-  const foldTargets = evidenceRoot
-    ? discoverDeltaSpecs(resolve(repoRoot, evidenceRoot), repoRoot).map((delta) => `openspec/specs/${delta.capability_id}/spec.md`)
-    : [];
+  const { discovered: discoveredAuthorization, authorization } = scopeAuthorization(repoRoot, policy, { evidenceRoot, active, baseCommit });
+  const foldTargets = scopeFoldTargets(repoRoot, evidenceRoot);
   const recordPaths = [evidence.review_record_path, evidence.activation_record_path];
   return {
     active,
@@ -314,6 +341,7 @@ function governedChangeScope(repoRoot, policy) {
     archivedRoot,
     evidenceRoot,
     authorization,
+    authorizationDiscovery: discoveredAuthorization,
     recordPaths,
     patterns: [`${changeRoot}/**`, ...(authorization?.paths ?? []), ...foldTargets, ...recordPaths]
   };
@@ -383,7 +411,10 @@ function inGovernedScope(path, scope) {
 
 function applyScopeDiagnostics(changes, scope) {
   if (scope.authorization === null) {
-    return [diagnostic("apply-scope-unauthorized", scope.changeRoot, "the range changes an active governed change that has no apply authorization")];
+    return [
+      ...(scope.authorizationDiscovery?.diagnostics ?? []),
+      diagnostic("apply-scope-unauthorized", scope.changeRoot, "the range changes an active governed change that has no apply authorization")
+    ];
   }
   return [
     ...scope.authorization.diagnostics.map((message) => diagnostic("apply-authorization-invalid", scope.changeRoot, message)),
@@ -488,6 +519,9 @@ function lifecycleStageDiagnostics(evidence, stage, path) {
   if (stage === "merge" && !["VERIFIED", "FOLDED"].includes(changeState)) {
     diagnostics.push(diagnostic("lifecycle-stage-not-ready", path, "merge requires a verified or folded change record"));
   }
+  if (stage === "fold" && !["VERIFIED", "FOLDED"].includes(changeState)) {
+    diagnostics.push(diagnostic("lifecycle-stage-not-ready", path, "fold requires a verified change record"));
+  }
   if (["activation", "release"].includes(stage) && changeState !== "FOLDED") {
     diagnostics.push(diagnostic("lifecycle-stage-not-ready", path, "activation/release requires every affected delta to be folded"));
   }
@@ -498,7 +532,7 @@ function contractCandidateStageDiagnostics(candidate, stage, path) {
   if (candidate?.applicability === "NOT_APPLICABLE") return [];
   // ACTIVATED and RELEASED are evidenced by their dedicated records, not by
   // rewriting this reviewed file, so later stages still read MERGED here.
-  const requiredStates = { merge: ["MERGE_READY", "MERGED"], activation: ["MERGED"], release: ["MERGED"] }[stage];
+  const requiredStates = { merge: ["MERGE_READY", "MERGED"], fold: ["MERGED"], activation: ["MERGED"], release: ["MERGED"] }[stage];
   if (!requiredStates || requiredStates.includes(candidate?.current_state)) return [];
   return [diagnostic("lifecycle-stage-not-ready", `${path}#contract_candidate`, `${stage} requires a contract candidate in ${requiredStates.join(" or ")}`)];
 }
@@ -624,8 +658,20 @@ function reviewAuthorityDiagnostics({ repoRoot, policy, stage, path, binding, te
   ];
 }
 
-function inspectReviewEvidence({ repoRoot, policy, stage, scope, rangeChanges, diagnostics, observations }) {
+function inspectReviewEvidence({ repoRoot, policy, stage, scope, rangeChanges, lifecycle, diagnostics, observations }) {
   const path = policy.repository_evidence.review_record_path;
+  if (stage === "fold") {
+    observations.push(diagnostic("review-binding-pending", path,
+      "fold creates a new exact identity that requires fresh exact-content review"));
+    return null;
+  }
+  const revisionAwaitingReview = stage === "candidate"
+    && ["APPLY_AUTHORIZED", "IMPLEMENTED", "VERIFIED"].includes(lifecycle?.change_record?.current_state);
+  if (revisionAwaitingReview) {
+    observations.push(diagnostic("review-binding-pending", path,
+      "the current bounded revision requires a fresh exact-content review; prior review evidence remains historical"));
+    return null;
+  }
   if (!existsSync(resolve(repoRoot, path))) {
     const entry = diagnostic("review-binding-pending", path, "exact project-owner review record is not yet stored");
     if (stage === "candidate") observations.push(entry);
@@ -798,13 +844,14 @@ function inspectCapabilityOverlap(overlap, discovered, diagnostics, observations
 }
 
 function inspectCapabilityOverlaps(context) {
-  const { policy, discovered, diagnostics, observations } = context;
-  for (const overlap of policy.capability_overlaps ?? []) {
+  const { policy, currentPin, discovered, diagnostics, observations } = context;
+  const overlaps = currentPin?.value.overlaps ?? [];
+  for (const overlap of overlaps) {
     inspectCapabilityOverlap(overlap, discovered, diagnostics, observations);
   }
-  const overlapCount = (name) => (policy.capability_overlaps ?? []).filter((entry) => entry.classification === name).length;
+  const overlapCount = (name) => overlaps.filter((entry) => entry.classification === name).length;
   const noOverlap = (policy.requirement_ownership ?? []).filter((entry) => entry.overlap === "SINGLE_OWNER").length;
-  observations.push(diagnostic("capability-overlap-summary", "capability_overlaps",
+  observations.push(diagnostic("capability-overlap-summary", "current_pin.overlaps",
     [`NO_OVERLAP=${noOverlap}`, ...["COMPATIBLE_OVERLAP", "DUPLICATE_CONSISTENT", "CONTRADICTORY"].map((name) => `${name}=${overlapCount(name)}`)].join(" ")));
 }
 
@@ -838,9 +885,9 @@ function readSemanticAssertionValue(assertion, context) {
 
 function recordSemanticConflict({ assertion, capability, requirement, value, context }) {
   if (requirement.includes(`\`${String(value)}\``)) return;
-  const { repoRoot, policy, stage, baseCommit, repositoryChanges, sourcePath, diagnostics, observations } = context;
+  const { repoRoot, stage, baseCommit, repositoryChanges, sourcePath, diagnostics, observations } = context;
   const sourceObject = gitObject(repoRoot, sourcePath);
-  const debt = baselineDebtFor(policy, assertion, sourceObject, capability.object);
+  const debt = baselineDebtFor(context.currentPin?.value.debts ?? [], assertion, sourceObject, capability.object);
   if (debtAllowedAtStage(debt, stage, baseCommit ? repositoryChanges : null)) {
     observations.push(diagnostic("baseline-conflict-bounded", assertion.id, `${debt.id} is unchanged, scope-bounded, and blocks activation/release`));
     return;
@@ -943,8 +990,8 @@ function inspectGovernedRange(context, scope, range) {
 }
 
 function inspectGovernedEvidence(context) {
-  const { repoRoot, policy, stage } = context;
-  const scope = governedChangeScope(repoRoot, policy);
+  const { repoRoot, policy, stage, baseCommit } = context;
+  const scope = governedChangeScope(repoRoot, policy, baseCommit);
   const range = governedEvidenceRange(context, scope);
   const evidence = { lifecycle: null, review: null, activation: null };
   if (governedEvidenceDisposition(context, scope, range) === "stop") return evidence;
@@ -960,6 +1007,7 @@ function inspectGovernedEvidence(context) {
     ...context,
     stage: currentStage,
     scope,
+    lifecycle: evidence.lifecycle,
     rangeChanges: range.rangeTouchesChange ? range.rangeChanges : null
   });
   evidence.activation = inspectActivationEvidence({ ...context, stage: currentStage, review: evidence.review });
@@ -970,6 +1018,36 @@ function observeRepositorySources(discovered, observations) {
   const applicableCount = discovered.current.filter((entry) => entry.applies).length;
   const authorizedDeltaCount = discovered.active.filter((entry) => entry.class === "ACTIVE_CANDIDATE_DELTA").length;
   observations.push(diagnostic("repository-source-discovery", "openspec", `${applicableCount} applicable current capabilities, ${authorizedDeltaCount} active authorized deltas, ${discovered.archived.length} archived deltas`));
+}
+
+function inspectStageAuthorization(context) {
+  const operations = {
+    activation: ["ACTIVATE", "activation", context.policy.governance_authorities.activation_grant],
+    release: ["RELEASE", "release", context.policy.governance_authorities.release_grant]
+  };
+  const expected = operations[context.stage];
+  if (!expected) return null;
+  const [operation, label, grant] = expected;
+  const changeDir = resolve(
+    context.repoRoot,
+    context.policy.repository_evidence.active_changes_root,
+    context.policy.change_id
+  );
+  const discovery = discoverAuthorizations(changeDir, context.repoRoot, context.policy, {
+    operation,
+    baseCommit: context.baseCommit
+  });
+  const structural = discovery.diagnostics.filter((entry) =>
+    !["authorization-current-missing", "authorization-inactive"].includes(entry.code));
+  context.diagnostics.push(...structural);
+  if (!discovery.current) {
+    context.diagnostics.push(diagnostic(`${label}-authorization-missing`, context.policy.change_id,
+      `${operation} requires one independently verified operation-specific authorization`));
+  } else if (discovery.current.grant !== grant) {
+    context.diagnostics.push(diagnostic(`${label}-authorization-invalid`, discovery.current.path,
+      `authorization does not grant ${grant}`));
+  }
+  return discovery;
 }
 
 export function inspectRepository(repoRoot, policy, { stage = "candidate", schema = null, baseCommit = null } = {}) {
@@ -989,7 +1067,15 @@ export function inspectRepository(repoRoot, policy, { stage = "candidate", schem
   Object.assign(context, source);
   context.repositoryChanges = inspectComparisonBase(context);
   inspectSourceSections(context);
-  context.discovered = discoverRepositorySources(repoRoot, policy, { sourcePath: context.sourcePath, contractVersion: context.contractVersion });
+  const pinSelection = selectCurrentPinSet(repoRoot, policy, { baseCommit });
+  context.diagnostics.push(...pinSelection.diagnostics);
+  context.currentPin = pinSelection.selected;
+  context.pinEvidence = pinSelection;
+  context.discovered = discoverRepositorySources(repoRoot, policy, {
+    sourcePath: context.sourcePath,
+    contractVersion: context.contractVersion,
+    baseCommit
+  });
   inspectCapabilityAvailability(context.discovered, context.diagnostics);
   inspectCapabilityOverlaps(context);
   inspectOwnedRequirements(context);
@@ -997,11 +1083,20 @@ export function inspectRepository(repoRoot, policy, { stage = "candidate", schem
   const sourceChange = inspectSourceChange(context);
   inspectCompatibilityDecision(context, sourceChange);
   const evidence = inspectGovernedEvidence(context);
+  const stageAuthorization = inspectStageAuthorization(context);
+  const fold = stage === "fold"
+    ? inspectFold(repoRoot, policy, { baseCommit })
+    : null;
+  if (fold) context.diagnostics.push(...fold.diagnostics);
   observeRepositorySources(context.discovered, context.observations);
   return {
     diagnostics: context.diagnostics,
     observations: context.observations,
     discovered: context.discovered,
+    currentPin: context.currentPin,
+    pinEvidence: context.pinEvidence,
+    fold,
+    stageAuthorization,
     sourceChange,
     ...evidence
   };

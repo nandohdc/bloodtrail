@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bloodtrail.dev/governance/change-authorization.schema.json",
+  "title": "Bloodtrail operation-specific change authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema", "schema", "id", "change_id", "operation", "status",
+    "authorization_scope", "principal_id", "authority_role", "grant", "withheld",
+    "authorized_base_commit", "authorized_base_tree", "authorized_proposal_commit",
+    "authorized_proposal_tree", "authorized_change_subtree", "scope_paths"
+  ],
+  "properties": {
+    "$schema": {"type":"string","minLength":1},
+    "schema": {"const":"bloodtrail.change-authorization.v1"},
+    "id": {"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"},
+    "change_id": {"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"},
+    "operation": {"enum":["IMPLEMENT","MERGE","FOLD","ACTIVATE","RELEASE","ARCHIVE"]},
+    "status": {"enum":["CURRENT","REVOKED","SUPERSEDED","WITHDRAWN","ARCHIVE_ONLY","HISTORICAL"]},
+    "authorization_scope": {"type":"string","minLength":1},
+    "principal_id": {"type":"string","minLength":1},
+    "authority_role": {"type":"string","minLength":1},
+    "grant": {"type":"string","minLength":1},
+    "withheld": {"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "authorized_base_commit": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "authorized_base_tree": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "authorized_proposal_commit": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "authorized_proposal_tree": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "authorized_change_subtree": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "scope_paths": {"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "authorized_capabilities": {"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "authorized_delta_objects": {"type":"object"},
+    "authorized_semantic_dimensions": {"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "authorized_source_pointers": {"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "predecessor": {"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"},
+    "supersedes": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"}},
+    "revokes": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"}}
+  }
+}

@@ -8,8 +8,8 @@
     "$schema", "schema", "policy_version", "status", "change_id", "contract",
     "authority_domains", "source_classes", "semantic_dimensions", "delegation_values",
     "default_unclassified_dimension", "governance_authorities", "repository_evidence",
-    "capabilities", "requirement_ownership", "capability_overlaps", "semantic_delegation", "source_shape",
-    "semantic_assertions", "baseline_conflicts", "change_record_lifecycle",
+    "authorization_discovery", "pinning", "capabilities", "overlap_rules", "debt_rules", "requirement_ownership", "semantic_delegation", "source_shape",
+    "semantic_assertions", "change_record_lifecycle",
     "contract_candidate_lifecycle", "lifecycle_relationships", "review_binding",
     "activation", "checker_trust", "conflict_rules"
   ],
@@ -27,30 +27,76 @@
     "default_unclassified_dimension": {"const":"SEMANTIC_REQUIREMENT"},
     "governance_authorities": {
       "type":"object","additionalProperties":false,
-      "required":["apply_authority_identity","review_authority_identity","review_authority_role","activation_grant","merge_grant"],
+      "required":["apply_authority_identity","review_authority_identity","review_authority_role","implementation_grant","activation_grant","merge_grant","fold_grant","release_grant","archive_grant"],
       "properties": {
         "apply_authority_identity":{"type":"string","minLength":1},
         "review_authority_identity":{"type":"string","minLength":1},
         "review_authority_role":{"type":"string","minLength":1},
+        "implementation_grant":{"type":"string","minLength":1},
         "activation_grant":{"type":"string","minLength":1},
-        "merge_grant":{"type":"string","minLength":1}
+        "merge_grant":{"type":"string","minLength":1},
+        "fold_grant":{"type":"string","minLength":1},
+        "release_grant":{"type":"string","minLength":1},
+        "archive_grant":{"type":"string","minLength":1}
       }
     },
     "repository_evidence": {
       "type":"object","additionalProperties":false,
-      "required":["active_changes_root","archive_root","apply_authorization_file","lifecycle_evidence_file","review_record_path","activation_record_path","protected_reference","governance_record_only_paths"],
+      "required":["active_changes_root","archive_root","authorization_index_file","authorization_records_directory","lifecycle_evidence_file","review_record_path","activation_record_path","authority_registry_path","pin_sets_root","protected_reference","governance_record_only_paths"],
       "properties": {
         "active_changes_root":{"type":"string","minLength":1},
         "archive_root":{"type":"string","minLength":1},
-        "apply_authorization_file":{"type":"string","minLength":1},
+        "authorization_index_file":{"type":"string","minLength":1},
+        "authorization_records_directory":{"type":"string","minLength":1},
         "lifecycle_evidence_file":{"type":"string","minLength":1},
         "review_record_path":{"type":"string","minLength":1},
         "activation_record_path":{"type":"string","minLength":1},
+        "authority_registry_path":{"type":"string","minLength":1},
+        "pin_sets_root":{"type":"string","minLength":1},
         "protected_reference":{"type":"string","pattern":"^refs/heads/"},
         "governance_record_only_paths":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}}
       }
     },
+    "authorization_discovery": {
+      "type":"object","additionalProperties":false,
+      "required":["record_schema","legacy_index_schema","current_statuses","inactive_statuses","operations","conflict_behavior","zero_record_behavior","protected_registry_source"],
+      "properties":{
+        "record_schema":{"type":"string","minLength":1},
+        "legacy_index_schema":{"type":"string","minLength":1},
+        "current_statuses":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+        "inactive_statuses":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+        "operations":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+        "conflict_behavior":{"const":"BLOCK"},
+        "zero_record_behavior":{"const":"UNAUTHORIZED"},
+        "protected_registry_source":{"const":"COMPARISON_BASE_OR_BOOTSTRAP_AUTHORIZATION"}
+      }
+    },
+    "pinning": {
+      "type":"object","additionalProperties":false,
+      "required":["schema_path","legacy_snapshot_id","selection","historical_records_immutable","current_cardinality","required_fold_review_classes"],
+      "properties":{
+        "schema_path":{"type":"string","minLength":1},
+        "legacy_snapshot_id":{"type":"string","minLength":1},
+        "selection":{"const":"EXACT_REPOSITORY_STATE_DIGEST"},
+        "historical_records_immutable":{"const":true},
+        "current_cardinality":{"const":1},
+        "required_fold_review_classes":{"type":"array","minItems":3,"uniqueItems":true,"items":{"type":"string","minLength":1}}
+      }
+    },
     "capabilities": {"type":"array","minItems":1,"items":{"type":"object","required":["id","path","domains","versions","path_prefixes"]}},
+    "overlap_rules": {
+      "type":"array","items":{
+        "type":"object","additionalProperties":false,
+        "required":["id","domain","classification","rule"],
+        "properties":{
+          "id":{"type":"string","minLength":1},
+          "domain":{"type":"string","minLength":1},
+          "classification":{"enum":["COMPATIBLE_OVERLAP","DUPLICATE_CONSISTENT","CONTRADICTORY"]},
+          "rule":{"type":"string","minLength":1}
+        }
+      }
+    },
+    "debt_rules": {"type":"array","items":{"type":"object","required":["id","assertion_id","allowed_stages","merge_scope","allowed_merge_path_prefixes","activation_effect","release_effect"]}},
     "requirement_ownership": {
       "type":"array","minItems":1,
       "items": {
@@ -75,24 +121,9 @@
         }
       }
     },
-    "capability_overlaps": {
-      "type":"array",
-      "items":{
-        "type":"object","additionalProperties":false,
-        "required":["id","domain","capability_objects","classification","rule"],
-        "properties":{
-          "id":{"type":"string","minLength":1},
-          "domain":{"type":"string","minLength":1},
-          "capability_objects":{"type":"object"},
-          "classification":{"enum":["COMPATIBLE_OVERLAP","DUPLICATE_CONSISTENT","CONTRADICTORY"]},
-          "rule":{"type":"string","minLength":1}
-        }
-      }
-    },
     "semantic_delegation": {"type":"array","minItems":1,"items":{"type":"object","required":["dimension","classification","source_patterns","capability_ids","delegation"]}},
     "source_shape": {"type":"array","minItems":1,"items":{"type":"object","required":["path","allowed_keys"]}},
     "semantic_assertions": {"type":"array","items":{"type":"object","required":["id","domain","source_pointer","capability_id","requirement_heading","adapter"]}},
-    "baseline_conflicts": {"type":"array","items":{"type":"object"}},
     "change_record_lifecycle": {"$ref":"#/$defs/lifecycle"},
     "contract_candidate_lifecycle": {"$ref":"#/$defs/lifecycle"},
     "lifecycle_relationships": {"type":"array","items":{"type":"object"}},

@@ -1,0 +1,58 @@
+{
+  "$schema": "../schemas/normative-precedence-pin-set.schema.json",
+  "schema": "bloodtrail.normative-precedence.pin-set.v1",
+  "id": "current-pre-fold-revision-3",
+  "status": "CURRENT",
+  "capability_state_digest": "b1432e764467c59560adce2c74c01199c365dcabe1e21daf7f9ebccf4760ea33",
+  "repository_state": {
+    "source": {"path":"contracts/security-audit/source/contract.source.json","object":"981da9e399a18e43c16493df42b80ee43da4779a"},
+    "policy": {"path":"openspec/governance/normative-source-precedence.json","object":"b1191d8e6228d84b6ec4476744045f8b16157874"},
+    "authority_registry": {"path":"openspec/governance/governance-authority-registry.json","object":"8573e5127fffbfe3ff42eea0e1d3f1b63db888f6"},
+    "capabilities": [
+      {"id":"client-evidence","path":"openspec/specs/client-evidence/spec.md","object":"81c18bf0437d6b035a87cb2a762d865ca8bd3517","domains":["client_evidence"],"path_prefixes":["contracts/security-audit/","research/browser-telemetry/"],"versions":["*"]},
+      {"id":"delivery-conformance-contract","path":"openspec/specs/delivery-conformance-contract/spec.md","object":"75d03ffa3e3825483271f92ce04293ecb9ba33f7","domains":["delivery"],"path_prefixes":["contracts/security-audit/"],"versions":["*"]},
+      {"id":"derived-field-trust-semantics","path":"openspec/specs/derived-field-trust-semantics/spec.md","object":"3134f3f2d615fe7f3922f10c0208f75a50da66d3","domains":["authority_trust","derivation"],"path_prefixes":["contracts/security-audit/"],"versions":["*"]},
+      {"id":"security-audit-event-contract","path":"openspec/specs/security-audit-event-contract/spec.md","object":"d33b916244279c348b9cda83f55b3b5d160590cf","domains":["authority_trust","catalog","compatibility","contract_identity","delivery","derivation","extensions","field_model","integrity","interoperability","privacy","registries","validation"],"path_prefixes":["contracts/security-audit/"],"versions":["*"]}
+    ]
+  },
+  "applicability": [
+    {"domain":"authority_trust","source_sections":["authority_matrix"],"owners":["derived-field-trust-semantics","security-audit-event-contract"]},
+    {"domain":"catalog","source_sections":["catalog"],"owners":["security-audit-event-contract"]},
+    {"domain":"compatibility","source_sections":["compatibility_policy"],"owners":["security-audit-event-contract"]},
+    {"domain":"contract_identity","source_sections":["adrs","authoritative_source","metadata"],"owners":["security-audit-event-contract"]},
+    {"domain":"delivery","source_sections":["delivery_class_contracts"],"owners":["delivery-conformance-contract","security-audit-event-contract"]},
+    {"domain":"derivation","source_sections":["derived_field_provenance"],"owners":["derived-field-trust-semantics","security-audit-event-contract"]},
+    {"domain":"extensions","source_sections":["extension_namespaces"],"owners":["security-audit-event-contract"]},
+    {"domain":"field_model","source_sections":["bounds","fields"],"owners":["security-audit-event-contract"]},
+    {"domain":"integrity","source_sections":["integrity_claims"],"owners":["security-audit-event-contract"]},
+    {"domain":"interoperability","source_sections":["mapping_policy","standards","standards_matrix"],"owners":["security-audit-event-contract"]},
+    {"domain":"privacy","source_sections":["privacy_transformations","prohibited_data"],"owners":["security-audit-event-contract"]},
+    {"domain":"registries","source_sections":["registries"],"owners":["security-audit-event-contract"]},
+    {"domain":"representation_metadata","source_sections":["$schema"],"owners":["security-audit-event-contract"]},
+    {"domain":"validation","source_sections":["validation_layers"],"owners":["security-audit-event-contract"]}
+  ],
+  "overlaps": [
+    {"id":"overlap-authority-trust","domain":"authority_trust","capability_objects":{"derived-field-trust-semantics":"3134f3f2d615fe7f3922f10c0208f75a50da66d3","security-audit-event-contract":"d33b916244279c348b9cda83f55b3b5d160590cf"},"classification":"COMPATIBLE_OVERLAP","rule":"all requirements apply; neither capability overrides the other; a contradiction requires governed reconciliation"},
+    {"id":"overlap-delivery","domain":"delivery","capability_objects":{"delivery-conformance-contract":"75d03ffa3e3825483271f92ce04293ecb9ba33f7","security-audit-event-contract":"d33b916244279c348b9cda83f55b3b5d160590cf"},"classification":"COMPATIBLE_OVERLAP","rule":"catalog delivery class assignment and delivery conformance semantics are cumulative, with no override"},
+    {"id":"overlap-derivation","domain":"derivation","capability_objects":{"derived-field-trust-semantics":"3134f3f2d615fe7f3922f10c0208f75a50da66d3","security-audit-event-contract":"d33b916244279c348b9cda83f55b3b5d160590cf"},"classification":"COMPATIBLE_OVERLAP","rule":"the event capability owns contract representation while the derived-field capability constrains semantics; both must be satisfied"}
+  ],
+  "debts": [
+    {
+      "id": "candidate-a-current-capability-version-drift",
+      "assertion_id": "contract-version-is-current-capability-literal",
+      "source_path": "contracts/security-audit/source/contract.source.json",
+      "source_blob": "981da9e399a18e43c16493df42b80ee43da4779a",
+      "capability_path": "openspec/specs/security-audit-event-contract/spec.md",
+      "capability_blob": "d33b916244279c348b9cda83f55b3b5d160590cf",
+      "allowed_stages": ["candidate", "merge", "fold"],
+      "merge_scope": "governance_or_remediation_only",
+      "allowed_merge_path_prefixes": [".github/workflows/ci.yml","openspec/CONTEXT.md","openspec/changes/define-normative-precedence-lifecycle/","openspec/governance/design-pattern-policy.json","openspec/governance/governance-authority-registry.json","openspec/governance/normative-precedence-pins/","openspec/governance/normative-source-precedence.json","openspec/governance/records/define-normative-precedence-lifecycle.json","openspec/governance/schemas/","openspec/scripts/check-design-pattern-governance.mjs","openspec/scripts/check-normative-precedence.mjs","openspec/scripts/design-pattern-governance/","openspec/scripts/normative-precedence/","openspec/scripts/verify-normative-precedence-mutations.mjs","openspec/tests/design-pattern-governance/"],
+      "activation_effect": "BLOCK",
+      "release_effect": "BLOCK",
+      "recomputed": true,
+      "lineage": ["revision-2-inline-bindings:candidate-a-current-capability-version-drift"]
+    }
+  ],
+  "lineage": ["revision-2-inline-bindings"],
+  "created_for": {"change_id":"define-normative-precedence-lifecycle","lifecycle_state":"VERIFIED","fold_executed":false}
+}

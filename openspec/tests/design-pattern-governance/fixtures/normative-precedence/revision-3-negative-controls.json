@@ -1,0 +1,27 @@
+{
+  "schema": "bloodtrail.normative-precedence.revision-3-negative-controls.v1",
+  "controls": [
+    {"id":"NC-R3-001","test_pattern":"R3-T015","expected_code":"pin-set-history-mutated"},
+    {"id":"NC-R3-002","test_pattern":"R3-T016","expected_code":"fold-pin-set-missing"},
+    {"id":"NC-R3-003","test_pattern":"R3-T019","expected_code":"fold-pin-set-stale"},
+    {"id":"NC-R3-004","test_pattern":"R3-T018","expected_code":"fold-applicability-mismatch"},
+    {"id":"NC-R3-005","test_pattern":"R3-T019","expected_code":"fold-applicability-ambiguous"},
+    {"id":"NC-R3-006","test_pattern":"R3-T020","expected_code":"capability-overlap-classification-stale"},
+    {"id":"NC-R3-007","test_pattern":"R3-T018","expected_code":"debt-recomputation-mismatch"},
+    {"id":"NC-R3-008","test_pattern":"R3-T022","expected_code":"contract-version-boundary-violation"},
+    {"id":"NC-R3-009","test_pattern":"R3-T003","expected_code":"authorization-current-missing"},
+    {"id":"NC-R3-010","test_pattern":"R3-T004","expected_code":"authorization-current-conflict"},
+    {"id":"NC-R3-011","test_pattern":"R3-T005","expected_code":"authorization-inactive"},
+    {"id":"NC-R3-012","test_pattern":"R3-T006","expected_code":"authorization-archive-only"},
+    {"id":"NC-R3-013","test_pattern":"R3-T012","expected_code":"fold-authorization-invalid"},
+    {"id":"NC-R3-014","test_pattern":"R3-T013","expected_code":"authorization-current-missing"},
+    {"id":"NC-R3-015","test_pattern":"R3-T026","expected_code":"review-binding-post-review-change"},
+    {"id":"NC-R3-016","test_pattern":"R3-T027","expected_code":"record-only-specificity-violation"},
+    {"id":"NC-R3-017","test_pattern":"R3-T028","expected_code":"record-only-exemption-overbroad"},
+    {"id":"NC-R3-018","test_pattern":"R3-T033","expected_code":"mutation-not-applied"},
+    {"id":"NC-R3-019","test_pattern":"R3-T032","expected_code":"mutation-anchor-missing"},
+    {"id":"NC-R3-020","test_pattern":"R3-T032","expected_code":"mutation-anchor-ambiguous"},
+    {"id":"NC-R3-021","test_pattern":"R3-T009","expected_code":"active-delta-object-mismatch"},
+    {"id":"NC-R3-022","test_pattern":"R3-T007","expected_code":"authorization-self-enrolled-signer"}
+  ]
+}

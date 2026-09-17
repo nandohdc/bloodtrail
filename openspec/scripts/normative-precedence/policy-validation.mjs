@@ -237,15 +237,13 @@ function validateJointOwnershipOverlap(overlaps, requirements, path) {
   if (overlaps.length !== 1) {
     return [diagnostic("capability-overlap-unclassified", path, "joint ownership requires one exact overlap classification")];
   }
-  const expectedIds = requirements.map((entry) => entry.capability_id).sort(byCodePoint);
-  const boundIds = Object.keys(overlaps[0].capability_objects ?? {}).sort(byCodePoint);
-  if (JSON.stringify(expectedIds) === JSON.stringify(boundIds)) return [];
-  return [diagnostic("capability-overlap-binding-incomplete", `capability_overlaps.${overlaps[0].id}`, "overlap binding must cover every joint owner exactly")];
+  if (requirements.length >= 2) return [];
+  return [diagnostic("capability-overlap-binding-incomplete", `overlap_rules.${overlaps[0].id}`, "joint ownership requires at least two declared owners")];
 }
 
 function validateOwnershipOverlap(policy, ownership, requirements) {
   const path = `requirement_ownership.${ownership.domain}`;
-  const overlaps = (policy.capability_overlaps ?? []).filter((entry) => entry.domain === ownership.domain);
+  const overlaps = (policy.overlap_rules ?? []).filter((entry) => entry.domain === ownership.domain);
   if (ownership.overlap === "COMPATIBLE_JOINT_OWNERSHIP") {
     return validateJointOwnershipOverlap(overlaps, requirements, path);
   }
@@ -283,8 +281,8 @@ function validateOwnership(policy, capabilities, capabilityIds) {
     diagnostics.push(...validateOwnershipRow(policy, ownership, capabilities, capabilityIds));
     ownedSections.push(...(ownership.source_sections ?? []));
   }
-  if (!unique((policy.capability_overlaps ?? []).map((entry) => entry.id))) {
-    diagnostics.push(diagnostic("capability-overlap-id-duplicate", "capability_overlaps", "overlap IDs must be unique"));
+  if (!unique((policy.overlap_rules ?? []).map((entry) => entry.id))) {
+    diagnostics.push(diagnostic("capability-overlap-id-duplicate", "overlap_rules", "overlap IDs must be unique"));
   }
   if (!unique(ownedSections)) diagnostics.push(diagnostic("source-section-ownership-ambiguous", "requirement_ownership", "a source section has multiple owners"));
   return diagnostics;
@@ -382,8 +380,11 @@ function validateSemanticOverlapBindings(policy) {
   for (const row of policy.semantic_delegation ?? []) {
     const owners = [...new Set(row.capability_ids ?? [])].sort(byCodePoint);
     if (owners.length < 2) continue;
-    const declared = (policy.capability_overlaps ?? []).some((overlap) => overlap.classification !== "CONTRADICTORY"
-      && JSON.stringify(Object.keys(overlap.capability_objects ?? {}).sort(byCodePoint)) === JSON.stringify(owners));
+    const declared = (policy.requirement_ownership ?? []).some((ownership) => {
+      const ownershipOwners = [...new Set((ownership.capability_requirements ?? []).map((entry) => entry.capability_id))].sort(byCodePoint);
+      return JSON.stringify(ownershipOwners) === JSON.stringify(owners)
+        && (policy.overlap_rules ?? []).some((overlap) => overlap.domain === ownership.domain && overlap.classification !== "CONTRADICTORY");
+    });
     if (!declared) {
       diagnostics.push(diagnostic("semantic-delegation-overlap-undeclared", `semantic_delegation.${row.dimension}`, "a multi-owner semantic dimension requires a declared non-contradictory capability overlap"));
     }

@@ -47,6 +47,7 @@ import {
   collectRangePaths,
   collectRelocatedChangeIds,
   isGovernanceCore,
+  requiresOpenSpecAssociation,
 } from "./design-pattern-governance/perimeter.mjs";
 import { matchesSelection } from "./design-pattern-governance/paths.mjs";
 import {
@@ -237,7 +238,7 @@ function checkAssessments(opts, context, schemas, diagnostics) {
       // exception exists to acknowledge is missing.
     } else if (document.ordering) {
       verifyAssessmentOrdering(document.ordering, {
-        governedPatterns: governedPatterns(context.policy),
+        governedPatterns: orderingGovernedPatterns(context.policy),
         cwd: context.cwd,
         documentPath: path,
         sink: diagnostics,
@@ -344,7 +345,7 @@ function checkPerimeter(opts, context, diagnostics) {
   checkUnclassifiedPaths(byClass, emergencyPaths, diagnostics);
   checkHiddenImplementation({ paths: range.paths, byClass, base, head, cwd, sink: diagnostics });
 
-  const governed = range.paths.filter((path) => matchesSelection(path, governedPatterns(policy)));
+  const governed = range.paths.filter((path) => requiresOpenSpecAssociation(path, policy));
   const relocated = collectRelocatedChangeIds(range.paths, cwd, diagnostics);
   checkRelocationCompleteness({ relocated, base, cwd, sink: diagnostics });
   const changes = collectOpenSpecChanges(
@@ -473,14 +474,12 @@ function archivedChangeExists(repositoryRoot, changeId) {
 }
 
 /**
- * Patterns that count as governed *implementation* for ordering purposes.
- *
- * Planning artifacts are excluded. They are normative — changing one after
- * signing makes the record stale — but they are not implementation, and counting
- * them would mean the assessment commit always "introduces implementation" by
- * virtue of containing the assessment.
+ * Pattern selection used only for proposal-before-implementation ordering.
+ * Association itself consumes the most-specific classifier in
+ * `requiresOpenSpecAssociation`; keeping this separate prevents a flattened
+ * ordering selection from becoming an ownership-classification shortcut.
  */
-function governedPatterns(policy) {
+function orderingGovernedPatterns(policy) {
   return {
     include: (policy.path_classes ?? [])
       .filter((entry) => entry.class === "governed_implementation" || entry.class === "governance_core")
@@ -489,6 +488,14 @@ function governedPatterns(policy) {
   };
 }
 
+/**
+ * Patterns that count as governed *implementation* for ordering purposes.
+ *
+ * Planning artifacts are excluded. They are normative — changing one after
+ * signing makes the record stale — but they are not implementation, and counting
+ * them would mean the assessment commit always "introduces implementation" by
+ * virtue of containing the assessment.
+ */
 function defaultBase(context) {
   const reference = context.mainlineRevision;
   if (reference === null) return null;

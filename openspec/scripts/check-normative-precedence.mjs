@@ -42,7 +42,7 @@ function parseArgs(args) {
 }
 
 function usage() {
-  console.log("Usage: node openspec/scripts/check-normative-precedence.mjs [--repo PATH] [--policy PATH] [--stage candidate|merge|activation|release] [--base COMMIT] [--json]");
+  console.log("Usage: node openspec/scripts/check-normative-precedence.mjs [--repo PATH] [--policy PATH] [--stage candidate|merge|fold|activation|release] [--base COMMIT] [--json]");
 }
 
 try {
