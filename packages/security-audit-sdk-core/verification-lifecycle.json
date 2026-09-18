@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": {
     "version": "2.1.0",
-    "normativeTechnicalTarget": "342711fc284a3c1a94e0e1197c9bda0775e7fec0",
+    "normativeTechnicalTarget": "d749dc89bb606cf58e07cbba614b72124651fa42",
     "protectedPrefixes": [
       "contracts/security-audit/",
       "openspec/specs/security-audit-event-contract/",
@@ -12,9 +12,9 @@
       "contracts/security-audit/package-lock.json"
     ],
     "governedCandidate": {
-      "change": "add-client-evidence-capability",
+      "change": "define-normative-precedence-lifecycle",
       "rangeBase": "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-      "technicalCommit": "342711fc284a3c1a94e0e1197c9bda0775e7fec0",
+      "technicalCommit": "d749dc89bb606cf58e07cbba614b72124651fa42",
       "protectedPaths": [
         "contracts/security-audit/adr/adr-009.md",
         "contracts/security-audit/docs/authority-matrix.md",
