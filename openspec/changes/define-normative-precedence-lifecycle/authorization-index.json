@@ -63,7 +63,7 @@
       "object": "6a28fa55077610447300e6976d80ff760d97a778",
       "introducing_commit": "e417de5bb96a30ef64a9f6d0145ef840a06bc820",
       "operation": "IMPLEMENT",
-      "status": "CURRENT",
+      "status": "SUPERSEDED",
       "record_format": "SIGNED_MARKDOWN_BOOTSTRAP",
       "authorization_scope": "CB-001-REVISION-3-IMPLEMENTATION",
       "principal_id": "nandohdc",
