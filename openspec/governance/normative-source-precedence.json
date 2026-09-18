@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/normative-source-precedence.schema.json",
   "schema": "bloodtrail.normative-source-precedence.policy",
-  "policy_version": "1.0.0-candidate",
+  "policy_version": "1.1.0-candidate",
   "status": "candidate_requires_exact_owner_review",
   "change_id": "define-normative-precedence-lifecycle",
   "contract": {
@@ -73,27 +73,84 @@
     "apply_authority_identity": "Fernando Homem da Costa (nandohdc)",
     "review_authority_identity": "Fernando Homem da Costa (nandohdc)",
     "review_authority_role": "PROJECT_OWNER",
+    "implementation_grant": "implement-normative-precedence-revision-3",
     "activation_grant": "activate-normative-precedence-policy",
-    "merge_grant": "merge-define-normative-precedence-lifecycle"
+    "merge_grant": "merge-define-normative-precedence-lifecycle",
+    "fold_grant": "fold-normative-precedence-capability-deltas",
+    "release_grant": "release-normative-precedence-policy",
+    "archive_grant": "archive-define-normative-precedence-lifecycle"
   },
   "repository_evidence": {
     "active_changes_root": "openspec/changes",
     "archive_root": "openspec/changes/archive",
-    "apply_authorization_file": "revision-2-apply-authorization.md",
+    "authorization_index_file": "authorization-index.json",
+    "authorization_records_directory": "authorizations",
     "lifecycle_evidence_file": "lifecycle-evidence.json",
     "review_record_path": "openspec/governance/records/define-normative-precedence-lifecycle.json",
     "activation_record_path": "openspec/governance/normative-precedence-activation.json",
+    "authority_registry_path": "openspec/governance/governance-authority-registry.json",
+    "pin_sets_root": "openspec/governance/normative-precedence-pins",
     "protected_reference": "refs/heads/main",
     "governance_record_only_paths": [
       "openspec/governance/records/define-normative-precedence-lifecycle.json",
       "openspec/governance/normative-precedence-activation.json"
     ]
   },
+  "authorization_discovery": {
+    "record_schema": "openspec/governance/schemas/change-authorization.schema.json",
+    "legacy_index_schema": "bloodtrail.normative-precedence.authorization-index.v1",
+    "current_statuses": ["CURRENT"],
+    "inactive_statuses": ["REVOKED", "SUPERSEDED", "WITHDRAWN", "ARCHIVE_ONLY", "HISTORICAL"],
+    "operations": ["IMPLEMENT", "MERGE", "FOLD", "ACTIVATE", "RELEASE", "ARCHIVE"],
+    "conflict_behavior": "BLOCK",
+    "zero_record_behavior": "UNAUTHORIZED",
+    "protected_registry_source": "COMPARISON_BASE_OR_BOOTSTRAP_AUTHORIZATION"
+  },
+  "pinning": {
+    "schema_path": "openspec/governance/schemas/normative-precedence-pin-set.schema.json",
+    "legacy_snapshot_id": "revision-2-inline-bindings",
+    "selection": "EXACT_REPOSITORY_STATE_DIGEST",
+    "historical_records_immutable": true,
+    "current_cardinality": 1,
+    "required_fold_review_classes": ["canonical_capability", "lifecycle_evidence", "current_pin_set"]
+  },
   "capabilities": [
     {"id":"security-audit-event-contract","path":"openspec/specs/security-audit-event-contract/spec.md","domains":["contract_identity","field_model","authority_trust","catalog","registries","privacy","derivation","extensions","compatibility","delivery","integrity","interoperability","validation"],"versions":["*"],"path_prefixes":["contracts/security-audit/"]},
     {"id":"client-evidence","path":"openspec/specs/client-evidence/spec.md","domains":["client_evidence"],"versions":["*"],"path_prefixes":["research/browser-telemetry/","contracts/security-audit/"]},
     {"id":"derived-field-trust-semantics","path":"openspec/specs/derived-field-trust-semantics/spec.md","domains":["authority_trust","derivation"],"versions":["*"],"path_prefixes":["contracts/security-audit/"]},
     {"id":"delivery-conformance-contract","path":"openspec/specs/delivery-conformance-contract/spec.md","domains":["delivery"],"versions":["*"],"path_prefixes":["contracts/security-audit/"]}
+  ],
+  "overlap_rules": [
+    {"id":"overlap-authority-trust","domain":"authority_trust","classification":"COMPATIBLE_OVERLAP","rule":"all requirements apply; neither capability overrides the other; a contradiction requires governed reconciliation"},
+    {"id":"overlap-derivation","domain":"derivation","classification":"COMPATIBLE_OVERLAP","rule":"the event capability owns contract representation while the derived-field capability constrains semantics; both must be satisfied"},
+    {"id":"overlap-delivery","domain":"delivery","classification":"COMPATIBLE_OVERLAP","rule":"catalog delivery class assignment and delivery conformance semantics are cumulative, with no override"}
+  ],
+  "debt_rules": [
+    {
+      "id": "candidate-a-current-capability-version-drift",
+      "assertion_id": "contract-version-is-current-capability-literal",
+      "allowed_stages": ["candidate", "merge", "fold"],
+      "merge_scope": "governance_or_remediation_only",
+      "allowed_merge_path_prefixes": [
+        ".github/workflows/ci.yml",
+        "openspec/CONTEXT.md",
+        "openspec/changes/define-normative-precedence-lifecycle/",
+        "openspec/governance/design-pattern-policy.json",
+        "openspec/governance/governance-authority-registry.json",
+        "openspec/governance/normative-precedence-pins/",
+        "openspec/governance/normative-source-precedence.json",
+        "openspec/governance/records/define-normative-precedence-lifecycle.json",
+        "openspec/governance/schemas/",
+        "openspec/scripts/check-design-pattern-governance.mjs",
+        "openspec/scripts/check-normative-precedence.mjs",
+        "openspec/scripts/design-pattern-governance/",
+        "openspec/scripts/normative-precedence/",
+        "openspec/scripts/verify-normative-precedence-mutations.mjs",
+        "openspec/tests/design-pattern-governance/"
+      ],
+      "activation_effect": "BLOCK",
+      "release_effect": "BLOCK"
+    }
   ],
   "requirement_ownership": [
     {"domain":"representation_metadata","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Contract artifacts are machine-readable and reviewable"}],"source_sections":["$schema"],"delegation":"REPRESENTATION_DETAIL","overlap":"SINGLE_OWNER"},
@@ -110,11 +167,6 @@
     {"domain":"integrity","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Integrity claims remain bounded"}],"source_sections":["integrity_claims"],"delegation":"NONE","overlap":"SINGLE_OWNER"},
     {"domain":"interoperability","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Interoperability mappings preserve canonical semantics"}],"source_sections":["standards","standards_matrix","mapping_policy"],"delegation":"NONE","overlap":"SINGLE_OWNER"},
     {"domain":"validation","capability_requirements":[{"capability_id":"security-audit-event-contract","requirement_heading":"Validation is layered and misuse-resistant"}],"source_sections":["validation_layers"],"delegation":"NONE","overlap":"SINGLE_OWNER"}
-  ],
-  "capability_overlaps": [
-    {"id":"overlap-authority-trust","domain":"authority_trust","capability_objects":{"security-audit-event-contract":"d33b916244279c348b9cda83f55b3b5d160590cf","derived-field-trust-semantics":"3134f3f2d615fe7f3922f10c0208f75a50da66d3"},"classification":"COMPATIBLE_OVERLAP","rule":"all requirements apply; neither capability overrides the other; a contradiction requires governed reconciliation"},
-    {"id":"overlap-derivation","domain":"derivation","capability_objects":{"security-audit-event-contract":"d33b916244279c348b9cda83f55b3b5d160590cf","derived-field-trust-semantics":"3134f3f2d615fe7f3922f10c0208f75a50da66d3"},"classification":"COMPATIBLE_OVERLAP","rule":"the event capability owns contract representation while the derived-field capability constrains semantics; both must be satisfied"},
-    {"id":"overlap-delivery","domain":"delivery","capability_objects":{"security-audit-event-contract":"d33b916244279c348b9cda83f55b3b5d160590cf","delivery-conformance-contract":"75d03ffa3e3825483271f92ce04293ecb9ba33f7"},"classification":"COMPATIBLE_OVERLAP","rule":"catalog delivery class assignment and delivery conformance semantics are cumulative, with no override"}
   ],
   "semantic_delegation": [
     {"dimension":"requiredness","classification":"SEMANTIC_REQUIREMENT","source_patterns":["/fields/*/r","/fields/*/required_with","/catalog/*/required_context"],"capability_ids":["security-audit-event-contract"],"delegation":"NONE"},
@@ -174,35 +226,6 @@
       "adapter": "source-value-present-in-requirement"
     }
   ],
-  "baseline_conflicts": [
-    {
-      "id": "candidate-a-current-capability-version-drift",
-      "candidate_commit": "b8122751342b0a2591a69a728ea58a99ca37dd0f",
-      "source_path": "contracts/security-audit/source/contract.source.json",
-      "source_blob": "981da9e399a18e43c16493df42b80ee43da4779a",
-      "capability_path": "openspec/specs/security-audit-event-contract/spec.md",
-      "capability_blob": "d33b916244279c348b9cda83f55b3b5d160590cf",
-      "assertion_id": "contract-version-is-current-capability-literal",
-      "allowed_stages": ["candidate", "merge"],
-      "merge_scope": "governance_or_remediation_only",
-      "allowed_merge_path_prefixes": [
-        ".github/workflows/ci.yml",
-        "openspec/CONTEXT.md",
-        "openspec/changes/define-normative-precedence-lifecycle/",
-        "openspec/governance/design-pattern-policy.json",
-        "openspec/governance/normative-source-precedence.json",
-        "openspec/governance/records/define-normative-precedence-lifecycle.json",
-        "openspec/governance/schemas/normative-source-precedence.schema.json",
-        "openspec/scripts/check-normative-precedence.mjs",
-        "openspec/scripts/normative-precedence/",
-        "openspec/tests/design-pattern-governance/fixtures/normative-precedence/",
-        "openspec/tests/design-pattern-governance/normative-precedence-policy.test.mjs",
-        "openspec/tests/design-pattern-governance/normative-precedence-repository.test.mjs"
-      ],
-      "activation_effect": "BLOCK",
-      "release_effect": "BLOCK"
-    }
-  ],
   "change_record_lifecycle": {
     "states": ["PROPOSED","VALIDATED","APPLY_AUTHORIZED","IMPLEMENTED","VERIFIED","FOLDED","ARCHIVED","REJECTED","WITHDRAWN","SUPERSEDED"],
     "transitions": [
@@ -216,7 +239,8 @@
       {"from":"APPLY_AUTHORIZED","to":"WITHDRAWN","entering_authority":"PROJECT_OWNER_OR_CHANGE_OWNER_WITHIN_POLICY","required_evidence":["withdrawal record"],"permitted_operations":["discard candidate"],"semantic_claim":"authorization is no longer exercised","invalidation":"new authorization required to resume"},
       {"from":"IMPLEMENTED","to":"VERIFIED","entering_authority":"TRUSTED_AND_CANDIDATE_CHECKERS","required_evidence":["required technical verification","failure-sensitive controls"],"permitted_operations":["freeze candidate"],"semantic_claim":"implementation has technical evidence, not owner approval","invalidation":"governed content change requires re-verification"},
       {"from":"IMPLEMENTED","to":"WITHDRAWN","entering_authority":"PROJECT_OWNER_OR_CHANGE_OWNER_WITHIN_POLICY","required_evidence":["withdrawal record"],"permitted_operations":["discard implementation"],"semantic_claim":"implementation is not progressing","invalidation":"new authorization required to resume"},
-      {"from":"VERIFIED","to":"FOLDED","entering_authority":"AUTHORIZED_FOLD","required_evidence":["exact verified delta","current capability byte comparison","identity-preserving governed fold"],"permitted_operations":["request folded-content review"],"semantic_claim":"delta is materialized in current capability but not activated","invalidation":"folded capability change requires re-fold and re-review"},
+      {"from":"VERIFIED","to":"APPLY_AUTHORIZED","entering_authority":"PROJECT_OWNER","required_evidence":["fresh exact revision authorization","verified predecessor identity","bounded revision scope"],"permitted_operations":["implement authorized revision"],"semantic_claim":"a bounded revision is authorized; prior verification is historical","invalidation":"proposal or revision-scope change requires new authorization"},
+      {"from":"VERIFIED","to":"FOLDED","entering_authority":"AUTHORIZED_FOLD","required_evidence":["distinct exact fold authorization","exact verified delta objects","deterministic isolated fold preview","strict OpenSpec validation","new immutable current pin set","exact fold lifecycle evidence","new technical commit and tree","complete governed path objects","fresh exact-content review"],"permitted_operations":["request folded-content review"],"semantic_claim":"delta is materialized in current capability but not activated","invalidation":"folded capability or binding change requires a new fold identity and review"},
       {"from":"VERIFIED","to":"SUPERSEDED","entering_authority":"PROJECT_OWNER","required_evidence":["superseding change identity"],"permitted_operations":["archive as superseded"],"semantic_claim":"another change replaces this candidate intent","invalidation":"superseding identity controls"},
       {"from":"FOLDED","to":"ARCHIVED","entering_authority":"AUTHORIZED_ARCHIVE","required_evidence":["activated contract identity","byte-identical archive movement","archive attestation"],"permitted_operations":["retain historical evidence"],"semantic_claim":"record is historical; activated contract remains operative","invalidation":"archive mutation fails immutable-history checks"},
       {"from":"SUPERSEDED","to":"ARCHIVED","entering_authority":"AUTHORIZED_ARCHIVE","required_evidence":["supersession evidence","archive attestation"],"permitted_operations":["retain historical evidence"],"semantic_claim":"superseded change is historical","invalidation":"archive mutation fails immutable-history checks"},

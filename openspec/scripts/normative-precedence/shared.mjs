@@ -8,7 +8,7 @@ import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 export const POLICY_RELATIVE_PATH = "openspec/governance/normative-source-precedence.json";
-export const STAGES = Object.freeze(["candidate", "merge", "activation", "release"]);
+export const STAGES = Object.freeze(["candidate", "merge", "fold", "activation", "release"]);
 
 export const REQUIRED_SEMANTIC_DIMENSIONS = Object.freeze([
   "requiredness", "conditional_requiredness", "authority", "trust", "privacy",

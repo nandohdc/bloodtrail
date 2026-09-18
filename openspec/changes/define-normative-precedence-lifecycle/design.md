@@ -143,6 +143,122 @@ candidate changes neither object, the checker reports the debt but permits a gov
 merge; activation and release still fail. This avoids freezing the repository in the broken state
 while preventing an unrelated edit from laundering the defect.
 
+### 10. Preserve old evidence and select one exact pin set per repository state
+
+Revision 3 moves applicability, overlap, and debt bindings out of mutable inline policy arrays and
+into immutable pin sets. Existing Revision 2 evidence is not rewritten. A legacy snapshot binds the
+old arrays to policy blob `6f4bf3a955f377499af5487ff5945baacbecac47`; new folded states receive new pin-set objects.
+
+The checker computes a deterministic state digest from the exact authored source, current capability
+registry, capability blobs, ownership mapping, version selectors, and governed path selectors. It
+requires exactly one current pin set for that digest. Missing, duplicate, floating, or stale pin sets
+fail closed. The pin set does not self-reference; the exact-content review binds the pin-set object
+alongside the remaining governed path-to-object set.
+
+Mutating old pins in place was rejected because it would make historical review evidence describe
+objects that did not exist when the review occurred. Reusing old pins based on matching capability
+names was rejected because names do not prove byte identity.
+
+### 11. Recompute applicability, overlap, and debt after canonical materialization
+
+A fold preview first materializes the proposed current capability blobs in a disposable tree. The
+checker then recomputes, rather than copies:
+
+1. capability applicability for every governed source section;
+2. every multi-owner overlap set and its exact-object classification; and
+3. every semantic assertion, bounded inherited-debt entry, and affected scope.
+
+Any owner-object change makes earlier overlap evidence stale. Persisting debt is rebound to the new
+objects with explicit lineage; resolved debt is omitted from the new current pin set but remains in
+history; new or broadened debt is a blocking conflict and cannot receive an inherited-debt exception.
+
+The existing `schema.version=2.1.0` source/current-capability conflict is expected to persist. The
+fold mechanism must re-establish that debt against the eventual folded event-capability blob and keep
+its activation/release block. CB-018 owns the semantic correction. CB-019 owns the later exact JSON
+Schema identity projection. Revision 3 is forbidden from changing, resolving, or weakening either
+side of the conflict.
+
+### 12. Discover operation authorization per change under a protected trust root
+
+Authorization files are discovered through a governed directory/schema convention rather than one
+CB-001 filename. Records bind the change, operation (`APPLY`, `FOLD`, `ACTIVATE`, `RELEASE`, or
+`ARCHIVE`), exact base/proposal objects, scope, paths, principal and role, grant, withheld authority,
+introducing event, and predecessor/supersession relation.
+
+The checker builds one coherent current chain per requested operation:
+
+- zero valid current records means unauthorized;
+- multiple consistent records are evaluated only under the explicit chain policy;
+- conflicting current records fail closed; and
+- revoked, superseded, withdrawn, archive-only, or archived-change records grant no current power.
+
+Existing Markdown authorizations remain byte-identical and are indexed by exact path, blob,
+introducing commit, grant type, and historical status. The trusted owner identity and signing key
+come from a protected-baseline authority registry. A candidate cannot add the signer that validates
+its own authorization, and a candidate checker cannot make the registry trusted by accepting it.
+
+### 13. Separate bounded revision, fold, and later activation operations
+
+A verified, active, not-yet-folded change may enter the bounded revision cycle
+`VERIFIED → APPLY_AUTHORIZED → IMPLEMENTED → VERIFIED` only under fresh exact apply authorization.
+The earlier verification remains historical. This Revision 3 proposal prepares such a revision but
+does not itself grant apply authority.
+
+`VERIFIED → FOLDED` requires a separate current fold authorization, exact verified delta inputs, a
+deterministic fold preview, strict OpenSpec validation, newly recomputed pins, immutable old pins,
+exact lifecycle evidence, and a new technical identity. The changed canonical capability blobs,
+lifecycle evidence, new pin set, and exact delta inputs are all review-bound. Any subsequent bound
+change creates another identity and requires another review.
+
+Merge, fold, activation, release, and archive authority remain pairwise distinct. Revision 3
+implementation will establish the mechanism only. It will not fold the active deltas, create
+activation evidence, grant activation, begin CB-002, or create Candidate B.
+
+### 14. Resolve CR-F16 through one most-specific path classification
+
+Association selection must consume the same most-specific classification used by the governed path
+classifier. Flattening `governance_core` and `governed_implementation` patterns into one unordered
+include set is forbidden because a narrower `governance_record_only` path otherwise loses its role.
+
+A most-specifically classified `governance_record_only` path is excluded from active-change
+implementation ownership only after its dedicated closed-schema, exact-binding, history, authority,
+and hidden-implementation checks pass. This is not a blanket exemption for `openspec/governance/`,
+and mixed commits still require association for every implementation or governance-core path. The
+existing duplicate record-only helper must either consume the shared classification result or be
+removed; a second independent definition is forbidden.
+
+### 15. Make mutation assurance countable before interpreting kill rate
+
+The Revision 3 mutation manifest contains exactly 22 planned mutants. Anchor preflight runs before
+execution and requires exactly one live target for each enabled mutant. The gate succeeds only with:
+
+```text
+EXPECTED_MUTANTS=22
+APPLIED_MUTANTS=22
+KILLED_MUTANTS=22
+NOT_APPLIED=0
+SURVIVED=0
+ANCHOR_PREFLIGHT=PASS
+NULL_CONTROLS=CLEAN
+RESTORATION=BYTE_IDENTICAL
+```
+
+Every mutant runs in isolation and must be killed by its declared control. A not-applied mutant fails
+assurance before any kill percentage is calculated. Unmodified and apply/restore null controls must
+stay clean and source hashes must restore byte-identically.
+
+### 16. Bind this planning revision without making it operative
+
+This planning revision is based on merge commit `49ab0c255a41cc99328ff2cd5d442ffbc80b1bb1`
+and tree `d608182899cb981403201c746ac7a18ddbc1d8c9`. Its approved package set is
+`071d5433d950c5c602e8706d86ce8fc8c2be2b39f3b78823131313b0e2922b43`; its manifest is
+`117b6a59a1fa8ceab9ee84837548b340b238591ac52bf7bb3256e6af800766fd`.
+
+The proposal commit/tree and exact change-subtree object will be frozen after strict validation. A
+separate project-owner apply authorization must bind those objects before any implementation path is
+edited. Planning freeze does not change trusted policy, checker behavior, lifecycle state, canonical
+capabilities, the three active delta statuses, or any contract/SDK artifact.
+
 ## Risks / Trade-offs
 
 - **[Ownership mappings can become another inventory to maintain]** → The checker verifies every
@@ -158,19 +274,37 @@ while preventing an unrelated edit from laundering the defect.
 - **[Candidate checker cannot be fully validated by old code]** → Existing trusted governance still
   enforces R14 assessment/review/anti-weakening boundaries; independent repository tests and negative
   controls plus exact owner review supply the new-rule evidence until activation.
+- **[Append-only pin and authorization evidence increases governed object count]** → Closed schemas,
+  deterministic selection, explicit lineage, and exact review bindings prevent the records from
+  becoming floating or mutable authority.
+- **[Fold preview and recomputation can expose more debt than Revision 2 recorded]** → New or widened
+  debt blocks instead of being inherited silently; Revision 3 never weakens a semantic conflict to
+  make a fold pass.
+- **[Most-specific record classification could hide implementation under a record path]** → The
+  record-only exception applies only after dedicated schema, history, authority, and hidden-code
+  checks, and mixed commits retain ordinary association requirements.
+- **[A closed mutation count can become stale after refactoring]** → Anchor preflight must locate
+  exactly one target for all 22 approved mutants; a missing or ambiguous target fails before runs.
 
 ## Migration Plan
 
-1. Land the OpenSpec proposal/assessment commit from Candidate A.
-2. Record bounded apply authorization for governance implementation only.
-3. Add policy, schema, checker, tests, glossary terms, and minimal CI invocation.
-4. Freeze the exact technical commit and request project-owner review; do not mark it approved.
-5. After approval, follow the existing identity-preserving signed-record and merge sequence, fold
-   every affected delta into the current capabilities, freeze and review the exact folded content,
-   and only then create the separately authorized direct-child activation record and archive the
-   byte-identical change record.
-6. Keep all Candidate A semantic debts activation/release-blocking until their dependent CB changes
-   remove them and a later exact Candidate B is intentionally frozen.
+1. Freeze this planning-only proposal commit/tree/change subtree against the reviewed package hashes.
+2. Obtain a separately signed project-owner apply authorization granting only Revision 3
+   implementation and explicitly withholding fold, activation, release, archive, CB-002, CB-018,
+   CB-019, contract/SDK changes, and Candidate B creation.
+3. Under that exact grant, add the policy schemas, immutable legacy snapshot, authorization index,
+   authority registry, checker modules, CR-F16 correction, tests, 22-mutant assurance gate, and only
+   the minimal CI/perimeter registration needed for them.
+4. Preserve every merged Revision 2 object, keep all three active deltas unfolded, and update
+   lifecycle evidence only through the authorized bounded revision cycle.
+5. Run strict OpenSpec validation, trusted-baseline and candidate checks separately, repository and
+   policy tests, all 22 negative controls, and the exact 22/22 mutation proof. Freeze the technical
+   identity and obtain fresh exact-content review before merge.
+6. After a later separate fold authorization, recompute the three-delta fold preview, applicability,
+   overlaps, debt, pin set, and exact fold identity. Freeze and freshly review that content.
+7. Keep the contract-version debt activation/release-blocking until CB-018 resolves it. Do not create
+   activation evidence or attempt activation merely because the fold mechanism exists.
 
-Rollback before activation is branch abandonment. After activation, rollback requires a new governed
-candidate; history and existing activation evidence are not rewritten.
+Rollback before Revision 3 activation is branch abandonment or a new governed revision; merged
+Revision 2 evidence is never rewritten. After any future activation, rollback requires a new
+governed candidate.

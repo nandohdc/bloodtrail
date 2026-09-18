@@ -37,3 +37,44 @@
 - [ ] 6.2 After approval only, create the signed governance record, re-run exact-head required checks, and establish merge readiness without starting CB-002.
 - [ ] 6.3 Land through identity-preserving merge, fold all three capability deltas while the change remains active, validate the fold independently, and freeze/review the exact folded content.
 - [ ] 6.4 After the folded-content review grants activation, store the separately authorized dedicated direct-child activation record, verify it cannot self-authorize, then archive the byte-identical completed change in a separate governed step.
+
+## 7. Revision 3 planning freeze
+
+- [x] 7.1 Bind proposal, design, capability deltas, implementation paths, tests, negative controls, and mutants to package set `071d5433f950c5c602e8706d86ce8fc8c2be2b39f3b78823131313b0e2922b43` and manifest `117b6a59a1fa8ceab9ee84837548b340b238591ac52bf7bb3256e6af800766fd`; verify no trusted enforcement or downstream contract artifact changes.
+- [x] 7.2 Run strict OpenSpec validation and the planning-scope integrity checks, freeze the exact proposal commit/tree/change subtree, and stop for separately signed apply authorization.
+
+## 8. Immutable evidence and authorization discovery
+
+- [x] 8.1 Add closed schemas for immutable normative-precedence pin sets, operation-specific change authorizations, and the protected governance authority registry; verify floating, partial, self-referential, and candidate-self-enrolled records fail.
+- [x] 8.2 Create an append-only Revision 2 legacy pin snapshot bound to policy blob `6f4bf3a955f377499af5487ff5945baacbecac47`; verify every historical pin and review object remains byte-identical.
+- [x] 8.3 Add a legacy authorization index binding every existing CB-001 authorization path, blob, introducing commit, scope, and status without renaming or rewriting any record; verify no historical grant broadens.
+- [x] 8.4 Implement deterministic per-change authorization discovery and coherent amendment, revocation, and supersession chains; verify zero records are unauthorized, conflicts block, and revoked, superseded, withdrawn, archive-only, and archived-change records grant nothing current.
+
+## 9. Fold identity and recomputation
+
+- [x] 9.1 Add deterministic repository-state digest and exact current pin-set selection; verify missing, duplicate, stale, mutated, branch-only, tag-only, version-only, and path-only pins fail.
+- [x] 9.2 Implement isolated fold preview and recompute post-fold applicability from exact source, registry, ownership, selectors, lifecycle, and capability objects; verify missing or ambiguous applicability and active/current conflation fail.
+- [x] 9.3 Recompute overlap owner sets and exact-object classifications; verify missing, surplus, ambiguous, and old-blob classifications fail while prior evidence stays historical.
+- [x] 9.4 Re-evaluate bounded inherited debt and affected scope; verify persisting debt is rebound with lineage, resolved debt is not current, new/broadened debt blocks, and the `schema.version=2.1.0` conflict remains activation/release blocking.
+- [x] 9.5 Enforce the bounded verified-revision cycle and exact `VERIFIED` to `FOLDED` transition; verify fold requires distinct authority, deterministic preview, strict validation, new pins, lifecycle evidence, new technical identity, and fresh exact-content review.
+
+## 10. CR-F16 path specificity
+
+- [x] 10.1 Make association consume the shared most-specific path classification and remove or subordinate duplicate record-only matching; verify broad/narrow pattern fixtures resolve deterministically.
+- [x] 10.2 Route most-specific `governance_record_only` paths through dedicated schema, exact-binding, history, authority, and hidden-implementation checks; verify nearby policy/checker paths and mixed commits are not exempt.
+
+## 11. Failure-sensitive Revision 3 evidence
+
+- [x] 11.1 Implement the 38 approved repository-level cases for pin history, applicability, overlap, debt, authorization discovery, fold lifecycle, review binding, CR-F16, scope, and contract-version boundary; verify expected valid states pass and invalid states fail for their intended reason.
+- [x] 11.2 Implement all 22 approved negative controls and verify each materially distinct weakened governance property is detected.
+- [x] 11.3 Add static anchor preflight and execute the closed 22-mutant manifest; require `EXPECTED=22`, `APPLIED=22`, `KILLED=22`, `NOT_APPLIED=0`, `SURVIVED=0`, clean null controls, and byte-identical restoration before reporting success.
+- [x] 11.4 Run policy-model, repository-enforcement, binding, full governance, contract-reuse, trusted checker at every required stage, candidate checker, dual check, mutation proof, null controls, strict OpenSpec validation, and `git diff --check`; record every command and exact result separately.
+
+## 12. Revision 3 exact review boundary
+
+- [x] 12.1 Verify implementation changed only separately authorized Revision 3 governance paths, preserved all merged Revision 2 evidence, left all three active deltas unfolded, and made no contract source, generated contract, validator, SDK, CB-002, CB-018, CB-019, or Candidate B change.
+- [ ] 12.2 Freeze the exact Revision 3 technical commit/tree and complete governed path-to-object set, then request fresh exact-content owner review while keeping fold, activation, release, and archive unauthorized.
+
+Future fold execution, folded-content review, activation, release, archive, CB-002, CB-018, CB-019,
+and Candidate B selection are deliberately excluded from the Revision 3 implementation task set and
+require separate governed actions.

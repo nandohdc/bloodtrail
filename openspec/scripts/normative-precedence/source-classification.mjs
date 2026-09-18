@@ -4,8 +4,8 @@ import {
   diagnostic
 } from "./shared.mjs";
 
-export function baselineDebtFor(policy, assertion, sourceObject, capabilityObject) {
-  return (policy.baseline_conflicts ?? []).find((entry) =>
+export function baselineDebtFor(debts, assertion, sourceObject, capabilityObject) {
+  return (debts ?? []).find((entry) =>
     entry.assertion_id === assertion.id
     && entry.source_blob === sourceObject
     && entry.capability_blob === capabilityObject

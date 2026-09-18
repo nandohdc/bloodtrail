@@ -1,0 +1,26 @@
+{
+  "$schema": "./schemas/governance-authority-registry.schema.json",
+  "schema": "bloodtrail.governance-authority-registry.v1",
+  "registry_version": 1,
+  "bootstrap": {
+    "authorization_commit": "e417de5bb96a30ef64a9f6d0145ef840a06bc820",
+    "authorization_path": "openspec/changes/define-normative-precedence-lifecycle/revision-3-apply-authorization.md",
+    "authorized_proposal_commit": "5a4957255f2e4830ceb15b38764e6bdb9824cae9",
+    "expected_parent": "5a4957255f2e4830ceb15b38764e6bdb9824cae9",
+    "mechanism": "SIGNED_DIRECT_CHILD_APPLY_AUTHORIZATION"
+  },
+  "principals": [
+    {
+      "id": "nandohdc",
+      "display_name": "Fernando Homem da Costa",
+      "roles": ["PROJECT_OWNER"],
+      "ssh_signing_keys": [
+        {
+          "fingerprint": "SHA256:MSQGfkZ33HtMFLuekps6RSechU/Ki/jK6cRvt4mRUHA",
+          "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINdemiy2sBjeB7bHoAU/ReoHFopeAnabbGMMzRD2ELMw",
+          "status": "ACTIVE"
+        }
+      ]
+    }
+  ]
+}

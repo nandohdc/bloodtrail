@@ -76,3 +76,81 @@ mechanism.
 - **WHEN** a governance-core candidate reaches exact review
 - **THEN** its record distinguishes baseline source and result from candidate source and result, and
   neither result is represented as project-owner approval
+
+### Requirement: Fold-time applicability, overlap, and debt are recomputed from exact objects
+
+Before a canonical fold can be accepted, repository enforcement SHALL materialize the proposed
+canonical objects in an isolated preview and recompute applicable current capabilities for every
+governed source section from exact repository-derived inputs. Active candidate deltas SHALL remain a
+separate candidate-intent class and SHALL NOT masquerade as current canonical capabilities.
+
+Every domain with multiple applicable current owners SHALL have exactly one overlap classification
+bound to the exact new owner-object set. Any owner-object change SHALL make a prior classification
+stale. Every semantic assertion SHALL be re-evaluated against the folded graph. Persisting debt SHALL
+be rebound to the new exact objects and deterministically derived affected scope with historical
+lineage; resolved debt SHALL be absent from the new current pin set but preserved in history; new or
+broadened debt SHALL block and SHALL NOT receive an inherited-debt exception.
+
+Missing, surplus, ambiguous, conflicting, stale, silently carried, or silently dropped evidence
+SHALL fail closed.
+
+#### Scenario: Applicability is copied from pre-fold state
+- **WHEN** a fold changes a current capability object but presents only the pre-fold applicability
+  result
+- **THEN** repository enforcement rejects the stale evidence and requires recomputation from the
+  folded preview
+
+#### Scenario: Overlap owner object changes
+- **WHEN** an overlap classification names the same capability paths but one bound capability blob
+  differs from the folded object
+- **THEN** repository enforcement rejects the old classification as stale
+
+#### Scenario: Existing semantic debt persists after fold
+- **WHEN** independent re-evaluation finds the same semantic contradiction against a newly folded
+  canonical object
+- **THEN** a new current debt entry binds the new objects, preserves historical lineage, and retains
+  every applicable activation and release block
+
+### Requirement: Governed path association uses the most-specific classification
+
+Every governance association decision SHALL consume the same most-specific governed path
+classification used by the repository path classifier. Association SHALL NOT flatten broader
+`governance_core` or `governed_implementation` patterns with narrower
+`governance_record_only` patterns into an unordered include set.
+
+A path classified most-specifically as `governance_record_only` MAY be excluded from active-change
+implementation ownership only when its dedicated closed-schema, exact-binding, history, authority,
+and hidden-implementation validation passes. This rule SHALL NOT exempt the broader
+`openspec/governance/` tree or waive association for implementation or governance-core paths in a
+mixed commit. Duplicate helpers SHALL NOT define path specificity independently.
+
+#### Scenario: Narrow record classification wins
+- **WHEN** a path matches both a broad governance-core prefix and a narrower record-only prefix
+- **THEN** association uses the most-specific record-only classification and still runs every
+  dedicated record validation
+
+#### Scenario: Nearby governance implementation path is treated as a record
+- **WHEN** a checker attempts to exempt a governance policy, schema, script, or mixed commit by using
+  the broader record-directory match
+- **THEN** governance rejects the exemption and requires ordinary change association
+
+### Requirement: Mutation assurance fails before kill-rate interpretation when coverage is incomplete
+
+Governance mutation assurance SHALL use a closed manifest of exactly 22 planned Revision 3 mutants.
+Static anchor preflight SHALL run before mutation execution and SHALL resolve exactly one live target
+for every enabled mutant. The assurance gate SHALL require `EXPECTED_MUTANTS=22`,
+`APPLIED_MUTANTS=22`, `KILLED_MUTANTS=22`, `NOT_APPLIED=0`, `SURVIVED=0`, clean null controls, and
+byte-identical restoration.
+
+Each mutant SHALL execute in isolation, change its intended object, and be killed by its declared
+control. Any missing or ambiguous anchor, not-applied mutant, survivor, contaminated null control, or
+non-identical restoration SHALL fail assurance before a mutation percentage is reported.
+
+#### Scenario: Mutant anchor no longer applies
+- **WHEN** one planned mutant matches zero or multiple live targets
+- **THEN** anchor preflight fails and governance reports no passing kill rate
+
+#### Scenario: All mutants apply and are killed
+- **WHEN** all 22 anchors resolve uniquely, all mutants apply in isolation, every declared control
+  kills its mutant, null controls remain clean, and restoration is byte-identical
+- **THEN** mutation assurance passes with expected, applied, and killed counts all equal to 22
