@@ -1,0 +1,37 @@
+{
+  "$schema": "../../../governance/schemas/change-authorization.schema.json",
+  "schema": "bloodtrail.change-authorization.v1",
+  "id": "cb-018-r3-resolve-debt",
+  "change_id": "define-normative-precedence-lifecycle",
+  "operation": "RESOLVE_DEBT",
+  "status": "CURRENT",
+  "authorization_scope": "At T3, retire only candidate-a-current-capability-version-drift against the exact frozen T2 resolving identity, recompute applicability, overlaps, and debt, and create current-pre-fold-cb-018; do not fold or activate any delta.",
+  "principal_id": "nandohdc",
+  "authority_role": "PROJECT_OWNER",
+  "grant": "resolve-contract-version-semantic-drift",
+  "withheld": [
+    "IMPLEMENT",
+    "MERGE",
+    "FOLD",
+    "ACTIVATE",
+    "RELEASE",
+    "ARCHIVE",
+    "implement-normative-precedence-revision-3",
+    "merge-define-normative-precedence-lifecycle",
+    "fold-normative-precedence-capability-deltas",
+    "activate-normative-precedence-policy",
+    "release-normative-precedence-policy",
+    "archive-define-normative-precedence-lifecycle",
+    "BEGIN_CB_002",
+    "IMPLEMENT_CB_019"
+  ],
+  "authorized_base_commit": "d749dc89bb606cf58e07cbba614b72124651fa42",
+  "authorized_base_tree": "c612fe23e7ce984064b7ccfc8a5c70ce5c31af51",
+  "authorized_proposal_commit": "6dd3a6359b49d4f4e7855b0117ed25fcb8596c3d",
+  "authorized_proposal_tree": "628e23a0b3d8349bdbc1b16f0665aa66f2913796",
+  "authorized_change_subtree": "92808225a8146a633f67aa3c4646b15a4f9f06e0",
+  "scope_paths": [
+    "openspec/changes/define-normative-precedence-lifecycle/",
+    "openspec/governance/normative-precedence-pins/current-pre-fold-cb-018.json"
+  ]
+}
