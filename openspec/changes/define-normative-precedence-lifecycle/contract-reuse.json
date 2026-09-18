@@ -8,13 +8,13 @@
     "metadata.schema_version",
     "compatibility_policy"
   ],
-  "rationale": "CB-001 Revision 2 changes governance over how the existing security-audit contract is authored, reviewed, activated, and checked. It does not add, remove, reinterpret, or repair a contract field, event, registry, validator rule, generated artifact, or compatibility classification, so security-audit@2.1.0 is reused exactly as the frozen Candidate A input.",
+  "rationale": "CB-001 governs how the existing security-audit contract is authored, reviewed, activated, and checked. Its CB-018 revision materializes security-audit@2.1.0 requirements that became operative and were archived under 2026-09-11-add-client-evidence-capability into the canonical capability, and adds an authorized debt-retirement transition. It adds, removes, or reinterprets no contract field, event, registry, validator rule, generated artifact, or version, so security-audit@2.1.0 is reused exactly and no compatibility classification applies.",
   "trust_boundary": "The new boundary is governance evidence: a candidate checker may inspect contract and capability content but cannot become semantic authority, owner approval, or trusted policy merely by passing. Existing contract producer, consumer, tenant, authority, trust, privacy, and delivery boundaries remain unchanged.",
-  "transformation_ownership": "The authoritative source remains the sole contract-generation input and every existing contract generator retains its current ownership. PR-B01 adds only governance classification and read-only inspection; it neither generates contract artifacts nor moves a contract transformation into governance code.",
+  "transformation_ownership": "The authoritative source remains the sole contract-generation input and every existing contract generator retains its current ownership. The governance work adds classification, read-only inspection, and, in CB-018, canonical capability text copied from the archived 2.1.0 change; it neither generates contract artifacts nor moves a contract transformation into governance code.",
   "alternatives": [
     {
       "approach": "extend",
-      "rejection_reason": "Treating the governance rule as a security-audit contract extension would falsely claim a new event semantic and require a compatibility classification even though no contract input or output changes."
+      "rejection_reason": "Treating the governance rule as a security-audit contract extension would falsely claim a new event semantic and require a compatibility classification even though no contract input or output changes; for CB-018 it would also assert a fictitious 2.1.0 to 2.2.0 move for semantics already operative under 2.1.0."
     },
     {
       "approach": "new_contract",
@@ -22,16 +22,19 @@
     }
   ],
   "author": {
-    "name": "Codex, under direct instruction from Fernando Homem da Costa",
+    "name": "Claude Code, under direct instruction from Fernando Homem da Costa",
     "handle": "nandohdc"
   },
   "evidence_references": [
     "openspec/changes/define-normative-precedence-lifecycle/proposal.md",
     "openspec/changes/define-normative-precedence-lifecycle/design.md",
-    "openspec/changes/define-normative-precedence-lifecycle/specs/security-audit-event-contract/spec.md"
+    "openspec/changes/define-normative-precedence-lifecycle/specs/security-audit-event-contract/spec.md",
+    "openspec/changes/archive/2026-09-11-add-client-evidence-capability/specs/security-audit-event-contract/spec.md",
+    "openspec/specs/security-audit-event-contract/spec.md"
   ],
   "assurance_limitations": [
-    "This CRA classifies only reuse of security-audit@2.1.0; it is not owner approval of the precedence policy and does not resolve any Candidate A semantic defect.",
+    "This CRA classifies only reuse of security-audit@2.1.0; it is not owner approval of the precedence policy and grants no implementation, debt-resolution, fold, activation, or release authority.",
+    "CB-018 resolves the contract-version drift only when a separately signed RESOLVE_DEBT authorization and a substantiated, pinned retirement both exist; until then the Candidate A debt remains activation- and release-blocking.",
     "The candidate governance checker remains untrusted until exact-content review and dedicated activation under the currently trusted baseline."
   ]
 }
