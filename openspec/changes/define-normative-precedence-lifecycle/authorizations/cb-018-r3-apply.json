@@ -1,0 +1,67 @@
+{
+  "$schema": "../../../governance/schemas/change-authorization.schema.json",
+  "schema": "bloodtrail.change-authorization.v1",
+  "id": "cb-018-r3-apply",
+  "change_id": "define-normative-precedence-lifecycle",
+  "operation": "IMPLEMENT",
+  "status": "CURRENT",
+  "authorization_scope": "Implement the exact frozen CB-018 R3 proposal through T2 only; stop at the exact T2 authorization-input identity before A3.",
+  "principal_id": "nandohdc",
+  "authority_role": "PROJECT_OWNER",
+  "grant": "IMPLEMENT",
+  "withheld": [
+    "RESOLVE_DEBT",
+    "MERGE",
+    "FOLD",
+    "ACTIVATE",
+    "RELEASE",
+    "ARCHIVE",
+    "resolve-contract-version-semantic-drift",
+    "merge-define-normative-precedence-lifecycle",
+    "fold-normative-precedence-capability-deltas",
+    "activate-normative-precedence-policy",
+    "release-normative-precedence-policy",
+    "archive-define-normative-precedence-lifecycle",
+    "BEGIN_CB_002",
+    "IMPLEMENT_CB_019"
+  ],
+  "authorized_base_commit": "e1cc9f770160bb1f3d6c8e41b40260cab8fea3ad",
+  "authorized_base_tree": "054c5170c1630d343ca7292b9c7c0eabe652b53e",
+  "authorized_proposal_commit": "0be610efe856a9ab67db3638dc307ec15ed5f5de",
+  "authorized_proposal_tree": "558af3e1d2165cc9722fe73ec590f87d72eab955",
+  "authorized_change_subtree": "78c0abd488bda7f693a37fba984db73e67d6ce82",
+  "scope_paths": [
+    "openspec/changes/define-normative-precedence-lifecycle/",
+    "openspec/governance/normative-precedence-pins/current-pre-fold-cb-018.json",
+    "openspec/governance/normative-source-precedence.json",
+    "openspec/governance/records/define-normative-precedence-lifecycle.json",
+    "openspec/governance/schemas/change-authorization.schema.json",
+    "openspec/governance/schemas/normative-precedence-pin-set.schema.json",
+    "openspec/governance/schemas/normative-source-precedence.schema.json",
+    "openspec/scripts/normative-precedence/debt-retirement.mjs",
+    "openspec/scripts/normative-precedence/pin-sets.mjs",
+    "openspec/specs/security-audit-event-contract/spec.md",
+    "openspec/tests/design-pattern-governance/fixtures/normative-precedence/revision-3-mutants.json",
+    "openspec/tests/design-pattern-governance/fixtures/normative-precedence/revision-3-negative-controls.json",
+    "openspec/tests/design-pattern-governance/mutation-assurance.test.mjs",
+    "openspec/tests/design-pattern-governance/normative-precedence-debt-retirement-controls.mjs",
+    "packages/security-audit-sdk-core/contract-provenance.json",
+    "packages/security-audit-sdk-core/scripts/check-changed-paths.mjs",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-core/tests/verification/governed-candidate-handover.test.mjs",
+    "packages/security-audit-sdk-core/verification-lifecycle.json"
+  ],
+  "authorized_capabilities": [
+    "change-governance",
+    "security-audit-event-contract",
+    "software-design-pattern-governance"
+  ],
+  "authorized_delta_objects": {
+    "change-governance": "8e59a7f260f1b35fc3fd49074a5587af17a163fa",
+    "security-audit-event-contract": "28302b2b00f42e026a01a795fd5c7a110723d12a",
+    "software-design-pattern-governance": "7ce68684a6fc765779c45c3327fd20a32f78f584"
+  },
+  "supersedes": [
+    "revision-3-apply"
+  ]
+}
