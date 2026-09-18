@@ -6,6 +6,8 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import "./normative-precedence-debt-retirement-controls.mjs";
+
 import {
   authorizationCoversDelta,
   evaluateAuthorizationSet,
@@ -81,6 +83,20 @@ function withPinHistory(callback) {
     run(repo, ["git", "commit", "-q", "-m", "baseline"]);
     const baseline = run(repo, ["git", "rev-parse", "HEAD"]);
     callback({ repo, path, baseline, pinSets: [{ path }] });
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+}
+
+function withHistoricalContractConflict(callback) {
+  const repo = mkdtempSync(resolve(tmpdir(), "bloodtrail-contract-conflict-"));
+  try {
+    run(root, ["git", "clone", "-q", "--shared", root, repo]);
+    const path = "openspec/specs/security-audit-event-contract/spec.md";
+    const historical = spawnSync("git", ["show", `${base}:${path}`], { cwd: root, encoding: "utf8" });
+    assert.equal(historical.status, 0, historical.stderr);
+    writeFileSync(resolve(repo, path), historical.stdout);
+    callback(repo);
   } finally {
     rmSync(repo, { recursive: true, force: true });
   }
@@ -173,7 +189,7 @@ test("R3-T018 pinned applicability must equal independent recomputation", () => 
   const selection = selectCurrentPinSet(root, policy, { baseCommit: base });
   const mutant = structuredClone(selection.selected.value);
   mutant.applicability.pop();
-  mutant.debts = [];
+  mutant.debts.push({ id: "surplus-debt" });
   const mismatches = codes(evidenceMismatchDiagnostics(mutant, selection.expected, selection.selected.path));
   assert.ok(mismatches.includes("fold-applicability-mismatch"));
   assert.ok(mismatches.includes("debt-recomputation-mismatch"));
@@ -196,7 +212,9 @@ test("R3-T020 stale overlap owner object fails", () => {
 });
 
 test("R3-T021 persisting contract-version debt remains fold-visible and activation-blocking", () => {
-  const debt = selectCurrentPinSet(root, policy, { baseCommit: base }).selected.value.debts[0];
+  const selection = selectCurrentPinSet(root, policy, { baseCommit: base });
+  const debt = selection.pinSets
+    .find((entry) => entry.value.id === "current-pre-fold-revision-3").value.debts[0];
   assert.equal(debtAllowedAtStage(debt, "fold", []), true);
   assert.equal(debtAllowedAtStage(debt, "activation", []), false);
 });
@@ -265,9 +283,9 @@ test("R3-T030 mixed commit leaves unrelated governance-core path unowned", () =>
   assert.equal(failures[0]?.[0], "openspec-association-absent");
 });
 
-test("R3-T031 mutation preflight resolves exactly 22 live anchors", () => {
+test("R3-T031 mutation preflight resolves exactly 33 live anchors", () => {
   const manifest = loadMutationManifest(root, "openspec/tests/design-pattern-governance/fixtures/normative-precedence/revision-3-mutants.json");
-  assert.equal(manifest.mutants.length, 22);
+  assert.equal(manifest.mutants.length, 33);
   assert.deepEqual(preflightMutationAnchors(root, manifest), []);
 });
 
@@ -279,14 +297,14 @@ test("R3-T032 missing mutation anchor fails preflight", () => {
 });
 
 test("R3-T033 NOT_APPLIED fails mutation assurance before kill-rate interpretation", () => {
-  assert.ok(codes(evaluateMutationSummary({ expected: 22, applied: 21, not_applied: 1, survived: 0, dirty_controls: 0, restoration_mismatches: 0 })).includes("mutation-not-applied"));
+  assert.ok(codes(evaluateMutationSummary({ expected: 33, applied: 32, not_applied: 1, survived: 0, dirty_controls: 0, restoration_mismatches: 0 })).includes("mutation-not-applied"));
 });
 
 test("R3-T034 null controls and byte-identical restoration are accepted", () => {
   const original = Buffer.from("original");
   const restored = Buffer.from(original);
   assert.equal(sha256Bytes(original), sha256Bytes(restored));
-  assert.deepEqual(evaluateMutationSummary({ expected: 22, applied: 22, not_applied: 0, survived: 0, dirty_controls: 0, restoration_mismatches: 0 }), []);
+  assert.deepEqual(evaluateMutationSummary({ expected: 33, applied: 33, not_applied: 0, survived: 0, dirty_controls: 0, restoration_mismatches: 0 }), []);
 });
 
 test("R3-T035 Revision 3 scope excludes contract source generated contract and SDK outputs", () => {
@@ -307,17 +325,23 @@ test("R3-T036 activation without grant and dedicated evidence remains blocked", 
 });
 
 test("R3-T037 contract-version debt remains activation-blocking after correct fold mechanics", () => {
-  const result = inspectRepository(root, policy, { stage: "activation", baseCommit: base });
-  assert.ok(codes(result.diagnostics).includes("baseline-conflict-stage-block"));
+  withHistoricalContractConflict((repo) => {
+    const fixturePolicy = JSON.parse(readFileSync(resolve(repo, "openspec/governance/normative-source-precedence.json"), "utf8"));
+    const result = inspectRepository(repo, fixturePolicy, { stage: "activation", baseCommit: base });
+    assert.ok(codes(result.diagnostics).includes("baseline-conflict-stage-block"));
+  });
 });
 
-test("R3-T038 all three CB-001 deltas remain active and canonical capability blobs remain unchanged", () => {
+test("R3-T038 all three CB-001 deltas remain active and only the resolving contract capability changes", () => {
   const result = inspectRepository(root, policy, { stage: "candidate", baseCommit: base });
   const active = result.discovered.active.filter((entry) => entry.change_id === policy.change_id);
   assert.equal(active.length, 3);
   assert.ok(active.every((entry) => entry.class === "ACTIVE_CANDIDATE_DELTA"));
   for (const entry of active) {
     const canonicalPath = `openspec/specs/${entry.capability_id}/spec.md`;
-    assert.equal(gitObject(root, canonicalPath), gitObjectAt(root, base, canonicalPath));
+    const expected = entry.capability_id === "security-audit-event-contract"
+      ? "487a4f066afa74696411ee782b0008673fd6ca14"
+      : gitObjectAt(root, base, canonicalPath);
+    assert.equal(gitObject(root, canonicalPath), expected);
   }
 });

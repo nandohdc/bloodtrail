@@ -15,7 +15,7 @@
     "schema": {"const":"bloodtrail.change-authorization.v1"},
     "id": {"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"},
     "change_id": {"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"},
-    "operation": {"enum":["IMPLEMENT","MERGE","FOLD","ACTIVATE","RELEASE","ARCHIVE"]},
+    "operation": {"enum":["IMPLEMENT","MERGE","FOLD","RESOLVE_DEBT","ACTIVATE","RELEASE","ARCHIVE"]},
     "status": {"enum":["CURRENT","REVOKED","SUPERSEDED","WITHDRAWN","ARCHIVE_ONLY","HISTORICAL"]},
     "authorization_scope": {"type":"string","minLength":1},
     "principal_id": {"type":"string","minLength":1},

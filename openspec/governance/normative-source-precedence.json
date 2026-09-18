@@ -77,6 +77,7 @@
     "activation_grant": "activate-normative-precedence-policy",
     "merge_grant": "merge-define-normative-precedence-lifecycle",
     "fold_grant": "fold-normative-precedence-capability-deltas",
+    "debt_resolution_grant": "resolve-contract-version-semantic-drift",
     "release_grant": "release-normative-precedence-policy",
     "archive_grant": "archive-define-normative-precedence-lifecycle"
   },
@@ -101,7 +102,7 @@
     "legacy_index_schema": "bloodtrail.normative-precedence.authorization-index.v1",
     "current_statuses": ["CURRENT"],
     "inactive_statuses": ["REVOKED", "SUPERSEDED", "WITHDRAWN", "ARCHIVE_ONLY", "HISTORICAL"],
-    "operations": ["IMPLEMENT", "MERGE", "FOLD", "ACTIVATE", "RELEASE", "ARCHIVE"],
+    "operations": ["IMPLEMENT", "MERGE", "FOLD", "RESOLVE_DEBT", "ACTIVATE", "RELEASE", "ARCHIVE"],
     "conflict_behavior": "BLOCK",
     "zero_record_behavior": "UNAUTHORIZED",
     "protected_registry_source": "COMPARISON_BASE_OR_BOOTSTRAP_AUTHORIZATION"

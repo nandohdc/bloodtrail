@@ -86,19 +86,19 @@ require separate governed actions.
 
 ## 14. CB-018 authorization
 
-- [ ] 14.1 Record a new separately signed CB-018 IMPLEMENT authorization bound to the exact corrected proposal commit/tree/change subtree, move `revision-3-apply` out of `CURRENT`, and verify exactly one current IMPLEMENT record while the abandoned R2-A1/R2-A2 identities grant nothing and RESOLVE_DEBT, MERGE, FOLD, ACTIVATE, RELEASE, and ARCHIVE stay withheld.
+- [x] 14.1 Record a new separately signed CB-018 IMPLEMENT authorization bound to the exact corrected proposal commit/tree/change subtree, move `revision-3-apply` out of `CURRENT`, and verify exactly one current IMPLEMENT record while the abandoned R2-A1/R2-A2 identities grant nothing and RESOLVE_DEBT, MERGE, FOLD, ACTIVATE, RELEASE, and ARCHIVE stay withheld.
 
 ## 15. Debt-retirement mechanism
 
-- [ ] 15.1 Add `RESOLVE_DEBT` to the change-authorization operation enum and policy operations, add `debt_resolution_grant` `resolve-contract-version-semantic-drift` to the policy, and add `debt_resolution_grant` as a required string property of the closed `governance_authorities` object in `normative-source-precedence.schema.json` without weakening its `additionalProperties: false`; verify a policy missing the grant fails with `policy-schema-required`, every existing grant, operation, principal, and key is unchanged, and the authority registry is untouched.
-- [ ] 15.2 Add the optional closed `retired_debts` pin-set property; verify both existing pins stay schema-valid and byte-identical.
-- [ ] 15.3 Implement retirement validation in `debt-retirement.mjs` with one decision site per diagnostic, and rewrite only the continuity guard in `pin-sets.mjs`; verify a debt missing without retirement still fails with `contract-version-boundary-violation`.
+- [x] 15.1 Add `RESOLVE_DEBT` to the change-authorization operation enum and policy operations, add `debt_resolution_grant` `resolve-contract-version-semantic-drift` to the policy, and add `debt_resolution_grant` as a required string property of the closed `governance_authorities` object in `normative-source-precedence.schema.json` without weakening its `additionalProperties: false`; verify a policy missing the grant fails with `policy-schema-required`, every existing grant, operation, principal, and key is unchanged, and the authority registry is untouched.
+- [x] 15.2 Add the optional closed `retired_debts` pin-set property; verify both existing pins stay schema-valid and byte-identical.
+- [x] 15.3 Implement retirement validation in `debt-retirement.mjs` with one decision site per diagnostic, and rewrite only the continuity guard in `pin-sets.mjs`; verify a debt missing without retirement still fails with `contract-version-boundary-violation`.
 
 ## 16. Canonical materialization and protected-path handover
 
-- [ ] 16.1 T1: materialize OD-1 to OD-4 so the canonical contract capability equals blob `487a4f066afa74696411ee782b0008673fd6ca14`; verify the assertion conflict is absent on re-evaluation and `contract.source.json` is unchanged.
+- [x] 16.1 T1: materialize OD-1 to OD-4 so the canonical contract capability equals blob `487a4f066afa74696411ee782b0008673fd6ca14`; verify the assertion conflict is absent on re-evaluation and `contract.source.json` is unchanged.
 - [ ] 16.2 T2: bind `governedCandidate`, the hardcoded candidate constant, `normativeTechnicalTarget` in the lifecycle file, and the immutability `proposalBaseline` to T1; verify `protectedPaths` equals the cumulative `cdecd7f3..T1` inventory exactly, freeze exact T1/T2/resolving objects, prove generated contract and SDK output are byte-identical, and permit only the three named `capability-overlap-classification-stale` instances as bounded intermediate diagnostics.
-- [ ] 16.3 Add the SDK Core protected-path control on a disposable clone and verify a protected-capability change outside the exact governed-candidate binding fails `check-changed-paths.mjs`.
+- [x] 16.3 Add the SDK Core protected-path control on a disposable clone and verify a protected-capability change outside the exact governed-candidate binding fails `check-changed-paths.mjs`.
 
 ## 17. A3 authorization and T3 retirement identity
 

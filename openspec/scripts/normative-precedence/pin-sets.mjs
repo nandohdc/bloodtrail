@@ -13,6 +13,7 @@ import {
   readJson,
 } from "./shared.mjs";
 import { validatePolicySchema } from "./policy-validation.mjs";
+import { validateDebtRetirements } from "./debt-retirement.mjs";
 
 function canonicalJson(value) {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
@@ -135,7 +136,9 @@ export function validateDebtContinuity(selected, pinSets) {
     entry.endsWith(":candidate-a-current-capability-version-drift"));
   const currentContractDebt = selected.value.debts?.some((debt) =>
     debt.assertion_id === "contract-version-is-current-capability-literal");
-  if (historicalContractDebt && !currentContractDebt) diagnostics.push(diagnostic(
+  const retiredContractDebt = selected.value.retired_debts?.some((debt) =>
+    debt.assertion_id === "contract-version-is-current-capability-literal");
+  if (historicalContractDebt && !currentContractDebt && !retiredContractDebt) diagnostics.push(diagnostic(
     "contract-version-boundary-violation",
     selected.path,
     "contract-version debt disappeared without the separately authorized semantic remediation",
@@ -288,12 +291,12 @@ export function selectCurrentPinSet(repoRoot, policy, { baseCommit = null } = {}
   diagnostics.push(...selection.diagnostics);
   const selected = selection.selected;
   const expected = selected ? recomputePinnedEvidence(repoRoot, policy, selected.value.repository_state) : null;
-  diagnostics.push(...selectedPinProblems(policy, selected, expected, pinSets));
+  diagnostics.push(...selectedPinProblems(repoRoot, policy, selected, expected, pinSets, baseCommit));
   if (baseCommit) diagnostics.push(...validatePinHistory(repoRoot, baseCommit, pinSets));
   return { selected, pinSets, expected, diagnostics };
 }
 
-function selectedPinProblems(policy, selected, expected, pinSets) {
+function selectedPinProblems(repoRoot, policy, selected, expected, pinSets, baseCommit) {
   if (!selected) return [];
   const diagnostics = [];
   if (selected.value.capability_state_digest !== expected.capability_state_digest) {
@@ -304,6 +307,7 @@ function selectedPinProblems(policy, selected, expected, pinSets) {
   diagnostics.push(...validateApplicabilityEvidence(policy, selected.value.applicability));
   diagnostics.push(...validateOverlapFreshness(selected.value.overlaps, selected.value.repository_state));
   diagnostics.push(...validateDebtContinuity(selected, pinSets));
+  diagnostics.push(...validateDebtRetirements(repoRoot, policy, selected, pinSets, { baseCommit }));
   return diagnostics;
 }
 
