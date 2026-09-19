@@ -206,9 +206,16 @@ function validateBoundaryParent(repoRoot, record) {
   if (!record.boundary_parent || !record.introducing_commit) return [];
   const parents = (gitStdout(repoRoot, ["show", "-s", "--format=%P", record.introducing_commit]) ?? "")
     .split(" ").filter(Boolean);
-  if (parents.length !== 1 || parents[0] !== record.boundary_parent) {
+  if (parents.length !== 1) {
     return [diagnostic(
-      "boundary-anchor-mismatch",
+      "authorization-parent-count-invalid",
+      record.path,
+      `expected exactly 1 parent for introducing commit, got ${parents.length}`
+    )];
+  }
+  if (parents[0] !== record.boundary_parent) {
+    return [diagnostic(
+      "authorization-parent-anchor-mismatch",
       record.path,
       `declared boundary_parent "${record.boundary_parent}" does not match sole parent "${parents[0] ?? "none"}"`
     )];
@@ -254,7 +261,7 @@ function selectionDiagnostics(records, allOperationRecords, { operation, changeI
   return [];
 }
 
-export function evaluateAuthorizationSet(records, operation, policy, { changeId = "change", archived = false } = {}) {
+export function evaluateAuthorizationSet(records, operation, policy, { changeId = "change", archived = false, indexCurrentId = null } = {}) {
   const operationRecords = records.filter((record) => record.operation === operation);
 
   if (archived && operationRecords.length > 0) {
@@ -268,6 +275,14 @@ export function evaluateAuthorizationSet(records, operation, policy, { changeId 
     const resolved = resolveEffectiveAuthority(graph);
     if (resolved.diagnostics.length > 0) {
       return { current: null, diagnostics: resolved.diagnostics };
+    }
+    if (resolved.effective && indexCurrentId && resolved.effective.id !== indexCurrentId) {
+      return {
+        current: null,
+        diagnostics: [
+          diagnostic("authorization-index-contradiction", changeId, `Legacy index specifies "${indexCurrentId}" but DAG resolved to "${resolved.effective.id}"`)
+        ]
+      };
     }
     return { current: resolved.effective, diagnostics: [] };
   }

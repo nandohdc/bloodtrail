@@ -6,6 +6,8 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import "./normative-precedence-sequential-authorization-controls.mjs";
+
 import {
   authorizationCoversDelta,
   evaluateAuthorizationSet,
