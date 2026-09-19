@@ -267,9 +267,9 @@ test("R3-T030 mixed commit leaves unrelated governance-core path unowned", () =>
   assert.equal(failures[0]?.[0], "openspec-association-absent");
 });
 
-test("R3-T031 mutation preflight resolves exactly 22 live anchors", () => {
+test("R3-T031 mutation preflight resolves exactly 36 live anchors", () => {
   const manifest = loadMutationManifest(root, "openspec/tests/design-pattern-governance/fixtures/normative-precedence/revision-3-mutants.json");
-  assert.equal(manifest.mutants.length, 22);
+  assert.equal(manifest.mutants.length, 36);
   assert.deepEqual(preflightMutationAnchors(root, manifest), []);
 });
 
@@ -281,14 +281,14 @@ test("R3-T032 missing mutation anchor fails preflight", () => {
 });
 
 test("R3-T033 NOT_APPLIED fails mutation assurance before kill-rate interpretation", () => {
-  assert.ok(codes(evaluateMutationSummary({ expected: 22, applied: 21, not_applied: 1, survived: 0, dirty_controls: 0, restoration_mismatches: 0 })).includes("mutation-not-applied"));
+  assert.ok(codes(evaluateMutationSummary({ expected: 36, applied: 35, not_applied: 1, survived: 0, dirty_controls: 0, restoration_mismatches: 0 })).includes("mutation-not-applied"));
 });
 
 test("R3-T034 null controls and byte-identical restoration are accepted", () => {
   const original = Buffer.from("original");
   const restored = Buffer.from(original);
   assert.equal(sha256Bytes(original), sha256Bytes(restored));
-  assert.deepEqual(evaluateMutationSummary({ expected: 22, applied: 22, not_applied: 0, survived: 0, dirty_controls: 0, restoration_mismatches: 0 }), []);
+  assert.deepEqual(evaluateMutationSummary({ expected: 36, applied: 36, not_applied: 0, survived: 0, dirty_controls: 0, restoration_mismatches: 0 }), []);
 });
 
 test("R3-T035 Revision 3 scope excludes contract source generated contract and SDK outputs", () => {
