@@ -10,7 +10,9 @@ import {
   classifyCommitOperation
 } from "../../scripts/normative-precedence/sequential-authorization.mjs";
 import {
-  evaluateAuthorizationSet
+  evaluateAuthorizationSet,
+  dedicatedRecordProblems,
+  validateBoundaryParent
 } from "../../scripts/normative-precedence/authorization-discovery.mjs";
 
 function sampleRoot(overrides = {}) {
@@ -344,9 +346,10 @@ test("NC-SEQ-006 operation match - successor operation does not equal predecesso
 
 // Category 2: Commit Anchor & Topology Controls (NC-SEQ-007 through NC-SEQ-012)
 test("NC-SEQ-007 multi-path commitment - successor introducing commit modifies two paths instead of strictly one", () => {
-  const changedPaths = ["path/to/record.json", "other/file.txt"];
-  const isDedicated = changedPaths.length === 1 && changedPaths[0] === "path/to/record.json";
-  assert.equal(isDedicated, false, "Multi-path commit must fail closed as not dedicated");
+  const record = sampleSuccessor({ path: "path/to/record.json" });
+  const changed = ["path/to/record.json", "other/file.txt"];
+  const diags = dedicatedRecordProblems(".", record, changed);
+  assert.ok(diags.some((d) => d.code === "authorization-record-not-dedicated"));
 });
 
 test("NC-SEQ-008 parent count - successor introducing commit is a merge commit with two parents", () => {
@@ -359,8 +362,8 @@ test("NC-SEQ-009 parent hash anchor - successor parent does not match boundary p
     boundary_parent: "3".repeat(40),
     introducing_commit: "2".repeat(40)
   });
-  const actualParent = "9".repeat(40);
-  assert.notEqual(record.boundary_parent, actualParent, "Parent anchor mismatch fails closed");
+  const diags = validateBoundaryParent(".", record, ["9".repeat(40)]);
+  assert.ok(diags.some((d) => d.code === "authorization-parent-anchor-mismatch"));
 });
 
 test("NC-SEQ-010 commit signature - successor introducing commit has missing or unverifiable SSH signature", () => {
@@ -465,7 +468,7 @@ test("NC-SEQ-017 predecessor scope leakage - commit in successor interval touche
   const root = sampleRoot({ scope_paths: ["packages/pred/**"] });
   const successor = sampleSuccessor({ scope_paths: ["packages/succ/**"] });
   const commits = [
-    { hash: successor.introducing_commit, changed_paths: [successor.path] },
+    { hash: successor.introducing_commit, changed_paths: [] },
     { hash: "commit-in-succ-interval", changed_paths: ["packages/pred/leaked.ts"] }
   ];
   const diags = evaluateCommitIntervals(commits, root, successor);
@@ -477,7 +480,7 @@ test("NC-SEQ-018 retroactive successor scope - commit in predecessor interval to
   const successor = sampleSuccessor({ scope_paths: ["packages/succ/**"] });
   const commits = [
     { hash: "commit-in-pred-interval", changed_paths: ["packages/succ/retro.ts"] },
-    { hash: successor.introducing_commit, changed_paths: [successor.path] }
+    { hash: successor.introducing_commit, changed_paths: [] }
   ];
   const diags = evaluateCommitIntervals(commits, root, successor);
   assert.ok(diags.some((d) => d.code === "apply-scope-unauthorized"));

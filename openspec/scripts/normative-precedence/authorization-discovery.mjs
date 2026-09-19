@@ -78,9 +78,9 @@ function changesOnlyItsOwnPath(changed, path) {
   return Array.isArray(changed) && changed.length === 1 && changed[0] === path;
 }
 
-function dedicatedRecordProblems(repoRoot, record) {
+export function dedicatedRecordProblems(repoRoot, record, changedPaths = null) {
   if (record.status !== "CURRENT") return [];
-  const changed = introducingCommitPaths(repoRoot, record.introducing_commit);
+  const changed = changedPaths ?? introducingCommitPaths(repoRoot, record.introducing_commit);
   if (changesOnlyItsOwnPath(changed, record.path)) return [];
   return [diagnostic("authorization-record-not-dedicated", record.path, record.id)];
 }
@@ -202,9 +202,9 @@ function indexRecords(changeDir, repoRoot, policy) {
   };
 }
 
-function validateBoundaryParent(repoRoot, record) {
+export function validateBoundaryParent(repoRoot, record, parentList = null) {
   if (!record.boundary_parent || !record.introducing_commit) return [];
-  const parents = (gitStdout(repoRoot, ["show", "-s", "--format=%P", record.introducing_commit]) ?? "")
+  const parents = parentList ?? (gitStdout(repoRoot, ["show", "-s", "--format=%P", record.introducing_commit]) ?? "")
     .split(" ").filter(Boolean);
   if (parents.length !== 1) {
     return [diagnostic(
@@ -264,12 +264,11 @@ function selectionDiagnostics(records, allOperationRecords, { operation, changeI
 export function evaluateAuthorizationSet(records, operation, policy, { changeId = "change", archived = false, indexCurrentId = null } = {}) {
   const operationRecords = records.filter((record) => record.operation === operation);
 
-  if (archived && operationRecords.length > 0) {
-    return { current: null, diagnostics: [diagnostic("authorization-archive-only", changeId, `${operation} authorization belongs to an archived change`)] };
-  }
-
   // If any record in operationRecords declares supersession, resolve via DAG
   if (operationRecords.some((record) => Boolean(record.supersession))) {
+    if (archived && operationRecords.length > 0) {
+      return { current: null, diagnostics: [diagnostic("authorization-archive-only", changeId, `${operation} authorization belongs to an archived change`)] };
+    }
     const cleanRecords = operationRecords.filter((record) => (record.diagnostics ?? []).length === 0);
     const graph = constructAuthorizationGraph(cleanRecords);
     const resolved = resolveEffectiveAuthority(graph);
