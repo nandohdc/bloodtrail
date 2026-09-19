@@ -6,8 +6,7 @@ import {
   validateGraphInvariants,
   validatePredecessorBinding,
   resolveEffectiveAuthority,
-  evaluateCommitIntervals,
-  classifyCommitOperation
+  evaluateCommitIntervals
 } from "../../scripts/normative-precedence/sequential-authorization.mjs";
 import {
   evaluateAuthorizationSet,

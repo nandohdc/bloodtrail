@@ -15,7 +15,7 @@ import {
   validateFoldReviewBinding,
 } from "../../scripts/normative-precedence/fold-validation.mjs";
 import { inspectRepository } from "../../scripts/normative-precedence/model.mjs";
-import { gitObject, gitStdout } from "../../scripts/normative-precedence/shared.mjs";
+import { gitStdout } from "../../scripts/normative-precedence/shared.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../../..");
