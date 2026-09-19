@@ -21,6 +21,10 @@ import {
   readJson,
 } from "./shared.mjs";
 import { validatePolicySchema } from "./policy-validation.mjs";
+import {
+  constructAuthorizationGraph,
+  resolveEffectiveAuthority
+} from "./sequential-authorization.mjs";
 
 function jsonAt(repoRoot, commit, path) {
   const value = gitStdout(repoRoot, ["show", `${commit}:${path}`]);
@@ -74,9 +78,9 @@ function changesOnlyItsOwnPath(changed, path) {
   return Array.isArray(changed) && changed.length === 1 && changed[0] === path;
 }
 
-function dedicatedRecordProblems(repoRoot, record) {
+export function dedicatedRecordProblems(repoRoot, record, changedPaths = null) {
   if (record.status !== "CURRENT") return [];
-  const changed = introducingCommitPaths(repoRoot, record.introducing_commit);
+  const changed = changedPaths ?? introducingCommitPaths(repoRoot, record.introducing_commit);
   if (changesOnlyItsOwnPath(changed, record.path)) return [];
   return [diagnostic("authorization-record-not-dedicated", record.path, record.id)];
 }
@@ -198,6 +202,27 @@ function indexRecords(changeDir, repoRoot, policy) {
   };
 }
 
+export function validateBoundaryParent(repoRoot, record, parentList = null) {
+  if (!record.boundary_parent || !record.introducing_commit) return [];
+  const parents = parentList ?? (gitStdout(repoRoot, ["show", "-s", "--format=%P", record.introducing_commit]) ?? "")
+    .split(" ").filter(Boolean);
+  if (parents.length !== 1) {
+    return [diagnostic(
+      "authorization-parent-count-invalid",
+      record.path,
+      `expected exactly 1 parent for introducing commit, got ${parents.length}`
+    )];
+  }
+  if (parents[0] !== record.boundary_parent) {
+    return [diagnostic(
+      "authorization-parent-anchor-mismatch",
+      record.path,
+      `declared boundary_parent "${record.boundary_parent}" does not match sole parent "${parents[0] ?? "none"}"`
+    )];
+  }
+  return [];
+}
+
 function validateSchemaRecordHistory(repoRoot, record) {
   const diagnostics = [...(record.diagnostics ?? [])];
   if (!record.introducing_commit) {
@@ -208,6 +233,7 @@ function validateSchemaRecordHistory(repoRoot, record) {
       "current authorization record was modified after its first recording"));
   }
   diagnostics.push(...dedicatedRecordProblems(repoRoot, record));
+  diagnostics.push(...validateBoundaryParent(repoRoot, record));
   return { ...record, diagnostics };
 }
 
@@ -235,8 +261,31 @@ function selectionDiagnostics(records, allOperationRecords, { operation, changeI
   return [];
 }
 
-export function evaluateAuthorizationSet(records, operation, policy, { changeId = "change", archived = false } = {}) {
+export function evaluateAuthorizationSet(records, operation, policy, { changeId = "change", archived = false, indexCurrentId = null } = {}) {
   const operationRecords = records.filter((record) => record.operation === operation);
+
+  // If any record in operationRecords declares supersession, resolve via DAG
+  if (operationRecords.some((record) => Boolean(record.supersession))) {
+    if (archived && operationRecords.length > 0) {
+      return { current: null, diagnostics: [diagnostic("authorization-archive-only", changeId, `${operation} authorization belongs to an archived change`)] };
+    }
+    const cleanRecords = operationRecords.filter((record) => (record.diagnostics ?? []).length === 0);
+    const graph = constructAuthorizationGraph(cleanRecords);
+    const resolved = resolveEffectiveAuthority(graph);
+    if (resolved.diagnostics.length > 0) {
+      return { current: null, diagnostics: resolved.diagnostics };
+    }
+    if (resolved.effective && indexCurrentId && resolved.effective.id !== indexCurrentId) {
+      return {
+        current: null,
+        diagnostics: [
+          diagnostic("authorization-index-contradiction", changeId, `Legacy index specifies "${indexCurrentId}" but DAG resolved to "${resolved.effective.id}"`)
+        ]
+      };
+    }
+    return { current: resolved.effective, diagnostics: [] };
+  }
+
   const current = currentOperationRecords(records, operation, policy)
     .filter((record) => (record.diagnostics ?? []).length === 0);
   const diagnostics = selectionDiagnostics(current, operationRecords, { operation, changeId, archived, policy });

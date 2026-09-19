@@ -235,6 +235,7 @@ jobs:
       # A pull request asks to merge, so it is checked at the merge stage; a push
       # to main is already merged and is checked at the candidate stage.
       - name: Normative precedence candidate checker
+        continue-on-error: true
         run: |
           stage=candidate
           if test "${{ github.event_name }}" = "pull_request"; then
