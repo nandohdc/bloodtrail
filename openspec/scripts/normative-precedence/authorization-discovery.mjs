@@ -269,7 +269,7 @@ export function evaluateAuthorizationSet(records, operation, policy, { changeId 
     if (archived && operationRecords.length > 0) {
       return { current: null, diagnostics: [diagnostic("authorization-archive-only", changeId, `${operation} authorization belongs to an archived change`)] };
     }
-    const cleanRecords = operationRecords.filter((record) => (record.diagnostics ?? []).length === 0);
+    const cleanRecords = operationRecords.filter((record) => (record.diagnostics ?? []).length === 0 && (record.supersession || record.status === "CURRENT" || record.status === "REVOKED"));
     const graph = constructAuthorizationGraph(cleanRecords);
     const resolved = resolveEffectiveAuthority(graph);
     if (resolved.diagnostics.length > 0) {

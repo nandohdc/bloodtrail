@@ -241,7 +241,24 @@ export function resolveEffectiveAuthority(graph) {
     };
   }
 
-  return { effective: leaves[0], diagnostics: [] };
+  const leaf = leaves[0];
+  const effective = { ...leaf };
+  if (!effective.authorized_capabilities || !effective.authorized_delta_objects) {
+    let curr = leaf;
+    while (curr?.supersession?.predecessor_id) {
+      const pred = graph.recordsById.get(curr.supersession.predecessor_id);
+      if (!pred) break;
+      if (!effective.authorized_capabilities && pred.authorized_capabilities) {
+        effective.authorized_capabilities = pred.authorized_capabilities;
+      }
+      if (!effective.authorized_delta_objects && pred.authorized_delta_objects) {
+        effective.authorized_delta_objects = pred.authorized_delta_objects;
+      }
+      curr = pred;
+    }
+  }
+
+  return { effective, diagnostics: [] };
 }
 
 /**
