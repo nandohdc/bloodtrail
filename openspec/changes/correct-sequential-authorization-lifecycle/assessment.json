@@ -1,0 +1,171 @@
+{
+  "schema_version": "1.1",
+  "change_id": "correct-sequential-authorization-lifecycle",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Signed authorization bytes are immutable, but the current embedded CURRENT status cannot express a later effective authorization for the same operation.",
+    "Every historical signed record must remain provenance-verified even after a valid successor becomes effective.",
+    "Successor scope must apply only to its own commit interval and must not retroactively authorize predecessor history.",
+    "Malformed, unsigned, ambiguous, forked, self-referential, or cyclic succession must fail closed.",
+    "The correction must preserve the accepted CB-018 T3 semantic identity and must not grant repair, fold, merge, activation, release, CB-002, or CB-019 authority.",
+    "Mutation assurance must prove that every planned successor-chain enforcement arm is present and failure-sensitive."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior",
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "change-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/correct-sequential-authorization-lifecycle/",
+    "openspec/governance/schemas/change-authorization.schema.json",
+    "openspec/scripts/normative-precedence/sequential-authorization.mjs",
+    "openspec/scripts/normative-precedence/authorization-discovery.mjs",
+    "openspec/scripts/normative-precedence/model.mjs",
+    "openspec/tests/design-pattern-governance/normative-precedence-sequential-authorization-controls.mjs",
+    "openspec/tests/design-pattern-governance/mutation-assurance.test.mjs",
+    "openspec/tests/design-pattern-governance/fixtures/normative-precedence/revision-3-negative-controls.json",
+    "openspec/tests/design-pattern-governance/fixtures/normative-precedence/revision-3-mutants.json"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-signed-successor-exact-binding",
+      "kind": "direct_implementation",
+      "summary": "Make the new dedicated signed successor carry an exact immutable predecessor and parent-boundary binding, derive effective status in memory, and evaluate scope by chain interval.",
+      "forces_addressed": [
+        "Signed authorization bytes are immutable, but the current embedded CURRENT status cannot express a later effective authorization for the same operation.",
+        "Every historical signed record must remain provenance-verified even after a valid successor becomes effective.",
+        "Successor scope must apply only to its own commit interval and must not retroactively authorize predecessor history.",
+        "Malformed, unsigned, ambiguous, forked, self-referential, or cyclic succession must fail closed.",
+        "The correction must preserve the accepted CB-018 T3 semantic identity and must not grant repair, fold, merge, activation, release, CB-002, or CB-019 authority.",
+        "Mutation assurance must prove that every planned successor-chain enforcement arm is present and failure-sensitive."
+      ]
+    },
+    {
+      "id": "approach-mutable-status-or-index",
+      "kind": "alternative",
+      "summary": "Edit the predecessor status or rely on the legacy authorization index to declare a schema-backed signed predecessor superseded.",
+      "forces_addressed": [
+        "Signed authorization bytes are immutable, but the current embedded CURRENT status cannot express a later effective authorization for the same operation."
+      ]
+    },
+    {
+      "id": "approach-separate-transition-record",
+      "kind": "alternative",
+      "summary": "Add a third separately signed transition artifact after recording the successor and use that artifact as the authority boundary.",
+      "forces_addressed": [
+        "Malformed, unsigned, ambiguous, forked, self-referential, or cyclic succession must fail closed.",
+        "Successor scope must apply only to its own commit interval and must not retroactively authorize predecessor history."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-signed-successor-exact-binding",
+  "rejected_alternative_ids": [
+    "approach-mutable-status-or-index",
+    "approach-separate-transition-record"
+  ],
+  "rejection_reasons": {
+    "approach-mutable-status-or-index": {
+      "forces": [
+        "Signed authorization bytes are immutable, but the current embedded CURRENT status cannot express a later effective authorization for the same operation.",
+        "Every historical signed record must remain provenance-verified even after a valid successor becomes effective."
+      ],
+      "reason": "Editing the signed predecessor destroys exact historical identity, while the legacy index does not control schema-record status and cannot truthfully retire immutable signed bytes."
+    },
+    "approach-separate-transition-record": {
+      "forces": [
+        "Malformed, unsigned, ambiguous, forked, self-referential, or cyclic succession must fail closed.",
+        "The correction must preserve the accepted CB-018 T3 semantic identity and must not grant repair, fold, merge, activation, release, CB-002, or CB-019 authority."
+      ],
+      "reason": "The successor's dedicated signed introducing commit already binds its exact object and exact parent boundary. A separate transition record adds another object and lifecycle without adding necessary identity evidence."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-immutable-sequential-authorization",
+    "implementation-historical-authorization-integrity",
+    "implementation-interval-bounded-authorization-scope",
+    "implementation-authorization-graph-fail-closed",
+    "implementation-sequential-mutation-assurance"
+  ],
+  "invariant_evidence": {
+    "implementation-immutable-sequential-authorization": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "SEQ-T001 proves one exact signed successor becomes the sole effective leaf while its predecessor remains byte-identical"
+      ]
+    },
+    "implementation-historical-authorization-integrity": {
+      "task_ids": [
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "SEQ-T007, SEQ-T008, and SEQ-T013 reject edited, status-hidden, unsigned, or non-dedicated historical records"
+      ]
+    },
+    "implementation-interval-bounded-authorization-scope": {
+      "task_ids": [
+        "2.4",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "SEQ-T011 and SEQ-T012 reject scope use in the wrong interval while SEQ-T014 accepts one path in each exact interval"
+      ]
+    },
+    "implementation-authorization-graph-fail-closed": {
+      "task_ids": [
+        "2.2",
+        "2.3",
+        "3.1",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "SEQ-T002 through SEQ-T010 reject missing, unsigned, mismatched, self-referential, cyclic, forked, or ambiguous succession"
+      ]
+    },
+    "implementation-sequential-mutation-assurance": {
+      "task_ids": [
+        "3.1",
+        "3.2",
+        "3.3",
+        "3.4",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "all fourteen sequential mutant anchors resolve once, all fourteen apply, all fourteen are killed by declared controls, null controls are clean, and restoration is byte-identical"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "e1cc9f770160bb1f3d6c8e41b40260cab8fea3ad"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4",
+    "4.1",
+    "4.2",
+    "4.3"
+  ]
+}
