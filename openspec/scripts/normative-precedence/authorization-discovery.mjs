@@ -21,6 +21,10 @@ import {
   readJson,
 } from "./shared.mjs";
 import { validatePolicySchema } from "./policy-validation.mjs";
+import {
+  constructAuthorizationGraph,
+  resolveEffectiveAuthority
+} from "./sequential-authorization.mjs";
 
 function jsonAt(repoRoot, commit, path) {
   const value = gitStdout(repoRoot, ["show", `${commit}:${path}`]);
@@ -198,6 +202,20 @@ function indexRecords(changeDir, repoRoot, policy) {
   };
 }
 
+function validateBoundaryParent(repoRoot, record) {
+  if (!record.boundary_parent || !record.introducing_commit) return [];
+  const parents = (gitStdout(repoRoot, ["show", "-s", "--format=%P", record.introducing_commit]) ?? "")
+    .split(" ").filter(Boolean);
+  if (parents.length !== 1 || parents[0] !== record.boundary_parent) {
+    return [diagnostic(
+      "boundary-anchor-mismatch",
+      record.path,
+      `declared boundary_parent "${record.boundary_parent}" does not match sole parent "${parents[0] ?? "none"}"`
+    )];
+  }
+  return [];
+}
+
 function validateSchemaRecordHistory(repoRoot, record) {
   const diagnostics = [...(record.diagnostics ?? [])];
   if (!record.introducing_commit) {
@@ -208,6 +226,7 @@ function validateSchemaRecordHistory(repoRoot, record) {
       "current authorization record was modified after its first recording"));
   }
   diagnostics.push(...dedicatedRecordProblems(repoRoot, record));
+  diagnostics.push(...validateBoundaryParent(repoRoot, record));
   return { ...record, diagnostics };
 }
 
@@ -237,6 +256,22 @@ function selectionDiagnostics(records, allOperationRecords, { operation, changeI
 
 export function evaluateAuthorizationSet(records, operation, policy, { changeId = "change", archived = false } = {}) {
   const operationRecords = records.filter((record) => record.operation === operation);
+
+  if (archived && operationRecords.length > 0) {
+    return { current: null, diagnostics: [diagnostic("authorization-archive-only", changeId, `${operation} authorization belongs to an archived change`)] };
+  }
+
+  // If any record in operationRecords declares supersession, resolve via DAG
+  if (operationRecords.some((record) => Boolean(record.supersession))) {
+    const cleanRecords = operationRecords.filter((record) => (record.diagnostics ?? []).length === 0);
+    const graph = constructAuthorizationGraph(cleanRecords);
+    const resolved = resolveEffectiveAuthority(graph);
+    if (resolved.diagnostics.length > 0) {
+      return { current: null, diagnostics: resolved.diagnostics };
+    }
+    return { current: resolved.effective, diagnostics: [] };
+  }
+
   const current = currentOperationRecords(records, operation, policy)
     .filter((record) => (record.diagnostics ?? []).length === 0);
   const diagnostics = selectionDiagnostics(current, operationRecords, { operation, changeId, archived, policy });

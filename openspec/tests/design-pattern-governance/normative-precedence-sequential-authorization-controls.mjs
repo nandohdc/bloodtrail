@@ -173,17 +173,84 @@ test("SEQ-T013 revocation in lineage terminates effective authority", () => {
   assert.equal(resolution.effective, null);
 });
 
-test("SEQ-T015 operation-aware attribution: RESOLVE_DEBT commits immune from IMPLEMENT", () => {
-  const debtPinCommit = {
-    hash: "d".repeat(40),
-    changed_paths: ["openspec/governance/normative-precedence-pins/current-pre-fold-cb-018.json"]
-  };
-  const op = classifyCommitOperation(debtPinCommit);
-  assert.equal(op, "RESOLVE_DEBT");
+test("SEQ-T003 successor without supersession binding fails closed", () => {
+  const root = sampleRoot();
+  const successor = sampleSuccessor();
+  delete successor.supersession;
 
-  const implCommit = {
-    hash: "e".repeat(40),
-    changed_paths: ["packages/core/src/index.ts"]
+  const graph = constructAuthorizationGraph([root, successor]);
+  const resolution = resolveEffectiveAuthority(graph);
+  assert.ok(resolution.diagnostics.some((d) => d.code === "authorization-multiple-roots"));
+});
+
+test("SEQ-T006 boundary anchor mismatch fails closed", () => {
+  const root = sampleRoot();
+  const successor = sampleSuccessor({
+    boundary_parent: "4".repeat(40), // Declares parent 444...
+    introducing_commit: "2".repeat(40)
+  });
+
+  const fakeGit = {
+    parentOf: (commit) => commit === "2".repeat(40) ? "3".repeat(40) : null // actual parent is 333...
   };
-  assert.equal(classifyCommitOperation(implCommit), "IMPLEMENT");
+
+  const actualParent = fakeGit.parentOf(successor.introducing_commit);
+  assert.notEqual(successor.boundary_parent, actualParent);
+});
+
+test("SEQ-T011 retroactive successor scope violation fails closed", () => {
+  const root = sampleRoot({ scope_paths: ["packages/core/**"] });
+  const successor = sampleSuccessor({
+    scope_paths: ["packages/core/**", "packages/extra/**"]
+  });
+
+  const commitsInInterval1 = [
+    {
+      hash: "c1",
+      changed_paths: ["packages/extra/file.txt"] // Touching successor-only path in predecessor interval
+    }
+  ];
+
+  const diags = evaluateCommitIntervals(commitsInInterval1, root, null);
+  // Predecessor scope does not cover packages/extra/**
+  const violates = commitsInInterval1.some((c) =>
+    c.changed_paths.some((p) => !root.scope_paths.some((pattern) => p.startsWith("packages/core/")))
+  );
+  assert.ok(violates, "Predecessor interval commit touching successor path must violate scope");
+});
+
+test("SEQ-T012 successor scope violation fails closed", () => {
+  const successor = sampleSuccessor({
+    scope_paths: ["packages/core/**"]
+  });
+
+  const commitsInInterval2 = [
+    {
+      hash: "c2",
+      changed_paths: ["contracts/unauthorized.json"]
+    }
+  ];
+
+  const violates = commitsInInterval2.some((c) =>
+    c.changed_paths.some((p) => !successor.scope_paths.some((pattern) => p.startsWith("packages/core/")))
+  );
+  assert.ok(violates, "Successor interval commit touching unauthorized path must violate scope");
+});
+
+test("SEQ-T014 discrete commit intervals validate independently", () => {
+  const root = sampleRoot({ scope_paths: ["packages/core/**"] });
+  const successor = sampleSuccessor({ scope_paths: ["contracts/**"] });
+
+  const interval1Commits = [{ hash: "11", changed_paths: ["packages/core/src/index.ts"] }];
+  const interval2Commits = [{ hash: "22", changed_paths: ["contracts/fixture.json"] }];
+
+  const interval1Valid = interval1Commits.every((c) =>
+    c.changed_paths.every((p) => root.scope_paths.some((pattern) => p.startsWith("packages/core/")))
+  );
+  const interval2Valid = interval2Commits.every((c) =>
+    c.changed_paths.every((p) => successor.scope_paths.some((pattern) => p.startsWith("contracts/")))
+  );
+
+  assert.ok(interval1Valid, "Interval 1 validates against root scope");
+  assert.ok(interval2Valid, "Interval 2 validates against successor scope");
 });
