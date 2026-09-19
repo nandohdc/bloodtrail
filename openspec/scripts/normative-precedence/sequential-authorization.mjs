@@ -324,17 +324,15 @@ export function evaluateCommitIntervals(commits, rootAuth, successorAuth = null)
       continue;
     }
 
-    if (!inSuccessorInterval) {
-      for (const path of commit.changed_paths || []) {
-        if (!pathMatchesScope(path, rootAuth.scope_paths)) {
-          diagnostics.push(diagnostic("apply-scope-unauthorized", path, `Path "${path}" in root interval commit "${commit.hash}" not covered by root scope`));
-        }
-      }
-    } else {
-      for (const path of commit.changed_paths || []) {
-        if (!pathMatchesScope(path, successorAuth.scope_paths)) {
-          diagnostics.push(diagnostic("apply-scope-unauthorized", path, `Path "${path}" in successor interval commit "${commit.hash}" not covered by successor scope`));
-        }
+    const activeAuth = inSuccessorInterval ? successorAuth : rootAuth;
+    const intervalKind = inSuccessorInterval ? "successor" : "root";
+    for (const path of commit.changed_paths || []) {
+      if (!pathMatchesScope(path, activeAuth.scope_paths)) {
+        diagnostics.push(diagnostic(
+          "apply-scope-unauthorized",
+          path,
+          `Path "${path}" in ${intervalKind} interval commit "${commit.hash}" not covered by ${intervalKind} scope`
+        ));
       }
     }
   }
