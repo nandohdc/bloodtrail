@@ -40,6 +40,7 @@ function withHistoricalConflict(callback) {
     const historical = spawnSync("git", ["show", `${base}:${path}`], { cwd: root, encoding: "utf8" });
     assert.equal(historical.status, 0, historical.stderr);
     writeFileSync(resolve(repo, path), historical.stdout);
+    rmSync(resolve(repo, "openspec/governance/normative-precedence-pins/current-pre-fold-cb-018.json"), { force: true });
     callback(repo);
   } finally {
     rmSync(repo, { recursive: true, force: true });
