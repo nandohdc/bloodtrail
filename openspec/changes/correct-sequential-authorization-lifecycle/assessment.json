@@ -31,7 +31,8 @@
     "openspec/tests/design-pattern-governance/normative-precedence-sequential-authorization-controls.mjs",
     "openspec/tests/design-pattern-governance/mutation-assurance.test.mjs",
     "openspec/tests/design-pattern-governance/fixtures/normative-precedence/revision-3-negative-controls.json",
-    "openspec/tests/design-pattern-governance/fixtures/normative-precedence/revision-3-mutants.json"
+    "openspec/tests/design-pattern-governance/fixtures/normative-precedence/revision-3-mutants.json",
+    ".github/workflows/ci.yml"
   ],
   "candidate_approaches": [
     {
