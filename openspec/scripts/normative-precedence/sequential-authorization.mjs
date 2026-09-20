@@ -7,21 +7,8 @@ import { diagnostic } from "./shared.mjs";
  * @param {Map<string, object>} recordsById Map of all authorization records keyed by ID.
  * @returns {Array<object>} List of diagnostic objects.
  */
-export function validatePredecessorBinding(record, recordsById, { isAncestor = null } = {}) {
-  if (!record.supersession) return [];
-  const binding = record.supersession;
+function checkNamespaceAndOperation(record, predecessor, binding) {
   const diagnostics = [];
-
-  const predecessor = recordsById.get(binding.predecessor_id);
-  if (!predecessor) {
-    diagnostics.push(diagnostic(
-      "authorization-predecessor-missing",
-      record.path,
-      `Predecessor record with ID "${binding.predecessor_id}" does not exist`
-    ));
-    return diagnostics;
-  }
-
   if (binding.change_id !== record.change_id || binding.change_id !== predecessor.change_id) {
     diagnostics.push(diagnostic(
       "authorization-change-namespace-mismatch",
@@ -29,7 +16,6 @@ export function validatePredecessorBinding(record, recordsById, { isAncestor = n
       `Change namespace mismatch: successor declares "${binding.change_id}", predecessor has "${predecessor.change_id}"`
     ));
   }
-
   if (binding.operation !== record.operation || binding.operation !== predecessor.operation) {
     diagnostics.push(diagnostic(
       "authorization-operation-mismatch",
@@ -37,7 +23,11 @@ export function validatePredecessorBinding(record, recordsById, { isAncestor = n
       `Operation mismatch: successor declares "${binding.operation}", predecessor has "${predecessor.operation}"`
     ));
   }
+  return diagnostics;
+}
 
+function checkPathBlobAndCommit(record, predecessor, binding) {
+  const diagnostics = [];
   if (binding.predecessor_path !== predecessor.path) {
     diagnostics.push(diagnostic(
       "authorization-predecessor-path-mismatch",
@@ -45,7 +35,6 @@ export function validatePredecessorBinding(record, recordsById, { isAncestor = n
       `Predecessor path mismatch: expected "${predecessor.path}", got "${binding.predecessor_path}"`
     ));
   }
-
   if (predecessor.object && binding.predecessor_object !== predecessor.object) {
     diagnostics.push(diagnostic(
       "authorization-predecessor-blob-mismatch",
@@ -53,7 +42,6 @@ export function validatePredecessorBinding(record, recordsById, { isAncestor = n
       `Predecessor Git blob hash mismatch: expected "${predecessor.object}", got "${binding.predecessor_object}"`
     ));
   }
-
   if (predecessor.introducing_commit && binding.predecessor_introducing_commit !== predecessor.introducing_commit) {
     diagnostics.push(diagnostic(
       "authorization-predecessor-commit-mismatch",
@@ -61,18 +49,55 @@ export function validatePredecessorBinding(record, recordsById, { isAncestor = n
       `Predecessor introducing commit mismatch: expected "${predecessor.introducing_commit}", got "${binding.predecessor_introducing_commit}"`
     ));
   }
+  return diagnostics;
+}
 
-  if (isAncestor && predecessor.introducing_commit && record.introducing_commit) {
-    if (!isAncestor(predecessor.introducing_commit, record.introducing_commit)) {
-      diagnostics.push(diagnostic(
-        "authorization-predecessor-not-ancestor",
-        record.path,
-        `Predecessor commit "${predecessor.introducing_commit}" is not an ancestor of successor commit "${record.introducing_commit}"`
-      ));
-    }
+function checkCommitAncestry(record, predecessor, isAncestor) {
+  if (!isAncestor) return [];
+  const predCommit = predecessor.introducing_commit;
+  const succCommit = record.introducing_commit;
+  if (!predCommit || !succCommit) return [];
+  if (!isAncestor(predCommit, succCommit)) {
+    return [diagnostic(
+      "authorization-predecessor-not-ancestor",
+      record.path,
+      `Predecessor commit "${predCommit}" is not an ancestor of successor commit "${succCommit}"`
+    )];
+  }
+  return [];
+}
+
+/**
+ * Validates the 11 supersession preconditions linking a successor record to its predecessor.
+ *
+ * @param {object} record The candidate successor authorization record.
+ * @param {Map<string, object>} recordsById Map of all authorization records keyed by ID.
+ * @returns {Array<object>} List of diagnostic objects.
+ */
+export function validatePredecessorBinding(record, recordsById, { isAncestor = null } = {}) {
+  if (!record.supersession) return [];
+  const binding = record.supersession;
+
+  const predecessor = recordsById.get(binding.predecessor_id);
+  if (!predecessor) {
+    return [diagnostic(
+      "authorization-predecessor-missing",
+      record.path,
+      `Predecessor record with ID "${binding.predecessor_id}" does not exist`
+    )];
   }
 
-  return diagnostics;
+  return [
+    ...checkNamespaceAndOperation(record, predecessor, binding),
+    ...checkPathBlobAndCommit(record, predecessor, binding),
+    ...checkCommitAncestry(record, predecessor, isAncestor),
+  ];
+}
+
+function recordPredecessorEdge(record, edges, parents) {
+  const predId = record.supersession.predecessor_id;
+  edges.get(predId)?.push(record.id);
+  parents.set(record.id, predId);
 }
 
 /**
@@ -93,18 +118,90 @@ export function constructAuthorizationGraph(records) {
   }
 
   for (const record of records) {
-    if (!record.supersession) {
-      roots.push(record);
+    if (record.supersession) {
+      recordPredecessorEdge(record, edges, parents);
     } else {
-      const predId = record.supersession.predecessor_id;
-      if (edges.has(predId)) {
-        edges.get(predId).push(record.id);
-      }
-      parents.set(record.id, predId);
+      roots.push(record);
     }
   }
 
   return { records, recordsById, roots, edges, parents };
+}
+
+function checkRootCardinality(roots) {
+  if (roots.length === 0) {
+    return [diagnostic("authorization-no-root", "", "No root authorization found in lineage")];
+  }
+  if (roots.length > 1) {
+    return [diagnostic(
+      "authorization-multiple-roots",
+      "",
+      `Multiple root authorizations detected (${roots.map((r) => r.id).join(", ")})`
+    )];
+  }
+  return [];
+}
+
+function checkSupersessionValidity(record, recordsById) {
+  if (!record.supersession) return [];
+  const predId = record.supersession.predecessor_id;
+  const diagnostics = [];
+  if (predId === record.id) {
+    diagnostics.push(diagnostic("authorization-self-supersession", record.path, `Record "${record.id}" cannot supersede itself`));
+  }
+  if (!recordsById.has(predId)) {
+    diagnostics.push(diagnostic("authorization-orphan-successor", record.path, `Record "${record.id}" supersedes non-existent predecessor "${predId}"`));
+  }
+  return diagnostics;
+}
+
+function checkDirectSupersessionInvariants(records, recordsById) {
+  return records.flatMap((record) => checkSupersessionValidity(record, recordsById));
+}
+
+function checkTopologyForks(edges) {
+  const diagnostics = [];
+  for (const [predId, succIds] of edges.entries()) {
+    if (succIds.length > 1) {
+      diagnostics.push(diagnostic(
+        "authorization-topology-fork",
+        predId,
+        `Predecessor "${predId}" has multiple successors: ${succIds.join(", ")}`
+      ));
+    }
+  }
+  return diagnostics;
+}
+
+function detectGraphCycles(records, edges) {
+  const visiting = new Set();
+  const visited = new Set();
+  const diagnostics = [];
+
+  function dfs(nodeId) {
+    if (diagnostics.length > 0) return;
+    if (visiting.has(nodeId)) {
+      diagnostics.push(diagnostic("authorization-cycle-detected", nodeId, `Cycle detected involving node "${nodeId}"`));
+      return;
+    }
+    if (visited.has(nodeId)) return;
+
+    visiting.add(nodeId);
+    const successors = edges.get(nodeId) ?? [];
+    for (const nextId of successors) {
+      dfs(nextId);
+    }
+    visiting.delete(nodeId);
+    visited.add(nodeId);
+  }
+
+  for (const record of records) {
+    if (!visited.has(record.id)) {
+      dfs(record.id);
+    }
+  }
+
+  return diagnostics;
 }
 
 /**
@@ -114,73 +211,76 @@ export function constructAuthorizationGraph(records) {
  * @returns {Array<object>} List of invariant violation diagnostics.
  */
 export function validateGraphInvariants(graph) {
-  const diagnostics = [];
+  return [
+    ...checkRootCardinality(graph.roots),
+    ...checkDirectSupersessionInvariants(graph.records, graph.recordsById),
+    ...checkTopologyForks(graph.edges),
+    ...detectGraphCycles(graph.records, graph.edges),
+  ];
+}
 
-  // 1. Root cardinality invariant
-  if (graph.roots.length === 0) {
-    diagnostics.push(diagnostic("authorization-no-root", "", "No root authorization found in lineage"));
-  } else if (graph.roots.length > 1) {
-    diagnostics.push(diagnostic(
-      "authorization-multiple-roots",
-      "",
-      `Multiple root authorizations detected (${graph.roots.map((r) => r.id).join(", ")})`
-    ));
+function findBindingError(records, recordsById) {
+  const successors = records.filter((record) => Boolean(record.supersession));
+  for (const record of successors) {
+    const bindingDiags = validatePredecessorBinding(record, recordsById);
+    if (bindingDiags.length > 0) return bindingDiags;
   }
+  return null;
+}
 
-  // 2. Self-supersession & orphan successor guards
-  for (const record of graph.records) {
-    if (record.supersession) {
-      const predId = record.supersession.predecessor_id;
-      if (predId === record.id) {
-        diagnostics.push(diagnostic("authorization-self-supersession", record.path, `Record "${record.id}" cannot supersede itself`));
-      }
-      if (!graph.recordsById.has(predId)) {
-        diagnostics.push(diagnostic("authorization-orphan-successor", record.path, `Record "${record.id}" supersedes non-existent predecessor "${predId}"`));
-      }
+function findRevocationError(records) {
+  const revoked = records.find((record) => record.status === "REVOKED");
+  if (!revoked) return null;
+  return [diagnostic("authorization-lineage-revoked", revoked.path, `Authorization lineage revoked at node "${revoked.id}"`)];
+}
+
+function resolveSingleLeaf(edges, recordsById) {
+  const leaves = [];
+  for (const [nodeId, succIds] of edges.entries()) {
+    if (succIds.length === 0) {
+      leaves.push(recordsById.get(nodeId));
     }
   }
-
-  // 3. Branching / fork guard: no predecessor may have > 1 successor
-  for (const [predId, succIds] of graph.edges.entries()) {
-    if (succIds.length > 1) {
-      diagnostics.push(diagnostic(
-        "authorization-topology-fork",
-        predId,
-        `Predecessor "${predId}" has multiple successors: ${succIds.join(", ")}`
-      ));
-    }
+  if (leaves.length === 0) {
+    return { leaf: null, diagnostic: diagnostic("authorization-no-leaf", "", "No active leaf found in authorization graph") };
   }
-
-  // 4. Cycle detection (2-node and N-node cycles via DFS)
-  const visiting = new Set();
-  const visited = new Set();
-  let cycleDetected = false;
-
-  function dfs(nodeId) {
-    if (cycleDetected) return;
-    if (visiting.has(nodeId)) {
-      cycleDetected = true;
-      diagnostics.push(diagnostic("authorization-cycle-detected", nodeId, `Cycle detected involving node "${nodeId}"`));
-      return;
-    }
-    if (visited.has(nodeId)) return;
-
-    visiting.add(nodeId);
-    const successors = graph.edges.get(nodeId) ?? [];
-    for (const nextId of successors) {
-      dfs(nextId);
-    }
-    visiting.delete(nodeId);
-    visited.add(nodeId);
+  if (leaves.length > 1) {
+    return {
+      leaf: null,
+      diagnostic: diagnostic("authorization-leaf-multiple", "", `Multiple un-superseded leaves detected (${leaves.map((l) => l.id).join(", ")})`)
+    };
   }
+  return { leaf: leaves[0], diagnostic: null };
+}
 
-  for (const record of graph.records) {
-    if (!visited.has(record.id)) {
-      dfs(record.id);
-    }
+function copyMissingCapabilities(effective, pred) {
+  if (!effective.authorized_capabilities && pred.authorized_capabilities) {
+    effective.authorized_capabilities = pred.authorized_capabilities;
   }
+  if (!effective.authorized_delta_objects && pred.authorized_delta_objects) {
+    effective.authorized_delta_objects = pred.authorized_delta_objects;
+  }
+}
 
-  return diagnostics;
+function hasAllCapabilities(effective) {
+  return Boolean(effective.authorized_capabilities && effective.authorized_delta_objects);
+}
+
+function resolvePredecessorRecord(curr, recordsById) {
+  const predId = curr.supersession?.predecessor_id;
+  return predId ? recordsById.get(predId) ?? null : null;
+}
+
+function inheritCapabilities(leaf, recordsById) {
+  const effective = { ...leaf };
+  let curr = leaf;
+  while (!hasAllCapabilities(effective)) {
+    const pred = resolvePredecessorRecord(curr, recordsById);
+    if (!pred) break;
+    copyMissingCapabilities(effective, pred);
+    curr = pred;
+  }
+  return effective;
 }
 
 /**
@@ -194,71 +294,19 @@ export function resolveEffectiveAuthority(graph) {
   if (invariantDiagnostics.length > 0) {
     return { effective: null, diagnostics: invariantDiagnostics };
   }
-
-  // Predecessor binding validation
-  for (const record of graph.records) {
-    if (record.supersession) {
-      const bindingDiags = validatePredecessorBinding(record, graph.recordsById);
-      if (bindingDiags.length > 0) {
-        return { effective: null, diagnostics: bindingDiags };
-      }
-    }
+  const bindingError = findBindingError(graph.records, graph.recordsById);
+  if (bindingError) {
+    return { effective: null, diagnostics: bindingError };
   }
-
-  // Revocation termination propagation (poison-pill)
-  for (const record of graph.records) {
-    if (record.status === "REVOKED") {
-      return {
-        effective: null,
-        diagnostics: [
-          diagnostic("authorization-lineage-revoked", record.path, `Authorization lineage revoked at node "${record.id}"`)
-        ]
-      };
-    }
+  const revocationError = findRevocationError(graph.records);
+  if (revocationError) {
+    return { effective: null, diagnostics: revocationError };
   }
-
-  // Identify active leaves (nodes with out-degree 0 in the succession tree)
-  const leaves = [];
-  for (const [nodeId, succIds] of graph.edges.entries()) {
-    if (succIds.length === 0) {
-      leaves.push(graph.recordsById.get(nodeId));
-    }
+  const { leaf, diagnostic: leafDiag } = resolveSingleLeaf(graph.edges, graph.recordsById);
+  if (leafDiag) {
+    return { effective: null, diagnostics: [leafDiag] };
   }
-
-  if (leaves.length === 0) {
-    return {
-      effective: null,
-      diagnostics: [diagnostic("authorization-no-leaf", "", "No active leaf found in authorization graph")]
-    };
-  }
-
-  if (leaves.length > 1) {
-    return {
-      effective: null,
-      diagnostics: [
-        diagnostic("authorization-leaf-multiple", "", `Multiple un-superseded leaves detected (${leaves.map((l) => l.id).join(", ")})`)
-      ]
-    };
-  }
-
-  const leaf = leaves[0];
-  const effective = { ...leaf };
-  if (!effective.authorized_capabilities || !effective.authorized_delta_objects) {
-    let curr = leaf;
-    while (curr?.supersession?.predecessor_id) {
-      const pred = graph.recordsById.get(curr.supersession.predecessor_id);
-      if (!pred) break;
-      if (!effective.authorized_capabilities && pred.authorized_capabilities) {
-        effective.authorized_capabilities = pred.authorized_capabilities;
-      }
-      if (!effective.authorized_delta_objects && pred.authorized_delta_objects) {
-        effective.authorized_delta_objects = pred.authorized_delta_objects;
-      }
-      curr = pred;
-    }
-  }
-
-  return { effective, diagnostics: [] };
+  return { effective: inheritCapabilities(leaf, graph.recordsById), diagnostics: [] };
 }
 
 /**
@@ -293,6 +341,58 @@ function pathMatchesScope(path, scopePatterns) {
   });
 }
 
+function checkCommitScope(commit, auth, intervalKind, diagnostics) {
+  const paths = commit.changed_paths || [];
+  const scopePaths = auth.scope_paths;
+  const unauthorized = paths.filter((path) => !pathMatchesScope(path, scopePaths));
+  for (const path of unauthorized) {
+    const message = intervalKind
+      ? `Path "${path}" in ${intervalKind} interval commit "${commit.hash}" not covered by ${intervalKind} scope`
+      : `Path "${path}" in commit "${commit.hash}" outside root authorization scope`;
+    diagnostics.push(diagnostic("apply-scope-unauthorized", path, message));
+  }
+}
+
+function evaluateSingleInterval(commits, rootAuth) {
+  const diagnostics = [];
+  for (const commit of commits) {
+    if (commit.hash !== rootAuth.introducing_commit) {
+      checkCommitScope(commit, rootAuth, null, diagnostics);
+    }
+  }
+  return diagnostics;
+}
+
+function intervalTarget(inSuccessor, rootAuth, successorAuth) {
+  return inSuccessor
+    ? { activeAuth: successorAuth, kind: "successor" }
+    : { activeAuth: rootAuth, kind: "root" };
+}
+
+function partitionDualIntervalCommits(commits, rootAuth, successorAuth) {
+  const result = [];
+  let inSuccessor = false;
+  const nonRootCommits = commits.filter((c) => c.hash !== rootAuth.introducing_commit);
+  for (const commit of nonRootCommits) {
+    if (commit.hash === successorAuth.introducing_commit) {
+      inSuccessor = true;
+    } else {
+      const target = intervalTarget(inSuccessor, rootAuth, successorAuth);
+      result.push({ commit, activeAuth: target.activeAuth, kind: target.kind });
+    }
+  }
+  return result;
+}
+
+function evaluateDualIntervals(commits, rootAuth, successorAuth) {
+  const diagnostics = [];
+  const entries = partitionDualIntervalCommits(commits, rootAuth, successorAuth);
+  for (const entry of entries) {
+    checkCommitScope(entry.commit, entry.activeAuth, entry.kind, diagnostics);
+  }
+  return diagnostics;
+}
+
 /**
  * Evaluates discrete commit intervals (C_A, P_B] and (C_B, HEAD] against authorization scope paths.
  *
@@ -302,40 +402,8 @@ function pathMatchesScope(path, scopePatterns) {
  * @returns {Array<object>} Scope diagnostics.
  */
 export function evaluateCommitIntervals(commits, rootAuth, successorAuth = null) {
-  const diagnostics = [];
-
   if (!successorAuth) {
-    for (const commit of commits) {
-      if (commit.hash === rootAuth.introducing_commit) continue;
-      for (const path of commit.changed_paths || []) {
-        if (!pathMatchesScope(path, rootAuth.scope_paths)) {
-          diagnostics.push(diagnostic("apply-scope-unauthorized", path, `Path "${path}" in commit "${commit.hash}" outside root authorization scope`));
-        }
-      }
-    }
-    return diagnostics;
+    return evaluateSingleInterval(commits, rootAuth);
   }
-
-  let inSuccessorInterval = false;
-  for (const commit of commits) {
-    if (commit.hash === rootAuth.introducing_commit) continue;
-    if (commit.hash === successorAuth.introducing_commit) {
-      inSuccessorInterval = true;
-      continue;
-    }
-
-    const activeAuth = inSuccessorInterval ? successorAuth : rootAuth;
-    const intervalKind = inSuccessorInterval ? "successor" : "root";
-    for (const path of commit.changed_paths || []) {
-      if (!pathMatchesScope(path, activeAuth.scope_paths)) {
-        diagnostics.push(diagnostic(
-          "apply-scope-unauthorized",
-          path,
-          `Path "${path}" in ${intervalKind} interval commit "${commit.hash}" not covered by ${intervalKind} scope`
-        ));
-      }
-    }
-  }
-
-  return diagnostics;
+  return evaluateDualIntervals(commits, rootAuth, successorAuth);
 }

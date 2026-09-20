@@ -261,35 +261,45 @@ function selectionDiagnostics(records, allOperationRecords, { operation, changeI
   return [];
 }
 
-export function evaluateAuthorizationSet(records, operation, policy, { changeId = "change", archived = false, indexCurrentId = null } = {}) {
-  const operationRecords = records.filter((record) => record.operation === operation);
+function indexContradictsDag(effective, indexCurrentId) {
+  if (!effective || !indexCurrentId) return false;
+  return effective.id !== indexCurrentId;
+}
 
-  // If any record in operationRecords declares supersession, resolve via DAG
-  if (operationRecords.some((record) => Boolean(record.supersession))) {
-    if (archived && operationRecords.length > 0) {
-      return { current: null, diagnostics: [diagnostic("authorization-archive-only", changeId, `${operation} authorization belongs to an archived change`)] };
-    }
-    const cleanRecords = operationRecords.filter((record) => (record.diagnostics ?? []).length === 0 && (record.supersession || record.status === "CURRENT" || record.status === "REVOKED"));
-    const graph = constructAuthorizationGraph(cleanRecords);
-    const resolved = resolveEffectiveAuthority(graph);
-    if (resolved.diagnostics.length > 0) {
-      return { current: null, diagnostics: resolved.diagnostics };
-    }
-    if (resolved.effective && indexCurrentId && resolved.effective.id !== indexCurrentId) {
-      return {
-        current: null,
-        diagnostics: [
-          diagnostic("authorization-index-contradiction", changeId, `Legacy index specifies "${indexCurrentId}" but DAG resolved to "${resolved.effective.id}"`)
-        ]
-      };
-    }
-    return { current: resolved.effective, diagnostics: [] };
+function evaluateDagAuthorization(operationRecords, { changeId, operation, archived, indexCurrentId }) {
+  if (archived && operationRecords.length > 0) {
+    return { current: null, diagnostics: [diagnostic("authorization-archive-only", changeId, `${operation} authorization belongs to an archived change`)] };
   }
+  const cleanRecords = operationRecords.filter((record) => (record.diagnostics ?? []).length === 0 && (record.supersession || record.status === "CURRENT" || record.status === "REVOKED"));
+  const graph = constructAuthorizationGraph(cleanRecords);
+  const resolved = resolveEffectiveAuthority(graph);
+  if (resolved.diagnostics.length > 0) {
+    return { current: null, diagnostics: resolved.diagnostics };
+  }
+  if (indexContradictsDag(resolved.effective, indexCurrentId)) {
+    return {
+      current: null,
+      diagnostics: [
+        diagnostic("authorization-index-contradiction", changeId, `Legacy index specifies "${indexCurrentId}" but DAG resolved to "${resolved.effective.id}"`)
+      ]
+    };
+  }
+  return { current: resolved.effective, diagnostics: [] };
+}
 
+function evaluateStandardAuthorization(records, operationRecords, { operation, policy, changeId, archived }) {
   const current = currentOperationRecords(records, operation, policy)
     .filter((record) => (record.diagnostics ?? []).length === 0);
   const diagnostics = selectionDiagnostics(current, operationRecords, { operation, changeId, archived, policy });
   return { current: current.length === 1 && !archived ? current[0] : null, diagnostics };
+}
+
+export function evaluateAuthorizationSet(records, operation, policy, { changeId = "change", archived = false, indexCurrentId = null } = {}) {
+  const operationRecords = records.filter((record) => record.operation === operation);
+  if (operationRecords.some((record) => Boolean(record.supersession))) {
+    return evaluateDagAuthorization(operationRecords, { changeId, operation, archived, indexCurrentId });
+  }
+  return evaluateStandardAuthorization(records, operationRecords, { operation, policy, changeId, archived });
 }
 
 const SIGNED_RECORD_FORMATS = Object.freeze(["SIGNED_MARKDOWN_BOOTSTRAP", "SCHEMA_JSON"]);

@@ -22,10 +22,11 @@ function sameValues(left, right) {
 }
 
 function sameDebtObjects(left, right) {
-  return left?.source_path === right?.source_path
-    && left?.source_blob === right?.source_blob
-    && left?.capability_path === right?.capability_path
-    && left?.capability_blob === right?.capability_blob;
+  if (!left || !right) return left === right;
+  return left.source_path === right.source_path
+    && left.source_blob === right.source_blob
+    && left.capability_path === right.capability_path
+    && left.capability_blob === right.capability_blob;
 }
 
 function debtObjects(debt) {
@@ -62,17 +63,25 @@ function resolvingDebtObjects(retirement, selected, policy) {
   };
 }
 
+function matchesAuthProperties(expected, actual) {
+  return actual.id === expected.id
+    && actual.path === expected.path
+    && actual.object === expected.object
+    && actual.operation === expected.operation
+    && actual.grant === expected.grant;
+}
+
+function hasWithheldOperations(withheldList) {
+  const withheld = new Set(withheldList ?? []);
+  return REQUIRED_WITHHELD_OPERATIONS.every((operation) => withheld.has(operation));
+}
+
 function authorizationMatches(retirement, authorization, policy) {
   if (!authorization) return false;
-  const withheld = new Set(authorization.withheld ?? []);
-  return authorization.operation === "RESOLVE_DEBT"
-    && authorization.grant === policy.governance_authorities.debt_resolution_grant
-    && REQUIRED_WITHHELD_OPERATIONS.every((operation) => withheld.has(operation))
-    && retirement.authorization.id === authorization.id
-    && retirement.authorization.path === authorization.path
-    && retirement.authorization.object === authorization.object
-    && retirement.authorization.operation === authorization.operation
-    && retirement.authorization.grant === authorization.grant;
+  if (authorization.operation !== "RESOLVE_DEBT") return false;
+  if (authorization.grant !== policy.governance_authorities.debt_resolution_grant) return false;
+  if (!hasWithheldOperations(authorization.withheld)) return false;
+  return matchesAuthProperties(authorization, retirement.authorization);
 }
 
 function authorizationSelfReferencesPin(retirement, policy, pinSets) {
@@ -157,7 +166,13 @@ function assertionResolvedByPinnedObjects(repoRoot, policy, retirement) {
   return requirement !== null && requirement.includes(`\`${String(value)}\``);
 }
 
-export function validateDebtRetirements(repoRoot, policy, selected, pinSets, { baseCommit = null } = {}) {
+export function validateDebtRetirements({
+  repoRoot,
+  policy,
+  selected,
+  pinSets,
+  baseCommit = null,
+}) {
   const retirements = selected?.value.retired_debts ?? [];
   if (retirements.length === 0) return [];
   const changeDir = resolve(repoRoot, policy.repository_evidence.active_changes_root, policy.change_id);

@@ -95,24 +95,42 @@ test("SEQ-T005 predecessor exact binding mismatch fails closed", () => {
   assert.ok(diagnostics.some((d) => d.code === "authorization-predecessor-blob-mismatch"));
 });
 
-test("SEQ-T009 self-supersession fails closed", () => {
-  const selfRecord = sampleRoot({
+function assertGraphInvariantFailure(records, expectedCode) {
+  const graph = constructAuthorizationGraph(records);
+  const invariants = validateGraphInvariants(graph);
+  assert.ok(invariants.some((d) => d.code === expectedCode));
+}
+
+function assertPredecessorMismatch(successor, expectedCode, recordsById = null) {
+  if (!recordsById) {
+    const root = sampleRoot();
+    recordsById = new Map([[root.id, root]]);
+  }
+  const diags = validatePredecessorBinding(successor, recordsById);
+  assert.ok(diags.some((d) => d.code === expectedCode));
+}
+
+function assertIntervalUnauthorized(commits) {
+  const root = sampleRoot({ scope_paths: ["packages/pred/**"] });
+  const successor = sampleSuccessor({ scope_paths: ["packages/succ/**"] });
+  const diags = evaluateCommitIntervals(commits, root, successor);
+  assert.ok(diags.some((d) => d.code === "apply-scope-unauthorized"));
+}
+
+function createSelfSupersedingRecord() {
+  return sampleRoot({
     supersession: {
       predecessor_id: "auth-root",
       predecessor_path: "openspec/changes/test-change/authorizations/auth-root.json",
       predecessor_object: "a".repeat(40),
       predecessor_introducing_commit: "1".repeat(40),
       change_id: "test-change",
-      operation: "IMPLEMENT"
-    }
+      operation: "IMPLEMENT",
+    },
   });
+}
 
-  const graph = constructAuthorizationGraph([selfRecord]);
-  const invariants = validateGraphInvariants(graph);
-  assert.ok(invariants.some((d) => d.code === "authorization-self-supersession"));
-});
-
-test("SEQ-T010 2-node and N-node cycles fail closed", () => {
+function createTwoNodeCycleRecords() {
   const recA = sampleRoot({
     id: "auth-a",
     supersession: {
@@ -121,8 +139,8 @@ test("SEQ-T010 2-node and N-node cycles fail closed", () => {
       predecessor_object: "b".repeat(40),
       predecessor_introducing_commit: "2".repeat(40),
       change_id: "test-change",
-      operation: "IMPLEMENT"
-    }
+      operation: "IMPLEMENT",
+    },
   });
   const recB = sampleSuccessor({
     id: "auth-b",
@@ -132,40 +150,46 @@ test("SEQ-T010 2-node and N-node cycles fail closed", () => {
       predecessor_object: "a".repeat(40),
       predecessor_introducing_commit: "1".repeat(40),
       change_id: "test-change",
-      operation: "IMPLEMENT"
-    }
+      operation: "IMPLEMENT",
+    },
   });
+  return [recA, recB];
+}
 
-  const graph = constructAuthorizationGraph([recA, recB]);
-  const invariants = validateGraphInvariants(graph);
-  assert.ok(invariants.some((d) => d.code === "authorization-cycle-detected"));
-});
-
-test("SEQ-T007 fork / branching supersession fails closed", () => {
-  const root = sampleRoot();
-  const succ1 = sampleSuccessor({ id: "succ-1" });
-  const succ2 = sampleSuccessor({ id: "succ-2" });
-
-  const graph = constructAuthorizationGraph([root, succ1, succ2]);
-  const invariants = validateGraphInvariants(graph);
-  assert.ok(invariants.some((d) => d.code === "authorization-topology-fork"));
-});
-
-test("SEQ-T008 orphan successor referencing nonexistent predecessor fails closed", () => {
-  const succ = sampleSuccessor({
+function createOrphanSuccessorRecord() {
+  return sampleSuccessor({
     supersession: {
       predecessor_id: "nonexistent-root",
       predecessor_path: "path/missing.json",
       predecessor_object: "0".repeat(40),
       predecessor_introducing_commit: "0".repeat(40),
       change_id: "test-change",
-      operation: "IMPLEMENT"
-    }
+      operation: "IMPLEMENT",
+    },
   });
+}
 
-  const graph = constructAuthorizationGraph([succ]);
-  const invariants = validateGraphInvariants(graph);
-  assert.ok(invariants.some((d) => d.code === "authorization-orphan-successor"));
+function assertResolutionDiagnostic(records, expectedCode) {
+  const graph = constructAuthorizationGraph(records);
+  const resolution = resolveEffectiveAuthority(graph);
+  assert.equal(resolution.effective, null);
+  assert.ok(resolution.diagnostics.some((d) => d.code === expectedCode));
+}
+
+test("SEQ-T009 self-supersession fails closed", () => {
+  assertResolutionDiagnostic([createSelfSupersedingRecord()], "authorization-self-supersession");
+});
+
+test("SEQ-T010 2-node and N-node cycles fail closed", () => {
+  assertResolutionDiagnostic(createTwoNodeCycleRecords(), "authorization-cycle-detected");
+});
+
+test("SEQ-T007 fork / branching supersession fails closed", () => {
+  assertResolutionDiagnostic([sampleRoot(), sampleSuccessor({ id: "succ-1" }), sampleSuccessor({ id: "succ-2" })], "authorization-topology-fork");
+});
+
+test("SEQ-T008 orphan successor referencing nonexistent predecessor fails closed", () => {
+  assertResolutionDiagnostic([createOrphanSuccessorRecord()], "authorization-orphan-successor");
 });
 
 test("SEQ-T013 revocation in lineage terminates effective authority", () => {
@@ -271,52 +295,40 @@ test("NC-SEQ-001 predecessor ID match - successor references nonexistent predece
       operation: "IMPLEMENT"
     }
   });
-  const recordsById = new Map();
-  const diags = validatePredecessorBinding(successor, recordsById);
-  assert.ok(diags.some((d) => d.code === "authorization-predecessor-missing"));
+  assertPredecessorMismatch(successor, "authorization-predecessor-missing", new Map());
 });
 
 test("NC-SEQ-002 predecessor path match - successor declares predecessor path that does not match record path", () => {
-  const root = sampleRoot();
   const successor = sampleSuccessor({
     supersession: {
       ...sampleSuccessor().supersession,
       predecessor_path: "wrong/path/to/pred.json"
     }
   });
-  const recordsById = new Map([[root.id, root]]);
-  const diags = validatePredecessorBinding(successor, recordsById);
-  assert.ok(diags.some((d) => d.code === "authorization-predecessor-path-mismatch"));
+  assertPredecessorMismatch(successor, "authorization-predecessor-path-mismatch");
 });
 
 test("NC-SEQ-003 predecessor blob match - successor declares predecessor blob SHA that differs from git hash-object", () => {
-  const root = sampleRoot();
   const successor = sampleSuccessor({
     supersession: {
       ...sampleSuccessor().supersession,
       predecessor_object: "f".repeat(40)
     }
   });
-  const recordsById = new Map([[root.id, root]]);
-  const diags = validatePredecessorBinding(successor, recordsById);
-  assert.ok(diags.some((d) => d.code === "authorization-predecessor-blob-mismatch"));
+  assertPredecessorMismatch(successor, "authorization-predecessor-blob-mismatch");
 });
 
 test("NC-SEQ-004 predecessor commit match - successor declares introducing commit that differs from git log", () => {
-  const root = sampleRoot();
   const successor = sampleSuccessor({
     supersession: {
       ...sampleSuccessor().supersession,
       predecessor_introducing_commit: "9".repeat(40)
     }
   });
-  const recordsById = new Map([[root.id, root]]);
-  const diags = validatePredecessorBinding(successor, recordsById);
-  assert.ok(diags.some((d) => d.code === "authorization-predecessor-commit-mismatch"));
+  assertPredecessorMismatch(successor, "authorization-predecessor-commit-mismatch");
 });
 
 test("NC-SEQ-005 change namespace match - successor change_id does not equal predecessor change_id", () => {
-  const root = sampleRoot();
   const successor = sampleSuccessor({
     change_id: "test-change",
     supersession: {
@@ -324,13 +336,10 @@ test("NC-SEQ-005 change namespace match - successor change_id does not equal pre
       change_id: "wrong-change"
     }
   });
-  const recordsById = new Map([[root.id, root]]);
-  const diags = validatePredecessorBinding(successor, recordsById);
-  assert.ok(diags.some((d) => d.code === "authorization-change-namespace-mismatch"));
+  assertPredecessorMismatch(successor, "authorization-change-namespace-mismatch");
 });
 
 test("NC-SEQ-006 operation match - successor operation does not equal predecessor operation", () => {
-  const root = sampleRoot();
   const successor = sampleSuccessor({
     operation: "IMPLEMENT",
     supersession: {
@@ -338,9 +347,7 @@ test("NC-SEQ-006 operation match - successor operation does not equal predecesso
       operation: "VERIFY"
     }
   });
-  const recordsById = new Map([[root.id, root]]);
-  const diags = validatePredecessorBinding(successor, recordsById);
-  assert.ok(diags.some((d) => d.code === "authorization-operation-mismatch"));
+  assertPredecessorMismatch(successor, "authorization-operation-mismatch");
 });
 
 // Category 2: Commit Anchor & Topology Controls (NC-SEQ-007 through NC-SEQ-012)
@@ -371,48 +378,11 @@ test("NC-SEQ-010 commit signature - successor introducing commit has missing or 
 });
 
 test("NC-SEQ-011 self-supersession - successor declares its own ID as predecessor_id", () => {
-  const selfRecord = sampleRoot({
-    supersession: {
-      predecessor_id: "auth-root",
-      predecessor_path: "openspec/changes/test-change/authorizations/auth-root.json",
-      predecessor_object: "a".repeat(40),
-      predecessor_introducing_commit: "1".repeat(40),
-      change_id: "test-change",
-      operation: "IMPLEMENT"
-    }
-  });
-  const graph = constructAuthorizationGraph([selfRecord]);
-  const invariants = validateGraphInvariants(graph);
-  assert.ok(invariants.some((d) => d.code === "authorization-self-supersession"));
+  assertGraphInvariantFailure([createSelfSupersedingRecord()], "authorization-self-supersession");
 });
 
 test("NC-SEQ-012 two-node cycle - record B succeeds A and record A succeeds B", () => {
-  const recA = sampleRoot({
-    id: "auth-a",
-    supersession: {
-      predecessor_id: "auth-b",
-      predecessor_path: "path/b.json",
-      predecessor_object: "b".repeat(40),
-      predecessor_introducing_commit: "2".repeat(40),
-      change_id: "test-change",
-      operation: "IMPLEMENT"
-    }
-  });
-  const recB = sampleSuccessor({
-    id: "auth-b",
-    supersession: {
-      predecessor_id: "auth-a",
-      predecessor_path: "path/a.json",
-      predecessor_object: "a".repeat(40),
-      predecessor_introducing_commit: "1".repeat(40),
-      change_id: "test-change",
-      operation: "IMPLEMENT"
-    }
-  });
-
-  const graph = constructAuthorizationGraph([recA, recB]);
-  const invariants = validateGraphInvariants(graph);
-  assert.ok(invariants.some((d) => d.code === "authorization-cycle-detected"));
+  assertGraphInvariantFailure(createTwoNodeCycleRecords(), "authorization-cycle-detected");
 });
 
 // Category 3: Dedicated Graph Topology Controls (NC-SEQ-013 through NC-SEQ-016)
@@ -427,30 +397,11 @@ test("NC-SEQ-013 N-node cycle - three-node loop A to B to C to A", () => {
 });
 
 test("NC-SEQ-014 fork / branching - two distinct successors B and C both reference predecessor A", () => {
-  const root = sampleRoot();
-  const succ1 = sampleSuccessor({ id: "succ-1" });
-  const succ2 = sampleSuccessor({ id: "succ-2" });
-
-  const graph = constructAuthorizationGraph([root, succ1, succ2]);
-  const invariants = validateGraphInvariants(graph);
-  assert.ok(invariants.some((d) => d.code === "authorization-topology-fork"));
+  assertGraphInvariantFailure([sampleRoot(), sampleSuccessor({ id: "succ-1" }), sampleSuccessor({ id: "succ-2" })], "authorization-topology-fork");
 });
 
 test("NC-SEQ-015 orphan record - successor references predecessor ID that has no file on disk", () => {
-  const succ = sampleSuccessor({
-    supersession: {
-      predecessor_id: "nonexistent-root",
-      predecessor_path: "path/missing.json",
-      predecessor_object: "0".repeat(40),
-      predecessor_introducing_commit: "0".repeat(40),
-      change_id: "test-change",
-      operation: "IMPLEMENT"
-    }
-  });
-
-  const graph = constructAuthorizationGraph([succ]);
-  const invariants = validateGraphInvariants(graph);
-  assert.ok(invariants.some((d) => d.code === "authorization-orphan-successor"));
+  assertGraphInvariantFailure([createOrphanSuccessorRecord()], "authorization-orphan-successor");
 });
 
 test("NC-SEQ-016 multiple leaves - graph resolves to two disconnected valid leaf nodes", () => {
@@ -464,25 +415,19 @@ test("NC-SEQ-016 multiple leaves - graph resolves to two disconnected valid leaf
 
 // Category 4: Interval Scope Controls (NC-SEQ-017 through NC-SEQ-021)
 test("NC-SEQ-017 predecessor scope leakage - commit in successor interval touches path only declared in predecessor", () => {
-  const root = sampleRoot({ scope_paths: ["packages/pred/**"] });
   const successor = sampleSuccessor({ scope_paths: ["packages/succ/**"] });
-  const commits = [
+  assertIntervalUnauthorized([
     { hash: successor.introducing_commit, changed_paths: [] },
     { hash: "commit-in-succ-interval", changed_paths: ["packages/pred/leaked.ts"] }
-  ];
-  const diags = evaluateCommitIntervals(commits, root, successor);
-  assert.ok(diags.some((d) => d.code === "apply-scope-unauthorized"));
+  ]);
 });
 
 test("NC-SEQ-018 retroactive successor scope - commit in predecessor interval touches path only declared in successor", () => {
-  const root = sampleRoot({ scope_paths: ["packages/pred/**"] });
   const successor = sampleSuccessor({ scope_paths: ["packages/succ/**"] });
-  const commits = [
+  assertIntervalUnauthorized([
     { hash: "commit-in-pred-interval", changed_paths: ["packages/succ/retro.ts"] },
     { hash: successor.introducing_commit, changed_paths: [] }
-  ];
-  const diags = evaluateCommitIntervals(commits, root, successor);
-  assert.ok(diags.some((d) => d.code === "apply-scope-unauthorized"));
+  ]);
 });
 
 test("NC-SEQ-019 path outside declared scope - commit in interval touches path not in any authorization", () => {
