@@ -136,11 +136,11 @@ mixed commit. Duplicate helpers SHALL NOT define path specificity independently.
 
 ### Requirement: Mutation assurance fails before kill-rate interpretation when coverage is incomplete
 
-Governance mutation assurance SHALL use a closed manifest of exactly 22 planned Revision 3 mutants.
-Static anchor preflight SHALL run before mutation execution and SHALL resolve exactly one live target
-for every enabled mutant. The assurance gate SHALL require `EXPECTED_MUTANTS=22`,
-`APPLIED_MUTANTS=22`, `KILLED_MUTANTS=22`, `NOT_APPLIED=0`, `SURVIVED=0`, clean null controls, and
-byte-identical restoration.
+Governance mutation assurance SHALL use a closed manifest of exactly 33 planned mutants: the 22
+Revision 3 mutants and 11 CB-018 mutants. Static anchor preflight SHALL run before mutation
+execution and SHALL resolve exactly one live target for every enabled mutant. The assurance gate
+SHALL require `EXPECTED_MUTANTS=33`, `APPLIED_MUTANTS=33`, `KILLED_MUTANTS=33`, `NOT_APPLIED=0`,
+`SURVIVED=0`, clean null controls, and byte-identical restoration.
 
 Each mutant SHALL execute in isolation, change its intended object, and be killed by its declared
 control. Any missing or ambiguous anchor, not-applied mutant, survivor, contaminated null control, or
@@ -151,6 +151,48 @@ non-identical restoration SHALL fail assurance before a mutation percentage is r
 - **THEN** anchor preflight fails and governance reports no passing kill rate
 
 #### Scenario: All mutants apply and are killed
-- **WHEN** all 22 anchors resolve uniquely, all mutants apply in isolation, every declared control
+- **WHEN** all 33 anchors resolve uniquely, all mutants apply in isolation, every declared control
   kills its mutant, null controls remain clean, and restoration is byte-identical
-- **THEN** mutation assurance passes with expected, applied, and killed counts all equal to 22
+- **THEN** mutation assurance passes with expected, applied, and killed counts all equal to 33
+
+### Requirement: Blocking semantic debt retires only through an authorized, substantiated, pinned transition
+
+A blocking semantic debt recorded in a historical pin set SHALL leave the current pin set only
+through an explicit retirement record. That record SHALL be carried by the pin set selected for the
+exact repository-state digest. The retirement SHALL identify the exact historical debt and its
+complete lineage, bind the exact prior and resolving source and capability objects, and name one
+current, independently verifiable authorization whose grant is the policy's debt-resolution grant.
+Repository enforcement SHALL re-evaluate the underlying semantic assertion against the exact
+resolving objects and SHALL accept the retirement only when the conflict is absent.
+
+Debt-resolution authority SHALL be distinct from implementation, merge, fold, activation, release,
+and archive authority. None of these SHALL imply another, and a debt-resolution authorization SHALL
+withhold all of them. A retirement record is evidence of an authorization and SHALL NOT authorize
+itself; a field asserting retirement is insufficient. A debt missing from the current pin set without
+a valid retirement SHALL NOT be treated as resolved. Retirement SHALL NOT widen a merge scope, weaken
+an activation or release effect, or activate any policy.
+
+#### Scenario: Debt disappears without a retirement
+- **WHEN** a historical pin set carries the contract-version debt and the selected current pin set
+  carries neither that debt nor a retirement record for it
+- **THEN** repository enforcement fails closed and the debt remains activation- and release-blocking
+
+#### Scenario: Retirement lacks dedicated debt-resolution authority
+- **WHEN** a retirement names a merge, fold, activation, or release authorization, or no current
+  signed debt-resolution authorization exists
+- **THEN** repository enforcement rejects the retirement and the debt remains blocking
+
+#### Scenario: Retirement is not substantiated by the resolving objects
+- **WHEN** re-evaluating the assertion against the bound resolving objects still reports the conflict
+- **THEN** repository enforcement rejects the retirement regardless of any authorization
+
+#### Scenario: Retirement binds objects that do not match the recorded debt or current state
+- **WHEN** the prior objects differ from the recorded historical debt, or the resolving objects
+  differ from the selected pin set's repository state
+- **THEN** repository enforcement rejects the retirement as stale
+
+#### Scenario: Authorized and substantiated retirement
+- **WHEN** lineage is continuous, the exact objects are bound, the conflict is absent on re-evaluation,
+  and one current signed debt-resolution authorization exists
+- **THEN** the debt is absent from the new current pin set and preserved in history, and activation
+  and release still require their own separate authority and evidence

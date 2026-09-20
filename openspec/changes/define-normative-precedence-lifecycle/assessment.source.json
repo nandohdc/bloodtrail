@@ -12,7 +12,11 @@
     "Canonical folding changes exact capability objects, so applicability, overlap, debt, pin, freeze, and review evidence must be recomputed and rebound without mutating historical evidence.",
     "Authorization discovery must be per change and operation, independently rooted, and fail closed for missing, conflicting, revoked, superseded, or archive-only records.",
     "CR-F16 requires one most-specific governed path classification so record-only validation cannot become either a blanket exemption or an accidental implementation-association requirement.",
-    "Mutation assurance must prove that all 22 approved mutants still apply and are killed before a kill rate can be interpreted."
+    "Mutation assurance must prove that all 33 approved mutants still apply and are killed before a kill rate can be interpreted.",
+    "The canonical security-audit-event-contract capability omits already-operative 2.1.0 requirements, so the source/current-capability assertion fails and the contract-version debt blocks activation, release, and non-governance merges.",
+    "A blocking debt may leave the current pin set only through an authorized, exact-object-bound, lineage-continuous, substantiated, and pinned retirement; disappearance alone must never read as resolution.",
+    "The protected contract capability may change only through an exact cumulative governed-candidate binding and an advanced immutability baseline, without changing contract source or generated output.",
+    "T1 changes objects bound by the current pin, so T2 can serve only as an exact authorization-input identity with three named stale-overlap diagnostics; debt retirement, recomputation, the new pin, and final green verification must occur at separately authorized T3."
   ],
   "applicability": {
     "triggers_matched": [
@@ -50,13 +54,20 @@
     "openspec/tests/design-pattern-governance/fixtures/normative-precedence/",
     "openspec/CONTEXT.md",
     ".github/workflows/ci.yml",
-    "openspec/governance/records/define-normative-precedence-lifecycle.json"
+    "openspec/governance/records/define-normative-precedence-lifecycle.json",
+    "openspec/specs/security-audit-event-contract/spec.md",
+    "openspec/tests/design-pattern-governance/normative-precedence-debt-retirement-controls.mjs",
+    "packages/security-audit-sdk-core/verification-lifecycle.json",
+    "packages/security-audit-sdk-core/contract-provenance.json",
+    "packages/security-audit-sdk-core/scripts/check-changed-paths.mjs",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-core/tests/verification/governed-candidate-handover.test.mjs"
   ],
   "candidate_approaches": [
     {
       "id": "approach-domain-specific-authority-and-two-lifecycles",
       "kind": "direct_implementation",
-      "summary": "Extend the domain-specific authority model with immutable historical pins, exact folded-state pin sets, fold-time applicability/overlap/debt recomputation, per-change authorization discovery, most-specific CR-F16 association, and closed 22-mutant assurance under the existing trusted governance baseline.",
+      "summary": "Extend the domain-specific authority model with immutable historical pins, exact folded-state pin sets, fold-time applicability/overlap/debt recomputation, per-change authorization discovery, most-specific CR-F16 association, and closed 33-mutant assurance under the existing trusted governance baseline; CB-018 adds exact 2.1.0 materialization at T1, a frozen T2 authorization-input identity, separately authorized debt retirement and current pin creation at T3, then final verification.",
       "forces_addressed": [
         "Candidate A contains conflicting current semantic statements, yet the repository has no machine-resolvable rule separating capability-owned semantic intent from source-owned concrete representation.",
         "Active candidate deltas must authorize bounded candidate work without becoming activated production semantics, while archived deltas must remain historical evidence only.",
@@ -67,7 +78,11 @@
         "Canonical folding changes exact capability objects, so applicability, overlap, debt, pin, freeze, and review evidence must be recomputed and rebound without mutating historical evidence.",
         "Authorization discovery must be per change and operation, independently rooted, and fail closed for missing, conflicting, revoked, superseded, or archive-only records.",
         "CR-F16 requires one most-specific governed path classification so record-only validation cannot become either a blanket exemption or an accidental implementation-association requirement.",
-        "Mutation assurance must prove that all 22 approved mutants still apply and are killed before a kill rate can be interpreted."
+        "Mutation assurance must prove that all 33 approved mutants still apply and are killed before a kill rate can be interpreted.",
+        "The canonical security-audit-event-contract capability omits already-operative 2.1.0 requirements, so the source/current-capability assertion fails and the contract-version debt blocks activation, release, and non-governance merges.",
+        "A blocking debt may leave the current pin set only through an authorized, exact-object-bound, lineage-continuous, substantiated, and pinned retirement; disappearance alone must never read as resolution.",
+        "The protected contract capability may change only through an exact cumulative governed-candidate binding and an advanced immutability baseline, without changing contract source or generated output.",
+        "T1 changes objects bound by the current pin, so T2 can serve only as an exact authorization-input identity with three named stale-overlap diagnostics; debt retirement, recomputation, the new pin, and final green verification must occur at separately authorized T3."
       ]
     },
     {
@@ -138,7 +153,12 @@
     "implementation-per-change-authorization-discovery",
     "implementation-fold-authority-distinct",
     "implementation-most-specific-path-association",
-    "implementation-mutation-count-fail-closed"
+    "implementation-mutation-count-fail-closed",
+    "implementation-debt-retirement-authorized-and-substantiated",
+    "implementation-canonical-materialization-exact",
+    "implementation-protected-handover-cumulative-exact",
+    "implementation-cb018-mutation-assurance-exact",
+    "implementation-cb018-t2-a3-t3-sequence"
   ],
   "invariant_evidence": {
     "implementation-semantic-delegation-default-deny": {
@@ -192,6 +212,26 @@
     "implementation-mutation-count-fail-closed": {
       "task_ids": ["11.2", "11.3", "11.4"],
       "evidence_ids": ["all 22 mutant anchors resolve uniquely, all 22 apply, all 22 are killed, null controls are clean, and restoration is byte-identical"]
+    },
+    "implementation-debt-retirement-authorized-and-substantiated": {
+      "task_ids": ["15.1", "15.3", "17.1", "17.2", "18.1"],
+      "evidence_ids": ["retirement without dedicated authority, against wrong objects, without substantiation, self-authorized, or with broken lineage fails, and a disappeared debt without retirement still fails"]
+    },
+    "implementation-canonical-materialization-exact": {
+      "task_ids": ["16.1"],
+      "evidence_ids": ["the canonical contract capability equals blob 487a4f066afa74696411ee782b0008673fd6ca14, the assertion conflict is absent on re-evaluation, and the authored source is unchanged"]
+    },
+    "implementation-protected-handover-cumulative-exact": {
+      "task_ids": ["16.2", "16.3"],
+      "evidence_ids": ["protectedPaths equals the cumulative inventory exactly, generated output is byte-identical, and a protected change outside the exact binding fails"]
+    },
+    "implementation-cb018-mutation-assurance-exact": {
+      "task_ids": ["18.2", "18.3"],
+      "evidence_ids": ["anchor preflight resolves 33 of 33 and the out-of-band campaign reports 33 applied and 33 killed from a clean committed worktree"]
+    },
+    "implementation-cb018-t2-a3-t3-sequence": {
+      "task_ids": ["16.2", "17.1", "17.2", "18.4"],
+      "evidence_ids": ["T2 freezes exact resolving objects with only three named stale-overlap diagnostics, A3 independently authorizes debt resolution, and T3 recomputes current evidence so final verification reports zero stale overlaps and one current pin"]
     }
   },
   "ordering": {

@@ -13,6 +13,7 @@ import {
   readJson,
 } from "./shared.mjs";
 import { validatePolicySchema } from "./policy-validation.mjs";
+import { validateDebtRetirements } from "./debt-retirement.mjs";
 
 function canonicalJson(value) {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
@@ -69,8 +70,17 @@ export function recomputeApplicability(policy) {
     .sort((left, right) => byCodePoint(left.domain, right.domain));
 }
 
+function hasDuplicateOwners(row) {
+  const owners = row?.owners ?? [];
+  return new Set(owners).size !== owners.length;
+}
+
+function isAmbiguousApplicability(rows) {
+  return rows.length !== 1 || hasDuplicateOwners(rows[0]);
+}
+
 function applicabilityDomainProblem(policy, domain, rows) {
-  if (rows.length !== 1 || new Set(rows[0]?.owners ?? []).size !== (rows[0]?.owners ?? []).length) {
+  if (isAmbiguousApplicability(rows)) {
     return diagnostic("fold-applicability-ambiguous", domain,
       "each domain requires one deterministic applicability row with unique owners");
   }
@@ -104,16 +114,44 @@ export function recomputeOverlaps(policy, repositoryState) {
     .sort((left, right) => byCodePoint(left.id, right.id));
 }
 
+function overlapStaleDiagnostics(overlap, objects) {
+  const diagnostics = [];
+  for (const [capabilityId, object] of Object.entries(overlap.capability_objects ?? {})) {
+    if (objects.get(capabilityId) !== object) diagnostics.push(diagnostic(
+      "capability-overlap-classification-stale",
+      overlap.id,
+      `${capabilityId} is bound to a non-current capability object`,
+    ));
+  }
+  return diagnostics;
+}
+
 export function validateOverlapFreshness(overlaps, repositoryState) {
   const objects = new Map((repositoryState.capabilities ?? []).map((entry) => [entry.id, entry.object]));
+  return (overlaps ?? []).flatMap((overlap) => overlapStaleDiagnostics(overlap, objects));
+}
+
+function contractVersionDebtMissing(selected, historical) {
+  const historicalContractDebt = [...historical].some((entry) =>
+    entry.endsWith(":candidate-a-current-capability-version-drift"));
+  if (!historicalContractDebt) return false;
+
+  const currentContractDebt = (selected.value.debts ?? []).some((debt) =>
+    debt.assertion_id === "contract-version-is-current-capability-literal");
+  if (currentContractDebt) return false;
+
+  const retiredContractDebt = (selected.value.retired_debts ?? []).some((debt) =>
+    debt.assertion_id === "contract-version-is-current-capability-literal");
+  return !retiredContractDebt;
+}
+
+function uninheritedLineageDiagnostics(selected, historical) {
   const diagnostics = [];
-  for (const overlap of overlaps ?? []) {
-    for (const [capabilityId, object] of Object.entries(overlap.capability_objects ?? {})) {
-      if (objects.get(capabilityId) !== object) diagnostics.push(diagnostic(
-        "capability-overlap-classification-stale",
-        overlap.id,
-        `${capabilityId} is bound to a non-current capability object`,
-      ));
+  for (const debt of selected.value.debts ?? []) {
+    const uninherited = (debt.lineage ?? []).filter((lineage) => !historical.has(lineage));
+    for (const lineage of uninherited) {
+      diagnostics.push(diagnostic("baseline-conflict-not-inherited", selected.path,
+        `${debt.id} claims inherited lineage ${lineage} that is not present in historical pins`));
     }
   }
   return diagnostics;
@@ -124,22 +162,14 @@ export function validateDebtContinuity(selected, pinSets) {
   const historical = new Set(pinSets
     .filter((entry) => entry.path !== selected.path)
     .flatMap((entry) => (entry.value.debts ?? []).map((debt) => `${entry.value.id}:${debt.id}`)));
-  const diagnostics = [];
-  for (const debt of selected.value.debts ?? []) {
-    for (const lineage of debt.lineage ?? []) {
-      if (!historical.has(lineage)) diagnostics.push(diagnostic("baseline-conflict-not-inherited", selected.path,
-        `${debt.id} claims inherited lineage ${lineage} that is not present in historical pins`));
-    }
+  const diagnostics = [...uninheritedLineageDiagnostics(selected, historical)];
+  if (contractVersionDebtMissing(selected, historical)) {
+    diagnostics.push(diagnostic(
+      "contract-version-boundary-violation",
+      selected.path,
+      "contract-version debt disappeared without the separately authorized semantic remediation",
+    ));
   }
-  const historicalContractDebt = [...historical].some((entry) =>
-    entry.endsWith(":candidate-a-current-capability-version-drift"));
-  const currentContractDebt = selected.value.debts?.some((debt) =>
-    debt.assertion_id === "contract-version-is-current-capability-literal");
-  if (historicalContractDebt && !currentContractDebt) diagnostics.push(diagnostic(
-    "contract-version-boundary-violation",
-    selected.path,
-    "contract-version debt disappeared without the separately authorized semantic remediation",
-  ));
   return diagnostics;
 }
 
@@ -190,19 +220,21 @@ function assertionDebt(assertion, policy, repositoryState, { source, requirement
   return rule ? recomputedDebt(rule, assertion, repositoryState) : null;
 }
 
+function tryCollectDebt({ assertion, policy, repositoryState, source, readCapability }) {
+  const capability = repositoryState.capabilities.find((entry) => entry.id === assertion.capability_id);
+  const capabilityText = readCapability(capability);
+  if (capabilityText === null) return null;
+  const requirement = extractRequirement(capabilityText, assertion.requirement_heading);
+  if (requirement === null) return null;
+  return assertionDebt(assertion, policy, repositoryState, { source, requirement });
+}
+
 function collectDebts(policy, repositoryState, source, readCapability) {
   if (source === null) return [];
-  const debts = [];
-  for (const assertion of policy.semantic_assertions ?? []) {
-    const capability = repositoryState.capabilities.find((entry) => entry.id === assertion.capability_id);
-    const capabilityText = readCapability(capability);
-    if (capabilityText === null) continue;
-    const requirement = extractRequirement(capabilityText, assertion.requirement_heading);
-    if (requirement === null) continue;
-    const debt = assertionDebt(assertion, policy, repositoryState, { source, requirement });
-    if (debt) debts.push(debt);
-  }
-  return debts.sort((left, right) => byCodePoint(left.id, right.id));
+  return (policy.semantic_assertions ?? [])
+    .map((assertion) => tryCollectDebt({ assertion, policy, repositoryState, source, readCapability }))
+    .filter(Boolean)
+    .sort((left, right) => byCodePoint(left.id, right.id));
 }
 
 function evidenceFrom(policy, repositoryState, debts) {
@@ -288,12 +320,12 @@ export function selectCurrentPinSet(repoRoot, policy, { baseCommit = null } = {}
   diagnostics.push(...selection.diagnostics);
   const selected = selection.selected;
   const expected = selected ? recomputePinnedEvidence(repoRoot, policy, selected.value.repository_state) : null;
-  diagnostics.push(...selectedPinProblems(policy, selected, expected, pinSets));
+  diagnostics.push(...selectedPinProblems({ repoRoot, policy, selected, expected, pinSets, baseCommit }));
   if (baseCommit) diagnostics.push(...validatePinHistory(repoRoot, baseCommit, pinSets));
   return { selected, pinSets, expected, diagnostics };
 }
 
-function selectedPinProblems(policy, selected, expected, pinSets) {
+function selectedPinProblems({ repoRoot, policy, selected, expected, pinSets, baseCommit }) {
   if (!selected) return [];
   const diagnostics = [];
   if (selected.value.capability_state_digest !== expected.capability_state_digest) {
@@ -304,6 +336,7 @@ function selectedPinProblems(policy, selected, expected, pinSets) {
   diagnostics.push(...validateApplicabilityEvidence(policy, selected.value.applicability));
   diagnostics.push(...validateOverlapFreshness(selected.value.overlaps, selected.value.repository_state));
   diagnostics.push(...validateDebtContinuity(selected, pinSets));
+  diagnostics.push(...validateDebtRetirements({ repoRoot, policy, selected, pinSets, baseCommit }));
   return diagnostics;
 }
 

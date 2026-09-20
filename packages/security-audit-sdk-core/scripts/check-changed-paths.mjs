@@ -47,9 +47,9 @@ const REVIEWED_PATH_RULES = Object.freeze([
 // last wrote protected content. Narrowing the base to the newest correction
 // would reopen every protected path the earlier candidate already admitted.
 const GOVERNED_CONTRACT_CANDIDATE = Object.freeze({
-  change: "add-client-evidence-capability",
+  change: "define-normative-precedence-lifecycle",
   rangeBase: "cdecd7f3f2804517d9aa25ee4322b6486fd7a5bb",
-  technicalCommit: "342711fc284a3c1a94e0e1197c9bda0775e7fec0",
+  technicalCommit: "d749dc89bb606cf58e07cbba614b72124651fa42",
 });
 
 const requestedLifecycle = parseLifecycleArguments();

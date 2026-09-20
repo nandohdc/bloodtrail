@@ -78,3 +78,45 @@
 Future fold execution, folded-content review, activation, release, archive, CB-002, CB-018, CB-019,
 and Candidate B selection are deliberately excluded from the Revision 3 implementation task set and
 require separate governed actions.
+
+## 13. CB-018 corrected planning freeze
+
+- [x] 13.1 Bind the corrected T1 → T2 → A3 → T3 lifecycle, three exact T2 transient diagnostics, re-derived 19-path scope, retirement diagnostics, governed-candidate handover, 33 mutants, 33 negative controls, and 1 SDK Core protected-path control to package set `fc9acef3002dbe0a41b5092f0494c00d002a60a7700d680591c0de1d92576ce4` and manifest `5e866b74f4b19ffb740a084cc3a27a565ff41303676b60717b72bcf56f74862f`; verify no canonical capability, policy, schema, checker, pin, authorization, lifecycle, SDK Core, contract, or generated artifact changes.
+- [x] 13.2 Run strict OpenSpec validation and planning-scope integrity checks, freeze the exact corrected CB-018 proposal commit/tree/change subtree from trusted main `e1cc9f7`, record R2-A1/R2-A2 as abandoned before T1, and stop for a new separately signed apply authorization.
+
+## 14. CB-018 authorization
+
+- [x] 14.1 Record a new separately signed CB-018 IMPLEMENT authorization bound to the exact corrected proposal commit/tree/change subtree, move `revision-3-apply` out of `CURRENT`, and verify exactly one current IMPLEMENT record while the abandoned R2-A1/R2-A2 identities grant nothing and RESOLVE_DEBT, MERGE, FOLD, ACTIVATE, RELEASE, and ARCHIVE stay withheld.
+
+## 15. Debt-retirement mechanism
+
+- [x] 15.1 Add `RESOLVE_DEBT` to the change-authorization operation enum and policy operations, add `debt_resolution_grant` `resolve-contract-version-semantic-drift` to the policy, and add `debt_resolution_grant` as a required string property of the closed `governance_authorities` object in `normative-source-precedence.schema.json` without weakening its `additionalProperties: false`; verify a policy missing the grant fails with `policy-schema-required`, every existing grant, operation, principal, and key is unchanged, and the authority registry is untouched.
+- [x] 15.2 Add the optional closed `retired_debts` pin-set property; verify both existing pins stay schema-valid and byte-identical.
+- [x] 15.3 Implement retirement validation in `debt-retirement.mjs` with one decision site per diagnostic, and rewrite only the continuity guard in `pin-sets.mjs`; verify a debt missing without retirement still fails with `contract-version-boundary-violation`.
+
+## 16. Canonical materialization and protected-path handover
+
+- [x] 16.1 T1: materialize OD-1 to OD-4 so the canonical contract capability equals blob `487a4f066afa74696411ee782b0008673fd6ca14`; verify the assertion conflict is absent on re-evaluation and `contract.source.json` is unchanged.
+- [ ] 16.2 T2: bind `governedCandidate`, the hardcoded candidate constant, `normativeTechnicalTarget` in the lifecycle file, and the immutability `proposalBaseline` to T1; verify `protectedPaths` equals the cumulative `cdecd7f3..T1` inventory exactly, freeze exact T1/T2/resolving objects, prove generated contract and SDK output are byte-identical, and permit only the three named `capability-overlap-classification-stale` instances as bounded intermediate diagnostics.
+- [x] 16.3 Add the SDK Core protected-path control on a disposable clone and verify a protected-capability change outside the exact governed-candidate binding fails `check-changed-paths.mjs`.
+
+## 17. A3 authorization and T3 retirement identity
+
+- [ ] 17.1 A3: after exact T2 exists, derive and record a separately signed dedicated RESOLVE_DEBT authorization bound to the actual T2 resolving objects, never predicted hashes; verify it withholds every other operation and stop until its signature and bindings independently verify.
+- [ ] 17.2 T3: under A3 only, add `current-pre-fold-cb-018` with zero current debts and the single frozen retirement entry, recompute applicability/overlap/debt, and verify both historical pins byte-identical, `capability-overlap-classification-stale=0`, `CONTRADICTORY=0`, debt state consistent, current pin cardinality one, `FOLD_EXECUTED=NO`, and no activation evidence.
+
+## 18. Failure-sensitive CB-018 evidence
+
+- [ ] 18.1 Implement NC-CB018-001 to NC-CB018-011 in the imported controls module and verify each weakened property fails for its declared reason.
+- [ ] 18.2 Re-anchor `MUT-R3-008` without changing its purpose, add `MUT-CB018-001` to `MUT-CB018-011`, rewrite `R3-T018`, `R3-T021`, `R3-T031`, `R3-T037`, and `R3-T038` per design decision 24 without removing any assertion, and verify anchor preflight resolves all 33 exactly once and `R3-T018` still kills `MUT-R3-004` and `MUT-R3-007`.
+- [ ] 18.3 After T3, run the full 33-mutant campaign out-of-band from a clean committed worktree and require `EXPECTED=33`, `APPLIED=33`, `KILLED=33`, `NOT_APPLIED=0`, `SURVIVED=0`, clean null controls, and byte-identical restoration; record `FULL_MUTATION_EXECUTION_CI_ENFORCED=NO`.
+- [ ] 18.4 After T3, run strict OpenSpec validation, policy-model, repository-enforcement, full governance, contract-reuse, trusted and candidate checkers at every required stage, SDK Core validation, the protected-path control, and `git diff --check`; require all non-review diagnostics green and record every command and exact result.
+
+## 19. CB-018 exact review boundary
+
+- [ ] 19.1 Verify implementation changed only the approved CB-018 paths, left all three active deltas unfolded, and changed no contract source, generated contract, SDK output, release metadata, OD-5, CB-002, or CB-019 path.
+- [ ] 19.2 Freeze the exact final T3 CB-018 technical commit/tree and complete governed path-to-object set, then request fresh exact-content owner review while fold, activation, release, and archive remain unauthorized.
+
+Folding the three active deltas, folded-content review, activation, release, archive, OD-5, CB-002,
+CB-019, and Candidate B selection are deliberately excluded from the CB-018 task set and require
+separate governed actions.

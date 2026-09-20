@@ -27,7 +27,7 @@
     "default_unclassified_dimension": {"const":"SEMANTIC_REQUIREMENT"},
     "governance_authorities": {
       "type":"object","additionalProperties":false,
-      "required":["apply_authority_identity","review_authority_identity","review_authority_role","implementation_grant","activation_grant","merge_grant","fold_grant","release_grant","archive_grant"],
+      "required":["apply_authority_identity","review_authority_identity","review_authority_role","implementation_grant","activation_grant","merge_grant","fold_grant","debt_resolution_grant","release_grant","archive_grant"],
       "properties": {
         "apply_authority_identity":{"type":"string","minLength":1},
         "review_authority_identity":{"type":"string","minLength":1},
@@ -36,6 +36,7 @@
         "activation_grant":{"type":"string","minLength":1},
         "merge_grant":{"type":"string","minLength":1},
         "fold_grant":{"type":"string","minLength":1},
+        "debt_resolution_grant":{"type":"string","minLength":1},
         "release_grant":{"type":"string","minLength":1},
         "archive_grant":{"type":"string","minLength":1}
       }
