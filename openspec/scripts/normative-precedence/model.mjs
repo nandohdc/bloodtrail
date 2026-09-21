@@ -409,10 +409,6 @@ function inGovernedScope(path, scope) {
   return scope.patterns.some((pattern) => authorizedPathMatches(path, pattern));
 }
 
-function isResolveDebtPath(path) {
-  return path.startsWith("openspec/governance/normative-precedence-pins/");
-}
-
 function applyScopeDiagnostics(changes, scope) {
   if (scope.authorization === null) {
     return [
@@ -423,7 +419,7 @@ function applyScopeDiagnostics(changes, scope) {
   return [
     ...scope.authorization.diagnostics.map((message) => diagnostic("apply-authorization-invalid", scope.changeRoot, message)),
     ...changes
-      .filter((path) => !isResolveDebtPath(path) && !inGovernedScope(path, scope))
+      .filter((path) => !inGovernedScope(path, scope))
       .map((path) => diagnostic("apply-scope-exceeded", path, "changed path is outside the exact apply-authorized scope"))
   ];
 }
