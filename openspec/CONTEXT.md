@@ -160,33 +160,3 @@ _Avoid_: full governance-gate chain, slow validate
 **Governance-gate chain**:
 The complete validation chain (~291s across workspaces) that enforces fail-closed gate mutation testing (`test:verification`, ~254s dominant cost) and full contract/SDK validation, required before pushing to mainline or opening PRs.
 _Avoid_: fast test loop, product loop
-
-## Sequential Authorization Lifecycle
-
-**Sequential authorization**:
-An evidence-bearing lifecycle mechanism where a signed successor authorization supersedes an earlier authorization for the same operation without mutating historical bytes or cryptographic signatures.
-_Avoid_: mutable authorization file, external mutable index, in-place status edit
-
-**Successor authorization record**:
-A dedicated, cryptographic-signature-bearing authorization record that explicitly binds an exact predecessor via Git blob SHA-256 and introducing commit SHA-1, superseding it within its own commit interval.
-_Avoid_: replacement record, unsigned amendment
-
-**Predecessor binding**:
-The immutable relation in which a successor declares `predecessor_id`, `predecessor_path`, `predecessor_object` (Git blob SHA-256), and `predecessor_introducing_commit` (SHA-1). Any drift in these fields fails closed.
-_Avoid_: loose identifier match, unverified parent
-
-**Effective authority leaf**:
-The unique topological leaf (out-degree zero) of the authorization directed acyclic graph (DAG) for a given `(change_id, operation)`. Only this leaf grants effective execution authority.
-_Avoid_: multiple active authorizations, historical authority accumulation
-
-**Discrete commit interval**:
-The half-open commit range $(C_{\text{intro}}, P_{\text{successor}}]$ or $(C_{\text{intro}}, \text{HEAD}]$ within which a specific authorization's scope is strictly evaluated. A successor cannot retroactively authorize commits in a prior interval.
-_Avoid_: open-ended scope, retroactive authorization
-
-**Path-perimeter attribution immunity**:
-The governance rule under which commits modifying strictly debt-resolution paths (`RESOLVE_DEBT`) are exempt from implementation scope checking under an `IMPLEMENT` or `APPLY` authorization.
-_Avoid_: unowned implementation bypass, universal immunity
-
-**Issuance-time status**:
-The static JSON property `status: "CURRENT"` recorded at authorization creation time as the author's issuance assertion. Effective runtime status is derived dynamically from graph traversal, not read from this field.
-_Avoid_: dynamic status mutation, authoritative static status

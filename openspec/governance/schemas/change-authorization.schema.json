@@ -32,27 +32,6 @@
     "authorized_delta_objects": {"type":"object"},
     "authorized_semantic_dimensions": {"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
     "authorized_source_pointers": {"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
-    "boundary_parent": {"type":"string","pattern":"^[0-9a-f]{40}$"},
-    "supersession": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "predecessor_id",
-        "predecessor_path",
-        "predecessor_object",
-        "predecessor_introducing_commit",
-        "change_id",
-        "operation"
-      ],
-      "properties": {
-        "predecessor_id": {"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"},
-        "predecessor_path": {"type":"string","minLength":1},
-        "predecessor_object": {"type":"string","pattern":"^[0-9a-f]{40}$"},
-        "predecessor_introducing_commit": {"type":"string","pattern":"^[0-9a-f]{40}$"},
-        "change_id": {"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"},
-        "operation": {"enum":["IMPLEMENT","MERGE","FOLD","RESOLVE_DEBT","ACTIVATE","RELEASE","ARCHIVE"]}
-      }
-    },
     "predecessor": {"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"},
     "supersedes": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"}},
     "revokes": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[a-z0-9][a-z0-9-]+$"}}
