@@ -1,0 +1,31 @@
+{
+  "schema": "bloodtrail.cb-018-option-a-restoration-r1.assurance-record-pointer.v1",
+  "kind": "ASSURANCE_SIGNED_RECORD_POINTER",
+  "program": "cb-018-option-a-restoration-r1",
+  "operation": "RESTORATION_IMPLEMENT",
+  "record_path": "authority/A1-restoration-authority.json",
+  "record_sha256": "280c96b3c3ef685c3fcc38efba0be8877427334620dfc770523159b8d446758e",
+  "signature_path": "authority/A1-restoration-authority.json.sig",
+  "signature_sha256": "a127fc2a4a3548190ca9eea64e8214e6ef391b0dabecc9d99f03f0140359a412",
+  "allowed_signers_sha256": "afd74a24718bcb16560727e83dfa0ec000a0148e914d618b94c4a80d5590579e",
+  "signer_principal": "nandohdc",
+  "signer_fingerprint": "SHA256:MSQGfkZ33HtMFLuekps6RSechU/Ki/jK6cRvt4mRUHA",
+  "signature_namespace": "cb-018-option-a-restoration",
+  "a0_identity_sha256": "edf02ff9e5fcd629e243ad1c626f1453e95d7272c28a3069c1a1f002e0540b4b",
+  "proposal_identity_sha256": "e6f791b03950e2ac58f402d7b701066f81e7da5e3e1ff83f311cfcaaf0a97551",
+  "base_commit": "035e0edc3bdfcc484cbbbd226896398931dbcf56",
+  "trees": {
+    "pure_mechanical_restoration": "83de96dc0ad4941cf7511beab718b4fe941b6e1c",
+    "fixture_repaired_restoration": "74564c0caa56c9b081cf5c2d264fa3c378a56228",
+    "s2_governed_restoration": "9893e2794678b11f455cfeca10e56be70936e674",
+    "alpha": "9ce68313d6092fd0672d5d4d0e92f6c219a7cac1",
+    "beta": "4e64d0d9150ed04b13b51bb8874517c3cb0498fb",
+    "gamma": "9893e2794678b11f455cfeca10e56be70936e674",
+    "naming": {
+      "pure_mechanical_restoration": "historical reference only (merge-tree of 1021b77 and aa5740a); never a state of main",
+      "fixture_repaired_restoration": "historical reference only (pure + RS-1 repair, exact T3 module bytes); never a state of main — rejected by RS-5 because PR-alpha would fail the required codescene delta context",
+      "s2_governed_restoration": "S2_FINAL_TREE: fixture-repaired content with the two modules as GOVERNED_REIMPLEMENTATION_OF_T3_SEMANTICS and MUT-R3-008 re-anchored"
+    }
+  },
+  "verifier": "tools/verify-restoration-chain.mjs in the assurance program directory; this pointer grants nothing by itself"
+}
