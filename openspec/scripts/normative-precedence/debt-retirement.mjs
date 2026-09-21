@@ -17,16 +17,27 @@ const REQUIRED_WITHHELD_OPERATIONS = Object.freeze([
   "ARCHIVE",
 ]);
 
+const DEBT_OBJECT_FIELDS = Object.freeze([
+  "source_path",
+  "source_blob",
+  "capability_path",
+  "capability_blob",
+]);
+
+const AUTHORIZATION_BINDING_FIELDS = Object.freeze([
+  "id",
+  "path",
+  "object",
+  "operation",
+  "grant",
+]);
+
 function sameValues(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function sameDebtObjects(left, right) {
-  if (!left || !right) return left === right;
-  return left.source_path === right.source_path
-    && left.source_blob === right.source_blob
-    && left.capability_path === right.capability_path
-    && left.capability_blob === right.capability_blob;
+  return DEBT_OBJECT_FIELDS.every((field) => left?.[field] === right?.[field]);
 }
 
 function debtObjects(debt) {
@@ -39,19 +50,26 @@ function debtObjects(debt) {
   };
 }
 
-function historicalDebt(retirement, selected, pinSets) {
+function findAssertion(policy, assertionId) {
+  return (policy.semantic_assertions ?? []).find((entry) => entry.id === assertionId);
+}
+
+function historicalDebtReference(retirement) {
   const split = retirement.retired_from?.lastIndexOf(":") ?? -1;
   if (split <= 0) return null;
-  const pinId = retirement.retired_from.slice(0, split);
-  const debtId = retirement.retired_from.slice(split + 1);
-  const pin = pinSets.find((entry) => entry.path !== selected.path && entry.value.id === pinId);
-  const debt = pin?.value.debts?.find((entry) => entry.id === debtId);
-  return pin && debt ? { pin, debt } : null;
+  return { pinId: retirement.retired_from.slice(0, split), debtId: retirement.retired_from.slice(split + 1) };
+}
+
+function historicalDebt(retirement, selected, pinSets) {
+  const reference = historicalDebtReference(retirement);
+  if (!reference) return null;
+  const pin = pinSets.find((entry) => entry.path !== selected.path && entry.value.id === reference.pinId);
+  const debt = pin?.value.debts?.find((entry) => entry.id === reference.debtId);
+  return debt ? { pin, debt } : null;
 }
 
 function resolvingDebtObjects(retirement, selected, policy) {
-  const assertion = (policy.semantic_assertions ?? [])
-    .find((entry) => entry.id === retirement.assertion_id);
+  const assertion = findAssertion(policy, retirement.assertion_id);
   const capability = selected.value.repository_state.capabilities
     .find((entry) => entry.id === assertion?.capability_id);
   if (!assertion || !capability) return null;
@@ -63,25 +81,21 @@ function resolvingDebtObjects(retirement, selected, policy) {
   };
 }
 
-function matchesAuthProperties(expected, actual) {
-  return actual.id === expected.id
-    && actual.path === expected.path
-    && actual.object === expected.object
-    && actual.operation === expected.operation
-    && actual.grant === expected.grant;
+function exactResolveDebtAuthorization(authorization, policy) {
+  const withheld = new Set(authorization.withheld ?? []);
+  return authorization.operation === "RESOLVE_DEBT"
+    && authorization.grant === policy.governance_authorities.debt_resolution_grant
+    && REQUIRED_WITHHELD_OPERATIONS.every((operation) => withheld.has(operation));
 }
 
-function hasWithheldOperations(withheldList) {
-  const withheld = new Set(withheldList ?? []);
-  return REQUIRED_WITHHELD_OPERATIONS.every((operation) => withheld.has(operation));
+function retirementBindsAuthorization(retirement, authorization) {
+  return AUTHORIZATION_BINDING_FIELDS.every((field) => retirement.authorization[field] === authorization[field]);
 }
 
 function authorizationMatches(retirement, authorization, policy) {
   if (!authorization) return false;
-  if (authorization.operation !== "RESOLVE_DEBT") return false;
-  if (authorization.grant !== policy.governance_authorities.debt_resolution_grant) return false;
-  if (!hasWithheldOperations(authorization.withheld)) return false;
-  return matchesAuthProperties(authorization, retirement.authorization);
+  return exactResolveDebtAuthorization(authorization, policy)
+    && retirementBindsAuthorization(retirement, authorization);
 }
 
 function authorizationSelfReferencesPin(retirement, policy, pinSets) {
@@ -147,32 +161,30 @@ function blobText(repoRoot, object) {
   return result.status === 0 ? result.stdout : null;
 }
 
-function assertionResolvedByPinnedObjects(repoRoot, policy, retirement) {
-  const assertion = (policy.semantic_assertions ?? [])
-    .find((entry) => entry.id === retirement.assertion_id);
-  if (!assertion || assertion.adapter !== "source-value-present-in-requirement") return false;
-  const sourceText = blobText(repoRoot, retirement.resolving.source_blob);
-  const capabilityText = blobText(repoRoot, retirement.resolving.capability_blob);
-  if (sourceText === null || capabilityText === null) return false;
-  let source;
-  let value;
+function pinnedSourceValue(sourceText, pointer) {
   try {
-    source = JSON.parse(sourceText);
-    value = getJsonPointer(source, assertion.source_pointer);
+    return { value: getJsonPointer(JSON.parse(sourceText), pointer) };
   } catch {
-    return false;
+    return null;
   }
+}
+
+function requirementCitesValue(capabilityText, assertion, value) {
   const requirement = extractRequirement(capabilityText, assertion.requirement_heading);
   return requirement !== null && requirement.includes(`\`${String(value)}\``);
 }
 
-export function validateDebtRetirements({
-  repoRoot,
-  policy,
-  selected,
-  pinSets,
-  baseCommit = null,
-}) {
+function assertionResolvedByPinnedObjects(repoRoot, policy, retirement) {
+  const assertion = findAssertion(policy, retirement.assertion_id);
+  if (assertion?.adapter !== "source-value-present-in-requirement") return false;
+  const sourceText = blobText(repoRoot, retirement.resolving.source_blob);
+  const capabilityText = blobText(repoRoot, retirement.resolving.capability_blob);
+  if (sourceText === null || capabilityText === null) return false;
+  const resolved = pinnedSourceValue(sourceText, assertion.source_pointer);
+  return resolved !== null && requirementCitesValue(capabilityText, assertion, resolved.value);
+}
+
+export function validateDebtRetirements(repoRoot, policy, { selected, pinSets }, { baseCommit = null } = {}) {
   const retirements = selected?.value.retired_debts ?? [];
   if (retirements.length === 0) return [];
   const changeDir = resolve(repoRoot, policy.repository_evidence.active_changes_root, policy.change_id);
