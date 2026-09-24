@@ -39,7 +39,7 @@ and archive the umbrella, `deliver-sdk-evaluation-alpha`.
   - loopback tests cover every status class;
   - the sentinel-credential test passes;
   - a throwing callback changes nothing.
-- [ ] 3.3 #591 `flush` waits for in-flight sends, and SDK shutdown drains them within its bound. Verify the
+- [x] 3.3 #591 `flush` waits for in-flight sends, and SDK shutdown drains them within its bound. Verify the
   tests for:
   - held responses;
   - `SDK_SHUTDOWN_TIMEOUT`;
