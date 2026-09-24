@@ -5,23 +5,21 @@
   "decision": "direct_implementation",
   "forces": [
     "No developer outside the repository has used the SDK, and #575 requires evidence from fresh evaluators before further governance, deployment or enterprise investment.",
-    "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
-    "The delivery handoff's request projection overwrites correlation.retry_attempt, so a sink built on it cannot send the validated event byte for byte.",
-    "The Node surface is frozen and widens only additively through a governed change that updates the frozen lists, the freeze record and an ADR together.",
-    "Only src/fetch-exchange.ts may reach fetch, and the scope gate rejects tokens such as transport, adapter and collector in source file names.",
     "The packages are private and unpublished and the Node binding installed alone fails at import, so evaluators need a kit that installs with npm or pnpm with exactly one core copy.",
     "Two active CB-018 changes own the CI workflow, sdk-core's coherence and changed-paths scripts and its lifecycle record, so this work must not touch them.",
     "Distribution to evaluators is the owner's decision, so a kit must carry an exact identity and ship only under an owner-approved authorization.",
-    "Developers must correlate a failed send with their own logs and the receiver's, which needs the event identifier.",
-    "The ratified F-11 requirement forbids event IDs in sink-failure diagnostics and coherence freezes it byte for byte.",
-    "Each implementation PR must pass association without a proposal of its own, and parallel PRs must not edit the same file."
+    "Each implementation PR must pass association without a proposal of its own, and parallel PRs must not edit the same file.",
+    "CONTRIBUTING.md requires every transport to have its own OpenSpec change and explicit authorization, so the HTTP sink cannot live inside a broader change.",
+    "No evaluator has been recruited and handles must never be invented, so the authorization must fail closed until an owner-approved amendment names them.",
+    "CI's Node 24.2.0 leg runs only npm run test for the Node binding and installs the collector after it validates, so the kit gate must join test and validate and build the collector itself.",
+    "Failed results carry only a code, category and path, several codes mislead, and developers must fix a failed result without asking anyone.",
+    "The authoritativeTenant input type lets calls compile that its runtime rule then rejects with a thrown error."
   ],
   "applicability": {
     "triggers_matched": [
       "public_api",
       "integration",
       "lifecycle_or_state",
-      "concurrency",
       "security_sensitive_behavior",
       "canonical_capability_requirement"
     ],
@@ -35,11 +33,6 @@
     "openspec/changes/deliver-sdk-evaluation-alpha/",
     "openspec/specs/security-audit-sdk-node/spec.md",
     "openspec/specs/security-audit-sdk-core/spec.md",
-    "packages/security-audit-sdk-node/src/http-response-classification.ts",
-    "packages/security-audit-sdk-node/src/http-handoff.ts",
-    "packages/security-audit-sdk-node/src/http-audit-sink.ts",
-    "packages/security-audit-sdk-node/src/index.ts",
-    "packages/security-audit-sdk-node/scripts/check-exports.mjs",
     "packages/security-audit-sdk-node/scripts/check-package-contents.mjs",
     "packages/security-audit-sdk-node/scripts/verification-helpers.mjs",
     "packages/security-audit-sdk-node/scripts/packed-install.mjs",
@@ -48,14 +41,8 @@
     "packages/security-audit-sdk-node/scripts/check-evaluation-kit-controls.mjs",
     "packages/security-audit-sdk-node/scripts/evaluation-kit-doc-blocks.mjs",
     "packages/security-audit-sdk-node/scripts/evaluation-kit-peer.mjs",
-    "packages/security-audit-sdk-node/compatibility.json",
     "packages/security-audit-sdk-node/package.json",
     "packages/security-audit-sdk-node/README.md",
-    "packages/security-audit-sdk-node/adr/003-governed-fetch-delivery-adapter.md",
-    "packages/security-audit-sdk-node/adr/004-http-audit-sink-and-shared-response-classification.md",
-    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
-    "packages/security-audit-sdk-node/tests/http-audit-sink.test.ts",
-    "packages/security-audit-sdk-node/tests/http-audit-sink-mutations.test.ts",
     "packages/security-audit-sdk-node/tests/error-catalog.test.ts",
     "packages/security-audit-sdk-node/examples/first-event.ts",
     "packages/security-audit-sdk-node/examples/evaluation-service.ts",
@@ -88,38 +75,36 @@
     {
       "id": "approach-umbrella-evaluation-alpha",
       "kind": "direct_implementation",
-      "summary": "One umbrella change that owns exact paths: an HTTP audit sink composing the governed fetch adapter with one shared response classifier and an outcome callback carrying the event identifier, an error catalog, the authoritativeTenant union, a conformance suite, and an evaluation kit whose gate runs in the Node binding's test and validate scripts, with ADDED-only deltas.",
+      "summary": "One umbrella program change that owns exact paths for the error catalog, the authoritativeTenant union, the conformance suite, the evaluator documentation and an evaluation kit whose gate runs in the Node binding's test and validate scripts, depends on a separate HTTP transport change, and carries an evaluation authorization that names no evaluator until an owner-approved amendment.",
       "forces_addressed": [
         "No developer outside the repository has used the SDK, and #575 requires evidence from fresh evaluators before further governance, deployment or enterprise investment.",
-        "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
-        "The delivery handoff's request projection overwrites correlation.retry_attempt, so a sink built on it cannot send the validated event byte for byte.",
-        "The Node surface is frozen and widens only additively through a governed change that updates the frozen lists, the freeze record and an ADR together.",
-        "Only src/fetch-exchange.ts may reach fetch, and the scope gate rejects tokens such as transport, adapter and collector in source file names.",
         "The packages are private and unpublished and the Node binding installed alone fails at import, so evaluators need a kit that installs with npm or pnpm with exactly one core copy.",
         "Two active CB-018 changes own the CI workflow, sdk-core's coherence and changed-paths scripts and its lifecycle record, so this work must not touch them.",
         "Distribution to evaluators is the owner's decision, so a kit must carry an exact identity and ship only under an owner-approved authorization.",
-        "Developers must correlate a failed send with their own logs and the receiver's, which needs the event identifier.",
-        "The ratified F-11 requirement forbids event IDs in sink-failure diagnostics and coherence freezes it byte for byte.",
-        "Each implementation PR must pass association without a proposal of its own, and parallel PRs must not edit the same file."
+        "Each implementation PR must pass association without a proposal of its own, and parallel PRs must not edit the same file.",
+        "CONTRIBUTING.md requires every transport to have its own OpenSpec change and explicit authorization, so the HTTP sink cannot live inside a broader change.",
+        "No evaluator has been recruited and handles must never be invented, so the authorization must fail closed until an owner-approved amendment names them.",
+        "CI's Node 24.2.0 leg runs only npm run test for the Node binding and installs the collector after it validates, so the kit gate must join test and validate and build the collector itself.",
+        "Failed results carry only a code, category and path, several codes mislead, and developers must fix a failed result without asking anyone.",
+        "The authoritativeTenant input type lets calls compile that its runtime rule then rejects with a thrown error."
       ]
     },
     {
       "id": "approach-per-feature-changes",
       "kind": "alternative",
-      "summary": "Separate OpenSpec changes for the sink, the error catalog, the conformance suite and the evaluation kit, each with its own proposal, assessment, fold and archive.",
+      "summary": "Separate OpenSpec changes for the catalog, the conformance suite, the kit and the documentation, each with its own proposal, assessment, fold and archive.",
       "forces_addressed": [
-        "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
-        "The Node surface is frozen and widens only additively through a governed change that updates the frozen lists, the freeze record and an ADR together.",
-        "Distribution to evaluators is the owner's decision, so a kit must carry an exact identity and ship only under an owner-approved authorization."
+        "Distribution to evaluators is the owner's decision, so a kit must carry an exact identity and ship only under an owner-approved authorization.",
+        "Failed results carry only a code, category and path, several codes mislead, and developers must fix a failed result without asking anyone."
       ]
     },
     {
-      "id": "approach-handoff-backed-sink",
+      "id": "approach-single-umbrella-with-transport",
       "kind": "alternative",
-      "summary": "Build the sink on createHttpDeliveryHandoff, reusing its request projection and outcome set, so delivery goes through the existing conformance primitive.",
+      "summary": "Keep the HTTP sink inside the umbrella and record a documented exception to the transport rule, so one change owns every MVP path.",
       "forces_addressed": [
-        "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
-        "Only src/fetch-exchange.ts may reach fetch, and the scope gate rejects tokens such as transport, adapter and collector in source file names."
+        "Each implementation PR must pass association without a proposal of its own, and parallel PRs must not edit the same file.",
+        "No developer outside the repository has used the SDK, and #575 requires evidence from fresh evaluators before further governance, deployment or enterprise investment."
       ]
     },
     {
@@ -132,33 +117,33 @@
       ]
     },
     {
-      "id": "approach-event-id-in-sink-failures",
+      "id": "approach-placeholder-evaluators",
       "kind": "alternative",
-      "summary": "Populate the existing eventId field of core sink-failure results so that SDK_SINK_REJECTED and SDK_SINK_FAILURE carry the event identifier.",
+      "summary": "Approve the authorization now with placeholder evaluator handles that are filled in later, so the approval text already carries evaluator slots.",
       "forces_addressed": [
-        "Developers must correlate a failed send with their own logs and the receiver's, which needs the event identifier."
+        "Distribution to evaluators is the owner's decision, so a kit must carry an exact identity and ship only under an owner-approved authorization."
       ]
     }
   ],
   "selected_approach_id": "approach-umbrella-evaluation-alpha",
   "rejected_alternative_ids": [
     "approach-per-feature-changes",
-    "approach-handoff-backed-sink",
+    "approach-single-umbrella-with-transport",
     "approach-registry-publication",
-    "approach-event-id-in-sink-failures"
+    "approach-placeholder-evaluators"
   ],
   "rejection_reasons": {
     "approach-per-feature-changes": {
       "forces": [
         "Each implementation PR must pass association without a proposal of its own, and parallel PRs must not edit the same file."
       ],
-      "reason": "Every feature would need its own proposal PR, assessment, fold and archive, and the sink, catalog and kit share owned files, so parallel changes would each claim the same paths and collide in the union."
+      "reason": "Every feature would need its own proposal PR, assessment, fold and archive, and the kit, catalog and documentation share owned files, so parallel changes would each claim the same paths and collide in the union."
     },
-    "approach-handoff-backed-sink": {
+    "approach-single-umbrella-with-transport": {
       "forces": [
-        "The delivery handoff's request projection overwrites correlation.retry_attempt, so a sink built on it cannot send the validated event byte for byte."
+        "CONTRIBUTING.md requires every transport to have its own OpenSpec change and explicit authorization, so the HTTP sink cannot live inside a broader change."
       ],
-      "reason": "The handoff's projection rewrites correlation.retry_attempt, which breaks the byte-exact body the evaluation depends on, and its attempt semantics imply a delivery-class conformance the sink does not claim."
+      "reason": "It would start the MVP with a knowing exception to the repository's own rule that each transport gets its own OpenSpec change and explicit authorization, which one extra change in the same PR avoids at no cost to the ticket graph."
     },
     "approach-registry-publication": {
       "forces": [
@@ -167,67 +152,28 @@
       ],
       "reason": "Publication is not authorized, and a version dependency on the unclaimed @bloodtrail scope would make a lone install a dependency-confusion vector, whereas a kit reaches only named evaluators under a recorded identity."
     },
-    "approach-event-id-in-sink-failures": {
+    "approach-placeholder-evaluators": {
       "forces": [
-        "The ratified F-11 requirement forbids event IDs in sink-failure diagnostics and coherence freezes it byte for byte.",
-        "Two active CB-018 changes own the CI workflow, sdk-core's coherence and changed-paths scripts and its lifecycle record, so this work must not touch them."
+        "No evaluator has been recruited and handles must never be invented, so the authorization must fail closed until an owner-approved amendment names them."
       ],
-      "reason": "It contradicts the ratified F-11 diagnostics requirement, and changing that requirement needs an edit to check-coherence.mjs, which an active CB-018 change owns; the sink's outcome callback carries the identifier instead."
+      "reason": "An approved record with placeholder handles would let someone fill them in later without the owner's exact-commit approval, so the record instead names no evaluator and forbids distribution until an amendment does."
     }
   },
   "selected_pattern_ids": [],
   "implementation_invariant_ids": [
-    "implementation-sink-sends-validated-bytes",
-    "implementation-single-classification-source",
-    "implementation-fetch-confined-to-adapter",
-    "implementation-surface-widened-additively",
     "implementation-error-catalog-complete",
     "implementation-tenant-type-encodes-runtime-rule",
+    "implementation-conformance-covers-every-event",
     "implementation-kit-gate-fails-closed",
     "implementation-single-core-copy",
     "implementation-no-release-or-publication",
     "implementation-owner-authorizes-distribution"
   ],
   "invariant_evidence": {
-    "implementation-sink-sends-validated-bytes": {
-      "task_ids": [
-        "4.1",
-        "4.4"
-      ],
-      "evidence_ids": [
-        "loopback tests prove the received body equals the validated event's canonical serialization, including a non-zero correlation.retry_attempt, and the field-rewriting mutant is killed"
-      ]
-    },
-    "implementation-single-classification-source": {
-      "task_ids": [
-        "2.1",
-        "4.2"
-      ],
-      "evidence_ids": [
-        "the handoff, retry and delivery-class tests pass unedited after the extraction, and every sink status class maps through the shared classifier"
-      ]
-    },
-    "implementation-fetch-confined-to-adapter": {
-      "task_ids": [
-        "4.1"
-      ],
-      "evidence_ids": [
-        "the scope gate passes without rule edits and only src/fetch-exchange.ts reaches fetch"
-      ]
-    },
-    "implementation-surface-widened-additively": {
-      "task_ids": [
-        "4.1",
-        "4.2"
-      ],
-      "evidence_ids": [
-        "the export check lists the three new names with no core collision, and compatibility.json gains one freezeRecord amendment with earlier records byte-identical"
-      ]
-    },
     "implementation-error-catalog-complete": {
       "task_ids": [
-        "2.4",
-        "2.5"
+        "2.3",
+        "2.4"
       ],
       "evidence_ids": [
         "the completeness test fails for a removed entry and for an unknown code, and passes for the complete catalog"
@@ -235,19 +181,30 @@
     },
     "implementation-tenant-type-encodes-runtime-rule": {
       "task_ids": [
-        "2.3"
+        "2.2"
       ],
       "evidence_ids": [
         "compile-only positive and negative assertions pass and the runtime tests pass unedited"
       ]
     },
+    "implementation-conformance-covers-every-event": {
+      "task_ids": [
+        "3.1",
+        "3.2",
+        "3.3",
+        "3.4"
+      ],
+      "evidence_ids": [
+        "each of the 24 named methods has a valid row that passes validateSecurityAuditEvent, and each rule family has invalid rows asserting the exact code and path"
+      ]
+    },
     "implementation-kit-gate-fails-closed": {
       "task_ids": [
-        "5.1",
-        "5.3",
-        "5.7",
-        "5.8",
-        "7.1"
+        "4.1",
+        "4.3",
+        "4.7",
+        "4.8",
+        "6.1"
       ],
       "evidence_ids": [
         "each planted defect, a broken core dependency, a duplicated core, a drifted snippet, a type error and a missing kit item, fails the gate"
@@ -255,7 +212,7 @@
     },
     "implementation-single-core-copy": {
       "task_ids": [
-        "5.7"
+        "4.7"
       ],
       "evidence_ids": [
         "the duplicate-copy probe finds one core in the npm and pnpm installs and reports DUPLICATE_AUTHORITY for a planted second copy"
@@ -263,19 +220,20 @@
     },
     "implementation-no-release-or-publication": {
       "task_ids": [
-        "7.1"
+        "6.1"
       ],
       "evidence_ids": [
-        "the packages stay private and UNLICENSED at 0.4.0, 0.4.0 and 0.1.0 with no tag, and the publication-path gate is unchanged"
+        "the packages stay private and UNLICENSED at their current versions with no tag, and the publication-path gate is unchanged"
       ]
     },
     "implementation-owner-authorizes-distribution": {
       "task_ids": [
         "1.1",
-        "8.1"
+        "7.1",
+        "7.2"
       ],
       "evidence_ids": [
-        "evaluation-authorization.md is approved only by the owner's merge, and kit identity and evaluator handles are recorded on #605 before distribution"
+        "evaluation-authorization.md names no evaluator and forbids distribution until an owner-approved, SHA-bound amendment names them, and kit identity and handles are recorded on #605 before distribution"
       ]
     }
   },
@@ -285,12 +243,10 @@
   },
   "verification_task_ids": [
     "1.1",
-    "10.1",
     "2.1",
     "2.2",
     "2.3",
     "2.4",
-    "2.5",
     "3.1",
     "3.2",
     "3.3",
@@ -299,18 +255,16 @@
     "4.2",
     "4.3",
     "4.4",
+    "4.5",
+    "4.6",
+    "4.7",
+    "4.8",
     "5.1",
     "5.2",
     "5.3",
-    "5.4",
-    "5.5",
-    "5.6",
-    "5.7",
-    "5.8",
     "6.1",
-    "6.2",
-    "6.3",
     "7.1",
+    "7.2",
     "8.1",
     "9.1"
   ]

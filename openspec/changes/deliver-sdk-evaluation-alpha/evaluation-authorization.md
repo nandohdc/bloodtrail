@@ -6,7 +6,8 @@ that act, and the record's own text is never evidence that the act happened.
 
 - **How the owner approves it.** The act has two parts, and both are required:
   1. The owner posts an approval comment on the pull request that proposes the
-     `deliver-sdk-evaluation-alpha` change. The comment names the head commit SHA being approved.
+     `deliver-sdk-evaluation-alpha` and `add-sdk-node-http-audit-sink` changes. The comment names both
+     changes and the head commit SHA being approved.
   2. The owner merges that commit personally.
 
   The act approves exactly the text at that commit.
@@ -18,7 +19,7 @@ that act, and the record's own text is never evidence that the act happened.
 
 | Field | Value |
 |---|---|
-| Governing change | `deliver-sdk-evaluation-alpha` |
+| Governing change | `deliver-sdk-evaluation-alpha` (the HTTP audit sink is governed by `add-sdk-node-http-audit-sink`) |
 | Spec | #575 |
 | Evaluation ticket | #605 |
 | Drafted by | Claude (agent), 2026-09-23 |
@@ -29,13 +30,13 @@ that act, and the record's own text is never evidence that the act happened.
 This record covers a non-production evaluation alpha of the Bloodtrail SDK and nothing else:
 
 - the SDK core (`@bloodtrail/security-audit-sdk-core` 0.4.0);
-- the Node binding (`@bloodtrail/security-audit-sdk-node` 0.4.0), including its non-production HTTP audit
-  sink;
+- the Node binding (`@bloodtrail/security-audit-sdk-node` 0.4.0), including the non-production HTTP audit
+  sink that `add-sdk-node-http-audit-sink` adds;
 - the collector ingress (`@bloodtrail/security-audit-collector` 0.1.0), used only inside the example
   receiver.
 
-These are delivered as an evaluation kit to the evaluators listed below. Evaluators use them to follow the
-quickstart and to integrate the SDK into non-production services they own.
+These are delivered as an evaluation kit to the evaluators this record authorizes. Evaluators use them to
+follow the quickstart and to integrate the SDK into non-production services they own.
 
 ## Data
 
@@ -59,19 +60,29 @@ component.
 
 ## Evaluators
 
-Three developers new to Bloodtrail take part, and the minimum is two. Each integrates the kit into a
-non-production service they own. The owner's own dogfooding is reported separately and is not an
-evaluator slot.
-
-| # | GitHub handle |
+| Field | Value |
 |---|---|
-| 1 | `<OWNER TO FILL BEFORE MERGE>` |
-| 2 | `<OWNER TO FILL BEFORE MERGE>` |
-| 3 | `<OWNER TO FILL BEFORE MERGE>` |
+| Authorized evaluators | **None yet** |
+| Evaluation distribution allowed | **No** |
 
-The owner fills in these handles before the approval act. A kit goes only to a handle listed here. Adding
-or replacing an evaluator needs an amendment to this file under a governed change, approved through the
-same two-part act.
+No evaluator is authorized by this version of the record, so no kit may be distributed and the evaluation
+(#605) cannot start. Implementation and kit construction can proceed.
+
+The plan is for three developers new to Bloodtrail to take part, with a minimum of two. Each will integrate
+the kit into a non-production service they own. The owner's own dogfooding is reported separately and is
+not an evaluator slot.
+
+**Distribution becomes allowed only through an amendment to this file**, under the governing change. The
+amendment must:
+
+1. name each authorized evaluator by GitHub handle, and name no one invented or unconfirmed;
+2. name the exact kit it authorizes, if the kit's identity is known by then (commit SHA, per-artifact
+   SHA-256 and kit digest);
+3. take effect through the same two-part act: an approval comment by the owner naming the amendment's head
+   SHA, then the owner's own merge.
+
+After the amendment, a kit goes only to a handle it lists. Adding or replacing an evaluator later needs
+another amendment made the same way.
 
 ## Duration
 
@@ -118,4 +129,5 @@ authorizing it:
 - any transport, exporter, collector deployment, queue, outbox, storage, SIEM integration, analytics,
   detection, browser telemetry, framework instrumentation or cryptographic audit-log chaining, beyond the
   non-production HTTP audit sink that the governing change adds;
-- distributing a kit to anyone not listed above.
+- distributing a kit before an amendment authorizes evaluators, or to anyone that amendment does not
+  list.
