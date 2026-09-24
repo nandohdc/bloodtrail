@@ -1,11 +1,21 @@
 import type { SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
 
 import { nodeByteLength } from "./byte-length.js";
+import { classifyHttpExchangeOutcome, type HttpResponseClassification } from "./http-response-classification.js";
 
 const MAX_REQUEST_BODY_BYTES = 65_536;
-const RETRYABLE_RESPONSE_STATUSES = new Set([408, 425, 429]);
 // Contract 2.1.0 bounds.retry_attempt_max — the wire ceiling on correlation.retry_attempt.
 const RETRY_ATTEMPT_MAX = 1000;
+// The handoff's delivery status for each shared classification code.
+const HANDOFF_STATUS_BY_CODE = {
+  acknowledged: "acknowledged",
+  http_retryable: "retryable",
+  timeout: "retryable",
+  transport_failure: "retryable",
+  http_permanent: "non_retryable",
+  malformed_acknowledgment: "protocol_error",
+  unexpected_response: "protocol_error",
+} as const satisfies Record<HttpResponseClassification, HttpDeliveryHandoffResult["status"]>;
 
 type AttemptIdentity = Readonly<{
   readonly eventId: string;
@@ -92,7 +102,8 @@ export function createHttpDeliveryHandoff(options: HttpDeliveryHandoffOptions): 
       }
 
       try {
-        return classifyOutcome(await exchange(request), identity);
+        const code = classifyHttpExchangeOutcome(await exchange(request), identity.eventId);
+        return result(HANDOFF_STATUS_BY_CODE[code], code, identity);
       } catch {
         return result("retryable", "transport_failure", identity);
       }
@@ -145,72 +156,6 @@ function projectRequest(
     event_id: attempt.eventId,
     attempt: attempt.ordinal,
   });
-}
-
-function classifyOutcome(outcome: unknown, attempt: AttemptIdentity): HttpDeliveryHandoffResult {
-  if (isResponseOutcome(outcome)) return classifyResponse(outcome, attempt);
-  return classifyNonResponse(outcome, attempt);
-}
-
-function classifyNonResponse(outcome: unknown, attempt: AttemptIdentity): HttpDeliveryHandoffResult {
-  if (!isRecord(outcome)) return result("protocol_error", "unexpected_response", attempt);
-  switch (outcome.kind) {
-    case "timeout":
-      return result("retryable", "timeout", attempt);
-    case "transport_failure":
-      return result("retryable", "transport_failure", attempt);
-    default:
-      return result("protocol_error", "unexpected_response", attempt);
-  }
-}
-
-function classifyResponse(
-  response: Readonly<Record<string, unknown>> & Readonly<{ readonly kind: "response" }>,
-  attempt: AttemptIdentity,
-): HttpDeliveryHandoffResult {
-  const statusClassification = classifyStatus(response.status);
-  if (statusClassification !== null) {
-    return result(statusClassification.status, statusClassification.code, attempt);
-  }
-
-  return isExactAcknowledgment(response.acknowledgments, attempt)
-    ? result("acknowledged", "acknowledged", attempt)
-    : result("protocol_error", "malformed_acknowledgment", attempt);
-}
-
-function classifyStatus(status: unknown): Pick<HttpDeliveryHandoffResult, "status" | "code"> | null {
-  if (!isHttpStatus(status)) return { status: "protocol_error", code: "unexpected_response" };
-  if (status >= 500) return { status: "retryable", code: "http_retryable" };
-  if (RETRYABLE_RESPONSE_STATUSES.has(status)) return { status: "retryable", code: "http_retryable" };
-  if (status >= 400) return { status: "non_retryable", code: "http_permanent" };
-  if (status >= 300) return { status: "protocol_error", code: "unexpected_response" };
-  if (status < 200) return { status: "protocol_error", code: "unexpected_response" };
-  return null;
-}
-
-function isHttpStatus(status: unknown): status is number {
-  if (typeof status !== "number") return false;
-  if (!Number.isInteger(status)) return false;
-  if (status < 100) return false;
-  return status <= 599;
-}
-
-function isExactAcknowledgment(acknowledgments: unknown, attempt: AttemptIdentity): boolean {
-  if (!Array.isArray(acknowledgments) || acknowledgments.length !== 1) return false;
-  const acknowledgment = acknowledgments[0];
-  return isRecord(acknowledgment)
-    && acknowledgment.event_id === attempt.eventId
-    && acknowledgment.outcome === "accepted";
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isResponseOutcome(
-  outcome: unknown,
-): outcome is Readonly<Record<string, unknown>> & Readonly<{ readonly kind: "response" }> {
-  return isRecord(outcome) && outcome.kind === "response";
 }
 
 function result(
