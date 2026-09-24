@@ -51,7 +51,8 @@ results:
   which are 4xx statuses a peer uses to ask for a later attempt.
 
 A rejected or unknown result carries the classifier's code. #589 mapped every code but `acknowledged` to
-unknown; #590 split out the rejection.
+unknown; #590 split out the rejection. The one result that is not a classification is a closed sink's,
+described below.
 
 This changes the letter of ADR-NODE-003, which says "every classification … stays with
 `createHttpDeliveryHandoff`". It keeps that ADR's intent: one classification source, which no second
@@ -84,9 +85,40 @@ classifier then judges the peer's real answer, and nothing it sends becomes acce
 acknowledgment. `src/fetch-exchange.ts` joined the change's `owned_paths` under the umbrella's D1 amendment
 rule, and its header comment now names the shared classifier.
 
+**Flush and shutdown.** #591 has the sink track each send until it settles. `flush` waits for the sends
+in flight when it is called, and never for one started after it. Each send settles within `timeoutMs`,
+plus the synchronous run time of `onOutcome`. The adapter's deadline covers the whole exchange, response
+body included, and the sink never waits for a promise the callback returns. So a flush is bounded the same
+way.
+
+`shutdown` closes the sink and then flushes it. From the moment it is called, an emit makes no request and
+returns unknown with the code `shut_down`, and `onOutcome` reports nothing for it. Through an SDK that is
+`SDK_SINK_FAILURE`, but an SDK stops admitting emissions before it shuts its sink down, so only a caller
+holding the sink directly meets it. This follows `createDeliveryShutdown`, which also stops admitting work
+before it drains, and answers with a result rather than a throw.
+
+The bound belongs to the SDK:
+
+- its `shutdown` waits up to `shutdownTimeoutMs` for its own in-flight emits;
+- if they settle in time, it flushes the sink and shuts it down;
+- if one outlives the bound, it returns `SDK_SHUTDOWN_TIMEOUT` and never calls the sink;
+- after either, every emit, flush and shutdown returns `SDK_SHUT_DOWN`.
+
+Two consequences follow from how the core awaits its sink, which this change does not alter:
+
+- *On `SDK_SHUTDOWN_TIMEOUT`, the held send runs on.* Its socket stays open for up to `timeoutMs`, so the
+  process may not exit before then. It is still reported once, after the SDK has already returned.
+- *A shared sink can outlast the SDK's bound.* The core awaits the sink's flush and shutdown after its own
+  bounded wait, not within it. A send that another user of the same sink holds therefore lengthens the
+  SDK's shutdown by up to `timeoutMs` for each of those two calls, and the first shutdown closes the sink
+  for every user. The factory's documentation says to give each SDK its own sink.
+
+Concurrent emits each make one request, with no cap and no ordering. The set of in-flight sends is not a
+queue: nothing in it waits to be sent. The caller of `emit` gets a promise of its own, so a send nobody
+handles still surfaces as an unhandled rejection.
+
 **Scope.** Non-production evaluation only. The sink makes one attempt per event, with no retry, batching,
-queueing, backpressure or ordering, and it claims no delivery-class conformance. #591 adds `flush` and
-shutdown draining.
+queueing, backpressure, concurrency cap or ordering, and it claims no delivery-class conformance.
 
 The change's assessment rejected two alternatives:
 
@@ -115,3 +147,13 @@ To revert only #590:
 - return the authored reference pin in `tests/scope-mutations.test.ts` from 90 to 89.
 
 The sink then maps every code but `acknowledged` to unknown again.
+
+To revert only #591:
+
+- remove the sink's in-flight set, its closed state and the `shut_down` result, `flush` and `shutdown`,
+  and return `emit` to a plain send;
+- remove the lifecycle arms from `tests/http-audit-sink.test.ts`, with their helpers;
+- untick task 3.3 in the change's `tasks.md`.
+
+No export, frozen-list entry, amendment or pin changes. The SDK's own shutdown bound still applies,
+because it tracks its emits itself.

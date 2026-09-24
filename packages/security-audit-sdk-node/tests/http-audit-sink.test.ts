@@ -1,7 +1,7 @@
-// The HTTP audit sink (#589, #590): the SDK's sink interface over the governed
-// fetch adapter. These arms run through a real SDK and a loopback peer, so they
-// show exactly what reaches the wire, what the SDK returns for it, and what
-// onOutcome reports.
+// The HTTP audit sink (#589, #590, #591): the SDK's sink interface over the
+// governed fetch adapter. These arms run through a real SDK and a loopback peer,
+// so they show exactly what reaches the wire, what the SDK returns for it, what
+// onOutcome reports, and how flush and shutdown wait for sends in flight.
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -17,6 +17,7 @@ import {
   type AuditEventSink,
   type AuditResult,
   type SecurityAuditEvent,
+  type SecurityAuditSdk,
 } from "@bloodtrail/security-audit-sdk-core";
 import {
   createFetchHttpExchange,
@@ -69,6 +70,18 @@ const SINK_STATUS_BY_HANDOFF_STATUS = {
   protocol_error: "unknown",
 } as const;
 
+// Each way to flush. The core's interface declares the sink's own flush
+// optional, so a missing one returns undefined.
+const FLUSHES = {
+  "the SDK's flush": async (sdk) => {
+    assert.deepEqual(await sdk.flush(), { ok: true, value: undefined });
+  },
+  "the sink's flush": (_sdk, sink) => sink.flush?.(),
+} satisfies Record<string, (sdk: SecurityAuditSdk, sink: AuditEventSink) => Promise<void> | undefined>;
+
+const CONCURRENT_EMITS = 8;
+const SHUT_DOWN = { status: "unknown", code: "shut_down" };
+
 interface ReceivedRequest {
   readonly method: string | undefined;
   readonly url: string | undefined;
@@ -79,7 +92,11 @@ interface ReceivedRequest {
 type Handler = (request: IncomingMessage, body: string, response: ServerResponse) => void;
 
 const servers: Server[] = [];
-after(() => Promise.all(servers.map((server) => new Promise<void>((done) => server.close(() => done())))));
+// A failed arm can leave a request held, so every connection is cut first.
+after(() => Promise.all(servers.map((server) => new Promise<void>((done) => {
+  server.closeAllConnections();
+  server.close(() => done());
+}))));
 
 interface Peer {
   readonly origin: string;
@@ -103,6 +120,31 @@ async function peer(handler: Handler): Promise<Peer> {
   const address = server.address();
   assert.ok(address && typeof address === "object");
   return { origin: `http://127.0.0.1:${address.port}`, received, server };
+}
+
+interface HoldingPeer extends Peer {
+  /** How many requests have arrived, each held until released. */
+  held(): number;
+  /** Answers the request that arrived at `index` with its exact acknowledgment. */
+  release(index: number): void;
+}
+
+// Holds every request unanswered until the test releases it.
+async function holdingPeer(): Promise<HoldingPeer> {
+  const answers: Array<() => void> = [];
+  const answer = acknowledge();
+  const base = await peer((request, body, response) => {
+    answers.push(() => answer(request, body, response));
+  });
+  return {
+    ...base,
+    held: () => answers.length,
+    release(index) {
+      const release = answers[index];
+      assert.ok(release, `no request ${index} has arrived`);
+      release();
+    },
+  };
 }
 
 function reply(status: number, body: unknown): Handler {
@@ -173,19 +215,70 @@ async function captureUnhandledRejections(run: () => Promise<void>): Promise<unk
   return reasons;
 }
 
-async function emitThroughSdk(sink: AuditEventSink): Promise<AuditResult<AuditDeliveryResult>> {
-  const sdk = createNodeSecurityAuditSdk({
+// Resolves once `ready` holds. It fails on its own deadline, because a test's
+// deadline fails the test but cannot stop this loop, which would then keep
+// the run alive.
+async function until(ready: () => boolean): Promise<void> {
+  const deadline = Date.now() + 3_000;
+  while (!ready()) {
+    assert.ok(Date.now() < deadline, "the awaited condition never held");
+    await pause(5);
+  }
+}
+
+function pause(ms: number): Promise<void> {
+  return new Promise<void>((done) => setTimeout(done, ms));
+}
+
+// Reports whether `promise` has settled yet, without deciding its outcome for the caller.
+function settlement(promise: Promise<unknown>): () => boolean {
+  let settled = false;
+  const mark = (): void => { settled = true; };
+  promise.then(mark, mark);
+  return () => settled;
+}
+
+// A copy of the fixture event under another identifier, so concurrent sends can be told apart.
+function eventNumbered(index: number): SecurityAuditEvent {
+  return { ...retriedEvent, event: { ...retriedEvent.event, id: `22222222-2222-4222-8222-${String(index).padStart(12, "0")}` } };
+}
+
+// Delegates to `sink`, recording each flush and shutdown the SDK asks of it.
+function observed(sink: AuditEventSink, calls: string[]): AuditEventSink {
+  return {
+    emit: (event) => sink.emit(event),
+    async flush() {
+      calls.push("flush");
+      await sink.flush?.();
+    },
+    async shutdown() {
+      calls.push("shutdown");
+      await sink.shutdown?.();
+    },
+  };
+}
+
+function sdkFor(sink: AuditEventSink, shutdownTimeoutMs = 5_000): SecurityAuditSdk {
+  return createNodeSecurityAuditSdk({
     contractVersion: CONTRACT_VERSION,
     producer: retriedEvent.producer,
     service: retriedEvent.service,
     environment: retriedEvent.environment,
     sink,
+    shutdownTimeoutMs,
   });
-  return sdk.emit(retriedEvent);
+}
+
+async function emitThroughSdk(sink: AuditEventSink): Promise<AuditResult<AuditDeliveryResult>> {
+  return sdkFor(sink).emit(retriedEvent);
 }
 
 function sdkOutcome(result: AuditResult<AuditDeliveryResult>): string {
   return result.ok ? result.value.status : result.error.code;
+}
+
+function lifecycleOutcome(result: AuditResult<void>): string {
+  return result.ok ? "ok" : result.error.code;
 }
 
 // The bytes the SDK hands its sink once validation has finished with the event.
@@ -367,6 +460,156 @@ describe("HTTP audit sink", () => {
 
     assert.equal(invoked, 12);
     assert.deepEqual(unhandled, []);
+  });
+
+  // The deadlines in these arms turn a drain that waits too long into a
+  // failure rather than a hung run.
+  it("waits in flush for every send started before the call, and for none started after it", { timeout: 10_000 }, async () => {
+    for (const [name, flush] of Object.entries(FLUSHES)) {
+      const { origin, held, release } = await holdingPeer();
+      const { sink, reports } = recordingSinkFor(origin);
+      const sdk = sdkFor(sink);
+      const earlier = [sdk.emit(eventNumbered(1)), sdk.emit(eventNumbered(2))];
+      await until(() => held() === 2);
+
+      const draining = flush(sdk, sink);
+      assert.ok(draining, `${name} must be implemented`);
+      const drained = settlement(draining);
+      // Sent straight to the sink, so it starts in the same turn as the drain.
+      const later = sink.emit(eventNumbered(3));
+      const laterSettled = settlement(later);
+      await until(() => held() === 3);
+
+      release(0);
+      await until(() => reports.length === 1);
+      await pause(20);
+      assert.equal(drained(), false, `${name} must wait for every earlier send`);
+
+      release(1);
+      await draining;
+      assert.deepEqual((await Promise.all(earlier)).map(sdkOutcome), ["accepted", "accepted"], name);
+      assert.equal(laterSettled(), false, `${name} must not wait for a later send`);
+      release(2);
+      assert.deepEqual(await later, { status: "accepted" }, name);
+      assert.equal(reports.length, 3, name);
+    }
+  });
+
+  it("closes the sink on shutdown, refusing every later send at once and resolving when the earlier ones settle", { timeout: 10_000 }, async () => {
+    const { origin, received, held, release } = await holdingPeer();
+    const { sink, reports } = recordingSinkFor(origin);
+    const { flush, shutdown } = sink;
+    assert.ok(flush && shutdown, "the sink must implement flush and shutdown");
+    const earlier = [sink.emit(eventNumbered(1)), sink.emit(eventNumbered(2))];
+    await until(() => held() === 2);
+
+    const closing = shutdown();
+    const closed = settlement(closing);
+    assert.deepEqual(await sink.emit(eventNumbered(3)), SHUT_DOWN, "a send after shutdown began must be refused");
+    release(0);
+    await until(() => reports.length === 1);
+    await pause(20);
+    assert.equal(closed(), false, "shutdown must wait for every earlier send");
+
+    release(1);
+    await closing;
+    assert.deepEqual(await Promise.all(earlier), [{ status: "accepted" }, { status: "accepted" }]);
+    assert.deepEqual(await sink.emit(eventNumbered(4)), SHUT_DOWN, "a closed sink must stay closed");
+    await flush();
+    assert.equal(received.length, 2, "a closed sink must make no request");
+    // Only the two earlier sends were requests, so only they are reported.
+    assert.equal(reports.length, 2);
+  });
+
+  it("waits in flush and shutdown for a held send beside one that rejects", { timeout: 10_000 }, async () => {
+    const { origin, received, held, release } = await holdingPeer();
+    const sink = sinkFor(origin);
+    // A BigInt cannot be serialized, so the send rejects before any request.
+    const unserializable = { ...retriedEvent, extension: 1n } as unknown as SecurityAuditEvent;
+    // Shutdown comes last, because it closes the sink.
+    for (const [index, name] of (["flush", "shutdown"] as const).entries()) {
+      const drain = sink[name];
+      assert.ok(drain, `the sink must implement ${name}`);
+      const sending = sink.emit(eventNumbered(index));
+      await until(() => held() === index + 1);
+      const rejecting = sink.emit(unserializable);
+      const draining = drain();
+      const drained = settlement(draining);
+
+      await assert.rejects(rejecting, TypeError, name);
+      await pause(20);
+      assert.equal(drained(), false, `${name} must still wait for the held send`);
+      release(index);
+      await draining;
+      assert.deepEqual(await sending, { status: "accepted" }, name);
+    }
+    assert.equal(received.length, 2);
+  });
+
+  it("lets a held send settle within the SDK's shutdown bound, then flushes and closes the sink", { timeout: 10_000 }, async () => {
+    const { origin, received, held, release } = await holdingPeer();
+    const { sink, reports } = recordingSinkFor(origin);
+    const calls: string[] = [];
+    const sdk = sdkFor(observed(sink, calls));
+    const sending = sdk.emit(retriedEvent);
+    await until(() => held() === 1);
+
+    const shuttingDown = sdk.shutdown();
+    const shutDown = settlement(shuttingDown);
+    assert.equal(sdkOutcome(await sdk.emit(retriedEvent)), "SDK_SHUTTING_DOWN");
+    await pause(20);
+    assert.equal(shutDown(), false, "shutdown must wait for the send in flight");
+    assert.deepEqual(calls, [], "the sink must not be flushed or shut down while a send is in flight");
+
+    release(0);
+    assert.equal(sdkOutcome(await sending), "accepted");
+    assert.equal(lifecycleOutcome(await shuttingDown), "ok");
+    assert.deepEqual(calls, ["flush", "shutdown"]);
+    assert.equal(sdkOutcome(await sdk.emit(retriedEvent)), "SDK_SHUT_DOWN");
+    assert.deepEqual(await sink.emit(retriedEvent), SHUT_DOWN, "the SDK's shutdown must close the sink");
+    assert.equal(received.length, 1, "no emit after shutdown began may reach the peer");
+    assert.deepEqual(reports, [{ eventId, outcome: "acknowledged", status: 202 }]);
+  });
+
+  it("returns SDK_SHUTDOWN_TIMEOUT when a held send outlives the bound, then SDK_SHUT_DOWN for every later call", { timeout: 10_000 }, async () => {
+    const { origin, received, held, release } = await holdingPeer();
+    const { sink, reports } = recordingSinkFor(origin);
+    const calls: string[] = [];
+    // The bound is far shorter than the sink's own request deadline.
+    const sdk = sdkFor(observed(sink, calls), 50);
+    const sending = sdk.emit(retriedEvent);
+    await until(() => held() === 1);
+
+    assert.equal(lifecycleOutcome(await sdk.shutdown()), "SDK_SHUTDOWN_TIMEOUT");
+    assert.deepEqual(calls, [], "the SDK must leave the sink alone once its bound has expired");
+    assert.equal(sdkOutcome(await sdk.emit(retriedEvent)), "SDK_SHUT_DOWN");
+    assert.equal(lifecycleOutcome(await sdk.flush()), "SDK_SHUT_DOWN");
+    assert.equal(lifecycleOutcome(await sdk.shutdown()), "SDK_SHUT_DOWN");
+    assert.equal(received.length, 1);
+
+    // The send the bound gave up on still settles, and is reported once.
+    release(0);
+    assert.equal(sdkOutcome(await sending), "accepted");
+    assert.deepEqual(reports, [{ eventId, outcome: "acknowledged", status: 202 }]);
+  });
+
+  it("sends N concurrent emits as N requests, each settled and reported exactly once, in any order", { timeout: 10_000 }, async () => {
+    const { origin, received, held, release } = await holdingPeer();
+    const { sink, reports } = recordingSinkFor(origin);
+    const sdk = sdkFor(sink);
+    const events = Array.from({ length: CONCURRENT_EMITS }, (_, index) => eventNumbered(index));
+    const sending = events.map((event) => sdk.emit(event));
+    // Every request is held at once, so nothing serialized them.
+    await until(() => held() === CONCURRENT_EMITS);
+    for (let index = CONCURRENT_EMITS - 1; index >= 0; index -= 1) release(index);
+
+    assert.deepEqual((await Promise.all(sending)).map(sdkOutcome), events.map(() => "accepted"));
+    const ids = events.map((event) => event.event.id);
+    const sentIds = received.map((request) => (JSON.parse(request.body.toString("utf8")) as SecurityAuditEvent).event.id);
+    assert.equal(received.length, CONCURRENT_EMITS);
+    assert.deepEqual(new Set(sentIds), new Set(ids));
+    assert.equal(reports.length, CONCURRENT_EMITS);
+    assert.deepEqual(new Set(reports), new Set(ids.map((id) => ({ eventId: id, outcome: "acknowledged", status: 202 }))));
   });
 
   it("sends caller headers to the configured origin beside its own content type", async () => {

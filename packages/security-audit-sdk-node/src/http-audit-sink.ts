@@ -1,13 +1,14 @@
-// The HTTP audit sink (#589, #590): the core's sink interface over the governed
-// fetch delivery adapter. Each emitted event becomes one POST whose body is the
-// event the SDK validated, serialized once and sent unchanged. Every result
-// comes from the shared response classifier, and the sink adds no rule of its
-// own: only the exact acknowledgment is acceptance, and only a permanent 4xx is
-// a rejection. onOutcome reports each request's cause.
+// The HTTP audit sink (#589, #590, #591): the core's sink interface over the
+// governed fetch delivery adapter. Each emitted event becomes one POST whose
+// body is the event the SDK validated, serialized once and sent unchanged.
+// Every result comes from the shared response classifier, and the sink adds no
+// rule of its own: only the exact acknowledgment is acceptance, and only a
+// permanent 4xx is a rejection. onOutcome reports each request's cause, flush
+// waits for the sends already in flight, and shutdown closes the sink.
 //
 // NON-PRODUCTION. One attempt per event: no retry, batching, queueing,
-// backpressure or ordering. Caller headers go only to the configured origin,
-// and the sink never logs, echoes or reports one.
+// backpressure, concurrency cap or ordering. Caller headers go only to the
+// configured origin, and the sink never logs, echoes or reports one.
 
 import type { AuditDeliveryResult, AuditEventSink, SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
 
@@ -67,6 +68,8 @@ const RESERVED_HEADER_NAMES = new Set([
   "connection", "keep-alive", "transfer-encoding", "upgrade", "expect",
 ]);
 const ACCEPTED: AuditDeliveryResult = Object.freeze({ status: "accepted" });
+// What a closed sink returns. It made no request, so onOutcome reports nothing.
+const SHUT_DOWN: AuditDeliveryResult = Object.freeze({ status: "unknown", code: "shut_down" });
 // The core's sink status for each shared classification code.
 const SINK_STATUS_BY_CODE = {
   acknowledged: "accepted",
@@ -84,26 +87,64 @@ type OutcomeCallback = (outcome: HttpAuditSinkOutcome) => unknown;
 /**
  * Creates an HTTP audit sink for non-production evaluation. Invalid options
  * throw a `TypeError` here, and no error names a header or its value.
+ *
+ * Give each SDK its own sink. An SDK waits for its sink's flush and shutdown
+ * after its own shutdown bound, so a send that another user of the same sink
+ * holds lengthens that SDK's shutdown, and the first shutdown closes the sink
+ * for every user.
  */
 export function createHttpAuditSink(options: HttpAuditSinkOptions): AuditEventSink {
   const path = validatePath(options.path);
   const headers = validateHeaders(options.headers);
   const onOutcome = validateOnOutcome(options.onOutcome);
   const exchange = createFetchHttpExchange({ origin: options.origin, timeoutMs: options.timeoutMs, headers });
+  // Every send that has not settled yet. Concurrent sends are not capped or ordered.
+  const inFlight = new Set<Promise<AuditDeliveryResult>>();
+  let open = true;
+
+  async function send(event: Readonly<SecurityAuditEvent>): Promise<AuditDeliveryResult> {
+    // No catch: the governed adapter settles every exchange with an outcome
+    // it built from plain data, so neither it nor the classifier throws here,
+    // and report contains the callback. Should serialization throw, the emit
+    // rejects, and the SDK reports a rejected emit as SDK_SINK_FAILURE.
+    const eventId = event.event.id;
+    const exchanged = await exchange(requestFor(event, eventId, path));
+    const code = classifyHttpExchangeOutcome(exchanged, eventId);
+    report(onOutcome, outcomeFor(eventId, code, exchanged));
+    return resultFor(code);
+  }
+
+  // Waits for the sends in flight when it is called, and never for a later
+  // one: allSettled reads the set once, during the call. Each send settles
+  // within timeoutMs plus onOutcome's own synchronous run time, because the
+  // adapter's deadline covers the whole exchange and the sink never waits for
+  // a promise onOutcome returns.
+  async function flush(): Promise<void> {
+    await Promise.allSettled(inFlight);
+  }
 
   return Object.freeze({
-    async emit(event: Readonly<SecurityAuditEvent>): Promise<AuditDeliveryResult> {
-      // No catch: the governed adapter settles every exchange with an outcome
-      // it built from plain data, so neither it nor the classifier throws here,
-      // and report contains the callback. Should serialization throw, the emit
-      // rejects, and the SDK reports a rejected emit as SDK_SINK_FAILURE.
-      const eventId = event.event.id;
-      const exchanged = await exchange(requestFor(event, eventId, path));
-      const code = classifyHttpExchangeOutcome(exchanged, eventId);
-      report(onOutcome, outcomeFor(eventId, code, exchanged));
-      return resultFor(code);
+    emit: (event: Readonly<SecurityAuditEvent>): Promise<AuditDeliveryResult> =>
+      open ? track(inFlight, send(event)) : Promise.resolve(SHUT_DOWN),
+    flush,
+    // Closes the sink before it drains, so no send starts once shutdown has
+    // been called. The SDK stops admitting emissions before it gets here.
+    async shutdown(): Promise<void> {
+      open = false;
+      await flush();
     },
   } satisfies AuditEventSink);
+}
+
+// Holds `sending` in `inFlight` until it settles. The caller gets a promise of
+// its own, so a send nobody handles still surfaces as an unhandled rejection.
+async function track<T>(inFlight: Set<Promise<T>>, sending: Promise<T>): Promise<T> {
+  inFlight.add(sending);
+  try {
+    return await sending;
+  } finally {
+    inFlight.delete(sending);
+  }
 }
 
 function resultFor(code: HttpResponseClassification): AuditDeliveryResult {
