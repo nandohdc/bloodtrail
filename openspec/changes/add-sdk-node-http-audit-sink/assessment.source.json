@@ -1,0 +1,189 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
+    "The delivery handoff's request projection overwrites correlation.retry_attempt, so a sink built on it cannot send the validated event byte for byte.",
+    "CONTRIBUTING.md requires every transport to have its own OpenSpec change and explicit authorization, never an incidental addition.",
+    "The Node surface is frozen and widens only additively through a governed change that updates the frozen lists, the freeze record and an ADR together.",
+    "Only src/fetch-exchange.ts may reach fetch, and the scope gate rejects tokens such as transport, adapter and collector in source file names.",
+    "Two rule sets for classifying HTTP responses, one in the handoff and one in a sink, would drift apart.",
+    "Developers must correlate a failed send with their own logs and the receiver's, which needs the event identifier.",
+    "The ratified F-11 requirement forbids event IDs in sink-failure diagnostics and coherence freezes it byte for byte.",
+    "The delivery peer is untrusted: it can stall, refuse, redirect, or answer with malformed or ambiguous acknowledgments, and none of those may become acceptance."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "integration",
+      "lifecycle_or_state",
+      "concurrency",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/add-sdk-node-http-audit-sink/",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/src/http-response-classification.ts",
+    "packages/security-audit-sdk-node/src/http-handoff.ts",
+    "packages/security-audit-sdk-node/src/http-audit-sink.ts",
+    "packages/security-audit-sdk-node/src/index.ts",
+    "packages/security-audit-sdk-node/scripts/check-exports.mjs",
+    "packages/security-audit-sdk-node/compatibility.json",
+    "packages/security-audit-sdk-node/adr/003-governed-fetch-delivery-adapter.md",
+    "packages/security-audit-sdk-node/adr/004-http-audit-sink-and-shared-response-classification.md",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
+    "packages/security-audit-sdk-node/tests/http-audit-sink.test.ts",
+    "packages/security-audit-sdk-node/tests/http-audit-sink-mutations.test.ts"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-sink-over-governed-adapter",
+      "kind": "direct_implementation",
+      "summary": "A dedicated change that adds createHttpAuditSink: one byte-exact POST per event through the governed fetch adapter, a response classifier extracted from the handoff and shared with it, an onOutcome callback carrying the event identifier, flush and bounded shutdown draining, and an additive export widening recorded in ADR-NODE-004.",
+      "forces_addressed": [
+        "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
+        "The delivery handoff's request projection overwrites correlation.retry_attempt, so a sink built on it cannot send the validated event byte for byte.",
+        "CONTRIBUTING.md requires every transport to have its own OpenSpec change and explicit authorization, never an incidental addition.",
+        "The Node surface is frozen and widens only additively through a governed change that updates the frozen lists, the freeze record and an ADR together.",
+        "Only src/fetch-exchange.ts may reach fetch, and the scope gate rejects tokens such as transport, adapter and collector in source file names.",
+        "Two rule sets for classifying HTTP responses, one in the handoff and one in a sink, would drift apart.",
+        "Developers must correlate a failed send with their own logs and the receiver's, which needs the event identifier.",
+        "The ratified F-11 requirement forbids event IDs in sink-failure diagnostics and coherence freezes it byte for byte.",
+        "The delivery peer is untrusted: it can stall, refuse, redirect, or answer with malformed or ambiguous acknowledgments, and none of those may become acceptance."
+      ]
+    },
+    {
+      "id": "approach-handoff-backed-sink",
+      "kind": "alternative",
+      "summary": "Build the sink on createHttpDeliveryHandoff, reusing its request projection and outcome set, so delivery goes through the existing conformance primitive.",
+      "forces_addressed": [
+        "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
+        "Two rule sets for classifying HTTP responses, one in the handoff and one in a sink, would drift apart."
+      ]
+    },
+    {
+      "id": "approach-sink-local-classification",
+      "kind": "alternative",
+      "summary": "Give the sink its own response classification rules and leave the handoff's classification untouched, so ADR-NODE-003 keeps its letter.",
+      "forces_addressed": [
+        "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
+        "The delivery handoff's request projection overwrites correlation.retry_attempt, so a sink built on it cannot send the validated event byte for byte."
+      ]
+    },
+    {
+      "id": "approach-event-id-in-sink-failures",
+      "kind": "alternative",
+      "summary": "Populate the existing eventId field of core sink-failure results so that SDK_SINK_REJECTED and SDK_SINK_FAILURE carry the event identifier.",
+      "forces_addressed": [
+        "Developers must correlate a failed send with their own logs and the receiver's, which needs the event identifier."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-sink-over-governed-adapter",
+  "rejected_alternative_ids": [
+    "approach-handoff-backed-sink",
+    "approach-sink-local-classification",
+    "approach-event-id-in-sink-failures"
+  ],
+  "rejection_reasons": {
+    "approach-handoff-backed-sink": {
+      "forces": [
+        "The delivery handoff's request projection overwrites correlation.retry_attempt, so a sink built on it cannot send the validated event byte for byte."
+      ],
+      "reason": "The handoff's projection rewrites correlation.retry_attempt, which breaks the byte-exact body the evaluation depends on, and its attempt semantics imply a delivery-class conformance the sink does not claim."
+    },
+    "approach-sink-local-classification": {
+      "forces": [
+        "Two rule sets for classifying HTTP responses, one in the handoff and one in a sink, would drift apart."
+      ],
+      "reason": "Two copies of the status and acknowledgment rules would drift, so a status such as 429 could be a failure in one component and a rejection in the other; one shared classifier keeps a single source of classification."
+    },
+    "approach-event-id-in-sink-failures": {
+      "forces": [
+        "The ratified F-11 requirement forbids event IDs in sink-failure diagnostics and coherence freezes it byte for byte."
+      ],
+      "reason": "It contradicts the ratified F-11 diagnostics requirement, and changing that requirement needs an edit to check-coherence.mjs, which an active CB-018 change owns; the outcome callback carries the identifier instead."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-sink-sends-validated-bytes",
+    "implementation-single-classification-source",
+    "implementation-fetch-confined-to-adapter",
+    "implementation-surface-widened-additively",
+    "implementation-sink-drains-without-delivery-machinery"
+  ],
+  "invariant_evidence": {
+    "implementation-sink-sends-validated-bytes": {
+      "task_ids": [
+        "3.1",
+        "3.4"
+      ],
+      "evidence_ids": [
+        "loopback tests prove the received body equals the validated event's canonical serialization, including a non-zero correlation.retry_attempt, and the field-rewriting mutant is killed"
+      ]
+    },
+    "implementation-single-classification-source": {
+      "task_ids": [
+        "2.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "the handoff, retry and delivery-class tests pass unedited after the extraction, and every sink status class maps through the shared classifier"
+      ]
+    },
+    "implementation-fetch-confined-to-adapter": {
+      "task_ids": [
+        "3.1"
+      ],
+      "evidence_ids": [
+        "the scope gate passes without rule edits and only src/fetch-exchange.ts reaches fetch"
+      ]
+    },
+    "implementation-surface-widened-additively": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "the export check lists the three new names with no core collision, and compatibility.json gains one freezeRecord amendment with earlier records byte-identical"
+      ]
+    },
+    "implementation-sink-drains-without-delivery-machinery": {
+      "task_ids": [
+        "3.3",
+        "3.4"
+      ],
+      "evidence_ids": [
+        "held-response, shutdown-bound and concurrent-emit loopback tests pass, and the non-waiting flush mutant is killed"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "The sink sends exactly the validated event bytes and reports acceptance only for the one exact acknowledgment, so no field is rewritten and no failure becomes a delivered state.",
+    "authentication_or_authorization": "The sink holds no credential of its own; caller headers are sent only to the configured origin and never follow a redirect.",
+    "authority_provenance": "The sink forwards the SDK-validated event unchanged, so authoritative and claimed values keep the distinction the SDK gave them.",
+    "concurrency": "Concurrent emits are allowed with no ordering promise; each request is independent and settles once, and flush tracks only requests started before it.",
+    "confidentiality": "Events go only to the configured origin with no redirect following, headers are never logged or echoed, and the outcome callback never receives bodies, payloads or header values.",
+    "cryptography": "No cryptography is implemented; https origins use the runtime's TLS without configuration by the sink.",
+    "error_disclosure": "Core sink-failure diagnostics keep F-11's bounded fields with no event identifier; the callback reports only the event identifier, a closed code and a status.",
+    "external_security_integration": "The sink reaches only the configured origin through the governed fetch adapter and adds no dependency.",
+    "fail_posture": "Invalid options throw at construction, and every ambiguous, malformed, redirected or timed-out response maps to failure rather than acceptance.",
+    "lifecycle": "flush waits for in-flight requests and SDK shutdown drains them within its bound before the sink closes; emits after shutdown return SDK_SHUT_DOWN.",
+    "mutation_ownership": "Changes are confined to the exact sdk-node paths in owned_paths and the canonical Node capability through the fold; no CB-018-owned or governance-core path is touched.",
+    "privacy_transformation": "The sink transforms no field; privacy transformation stays in the SDK before validation, and the evaluation is synthetic-data only.",
+    "resource_retention": "The sink retains only the set of in-flight requests; responses are read to the adapter's bound and discarded.",
+    "retry_or_redelivery": "The sink never retries, batches or queues; one attempt per emit is the documented guarantee, and correlation.retry_attempt is sent exactly as validated.",
+    "trust_boundary": "The receiving peer is untrusted; the shared classifier reduces its behaviour to a closed code set, and nothing it sends becomes acceptance except the exact acknowledgment."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "73493c549ed2d3687f44d323fb5cbb75053683fb"
+  }
+}
