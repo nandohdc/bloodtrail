@@ -21,7 +21,7 @@ and archive the umbrella, `deliver-sdk-evaluation-alpha`.
 
 ## 2. Shared response classification
 
-- [ ] 2.1 #579 Extract the shared HTTP response classifier from the delivery handoff, with no behaviour
+- [x] 2.1 #579 Extract the shared HTTP response classifier from the delivery handoff, with no behaviour
   change. Verify:
   - the handoff, retry and delivery-class tests pass unedited;
   - the export check passes with no edit to its frozen lists;
