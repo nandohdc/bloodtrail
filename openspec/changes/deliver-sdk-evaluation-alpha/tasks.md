@@ -41,7 +41,7 @@ archive task (9.1) stays unticked until its own ticket.
   #581 was withdrawn by deviation 6 and has no task. Sink failures keep F-11's diagnostics, and the
   event identifier reaches developers through the HTTP sink's outcome callback.
 
-- [ ] 2.2 #582 Make `authoritativeTenant`'s input type a union that encodes its runtime rule. Verify:
+- [x] 2.2 #582 Make `authoritativeTenant`'s input type a union that encodes its runtime rule. Verify:
   - positive and negative compile-only type assertions pass;
   - the runtime tests pass unedited;
   - exported type names and the core export checks are unchanged.

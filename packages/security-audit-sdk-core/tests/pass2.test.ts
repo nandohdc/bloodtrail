@@ -1502,7 +1502,7 @@ function toNamedInput(event: SecurityAuditEvent): Record<string, unknown> {
       observed_at: event.event.observed_at,
     },
     actor: brandActorFromRaw(event.actor),
-    tenant: event.tenant ? authoritativeTenant(withoutClaimedTenantId(event.tenant)) : undefined,
+    tenant: event.tenant ? authoritativeTenant(withoutClaimedTenantId(event.tenant) as Parameters<typeof authoritativeTenant>[0]) : undefined,
     claimedTenant: event.tenant?.claimed_tenant_id ? claimedTenant(event.tenant.claimed_tenant_id) : undefined,
     subject: event.subject ? authoritativeSubject(event.subject) : undefined,
     authenticated_principal: event.authenticated_principal ? authenticatedPrincipal(event.authenticated_principal) : undefined,

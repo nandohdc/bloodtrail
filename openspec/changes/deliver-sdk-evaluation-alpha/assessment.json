@@ -67,7 +67,10 @@
     "packages/security-audit-sdk-core/tests/conformance-invalid-cases.test.ts",
     "packages/security-audit-sdk-core/tests/pass1.test.ts",
     "packages/security-audit-sdk-core/tests/pass2.test.ts",
+    "packages/security-audit-sdk-core/tests/f08-retention.test.ts",
+    "packages/security-audit-sdk-core/tests/authoritative-tenant.test.ts",
     "packages/security-audit-sdk-core/API.md",
+    "packages/security-audit-sdk-core/MIGRATION.md",
     "packages/security-audit-sdk-core/README.md",
     "README.md"
   ],

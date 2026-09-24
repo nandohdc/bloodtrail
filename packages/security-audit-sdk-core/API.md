@@ -89,7 +89,7 @@ The application must invoke authoritative constructors only after server-side au
 
 ### Tenant and resource
 
-- `authoritativeTenant` represents resolved tenant, cross-tenant, platform, or tenantless scope.
+- `authoritativeTenant` represents resolved tenant, cross-tenant, platform, or tenantless scope. For a `tenant` or `cross_tenant` scope, its input type requires `effective_tenant_id` and `resource_tenant_id`, and its runtime check also rejects an empty one.
 - `claimedTenant` preserves a caller claim separately.
 - `authoritativeResource` represents stable resource identity, operation, classification, ownership, and optional parent/bulk/export/change metadata.
 
