@@ -24,7 +24,7 @@ const FROZEN_TYPE_EXPORTS = [
   "DeliveryRetry", "DeliveryRetryJitterSource", "DeliveryRetryObservability",
   "DeliveryRetryOptions", "DeliveryRetryResult", "DeliveryShutdown", "DeliveryShutdownOptions",
   "DeliveryShutdownReport", "DeliveryShutdownSubmission", "DeliveryShutdownSubmitResult",
-  "FetchHttpExchangeOptions", "GovernedDeliveryClass", "HttpAcknowledgment", "HttpAuditSinkOptions", "HttpDeliveryHandoff",
+  "FetchHttpExchangeOptions", "GovernedDeliveryClass", "HttpAcknowledgment", "HttpAuditSinkOptions", "HttpAuditSinkOutcome", "HttpDeliveryHandoff",
   "HttpDeliveryHandoffOptions", "HttpDeliveryHandoffResult", "HttpExchange", "HttpExchangeOutcome",
   "HttpExchangeRequest", "NodePlatformProvider", "NodeSecurityAuditSdkConfiguration",
   "NodeTimerHandle", "PolicyCriticalBehavior", "PolicyCriticalDelivery",
