@@ -45,7 +45,7 @@ archive task (9.1) stays unticked until its own ticket.
   - positive and negative compile-only type assertions pass;
   - the runtime tests pass unedited;
   - exported type names and the core export checks are unchanged.
-- [ ] 2.3 #583 Error catalog part 1: all 21 SDK codes and the 12 most-hit contract codes. Verify that the
+- [x] 2.3 #583 Error catalog part 1: all 21 SDK codes and the 12 most-hit contract codes. Verify that the
   completeness test, with a pending list of exactly the other 19 contract codes, runs in the Node
   binding's validation chain.
 - [ ] 2.4 #584 Error catalog part 2: the remaining 19 contract codes, with the pending list deleted.
