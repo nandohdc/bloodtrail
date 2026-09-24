@@ -117,6 +117,22 @@ Concurrent emits each make one request, with no cap and no ordering. The set of 
 queue: nothing in it waits to be sent. The caller of `emit` gets a promise of its own, so a send nobody
 handles still surfaces as an unhandled rejection.
 
+**Mutation checks.** #592 proves that the sink tests can fail. `tests/http-audit-sink-mutations.test.ts`
+applies each mutant, in the sink, the shared classifier or the adapter, to a disposable clone of the built
+package, never to the live tree. It then runs the one sink test pinned to that mutant, alone, and that test
+must fail. Before any mutant runs, it checks that the clone holds the current build. It also runs every
+pinned test alone against an unmutated clone, and each must pass. The run fails when a mutant does not apply,
+survives or hangs, or when the number applied differs from the pinned count.
+
+Three edits are left out, because no sink test can reach them:
+
+- dropping the tracker's `delete`, which only holds memory;
+- changing a request field the adapter never reads (`content-length`, `event_id` or `attempt`), since `fetch`
+  sets its own length;
+- dropping the classifier's check that an acknowledgment's outcome is `accepted`. On the sink's path the
+  adapter hands it no other, so the adapter's own check is mutated instead. The classifier's check is still
+  live for a handoff given an injected exchange, and no test in the package covers that case yet.
+
 **Scope.** Non-production evaluation only. The sink makes one attempt per event, with no retry, batching,
 queueing, backpressure, concurrency cap or ordering, and it claims no delivery-class conformance.
 
@@ -132,7 +148,7 @@ Revert these together:
 
 - `index.ts`'s export line;
 - the three frozen-list entries and the amendment;
-- `src/http-audit-sink.ts` and its test file;
+- `src/http-audit-sink.ts` and its two test files, the sink tests and the mutation checks;
 - the exported path pattern in `src/http-handoff.ts`;
 - the three scope-mutation pins.
 
@@ -144,7 +160,9 @@ To revert only #590:
 
 - restore the amendment to its #589 form, naming two exports at 19/43;
 - remove `HttpAuditSinkOutcome` from `index.ts` and from the frozen type list;
-- return the authored reference pin in `tests/scope-mutations.test.ts` from 90 to 89.
+- return the authored reference pin in `tests/scope-mutations.test.ts` from 90 to 89;
+- in `tests/http-audit-sink-mutations.test.ts`, remove or re-anchor each mutant whose text the revert
+  changes, and update the pinned count. The check names every mutant that no longer applies.
 
 The sink then maps every code but `acknowledged` to unknown again.
 
@@ -153,7 +171,18 @@ To revert only #591:
 - remove the sink's in-flight set, its closed state and the `shut_down` result, `flush` and `shutdown`,
   and return `emit` to a plain send;
 - remove the lifecycle arms from `tests/http-audit-sink.test.ts`, with their helpers;
+- in `tests/http-audit-sink-mutations.test.ts`, remove the flush and shutdown mutants, re-anchor on the
+  plain send each other mutant whose text the revert changes, such as the two-requests-per-emit mutant, and
+  update the pinned count;
 - untick task 3.3 in the change's `tasks.md`.
 
-No export, frozen-list entry, amendment or pin changes. The SDK's own shutdown bound still applies,
-because it tracks its emits itself.
+No export, frozen-list entry, amendment or scope-mutation pin changes. The SDK's own shutdown bound still
+applies, because it tracks its emits itself.
+
+To revert only #592:
+
+- delete `tests/http-audit-sink-mutations.test.ts`;
+- remove this record's mutation-check paragraph, and every mention of that file in these reversal notes;
+- untick task 3.4.
+
+No source, export, frozen-list entry, amendment or scope-mutation pin changes.

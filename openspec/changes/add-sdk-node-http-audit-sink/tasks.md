@@ -45,7 +45,7 @@ and archive the umbrella, `deliver-sdk-evaluation-alpha`.
   - `SDK_SHUTDOWN_TIMEOUT`;
   - `SDK_SHUT_DOWN`;
   - N concurrent emits.
-- [ ] 3.4 #592 Run the sink mutation checks on disposable clones. Verify that every mutant is killed, and
+- [x] 3.4 #592 Run the sink mutation checks on disposable clones. Verify that every mutant is killed, and
   that the run asserts the number of mutants applied.
 
 ## 4. Fold
