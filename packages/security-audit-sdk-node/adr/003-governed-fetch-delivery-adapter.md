@@ -3,6 +3,9 @@
 - Status: Accepted for SDK-node implementation
 - Date: 2026-09-10
 - Decision source: `decision_source = "delegated to Claude by the owner, 2026-09-10; not a human owner decision"`
+- Amended by: [ADR-NODE-004](004-http-audit-sink-and-shared-response-classification.md), which moves
+  response classification into one classifier that the handoff shares with the HTTP audit sink, and
+  stops this adapter from dropping acknowledgment entries it cannot read as accepted
 
 ## Context
 

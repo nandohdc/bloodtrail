@@ -29,6 +29,13 @@
         "adr": "adr/003-governed-fetch-delivery-adapter.md",
         "valueExportCount": 18,
         "typeExportCount": 42
+      },
+      {
+        "issue": 589,
+        "reason": "Governed additive widening for the HTTP audit sink: createHttpAuditSink and HttpAuditSinkOptions, the core's sink interface over the governed fetch delivery adapter, classified by the response classifier it shares with createHttpDeliveryHandoff.",
+        "adr": "adr/004-http-audit-sink-and-shared-response-classification.md",
+        "valueExportCount": 19,
+        "typeExportCount": 43
       }
     ]
   },

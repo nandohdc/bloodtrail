@@ -1,7 +1,9 @@
 // The governed delivery adapter (#113): an HttpExchange over the Node
 // runtime's global fetch. It is the only adapter the governed inventory
 // approves; it maps every native fetch outcome onto the closed HttpExchange
-// outcome set and leaves every conformance decision to createHttpDeliveryHandoff.
+// outcome set and leaves every conformance decision to the shared response
+// classifier, which createHttpDeliveryHandoff and createHttpAuditSink both call
+// (ADR-NODE-004).
 //
 // NON-PRODUCTION. The adapter holds no credential of its own: any header the
 // caller supplies is the caller's, and the adapter never logs, echoes, or
@@ -25,8 +27,9 @@ export interface FetchHttpExchangeOptions {
 const DEFAULT_MAX_RESPONSE_BYTES = 65_536;
 const MAX_TIMEOUT_MS = 60_000;
 const ORIGIN_PATTERN = /^https?:\/\/(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::\d{1,5})?$/;
-// A value the handoff's acknowledgment check can never accept, so an unreadable
-// or oversized body becomes its protocol_error rather than a guess here.
+// A value the shared classifier's acknowledgment check can never accept, so an
+// unreadable or oversized body becomes malformed_acknowledgment rather than a
+// guess here.
 const UNREADABLE: readonly HttpAcknowledgment[] = Object.freeze([]);
 
 export function createFetchHttpExchange(options: FetchHttpExchangeOptions): HttpExchange {
@@ -43,7 +46,7 @@ export function createFetchHttpExchange(options: FetchHttpExchangeOptions): Http
         method: request.method,
         headers: { ...callerHeaders, "content-type": request.headers["content-type"] },
         body: request.body,
-        // A redirect is surfaced to the handoff as a 3xx, never followed:
+        // A redirect is surfaced to the caller as a 3xx, never followed:
         // following one would send the event to a peer nobody configured.
         redirect: "manual",
         signal: AbortSignal.timeout(timeoutMs),
@@ -73,13 +76,11 @@ function parseAcknowledgments(body: string): readonly HttpAcknowledgment[] {
     if (!("acknowledgments" in parsed)) return UNREADABLE;
     const rawAcks = parsed.acknowledgments;
     if (!Array.isArray(rawAcks)) return UNREADABLE;
-    const result: HttpAcknowledgment[] = [];
-    for (const ack of rawAcks) {
-      if (isAcceptedAcknowledgment(ack)) {
-        result.push({ event_id: ack.event_id, outcome: "accepted" });
-      }
-    }
-    return Object.freeze(result);
+    // Every entry must read as an accepted acknowledgment. Dropping the others
+    // would hide them from the classifier's exactly-one check, so the exact
+    // acknowledgment paired with anything else would read as accepted.
+    if (!rawAcks.every(isAcceptedAcknowledgment)) return UNREADABLE;
+    return Object.freeze(rawAcks.map((ack): HttpAcknowledgment => ({ event_id: ack.event_id, outcome: "accepted" })));
   } catch {
     return UNREADABLE;
   }
