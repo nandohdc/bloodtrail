@@ -29,7 +29,7 @@ and archive the umbrella, `deliver-sdk-evaluation-alpha`.
 
 ## 3. HTTP audit sink
 
-- [ ] 3.1 #589 HTTP sink v1: one byte-exact POST per event through the governed fetch adapter (A1,
+- [x] 3.1 #589 HTTP sink v1: one byte-exact POST per event through the governed fetch adapter (A1,
   `createFetchHttpExchange`). Verify:
   - loopback tests prove byte-identical bodies, including a non-zero `correlation.retry_attempt`;
   - they prove one request per emit, and that a 3xx is not followed;

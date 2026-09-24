@@ -32,6 +32,7 @@
     "packages/security-audit-sdk-node/src/http-response-classification.ts",
     "packages/security-audit-sdk-node/src/http-handoff.ts",
     "packages/security-audit-sdk-node/src/http-audit-sink.ts",
+    "packages/security-audit-sdk-node/src/fetch-exchange.ts",
     "packages/security-audit-sdk-node/src/index.ts",
     "packages/security-audit-sdk-node/scripts/check-exports.mjs",
     "packages/security-audit-sdk-node/compatibility.json",

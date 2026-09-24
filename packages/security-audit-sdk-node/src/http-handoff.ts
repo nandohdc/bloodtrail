@@ -4,6 +4,9 @@ import { nodeByteLength } from "./byte-length.js";
 import { classifyHttpExchangeOutcome, type HttpResponseClassification } from "./http-response-classification.js";
 
 const MAX_REQUEST_BODY_BYTES = 65_536;
+// A bounded absolute request path, with no query or fragment. The HTTP audit
+// sink checks its path against this same pattern.
+export const BOUNDED_ABSOLUTE_PATH = /^\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]{1,2047}$/;
 // Contract 2.1.0 bounds.retry_attempt_max — the wire ceiling on correlation.retry_attempt.
 const RETRY_ATTEMPT_MAX = 1000;
 // The handoff's delivery status for each shared classification code.
@@ -112,7 +115,7 @@ export function createHttpDeliveryHandoff(options: HttpDeliveryHandoffOptions): 
 }
 
 function validatePath(path: string): string {
-  if (!/^\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]{1,2047}$/.test(path)) {
+  if (!BOUNDED_ABSOLUTE_PATH.test(path)) {
     throw new TypeError("HTTP handoff path must be a bounded absolute path");
   }
   return path;
