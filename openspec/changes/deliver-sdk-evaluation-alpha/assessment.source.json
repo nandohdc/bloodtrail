@@ -1,0 +1,301 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "No developer outside the repository has used the SDK, and #575 requires evidence from fresh evaluators before further governance, deployment or enterprise investment.",
+    "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
+    "The delivery handoff's request projection overwrites correlation.retry_attempt, so a sink built on it cannot send the validated event byte for byte.",
+    "The Node surface is frozen and widens only additively through a governed change that updates the frozen lists, the freeze record and an ADR together.",
+    "Only src/fetch-exchange.ts may reach fetch, and the scope gate rejects tokens such as transport, adapter and collector in source file names.",
+    "The packages are private and unpublished and the Node binding installed alone fails at import, so evaluators need a kit that installs with npm or pnpm with exactly one core copy.",
+    "Two active CB-018 changes own the CI workflow, sdk-core's coherence and changed-paths scripts and its lifecycle record, so this work must not touch them.",
+    "Distribution to evaluators is the owner's decision, so a kit must carry an exact identity and ship only under an owner-approved authorization.",
+    "Developers must correlate a failed send with their own logs and the receiver's, which needs the event identifier.",
+    "The ratified F-11 requirement forbids event IDs in sink-failure diagnostics and coherence freezes it byte for byte.",
+    "Each implementation PR must pass association without a proposal of its own, and parallel PRs must not edit the same file."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "integration",
+      "lifecycle_or_state",
+      "concurrency",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node",
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/deliver-sdk-evaluation-alpha/",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "openspec/specs/security-audit-sdk-core/spec.md",
+    "packages/security-audit-sdk-node/src/http-response-classification.ts",
+    "packages/security-audit-sdk-node/src/http-handoff.ts",
+    "packages/security-audit-sdk-node/src/http-audit-sink.ts",
+    "packages/security-audit-sdk-node/src/index.ts",
+    "packages/security-audit-sdk-node/scripts/check-exports.mjs",
+    "packages/security-audit-sdk-node/scripts/check-package-contents.mjs",
+    "packages/security-audit-sdk-node/scripts/verification-helpers.mjs",
+    "packages/security-audit-sdk-node/scripts/packed-install.mjs",
+    "packages/security-audit-sdk-node/scripts/build-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-controls.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-doc-blocks.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-peer.mjs",
+    "packages/security-audit-sdk-node/compatibility.json",
+    "packages/security-audit-sdk-node/package.json",
+    "packages/security-audit-sdk-node/README.md",
+    "packages/security-audit-sdk-node/adr/003-governed-fetch-delivery-adapter.md",
+    "packages/security-audit-sdk-node/adr/004-http-audit-sink-and-shared-response-classification.md",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
+    "packages/security-audit-sdk-node/tests/http-audit-sink.test.ts",
+    "packages/security-audit-sdk-node/tests/http-audit-sink-mutations.test.ts",
+    "packages/security-audit-sdk-node/tests/error-catalog.test.ts",
+    "packages/security-audit-sdk-node/examples/first-event.ts",
+    "packages/security-audit-sdk-node/examples/evaluation-service.ts",
+    "packages/security-audit-sdk-node/examples/evaluation-receiver.ts",
+    "packages/security-audit-sdk-node/examples/seeded-invalid-calls.ts",
+    "packages/security-audit-sdk-node/docs/quickstart.md",
+    "packages/security-audit-sdk-node/docs/error-catalog.md",
+    "packages/security-audit-sdk-node/docs/wire-protocol.md",
+    "packages/security-audit-sdk-node/docs/privacy.md",
+    "packages/security-audit-sdk-node/docs/supported-and-planned.md",
+    "packages/security-audit-sdk-node/docs/known-issues.md",
+    "packages/security-audit-sdk-node/docs/evaluation-guide.md",
+    "packages/security-audit-sdk-node/docs/evaluation-questionnaire.md",
+    "packages/security-audit-sdk-node/docs/seeded-invalid-calls.md",
+    "packages/security-audit-sdk-core/src/context.ts",
+    "packages/security-audit-sdk-core/tests/types/index.ts",
+    "packages/security-audit-sdk-core/tests/verification/authority-scope.test.mjs",
+    "packages/security-audit-sdk-core/tests/conformance-harness.ts",
+    "packages/security-audit-sdk-core/tests/conformance-account-authentication-session.test.ts",
+    "packages/security-audit-sdk-core/tests/conformance-authorization-administration.test.ts",
+    "packages/security-audit-sdk-core/tests/conformance-data-configuration-tenant.test.ts",
+    "packages/security-audit-sdk-core/tests/conformance-invalid-cases.test.ts",
+    "packages/security-audit-sdk-core/tests/pass1.test.ts",
+    "packages/security-audit-sdk-core/tests/pass2.test.ts",
+    "packages/security-audit-sdk-core/API.md",
+    "packages/security-audit-sdk-core/README.md",
+    "README.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-umbrella-evaluation-alpha",
+      "kind": "direct_implementation",
+      "summary": "One umbrella change that owns exact paths: an HTTP audit sink composing the governed fetch adapter with one shared response classifier and an outcome callback carrying the event identifier, an error catalog, the authoritativeTenant union, a conformance suite, and an evaluation kit whose gate runs in the Node binding's test and validate scripts, with ADDED-only deltas.",
+      "forces_addressed": [
+        "No developer outside the repository has used the SDK, and #575 requires evidence from fresh evaluators before further governance, deployment or enterprise investment.",
+        "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
+        "The delivery handoff's request projection overwrites correlation.retry_attempt, so a sink built on it cannot send the validated event byte for byte.",
+        "The Node surface is frozen and widens only additively through a governed change that updates the frozen lists, the freeze record and an ADR together.",
+        "Only src/fetch-exchange.ts may reach fetch, and the scope gate rejects tokens such as transport, adapter and collector in source file names.",
+        "The packages are private and unpublished and the Node binding installed alone fails at import, so evaluators need a kit that installs with npm or pnpm with exactly one core copy.",
+        "Two active CB-018 changes own the CI workflow, sdk-core's coherence and changed-paths scripts and its lifecycle record, so this work must not touch them.",
+        "Distribution to evaluators is the owner's decision, so a kit must carry an exact identity and ship only under an owner-approved authorization.",
+        "Developers must correlate a failed send with their own logs and the receiver's, which needs the event identifier.",
+        "The ratified F-11 requirement forbids event IDs in sink-failure diagnostics and coherence freezes it byte for byte.",
+        "Each implementation PR must pass association without a proposal of its own, and parallel PRs must not edit the same file."
+      ]
+    },
+    {
+      "id": "approach-per-feature-changes",
+      "kind": "alternative",
+      "summary": "Separate OpenSpec changes for the sink, the error catalog, the conformance suite and the evaluation kit, each with its own proposal, assessment, fold and archive.",
+      "forces_addressed": [
+        "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
+        "The Node surface is frozen and widens only additively through a governed change that updates the frozen lists, the freeze record and an ADR together.",
+        "Distribution to evaluators is the owner's decision, so a kit must carry an exact identity and ship only under an owner-approved authorization."
+      ]
+    },
+    {
+      "id": "approach-handoff-backed-sink",
+      "kind": "alternative",
+      "summary": "Build the sink on createHttpDeliveryHandoff, reusing its request projection and outcome set, so delivery goes through the existing conformance primitive.",
+      "forces_addressed": [
+        "Nothing implements the SDK sink boundary over HTTP, so every developer hand-writes the glue between the SDK and the Node binding's delivery pieces.",
+        "Only src/fetch-exchange.ts may reach fetch, and the scope gate rejects tokens such as transport, adapter and collector in source file names."
+      ]
+    },
+    {
+      "id": "approach-registry-publication",
+      "kind": "alternative",
+      "summary": "Publish the three packages to a registry under the @bloodtrail scope and have evaluators install them by version instead of from a kit.",
+      "forces_addressed": [
+        "No developer outside the repository has used the SDK, and #575 requires evidence from fresh evaluators before further governance, deployment or enterprise investment.",
+        "The packages are private and unpublished and the Node binding installed alone fails at import, so evaluators need a kit that installs with npm or pnpm with exactly one core copy."
+      ]
+    },
+    {
+      "id": "approach-event-id-in-sink-failures",
+      "kind": "alternative",
+      "summary": "Populate the existing eventId field of core sink-failure results so that SDK_SINK_REJECTED and SDK_SINK_FAILURE carry the event identifier.",
+      "forces_addressed": [
+        "Developers must correlate a failed send with their own logs and the receiver's, which needs the event identifier."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-umbrella-evaluation-alpha",
+  "rejected_alternative_ids": [
+    "approach-per-feature-changes",
+    "approach-handoff-backed-sink",
+    "approach-registry-publication",
+    "approach-event-id-in-sink-failures"
+  ],
+  "rejection_reasons": {
+    "approach-per-feature-changes": {
+      "forces": [
+        "Each implementation PR must pass association without a proposal of its own, and parallel PRs must not edit the same file."
+      ],
+      "reason": "Every feature would need its own proposal PR, assessment, fold and archive, and the sink, catalog and kit share owned files, so parallel changes would each claim the same paths and collide in the union."
+    },
+    "approach-handoff-backed-sink": {
+      "forces": [
+        "The delivery handoff's request projection overwrites correlation.retry_attempt, so a sink built on it cannot send the validated event byte for byte."
+      ],
+      "reason": "The handoff's projection rewrites correlation.retry_attempt, which breaks the byte-exact body the evaluation depends on, and its attempt semantics imply a delivery-class conformance the sink does not claim."
+    },
+    "approach-registry-publication": {
+      "forces": [
+        "Distribution to evaluators is the owner's decision, so a kit must carry an exact identity and ship only under an owner-approved authorization.",
+        "The packages are private and unpublished and the Node binding installed alone fails at import, so evaluators need a kit that installs with npm or pnpm with exactly one core copy."
+      ],
+      "reason": "Publication is not authorized, and a version dependency on the unclaimed @bloodtrail scope would make a lone install a dependency-confusion vector, whereas a kit reaches only named evaluators under a recorded identity."
+    },
+    "approach-event-id-in-sink-failures": {
+      "forces": [
+        "The ratified F-11 requirement forbids event IDs in sink-failure diagnostics and coherence freezes it byte for byte.",
+        "Two active CB-018 changes own the CI workflow, sdk-core's coherence and changed-paths scripts and its lifecycle record, so this work must not touch them."
+      ],
+      "reason": "It contradicts the ratified F-11 diagnostics requirement, and changing that requirement needs an edit to check-coherence.mjs, which an active CB-018 change owns; the sink's outcome callback carries the identifier instead."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-sink-sends-validated-bytes",
+    "implementation-single-classification-source",
+    "implementation-fetch-confined-to-adapter",
+    "implementation-surface-widened-additively",
+    "implementation-error-catalog-complete",
+    "implementation-tenant-type-encodes-runtime-rule",
+    "implementation-kit-gate-fails-closed",
+    "implementation-single-core-copy",
+    "implementation-no-release-or-publication",
+    "implementation-owner-authorizes-distribution"
+  ],
+  "invariant_evidence": {
+    "implementation-sink-sends-validated-bytes": {
+      "task_ids": [
+        "4.1",
+        "4.4"
+      ],
+      "evidence_ids": [
+        "loopback tests prove the received body equals the validated event's canonical serialization, including a non-zero correlation.retry_attempt, and the field-rewriting mutant is killed"
+      ]
+    },
+    "implementation-single-classification-source": {
+      "task_ids": [
+        "2.1",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "the handoff, retry and delivery-class tests pass unedited after the extraction, and every sink status class maps through the shared classifier"
+      ]
+    },
+    "implementation-fetch-confined-to-adapter": {
+      "task_ids": [
+        "4.1"
+      ],
+      "evidence_ids": [
+        "the scope gate passes without rule edits and only src/fetch-exchange.ts reaches fetch"
+      ]
+    },
+    "implementation-surface-widened-additively": {
+      "task_ids": [
+        "4.1",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "the export check lists the three new names with no core collision, and compatibility.json gains one freezeRecord amendment with earlier records byte-identical"
+      ]
+    },
+    "implementation-error-catalog-complete": {
+      "task_ids": [
+        "2.4",
+        "2.5"
+      ],
+      "evidence_ids": [
+        "the completeness test fails for a removed entry and for an unknown code, and passes for the complete catalog"
+      ]
+    },
+    "implementation-tenant-type-encodes-runtime-rule": {
+      "task_ids": [
+        "2.3"
+      ],
+      "evidence_ids": [
+        "compile-only positive and negative assertions pass and the runtime tests pass unedited"
+      ]
+    },
+    "implementation-kit-gate-fails-closed": {
+      "task_ids": [
+        "5.1",
+        "5.3",
+        "5.7",
+        "5.8",
+        "7.1"
+      ],
+      "evidence_ids": [
+        "each planted defect, a broken core dependency, a duplicated core, a drifted snippet, a type error and a missing kit item, fails the gate"
+      ]
+    },
+    "implementation-single-core-copy": {
+      "task_ids": [
+        "5.7"
+      ],
+      "evidence_ids": [
+        "the duplicate-copy probe finds one core in the npm and pnpm installs and reports DUPLICATE_AUTHORITY for a planted second copy"
+      ]
+    },
+    "implementation-no-release-or-publication": {
+      "task_ids": [
+        "7.1"
+      ],
+      "evidence_ids": [
+        "the packages stay private and UNLICENSED at 0.4.0, 0.4.0 and 0.1.0 with no tag, and the publication-path gate is unchanged"
+      ]
+    },
+    "implementation-owner-authorizes-distribution": {
+      "task_ids": [
+        "1.1",
+        "8.1"
+      ],
+      "evidence_ids": [
+        "evaluation-authorization.md is approved only by the owner's merge, and kit identity and evaluator handles are recorded on #605 before distribution"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "The sink sends exactly the validated event bytes and reports acceptance only for the one exact acknowledgment, so no field is rewritten and no failure becomes a delivered state.",
+    "authentication_or_authorization": "The sink holds no credential of its own; caller headers go only to the configured origin, and distribution needs the owner's merge of the evaluation authorization.",
+    "authority_provenance": "The authoritativeTenant union only narrows a type; branding, runtime validation and the authority registry are unchanged, and client claims stay distinct from authoritative values.",
+    "concurrency": "Concurrent emits are allowed with no ordering promise; each request is independent and settles once, and flush tracks only requests started before it.",
+    "confidentiality": "Events go only to the configured origin with no redirect following, headers are never logged or echoed, and the outcome callback never receives bodies, payloads or header values.",
+    "cryptography": "No cryptography is implemented; https origins use the runtime's TLS, and the kit identity uses SHA-256 digests for identification, not for trust.",
+    "error_disclosure": "Core sink-failure diagnostics keep F-11's bounded fields with no event identifier; the callback reports only the event identifier, a closed code and a status.",
+    "external_security_integration": "The sink reaches only the configured origin through the governed fetch adapter and adds no dependency; the kit gate fetches pinned tools from the npm registry only at gate time.",
+    "fail_posture": "Invalid sink options throw at construction, every ambiguous response maps to failure rather than acceptance, and the kit gate fails closed, including when the registry is unreachable.",
+    "lifecycle": "flush waits for in-flight requests and SDK shutdown drains within its bound before closing the sink; emits after shutdown return SDK_SHUT_DOWN.",
+    "mutation_ownership": "Changes are confined to the exact paths in owned_paths and the two canonical Node and core capability specs through the fold; no CB-018-owned or governance-core path is touched.",
+    "privacy_transformation": "No field is transformed by the sink; the evaluation is synthetic-data only, with a stop-and-purge condition if non-synthetic data reaches a receiver.",
+    "resource_retention": "The sink retains only the set of in-flight requests; responses are read to the adapter's bound and discarded, and the kit is written only outside the repository.",
+    "retry_or_redelivery": "The sink never retries, batches or queues; one attempt per emit is the documented guarantee, and correlation.retry_attempt is sent exactly as validated.",
+    "trust_boundary": "The receiving peer is untrusted; the shared classifier reduces its behaviour to a closed code set, and the example receiver re-runs full SDK validation instead of trusting structure."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "73493c549ed2d3687f44d323fb5cbb75053683fb"
+  }
+}
