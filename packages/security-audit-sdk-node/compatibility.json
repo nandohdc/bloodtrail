@@ -32,10 +32,10 @@
       },
       {
         "issue": 589,
-        "reason": "Governed additive widening for the HTTP audit sink: createHttpAuditSink and HttpAuditSinkOptions, the core's sink interface over the governed fetch delivery adapter, classified by the response classifier it shares with createHttpDeliveryHandoff.",
+        "reason": "Governed additive widening for the HTTP audit sink: createHttpAuditSink and HttpAuditSinkOptions (#589), and HttpAuditSinkOutcome (#590, recorded in this same amendment as ADR-NODE-004 provides), the core's sink interface over the governed fetch delivery adapter, classified by the response classifier it shares with createHttpDeliveryHandoff.",
         "adr": "adr/004-http-audit-sink-and-shared-response-classification.md",
         "valueExportCount": 19,
-        "typeExportCount": 43
+        "typeExportCount": 44
       }
     ]
   },

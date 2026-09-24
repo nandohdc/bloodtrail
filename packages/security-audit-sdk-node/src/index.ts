@@ -15,7 +15,7 @@ export {
   type HttpExchangeRequest,
 } from "./http-handoff.js";
 export { createFetchHttpExchange, type FetchHttpExchangeOptions } from "./fetch-exchange.js";
-export { createHttpAuditSink, type HttpAuditSinkOptions } from "./http-audit-sink.js";
+export { createHttpAuditSink, type HttpAuditSinkOptions, type HttpAuditSinkOutcome } from "./http-audit-sink.js";
 export {
   createBoundedDeliveryRetry,
   type DeliveryRetry,

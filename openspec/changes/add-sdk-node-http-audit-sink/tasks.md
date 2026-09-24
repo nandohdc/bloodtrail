@@ -34,7 +34,7 @@ and archive the umbrella, `deliver-sdk-evaluation-alpha`.
   - loopback tests prove byte-identical bodies, including a non-zero `correlation.retry_attempt`;
   - they prove one request per emit, and that a 3xx is not followed;
   - ADR-NODE-004, the frozen lists and a freeze-record amendment are in place.
-- [ ] 3.2 #590 Split rejected from failed, and add the `onOutcome` callback. The callback carries the event
+- [x] 3.2 #590 Split rejected from failed, and add the `onOutcome` callback. The callback carries the event
   identifier and the classifier's code. Verify:
   - loopback tests cover every status class;
   - the sentinel-credential test passes;

@@ -1,7 +1,9 @@
-// The HTTP audit sink (#589): the core's sink interface over the governed fetch
-// delivery adapter. Each emitted event becomes one POST whose body is the event
-// the SDK validated, serialized once and sent unchanged. Acceptance comes only
-// from the shared response classifier; the sink adds no rule of its own.
+// The HTTP audit sink (#589, #590): the core's sink interface over the governed
+// fetch delivery adapter. Each emitted event becomes one POST whose body is the
+// event the SDK validated, serialized once and sent unchanged. Every result
+// comes from the shared response classifier, and the sink adds no rule of its
+// own: only the exact acknowledgment is acceptance, and only a permanent 4xx is
+// a rejection. onOutcome reports each request's cause.
 //
 // NON-PRODUCTION. One attempt per event: no retry, batching, queueing,
 // backpressure or ordering. Caller headers go only to the configured origin,
@@ -11,8 +13,8 @@ import type { AuditDeliveryResult, AuditEventSink, SecurityAuditEvent } from "@b
 
 import { nodeByteLength } from "./byte-length.js";
 import { createFetchHttpExchange } from "./fetch-exchange.js";
-import { BOUNDED_ABSOLUTE_PATH, type HttpExchangeRequest } from "./http-handoff.js";
-import { classifyHttpExchangeOutcome } from "./http-response-classification.js";
+import { BOUNDED_ABSOLUTE_PATH, type HttpExchangeOutcome, type HttpExchangeRequest } from "./http-handoff.js";
+import { classifyHttpExchangeOutcome, type HttpResponseClassification } from "./http-response-classification.js";
 
 export interface HttpAuditSinkOptions {
   /** `http://` or `https://` scheme, host, and optional port only: no path, query, fragment, or userinfo. */
@@ -23,7 +25,35 @@ export interface HttpAuditSinkOptions {
   readonly timeoutMs: number;
   /** Caller-owned headers, such as an authorization header. They are sent only to `origin`. */
   readonly headers?: Readonly<Record<string, string>>;
+  /**
+   * Called once per request with that request's outcome, and never with a
+   * body, payload or header value. It runs inline before the emit settles, so
+   * it should be quick. The sink does not wait for a promise it returns, and
+   * ignores anything it throws or rejects with.
+   */
+  readonly onOutcome?: (outcome: HttpAuditSinkOutcome) => void;
 }
+
+/** One request's cause, reported through `HttpAuditSinkOptions.onOutcome`. */
+export type HttpAuditSinkOutcome = Readonly<{
+  /** The emitted event's `event.id`. */
+  readonly eventId: string;
+  /**
+   * The shared response classifier's code, `acknowledged` included. The codes
+   * are spelled out so that no edit to the internal classifier can change this
+   * frozen type: a new code fails to compile in this file instead.
+   */
+  readonly outcome:
+    | "acknowledged"
+    | "http_retryable"
+    | "timeout"
+    | "transport_failure"
+    | "http_permanent"
+    | "malformed_acknowledgment"
+    | "unexpected_response";
+  /** The HTTP status, present only when a response arrived. */
+  readonly status?: number;
+}>;
 
 // RFC 9110 field names. A field value may hold visible characters, spaces and
 // tabs, but no line break or NUL, and fetch needs one byte per character.
@@ -37,6 +67,19 @@ const RESERVED_HEADER_NAMES = new Set([
   "connection", "keep-alive", "transfer-encoding", "upgrade", "expect",
 ]);
 const ACCEPTED: AuditDeliveryResult = Object.freeze({ status: "accepted" });
+// The core's sink status for each shared classification code.
+const SINK_STATUS_BY_CODE = {
+  acknowledged: "accepted",
+  http_permanent: "rejected",
+  http_retryable: "unknown",
+  timeout: "unknown",
+  transport_failure: "unknown",
+  malformed_acknowledgment: "unknown",
+  unexpected_response: "unknown",
+} as const satisfies Record<HttpResponseClassification, AuditDeliveryResult["status"]>;
+
+// A callback may return anything, a rejected promise included.
+type OutcomeCallback = (outcome: HttpAuditSinkOutcome) => unknown;
 
 /**
  * Creates an HTTP audit sink for non-production evaluation. Invalid options
@@ -45,21 +88,51 @@ const ACCEPTED: AuditDeliveryResult = Object.freeze({ status: "accepted" });
 export function createHttpAuditSink(options: HttpAuditSinkOptions): AuditEventSink {
   const path = validatePath(options.path);
   const headers = validateHeaders(options.headers);
+  const onOutcome = validateOnOutcome(options.onOutcome);
   const exchange = createFetchHttpExchange({ origin: options.origin, timeoutMs: options.timeoutMs, headers });
 
   return Object.freeze({
     async emit(event: Readonly<SecurityAuditEvent>): Promise<AuditDeliveryResult> {
       // No catch: the governed adapter settles every exchange with an outcome
-      // it built from plain data, so neither it nor the classifier throws here.
-      // Should serialization throw, the emit rejects, and the SDK reports a
-      // rejected emit as SDK_SINK_FAILURE.
-      const code = classifyHttpExchangeOutcome(await exchange(requestFor(event, path)), event.event.id);
-      return code === "acknowledged" ? ACCEPTED : Object.freeze({ status: "unknown", code });
+      // it built from plain data, so neither it nor the classifier throws here,
+      // and report contains the callback. Should serialization throw, the emit
+      // rejects, and the SDK reports a rejected emit as SDK_SINK_FAILURE.
+      const eventId = event.event.id;
+      const exchanged = await exchange(requestFor(event, eventId, path));
+      const code = classifyHttpExchangeOutcome(exchanged, eventId);
+      report(onOutcome, outcomeFor(eventId, code, exchanged));
+      return resultFor(code);
     },
   } satisfies AuditEventSink);
 }
 
-function requestFor(event: Readonly<SecurityAuditEvent>, path: string): HttpExchangeRequest {
+function resultFor(code: HttpResponseClassification): AuditDeliveryResult {
+  const status = SINK_STATUS_BY_CODE[code];
+  return status === "accepted" ? ACCEPTED : Object.freeze({ status, code });
+}
+
+// Closed values only: the event identifier, the classifier's code, and the
+// status of a response when one arrived. Never a body, a payload or a header.
+function outcomeFor(
+  eventId: string,
+  outcome: HttpResponseClassification,
+  exchanged: HttpExchangeOutcome,
+): HttpAuditSinkOutcome {
+  return Object.freeze(exchanged.kind === "response" ? { eventId, outcome, status: exchanged.status } : { eventId, outcome });
+}
+
+// The callback's failures are its own. The sink does not wait for it, and
+// nothing it throws or rejects with reaches the emit or goes unhandled.
+function report(onOutcome: OutcomeCallback | undefined, outcome: HttpAuditSinkOutcome): void {
+  if (onOutcome === undefined) return;
+  try {
+    Promise.resolve(onOutcome(outcome)).catch(() => undefined);
+  } catch {
+    // A synchronous throw is dropped for the same reason.
+  }
+}
+
+function requestFor(event: Readonly<SecurityAuditEvent>, eventId: string, path: string): HttpExchangeRequest {
   // Serialized once and sent as is, so the body is exactly the validated event.
   const body = JSON.stringify(event);
   return Object.freeze({
@@ -70,7 +143,7 @@ function requestFor(event: Readonly<SecurityAuditEvent>, path: string): HttpExch
       "content-length": String(nodeByteLength.byteLength(body)),
     }),
     body,
-    event_id: event.event.id,
+    event_id: eventId,
     // The sink makes one attempt per event and never schedules another.
     attempt: 0,
   });
@@ -81,6 +154,13 @@ function validatePath(path: unknown): string {
     throw new TypeError("HTTP audit sink path must be a bounded absolute path");
   }
   return path;
+}
+
+function validateOnOutcome(onOutcome: HttpAuditSinkOptions["onOutcome"]): OutcomeCallback | undefined {
+  if (onOutcome !== undefined && typeof onOutcome !== "function") {
+    throw new TypeError("HTTP audit sink onOutcome must be a function");
+  }
+  return onOutcome;
 }
 
 function validateHeaders(headers: unknown): Readonly<Record<string, string>> {
