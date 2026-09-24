@@ -1,6 +1,7 @@
 import {
   CONTRACT_ERROR_CODES,
   SDK_ERROR_CODES,
+  authoritativeTenant,
   createSecurityAuditSdk,
   type AuditEventSink,
   type AuthenticationSucceededEventInput,
@@ -43,6 +44,26 @@ void sdk.redeliver(redeliveryInput, { retry: true });
 // @ts-expect-error generated controlled tenant scopes reject unknown values
 const badTenant: SecurityAuditEvent["tenant"] = { scope: "caller_claimed" };
 void badTenant;
+
+authoritativeTenant({ scope: "tenant", effective_tenant_id: "tenant", resource_tenant_id: "tenant" });
+authoritativeTenant({ scope: "cross_tenant", actor_tenant_id: "platform", effective_tenant_id: "tenant", resource_tenant_id: "tenant", parent_tenant_id: "parent" });
+authoritativeTenant({ scope: "platform" });
+authoritativeTenant({ scope: "tenantless" });
+authoritativeTenant({ scope: "platform", actor_tenant_id: "platform", effective_tenant_id: "tenant", resource_tenant_id: "tenant", parent_tenant_id: "parent" });
+// @ts-expect-error a tenant scope requires the effective tenant identifier
+authoritativeTenant({ scope: "tenant", resource_tenant_id: "tenant" });
+// @ts-expect-error a tenant scope requires the resource tenant identifier
+authoritativeTenant({ scope: "tenant", effective_tenant_id: "tenant" });
+// @ts-expect-error a cross-tenant scope requires the effective tenant identifier
+authoritativeTenant({ scope: "cross_tenant", resource_tenant_id: "tenant" });
+// @ts-expect-error a cross-tenant scope requires the resource tenant identifier
+authoritativeTenant({ scope: "cross_tenant", effective_tenant_id: "tenant" });
+declare const canonicalTenant: Omit<SecurityAuditEvent["tenant"], "claimed_tenant_id">;
+// @ts-expect-error a canonical tenant's scope is unknown until runtime, so it may lack an identifier its scope requires
+authoritativeTenant(canonicalTenant);
+// @ts-expect-error the input type still rejects a claimed tenant identifier
+authoritativeTenant({ scope: "tenantless", claimed_tenant_id: "tenant_claim" });
+
 // @ts-expect-error generated event type preserves required top-level fields
 const missingRequiredFields: SecurityAuditEvent = {};
 void missingRequiredFields;

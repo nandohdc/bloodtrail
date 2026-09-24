@@ -266,7 +266,22 @@ export function impersonationContext(input: Omit<ContextValue<"delegation">, "mo
   return delegationContext({ ...normalized, mode: "impersonation" });
 }
 
-export function authoritativeTenant(input: Omit<ContextValue<"tenant">, "claimed_tenant_id">): TenantAuthorityContext {
+type TenantAuthorityFields = Omit<ContextValue<"tenant">, "claimed_tenant_id">;
+type IdentifiedTenantScope = "tenant" | "cross_tenant";
+
+// The input type states the runtime rule below as far as a type can: a `tenant` or `cross_tenant`
+// scope must carry both the effective and the resource tenant identifier, and every other scope keeps
+// them optional. Only the runtime check rejects an empty identifier. A value whose scope is known only
+// at runtime, such as a whole canonical tenant, does not satisfy the type.
+type TenantAuthorityInput =
+  | (Omit<TenantAuthorityFields, "scope" | "effective_tenant_id" | "resource_tenant_id"> & {
+    readonly scope: IdentifiedTenantScope;
+    readonly effective_tenant_id: string;
+    readonly resource_tenant_id: string;
+  })
+  | (Omit<TenantAuthorityFields, "scope"> & { readonly scope: Exclude<TenantAuthorityFields["scope"], IdentifiedTenantScope> });
+
+export function authoritativeTenant(input: TenantAuthorityInput): TenantAuthorityContext {
   const normalized = normalizeCanonicalInputOrThrow(input, "/tenant");
   requireNonEmptyString(normalized.scope, "/tenant/scope");
   if (normalized.scope === "tenant" || normalized.scope === "cross_tenant") {

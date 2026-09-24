@@ -364,7 +364,7 @@ function namedInput(event: SecurityAuditEvent): Record<string, unknown> {
       observed_at: event.event.observed_at,
     },
     actor: brandActor(event.actor),
-    tenant: tenant ? authoritativeTenant(tenant) : undefined,
+    tenant: tenant ? authoritativeTenant(tenant as Parameters<typeof authoritativeTenant>[0]) : undefined,
     claimedTenant: claimedTenantId ? claimedTenant(claimedTenantId) : undefined,
     subject: event.subject ? authoritativeSubject(event.subject) : undefined,
     authenticated_principal: event.authenticated_principal ? authenticatedPrincipal(event.authenticated_principal) : undefined,
