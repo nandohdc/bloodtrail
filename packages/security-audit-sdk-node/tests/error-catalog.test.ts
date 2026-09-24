@@ -15,30 +15,6 @@ const CATALOG = readFileSync(resolve(__dirname, "../docs/error-catalog.md"), "ut
 const EXPORTED_CODES: ReadonlyArray<string> = [...SDK_ERROR_CODES, ...CONTRACT_ERROR_CODES];
 const ENTRY_PARTS = ["**Meaning.**", "**Common causes.**", "**Fix.**", "**Fields.**"];
 
-// The contract codes that part 1 leaves undocumented, in the core's order.
-// Part 2 (#584) documents them and deletes this list.
-const PENDING_CONTRACT_CODES: ReadonlyArray<string> = [
-  "INVALID_DELEGATION",
-  "UNKNOWN_EXTENSION",
-  "ENVELOPE_PAYLOAD_CONFLICT",
-  "UNSUPPORTED_MAPPING_VERSION",
-  "PROHIBITED_BODY_ATTRIBUTES",
-  "MISSING_NATIVE_MAPPING",
-  "MAPPING_SCOPE_OVERCLAIM",
-  "UNAPPROVED_POLICY_CRITICAL_POSTURE",
-  "UNSUPPORTED_COMPATIBILITY_VERSION",
-  "DERIVED_FROM_MALFORMED_INPUT",
-  "DERIVED_FROM_DUPLICATE_INPUT",
-  "DERIVED_FROM_NONCANONICAL_ORDER",
-  "DERIVED_FROM_UNRESOLVABLE_INPUT",
-  "DERIVED_FROM_ABSENT_INPUT",
-  "DERIVED_FROM_EMPTY_INPUT",
-  "DERIVED_FROM_NON_DERIVED",
-  "DERIVED_FROM_CYCLE",
-  "DERIVED_FROM_MISSING",
-  "DERIVED_FROM_TRUST_FLOOR_EXCEEDED",
-];
-
 interface CatalogEntry {
   readonly code: string;
   readonly body: string;
@@ -73,7 +49,7 @@ function catalogProblems(catalog: string) {
   const entries = catalogEntries(catalog);
   const codes = documentedCodes(catalog);
   return {
-    missing: EXPORTED_CODES.filter((code) => !codes.includes(code) && !PENDING_CONTRACT_CODES.includes(code)),
+    missing: EXPORTED_CODES.filter((code) => !codes.includes(code)),
     unknown: codes.filter((code) => !EXPORTED_CODES.includes(code)),
     repeated: codes.filter((code, index) => codes.indexOf(code) !== index),
     incomplete: entries.filter((entry) => !ENTRY_PARTS.every((part) => entry.body.includes(part))).map((entry) => entry.code),
@@ -83,19 +59,14 @@ function catalogProblems(catalog: string) {
 const NO_PROBLEMS = { missing: [], unknown: [], repeated: [], incomplete: [] };
 
 describe("error catalog", () => {
-  it("documents every exported code that is not pending, once, with every part, and no other code", () => {
+  it("documents every exported code, once, with every part, and no other code", () => {
     assert.deepEqual(catalogProblems(CATALOG), NO_PROBLEMS);
   });
 
-  it("leaves pending exactly the contract codes it does not document", () => {
-    const documented = documentedCodes(CATALOG);
-    assert.deepEqual(PENDING_CONTRACT_CODES, CONTRACT_ERROR_CODES.filter((code) => !documented.includes(code)));
-  });
-
-  it("fails and names the code when one exported code's entry is removed", () => {
-    for (const code of [SDK_ERROR_CODES[0], CONTRACT_ERROR_CODES[0]]) {
+  it("fails and names the code when any one exported code's entry is removed", () => {
+    for (const code of EXPORTED_CODES) {
       const withoutEntry = CATALOG.replace(entryText(entryFor(CATALOG, code)), "");
-      assert.deepEqual(catalogProblems(withoutEntry), { ...NO_PROBLEMS, missing: [code] });
+      assert.deepEqual(catalogProblems(withoutEntry), { ...NO_PROBLEMS, missing: [code] }, code);
     }
   });
 
