@@ -17,6 +17,41 @@ import {
 } from "@bloodtrail/security-audit-sdk-core";
 import assert from "node:assert/strict";
 
+interface RecordAuthorizationOptions {
+  readonly policyId: string;
+  readonly capability: string;
+  readonly recordId: string;
+}
+
+function createRecordAuthorization(options: RecordAuthorizationOptions) {
+  return authorizationEvidence({
+    decision: "allow",
+    policy_id: options.policyId,
+    policy_version: "1.0.0",
+    capability: options.capability,
+    enforcement_point: "data-service",
+    decision_reason: "accepted",
+    resource_context: {
+      type: "sensitive_record",
+      id: options.recordId,
+    },
+    tenant_context: {
+      effective_tenant_id: "tenant-eval-scoped",
+    },
+  });
+}
+
+function createRecordResource(id: string, operationType: "read" | "update") {
+  return authoritativeResource({
+    type: "sensitive_record",
+    id,
+    owning_tenant_id: "tenant-eval-scoped",
+    data_classification: "confidential",
+    operation_type: operationType,
+    change_categories: ["metadata"],
+  });
+}
+
 export async function runEvaluationService(origin: string = "http://127.0.0.1:3000") {
   const outcomesReceived: unknown[] = [];
   const sink = createHttpAuditSink({
@@ -238,6 +273,93 @@ export async function runEvaluationService(origin: string = "http://127.0.0.1:30
   assert.equal(authSucceededResult.value.status, "accepted", "Delivery status must be accepted");
   console.log("service:emitted:authentication.succeeded");
 
+  // 4. Flow: Sensitive resource viewed
+  const recordResourceView = createRecordResource("record-eval-view-1", "read");
+  const authzView = createRecordAuthorization({
+    policyId: "policy.eval-view-1",
+    capability: "read_record",
+    recordId: "record-eval-view-1",
+  });
+
+  const viewResult = await sdk.sensitiveResourceViewed({
+    actor: scopedActor,
+    authenticated_principal: principal,
+    tenant: scopedTenant,
+    resource: recordResourceView,
+    authorization: authzView,
+    request: {
+      id: "req-view-rec-1",
+      method: "GET",
+      route: "/api/v1/records/record-eval-view-1",
+    },
+  });
+
+  if (!viewResult.ok) {
+    throw new Error(`sensitiveResourceViewed emit failed: ${JSON.stringify(viewResult.error)}`);
+  }
+  assert.equal(viewResult.value.status, "accepted", "sensitiveResourceViewed must be accepted");
+  console.log("service:emitted:data.sensitive_resource.viewed");
+
+  // 5. Flow: Sensitive resource modified with beginOperation and commit
+  // Assert: commit state comes from the operation handle, never from caller input.
+  const recordResourceModify = createRecordResource("record-eval-modify-1", "update");
+  const authzModify = createRecordAuthorization({
+    policyId: "policy.eval-modify-1",
+    capability: "update_record",
+    recordId: "record-eval-modify-1",
+  });
+
+  // Verify negative case: direct caller-supplied commit_state without a matching operation handle fails closed
+  const forgedCommitAttempt = await (sdk.sensitiveResourceModified as (input: unknown) => Promise<{ ok: boolean; error: { code: string } }>)({
+    actor: scopedActor,
+    tenant: scopedTenant,
+    resource: recordResourceModify,
+    authorization: authzModify,
+    event: {
+      commit_state: "committed",
+    },
+  });
+  assert.equal(forgedCommitAttempt.ok, false, "direct commit_state without operation handle must fail");
+  assert.equal(forgedCommitAttempt.error.code, "PREMATURE_SUCCESS");
+  console.log("service:direct-commit-prevented:pass");
+
+  // Start real operation
+  const op = sdk.beginOperation({
+    operationId: "22222222-2222-4222-8222-000000000301",
+    transactionId: "22222222-2222-4222-8222-000000000302",
+    boundEvent: "sensitiveResourceModified",
+    transactional: true,
+  });
+  if (!op.ok) {
+    throw new Error(`beginOperation failed: ${JSON.stringify(op.error)}`);
+  }
+
+  // Simulate transactional modification
+  await new Promise((resolve) => setTimeout(resolve, 10));
+
+  // Mark committed on the handle
+  op.value.markCommitted();
+
+  // Commit state is not passed by caller; it originates from op.value
+  const modifyResult = await sdk.sensitiveResourceModified({
+    actor: scopedActor,
+    tenant: scopedTenant,
+    resource: recordResourceModify,
+    authorization: authzModify,
+    correlation: {
+      correlation_id: "22222222-2222-4222-8222-000000000303",
+      operation_id: op.value.operationId,
+    },
+    operation: op.value,
+  });
+
+  if (!modifyResult.ok) {
+    throw new Error(`sensitiveResourceModified emit failed: ${JSON.stringify(modifyResult.error)}`);
+  }
+  assert.equal(modifyResult.value.status, "accepted", "sensitiveResourceModified must be accepted");
+  console.log("service:operation-commit:pass");
+  console.log("service:emitted:data.sensitive_resource.modified");
+
   await sdk.shutdown();
   assert.equal(sdk.state, "shut_down", "SDK must be shut down");
 
@@ -246,6 +368,8 @@ export async function runEvaluationService(origin: string = "http://127.0.0.1:30
     authFailedResult,
     authzDeniedResult,
     authSucceededResult,
+    viewResult,
+    modifyResult,
     outcomes: outcomesReceived,
   };
 }

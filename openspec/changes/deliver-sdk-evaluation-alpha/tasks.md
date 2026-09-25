@@ -84,7 +84,7 @@ archive task (9.1) stays unticked until its own ticket.
 - [x] 4.4 #596 Example: per-request context, authentication failure and authorization denial. Verify that:
   - both events arrive valid and byte-identical;
   - the context survives an `await`.
-- [ ] 4.5 #597 Example: sensitive-resource view and committed sensitive-resource modification. Verify
+- [x] 4.5 #597 Example: sensitive-resource view and committed sensitive-resource modification. Verify
   that:
   - all five demonstrated events arrive valid and byte-identical;
   - the modification's commit state comes from the operation handle.

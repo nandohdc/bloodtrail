@@ -313,6 +313,155 @@ await sdk.runWithContext({ actor: requestActor, tenant: requestTenant }, async (
 await sdk.shutdown();
 ```
 
+## Sensitive Resource Operations: View and Committed Modification
+
+The evaluation kit demonstrates five canonical events:
+1. `authenticationFailed`
+2. `authorizationDenied`
+3. `authenticationSucceeded`
+4. `sensitiveResourceViewed`
+5. `sensitiveResourceModified`
+
+State modifications that change security-sensitive data must use `sdk.beginOperation` to track the lifecycle of the change. The audit event's `commit_state` originates from the operation handle when transitioned via `markCommitted()`, never from arbitrary caller input:
+
+```typescript
+import {
+  createNodeSecurityAuditSdk,
+} from "@bloodtrail/security-audit-sdk-node";
+import {
+  authenticatedHumanActor,
+  authoritativeTenant,
+  authoritativeResource,
+  authorizationEvidence,
+  authenticatedPrincipal,
+} from "@bloodtrail/security-audit-sdk-core";
+import assert from "node:assert/strict";
+
+const sdk = createNodeSecurityAuditSdk({
+  contractVersion: "2.1.0",
+  producer: { name: "quickstart-service", version: "0.1.0" },
+  environment: { name: "synthetic" },
+  service: { name: "quickstart-service" },
+  sink: {
+    async emit() {
+      return { status: "accepted" };
+    },
+  },
+});
+
+const actor = authenticatedHumanActor({
+  id: "actor-quickstart-user",
+  displayName: "Quickstart User",
+});
+
+const tenant = authoritativeTenant({
+  scope: "tenant",
+  actor_tenant_id: "tenant-quickstart-1",
+  effective_tenant_id: "tenant-quickstart-1",
+  resource_tenant_id: "tenant-quickstart-1",
+});
+
+const principal = authenticatedPrincipal({
+  type: "human_user",
+  id: "principal-quickstart-1",
+  issuer: "https://idp.synthetic.test",
+});
+
+// 1. Sensitive resource viewed
+const recordResourceView = authoritativeResource({
+  type: "sensitive_record",
+  id: "record-quickstart-1",
+  owning_tenant_id: "tenant-quickstart-1",
+  data_classification: "confidential",
+  operation_type: "read",
+  change_categories: ["metadata"],
+});
+
+const authzView = authorizationEvidence({
+  decision: "allow",
+  policy_id: "policy.quickstart-view",
+  policy_version: "1.0.0",
+  capability: "read_record",
+  enforcement_point: "data-service",
+  decision_reason: "accepted",
+  resource_context: {
+    type: "sensitive_record",
+    id: "record-quickstart-1",
+  },
+  tenant_context: {
+    effective_tenant_id: "tenant-quickstart-1",
+  },
+});
+
+const viewResult = await sdk.sensitiveResourceViewed({
+  actor,
+  authenticated_principal: principal,
+  tenant,
+  resource: recordResourceView,
+  authorization: authzView,
+  request: {
+    id: "req-view-1",
+    method: "GET",
+    route: "/api/v1/records/record-quickstart-1",
+  },
+});
+assert.equal(viewResult.ok, true);
+
+// 2. Sensitive resource modified with transaction commit
+// Begin a transactional operation bound to the modification event
+const op = sdk.beginOperation({
+  operationId: "22222222-2222-4222-8222-000000000401",
+  transactionId: "22222222-2222-4222-8222-000000000402",
+  boundEvent: "sensitiveResourceModified",
+  transactional: true,
+});
+assert.equal(op.ok, true);
+
+const recordResourceModify = authoritativeResource({
+  type: "sensitive_record",
+  id: "record-quickstart-1",
+  owning_tenant_id: "tenant-quickstart-1",
+  data_classification: "confidential",
+  operation_type: "update",
+  change_categories: ["metadata"],
+});
+
+const authzModify = authorizationEvidence({
+  decision: "allow",
+  policy_id: "policy.quickstart-modify",
+  policy_version: "1.0.0",
+  capability: "update_record",
+  enforcement_point: "data-service",
+  decision_reason: "accepted",
+  resource_context: {
+    type: "sensitive_record",
+    id: "record-quickstart-1",
+  },
+  tenant_context: {
+    effective_tenant_id: "tenant-quickstart-1",
+  },
+});
+
+// Mark the operation handle committed once the database transaction commits
+op.value.markCommitted();
+
+// Emit the modification event; commit_state originates from the operation handle, never caller input
+const modifyResult = await sdk.sensitiveResourceModified({
+  actor,
+  tenant,
+  resource: recordResourceModify,
+  authorization: authzModify,
+  correlation: {
+    correlation_id: "22222222-2222-4222-8222-000000000403",
+    operation_id: op.value.operationId,
+  },
+  operation: op.value,
+});
+assert.equal(modifyResult.ok, true);
+
+await sdk.shutdown();
+```
+
 ## Running the Example Receiver
 
 To see audit events arriving and passing validation over HTTP:
