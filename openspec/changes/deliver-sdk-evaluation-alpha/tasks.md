@@ -53,7 +53,7 @@ archive task (9.1) stays unticked until its own ticket.
 
 ## 3. Conformance suite
 
-- [ ] 3.1 #585 The conformance harness, plus rows for the 10 account, authentication and session events.
+- [x] 3.1 #585 The conformance harness, plus rows for the 10 account, authentication and session events.
   Verify that:
   - each row returns ok, passes `validateSecurityAuditEvent` and matches its catalog entry;
   - at least one invalid row asserts its code and path.
