@@ -57,7 +57,7 @@ archive task (9.1) stays unticked until its own ticket.
   Verify that:
   - each row returns ok, passes `validateSecurityAuditEvent` and matches its catalog entry;
   - at least one invalid row asserts its code and path.
-- [ ] 3.2 #586 Rows for the 7 authorization and administration events. Verify that each row passes
+- [x] 3.2 #586 Rows for the 7 authorization and administration events. Verify that each row passes
   validation and matches its catalog entry.
 - [ ] 3.3 #587 Rows for the 7 data, configuration and tenant events. Verify that each row passes, and that
   transaction-bound rows take their commit state from a real operation handle.
