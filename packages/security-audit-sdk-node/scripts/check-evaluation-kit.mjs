@@ -11,6 +11,7 @@ import {
   packTarball,
   verifyKitIdentity,
 } from "./build-evaluation-kit.mjs";
+import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
 import { assert, packageRoot, runChecked } from "./verification-helpers.mjs";
 
 async function checkDeterminism(identity) {
@@ -28,6 +29,12 @@ async function checkDeterminism(identity) {
 }
 
 async function typecheckExamples(tempInstall) {
+  const docsDir = resolve(tempInstall, "docs");
+  const docBlocksDir = resolve(tempInstall, "doc-blocks");
+  if (existsSync(docsDir)) {
+    await extractDocBlocksFromDir(docsDir, docBlocksDir);
+  }
+
   const tsconfigPath = resolve(tempInstall, "tsconfig.json");
   const tsconfig = {
     compilerOptions: {
@@ -46,7 +53,7 @@ async function typecheckExamples(tempInstall) {
       noEmit: true,
       typeRoots: [resolve(packageRoot, "node_modules/@types")],
     },
-    include: ["examples/**/*.ts"],
+    include: ["examples/**/*.ts", "doc-blocks/**/*.ts"],
   };
   await writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2), "utf8");
   const tscBin = resolve(packageRoot, "node_modules/typescript/bin/tsc");
@@ -145,7 +152,7 @@ export async function checkEvaluationKit({ kitDir: existingKitDir } = {}) {
       { cwd: tempInstall, capture: true },
     );
 
-    // 4. Type-check examples in the installed kit with TypeScript 5.9.2 under strict settings
+    // 4. Type-check examples and doc blocks in the installed kit with TypeScript 5.9.2 under strict settings
     await typecheckExamples(tempInstall);
 
     // 5. Run examples/first-event.ts
@@ -162,7 +169,7 @@ export async function checkEvaluationKit({ kitDir: existingKitDir } = {}) {
     await verifyHttpExchange(tempInstall);
 
     process.stdout.write(
-      "evaluation kit verification passed: kit built, identity verified, installed outside workspace, examples type-checked, first-event emitted and verified over HTTP\n",
+      "evaluation kit verification passed: kit built, identity verified, installed outside workspace, doc blocks and examples type-checked, events emitted and verified over HTTP\n",
     );
     return { success: true };
   } finally {

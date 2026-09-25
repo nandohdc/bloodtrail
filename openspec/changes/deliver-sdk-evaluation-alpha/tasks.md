@@ -79,7 +79,7 @@ archive task (9.1) stays unticked until its own ticket.
 - [x] 4.2 #594 The first event goes over HTTP from the installed kit. Verify that:
   - at the example receiver, the event is accepted, passes validation and is byte-identical;
   - the examples type-check with TypeScript 5.9.2.
-- [ ] 4.3 #595 Quickstart v1, with every documented TypeScript code block type-checked. Verify that a
+- [x] 4.3 #595 Quickstart v1, with every documented TypeScript code block type-checked. Verify that a
   snippet using a renamed option fails the gate.
 - [ ] 4.4 #596 Example: per-request context, authentication failure and authorization denial. Verify that:
   - both events arrive valid and byte-identical;
