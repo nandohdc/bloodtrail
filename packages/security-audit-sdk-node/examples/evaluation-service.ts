@@ -2,6 +2,7 @@ import process from "node:process";
 import {
   createNodeSecurityAuditSdk,
   createHttpAuditSink,
+  nodeContextProvider,
 } from "@bloodtrail/security-audit-sdk-node";
 import {
   authenticatedHumanActor,
@@ -11,11 +12,13 @@ import {
   credentialReference,
   sessionEvidence,
   observedSource,
+  authoritativeResource,
+  authorizationEvidence,
 } from "@bloodtrail/security-audit-sdk-core";
 import assert from "node:assert/strict";
 
 export async function runEvaluationService(origin: string = "http://127.0.0.1:3000") {
-  let outcomeReceived: unknown = null;
+  const outcomesReceived: unknown[] = [];
   const sink = createHttpAuditSink({
     origin,
     path: "/v1/security-audit",
@@ -24,7 +27,7 @@ export async function runEvaluationService(origin: string = "http://127.0.0.1:30
       authorization: "Bearer fixture-token-a",
     },
     onOutcome: (outcome) => {
-      outcomeReceived = outcome;
+      outcomesReceived.push(outcome);
     },
   });
 
@@ -38,6 +41,138 @@ export async function runEvaluationService(origin: string = "http://127.0.0.1:30
 
   assert.equal(sdk.state, "ready", "SDK must be in ready state");
 
+  // 1. Flow: Authentication failure handler
+  // When authentication credentials fail validation, emit authenticationFailed.
+  // The tenant is bound in the request scope, and authenticationFailed inherits it.
+  const authFailedResult = await sdk.runWithContext(
+    {
+      tenant: authoritativeTenant({
+        scope: "tenant",
+        actor_tenant_id: "tenant-eval-1",
+        effective_tenant_id: "tenant-eval-1",
+        resource_tenant_id: "tenant-eval-1",
+      }),
+    },
+    async () => {
+      return await sdk.authenticationFailed({
+        actor: authenticatedHumanActor({
+          id: "actor-eval-failed-user",
+          displayName: "Failed Login User",
+        }),
+        authentication: authenticationEvidence({
+          method: "password_mfa",
+          assurance_level: "aal1",
+          mfa_state: "not_used",
+          credential_type: "password",
+          identity_provider: "https://idp.synthetic.test",
+          delegated: false,
+          impersonated: false,
+        }),
+        source: observedSource({
+          observed: {
+            address: "127.0.0.1",
+            port: 443,
+          },
+        }),
+        request: {
+          id: "req-auth-failed-1",
+          method: "POST",
+          route: "/api/v1/auth/login",
+        },
+        correlation: {
+          correlation_id: "22222222-2222-4222-8222-000000000041",
+        },
+        event: {
+          outcome_reason: {
+            code: "credential_invalid",
+          },
+        },
+      });
+    },
+  );
+
+  if (!authFailedResult.ok) {
+    throw new Error(`authenticationFailed emit failed: ${JSON.stringify(authFailedResult.error)}`);
+  }
+  assert.equal(authFailedResult.value.status, "accepted", "authenticationFailed must be accepted");
+  console.log("service:emitted:authentication.failed");
+
+  // 2. Flow: Authenticated request context scope with async work and authorization denial
+  // Resolve authenticated principal, actor, and tenant, and establish a context scope.
+  const scopedActor = authenticatedHumanActor({
+    id: "actor-eval-scoped-user",
+    displayName: "Scoped User",
+  });
+  const scopedTenant = authoritativeTenant({
+    scope: "tenant",
+    actor_tenant_id: "tenant-eval-scoped",
+    effective_tenant_id: "tenant-eval-scoped",
+    resource_tenant_id: "tenant-eval-scoped",
+  });
+
+  const authzDeniedResult = await sdk.runWithContext(
+    {
+      actor: scopedActor,
+      tenant: scopedTenant,
+    },
+    async () => {
+      // Simulate asynchronous work (e.g. database lookup, policy evaluation)
+      await new Promise((resolve) => setTimeout(resolve, 15));
+
+      // Context survives the await: resolve active actor and tenant from the scope
+      const activeContext = nodeContextProvider.get();
+      assert.ok(activeContext?.actor, "active context actor must survive await");
+      assert.ok(activeContext?.tenant, "active context tenant must survive await");
+
+      return await sdk.authorizationDenied({
+        actor: activeContext.actor,
+        tenant: activeContext.tenant,
+        resource: authoritativeResource({
+          type: "authorization_policy",
+          id: "policy-eval-denied-1",
+          owning_tenant_id: "tenant-eval-scoped",
+          data_classification: "confidential",
+          operation_type: "execute",
+          change_categories: ["metadata"],
+        }),
+        authorization: authorizationEvidence({
+          decision: "deny",
+          policy_id: "policy.eval-1",
+          policy_version: "1.0.0",
+          capability: "evaluate_authorization",
+          enforcement_point: "policy-enforcement-point",
+          decision_reason: "policy_denied",
+          resource_context: {
+            type: "authorization_policy",
+            id: "policy-eval-denied-1",
+          },
+          tenant_context: {
+            effective_tenant_id: "tenant-eval-scoped",
+          },
+        }),
+        source: observedSource({
+          observed: {
+            address: "127.0.0.1",
+            port: 443,
+          },
+        }),
+        event: {
+          outcome_reason: {
+            code: "policy_denied",
+          },
+        },
+      });
+    },
+  );
+
+  if (!authzDeniedResult.ok) {
+    throw new Error(`authorizationDenied emit failed: ${JSON.stringify(authzDeniedResult.error)}`);
+  }
+  assert.equal(authzDeniedResult.value.status, "accepted", "authorizationDenied must be accepted");
+  console.log("service:context-survives-await:pass");
+  console.log("service:emitted:authorization.denied");
+
+  // 3. Flow: Authentication success
   const actor = authenticatedHumanActor({
     id: "actor-eval-user-1",
     displayName: "Eval User",
@@ -87,7 +222,7 @@ export async function runEvaluationService(origin: string = "http://127.0.0.1:30
     },
   });
 
-  const result = await sdk.authenticationSucceeded({
+  const authSucceededResult = await sdk.authenticationSucceeded({
     actor,
     tenant,
     authenticated_principal: principal,
@@ -97,16 +232,22 @@ export async function runEvaluationService(origin: string = "http://127.0.0.1:30
     source,
   });
 
-  if (!result.ok) {
-    throw new Error(`Emit failed: ${JSON.stringify(result.error)}`);
+  if (!authSucceededResult.ok) {
+    throw new Error(`authenticationSucceeded emit failed: ${JSON.stringify(authSucceededResult.error)}`);
   }
-  assert.equal(result.value.status, "accepted", "Delivery status must be accepted");
+  assert.equal(authSucceededResult.value.status, "accepted", "Delivery status must be accepted");
+  console.log("service:emitted:authentication.succeeded");
 
   await sdk.shutdown();
   assert.equal(sdk.state, "shut_down", "SDK must be shut down");
 
-  console.log("service:emitted:authentication.succeeded");
-  return { ok: true, result, outcome: outcomeReceived };
+  return {
+    ok: true,
+    authFailedResult,
+    authzDeniedResult,
+    authSucceededResult,
+    outcomes: outcomesReceived,
+  };
 }
 
 const isMain =

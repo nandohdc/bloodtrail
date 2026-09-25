@@ -81,7 +81,7 @@ archive task (9.1) stays unticked until its own ticket.
   - the examples type-check with TypeScript 5.9.2.
 - [x] 4.3 #595 Quickstart v1, with every documented TypeScript code block type-checked. Verify that a
   snippet using a renamed option fails the gate.
-- [ ] 4.4 #596 Example: per-request context, authentication failure and authorization denial. Verify that:
+- [x] 4.4 #596 Example: per-request context, authentication failure and authorization denial. Verify that:
   - both events arrive valid and byte-identical;
   - the context survives an `await`.
 - [ ] 4.5 #597 Example: sensitive-resource view and committed sensitive-resource modification. Verify

@@ -60,6 +60,21 @@ async function typecheckExamples(tempInstall) {
   runChecked(process.execPath, [tscBin, "-p", tsconfigPath], { cwd: tempInstall, capture: true });
 }
 
+async function assertReceiverHealth(origin) {
+  const healthRes = await fetch(`${origin}/health`);
+  const healthJson = await healthRes.json();
+  assert(healthJson.status === "healthy", `receiver unhealthy: ${JSON.stringify(healthJson)}`);
+  assert(healthJson.acceptedCount === 3, `Expected receiver to accept 3 events, got ${healthJson.acceptedCount}`);
+
+  const authzEvent = healthJson.events?.find((e) => e.event.name === "bloodtrail.audit.authorization.denied");
+  assert(authzEvent, "authorization.denied must be accepted at receiver");
+  assert(authzEvent.actor?.id === "actor-eval-scoped-user", "authorization.denied must carry scoped actor");
+  assert(authzEvent.tenant?.effective_tenant_id === "tenant-eval-scoped", "authorization.denied must carry scoped tenant");
+
+  const authFailedEvent = healthJson.events?.find((e) => e.event.name === "bloodtrail.audit.authentication.failed");
+  assert(authFailedEvent, "authentication.failed must be accepted at receiver");
+}
+
 async function verifyHttpExchange(tempInstall) {
   const receiverScript = resolve(tempInstall, "examples/evaluation-receiver.ts");
   const serviceScript = resolve(tempInstall, "examples/evaluation-service.ts");
@@ -116,6 +131,20 @@ async function verifyHttpExchange(tempInstall) {
       serviceRun.includes("service:emitted:authentication.succeeded"),
       `evaluation-service did not emit authentication.succeeded:\n${serviceRun}`,
     );
+    assert(
+      serviceRun.includes("service:emitted:authentication.failed"),
+      `evaluation-service did not emit authentication.failed:\n${serviceRun}`,
+    );
+    assert(
+      serviceRun.includes("service:emitted:authorization.denied"),
+      `evaluation-service did not emit authorization.denied:\n${serviceRun}`,
+    );
+    assert(
+      serviceRun.includes("service:context-survives-await:pass"),
+      `context did not survive await in evaluation-service:\n${serviceRun}`,
+    );
+
+    await assertReceiverHealth(origin);
   } finally {
     receiverProc.kill("SIGTERM");
   }
