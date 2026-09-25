@@ -45,6 +45,10 @@ const result = await sdk.accountRegistrationAttempted({
     method: "POST",
     route: "/api/v1/evaluation/first-event",
   },
+  correlation: {
+    correlation_id: "11111111-1111-4111-8111-000000000001",
+    operation_id: "11111111-1111-4111-8111-000000000002",
+  },
 });
 
 assert.equal(result.ok, true, `Emit must succeed: ${JSON.stringify(result)}`);

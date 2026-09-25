@@ -1,7 +1,9 @@
+import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { cp, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
+import process from "node:process";
 import { pathToFileURL } from "node:url";
 import {
   assertOutsideRepository,
@@ -9,7 +11,108 @@ import {
   packTarball,
   verifyKitIdentity,
 } from "./build-evaluation-kit.mjs";
-import { assert, runChecked } from "./verification-helpers.mjs";
+import { assert, packageRoot, runChecked } from "./verification-helpers.mjs";
+
+async function checkDeterminism(identity) {
+  const dCheck = await mkdtemp(resolve(tmpdir(), "bloodtrail-determinism-check-"));
+  try {
+    const coreRepack = await packTarball("core", dCheck);
+    const nodeRepack = await packTarball("node", dCheck);
+    const expectedCore = identity.artifacts.find((a) => a.name === "core");
+    const expectedNode = identity.artifacts.find((a) => a.name === "node");
+    assert(coreRepack.sha256 === expectedCore.sha256, "core tarball digest must be deterministic");
+    assert(nodeRepack.sha256 === expectedNode.sha256, "node tarball digest must be deterministic");
+  } finally {
+    await rm(dCheck, { recursive: true, force: true });
+  }
+}
+
+async function typecheckExamples(tempInstall) {
+  const tsconfigPath = resolve(tempInstall, "tsconfig.json");
+  const tsconfig = {
+    compilerOptions: {
+      target: "ES2024",
+      module: "NodeNext",
+      moduleResolution: "NodeNext",
+      strict: true,
+      noUncheckedIndexedAccess: true,
+      exactOptionalPropertyTypes: true,
+      useUnknownInCatchVariables: true,
+      noImplicitOverride: true,
+      noFallthroughCasesInSwitch: true,
+      noImplicitReturns: true,
+      verbatimModuleSyntax: true,
+      isolatedModules: true,
+      noEmit: true,
+      typeRoots: [resolve(packageRoot, "node_modules/@types")],
+    },
+    include: ["examples/**/*.ts"],
+  };
+  await writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2), "utf8");
+  const tscBin = resolve(packageRoot, "node_modules/typescript/bin/tsc");
+  runChecked(process.execPath, [tscBin, "-p", tsconfigPath], { cwd: tempInstall, capture: true });
+}
+
+async function verifyHttpExchange(tempInstall) {
+  const receiverScript = resolve(tempInstall, "examples/evaluation-receiver.ts");
+  const serviceScript = resolve(tempInstall, "examples/evaluation-service.ts");
+  if (!existsSync(receiverScript) || !existsSync(serviceScript)) {
+    return;
+  }
+
+  const receiverProc = spawn(process.execPath, ["--no-warnings", receiverScript, "0"], {
+    cwd: tempInstall,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  let receiverOrigin = null;
+  const receiverOutput = [];
+  const readyPromise = new Promise((resolveReady, rejectReady) => {
+    receiverProc.stdout.on("data", (chunk) => {
+      const text = chunk.toString("utf8");
+      receiverOutput.push(text);
+      const match = /receiver:ready\s+(http:\/\/127\.0\.0\.1:\d+)/.exec(text);
+      if (match) {
+        receiverOrigin = match[1];
+        resolveReady(receiverOrigin);
+      }
+    });
+    receiverProc.stderr.on("data", (chunk) => {
+      receiverOutput.push(chunk.toString("utf8"));
+    });
+    receiverProc.on("error", rejectReady);
+    receiverProc.on("exit", (code) => {
+      if (!receiverOrigin) {
+        rejectReady(
+          new Error(`receiver exited early with code ${code}:\n${receiverOutput.join("")}`),
+        );
+      }
+    });
+  });
+
+  try {
+    const origin = await Promise.race([
+      readyPromise,
+      new Promise((_, rejectTimeout) =>
+        setTimeout(
+          () => rejectTimeout(new Error("timed out waiting for evaluation-receiver to be ready")),
+          10000,
+        ),
+      ),
+    ]);
+
+    const serviceRun = runChecked(process.execPath, ["--no-warnings", serviceScript, origin], {
+      cwd: tempInstall,
+      capture: true,
+    });
+    assert(
+      serviceRun.includes("service:emitted:authentication.succeeded"),
+      `evaluation-service did not emit authentication.succeeded:\n${serviceRun}`,
+    );
+  } finally {
+    receiverProc.kill("SIGTERM");
+  }
+}
 
 export async function checkEvaluationKit({ kitDir: existingKitDir } = {}) {
   await assertOutsideRepository(tmpdir());
@@ -30,17 +133,7 @@ export async function checkEvaluationKit({ kitDir: existingKitDir } = {}) {
 
     // 2. Determinism check: packing same packages produces identical digests
     if (!existingKitDir) {
-      const dCheck = await mkdtemp(resolve(tmpdir(), "bloodtrail-determinism-check-"));
-      try {
-        const coreRepack = await packTarball("core", dCheck);
-        const nodeRepack = await packTarball("node", dCheck);
-        const expectedCore = identity.artifacts.find((a) => a.name === "core");
-        const expectedNode = identity.artifacts.find((a) => a.name === "node");
-        assert(coreRepack.sha256 === expectedCore.sha256, "core tarball digest must be deterministic");
-        assert(nodeRepack.sha256 === expectedNode.sha256, "node tarball digest must be deterministic");
-      } finally {
-        await rm(dCheck, { recursive: true, force: true });
-      }
+      await checkDeterminism(identity);
     }
 
     // 3. Install kit with npm outside any workspace root
@@ -52,18 +145,24 @@ export async function checkEvaluationKit({ kitDir: existingKitDir } = {}) {
       { cwd: tempInstall, capture: true },
     );
 
-    // 4. Run examples/first-event.ts
+    // 4. Type-check examples in the installed kit with TypeScript 5.9.2 under strict settings
+    await typecheckExamples(tempInstall);
+
+    // 5. Run examples/first-event.ts
     const firstEventScript = resolve(tempInstall, "examples/first-event.ts");
     assert(existsSync(firstEventScript), "examples/first-event.ts missing from installed kit");
 
-    const output = runChecked("node", ["--no-warnings", "examples/first-event.ts"], {
+    const output = runChecked(process.execPath, ["--no-warnings", "examples/first-event.ts"], {
       cwd: tempInstall,
       capture: true,
     });
     assert(output.includes("first-event:pass"), `examples/first-event.ts did not succeed:\n${output}`);
 
+    // 6. Run example-receiver and example-service end to end over loopback HTTP
+    await verifyHttpExchange(tempInstall);
+
     process.stdout.write(
-      "evaluation kit verification passed: kit built, identity verified, installed outside workspace, first-event emitted and verified\n",
+      "evaluation kit verification passed: kit built, identity verified, installed outside workspace, examples type-checked, first-event emitted and verified over HTTP\n",
     );
     return { success: true };
   } finally {
