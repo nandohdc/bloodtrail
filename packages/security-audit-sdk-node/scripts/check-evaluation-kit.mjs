@@ -60,19 +60,31 @@ async function typecheckExamples(tempInstall) {
   runChecked(process.execPath, [tscBin, "-p", tsconfigPath], { cwd: tempInstall, capture: true });
 }
 
+function findRequiredAcceptedEvent(events, eventName) {
+  const match = events.find((entry) => entry.event?.name === eventName);
+  assert(match, `${eventName} must be accepted at receiver`);
+  return match;
+}
+
 async function assertReceiverHealth(origin) {
   const healthRes = await fetch(`${origin}/health`);
   const healthJson = await healthRes.json();
   assert(healthJson.status === "healthy", `receiver unhealthy: ${JSON.stringify(healthJson)}`);
-  assert(healthJson.acceptedCount === 3, `Expected receiver to accept 3 events, got ${healthJson.acceptedCount}`);
+  assert(healthJson.acceptedCount === 5, `Expected receiver to accept 5 events, got ${healthJson.acceptedCount}`);
+  assert(Array.isArray(healthJson.events), "receiver /health must include events array");
 
-  const authzEvent = healthJson.events?.find((e) => e.event.name === "bloodtrail.audit.authorization.denied");
-  assert(authzEvent, "authorization.denied must be accepted at receiver");
-  assert(authzEvent.actor?.id === "actor-eval-scoped-user", "authorization.denied must carry scoped actor");
-  assert(authzEvent.tenant?.effective_tenant_id === "tenant-eval-scoped", "authorization.denied must carry scoped tenant");
+  const events = healthJson.events;
+  const authz = findRequiredAcceptedEvent(events, "bloodtrail.audit.authorization.denied");
+  assert(authz.actor?.id === "actor-eval-scoped-user", "authorization.denied must carry scoped actor");
+  assert(authz.tenant?.effective_tenant_id === "tenant-eval-scoped", "authorization.denied must carry scoped tenant");
 
-  const authFailedEvent = healthJson.events?.find((e) => e.event.name === "bloodtrail.audit.authentication.failed");
-  assert(authFailedEvent, "authentication.failed must be accepted at receiver");
+  findRequiredAcceptedEvent(events, "bloodtrail.audit.authentication.failed");
+  findRequiredAcceptedEvent(events, "bloodtrail.audit.authentication.succeeded");
+  findRequiredAcceptedEvent(events, "bloodtrail.audit.data.sensitive_resource.viewed");
+
+  const modified = findRequiredAcceptedEvent(events, "bloodtrail.audit.data.sensitive_resource.modified");
+  assert(modified.event?.commit_state === "committed", "modification commit state must be committed from operation handle");
+  assert(modified.correlation?.operation_id === "22222222-2222-4222-8222-000000000301", "modification must carry operation ID");
 }
 
 async function verifyHttpExchange(tempInstall) {
@@ -142,6 +154,22 @@ async function verifyHttpExchange(tempInstall) {
     assert(
       serviceRun.includes("service:context-survives-await:pass"),
       `context did not survive await in evaluation-service:\n${serviceRun}`,
+    );
+    assert(
+      serviceRun.includes("service:emitted:data.sensitive_resource.viewed"),
+      `evaluation-service did not emit data.sensitive_resource.viewed:\n${serviceRun}`,
+    );
+    assert(
+      serviceRun.includes("service:direct-commit-prevented:pass"),
+      `evaluation-service did not verify direct commit prevention:\n${serviceRun}`,
+    );
+    assert(
+      serviceRun.includes("service:operation-commit:pass"),
+      `evaluation-service did not verify operation commit:\n${serviceRun}`,
+    );
+    assert(
+      serviceRun.includes("service:emitted:data.sensitive_resource.modified"),
+      `evaluation-service did not emit data.sensitive_resource.modified:\n${serviceRun}`,
     );
 
     await assertReceiverHealth(origin);
