@@ -1,7 +1,7 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { assert, packageRoot, readJson, repositoryRoot, runChecked } from "./verification-helpers.mjs";
+import { packedInstall } from "./packed-install.mjs";
+import { assert, packageRoot, readJson, runChecked } from "./verification-helpers.mjs";
 
 const pkg = await readJson(resolve(packageRoot, "package.json"));
 assert(pkg.private === true, "package must remain private");
@@ -82,56 +82,18 @@ for (const path of packedPaths) {
 }
 
 // 2. Perform production install test outside workspace root
-const coreRoot = resolve(repositoryRoot, "packages/security-audit-sdk-core");
-const tempRoot = await mkdtemp(resolve(tmpdir(), "bloodtrail-node-test-"));
-const consumerRoot = resolve(tempRoot, "consumer");
+const { installRoot, removeTemporaryDirectory } = await packedInstall({
+  packages: ["core", "node"],
+  manifest: () => ({ name: "consumer", private: true, type: "module" }),
+  installer: ({ core, node }) => ({
+    command: "npm",
+    args: ["install", "--omit=dev", "--no-audit", "--no-fund", "--ignore-scripts", "--offline", core.path, node.path],
+  }),
+});
 
 try {
-  runChecked("mkdir", ["-p", consumerRoot]);
-
-  // Pack Core
-  const corePackOut = JSON.parse(
-    runChecked("npm", ["pack", "--json", "--pack-destination", tempRoot, "--ignore-scripts"], {
-      cwd: coreRoot,
-      capture: true,
-    }),
-  );
-  const coreTarball = resolve(tempRoot, (Array.isArray(corePackOut) ? corePackOut[0] : corePackOut).filename);
-
-  // Pack Node binding
-  const nodePackOut = JSON.parse(
-    runChecked("npm", ["pack", "--json", "--pack-destination", tempRoot, "--ignore-scripts"], {
-      cwd: packageRoot,
-      capture: true,
-    }),
-  );
-  const nodeTarball = resolve(tempRoot, (Array.isArray(nodePackOut) ? nodePackOut[0] : nodePackOut).filename);
-
-  // Initialize consumer
-  await writeFile(
-    resolve(consumerRoot, "package.json"),
-    JSON.stringify({ name: "consumer", private: true, type: "module" }),
-    "utf8",
-  );
-
-  // Install both tarballs into isolated consumer
-  runChecked(
-    "npm",
-    [
-      "install",
-      "--omit=dev",
-      "--no-audit",
-      "--no-fund",
-      "--ignore-scripts",
-      "--offline",
-      coreTarball,
-      nodeTarball,
-    ],
-    { cwd: consumerRoot, capture: true },
-  );
-
   // Probe imports from the consumer
-  const probeScript = resolve(consumerRoot, "probe.mjs");
+  const probeScript = resolve(installRoot, "probe.mjs");
   await writeFile(
     probeScript,
     `
@@ -156,12 +118,12 @@ try {
     "utf8",
   );
 
-  const probeOutput = runChecked("node", [probeScript], { cwd: consumerRoot, capture: true });
+  const probeOutput = runChecked("node", [probeScript], { cwd: installRoot, capture: true });
   assert(probeOutput.includes("consumer-probe:pass"), "consumer probe failed to execute successfully");
 
   process.stdout.write(
     `packed artifact verification passed: ${packedPaths.size} files in tarball, clean offline install and import verified outside workspace root\n`,
   );
 } finally {
-  await rm(tempRoot, { recursive: true, force: true });
+  await removeTemporaryDirectory();
 }
