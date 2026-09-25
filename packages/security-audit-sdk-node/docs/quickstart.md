@@ -11,13 +11,24 @@ Get from the evaluation kit to your first accepted audit event delivered over HT
 
 ## Installation
 
-Inside the evaluation kit directory, install the local tarballs:
+Inside the evaluation kit directory, install the local tarballs using either supported installer:
 
+**Using npm:**
 ```bash
 npm install
 ```
 
-The generated manifest pins `@bloodtrail/security-audit-sdk-core` to the kit's own tarball via npm and pnpm overrides, ensuring exactly one core copy is installed.
+**Using pnpm:**
+```bash
+pnpm install
+```
+
+The generated manifest pins `@bloodtrail/security-audit-sdk-core` to the kit's own tarball via npm and pnpm overrides, ensuring exactly one core copy is resolved across all dependencies.
+
+> [!WARNING]
+> **Unsupported installers and configurations:**
+> - **Yarn is unsupported:** Yarn's hoisting algorithms do not honor the required single-copy Core resolution constraints and will lead to authority resolution failures.
+> - **Standalone Node binding install is unsupported:** Installing `@bloodtrail/security-audit-sdk-node` on its own without the kit's companion packages exits 0 during package installation, but fails immediately at runtime import because `@bloodtrail/security-audit-sdk-core` is a required peer dependency. Always install the complete kit via its generated `package.json`.
 
 ## Package Responsibilities
 

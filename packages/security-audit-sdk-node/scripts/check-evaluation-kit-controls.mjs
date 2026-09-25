@@ -104,8 +104,28 @@ export async function checkEvaluationKitControls() {
       await rm(tempBrokenDoc, { recursive: true, force: true });
     }
 
+    // Control 5: Planted second core copy reports DUPLICATE_AUTHORITY and fails the gate
+    const tempDuplicateCore = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-dup-core-"));
+    try {
+      await cp(kitDir, tempDuplicateCore, { recursive: true });
+      let failed = false;
+      let reportedDuplicateAuthority = false;
+      try {
+        await checkEvaluationKit({ kitDir: tempDuplicateCore, plantDuplicateCore: true });
+      } catch (err) {
+        failed = true;
+        if (err.message?.includes("DUPLICATE_AUTHORITY")) {
+          reportedDuplicateAuthority = true;
+        }
+      }
+      assert.ok(failed, "gate must fail closed when duplicate core is planted");
+      assert.ok(reportedDuplicateAuthority, "planted duplicate core must report DUPLICATE_AUTHORITY");
+    } finally {
+      await rm(tempDuplicateCore, { recursive: true, force: true });
+    }
+
     process.stdout.write(
-      "evaluation kit negative controls passed: missing core tarball, wrong override, tampered identity, and renamed doc option each failed closed\n",
+      "evaluation kit negative controls passed: missing core tarball, wrong override, tampered identity, renamed doc option, and planted duplicate core each failed closed\n",
     );
   } finally {
     await removeKit();
