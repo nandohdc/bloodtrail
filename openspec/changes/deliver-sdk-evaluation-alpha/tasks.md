@@ -48,7 +48,7 @@ archive task (9.1) stays unticked until its own ticket.
 - [x] 2.3 #583 Error catalog part 1: all 21 SDK codes and the 12 most-hit contract codes. Verify that the
   completeness test, with a pending list of exactly the other 19 contract codes, runs in the Node
   binding's validation chain.
-- [ ] 2.4 #584 Error catalog part 2: the remaining 19 contract codes, with the pending list deleted.
+- [x] 2.4 #584 Error catalog part 2: the remaining 19 contract codes, with the pending list deleted.
   Verify that a catalog with one entry removed fails the completeness test.
 
 ## 3. Conformance suite

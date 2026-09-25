@@ -3,8 +3,9 @@
 A failed call gives you an error code. Each entry below says what the code means, what usually causes
 it, how to fix it, and which fields of the failure to read.
 
-The catalog covers every SDK code in the core's `SDK_ERROR_CODES`, and the codes in its
-`CONTRACT_ERROR_CODES` that named calls hit most. It does not document the other contract codes yet.
+The catalog covers every code in the core's `SDK_ERROR_CODES` and `CONTRACT_ERROR_CODES`. No SDK call
+returns the codes under "Contract codes for rules outside the SDK", because their rules apply outside
+it.
 
 Every example value in this catalog is synthetic.
 
@@ -681,10 +682,73 @@ identifier of the event it sent, but the HTTP sink's `onOutcome` reports it. For
 
 **Fields.** `category` is `validation`. `path` is `/correlation`, or a field under it.
 
+### `INVALID_DELEGATION`
+
+**Meaning.** The event involves delegation or impersonation, but it has no delegation, or its delegation
+lacks `mode`, `principal_id` or `expires_at`.
+
+**Common causes.**
+
+- Authentication evidence with `delegated: true` or `impersonated: true`, and no delegation. TypeScript
+  accepts this.
+- `privilegeElevated` or `impersonationStarted` without a delegation. TypeScript requires the
+  `delegation` property in the call itself for both, but it accepts `undefined` as its value, for
+  example from a variable that holds a delegation for some requests only.
+- An event passed to `emit` whose delegation lacks `mode`, `principal_id` or `expires_at`.
+  `delegationContext` refuses such a value with `SDK_INVALID_CONFIGURATION`, so only an event built by
+  hand can have it.
+
+The SDK checks that `expires_at` is present, not that it is still in the future, so it accepts an
+expired delegation.
+
+**Fix.** Supply a delegation from `delegationContext` or `impersonationContext`. To supply an actor
+together with its delegation, spread the result of `delegatedActorContext` or
+`impersonatingActorContext` into the call. The SDK reads a delegation from the same three places as a
+tenant: see `MISSING_TENANT_CONTEXT`.
+
+**Fields.** `category` is `validation`, and `path` is `/delegation`. The path does not name the missing
+member.
+
+### `UNKNOWN_EXTENSION`
+
+**Meaning.** The event's `extensions` holds a namespace that the contract does not register, or a value
+that the registered namespace does not allow. The code says unknown even when the namespace is
+registered and only a value inside it is wrong. The contract registers the namespace
+`bloodtrail.audit.enrichment.v1`, and the core exports the registry as `EXTENSION_NAMESPACES`.
+
+**Common causes.**
+
+- An unregistered namespace, such as `com.example.enrichment.v1`. TypeScript rejects an object whose
+  only namespace is unregistered, but it accepts a variable that holds the registered namespace as well.
+  The path is `/extensions`, and it does not name the namespace.
+- A value in `bloodtrail.audit.enrichment.v1` that the namespace's schema does not allow. The path
+  points at the value, or at the object that lacks a member. For example:
+  - a member that the namespace does not define;
+  - a missing `provenance`, or a `provenance` without `trust_level`, `source` or `version`;
+  - a `provenance.trust_level` other than `downstream_enrichment`;
+  - a `provenance.version` that is not a semantic version such as `1.0.0`;
+  - a `risk.level` outside the contract's risk levels, or `risk.reason_codes` with more than 16 codes
+    or with a code outside the contract's reason codes.
+
+Three problems inside an extension have their own codes instead:
+
+- an array of more than 32 items, or a namespace over 4,096 bytes of JSON: `FIELD_LIMIT_EXCEEDED`;
+- a plain object where `registeredEnrichmentExtension`'s value belongs: `AUTHORITY_ESCALATION`;
+- prohibited data: `PROHIBITED_DATA`.
+
+**Fix.** Build the extensions with `registeredEnrichmentExtension`, use only the registered namespace,
+and compare the value at `path` with the namespace's schema. The namespace carries downstream
+enrichment, so its `provenance.trust_level` is always `downstream_enrichment`.
+
+**Fields.** `category` is `validation`. `path` is `/extensions`, or points into
+`/extensions/bloodtrail.audit.enrichment.v1`.
+
 ### `DUPLICATE_AUTHORITY`
 
 **Meaning.** A context value came from a second installed copy of the core package. Authority from one
-copy is not valid in another.
+copy is not valid in another. The contract's own validator also uses this code for an OpenTelemetry
+mapping whose attributes repeat an authority field, such as `event.id` or `actor.id`. No SDK call
+reports that meaning, because the SDK does not map events to OpenTelemetry.
 
 **Common causes.** Two copies of `@bloodtrail/security-audit-sdk-core` resolve in your application.
 The value was built with one copy's constructor and passed to an SDK from the other. This can happen
@@ -698,3 +762,290 @@ when your application depends on the core directly and the Node binding resolves
 
 **Fields.** `category` is `authority`, and `path` names the field. It surfaces in the same places as
 `AUTHORITY_ESCALATION`. When it is thrown, its `message` states the fix.
+
+## Derived-field provenance codes
+
+These codes concern `risk`, which any event may carry. An event with `risk` must say where the risk
+came from, in `risk.model.provenance`:
+
+- `trust_level` is the trust that the risk claims. It must be `derived_server` or a less trusted level,
+  and no more trusted than the least trusted input.
+- `derived_from` lists the inputs: from 1 to 32 distinct strings in ascending code-point order, each of
+  at most 256 characters. An input names a canonical field in dot notation, such as `event.name`, or a
+  whole registered extension namespace, such as `extensions.bloodtrail.audit.enrichment.v1`.
+
+The core exports the canonical fields, with each field's trust, as `FIELD_POLICY`, and the trust levels,
+from most to least trusted, as `REGISTRIES.trust_levels`.
+
+Pass `risk` from `riskContext`. The SDK reads it from the same three places as a tenant: see
+`MISSING_TENANT_CONTEXT`. TypeScript cannot check most of these rules. The schema check catches a
+malformed input, but the other rules run after the event's other validation, so these codes usually
+appear only once the rest of the event is valid.
+
+### `DERIVED_FROM_MALFORMED_INPUT`
+
+**Meaning.** `derived_from` is not a list of inputs: it is not an array, or an input is not a
+non-empty string of at most 256 characters.
+
+**Common causes.**
+
+- A single input given as a string, such as `derived_from: "event.name"`. TypeScript rejects this, so
+  it arises from JavaScript or through a cast. The path is `/risk/model/provenance/derived_from`.
+- An input that is empty, longer than 256 characters, or not a string. The path ends with the input's
+  position, such as `/risk/model/provenance/derived_from/0`.
+
+More than 32 inputs, or an input over 8,192 bytes, gives `FIELD_LIMIT_EXCEEDED` instead, because the
+SDK's general limits on arrays and strings apply first.
+
+**Fix.** Pass an array with one dot-notation string per input.
+
+**Fields.** `category` is `validation`. `path` is `/risk/model/provenance/derived_from`, or points at
+one of its inputs.
+
+### `DERIVED_FROM_DUPLICATE_INPUT`
+
+**Meaning.** An input appears more than once in `derived_from`.
+
+**Common causes.** The same input listed twice, for example when the inputs are gathered from two
+sources and joined. A list that repeats an input and is also out of order reports this code, not
+`DERIVED_FROM_NONCANONICAL_ORDER`.
+
+**Fix.** Remove the repeated inputs, for example by collecting them in a `Set`, then sort them.
+
+**Fields.** `category` is `validation`, and `path` is `/risk/model/provenance/derived_from`. It does not
+say which input repeats.
+
+### `DERIVED_FROM_NONCANONICAL_ORDER`
+
+**Meaning.** `derived_from` is not in ascending code-point order.
+
+**Common causes.** Inputs listed in the order that the risk model used them, such as
+`["event.outcome", "event.name"]`, and never sorted.
+
+**Fix.** Sort the inputs by code point. Canonical field names and namespace names contain only ASCII
+characters, and for those JavaScript's default `sort()` gives code-point order.
+
+**Fields.** `category` is `validation`, and `path` is `/risk/model/provenance/derived_from`.
+
+### `DERIVED_FROM_UNRESOLVABLE_INPUT`
+
+**Meaning.** An input names neither a canonical field nor a registered extension namespace.
+
+**Common causes.**
+
+- A misspelled input, or one in another notation, such as the JSON Pointer `/event/name` or the
+  camel-case `eventName`.
+- An input that names no field in `FIELD_POLICY`, such as `event`, which names an object rather than a
+  field.
+- An input below an extension namespace, such as `extensions.bloodtrail.audit.enrichment.v1.risk.level`,
+  or one that names an unregistered namespace. An extension input names the whole namespace.
+
+**Fix.** Write each field input exactly as that field's `path` in `FIELD_POLICY`, and each extension
+input as `extensions.` followed by the registered namespace.
+
+**Fields.** `category` is `validation`, and `path` is `/risk/model/provenance/derived_from`. It does not
+say which input fails.
+
+### `DERIVED_FROM_ABSENT_INPUT`
+
+**Meaning.** An input names a real field or namespace, but this event does not carry it.
+
+**Common causes.**
+
+- A field that this event leaves out, such as `subject.display_name` on an event without a subject
+  display name. A list of inputs shared by several events often names a field that one of them lacks.
+- `extensions.bloodtrail.audit.enrichment.v1` on an event without that extension.
+
+**Fix.** List only the inputs that this event carries, or add the missing field to the event.
+
+**Fields.** `category` is `validation`, and `path` is `/risk/model/provenance/derived_from`. It does not
+say which input is absent.
+
+### `DERIVED_FROM_EMPTY_INPUT`
+
+**Meaning.** `derived_from` is an empty array.
+
+**Common causes.** A list of inputs that was created but never filled, or a risk value that does not
+depend on the event at all.
+
+**Fix.** List at least one input. If the risk does not come from any of the event's fields, leave
+`risk` out.
+
+**Fields.** `category` is `validation`, and `path` is `/risk/model/provenance/derived_from`.
+
+### `DERIVED_FROM_NON_DERIVED`
+
+**Meaning.** `trust_level` claims more trust than a derived value can have. The most that risk can
+claim is `derived_server`.
+
+**Common causes.** A `trust_level` of `authoritative_server`, `verified_assertion` or
+`observed_transport`, for example because the server computed the risk, or because the level was copied
+from the actor's provenance.
+
+**Fix.** Set `trust_level` to `derived_server`, or to a less trusted level when an input is less
+trusted. See `DERIVED_FROM_TRUST_FLOOR_EXCEEDED`.
+
+**Fields.** `category` is `validation`. `path` is `/risk/model/provenance/derived_from`, although the
+value at fault is `trust_level`.
+
+### `DERIVED_FROM_CYCLE`
+
+**Meaning.** An input names part of the risk itself: a field under `risk.`, such as `risk.level`, or
+`risk.model.provenance.derived_from` itself.
+
+**Common causes.** A risk field listed as an input to the risk, for example `risk.score` when the model
+derives the level from the score.
+
+**Fix.** List the event fields that the risk was computed from, not the risk's own fields.
+
+**Fields.** `category` is `validation`, and `path` is `/risk/model/provenance/derived_from`.
+
+### `DERIVED_FROM_MISSING`
+
+**Meaning.** The event carries `risk`, but not its provenance: `trust_level` or `derived_from` is
+missing.
+
+**Common causes.**
+
+- A `risk` without `model` or `model.provenance`, such as `riskContext({ level: "low" })`. The path is
+  `/risk/model/provenance/trust_level`.
+- A provenance without `trust_level`. The path is `/risk/model/provenance/trust_level`.
+- A provenance without `derived_from`. The path is `/risk/model/provenance/derived_from`.
+
+**Fix.** Supply both `trust_level` and `derived_from`, or leave `risk` out.
+
+**Fields.** `category` is `validation`. `path` names the missing field. When both are missing, it names
+`trust_level`.
+
+### `DERIVED_FROM_TRUST_FLOOR_EXCEEDED`
+
+**Meaning.** `trust_level` claims more trust than the least trusted input has. A value derived from a
+client's claim, for example, cannot be more trusted than that claim.
+
+**Common causes.**
+
+- `derived_server` with an input that the client supplies, such as `request.user_agent` or
+  `subject.display_name`, whose trust is `client_claim`.
+- `derived_server` with an extension namespace as an input. Its trust is `downstream_enrichment`.
+
+**Fix.** Lower `trust_level` to the least trusted input's level, such as `client_claim`, or remove that
+input if the risk does not depend on it. `FIELD_POLICY` gives each field's trust, and
+`EXTENSION_NAMESPACES` gives each namespace's.
+
+**Fields.** `category` is `validation`. `path` ends with the position of the first input with the
+lowest trust, such as `/risk/model/provenance/derived_from/1`.
+
+## Contract codes for rules outside the SDK
+
+The contract defines these codes for rules that apply outside the SDK: mapping an event to CloudEvents,
+OpenTelemetry or OCSF, a consumer's supported versions, and the delivery of `policy_critical` events.
+No SDK call returns them. Each entry says what the code means in the contract, and what to check if
+another component reports it.
+
+### `ENVELOPE_PAYLOAD_CONFLICT`
+
+**Meaning.** A CloudEvents envelope disagrees with the canonical event that it carries. The event in
+`data` is authoritative, and the envelope may only repeat it.
+
+**Common causes.** In the contract's rules, an envelope conflicts when it has no `data`, or when one of
+these attributes differs from the event:
+
+- `id` from `event.id`, for example an identifier generated anew for each delivery;
+- `type` from `event.name`;
+- `time` from `event.timestamp`, for example the time of sending;
+- `dataschema` from the contract's schema identifier.
+
+**Fix.** Derive the envelope from the event: copy `id`, `type` and `time` from `event.id`, `event.name`
+and `event.timestamp`, set `dataschema` to the core's exported `CONTRACT_SCHEMA_ID`, and put the event
+unchanged in `data`.
+
+**Fields.** No call returns it, so it has no fields to read.
+
+### `UNSUPPORTED_MAPPING_VERSION`
+
+**Meaning.** A mapping targets a version of an external standard other than the one that the contract
+pins: CloudEvents 1.0.2, OpenTelemetry 1.59.0 with Semantic Conventions 1.43.0, and OCSF 1.8.0.
+
+**Common causes.**
+
+- A mapping written for a newer release of the standard.
+- A CloudEvents `specversion` of `1.0.2`. The attribute names only the major and minor version, `1.0`.
+
+**Fix.** Map to the pinned version. The contract supports no other.
+
+**Fields.** No call returns it, so it has no fields to read.
+
+### `PROHIBITED_BODY_ATTRIBUTES`
+
+**Meaning.** An OpenTelemetry log record that carries an event holds prohibited data in its body or
+attributes, or has a body over the contract's size limit.
+
+**Common causes.**
+
+- A body or attribute that holds a credential or a secret, such as a raw token.
+- A body over 4,096 characters of JSON, for example a whole request copied into it.
+
+**Fix.** Put only the canonical event in the body, and nothing that the event itself may not carry.
+
+**Fields.** No call returns it, so it has no fields to read.
+
+### `MISSING_NATIVE_MAPPING`
+
+**Meaning.** An OpenTelemetry log record lacks a native field that the contract maps an event value to.
+The native fields are the timestamp, the observed timestamp, the event name, the trace and span
+identifiers, the resource and the instrumentation scope.
+
+**Common causes.** A record without one of these fields, for example with the event's timestamp in
+its attributes instead.
+
+**Fix.** Fill each native field from the event, and keep the attributes for values without a native
+field.
+
+**Fields.** No call returns it, so it has no fields to read.
+
+### `MAPPING_SCOPE_OVERCLAIM`
+
+**Meaning.** An OCSF mapping claims more than the contract allows. The contract allows a claim of OCSF
+compatibility only for version 1.8.0, for tested catalog events and selected classes and profiles, and
+with Bloodtrail's extension losses stated.
+
+**Common causes.**
+
+- A mapping status other than `exact`, `transformed`, `extended`, `unmapped` or `lossy`.
+- A claim of full OCSF compatibility.
+
+**Fix.** Give each event's mapping one of the five statuses, and claim compatibility for each mapped
+event only.
+
+**Fields.** No call returns it, so it has no fields to read.
+
+### `UNAPPROVED_POLICY_CRITICAL_POSTURE`
+
+**Meaning.** A `policy_critical` event is delivered without a failure posture that its policy owner
+approved: whether a delivery failure lets the business operation continue, stops it, or defers its
+completion. The `policy_critical` events are those whose `delivery` in `EVENT_CATALOG` is
+`policy_critical`: the events of `privilegeElevated`, `impersonationStarted`, `impersonationEnded` and
+`sensitiveDataExported`.
+
+**Common causes.** The contract uses this code in its delivery scenarios, for a `policy_critical` event
+with no approved posture. The SDK sends these events like any other and checks no posture. The
+contract blocks their production use until a reviewed policy exists.
+
+**Fix.** Nothing in a call changes it. Before these events are relied on outside evaluation, their
+policy owner must approve how a delivery failure affects the business operation.
+
+**Fields.** No call returns it, so it has no fields to read.
+
+### `UNSUPPORTED_COMPATIBILITY_VERSION`
+
+**Meaning.** An event's schema version is one that its consumer does not support. The contract's
+compatibility policy has the producer reject such an event, and the consumer reject or quarantine it.
+
+**Common causes.** A consumer that receives events of a newer contract version than it supports. In the
+SDK, the same mismatch reports `UNSUPPORTED_SCHEMA_VERSION` for an event passed to `emit`, and
+`SDK_UNSUPPORTED_CONTRACT_VERSION` for the configuration.
+
+**Fix.** Produce and consume the same contract version, or upgrade the consumer. For the version that
+the SDK supports, see `SDK_UNSUPPORTED_CONTRACT_VERSION`.
+
+**Fields.** No call returns it, so it has no fields to read.
