@@ -34,7 +34,7 @@ archive task (9.1) stays unticked until its own ticket.
 
   #579, the shared response classifier, is task 2.1 of `add-sdk-node-http-audit-sink`.
 
-- [ ] 2.1 #580 Extract the pack-and-install harness. Verify:
+- [x] 2.1 #580 Extract the pack-and-install harness. Verify:
   - the packed-install check's assertions and outcome are unchanged;
   - nothing is written inside the repository tree, even when a step fails.
 
