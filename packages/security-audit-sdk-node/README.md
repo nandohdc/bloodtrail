@@ -2,10 +2,9 @@
 
 Provisional first-party Node.js platform binding for Bloodtrail security audit events.
 
-## API Stability: Provisional and Unfrozen
+## API Stability: Frozen
 
-> **PROVISIONAL STATUS NOTICE (PLAN-047):**
-> The public API surface of this package is **explicitly provisional and unfrozen**. It is designed to implement concrete Node.js host capabilities for `@bloodtrail/security-audit-sdk-core` while the SDK vertical delivery contracts (#102–#109) are materialized. Final freezing of this surface is governed by issue #111.
+The public API surface of this package is **frozen** (governed by issue #111, with amendments #112, #113, and #589). All exports, types, and runtime behaviours are locked.
 
 ## Overview
 
@@ -34,7 +33,12 @@ does not open sockets, use `fetch` or `node:http`, schedule retries, manage a
 queue, drain during shutdown, or claim durable or exactly-once delivery.
 
 ```typescript
-import { createHttpDeliveryHandoff } from "@bloodtrail/security-audit-sdk-node";
+import {
+  createHttpDeliveryHandoff,
+  type HttpExchangeRequest,
+} from "@bloodtrail/security-audit-sdk-node";
+
+declare function sendWithApplicationOwnedClient(request: HttpExchangeRequest): Promise<void>;
 
 const handoff = createHttpDeliveryHandoff({
   path: "/v1/security-audit",
@@ -94,7 +98,16 @@ terminal outcome — or a spent retry budget — stops scheduling immediately an
 never exceeds the configured maximum number of attempts.
 
 ```typescript
-import { createHttpDeliveryHandoff, createBoundedDeliveryRetry, nodeTimers } from "@bloodtrail/security-audit-sdk-node";
+import {
+  createHttpDeliveryHandoff,
+  createBoundedDeliveryRetry,
+  createFetchHttpExchange,
+  nodeTimers,
+} from "@bloodtrail/security-audit-sdk-node";
+import type { SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
+
+declare const event: SecurityAuditEvent;
+const exchange = createFetchHttpExchange({ origin: "http://127.0.0.1:8080", timeoutMs: 2_000 });
 
 const retry = createBoundedDeliveryRetry({
   handoff: createHttpDeliveryHandoff({ path: "/v1/security-audit", exchange }),
@@ -125,7 +138,25 @@ does. It composes above either the raw handoff or the retry-wrapped delivery —
 wrap whichever one call should count as one admitted slot.
 
 ```typescript
-import { createBoundedDeliveryBackpressure } from "@bloodtrail/security-audit-sdk-node";
+import {
+  createBoundedDeliveryBackpressure,
+  createBoundedDeliveryRetry,
+  createFetchHttpExchange,
+  createHttpDeliveryHandoff,
+  nodeTimers,
+} from "@bloodtrail/security-audit-sdk-node";
+import type { SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
+
+declare const event: SecurityAuditEvent;
+const exchange = createFetchHttpExchange({ origin: "http://127.0.0.1:8080", timeoutMs: 2_000 });
+const retry = createBoundedDeliveryRetry({
+  handoff: createHttpDeliveryHandoff({ path: "/v1/security-audit", exchange }),
+  maxAttempts: 5,
+  baseDelayMs: 200,
+  maxDelayMs: 10_000,
+  jitterSource: Math.random,
+  timers: nodeTimers,
+});
 
 const gate = createBoundedDeliveryBackpressure({ capacity: 64 });
 
@@ -147,7 +178,27 @@ a lifecycle boundary, independent of what that operation does. It composes
 above the raw handoff, the retry-wrapped delivery, or the backpressure gate.
 
 ```typescript
-import { createDeliveryShutdown, nodeTimers } from "@bloodtrail/security-audit-sdk-node";
+import {
+  createDeliveryShutdown,
+  createBoundedDeliveryBackpressure,
+  createBoundedDeliveryRetry,
+  createFetchHttpExchange,
+  createHttpDeliveryHandoff,
+  nodeTimers,
+} from "@bloodtrail/security-audit-sdk-node";
+import type { SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
+
+declare const event: SecurityAuditEvent;
+const exchange = createFetchHttpExchange({ origin: "http://127.0.0.1:8080", timeoutMs: 2_000 });
+const retry = createBoundedDeliveryRetry({
+  handoff: createHttpDeliveryHandoff({ path: "/v1/security-audit", exchange }),
+  maxAttempts: 5,
+  baseDelayMs: 200,
+  maxDelayMs: 10_000,
+  jitterSource: Math.random,
+  timers: nodeTimers,
+});
+const gate = createBoundedDeliveryBackpressure({ capacity: 64 });
 
 const lifecycle = createDeliveryShutdown({ deadlineMs: 5000, timers: nodeTimers });
 
@@ -172,19 +223,27 @@ repeated calls return the identical accounting from the first call.
 ## Usage
 
 ```typescript
-import { createNodeSecurityAuditSdk } from "@bloodtrail/security-audit-sdk-node";
+import {
+  createNodeSecurityAuditSdk,
+  createHttpAuditSink,
+} from "@bloodtrail/security-audit-sdk-node";
 import { CONTRACT_VERSION } from "@bloodtrail/security-audit-sdk-core";
+
+const sink = createHttpAuditSink({
+  origin: "http://127.0.0.1:3000",
+  path: "/v1/security-audit",
+  timeoutMs: 5000,
+  headers: {
+    authorization: "Bearer fixture-token",
+  },
+});
 
 const sdk = createNodeSecurityAuditSdk({
   contractVersion: CONTRACT_VERSION,
-  producer: { id: "auth-service", name: "Authentication Service" },
-  service: { id: "auth-svc", name: "Auth Svc", version: "1.0.0" },
-  environment: { name: "production", region: "us-east-1" },
-  sink: {
-    async emit(event) {
-      // Custom sink emission logic
-      return { ok: true, value: { eventId: event.event.id, status: "delivered" } };
-    },
-  },
+  producer: { name: "evaluation-producer", version: "0.1.0" },
+  // service: { id: "evaluation-service", name: "Evaluation Service", version: "1.0.0" },
+  service: { name: "evaluation-service", version: "0.1.0" },
+  environment: { name: "synthetic" },
+  sink,
 });
 ```
