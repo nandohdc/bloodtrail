@@ -88,7 +88,7 @@ archive task (9.1) stays unticked until its own ticket.
   that:
   - all five demonstrated events arrive valid and byte-identical;
   - the modification's commit state comes from the operation handle.
-- [ ] 4.6 #598 Kit failure paths, the wire-protocol page and its failure table. Verify that:
+- [x] 4.6 #598 Kit failure paths, the wire-protocol page and its failure table. Verify that:
   - every status class maps to the documented SDK code and `onOutcome` code;
   - the flush and shutdown behaviour matches the docs.
 - [ ] 4.7 #599 pnpm support, and one core copy proven for every supported installer. Verify that:
