@@ -71,7 +71,7 @@ archive task (9.1) stays unticked until its own ticket.
 
 ## 4. Evaluation kit and example
 
-- [ ] 4.1 #593 Kit v0: build it, install it with npm outside the repository, and emit one event. Verify
+- [x] 4.1 #593 Kit v0: build it, install it with npm outside the repository, and emit one event. Verify
   that:
   - the builder is deterministic for a given commit;
   - the gate runs in both `test` and `validate`;

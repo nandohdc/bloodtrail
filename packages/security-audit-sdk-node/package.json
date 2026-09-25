@@ -40,13 +40,16 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:runtime": "tsc -p tsconfig.test.json && node --test dist-tests/**/*.test.js",
     "test:coverage": "node -e \"require('node:fs').mkdirSync('coverage',{recursive:true})\" && npm run build && tsc -p tsconfig.test.json && node --enable-source-maps --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=25 --test-reporter=lcov --test-reporter-destination=coverage/lcov.info --test-reporter=junit --test-reporter-destination=coverage/junit.xml dist-tests/**/*.test.js",
-    "test": "npm run build && npm run test:runtime",
+    "test": "npm run build && npm run test:runtime && npm run test:kit",
+    "build:kit": "node scripts/build-evaluation-kit.mjs",
+    "test:kit": "node scripts/check-evaluation-kit.mjs",
+    "test:kit-controls": "node scripts/check-evaluation-kit-controls.mjs",
     "test:scope": "node scripts/check-scope.mjs",
     "test:exports": "node scripts/check-exports.mjs",
     "test:compatibility": "node scripts/check-compatibility.mjs",
     "test:dependencies": "node scripts/check-dependencies.mjs",
     "test:package": "node scripts/check-package-contents.mjs",
-    "validate": "npm run typecheck && npm run build && npm run test:runtime && npm run test:scope && npm run test:exports && npm run test:compatibility && npm run test:dependencies && npm run test:package"
+    "validate": "npm run typecheck && npm run build && npm run test:runtime && npm run test:scope && npm run test:exports && npm run test:compatibility && npm run test:dependencies && npm run test:package && npm run test:kit && npm run test:kit-controls"
   },
   "dependencies": {
     "@bloodtrail/security-audit-sdk-core": "file:../security-audit-sdk-core"
