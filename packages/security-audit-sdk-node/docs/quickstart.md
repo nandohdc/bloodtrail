@@ -172,17 +172,24 @@ await sdk.flush();
 await sdk.shutdown();
 ```
 
-## Per-Request Context Scope
+## Authentication Failure and Per-Request Context Scope
 
-Use `sdk.runWithContext` to bind contextual information like tenant context across asynchronous operations:
+When authentication fails, emit `authenticationFailed` before a session or context is created. For authenticated requests, establish a per-request context scope using `sdk.runWithContext`. The active scope's `actor` and `tenant` automatically apply to all audit calls inside the callback, even after asynchronous operations (`await`), eliminating boilerplate and preventing identity drifting:
 
 ```typescript
 import {
   createNodeSecurityAuditSdk,
+  nodeContextProvider,
 } from "@bloodtrail/security-audit-sdk-node";
 import {
+  authenticatedHumanActor,
   authoritativeTenant,
+  authoritativeResource,
+  authorizationEvidence,
+  observedSource,
+  authenticationEvidence,
 } from "@bloodtrail/security-audit-sdk-core";
+import assert from "node:assert/strict";
 
 const sdk = createNodeSecurityAuditSdk({
   contractVersion: "2.1.0",
@@ -196,16 +203,111 @@ const sdk = createNodeSecurityAuditSdk({
   },
 });
 
-const tenant = authoritativeTenant({
+// 1. Handling authentication failure
+const authFailedResult = await sdk.authenticationFailed({
+  actor: authenticatedHumanActor({
+    id: "actor-failed-login",
+    displayName: "Unknown User",
+  }),
+  tenant: authoritativeTenant({
+    scope: "tenant",
+    actor_tenant_id: "tenant-quickstart-1",
+    effective_tenant_id: "tenant-quickstart-1",
+    resource_tenant_id: "tenant-quickstart-1",
+  }),
+  authentication: authenticationEvidence({
+    method: "password_mfa",
+    assurance_level: "aal1",
+    mfa_state: "not_used",
+    credential_type: "password",
+    identity_provider: "https://idp.synthetic.test",
+    delegated: false,
+    impersonated: false,
+  }),
+  source: observedSource({
+    observed: {
+      address: "127.0.0.1",
+      port: 443,
+    },
+  }),
+  request: {
+    id: "req-failed-login-1",
+    method: "POST",
+    route: "/api/v1/auth/login",
+  },
+  correlation: {
+    correlation_id: "22222222-2222-4222-8222-000000000041",
+  },
+  event: {
+    outcome_reason: {
+      code: "credential_invalid",
+    },
+  },
+});
+assert.equal(authFailedResult.ok, true);
+
+// 2. Establishing per-request context scope across asynchronous operations
+const requestActor = authenticatedHumanActor({
+  id: "actor-quickstart-user",
+  displayName: "Quickstart User",
+});
+
+const requestTenant = authoritativeTenant({
   scope: "tenant",
   actor_tenant_id: "tenant-quickstart-1",
   effective_tenant_id: "tenant-quickstart-1",
   resource_tenant_id: "tenant-quickstart-1",
 });
 
-await sdk.runWithContext({ tenant }, async () => {
+await sdk.runWithContext({ actor: requestActor, tenant: requestTenant }, async () => {
   // Asynchronous calls inside this callback inherit the active context
-  await sdk.flush();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+
+  // The active context frame survives the await across asynchronous continuations
+  const activeContext = nodeContextProvider.get();
+  assert.ok(activeContext?.actor);
+  assert.ok(activeContext?.tenant);
+
+  // Emitting authorization denial after async work
+  const authzResult = await sdk.authorizationDenied({
+    actor: activeContext.actor,
+    tenant: activeContext.tenant,
+    resource: authoritativeResource({
+      type: "authorization_policy",
+      id: "policy-quickstart-1",
+      owning_tenant_id: "tenant-quickstart-1",
+      data_classification: "confidential",
+      operation_type: "execute",
+      change_categories: ["metadata"],
+    }),
+    authorization: authorizationEvidence({
+      decision: "deny",
+      policy_id: "policy.quickstart-1",
+      policy_version: "1.0.0",
+      capability: "evaluate_authorization",
+      enforcement_point: "policy-enforcement-point",
+      decision_reason: "policy_denied",
+      resource_context: {
+        type: "authorization_policy",
+        id: "policy-quickstart-1",
+      },
+      tenant_context: {
+        effective_tenant_id: "tenant-quickstart-1",
+      },
+    }),
+    source: observedSource({
+      observed: {
+        address: "127.0.0.1",
+        port: 443,
+      },
+    }),
+    event: {
+      outcome_reason: {
+        code: "policy_denied",
+      },
+    },
+  });
+  assert.equal(authzResult.ok, true);
 });
 
 await sdk.shutdown();

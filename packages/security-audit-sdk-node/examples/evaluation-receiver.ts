@@ -100,7 +100,11 @@ async function handleAuditSubmission(
 function createDispatchHandler(state: ReceiverState) {
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     if (req.method === "GET" && req.url === "/health") {
-      sendJson(res, 200, { status: "healthy", acceptedCount: state.acceptedEvents.length });
+      sendJson(res, 200, {
+        status: "healthy",
+        acceptedCount: state.acceptedEvents.length,
+        events: state.acceptedEvents.map((e) => JSON.parse(e)),
+      });
       return;
     }
     if (req.method !== "POST") {
