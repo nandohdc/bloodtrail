@@ -84,8 +84,28 @@ export async function checkEvaluationKitControls() {
       await rm(tempTamperedId, { recursive: true, force: true });
     }
 
+    // Control 4: Renamed option in doc block snippet fails the gate
+    const tempBrokenDoc = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-broken-doc-"));
+    try {
+      await cp(kitDir, tempBrokenDoc, { recursive: true });
+      const quickstartPath = resolve(tempBrokenDoc, "docs/quickstart.md");
+      const quickstartText = await readFile(quickstartPath, "utf8");
+      const brokenQuickstart = quickstartText.replace("timeoutMs: 5000,", "timeoutOption: 5000,");
+      await writeFile(quickstartPath, brokenQuickstart, "utf8");
+
+      let failed = false;
+      try {
+        await checkEvaluationKit({ kitDir: tempBrokenDoc });
+      } catch {
+        failed = true;
+      }
+      assert.ok(failed, "gate must fail closed when doc block uses renamed option");
+    } finally {
+      await rm(tempBrokenDoc, { recursive: true, force: true });
+    }
+
     process.stdout.write(
-      "evaluation kit negative controls passed: missing core tarball, wrong override, and tampered identity each failed closed\n",
+      "evaluation kit negative controls passed: missing core tarball, wrong override, tampered identity, and renamed doc option each failed closed\n",
     );
   } finally {
     await removeKit();
