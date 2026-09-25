@@ -6,6 +6,8 @@ Get from the evaluation kit to your first accepted audit event delivered over HT
 
 - **Supported Node versions:** Node 24 and Node 26 (`>=24 <25 || >=26 <27`).
 - **Recommended Node version:** A current Node 24.x release (such as 24.8.x or later). Node 24.2.0 prints an experimental type-stripping warning when executing TypeScript files directly.
+- **Declared range:** The declared range for consumer projects is `>=5.9.2 <6`.
+- **Measured compatibility:** The kit exhibits measured compatibility with TypeScript 6.0.x and 7.0.x (the example sources and all doc code blocks type-check successfully with TypeScript 6 and 7, outside the declared range). The runtime does not depend on the TypeScript version because Node strips types.
 - **Loopback and synthetic data only:** All evaluation data must remain synthetic, and evaluation network traffic stays strictly on loopback (`127.0.0.1`).
 - **Non-production environments:** `environment.name` must never be set to a production value. Use `"development"`, `"test"`, or `"synthetic"`.
 

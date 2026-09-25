@@ -51,13 +51,36 @@ async function typecheckExamples(tempInstall) {
       verbatimModuleSyntax: true,
       isolatedModules: true,
       noEmit: true,
+      rootDir: ".",
+      skipLibCheck: true,
       typeRoots: [resolve(packageRoot, "node_modules/@types")],
+      types: ["node"],
     },
     include: ["examples/**/*.ts", "doc-blocks/**/*.ts"],
   };
   await writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2), "utf8");
-  const tscBin = resolve(packageRoot, "node_modules/typescript/bin/tsc");
-  runChecked(process.execPath, [tscBin, "-p", tsconfigPath], { cwd: tempInstall, capture: true });
+
+  const tsMatrix = [
+    {
+      version: "5.9.2",
+      command: process.execPath,
+      args: [resolve(packageRoot, "node_modules/typescript/bin/tsc"), "-p", tsconfigPath],
+    },
+    {
+      version: "6.0.3",
+      command: "npx",
+      args: ["--yes", "-p", "typescript@6.0.3", "tsc", "-p", tsconfigPath],
+    },
+    {
+      version: "7.0.2",
+      command: "npx",
+      args: ["--yes", "-p", "typescript@7.0.2", "tsc", "-p", tsconfigPath],
+    },
+  ];
+
+  for (const leg of tsMatrix) {
+    runChecked(leg.command, leg.args, { cwd: tempInstall, capture: true });
+  }
 }
 
 function findRequiredAcceptedEvent(events, eventName) {
@@ -628,7 +651,7 @@ export async function checkEvaluationKit({ kitDir: existingKitDir, plantDuplicat
     // 4. Verify single core copy in npm install (and fail closed if planted duplicate)
     await verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore);
 
-    // 5. Type-check examples and doc blocks in the installed kit with TypeScript 5.9.2 under strict settings
+    // 5. Type-check examples and doc blocks in the installed kit with TypeScript matrix (5.9.2, 6.0.x, 7.0.x) under strict settings
     await typecheckExamples(tempInstall);
 
     // 6. Run examples/first-event.ts
@@ -651,7 +674,7 @@ export async function checkEvaluationKit({ kitDir: existingKitDir, plantDuplicat
     await verifyPnpmInstall(kitDir);
 
     process.stdout.write(
-      "evaluation kit verification passed: kit built, identity verified, installed outside workspace with npm and pnpm, doc blocks and examples type-checked, single core copy verified, events emitted and verified over HTTP, failure paths verified\n",
+      "evaluation kit verification passed: kit built, identity verified, installed outside workspace with npm and pnpm, doc blocks and examples type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, events emitted and verified over HTTP, failure paths verified\n",
     );
     return { success: true };
   } finally {

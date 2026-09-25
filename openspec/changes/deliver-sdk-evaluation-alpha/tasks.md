@@ -94,7 +94,7 @@ archive task (9.1) stays unticked until its own ticket.
 - [x] 4.7 #599 pnpm support, and one core copy proven for every supported installer. Verify that:
   - the npm and pinned-pnpm installs both run the one-event script;
   - a planted second core copy fails the gate.
-- [ ] 4.8 #600 Measured compatibility with TypeScript 6 and 7. Verify that:
+- [x] 4.8 #600 Measured compatibility with TypeScript 6 and 7. Verify that:
   - every example and doc block type-checks under 5.9.2, a pinned 6.0.x and a pinned 7.0.x;
   - a planted type error fails every leg;
   - the declared range is unchanged.
