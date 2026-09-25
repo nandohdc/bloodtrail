@@ -104,7 +104,7 @@ archive task (9.1) stays unticked until its own ticket.
 - [x] 5.1 #601 Correct the Node binding, core and root READMEs. Verify that:
   - every code block type-checks through the gate;
   - sdk-core's coherence and contract-version-currency checks stay green.
-- [ ] 5.2 #602 Privacy guidance, the supported-versus-planned table, and the known issues. Verify that:
+- [x] 5.2 #602 Privacy guidance, the supported-versus-planned table, and the known issues. Verify that:
   - no planned item is described as implemented;
   - every code block type-checks.
 - [ ] 5.3 #603 Evaluation guide, questionnaire and seeded invalid-call exercise. Verify that:
