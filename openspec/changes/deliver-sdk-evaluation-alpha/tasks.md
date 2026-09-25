@@ -59,7 +59,7 @@ archive task (9.1) stays unticked until its own ticket.
   - at least one invalid row asserts its code and path.
 - [x] 3.2 #586 Rows for the 7 authorization and administration events. Verify that each row passes
   validation and matches its catalog entry.
-- [ ] 3.3 #587 Rows for the 7 data, configuration and tenant events. Verify that each row passes, and that
+- [x] 3.3 #587 Rows for the 7 data, configuration and tenant events. Verify that each row passes, and that
   transaction-bound rows take their commit state from a real operation handle.
 - [ ] 3.4 #588 Invalid rows for each rule family, the contract's positive and negative examples, and size
   bounds. Verify that:
