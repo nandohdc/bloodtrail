@@ -202,8 +202,36 @@ export async function checkEvaluationKitControls() {
     // Control 5: Planted second core copy reports DUPLICATE_AUTHORITY and fails the gate
     await checkDuplicateCoreControl(kitDir);
 
+    // Control 6: Removing any kit item fails the gate
+    const tempMissingItem = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-missing-item-"));
+    try {
+      await cp(kitDir, tempMissingItem, { recursive: true });
+      await rm(resolve(tempMissingItem, "docs/evaluation-guide.md"));
+
+      let failed = false;
+      try {
+        await checkEvaluationKit({ kitDir: tempMissingItem });
+      } catch {
+        failed = true;
+      }
+      assert.ok(failed, "gate must fail closed when a required kit item is missing");
+    } finally {
+      await rm(tempMissingItem, { recursive: true, force: true });
+    }
+
+    // Control 7: Distributable build refuses dirty tree
+    let dirtyRefused = false;
+    try {
+      await buildEvaluationKit({ mode: "distributable", _gitStatus: " M dirty-file.ts\n" });
+    } catch (err) {
+      if (err.message?.includes("cannot build distributable evaluation kit from dirty git tree")) {
+        dirtyRefused = true;
+      }
+    }
+    assert.ok(dirtyRefused, "distributable build must refuse dirty git tree");
+
     process.stdout.write(
-      "evaluation kit negative controls passed: missing core tarball, wrong override, tampered identity, renamed doc option (across all TypeScript matrix legs), and planted duplicate core each failed closed\n",
+      "evaluation kit negative controls passed: missing core tarball, wrong override, tampered identity, renamed doc option (across all TypeScript matrix legs), planted duplicate core, missing kit item, and dirty tree build attempt each failed closed\n",
     );
   } finally {
     await removeKit();

@@ -60,14 +60,41 @@ export function computeKitDigest(packageSetDigest, manifestDigest) {
   return createHash("sha256").update(`${packageSetDigest}\n${manifestDigest}\n`, "utf8").digest("hex");
 }
 
+export const REQUIRED_KIT_ITEMS = Object.freeze([
+  "identity.json",
+  "package.json",
+  "bloodtrail-security-audit-sdk-core-0.4.0.tgz",
+  "bloodtrail-security-audit-sdk-node-0.4.0.tgz",
+  "bloodtrail-security-audit-collector-0.1.0.tgz",
+  "examples/evaluation-service.ts",
+  "examples/evaluation-receiver.ts",
+  "examples/seeded-invalid-calls.ts",
+  "docs/quickstart.md",
+  "docs/error-catalog.md",
+  "docs/wire-protocol.md",
+  "docs/privacy.md",
+  "docs/supported-and-planned.md",
+  "docs/known-issues.md",
+  "docs/evaluation-guide.md",
+  "docs/evaluation-questionnaire.md",
+  "docs/seeded-invalid-calls.md",
+]);
+
 export async function verifyKitIdentity(kitDir) {
   const identityPath = resolve(kitDir, "identity.json");
   const manifestPath = resolve(kitDir, "package.json");
   assert(existsSync(identityPath), `identity.json missing in ${kitDir}`);
   assert(existsSync(manifestPath), `package.json missing in ${kitDir}`);
 
+  // Assert all required kit items are present
+  for (const item of REQUIRED_KIT_ITEMS) {
+    const itemPath = resolve(kitDir, item);
+    assert(existsSync(itemPath), `Required kit item missing: ${item}`);
+  }
+
   const identity = JSON.parse(await readFile(identityPath, "utf8"));
   assert(identity.commit, "identity.json must contain commit SHA");
+  assert(/^[0-9a-f]{40}$/i.test(identity.commit), "identity.json commit must be a valid 40-character SHA");
   assert(typeof identity.distributable === "boolean", "identity.json must declare distributable boolean");
   assert(Array.isArray(identity.artifacts) && identity.artifacts.length === 3, "identity.json must declare 3 artifacts");
 
@@ -92,8 +119,8 @@ export async function verifyKitIdentity(kitDir) {
   return { verified: true, identity };
 }
 
-function resolveKitGitState(mode) {
-  const gitStatus = runChecked("git", ["status", "--porcelain"], { cwd: repositoryRoot, capture: true }).trim();
+function resolveKitGitState(mode, _gitStatus = null) {
+  const gitStatus = _gitStatus ?? runChecked("git", ["status", "--porcelain"], { cwd: repositoryRoot, capture: true }).trim();
   const isClean = gitStatus.length === 0;
 
   if (mode === "distributable" && !isClean) {
@@ -190,10 +217,11 @@ export async function buildEvaluationKit({
   destDir = null,
   mode = "distributable",
   createArchive = true,
+  _gitStatus = null,
 } = {}) {
   await assertOutsideRepository(tmpdir());
 
-  const { commit, distributable } = resolveKitGitState(mode);
+  const { commit, distributable } = resolveKitGitState(mode, _gitStatus);
 
   const parentTemp = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-build-"));
   const kitDir = destDir ? resolve(destDir) : resolve(parentTemp, "evaluation-kit");
