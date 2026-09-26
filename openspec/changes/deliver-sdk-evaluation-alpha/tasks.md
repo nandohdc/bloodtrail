@@ -113,7 +113,7 @@ archive task (9.1) stays unticked until its own ticket.
 
 ## 6. Kit identity
 
-- [ ] 6.1 #604 Kit identity and completeness. Verify that:
+- [x] 6.1 #604 Kit identity and completeness. Verify that:
   - the identity file reproduces from the kit's files;
   - the distributable build refuses a dirty tree;
   - removing any kit item fails the gate;
