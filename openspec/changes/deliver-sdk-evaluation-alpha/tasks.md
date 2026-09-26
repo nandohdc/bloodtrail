@@ -121,7 +121,7 @@ archive task (9.1) stays unticked until its own ticket.
 
 ## 7. Evaluation
 
-- [ ] 7.1 Evaluator amendment. No ticket carries this task; it belongs to the owner. The owner amends
+- [x] 7.1 Evaluator amendment. No ticket carries this task; it belongs to the owner. The owner amends
   `evaluation-authorization.md` to name the evaluator handles, and names the exact kit too if its
   identity is known by then. The amendment takes effect through the owner's own two-part act: an approval
   comment naming the amendment's head SHA, then the owner's merge. The amendment PR ticks this task.
