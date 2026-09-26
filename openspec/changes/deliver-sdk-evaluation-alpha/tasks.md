@@ -130,7 +130,7 @@ archive task (9.1) stays unticked until its own ticket.
   - the approval comment names the merged head.
 
   #605 cannot start until this task is done.
-- [ ] 7.2 #605 The evaluation is closed. Before distribution:
+- [x] 7.2 #605 The evaluation is closed. Before distribution:
   - kit v1's identity was recorded on #605;
   - the evaluators' handles were recorded on #605, and matched the amended authorization.
 
@@ -145,7 +145,7 @@ archive task (9.1) stays unticked until its own ticket.
 
 ## 8. Fold
 
-- [ ] 8.1 #606 While both changes are still active, fold this change's final deltas into
+- [x] 8.1 #606 While both changes are still active, fold this change's final deltas into
   `openspec/specs/security-audit-sdk-node/spec.md` and `openspec/specs/security-audit-sdk-core/spec.md`,
   and fold the transport change's delta. Do this in one PR of its own, with one fold commit per change.
   Verify that:

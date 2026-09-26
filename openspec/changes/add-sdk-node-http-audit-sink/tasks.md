@@ -50,7 +50,7 @@ and archive the umbrella, `deliver-sdk-evaluation-alpha`.
 
 ## 4. Fold
 
-- [ ] 4.1 #606 Fold this change's delta into `openspec/specs/security-audit-sdk-node/spec.md`, in the
+- [x] 4.1 #606 Fold this change's delta into `openspec/specs/security-audit-sdk-node/spec.md`, in the
   umbrella's fold PR, while both changes are still active. Verify:
   - each requirement and scenario heading appears exactly once;
   - no delta header survives;
