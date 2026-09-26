@@ -178,6 +178,332 @@ async function verifyHttpExchange(tempInstall) {
   }
 }
 
+async function verifyFailurePaths(tempInstall) {
+  const failureScriptContent = `import assert from "node:assert/strict";
+import {
+  createHttpAuditSink,
+  createNodeSecurityAuditSdk,
+} from "@bloodtrail/security-audit-sdk-node";
+import {
+  CONTRACT_VERSION,
+  authenticatedHumanActor,
+  authoritativeTenant,
+  observedSource,
+} from "@bloodtrail/security-audit-sdk-core";
+
+const peerOrigin = process.argv[2];
+assert(peerOrigin, "peer origin required");
+
+function emitTestEvent(sdk, id = "1") {
+  return sdk.accountRegistrationAttempted({
+    actor: authenticatedHumanActor({ id: "actor-fail-" + id, displayName: "User " + id }),
+    tenant: authoritativeTenant({
+      scope: "tenant",
+      actor_tenant_id: "tenant-eval-fail",
+      effective_tenant_id: "tenant-eval-fail",
+      resource_tenant_id: "tenant-eval-fail",
+    }),
+    source: observedSource({
+      observed: {
+        address: "203.0.113.10",
+        port: 443,
+      },
+    }),
+    request: {
+      id: "req-fail-" + id,
+      method: "POST",
+      route: "/api/v1/accounts/register",
+    },
+  });
+}
+
+function createTestSdk(sink, shutdownTimeoutMs = 5000) {
+  return createNodeSecurityAuditSdk({
+    contractVersion: CONTRACT_VERSION,
+    producer: {
+      name: "eval-service",
+      version: "1.0.0",
+    },
+    service: {
+      name: "eval-service",
+      version: "1.0.0",
+    },
+    environment: {
+      name: "development",
+    },
+    sink,
+    shutdownTimeoutMs,
+  });
+}
+
+function assertOutcomeReport(reports, expectedOutcome, expectedStatus) {
+  assert.equal(reports.length, 1, "must produce 1 outcome report");
+  assert.equal(reports[0].outcome, expectedOutcome, "must report outcome " + expectedOutcome);
+  assert.equal(reports[0].status, expectedStatus, "report must carry status " + expectedStatus);
+  assert.ok(typeof reports[0].eventId === "string" && reports[0].eventId.length > 0, "report must carry eventId");
+}
+
+// 1. Permanent 4xx status codes map to SDK_SINK_REJECTED and outcome http_permanent
+for (const status of [400, 401, 403, 404, 422]) {
+  const reports = [];
+  const sink = createHttpAuditSink({
+    origin: peerOrigin,
+    path: "/v1/security-audit",
+    timeoutMs: 2000,
+    headers: { "x-peer-behavior": String(status) },
+    onOutcome: (outcome) => { reports.push(outcome); },
+  });
+  const sdk = createTestSdk(sink);
+  const result = await emitTestEvent(sdk, String(status));
+
+  assert.equal(result.ok, false, "status " + status + " must result in error");
+  assert.equal(result.error.code, "SDK_SINK_REJECTED", "status " + status + " must map to SDK_SINK_REJECTED");
+  assert.equal(result.error.eventId, undefined, "result error must carry no eventId");
+  assert.equal(result.error.event_id, undefined, "result error must carry no event_id");
+  assertOutcomeReport(reports, "http_permanent", status);
+}
+console.log("failure-paths:permanent-rejection:pass");
+
+// 2. Retryable status codes (5xx, 408, 425, 429) map to SDK_SINK_FAILURE and outcome http_retryable
+for (const status of [408, 425, 429, 500, 503]) {
+  const reports = [];
+  const sink = createHttpAuditSink({
+    origin: peerOrigin,
+    path: "/v1/security-audit",
+    timeoutMs: 2000,
+    headers: { "x-peer-behavior": String(status) },
+    onOutcome: (outcome) => { reports.push(outcome); },
+  });
+  const sdk = createTestSdk(sink);
+  const result = await emitTestEvent(sdk, String(status));
+
+  assert.equal(result.ok, false, "status " + status + " must result in error");
+  assert.equal(result.error.code, "SDK_SINK_FAILURE", "status " + status + " must map to SDK_SINK_FAILURE");
+  assert.equal(result.error.eventId, undefined, "result error must carry no eventId");
+  assertOutcomeReport(reports, "http_retryable", status);
+}
+console.log("failure-paths:retryable-failure:pass");
+
+// 3. Timeout maps to SDK_SINK_FAILURE and outcome timeout
+{
+  const reports = [];
+  const sink = createHttpAuditSink({
+    origin: peerOrigin,
+    path: "/v1/security-audit",
+    timeoutMs: 50,
+    headers: { "x-peer-behavior": "timeout" },
+    onOutcome: (outcome) => { reports.push(outcome); },
+  });
+  const sdk = createTestSdk(sink);
+  const result = await emitTestEvent(sdk, "timeout-1");
+
+  assert.equal(result.ok, false, "timeout must result in error");
+  assert.equal(result.error.code, "SDK_SINK_FAILURE", "timeout must map to SDK_SINK_FAILURE");
+  assertOutcomeReport(reports, "timeout", undefined);
+}
+console.log("failure-paths:timeout:pass");
+
+// 4. Refused connection maps to SDK_SINK_FAILURE and outcome transport_failure
+{
+  const reports = [];
+  const sink = createHttpAuditSink({
+    origin: "http://127.0.0.1:1",
+    path: "/v1/security-audit",
+    timeoutMs: 1000,
+    onOutcome: (outcome) => { reports.push(outcome); },
+  });
+  const sdk = createTestSdk(sink);
+  const result = await emitTestEvent(sdk, "transport-1");
+
+  assert.equal(result.ok, false, "refused connection must result in error");
+  assert.equal(result.error.code, "SDK_SINK_FAILURE", "refused connection must map to SDK_SINK_FAILURE");
+  assertOutcomeReport(reports, "transport_failure", undefined);
+}
+console.log("failure-paths:transport-failure:pass");
+
+// 5. Malformed acknowledgments map to SDK_SINK_FAILURE and outcome malformed_acknowledgment
+for (const malformedCase of [
+  "malformed-empty",
+  "malformed-no-array",
+  "malformed-wrong-id",
+  "malformed-rejected",
+  "malformed-not-json",
+]) {
+  const reports = [];
+  const sink = createHttpAuditSink({
+    origin: peerOrigin,
+    path: "/v1/security-audit",
+    timeoutMs: 2000,
+    headers: { "x-peer-behavior": malformedCase },
+    onOutcome: (outcome) => { reports.push(outcome); },
+  });
+  const sdk = createTestSdk(sink);
+  const result = await emitTestEvent(sdk, "malformed-" + malformedCase);
+
+  assert.equal(result.ok, false, "malformed case " + malformedCase + " must result in error");
+  assert.equal(result.error.code, "SDK_SINK_FAILURE", "malformed case " + malformedCase + " must map to SDK_SINK_FAILURE");
+  assertOutcomeReport(reports, "malformed_acknowledgment", 200);
+}
+console.log("failure-paths:malformed-acknowledgment:pass");
+
+// 6. Redirection maps to SDK_SINK_FAILURE and outcome unexpected_response (never followed)
+for (const redirectStatus of [301, 302, 307, 308]) {
+  const reports = [];
+  const sink = createHttpAuditSink({
+    origin: peerOrigin,
+    path: "/v1/security-audit",
+    timeoutMs: 2000,
+    headers: { "x-peer-behavior": "redirect-" + redirectStatus },
+    onOutcome: (outcome) => { reports.push(outcome); },
+  });
+  const sdk = createTestSdk(sink);
+  const result = await emitTestEvent(sdk, "redirect-" + redirectStatus);
+
+  assert.equal(result.ok, false, "redirect " + redirectStatus + " must result in error");
+  assert.equal(result.error.code, "SDK_SINK_FAILURE", "redirect " + redirectStatus + " must map to SDK_SINK_FAILURE");
+  assertOutcomeReport(reports, "unexpected_response", redirectStatus);
+}
+console.log("failure-paths:redirect:pass");
+
+// 7. Flush waits for in-flight requests
+{
+  const sink = createHttpAuditSink({
+    origin: peerOrigin,
+    path: "/v1/security-audit",
+    timeoutMs: 5000,
+    headers: { "x-peer-behavior": "hold" },
+  });
+  const sdk = createTestSdk(sink);
+
+  let inFlightSettled = false;
+  const inFlightPromise = emitTestEvent(sdk, "hold-flush").then((res) => {
+    inFlightSettled = true;
+    return res;
+  });
+
+  await new Promise((r) => setTimeout(r, 50));
+
+  let flushSettled = false;
+  const flushPromise = sdk.flush().then((res) => {
+    flushSettled = true;
+    return res;
+  });
+
+  await new Promise((r) => setTimeout(r, 50));
+  assert.equal(flushSettled, false, "flush must wait for in-flight request to settle");
+  assert.equal(inFlightSettled, false, "in-flight request must remain unsettled");
+
+  const releaseRes = await fetch(peerOrigin + "/release", { method: "POST" });
+  assert.equal(releaseRes.status, 200, "release endpoint must return 200");
+
+  const [inFlightResult, flushResult] = await Promise.all([inFlightPromise, flushPromise]);
+  assert.equal(inFlightResult.ok, true, "in-flight request must succeed once released");
+  assert.equal(flushResult.ok, true, "flush must succeed once earlier requests settle");
+}
+console.log("failure-paths:flush:pass");
+
+// 8. Shutdown drains in-flight requests, and calls after shutdown return SDK_SHUT_DOWN
+{
+  const sink = createHttpAuditSink({
+    origin: peerOrigin,
+    path: "/v1/security-audit",
+    timeoutMs: 5000,
+    headers: { "x-peer-behavior": "hold" },
+  });
+  const sdk = createTestSdk(sink, 5000);
+
+  let inFlightSettled = false;
+  const inFlightPromise = emitTestEvent(sdk, "hold-shutdown").then((res) => {
+    inFlightSettled = true;
+    return res;
+  });
+
+  await new Promise((r) => setTimeout(r, 50));
+
+  let shutdownSettled = false;
+  const shutdownPromise = sdk.shutdown().then((res) => {
+    shutdownSettled = true;
+    return res;
+  });
+
+  // Call during shutdown draining returns SDK_SHUTTING_DOWN
+  const lateEmitResult = await emitTestEvent(sdk, "late");
+  assert.equal(lateEmitResult.ok, false, "emit during shutdown draining must fail");
+  assert.equal(lateEmitResult.error.code, "SDK_SHUTTING_DOWN", "emit during shutdown draining must return SDK_SHUTTING_DOWN");
+
+  await new Promise((r) => setTimeout(r, 50));
+  assert.equal(shutdownSettled, false, "shutdown must wait for in-flight request to drain");
+  assert.equal(inFlightSettled, false, "in-flight request must still be held");
+
+  await fetch(peerOrigin + "/release", { method: "POST" });
+
+  const [inFlightResult, shutdownResult] = await Promise.all([inFlightPromise, shutdownPromise]);
+  assert.equal(inFlightResult.ok, true, "in-flight request must succeed once released");
+  assert.equal(shutdownResult.ok, true, "shutdown must succeed once drained");
+  assert.equal(sdk.state, "shut_down", "SDK state must be shut_down");
+
+  // Call after shutdown completes returns SDK_SHUT_DOWN
+  const postShutdownResult = await emitTestEvent(sdk, "post");
+  assert.equal(postShutdownResult.ok, false, "emit after shutdown completes must fail");
+  assert.equal(postShutdownResult.error.code, "SDK_SHUT_DOWN", "emit after shutdown completes must return SDK_SHUT_DOWN");
+}
+console.log("failure-paths:shutdown:pass");
+console.log("failure-paths:all:pass");
+`;
+
+  const failureScriptPath = resolve(tempInstall, "check-failure-paths.mjs");
+  await writeFile(failureScriptPath, failureScriptContent, "utf8");
+
+  const peerScript = resolve(packageRoot, "scripts/evaluation-kit-peer.mjs");
+  const peerProc = spawn(process.execPath, ["--no-warnings", peerScript, "0"], {
+    cwd: packageRoot,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  let peerOrigin = null;
+  const peerOutput = [];
+  const peerReadyPromise = new Promise((resolveReady, rejectReady) => {
+    peerProc.stdout.on("data", (chunk) => {
+      const text = chunk.toString("utf8");
+      peerOutput.push(text);
+      const match = /peer:ready\s+(http:\/\/127\.0\.0\.1:\d+)/.exec(text);
+      if (match) {
+        peerOrigin = match[1];
+        resolveReady(peerOrigin);
+      }
+    });
+    peerProc.stderr.on("data", (chunk) => {
+      peerOutput.push(chunk.toString("utf8"));
+    });
+    peerProc.on("error", rejectReady);
+    peerProc.on("exit", (code) => {
+      if (!peerOrigin) {
+        rejectReady(new Error(`peer exited early with code ${code}:\n${peerOutput.join("")}`));
+      }
+    });
+  });
+
+  try {
+    const origin = await Promise.race([
+      peerReadyPromise,
+      new Promise((_, rejectTimeout) =>
+        setTimeout(() => rejectTimeout(new Error("timed out waiting for evaluation-kit-peer to be ready")), 10000),
+      ),
+    ]);
+
+    const failureRun = runChecked(process.execPath, ["--no-warnings", "check-failure-paths.mjs", origin], {
+      cwd: tempInstall,
+      capture: true,
+    });
+    assert(
+      failureRun.includes("failure-paths:all:pass"),
+      `installed kit failure path check did not pass:\n${failureRun}`,
+    );
+  } finally {
+    peerProc.kill("SIGTERM");
+  }
+}
+
 export async function checkEvaluationKit({ kitDir: existingKitDir } = {}) {
   await assertOutsideRepository(tmpdir());
 
@@ -225,8 +551,11 @@ export async function checkEvaluationKit({ kitDir: existingKitDir } = {}) {
     // 6. Run example-receiver and example-service end to end over loopback HTTP
     await verifyHttpExchange(tempInstall);
 
+    // 7. Drive HTTP sink failure paths and lifecycle transitions from installed kit against controllable loopback peer
+    await verifyFailurePaths(tempInstall);
+
     process.stdout.write(
-      "evaluation kit verification passed: kit built, identity verified, installed outside workspace, doc blocks and examples type-checked, events emitted and verified over HTTP\n",
+      "evaluation kit verification passed: kit built, identity verified, installed outside workspace, doc blocks and examples type-checked, events emitted and verified over HTTP, failure paths verified\n",
     );
     return { success: true };
   } finally {
