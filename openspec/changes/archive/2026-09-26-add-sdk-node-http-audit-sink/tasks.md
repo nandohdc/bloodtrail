@@ -58,7 +58,7 @@ and archive the umbrella, `deliver-sdk-evaluation-alpha`.
 
 ## 5. Archive
 
-- [ ] 5.1 #607 Archive this change in the umbrella's archive PR. That PR is cut from `main` after the fold
+- [x] 5.1 #607 Archive this change in the umbrella's archive PR. That PR is cut from `main` after the fold
   merges, and is merged as a merge commit. Verify:
   - the local archive dry run passes;
   - both sides of the move are staged;
