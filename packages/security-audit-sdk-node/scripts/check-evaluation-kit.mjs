@@ -667,6 +667,19 @@ export async function checkEvaluationKit({ kitDir: existingKitDir, plantDuplicat
     // 7. Run example-receiver and example-service end to end over loopback HTTP
     await verifyHttpExchange(tempInstall);
 
+    // 7b. Run seeded invalid calls exercise against installed kit
+    const seededScript = resolve(tempInstall, "examples/seeded-invalid-calls.ts");
+    if (existsSync(seededScript)) {
+      const seededRun = runChecked(process.execPath, ["--no-warnings", seededScript], {
+        cwd: tempInstall,
+        capture: true,
+      });
+      assert(
+        seededRun.includes("seeded-invalid-calls:all-passed:5/5"),
+        `seeded invalid calls did not pass:\n${seededRun}`,
+      );
+    }
+
     // 8. Drive HTTP sink failure paths and lifecycle transitions from installed kit against controllable loopback peer
     await verifyFailurePaths(tempInstall);
 

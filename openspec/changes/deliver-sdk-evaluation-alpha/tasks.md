@@ -107,7 +107,7 @@ archive task (9.1) stays unticked until its own ticket.
 - [x] 5.2 #602 Privacy guidance, the supported-versus-planned table, and the known issues. Verify that:
   - no planned item is described as implemented;
   - every code block type-checks.
-- [ ] 5.3 #603 Evaluation guide, questionnaire and seeded invalid-call exercise. Verify that:
+- [x] 5.3 #603 Evaluation guide, questionnaire and seeded invalid-call exercise. Verify that:
   - the five seeded calls return their expected code and path against the installed kit;
   - the catalog documents each code.
 
