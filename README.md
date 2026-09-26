@@ -41,10 +41,9 @@ existence does not authorize:
 - production transports, exporters, collectors, queues, outboxes, storage, or SIEM integration;
 - analytics, detection, browser telemetry, or cryptographic audit-log chaining.
 
-Only a transport-neutral sink interface and non-production test sinks exist. None of the above
-may be added as an incidental part of another change — each requires a separate OpenSpec change
-and explicit authorization. The boundary and platform coupling policy are mechanically enforced by
-`npm run test:scope --prefix packages/security-audit-sdk-core`, not merely documented.
+The SDK core provides a transport-neutral sink interface and non-production test sinks only. For non-production evaluation, the Node binding provides an HTTP audit sink (`createHttpAuditSink`) and an evaluation kit operating strictly against local loopback with synthetic data. Neither the kit nor the HTTP sink authorizes production deployment, production collection, or real-user data processing. None of the above may be added as an incidental part of another change — each requires a separate OpenSpec change and explicit authorization. The boundary and platform coupling policy are mechanically enforced by `npm run test:scope --prefix packages/security-audit-sdk-core` and `npm run test:scope --prefix packages/security-audit-sdk-node`.
+
+To evaluate the SDK using the evaluation kit, see the [Quickstart](packages/security-audit-sdk-node/docs/quickstart.md).
 
 Cutting a `vX.Y.Z` tag does **not** lift this boundary, and the package is never published to a
 registry. See [`RELEASING.md`](RELEASING.md).
@@ -73,7 +72,7 @@ list matches what is on disk **and** that every covering `make` target actually 
 |---|---|---|
 | `contracts/security-audit/` | The canonical contract, version `2.1.0`. `source/contract.source.json` is the **single source of truth**; `catalog/`, `registries/`, `policies/`, `docs/`, `adr/` are **generated — never hand-edit**. | Frozen |
 | `packages/security-audit-sdk-core/` | [`@bloodtrail/security-audit-sdk-core`](packages/security-audit-sdk-core/README.md) — platform-neutral ESM TypeScript SDK core. Private, unpublished, unlicensed for distribution. | Isolated candidate, API frozen |
-| `packages/security-audit-sdk-node/` | `@bloodtrail/security-audit-sdk-node` — the Node binding: platform SPI implementations plus the HTTP delivery handoff, bounded retry, bounded backpressure, deadline-bounded shutdown, and the governed delivery classes. | Isolated candidate, API frozen |
+| `packages/security-audit-sdk-node/` | [`@bloodtrail/security-audit-sdk-node`](packages/security-audit-sdk-node/README.md) — the Node binding: platform SPI implementations plus the HTTP delivery handoff, bounded retry, bounded backpressure, deadline-bounded shutdown, HTTP audit sink, and evaluation kit. See the [Quickstart](packages/security-audit-sdk-node/docs/quickstart.md). | Isolated candidate, API frozen |
 | `packages/security-audit-collector/` | `@bloodtrail/security-audit-collector` — the synthetic collector ingress. Acceptance is admission only; no storage exists. | Isolated candidate, non-production |
 | `openspec/` | Spec-driven change management. `specs/` holds current capability specs; `changes/` holds in-flight proposals; `changes/archive/` holds completed ones. | Active |
 | `research/browser-telemetry/` | Isolated investigation. Research artifacts, **not** shipping code. | Investigation |

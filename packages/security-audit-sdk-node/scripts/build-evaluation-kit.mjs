@@ -148,6 +148,19 @@ async function copyKitAssets(kitDir) {
   if (existsSync(docsSrc)) {
     await cp(docsSrc, resolve(kitDir, "docs"), { recursive: true });
   }
+  // Copy READMEs into kit docs so their code blocks are type-checked by the evaluation kit gate
+  const nodeReadme = resolve(packageRoot, "README.md");
+  if (existsSync(nodeReadme)) {
+    await cp(nodeReadme, resolve(kitDir, "docs/node-readme.md"));
+  }
+  const coreReadme = resolve(coreRoot, "README.md");
+  if (existsSync(coreReadme)) {
+    await cp(coreReadme, resolve(kitDir, "docs/core-readme.md"));
+  }
+  const rootReadme = resolve(repositoryRoot, "README.md");
+  if (existsSync(rootReadme)) {
+    await cp(rootReadme, resolve(kitDir, "docs/root-readme.md"));
+  }
 }
 
 async function writeKitIdentity(kitDir, { commit, distributable, artifacts, manifestContent }) {
