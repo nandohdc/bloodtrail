@@ -91,7 +91,7 @@ archive task (9.1) stays unticked until its own ticket.
 - [x] 4.6 #598 Kit failure paths, the wire-protocol page and its failure table. Verify that:
   - every status class maps to the documented SDK code and `onOutcome` code;
   - the flush and shutdown behaviour matches the docs.
-- [ ] 4.7 #599 pnpm support, and one core copy proven for every supported installer. Verify that:
+- [x] 4.7 #599 pnpm support, and one core copy proven for every supported installer. Verify that:
   - the npm and pinned-pnpm installs both run the one-event script;
   - a planted second core copy fails the gate.
 - [ ] 4.8 #600 Measured compatibility with TypeScript 6 and 7. Verify that:

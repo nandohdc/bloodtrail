@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { cp, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -504,7 +504,97 @@ console.log("failure-paths:all:pass");
   }
 }
 
-export async function checkEvaluationKit({ kitDir: existingKitDir } = {}) {
+const PROBE_SCRIPT_CONTENT = `import assert from "node:assert/strict";
+import { createNodeSecurityAuditSdk } from "@bloodtrail/security-audit-sdk-node";
+import {
+  CONTRACT_VERSION,
+  authenticatedHumanActor,
+} from "@bloodtrail/security-audit-sdk-core";
+
+const COPY_PROBE_KEY = Symbol.for("bloodtrail.security-audit-sdk-core.copy-probe.v1");
+const probes = globalThis[COPY_PROBE_KEY];
+assert(Array.isArray(probes), "copy probe channel must be an array");
+
+const sdk = createNodeSecurityAuditSdk({
+  contractVersion: CONTRACT_VERSION,
+  producer: { name: "eval-probe", version: "1.0.0" },
+  service: { name: "eval-probe", version: "1.0.0" },
+  environment: { name: "development" },
+  sink: { emit: async () => ({ status: "accepted", event_id: "probe-1" }) },
+});
+
+const actor = authenticatedHumanActor({ id: "actor-probe", displayName: "Probe User" });
+sdk.runWithContext({ actor }, () => {});
+assert.equal(probes.length, 1, "expected exactly 1 core copy");
+console.log("duplicate-copy-probe:pass");
+`;
+
+async function verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore) {
+  if (plantDuplicateCore) {
+    const nestedCore = resolve(
+      tempInstall,
+      "node_modules/@bloodtrail/security-audit-sdk-node/node_modules/@bloodtrail/security-audit-sdk-core",
+    );
+    await cp(resolve(tempInstall, "node_modules/@bloodtrail/security-audit-sdk-core"), nestedCore, {
+      recursive: true,
+    });
+  }
+
+  const probeScriptPath = resolve(tempInstall, "check-duplicate-core.mjs");
+  await writeFile(probeScriptPath, PROBE_SCRIPT_CONTENT, "utf8");
+
+  const probeProc = spawnSync(process.execPath, ["--no-warnings", "check-duplicate-core.mjs"], {
+    cwd: tempInstall,
+    encoding: "utf8",
+  });
+  if (probeProc.status !== 0) {
+    const errOutput = (probeProc.stderr ?? "") + (probeProc.stdout ?? "");
+    if (errOutput.includes("DUPLICATE_AUTHORITY")) {
+      throw new Error(`duplicate-copy probe reported DUPLICATE_AUTHORITY:\n${errOutput}`);
+    }
+    throw new Error(`duplicate-copy probe failed with exit status ${probeProc.status}:\n${errOutput}`);
+  }
+  assert(probeProc.stdout.includes("duplicate-copy-probe:pass"), "duplicate-copy probe did not pass");
+}
+
+async function verifyPnpmInstall(kitDir) {
+  const tempPnpmInstall = await mkdtemp(resolve(tmpdir(), "bloodtrail-eval-pnpm-"));
+  try {
+    await cp(kitDir, tempPnpmInstall, { recursive: true });
+    runChecked("npx", ["--yes", "pnpm@10.17.0", "install", "--prod", "--ignore-scripts"], {
+      cwd: tempPnpmInstall,
+      capture: true,
+    });
+
+    const pnpmFirstEvent = runChecked(process.execPath, ["--no-warnings", "examples/first-event.ts"], {
+      cwd: tempPnpmInstall,
+      capture: true,
+    });
+    assert(
+      pnpmFirstEvent.includes("first-event:pass"),
+      `examples/first-event.ts did not succeed under pnpm:\n${pnpmFirstEvent}`,
+    );
+
+    const pnpmProbePath = resolve(tempPnpmInstall, "check-duplicate-core.mjs");
+    await writeFile(pnpmProbePath, PROBE_SCRIPT_CONTENT, "utf8");
+    const pnpmProbeProc = spawnSync(process.execPath, ["--no-warnings", "check-duplicate-core.mjs"], {
+      cwd: tempPnpmInstall,
+      encoding: "utf8",
+    });
+    if (pnpmProbeProc.status !== 0) {
+      const errOutput = (pnpmProbeProc.stderr ?? "") + (pnpmProbeProc.stdout ?? "");
+      if (errOutput.includes("DUPLICATE_AUTHORITY")) {
+        throw new Error(`duplicate-copy probe under pnpm reported DUPLICATE_AUTHORITY:\n${errOutput}`);
+      }
+      throw new Error(`duplicate-copy probe under pnpm failed with exit status ${pnpmProbeProc.status}:\n${errOutput}`);
+    }
+    assert(pnpmProbeProc.stdout.includes("duplicate-copy-probe:pass"), "duplicate-copy probe did not pass under pnpm");
+  } finally {
+    await rm(tempPnpmInstall, { recursive: true, force: true });
+  }
+}
+
+export async function checkEvaluationKit({ kitDir: existingKitDir, plantDuplicateCore = false } = {}) {
   await assertOutsideRepository(tmpdir());
 
   let kitDir = existingKitDir;
@@ -535,10 +625,13 @@ export async function checkEvaluationKit({ kitDir: existingKitDir } = {}) {
       { cwd: tempInstall, capture: true },
     );
 
-    // 4. Type-check examples and doc blocks in the installed kit with TypeScript 5.9.2 under strict settings
+    // 4. Verify single core copy in npm install (and fail closed if planted duplicate)
+    await verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore);
+
+    // 5. Type-check examples and doc blocks in the installed kit with TypeScript 5.9.2 under strict settings
     await typecheckExamples(tempInstall);
 
-    // 5. Run examples/first-event.ts
+    // 6. Run examples/first-event.ts
     const firstEventScript = resolve(tempInstall, "examples/first-event.ts");
     assert(existsSync(firstEventScript), "examples/first-event.ts missing from installed kit");
 
@@ -548,14 +641,17 @@ export async function checkEvaluationKit({ kitDir: existingKitDir } = {}) {
     });
     assert(output.includes("first-event:pass"), `examples/first-event.ts did not succeed:\n${output}`);
 
-    // 6. Run example-receiver and example-service end to end over loopback HTTP
+    // 7. Run example-receiver and example-service end to end over loopback HTTP
     await verifyHttpExchange(tempInstall);
 
-    // 7. Drive HTTP sink failure paths and lifecycle transitions from installed kit against controllable loopback peer
+    // 8. Drive HTTP sink failure paths and lifecycle transitions from installed kit against controllable loopback peer
     await verifyFailurePaths(tempInstall);
 
+    // 9. Install kit with pinned pnpm version outside workspace root, run one-event script and duplicate-copy probe
+    await verifyPnpmInstall(kitDir);
+
     process.stdout.write(
-      "evaluation kit verification passed: kit built, identity verified, installed outside workspace, doc blocks and examples type-checked, events emitted and verified over HTTP, failure paths verified\n",
+      "evaluation kit verification passed: kit built, identity verified, installed outside workspace with npm and pnpm, doc blocks and examples type-checked, single core copy verified, events emitted and verified over HTTP, failure paths verified\n",
     );
     return { success: true };
   } finally {
