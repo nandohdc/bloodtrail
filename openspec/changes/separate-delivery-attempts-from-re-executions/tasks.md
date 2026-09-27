@@ -67,7 +67,7 @@ archive (7.1) are separate pull requests, and their tasks stay unticked until th
 
 ## 6. Fold
 
-- [ ] 6.1 Fold the three deltas into the canonical specs while this change is still active. Add one new
+- [x] 6.1 Fold the three deltas into the canonical specs while this change is still active. Add one new
   `CURRENT` pin set recomputed for the folded state, and leave every existing pin set byte-identical.
   Verify:
   - each requirement and scenario heading appears exactly once;
