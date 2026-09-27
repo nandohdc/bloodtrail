@@ -78,7 +78,7 @@ archive (7.1) are separate pull requests, and their tasks stay unticked until th
 
 ## 7. Archive
 
-- [ ] 7.1 Archive this change in its own pull request, cut from `main` after the fold merges and merged as
+- [x] 7.1 Archive this change in its own pull request, cut from `main` after the fold merges and merged as
   a merge commit. Verify:
   - the local archive dry run passes;
   - both sides of the move are staged;
