@@ -103,6 +103,7 @@ titles are the match key for a modified requirement, so such a requirement canno
   - the handoff's request projection and the attempt-ceiling comments in the handoff and the retry;
   - the handoff and retry tests, and a mutation check;
   - the README and `docs/known-issues.md`;
+  - an "Amended by" pointer in ADR-NODE-004, whose context describes the rewrite;
   - a new `CONTEXT.md`.
 - **`packages/security-audit-collector/`:**
   - the deduplication key and the storage record's key comment;

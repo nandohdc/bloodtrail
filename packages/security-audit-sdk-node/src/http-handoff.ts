@@ -7,8 +7,9 @@ const MAX_REQUEST_BODY_BYTES = 65_536;
 // A bounded absolute request path, with no query or fragment. The HTTP audit
 // sink checks its path against this same pattern.
 export const BOUNDED_ABSOLUTE_PATH = /^\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]{1,2047}$/;
-// Contract 2.1.0 bounds.retry_attempt_max — the wire ceiling on correlation.retry_attempt.
-const RETRY_ATTEMPT_MAX = 1000;
+// The highest delivery attempt ordinal the handoff accepts. The ordinal travels
+// in the request descriptor and the result, never in the occurrence (#577).
+const ATTEMPT_ORDINAL_MAX = 1000;
 // The handoff's delivery status for each shared classification code.
 const HANDOFF_STATUS_BY_CODE = {
   acknowledged: "acknowledged",
@@ -124,7 +125,7 @@ function validatePath(path: string): string {
 function validateAttempt(attempt: number): number {
   if (!Number.isInteger(attempt)) throw invalidAttempt();
   if (attempt < 0) throw invalidAttempt();
-  if (attempt > RETRY_ATTEMPT_MAX) throw invalidAttempt();
+  if (attempt > ATTEMPT_ORDINAL_MAX) throw invalidAttempt();
   return attempt;
 }
 
@@ -132,6 +133,9 @@ function invalidAttempt(): TypeError {
   return new TypeError("HTTP handoff attempt ordinal must be a bounded non-negative integer");
 }
 
+// The body is the occurrence exactly as supplied, so every delivery attempt of
+// one occurrence sends identical bytes. correlation.retry_attempt counts
+// re-executions and is never rewritten here.
 function projectRequest(
   event: Readonly<SecurityAuditEvent>,
   path: string,
@@ -139,10 +143,7 @@ function projectRequest(
 ): HttpExchangeRequest | null {
   let body: string;
   try {
-    body = JSON.stringify({
-      ...event,
-      correlation: { ...event.correlation, retry_attempt: attempt.ordinal },
-    });
+    body = JSON.stringify(event);
   } catch {
     return null;
   }

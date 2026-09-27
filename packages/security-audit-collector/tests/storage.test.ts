@@ -167,7 +167,8 @@ test("S5 — a retry after an indeterminate write leaves one record and is then 
   };
   const ingress = persistingIngress(lossy);
   expectRejection(submit(ingress, body()), DIAGNOSTIC_CODES.STORAGE_WRITE_INDETERMINATE);
-  const retry = submit(ingress, body({ correlation: { correlation_id: "c1", operation_id: "op1", retry_attempt: 1 } }));
+  // A redelivery sends the identical occurrence.
+  const retry = submit(ingress, body());
   // The first write landed, so the retry finds it: the port's duplicate, acknowledged persisted.
   assert.deepEqual(retry, { kind: "duplicate", eventId: EVENT_ID, senderIdentity: SENDER, acknowledgment: "persisted" });
   assert.equal(storage.put(TENANT_ALPHA, recordFor(body())).kind, "duplicate", "exactly one record exists");
@@ -180,11 +181,8 @@ test("S6 — a byte-identical retry is the port's duplicate outcome, acknowledge
   assert.equal(submit(ingress, body()).kind, "persisted");
   const expected = { kind: "duplicate", eventId: EVENT_ID, senderIdentity: SENDER, acknowledgment: "persisted" };
   assert.deepEqual(submit(ingress, body()), expected);
-  // A genuine retry that only advances correlation.retry_attempt is the same occurrence.
-  const retry = body({ correlation: { correlation_id: "c1", operation_id: "op1", retry_attempt: 1 } });
-  assert.deepEqual(submit(ingress, retry), expected);
   assert.equal(ingress.metrics().persisted, 1);
-  assert.equal(ingress.metrics().deduplicated, 2);
+  assert.equal(ingress.metrics().deduplicated, 1);
   storage.close();
 });
 
@@ -193,15 +191,15 @@ test("S7 — repeated writes of one identity are idempotent at the port", () => 
   const record = recordFor(body());
   assert.equal(storage.put(TENANT_ALPHA, record).kind, "written");
   assert.equal(storage.put(TENANT_ALPHA, record).kind, "duplicate");
-  // A genuine retry differs only in retry_attempt and shares the occurrence key.
-  const retried = { ...record, body: body({ correlation: { correlation_id: "c1", operation_id: "op1", retry_attempt: 2 } }) };
-  assert.equal(storage.put(TENANT_ALPHA, retried).kind, "duplicate");
+  // A record that differs only in its retry attempt has another occurrence key.
+  const differing = recordFor(body({ correlation: { correlation_id: "c1", operation_id: "op1", retry_attempt: 2 } }));
+  assert.deepEqual(storage.put(TENANT_ALPHA, differing), { kind: "failed", reason: "conflict" });
   const found = storage.get(TENANT_ALPHA, EVENT_ID);
   assert.equal(found.kind === "found" && found.record.body, record.body, "the first record is left untouched");
   storage.close();
 });
 
-test("S8 — different content under a stored identity is a conflict and changes nothing", () => {
+test("S8 — different content under a stored identity, a different retry attempt included, is a conflict and changes nothing", () => {
   const storage = memoryStorage();
   const first = persistingIngress(storage);
   assert.equal(submit(first, body()).kind, "persisted");
@@ -209,6 +207,8 @@ test("S8 — different content under a stored identity is a conflict and changes
   const second = persistingIngress(storage);
   const conflicting = body({ service: { name: "different-service" } });
   expectRejection(submit(second, conflicting), DIAGNOSTIC_CODES.STORAGE_CONFLICT);
+  const differentRetryAttempt = body({ correlation: { correlation_id: "c1", operation_id: "op1", retry_attempt: 1 } });
+  expectRejection(submit(second, differentRetryAttempt), DIAGNOSTIC_CODES.STORAGE_CONFLICT);
   const found = storage.get(TENANT_ALPHA, EVENT_ID);
   assert.equal(found.kind === "found" && found.record.body, body());
   storage.close();
@@ -394,15 +394,13 @@ test("S20 — a failed write releases its reservation, so the retry is written r
 });
 
 function recordFor(text: string): StoredRecord {
-  const parsed = JSON.parse(text) as { correlation: Record<string, unknown> };
-  const { retry_attempt: _attempt, ...correlation } = parsed.correlation;
   return {
     eventId: EVENT_ID,
     schemaVersion: "2.1.0",
     retentionClass: "security_standard",
     admittedAt: ADMITTED_AT,
     expiresAt: ADMITTED_AT + RETENTION_MILLISECONDS.security_standard,
-    occurrenceKey: canonical({ ...parsed, correlation }),
+    occurrenceKey: canonical(JSON.parse(text)),
     body: text,
   };
 }

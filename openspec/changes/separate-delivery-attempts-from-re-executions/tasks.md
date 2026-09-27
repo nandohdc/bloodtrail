@@ -16,50 +16,50 @@ archive (7.1) are separate pull requests, and their tasks stay unticked until th
 
 ## 2. Vocabulary and decision record
 
-- [ ] 2.1 Add a glossary for the Node binding and one for the collector, and register both in
+- [x] 2.1 Add a glossary for the Node binding and one for the collector, and register both in
   `CONTEXT-MAP.md` with their relationship. Verify:
   - every term matches the delta specs' vocabulary;
   - no term is defined in two contexts;
   - the new files pass the repository's whitespace and final-newline rules.
-- [ ] 2.2 Add a system-wide ADR recording that delivery attempts never enter the canonical event, with the
+- [x] 2.2 Add a system-wide ADR recording that delivery attempts never enter the canonical event, with the
   rejected alternatives. Verify that it cites the contract evidence on both sides and refers to #577.
 
 ## 3. Node binding: the handoff sends the occurrence unchanged
 
-- [ ] 3.1 Write the failing test at the Node delivery seam: the bounded retry composed over the real
+- [x] 3.1 Write the failing test at the Node delivery seam: the bounded retry composed over the real
   handoff, with a recording exchange. Verify that it fails against the current projection. It asserts:
   - every attempt's body equals the canonical serialization of the supplied occurrence;
   - every body passes the SDK's complete-event validation;
   - a re-execution keeps retry attempt `2` on every attempt;
   - the attempt ordinals stay observable through the descriptors, the results and `onAttemptScheduled`.
-- [ ] 3.2 Make the handoff serialize the occurrence as supplied, and restate the attempt-ceiling comments
+- [x] 3.2 Make the handoff serialize the occurrence as supplied, and restate the attempt-ceiling comments
   in the handoff and the retry. Verify:
   - 3.1 passes;
   - the handoff tests assert the ordinal outside the occurrence;
   - the export check passes with no edit to its frozen lists;
   - every emitted declaration file is byte-identical to the one built from `main`.
-- [ ] 3.3 Add a mutation check for the handoff, run on disposable clones of the built package. Verify:
+- [x] 3.3 Add a mutation check for the handoff, run on disposable clones of the built package. Verify:
   - a mutant that writes the ordinal into `correlation.retry_attempt` is killed;
   - a mutant that rewrites another correlation field is killed;
   - the run asserts the number of mutants applied.
-- [ ] 3.4 Remove the known issue for #577 and correct the README's retry description. Verify:
+- [x] 3.4 Remove the known issue for #577 and correct the README's retry description. Verify:
   - the evaluation-kit gate passes;
   - no Node document says the ordinal travels in `correlation.retry_attempt`.
 
 ## 4. Collector: duplicates are decided over the whole submission
 
-- [ ] 4.1 Change the ingress and storage tests. Verify that they fail against the current key:
+- [x] 4.1 Change the ingress and storage tests. Verify that they fail against the current key:
   - a same-identity body that differs only in `correlation.retry_attempt` is a conflict;
   - its storage-backed counterpart is a storage conflict;
   - a re-execution with a new event ID is admitted as its own occurrence.
-- [ ] 4.2 Drop the exclusion from the canonical deduplication key, and restate the storage record's key
+- [x] 4.2 Drop the exclusion from the canonical deduplication key, and restate the storage record's key
   comment. Verify:
   - 4.1 passes with the rest of the collector suite;
   - `npm run validate --prefix packages/security-audit-collector` passes.
 
 ## 5. Verification
 
-- [ ] 5.1 Verify the whole implementation. The following must all pass:
+- [x] 5.1 Verify the whole implementation. The following must all pass:
   - `make` across every declared workspace;
   - the governance final phase over the implementation range;
   - normative precedence at the merge stage;

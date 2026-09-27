@@ -37,7 +37,8 @@ See `proposal.md` for why. The current state that shapes the approach:
 
 - No contract change: no delivery-attempt field, and no contract version move.
 - No wire header or other transport metadata for the delivery attempt.
-- No validation inside the handoff, and no semantic validation in the collector (known issue 2).
+- No validation inside the handoff, and no semantic validation in the collector (the known issue
+  "Collector Validates Structure Only").
 - No change to the HTTP audit sink, sdk-core, or the evaluation kit that is already identified.
 - No migration of existing non-production stores.
 

@@ -395,22 +395,38 @@ test("D8 — duplicate outcomes, diagnostics, and metrics do not disclose payloa
   assert.ok(!publicText.includes("producer-fixture"), "public duplicate state leaked a retained body field");
 });
 
-test("D9 — a retry that only advances correlation.retry_attempt is a duplicate, not a conflict (#391)", () => {
+test("D9 — a body that differs only in its correlation.retry_attempt is a conflict, not a duplicate (#577)", () => {
   const { ingress } = ingressWithCountingParse();
   expectAdmission(ingress.submit(authenticated(validBody())));
-  const retry = ingress.submit(authenticated(bodyWithCorrelation({ retry_attempt: 1 })));
-  assert.deepEqual(retry, {
-    kind: "duplicate",
-    eventId: "00000000-0000-4000-8000-000000000001",
-    senderIdentity: `synthetic:${FIXTURE_TOKEN}`,
-    acknowledgment: "admitted",
+  const differing = ingress.submit(authenticated(bodyWithCorrelation({ retry_attempt: 1 })));
+  assert.deepEqual(differing, {
+    kind: "rejected",
+    diagnostic: {
+      code: "COLLECTOR_DUPLICATE_CONFLICT",
+      category: "deduplication",
+      path: "/event/id",
+    },
   });
   assert.equal(ingress.metrics().accepted, 1);
-  assert.equal(JSON.stringify(ingress.metrics()).includes('"deduplicated":1'), true);
+  assert.equal(JSON.stringify(ingress.metrics()).includes('"rejectedDuplicateConflict":1'), true);
 
-  // Null control: a field other than correlation.retry_attempt still conflicts.
-  const conflict = ingress.submit(
-    authenticated(JSON.stringify({ ...VALID_EVENT, correlation: { ...VALID_EVENT.correlation, retry_attempt: 1, correlation_id: "different" } })),
-  );
-  assert.equal((conflict as { readonly kind: string }).kind, "rejected");
+  // Null control: an identical redelivery of the retained occurrence is still a duplicate.
+  const redelivery = ingress.submit(authenticated(validBody()));
+  assert.equal((redelivery as { readonly kind: string }).kind, "duplicate");
+});
+
+test("D10 — a re-execution, with its own event ID, is admitted independently of the original (#577)", () => {
+  const { ingress } = ingressWithCountingParse();
+  expectAdmission(ingress.submit(authenticated(validBody())));
+  const reExecution = JSON.stringify({
+    ...VALID_EVENT,
+    event: { ...VALID_EVENT.event, id: "00000000-0000-4000-8000-000000000002" },
+    correlation: { ...VALID_EVENT.correlation, retry_attempt: 1, original_event_id: VALID_EVENT.event.id },
+  });
+  expectAdmission(ingress.submit(authenticated(reExecution)));
+  assert.equal(ingress.metrics().accepted, 2);
+
+  // The original's retained record is unchanged, so its identical redelivery is still a duplicate.
+  const redelivery = ingress.submit(authenticated(validBody()));
+  assert.equal((redelivery as { readonly kind: string }).kind, "duplicate");
 });

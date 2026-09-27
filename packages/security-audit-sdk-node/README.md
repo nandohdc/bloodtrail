@@ -30,7 +30,9 @@ Per ADR 0009:
 `createHttpDeliveryHandoff` projects one canonical occurrence into a bounded
 `POST` request descriptor and delegates the exchange to caller-owned code. It
 does not open sockets, use `fetch` or `node:http`, schedule retries, manage a
-queue, drain during shutdown, or claim durable or exactly-once delivery.
+queue, drain during shutdown, or claim durable or exactly-once delivery. The
+request body is the occurrence exactly as supplied. The attempt ordinal travels
+in the descriptor and the result, never in the occurrence.
 
 ```typescript
 import {
@@ -122,9 +124,12 @@ const result = await retry.deliver(event);
 // result.status: "acknowledged" | "non_retryable" | "protocol_error" | "exhausted"
 ```
 
-Each retried attempt carries the occurrence's unchanged `event.id` and an
-incrementing zero-based `correlation.retry_attempt`, matching the delivery
-conformance contract's attempt-identity requirement. Delay before each retry is
+Every attempt sends the identical occurrence, byte for byte, so its `event.id`
+and its `correlation.retry_attempt` are the same on every attempt. The
+total attempt count is reported through the result's `attempts`, the
+attempt ordinal travels in the request descriptor and `observability` hooks,
+and the attempt is never written into the event (#577). This matches the
+delivery conformance contract's attempt-identity requirement. Delay before each retry is
 a jittered, capped exponential backoff: `floor(min(baseDelayMs * 2^attempt,
 maxDelayMs) * jitterSource())`. An optional `observability` hook exposes
 `onAttemptScheduled` and `onExhausted` for callers that need retry-exhaustion

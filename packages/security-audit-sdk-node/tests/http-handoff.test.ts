@@ -59,10 +59,7 @@ describe("HTTP delivery handoff", () => {
         "content-type": "application/json",
         "content-length": String(Buffer.byteLength(requests[0]!.body, "utf8")),
       },
-      body: JSON.stringify({
-        ...event,
-        correlation: { ...event.correlation, retry_attempt: 0 },
-      }),
+      body: original,
       event_id: event.event.id,
       attempt: 0,
     });
@@ -136,7 +133,7 @@ describe("HTTP delivery handoff", () => {
     assert.equal(requests.length, 0);
   });
 
-  it("carries a caller-supplied attempt ordinal into the wire correlation and the result without mutating event identity", async () => {
+  it("keeps a caller-supplied attempt ordinal in the request and the result, outside the occurrence", async () => {
     const event = eventFixture();
     const original = JSON.stringify(event);
     const { handoff, requests } = handoffWith(response(202, [{ event_id: event.event.id, outcome: "accepted" }]));
@@ -146,7 +143,8 @@ describe("HTTP delivery handoff", () => {
     assert.deepEqual(result, { status: "acknowledged", code: "acknowledged", event_id: event.event.id, attempt: 3 });
     assert.equal(requests[0]!.attempt, 3);
     assert.equal(requests[0]!.event_id, event.event.id);
-    assert.equal(JSON.parse(requests[0]!.body).correlation.retry_attempt, 3);
+    assert.equal(requests[0]!.body, original, "the body must be the occurrence as supplied, byte for byte");
+    assert.equal(JSON.parse(requests[0]!.body).correlation.retry_attempt, 0);
     assert.equal(JSON.stringify(event), original);
   });
 

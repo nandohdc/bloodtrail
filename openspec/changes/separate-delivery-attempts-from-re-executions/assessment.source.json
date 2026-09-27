@@ -43,6 +43,7 @@
     "packages/security-audit-sdk-node/README.md",
     "packages/security-audit-sdk-node/docs/known-issues.md",
     "packages/security-audit-sdk-node/CONTEXT.md",
+    "packages/security-audit-sdk-node/adr/004-http-audit-sink-and-shared-response-classification.md",
     "packages/security-audit-collector/src/ingress.ts",
     "packages/security-audit-collector/src/storage.ts",
     "packages/security-audit-collector/tests/ingress.test.ts",

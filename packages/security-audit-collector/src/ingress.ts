@@ -402,22 +402,13 @@ function eventIdOf(value: unknown): string {
   return typeof id === "string" ? id : "";
 }
 
-// Delivery conformance contract §Attempt identity: correlation.retry_attempt
-// is the only field an implementation is required to advance across retries
-// of one occurrence, so it is the only field excluded here. Comparing every
-// other field exactly (rather than a fingerprint) keeps a genuinely
+// Delivery conformance contract §Attempt identity: every delivery attempt of
+// one occurrence sends identical bytes, so the key covers the whole submission
+// and no field is excluded, correlation.retry_attempt included (#577).
+// Comparing every field exactly (rather than a fingerprint) keeps a genuinely
 // different payload under the same identity distinguishable as a conflict.
 function deduplicationKeyOf(value: unknown): string {
-  return canonicalStringify(withoutRetryAttempt(value));
-}
-
-function withoutRetryAttempt(value: unknown): unknown {
-  if (typeof value !== "object" || value === null) return value;
-  const record = value as Record<string, unknown>;
-  const correlation = record.correlation;
-  if (typeof correlation !== "object" || correlation === null) return value;
-  const { retry_attempt: _retryAttempt, ...correlationRest } = correlation as Record<string, unknown>;
-  return { ...record, correlation: correlationRest };
+  return canonicalStringify(value);
 }
 
 // Deterministic, key-sorted serialization so the comparison does not depend
