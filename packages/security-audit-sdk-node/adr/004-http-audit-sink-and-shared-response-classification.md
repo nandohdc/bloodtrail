@@ -4,6 +4,9 @@
 - Date: 2026-09-23
 - Decision source: the owner's approval of the OpenSpec change `add-sdk-node-http-audit-sink`, given as a
   SHA-bound approval comment on PR #610 and the owner's own merge of it (`520aa69`)
+- Amended by: [ADR 0013](../../../docs/adr/0013-delivery-attempts-never-enter-the-canonical-event.md), which
+  makes the delivery handoff send the occurrence unchanged, so the rewrite of `correlation.retry_attempt`
+  described below no longer happens (#577)
 
 ## Context
 

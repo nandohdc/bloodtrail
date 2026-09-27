@@ -2,8 +2,8 @@ import type { AuditTimerHandle, AuditTimerProvider, SecurityAuditEvent } from "@
 
 import type { HttpDeliveryHandoff, HttpDeliveryHandoffResult } from "./http-handoff.js";
 
-// Contract 2.1.0 bounds.retry_attempt_max is the wire ceiling; this is a much
-// tighter practical ceiling on how many attempts one delivery may schedule.
+// The most attempts one delivery may make. Their ordinals, 0 to 999, stay within
+// the handoff's attempt-ordinal ceiling and never enter the occurrence.
 const MAX_ATTEMPTS_CEILING = 1000;
 
 /** Returns a value in `[0, 1)`. Injected so delay computation stays deterministic under test. */

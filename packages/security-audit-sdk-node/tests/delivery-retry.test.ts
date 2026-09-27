@@ -3,17 +3,31 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { AuditTimerHandle, AuditTimerProvider, SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
+import {
+  validateSecurityAuditEvent,
+  type AuditTimerHandle,
+  type AuditTimerProvider,
+  type SecurityAuditEvent,
+} from "@bloodtrail/security-audit-sdk-core";
 import {
   createBoundedDeliveryRetry,
+  createHttpDeliveryHandoff,
   type DeliveryRetryOptions,
   type HttpDeliveryHandoff,
   type HttpDeliveryHandoffResult,
+  type HttpExchange,
+  type HttpExchangeRequest,
 } from "../dist/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturePath = resolve(__dirname, "../../../contracts/security-audit/examples/positive/all-events.json");
-const fixtureEvent = JSON.parse(readFileSync(fixturePath, "utf8"))[0] as SecurityAuditEvent;
+const fixtures = JSON.parse(readFileSync(fixturePath, "utf8")) as SecurityAuditEvent[];
+// A first execution: retry attempt 0 and no original_event_id.
+const fixtureEvent = fixtures[0]!;
+// A completed event carries original_event_id, so it stays valid as a re-execution.
+const foundRegistration = fixtures.find((event) => event.event.name === "bloodtrail.audit.account.registration.completed");
+assert.ok(foundRegistration, "registration completed fixture must be present");
+const registrationCompleted = foundRegistration;
 
 function eventFixture(): SecurityAuditEvent {
   return JSON.parse(JSON.stringify(fixtureEvent)) as SecurityAuditEvent;
@@ -198,5 +212,80 @@ describe("Bounded delivery retry", () => {
     ] as const) {
       assert.throws(() => createBoundedDeliveryRetry(baseOptions(overrides)), TypeError);
     }
+  });
+});
+
+/** Answers the first `retryableCount` requests with a 503, then acknowledges, recording every request. */
+function recordingExchange(retryableCount: number): { exchange: HttpExchange; requests: HttpExchangeRequest[] } {
+  const requests: HttpExchangeRequest[] = [];
+  const exchange: HttpExchange = async (request) => {
+    requests.push(request);
+    if (requests.length <= retryableCount) return { kind: "response", status: 503, acknowledgments: [] };
+    return { kind: "response", status: 202, acknowledgments: [{ event_id: request.event_id, outcome: "accepted" }] };
+  };
+  return { exchange, requests };
+}
+
+function retryOverHandoff(exchange: HttpExchange, overrides: Partial<DeliveryRetryOptions> = {}) {
+  const handoff = createHttpDeliveryHandoff({ path: "/v1/security-audit", exchange });
+  return createBoundedDeliveryRetry(baseOptions({ handoff, maxAttempts: 3, ...overrides }));
+}
+
+function sentEvents(requests: readonly HttpExchangeRequest[]): SecurityAuditEvent[] {
+  return requests.map((request) => JSON.parse(request.body) as SecurityAuditEvent);
+}
+
+describe("Bounded delivery retry over the delivery handoff", () => {
+  it("redelivers the identical occurrence on every delivery attempt", async () => {
+    const { exchange, requests } = recordingExchange(2);
+    const event = eventFixture();
+
+    const result = await retryOverHandoff(exchange).deliver(event);
+
+    assert.equal(result.status, "acknowledged");
+    const bodies = requests.map((request) => request.body);
+    assert.equal(bodies.length, 3);
+    const expectedBody = JSON.stringify(event);
+    assert.deepEqual(bodies, [expectedBody, expectedBody, expectedBody], "every attempt must send the exact canonical serialization");
+    assert.deepEqual(JSON.parse(bodies[0]!), event);
+  });
+
+  it("keeps a re-execution's retry attempt on every delivery attempt", async () => {
+    const { exchange, requests } = recordingExchange(1);
+    const reExecution: SecurityAuditEvent = {
+      ...registrationCompleted,
+      correlation: { ...registrationCompleted.correlation, retry_attempt: 2 },
+    };
+
+    await retryOverHandoff(exchange).deliver(reExecution);
+
+    assert.deepEqual(sentEvents(requests).map((sent) => sent.correlation.retry_attempt), [2, 2]);
+  });
+
+  it("sends every copy of a first execution's delivery retry in a form the SDK still validates", async () => {
+    const { exchange, requests } = recordingExchange(2);
+    const firstExecution = eventFixture();
+    assert.equal(validateSecurityAuditEvent(firstExecution).ok, true);
+
+    await retryOverHandoff(exchange).deliver(firstExecution);
+
+    const verdicts = sentEvents(requests).map((sent) => {
+      const validated = validateSecurityAuditEvent(sent);
+      return validated.ok ? "valid" : validated.error.code;
+    });
+    assert.deepEqual(verdicts, ["valid", "valid", "valid"]);
+  });
+
+  it("reports each delivery attempt's ordinal through the request, the scheduling callback and the result", async () => {
+    const { exchange, requests } = recordingExchange(2);
+    const scheduled: number[] = [];
+
+    const result = await retryOverHandoff(exchange, {
+      observability: { onAttemptScheduled: (nextAttempt) => scheduled.push(nextAttempt) },
+    }).deliver(eventFixture());
+
+    assert.deepEqual(requests.map((request) => request.attempt), [0, 1, 2]);
+    assert.deepEqual(scheduled, [1, 2]);
+    assert.equal(result.attempts, 3);
   });
 });

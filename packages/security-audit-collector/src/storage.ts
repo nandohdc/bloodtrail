@@ -22,9 +22,9 @@ export interface StoredRecord {
   readonly retentionClass: StoredRetentionClass;
   readonly admittedAt: number;
   readonly expiresAt: number;
-  // The canonical deduplication key: every field but the attempt-scoped
-  // `correlation.retry_attempt`, key-sorted. It is what makes a genuine retry
-  // a duplicate rather than a conflict, compared exactly and never hashed.
+  // The canonical deduplication key: the whole submission, key-sorted. An
+  // identical redelivery shares it, and any other content under the same
+  // identity is a conflict. It is compared exactly and never hashed.
   readonly occurrenceKey: string;
   readonly body: string;
 }

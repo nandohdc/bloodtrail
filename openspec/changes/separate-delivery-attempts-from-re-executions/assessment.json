@@ -1,0 +1,232 @@
+{
+  "schema_version": "1.1",
+  "change_id": "separate-delivery-attempts-from-re-executions",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The delivery handoff writes its attempt ordinal into correlation.retry_attempt, the contract's re-execution counter, so a re-execution loses its count silently and a delivery retry of a first execution fails the SDK's BAD_CAUSALITY rule.",
+    "The collector validates structure only and excludes correlation.retry_attempt from its deduplication key, so it accepts the rewritten copies and acknowledges them as duplicates.",
+    "Three current capabilities require the rewrite, while the event contract, ADR-003, the authority matrix and the Node capability's own HTTP audit sink require the same immutable event on redelivery.",
+    "The contract is frozen at 2.1.0; a new field or a redefinition of an existing one is a contract version move that CB-018's unresolved version conflict blocks.",
+    "The delivery-conformance capability is pinned by the CB-018 pin set in a governance_core directory a preserved workstream owns; a fold without a new pin set leaves every later precedence run failing, masked by continue-on-error (#570).",
+    "The Node public surface is frozen, so the fix must not add, remove or retype any export, option or result field.",
+    "The delivery-conformance capability is platform-neutral and may not require or name a transport mechanism such as a header.",
+    "The collector and its stores are non-production and synthetic, so a key change needs no data migration, but a kit must never pair an old handoff with a new collector.",
+    "Strict validation forbids a modified requirement from dropping or renaming a scenario, and four affected requirements carry scenarios that become false.",
+    "The collector capability forbids a collector change range from modifying sdk-core, so the shared delivery vocabulary cannot live in sdk-core's glossary."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "integration",
+      "persistence",
+      "security_sensitive_behavior",
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "delivery-conformance-contract",
+      "security-audit-collector",
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/separate-delivery-attempts-from-re-executions/",
+    "openspec/specs/delivery-conformance-contract/spec.md",
+    "openspec/specs/security-audit-collector/spec.md",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "openspec/governance/normative-precedence-pins/current-separate-delivery-attempts-from-re-executions.json",
+    "packages/security-audit-sdk-node/src/http-handoff.ts",
+    "packages/security-audit-sdk-node/src/delivery-retry.ts",
+    "packages/security-audit-sdk-node/tests/http-handoff.test.ts",
+    "packages/security-audit-sdk-node/tests/delivery-retry.test.ts",
+    "packages/security-audit-sdk-node/tests/http-handoff-mutations.test.ts",
+    "packages/security-audit-sdk-node/README.md",
+    "packages/security-audit-sdk-node/docs/known-issues.md",
+    "packages/security-audit-sdk-node/CONTEXT.md",
+    "packages/security-audit-sdk-node/adr/004-http-audit-sink-and-shared-response-classification.md",
+    "packages/security-audit-collector/src/ingress.ts",
+    "packages/security-audit-collector/src/storage.ts",
+    "packages/security-audit-collector/tests/ingress.test.ts",
+    "packages/security-audit-collector/tests/storage.test.ts",
+    "packages/security-audit-collector/CONTEXT.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-delivery-attempts-outside-event",
+      "kind": "direct_implementation",
+      "summary": "Keep the delivery attempt ordinal out of the canonical event: the handoff sends the occurrence as supplied, the bounded retry redelivers identical bytes, the collector's deduplication key covers the whole submission, and the three capabilities are reconciled, with the fold rebinding the CB-018 pin set in a new file.",
+      "forces_addressed": [
+        "The delivery handoff writes its attempt ordinal into correlation.retry_attempt, the contract's re-execution counter, so a re-execution loses its count silently and a delivery retry of a first execution fails the SDK's BAD_CAUSALITY rule.",
+        "The collector validates structure only and excludes correlation.retry_attempt from its deduplication key, so it accepts the rewritten copies and acknowledges them as duplicates.",
+        "Three current capabilities require the rewrite, while the event contract, ADR-003, the authority matrix and the Node capability's own HTTP audit sink require the same immutable event on redelivery.",
+        "The contract is frozen at 2.1.0; a new field or a redefinition of an existing one is a contract version move that CB-018's unresolved version conflict blocks.",
+        "The delivery-conformance capability is pinned by the CB-018 pin set in a governance_core directory a preserved workstream owns; a fold without a new pin set leaves every later precedence run failing, masked by continue-on-error (#570).",
+        "The Node public surface is frozen, so the fix must not add, remove or retype any export, option or result field.",
+        "The delivery-conformance capability is platform-neutral and may not require or name a transport mechanism such as a header.",
+        "The collector and its stores are non-production and synthetic, so a key change needs no data migration, but a kit must never pair an old handoff with a new collector.",
+        "Strict validation forbids a modified requirement from dropping or renaming a scenario, and four affected requirements carry scenarios that become false.",
+        "The collector capability forbids a collector change range from modifying sdk-core, so the shared delivery vocabulary cannot live in sdk-core's glossary."
+      ]
+    },
+    {
+      "id": "approach-contract-delivery-attempt-field",
+      "kind": "alternative",
+      "summary": "Add an optional delivery-attempt field to the contract (2.2.0) and have delivery write it instead of correlation.retry_attempt.",
+      "forces_addressed": [
+        "The delivery handoff writes its attempt ordinal into correlation.retry_attempt, the contract's re-execution counter, so a re-execution loses its count silently and a delivery retry of a first execution fails the SDK's BAD_CAUSALITY rule.",
+        "Three current capabilities require the rewrite, while the event contract, ADR-003, the authority matrix and the Node capability's own HTTP audit sink require the same immutable event on redelivery."
+      ]
+    },
+    {
+      "id": "approach-retry-attempt-delivery-only",
+      "kind": "alternative",
+      "summary": "Redefine correlation.retry_attempt as a delivery-only counter and express re-execution only through original_event_id and causation (3.0.0).",
+      "forces_addressed": [
+        "The delivery handoff writes its attempt ordinal into correlation.retry_attempt, the contract's re-execution counter, so a re-execution loses its count silently and a delivery retry of a first execution fails the SDK's BAD_CAUSALITY rule.",
+        "The collector validates structure only and excludes correlation.retry_attempt from its deduplication key, so it accepts the rewritten copies and acknowledges them as duplicates."
+      ]
+    },
+    {
+      "id": "approach-delivery-attempt-header",
+      "kind": "alternative",
+      "summary": "Carry the delivery attempt ordinal in an HTTP request header instead of inside the event.",
+      "forces_addressed": [
+        "The delivery handoff writes its attempt ordinal into correlation.retry_attempt, the contract's re-execution counter, so a re-execution loses its count silently and a delivery retry of a first execution fails the SDK's BAD_CAUSALITY rule.",
+        "The collector validates structure only and excludes correlation.retry_attempt from its deduplication key, so it accepts the rewritten copies and acknowledges them as duplicates."
+      ]
+    },
+    {
+      "id": "approach-keep-collector-exclusion",
+      "kind": "alternative",
+      "summary": "Fix the producer only and keep the collector's exclusion of correlation.retry_attempt from its deduplication key.",
+      "forces_addressed": [
+        "The delivery handoff writes its attempt ordinal into correlation.retry_attempt, the contract's re-execution counter, so a re-execution loses its count silently and a delivery retry of a first execution fails the SDK's BAD_CAUSALITY rule.",
+        "The collector and its stores are non-production and synthetic, so a key change needs no data migration, but a kit must never pair an old handoff with a new collector."
+      ]
+    },
+    {
+      "id": "approach-defer-conformance-fold",
+      "kind": "alternative",
+      "summary": "Implement the fix but leave the delivery-conformance delta unfolded until the CB-018 workstream resumes, so no pin set is written.",
+      "forces_addressed": [
+        "The delivery handoff writes its attempt ordinal into correlation.retry_attempt, the contract's re-execution counter, so a re-execution loses its count silently and a delivery retry of a first execution fails the SDK's BAD_CAUSALITY rule.",
+        "The delivery-conformance capability is pinned by the CB-018 pin set in a governance_core directory a preserved workstream owns; a fold without a new pin set leaves every later precedence run failing, masked by continue-on-error (#570)."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-delivery-attempts-outside-event",
+  "rejected_alternative_ids": [
+    "approach-contract-delivery-attempt-field",
+    "approach-retry-attempt-delivery-only",
+    "approach-delivery-attempt-header",
+    "approach-keep-collector-exclusion",
+    "approach-defer-conformance-fold"
+  ],
+  "rejection_reasons": {
+    "approach-contract-delivery-attempt-field": {
+      "forces": [
+        "The contract is frozen at 2.1.0; a new field or a redefinition of an existing one is a contract version move that CB-018's unresolved version conflict blocks."
+      ],
+      "reason": "A new optional field is a 2.1.0 to 2.2.0 contract move that advances every pin in the version table, needs CB-018's version conflict settled and stays blocked at release; copies would still differ byte for byte, so the collector would keep excluding a field."
+    },
+    "approach-retry-attempt-delivery-only": {
+      "forces": [
+        "The contract is frozen at 2.1.0; a new field or a redefinition of an existing one is a contract version move that CB-018's unresolved version conflict blocks."
+      ],
+      "reason": "Redefining the field is semantic reuse, a major 3.0.0 change under the compatibility policy, and it removes the re-execution count that the SDK's named API and causality validation rely on."
+    },
+    "approach-delivery-attempt-header": {
+      "forces": [
+        "The delivery-conformance capability is platform-neutral and may not require or name a transport mechanism such as a header."
+      ],
+      "reason": "A header adds a wire contract that no consumer needs and that the platform-neutral conformance capability could not name; the ordinal is already observable locally through the descriptor, the results and the callbacks."
+    },
+    "approach-keep-collector-exclusion": {
+      "forces": [
+        "The collector validates structure only and excludes correlation.retry_attempt from its deduplication key, so it accepts the rewritten copies and acknowledges them as duplicates."
+      ],
+      "reason": "Once every attempt sends identical bytes, the exclusion serves no conforming producer; it only lets a same-identity body that differs in correlation.retry_attempt be acknowledged silently instead of rejected."
+    },
+    "approach-defer-conformance-fold": {
+      "forces": [
+        "The delivery-conformance capability is pinned by the CB-018 pin set in a governance_core directory a preserved workstream owns; a fold without a new pin set leaves every later precedence run failing, masked by continue-on-error (#570).",
+        "Three current capabilities require the rewrite, while the event contract, ADR-003, the authority matrix and the Node capability's own HTTP audit sink require the same immutable event on redelivery."
+      ],
+      "reason": "The change could never archive, and the code would contradict a current capability that an active delta cannot override; folding without a pin set instead leaves every later precedence run failing."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-delivery-sends-supplied-bytes",
+    "implementation-attempt-ordinal-stays-local",
+    "implementation-collector-key-covers-whole-submission",
+    "implementation-node-surface-unchanged",
+    "implementation-pin-history-immutable"
+  ],
+  "invariant_evidence": {
+    "implementation-delivery-sends-supplied-bytes": {
+      "task_ids": [
+        "3.1",
+        "3.2",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "the composed retry-over-handoff test proves every attempt's body equals the supplied occurrence's canonical serialization and passes SDK validation, and the correlation-rewriting mutants are killed"
+      ]
+    },
+    "implementation-attempt-ordinal-stays-local": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "the handoff and retry tests read the ordinal from the request descriptor, the results and onAttemptScheduled, and never from the body"
+      ]
+    },
+    "implementation-collector-key-covers-whole-submission": {
+      "task_ids": [
+        "4.1",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "ingress and storage tests prove a body differing only in correlation.retry_attempt is a conflict, an identical redelivery is a duplicate, and a re-execution is admitted as its own occurrence"
+      ]
+    },
+    "implementation-node-surface-unchanged": {
+      "task_ids": [
+        "3.2"
+      ],
+      "evidence_ids": [
+        "the export check passes with its frozen lists unedited, and every emitted declaration file is byte-identical to the build from main"
+      ]
+    },
+    "implementation-pin-history-immutable": {
+      "task_ids": [
+        "6.1"
+      ],
+      "evidence_ids": [
+        "normative precedence selects the new pin set at the candidate and merge stages with no fold-pin-set or pin-set-history-mutated diagnostic"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "f40e2cb8d03046de4434bb08a19ecc47e8293170"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4",
+    "4.1",
+    "4.2",
+    "5.1",
+    "6.1",
+    "7.1"
+  ]
+}
