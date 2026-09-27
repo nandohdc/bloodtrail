@@ -64,7 +64,7 @@ The collector ingress SHALL enforce the ratified asymmetric version policy: a su
 
 ### Requirement: Collector-local duplicate identity and retention are bounded
 
-Without storage configured, after all required ingress validation has succeeded, the collector SHALL derive duplicate identity exclusively from the authenticated sender identity and the validated canonical `event.id`. The collector SHALL retain, in memory only, one canonical deduplication key for each such identity for 300 seconds from its first admission, up to 32 live identities. The canonical deduplication key SHALL be derived from the validated submission body by excluding the attempt-scoped `correlation.retry_attempt` field and exactly comparing every other field, so that only a genuine retry of the same occurrence — never a payload that differs in any other respect — can share a key. It SHALL purge expired records lazily before every duplicate decision and new-record decision. With storage configured, the collector SHALL NOT consult or populate this in-memory record: the storage port decides duplicate identity durably, and the record's 32-identity capacity SHALL NOT bound how many distinct occurrences can be persisted. The record is a synthetic, non-production idempotency control: it SHALL NOT be durable storage, a queue, a delivery record, a retention-policy decision, or an exactly-once guarantee.
+Without storage configured, after all required ingress validation has succeeded, the collector SHALL derive duplicate identity exclusively from the authenticated sender identity and the validated canonical `event.id`. The collector SHALL retain, in memory only, one canonical deduplication key for each such identity for 300 seconds from its first admission, up to 32 live identities. The canonical deduplication key SHALL be derived from the whole validated submission body, comparing every field exactly under a key-order-independent canonical serialization, so that only a canonically identical copy of the same occurrence — never a payload that differs in any field, including `correlation.retry_attempt` — can share a key. It SHALL purge expired records lazily before every duplicate decision and new-record decision. With storage configured, the collector SHALL NOT consult or populate this in-memory record: the storage port decides duplicate identity durably, and the record's 32-identity capacity SHALL NOT bound how many distinct occurrences can be persisted. The record is a synthetic, non-production idempotency control: it SHALL NOT be durable storage, a queue, a delivery record, a retention-policy decision, or an exactly-once guarantee.
 
 #### Scenario: First valid identity is retained
 - **WHEN** storage is not configured and an authenticated, size-bounded, schema-valid, supported-version submission presents an identity not retained by the collector
@@ -90,21 +90,25 @@ Without storage configured, after all required ingress validation has succeeded,
 - **WHEN** storage is configured and more than 32 distinct valid identities are submitted within 300 seconds
 - **THEN** every one of them reaches the storage port and none is rejected with the deduplication-capacity diagnostic
 
-### Requirement: Duplicate and conflicting reuse have distinct deterministic outcomes
+### Requirement: Duplicate and conflicting reuse are decided over the whole submission
 
-Without storage configured, for a live sender-and-event identity, a submission whose canonical deduplication key exactly matches the retained key SHALL return a distinct duplicate outcome without a second admission or capacity consumption — including a genuine retry that only advances the zero-based `correlation.retry_attempt` counter, since that field is excluded from the key by design. A submission whose canonical deduplication key differs from the retained key in any other field SHALL be rejected with a distinct bounded conflict diagnostic and SHALL NOT replace or extend the retained record. The collector SHALL reserve a first-seen identity before reporting admission, so synchronous re-entrant submissions with the same key cannot both be admitted. With storage configured, identity SHALL be the record's storage scope and `event.id`, whichever authenticated sender submits it: a storage-port `duplicate` SHALL return the distinct duplicate outcome acknowledged `persisted`, and a storage-port conflict SHALL be rejected with the distinct storage-conflict diagnostic without changing the stored record.
+Without storage configured, for a live sender-and-event identity, a submission whose canonical deduplication key exactly matches the retained key SHALL return a distinct duplicate outcome without a second admission or capacity consumption. A submission whose canonical deduplication key differs from the retained key in any field, including `correlation.retry_attempt`, SHALL be rejected with a distinct bounded conflict diagnostic and SHALL NOT replace or extend the retained record, because every delivery attempt of one occurrence carries identical bytes and a body that differs under a live identity is never a redelivered copy of it. The collector SHALL reserve a first-seen identity before reporting admission, so synchronous re-entrant submissions with the same key cannot both be admitted. With storage configured, identity SHALL be the record's storage scope and `event.id`, whichever authenticated sender submits it, and the stored record's canonical deduplication key SHALL cover the whole submission in the same way: a storage-port `duplicate` SHALL return the distinct duplicate outcome acknowledged `persisted`, and a storage-port conflict SHALL be rejected with the distinct storage-conflict diagnostic without changing the stored record.
 
-#### Scenario: Identical retry is deduplicated
+#### Scenario: Identical redelivery is deduplicated
 - **WHEN** the same authenticated sender submits a valid body with the same `event.id` and an identical canonical deduplication key within 300 seconds
 - **THEN** the first submission is admitted once and the later submission returns the duplicate outcome without reprocessing or consuming admission capacity
 
-#### Scenario: A retry that only advances the attempt counter is deduplicated
-- **WHEN** the same authenticated sender resubmits a valid body with the same `event.id` whose only difference from the retained submission is an advanced `correlation.retry_attempt`
-- **THEN** the collector returns the duplicate outcome rather than the conflict diagnostic, and the original retained record is unchanged
+#### Scenario: A body that differs only in its retry attempt is a conflict
+- **WHEN** the same authenticated sender resubmits a valid body with the same `event.id` whose only difference from the retained submission is its `correlation.retry_attempt`
+- **THEN** the collector rejects the later submission with the conflict diagnostic, leaves the original retained record unchanged, and does not admit it
 
 #### Scenario: Conflicting reuse fails closed
-- **WHEN** the same authenticated sender submits a valid body with the same `event.id` whose canonical deduplication key differs from the retained key in a field other than `correlation.retry_attempt`
+- **WHEN** the same authenticated sender submits a valid body with the same `event.id` whose canonical deduplication key differs from the retained key in any field
 - **THEN** the collector rejects the later submission with the conflict diagnostic, leaves the original retained record unchanged, and does not admit it
+
+#### Scenario: A re-execution is its own occurrence
+- **WHEN** a valid body for a re-execution of an admitted occurrence is submitted, carrying its own new `event.id`, a `correlation.retry_attempt` above zero, and an `original_event_id` naming the admitted occurrence
+- **THEN** the collector decides it as a first-seen identity and admits it independently of the original, whose retained record is unchanged
 
 #### Scenario: Concurrently reachable duplicate is admitted once
 - **WHEN** processing of a valid first-seen submission causes a synchronous re-entrant submission with the same sender, event ID, and canonical deduplication key
@@ -116,7 +120,7 @@ Without storage configured, for a live sender-and-event identity, a submission w
 
 #### Scenario: Stored identity is the record's, not the sender's
 - **WHEN** storage is configured and a second authenticated sender submits an occurrence already stored under the same scope and `event.id`
-- **THEN** the same occurrence returns the duplicate outcome acknowledged `persisted`, and different content is rejected with the storage-conflict diagnostic
+- **THEN** the same occurrence returns the duplicate outcome acknowledged `persisted`, and different content, including a different `correlation.retry_attempt`, is rejected with the storage-conflict diagnostic
 
 ### Requirement: Ingress order is fixed and every stage fails closed
 

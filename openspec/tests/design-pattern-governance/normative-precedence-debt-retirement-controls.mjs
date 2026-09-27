@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -36,11 +36,20 @@ function withHistoricalConflict(callback) {
   const repo = mkdtempSync(resolve(tmpdir(), "bloodtrail-cb018-conflict-"));
   try {
     run(root, ["git", "clone", "-q", "--shared", root, repo]);
-    const path = "openspec/specs/security-audit-event-contract/spec.md";
-    const historical = spawnSync("git", ["show", `${base}:${path}`], { cwd: root, encoding: "utf8" });
-    assert.equal(historical.status, 0, historical.stderr);
-    writeFileSync(resolve(repo, path), historical.stdout);
-    rmSync(resolve(repo, "openspec/governance/normative-precedence-pins/current-pre-fold-cb-018.json"), { force: true });
+    for (const path of [
+      "openspec/specs/security-audit-event-contract/spec.md",
+      "openspec/specs/delivery-conformance-contract/spec.md",
+    ]) {
+      const historical = spawnSync("git", ["show", `${base}:${path}`], { cwd: root, encoding: "utf8" });
+      assert.equal(historical.status, 0, historical.stderr);
+      writeFileSync(resolve(repo, path), historical.stdout);
+    }
+    const pinsDir = resolve(repo, "openspec/governance/normative-precedence-pins");
+    for (const file of readdirSync(pinsDir)) {
+      if (file !== "current-pre-fold-revision-3.json" && file !== "revision-2-inline-bindings.json") {
+        rmSync(resolve(pinsDir, file), { force: true });
+      }
+    }
     callback(repo);
   } finally {
     rmSync(repo, { recursive: true, force: true });
