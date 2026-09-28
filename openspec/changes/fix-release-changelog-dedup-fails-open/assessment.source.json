@@ -1,0 +1,174 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Release Please emits release changelog entries ending in ', closes [#N](...)' when commit footers have Refs #N, which escape the ENTRY_REGEX parser in clean-release-changelog.mjs and leave duplicate entries in CHANGELOG.md.",
+    "The PR-description cleanup shells out to gh CLI which is not installed on self-hosted runners, causing cleanup to silently fail open and leaving duplicate entries in GitHub Release notes.",
+    "The cleaner's --check mode shares the parser's blind spot and is not wired into any required status check workflow, allowing duplicate entries to pass undetected.",
+    "Commit resolution in createGitResolver silently swallows git errors and assumes non-merge status on lookup failure, failing open in shallow or incomplete histories.",
+    "Updating release pull request descriptions must not introduce new third-party actions, credentials, or external CLI binaries to credential-bearing jobs."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "governance_core_path"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "release-versioning-tag-model"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/fix-release-changelog-dedup-fails-open/.openspec.yaml",
+    "openspec/changes/fix-release-changelog-dedup-fails-open/proposal.md",
+    "openspec/changes/fix-release-changelog-dedup-fails-open/specs/release-versioning-tag-model/spec.md",
+    "openspec/changes/fix-release-changelog-dedup-fails-open/design.md",
+    "openspec/changes/fix-release-changelog-dedup-fails-open/tasks.md",
+    "openspec/changes/fix-release-changelog-dedup-fails-open/assessment.source.json",
+    "openspec/changes/fix-release-changelog-dedup-fails-open/assessment.json",
+    "openspec/specs/release-versioning-tag-model/spec.md",
+    ".github/scripts/clean-release-changelog.mjs",
+    ".github/scripts/clean-release-changelog.test.mjs",
+    ".github/workflows/conventional-commits.yml"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-grammar-hardening-and-rest-cleanup",
+      "kind": "direct_implementation",
+      "summary": "Harden clean-release-changelog.mjs entry grammar to recognise issue-reference suffixes and fail closed on unrecognized entries, resolve git commits fatally, update PR bodies via REST fetch, and wire check mode into conventional-commits.",
+      "forces_addressed": [
+        "Release Please emits release changelog entries ending in ', closes [#N](...)' when commit footers have Refs #N, which escape the ENTRY_REGEX parser in clean-release-changelog.mjs and leave duplicate entries in CHANGELOG.md.",
+        "The PR-description cleanup shells out to gh CLI which is not installed on self-hosted runners, causing cleanup to silently fail open and leaving duplicate entries in GitHub Release notes.",
+        "The cleaner's --check mode shares the parser's blind spot and is not wired into any required status check workflow, allowing duplicate entries to pass undetected.",
+        "Commit resolution in createGitResolver silently swallows git errors and assumes non-merge status on lookup failure, failing open in shallow or incomplete histories.",
+        "Updating release pull request descriptions must not introduce new third-party actions, credentials, or external CLI binaries to credential-bearing jobs."
+      ]
+    },
+    {
+      "id": "approach-widen-pattern-arbitrary-text",
+      "kind": "alternative",
+      "summary": "Widen ENTRY_REGEX to accept arbitrary trailing text after the commit link.",
+      "forces_addressed": [
+        "Release Please emits release changelog entries ending in ', closes [#N](...)' when commit footers have Refs #N, which escape the ENTRY_REGEX parser in clean-release-changelog.mjs and leave duplicate entries in CHANGELOG.md."
+      ]
+    },
+    {
+      "id": "approach-install-gh-cli",
+      "kind": "alternative",
+      "summary": "Install GitHub CLI (gh) on self-hosted runner or use actions/github-script for PR body cleanup.",
+      "forces_addressed": [
+        "The PR-description cleanup shells out to gh CLI which is not installed on self-hosted runners, causing cleanup to silently fail open and leaving duplicate entries in GitHub Release notes.",
+        "Updating release pull request descriptions must not introduce new third-party actions, credentials, or external CLI binaries to credential-bearing jobs."
+      ]
+    },
+    {
+      "id": "approach-separate-ci-job",
+      "kind": "alternative",
+      "summary": "Add a new standalone CI job or add the check to ci.yml design-pattern-governance.",
+      "forces_addressed": [
+        "The cleaner's --check mode shares the parser's blind spot and is not wired into any required status check workflow, allowing duplicate entries to pass undetected."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-grammar-hardening-and-rest-cleanup",
+  "rejected_alternative_ids": [
+    "approach-widen-pattern-arbitrary-text",
+    "approach-install-gh-cli",
+    "approach-separate-ci-job"
+  ],
+  "rejection_reasons": {
+    "approach-widen-pattern-arbitrary-text": {
+      "forces": [
+        "Release Please emits release changelog entries ending in ', closes [#N](...)' when commit footers have Refs #N, which escape the ENTRY_REGEX parser in clean-release-changelog.mjs and leave duplicate entries in CHANGELOG.md."
+      ],
+      "reason": "Widening the pattern to accept arbitrary trailing text hides future malformed entries or parser regressions instead of failing closed."
+    },
+    "approach-install-gh-cli": {
+      "forces": [
+        "The PR-description cleanup shells out to gh CLI which is not installed on self-hosted runners, causing cleanup to silently fail open and leaving duplicate entries in GitHub Release notes.",
+        "Updating release pull request descriptions must not introduce new third-party actions, credentials, or external CLI binaries to credential-bearing jobs."
+      ],
+      "reason": "Installing gh or adding third-party actions increases supply-chain footprint and introduces external binaries to a PAT-bearing workflow when built-in fetch suffices."
+    },
+    "approach-separate-ci-job": {
+      "forces": [
+        "The cleaner's --check mode shares the parser's blind spot and is not wired into any required status check workflow, allowing duplicate entries to pass undetected."
+      ],
+      "reason": "A new job requires altering protected branch rules pinned at ten required contexts by ci-topology, while ci.yml does not run on PR edited events and cannot verify edited descriptions."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-issue-reference-suffixes-recognised",
+    "implementation-unrecognised-entry-fails-closed",
+    "implementation-commit-resolution-fails-closed",
+    "implementation-pr-body-rest-cleanup",
+    "implementation-required-status-check-wired"
+  ],
+  "invariant_evidence": {
+    "implementation-issue-reference-suffixes-recognised": {
+      "task_ids": [
+        "2.1"
+      ],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs asserts that entries with issue-reference suffixes are recognized, de-duplicated against merge twins, and retained with suffixes intact"
+      ]
+    },
+    "implementation-unrecognised-entry-fails-closed": {
+      "task_ids": [
+        "2.2"
+      ],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs asserts that entries linking a commit but not conforming to the recognised grammar exit non-zero and name the entry"
+      ]
+    },
+    "implementation-commit-resolution-fails-closed": {
+      "task_ids": [
+        "2.3"
+      ],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs asserts that unresolvable commit SHAs throw an error and cause the process to exit non-zero naming the entry"
+      ]
+    },
+    "implementation-pr-body-rest-cleanup": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs asserts that PR body cleanup uses injectable REST fetch, verifies patched payload, and exits non-zero on HTTP or verification errors"
+      ]
+    },
+    "implementation-required-status-check-wired": {
+      "task_ids": [
+        "4.1",
+        "4.2",
+        "5.1"
+      ],
+      "evidence_ids": [
+        "conventional-commits.yml checkout fetches full history and runs clean-release-changelog.mjs --check on release pull requests, failing on uncleaned changelogs or descriptions"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "trust_boundary": "No trust boundary is defined, moved, or crossed. The cleaner operates solely on release changelog markdown text and local git commit graph metadata.",
+    "authority_provenance": "No authority or identity credentials are altered. The cleaner preserves original branch commit hashes and commit author provenance in CHANGELOG.md while eliminating redundant merge commit links.",
+    "authentication_or_authorization": "Uses existing workflow GH_TOKEN via Node built-in fetch without modifying permissions, secrets, or credential scopes.",
+    "audit_integrity": "Improves audit integrity by eliminating duplicate entries in CHANGELOG.md and GitHub Release notes, ensuring each change is attributed accurately to its authoring commit without duplication.",
+    "confidentiality": "Operates exclusively on public git commit messages, hashes, and public CHANGELOG.md markdown; diagnostics sanitize tokens and headers.",
+    "mutation_ownership": "Mutations are strictly confined to CHANGELOG.md and release PR branch descriptions; no production code, manifests, or version files are modified.",
+    "fail_posture": "Fails closed in both cleaning and check modes on unrecognised entries, unresolvable commits, or REST update errors.",
+    "error_disclosure": "Diagnostics print public commit hashes and changelog subject lines without disclosing internal system paths, environment secrets, or credentials.",
+    "concurrency": "Executes synchronously during workflow execution with no concurrent race conditions or asynchronous state sharing.",
+    "lifecycle": "Operates during the release PR creation, update, and required check lifecycle, ensuring release PRs carry clean changelogs before merge.",
+    "resource_retention": "Retains no persistent buffers, memory leaks, or open handles beyond process termination.",
+    "retry_or_redelivery": "Deterministic idempotency; running the cleaner repeatedly on an already cleaned changelog produces identical output with no modifications.",
+    "cryptography": "Does not introduce, alter, or rely upon cryptographic algorithms, keys, or signature verification.",
+    "privacy_transformation": "Does not process user telemetry, personal data, or sensitive operational payloads.",
+    "external_security_integration": "Interacts only with the GitHub REST API via standard workflow environment endpoints without third-party external services."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "31c68278c6cc6eaf70b1d851bc0f97d98ed3c1ca"
+  }
+}
