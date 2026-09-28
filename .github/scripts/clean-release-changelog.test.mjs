@@ -1,11 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   checkChangelog,
+  checkReleaseRange,
   cleanChangelog,
+  cleanPullRequestBody,
   cleanSection,
-  createGitResolver
+  createGitResolver,
+  parseSectionEntries
 } from "./clean-release-changelog.mjs";
 
 function makeEntry(scope, desc, shortSha, issue = null) {
@@ -301,4 +306,345 @@ ${makeEntry("core", "feature", "b111111")}
   assert.equal(droppedEntries.length, 1);
   assert.ok(cleanedContent.includes("b111111"));
   assert.ok(!cleanedContent.includes("a111111"));
+});
+
+test("parseSectionEntries recognises single and multiple issue-reference suffixes", () => {
+  const lines = [
+    "* **sdk-node:** add the HTTP sink ([#589](https://github.com/issues/589)) ([29f19c8](https://github.com/commit/29f19c8)), closes [#575](https://github.com/issues/575)",
+    "* **sdk-node:** handle retries ([310e22d](https://github.com/commit/310e22d)), closes [#10](https://github.com/issues/10), [#20](https://github.com/issues/20)",
+    "* **sdk-core:** basic entry without suffix ([a872088](https://github.com/commit/a872088))"
+  ];
+
+  const entries = parseSectionEntries(lines);
+  assert.equal(entries.length, 3);
+  assert.equal(entries[0].subject, "**sdk-node:** add the HTTP sink ([#589](https://github.com/issues/589))");
+  assert.equal(entries[0].suffix, ", closes [#575](https://github.com/issues/575)");
+  assert.equal(entries[1].subject, "**sdk-node:** handle retries");
+  assert.equal(entries[1].suffix, ", closes [#10](https://github.com/issues/10), [#20](https://github.com/issues/20)");
+  assert.equal(entries[2].subject, "**sdk-core:** basic entry without suffix");
+  assert.equal(entries[2].suffix, "");
+});
+
+test("cleanSection de-duplicates merge commit against branch commit with issue-reference suffix", () => {
+  const branchEntry = "* **sdk-node:** add the HTTP sink ([#589](https://github.com/issues/589)) ([29f19c8](https://github.com/commit/29f19c8)), closes [#575](https://github.com/issues/575)";
+  const mergeEntry = "* **sdk-node:** add the HTTP sink ([#589](https://github.com/issues/589)) ([935d62e](https://github.com/commit/935d62e))";
+  const sectionText = `## [0.21.0] (2026-09-28)
+
+### Features
+
+${mergeEntry}
+${branchEntry}
+`;
+
+  const mockResolver = createMockResolver({
+    "935d62e": {
+      sha: "935d62e",
+      parents: ["p1", "p2"],
+      subject: "Merge pull request #589 from feat/http-sink",
+      isMerge: true,
+      mergedCommits: ["29f19c8"]
+    },
+    "29f19c8": {
+      sha: "29f19c8",
+      parents: ["p0"],
+      subject: "feat(sdk-node): add the HTTP sink (#589)",
+      isMerge: false,
+      mergedCommits: []
+    }
+  });
+
+  const { cleanedText, droppedEntries } = cleanSection(sectionText, mockResolver);
+  assert.equal(droppedEntries.length, 1);
+  assert.equal(droppedEntries[0].shortSha, "935d62e");
+  assert.ok(cleanedText.includes(branchEntry), "Retains branch entry with suffix intact");
+  assert.ok(!cleanedText.includes("935d62e"), "Drops merge commit entry");
+});
+
+test("parseSectionEntries throws and names entry when bullet links commit but has unrecognised format", () => {
+  const malformedBullet = "* **core:** unexpected format ([a111111](https://github.com/commit/a111111)) extra invalid text";
+  assert.throws(
+    () => parseSectionEntries([malformedBullet]),
+    (err) => err.message.includes('Unrecognised entry: "* **core:** unexpected format')
+  );
+
+  const brokenClosesBullet = "* **core:** broken closes ([a111111](https://github.com/commit/a111111)), closes not-a-link";
+  assert.throws(
+    () => parseSectionEntries([brokenClosesBullet]),
+    (err) => err.message.includes('Unrecognised entry: "* **core:** broken closes')
+  );
+});
+
+test("createGitResolver throws when git command fails and cleanSection fails closed", () => {
+  const failingExecGit = () => {
+    throw new Error("fatal: ambiguous argument 'deadbeef': unknown revision");
+  };
+
+  const resolver = createGitResolver({ execGit: failingExecGit });
+  assert.throws(
+    () => resolver("deadbeef"),
+    (err) => err.message.includes("Failed to resolve commit deadbeef")
+  );
+
+  const sectionText = `## [1.0.0] (2026-09-12)
+
+* **core:** unresolvable entry ([deadbeef](https://github.com/commit/deadbeef))
+`;
+
+  assert.throws(
+    () => cleanSection(sectionText, resolver),
+    (err) => err.message.includes("Unresolvable commit in entry") && err.message.includes("deadbeef")
+  );
+});
+
+test("cleanPullRequestBody successfully updates and verifies PR body via REST fetch", async () => {
+  const initialBody = `### Features
+
+* **core:** feature ([a111111](https://github.com/commit/a111111))
+* **core:** feature ([b111111](https://github.com/commit/b111111))
+`;
+
+  let patchCalled = false;
+  let patchPayload = null;
+
+  const mockFetch = async (url, opts) => {
+    assert.ok(url.includes("/repos/nandohdc/bloodtrail/pulls/537"));
+    assert.equal(opts.headers.Authorization, "Bearer secret-token");
+    assert.equal(opts.headers["X-GitHub-Api-Version"], "2022-11-28");
+
+    if (opts.method === "GET") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ body: initialBody })
+      };
+    }
+    if (opts.method === "PATCH") {
+      patchCalled = true;
+      patchPayload = JSON.parse(opts.body);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ body: patchPayload.body })
+      };
+    }
+    throw new Error(`Unexpected method ${opts.method}`);
+  };
+
+  const mockResolver = createMockResolver();
+  await cleanPullRequestBody(537, mockResolver, {
+    fetch: mockFetch,
+    env: {
+      GH_TOKEN: "secret-token",
+      GITHUB_REPOSITORY: "nandohdc/bloodtrail"
+    }
+  });
+
+  assert.ok(patchCalled, "PATCH was called");
+  assert.ok(patchPayload.body.includes("b111111"));
+  assert.ok(!patchPayload.body.includes("a111111"));
+});
+
+test("cleanPullRequestBody is a no-op when body is already clean", async () => {
+  const cleanBody = `### Features
+
+* **core:** feature ([b111111](https://github.com/commit/b111111))
+`;
+
+  let patchCalled = false;
+  const mockFetch = async (url, opts) => {
+    if (opts.method === "GET") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ body: cleanBody })
+      };
+    }
+    if (opts.method === "PATCH") {
+      patchCalled = true;
+    }
+    return { ok: true, status: 200 };
+  };
+
+  const mockResolver = createMockResolver();
+  await cleanPullRequestBody(537, mockResolver, {
+    fetch: mockFetch,
+    env: {
+      GH_TOKEN: "token",
+      GITHUB_REPOSITORY: "owner/repo"
+    }
+  });
+
+  assert.equal(patchCalled, false, "PATCH should not be called when body is already clean");
+});
+
+test("cleanPullRequestBody fails closed on missing env, non-2xx response, network error, or verification mismatch", async () => {
+  const mockResolver = createMockResolver();
+
+  // Missing token
+  await assert.rejects(
+    () => cleanPullRequestBody(537, mockResolver, { env: { GITHUB_REPOSITORY: "owner/repo" } }),
+    (err) => err.message.includes("Missing GH_TOKEN")
+  );
+
+  // Missing repository
+  await assert.rejects(
+    () => cleanPullRequestBody(537, mockResolver, { env: { GH_TOKEN: "token" } }),
+    (err) => err.message.includes("Missing GITHUB_REPOSITORY")
+  );
+
+  // Non-2xx GET
+  await assert.rejects(
+    () => cleanPullRequestBody(537, mockResolver, {
+      fetch: async () => ({ ok: false, status: 404 }),
+      env: { GH_TOKEN: "token", GITHUB_REPOSITORY: "owner/repo" }
+    }),
+    (err) => err.message.includes("failed with status 404")
+  );
+
+  // Verification mismatch
+  await assert.rejects(
+    () => cleanPullRequestBody(537, mockResolver, {
+      fetch: async (url, opts) => {
+        if (opts.method === "GET") {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              body: `* **core:** feat ([a111111](https://commit/a111111))\n* **core:** feat ([b111111](https://commit/b111111))`
+            })
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ body: "completely different body" })
+        };
+      },
+      env: { GH_TOKEN: "token", GITHUB_REPOSITORY: "owner/repo" }
+    }),
+    (err) => err.message.includes("Verification mismatch")
+  );
+});
+
+test("checkReleaseRange skips check when base version equals current version", () => {
+  const execGit = (args) => {
+    if (args[0] === "show" && args[1] === "origin/main:version.txt") {
+      return "0.20.0\n";
+    }
+    throw new Error(`Unexpected git invocation: ${args.join(" ")}`);
+  };
+
+  let readChangelogCalled = false;
+  const result = checkReleaseRange(
+    { releaseBase: "origin/main" },
+    {
+      execGit,
+      rootDir: process.cwd()
+    }
+  );
+
+  // version.txt in this repo is 0.20.0 (or whatever it is)
+  const currentVersion = readFileSync("version.txt", "utf8").trim();
+  const mockExecGit = () => currentVersion;
+
+  const res = checkReleaseRange(
+    { releaseBase: "origin/main" },
+    {
+      execGit: mockExecGit,
+      rootDir: process.cwd()
+    }
+  );
+
+  assert.equal(res.skipped, true);
+  assert.equal(res.version, currentVersion);
+});
+
+test("checkReleaseRange detects bumped version and validates changelog section and event description", () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "bloodtrail-release-check-"));
+  try {
+    writeFileSync(join(tempDir, "version.txt"), "0.21.0\n", "utf8");
+
+    const mockExecGit = (args) => {
+      if (args[0] === "show" && args[1].endsWith(":version.txt")) {
+        return "0.20.0\n"; // different from current version
+      }
+      return "";
+    };
+
+    // 1. Missing target section in changelog
+    writeFileSync(join(tempDir, "CHANGELOG.md"), "## [0.20.0] (2026-09-01)\n\n* **core:** old\n", "utf8");
+    assert.throws(
+      () => checkReleaseRange(
+        { releaseBase: "origin/main", filePath: "CHANGELOG.md" },
+        { execGit: mockExecGit, rootDir: tempDir }
+      ),
+      (err) => err.message.includes("Release section [0.21.0] is missing")
+    );
+
+    // 2. Target section has duplicate merge commit
+    const duplicateChangelog = `## [0.21.0] (2026-09-28)
+
+### Features
+
+${makeEntry("core", "feature", "a111111")}
+${makeEntry("core", "feature", "b111111")}
+`;
+    writeFileSync(join(tempDir, "CHANGELOG.md"), duplicateChangelog, "utf8");
+    const mockResolver = createMockResolver();
+    assert.throws(
+      () => checkReleaseRange(
+        { releaseBase: "origin/main", filePath: "CHANGELOG.md" },
+        { execGit: mockExecGit, rootDir: tempDir, resolveCommit: mockResolver }
+      ),
+      (err) => err.message.includes("Found 1 duplicate entry(ies) in changelog section [0.21.0]")
+    );
+
+    // 3. Clean section, but missing GITHUB_EVENT_PATH when --event-description is requested
+    const cleanChangelog = `## [0.21.0] (2026-09-28)
+
+### Features
+
+${makeEntry("core", "feature", "b111111")}
+`;
+    writeFileSync(join(tempDir, "CHANGELOG.md"), cleanChangelog, "utf8");
+    assert.throws(
+      () => checkReleaseRange(
+        { releaseBase: "origin/main", filePath: "CHANGELOG.md", eventDescription: true },
+        { execGit: mockExecGit, rootDir: tempDir, resolveCommit: mockResolver, env: {} }
+      ),
+      (err) => err.message.includes("Missing GITHUB_EVENT_PATH")
+    );
+
+    // 4. Duplicate entries in PR description from event file
+    const eventFile = join(tempDir, "event.json");
+    writeFileSync(eventFile, JSON.stringify({
+      pull_request: {
+        body: `### Features\n\n${makeEntry("core", "feature", "a111111")}\n${makeEntry("core", "feature", "b111111")}\n`
+      }
+    }), "utf8");
+
+    assert.throws(
+      () => checkReleaseRange(
+        { releaseBase: "origin/main", filePath: "CHANGELOG.md", eventDescription: true },
+        { execGit: mockExecGit, rootDir: tempDir, resolveCommit: mockResolver, env: { GITHUB_EVENT_PATH: eventFile } }
+      ),
+      (err) => err.message.includes("Found 1 duplicate entry(ies) in pull request description")
+    );
+
+    // 5. Clean changelog section and clean PR description: check passes
+    writeFileSync(eventFile, JSON.stringify({
+      pull_request: {
+        body: `### Features\n\n${makeEntry("core", "feature", "b111111")}\n`
+      }
+    }), "utf8");
+
+    const passResult = checkReleaseRange(
+      { releaseBase: "origin/main", filePath: "CHANGELOG.md", eventDescription: true },
+      { execGit: mockExecGit, rootDir: tempDir, resolveCommit: mockResolver, env: { GITHUB_EVENT_PATH: eventFile } }
+    );
+    assert.equal(passResult.skipped, false);
+    assert.equal(passResult.version, "0.21.0");
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
 });
