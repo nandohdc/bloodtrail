@@ -5,6 +5,10 @@
  * Resolves Issue #471: Release Please duplicates changelog entries because GitHub
  * merge commits repeat pull request titles in their bodies, causing Release Please
  * to parse both the merge commit and the branch's individual commits.
+ *
+ * Resolves Issue #642: Recognise issue-reference suffixes, fail closed on unrecognised
+ * entries or unresolvable commits, update PR descriptions via REST fetch, and enforce
+ * de-duplication in required checks.
  */
 
 import { execFileSync } from "node:child_process";
@@ -12,7 +16,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, normalize, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const ENTRY_REGEX = /^(\s*\*\s+)(.*?)\s*\(\[([a-f0-9]+)\]\(([^)]+)\)\)\s*$/;
+export const ENTRY_REGEX = /^(\s*\*\s+)(.*?)\s*\(\[([a-f0-9]+)\]\(([^)]+)\)\)((?:(?:\s*,\s*|\s+)closes\s+\[[^\]]+\]\([^)]+\)(?:(?:,\s*|\s+)\[[^\]]+\]\([^)]+\))*)?)\s*$/;
+export const COMMIT_LINK_REGEX = /\(\[[a-f0-9]+\]\([^)]+\)\)/;
 
 function validateRelativePath(filePath) {
   if (typeof filePath !== "string") {
@@ -44,30 +49,23 @@ export function safeResolvePath(filePath, rootDir = process.cwd()) {
 }
 
 function inspectCommitDetails(sha, execGit) {
-  try {
-    const out = execGit(["log", "-1", "--format=%H%x00%P%x00%s", sha]).trim();
-    const [fullSha, rawParents, subject] = out.split("\0");
-    const parents = rawParents ? rawParents.split(/\s+/).filter(Boolean) : [];
-    const isMerge = parents.length > 1 && (subject?.startsWith("Merge ") ?? false);
-    return { fullSha: fullSha || sha, parents, subject: subject || "", isMerge };
-  } catch {
-    return { fullSha: sha, parents: [], subject: "", isMerge: false };
-  }
+  const out = execGit(["log", "-1", "--format=%H%x00%P%x00%s", sha]).trim();
+  const [fullSha, rawParents, subject] = out.split("\0");
+  const parents = rawParents ? rawParents.split(/\s+/).filter(Boolean) : [];
+  const isMerge = parents.length > 1 && (subject?.startsWith("Merge ") ?? false);
+  return { fullSha: fullSha || sha, parents, subject: subject || "", isMerge };
 }
 
 function inspectMergedCommits(parents, execGit) {
   if (parents.length < 2) return [];
-  try {
-    const revList = execGit(["rev-list", `${parents[0]}..${parents[1]}`]).trim();
-    return revList ? revList.split("\n").filter(Boolean) : [];
-  } catch {
-    return [];
-  }
+  const revList = execGit(["rev-list", `${parents[0]}..${parents[1]}`]).trim();
+  return revList ? revList.split("\n").filter(Boolean) : [];
 }
 
 /**
  * Creates a commit resolver that caches git inspections.
  * Accepts an injectable execGit function for isolated deterministic unit testing.
+ * Fails closed on any git inspection error.
  */
 export function createGitResolver(options = {}) {
   const cwd = options.cwd ?? process.cwd();
@@ -87,8 +85,21 @@ export function createGitResolver(options = {}) {
       return cache.get(sha);
     }
 
-    const details = inspectCommitDetails(sha, execGit);
-    const mergedCommits = details.isMerge ? inspectMergedCommits(details.parents, execGit) : [];
+    let details;
+    try {
+      details = inspectCommitDetails(sha, execGit);
+    } catch (err) {
+      throw new Error(`Failed to resolve commit ${sha}: ${err.message}`);
+    }
+
+    let mergedCommits = [];
+    if (details.isMerge) {
+      try {
+        mergedCommits = inspectMergedCommits(details.parents, execGit);
+      } catch (err) {
+        throw new Error(`Failed to inspect merged commits for ${sha} (${details.parents[0]}..${details.parents[1]}): ${err.message}`);
+      }
+    }
     const info = { ...details, sha: details.fullSha, mergedCommits };
 
     cache.set(sha, info);
@@ -101,24 +112,30 @@ export function createGitResolver(options = {}) {
 
 /**
  * Parses bullet point entries from release section lines.
+ * Fails closed if any bullet links a commit but fails to match the recognised grammar.
  */
 export function parseSectionEntries(lines) {
   const entries = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const match = line.match(ENTRY_REGEX);
-    if (match) {
-      const url = match[4];
-      const commitMatch = url.match(/\/commit\/([a-f0-9]+)/);
-      const fullSha = commitMatch ? commitMatch[1] : match[3];
-      entries.push({
-        lineIndex: i,
-        prefix: match[1],
-        subject: match[2].trim(),
-        shortSha: match[3],
-        fullSha,
-        rawLine: line
-      });
+    if (/^\s*\*\s+/.test(line)) {
+      const match = line.match(ENTRY_REGEX);
+      if (match) {
+        const url = match[4];
+        const commitMatch = url.match(/\/commit\/([a-f0-9]+)/);
+        const fullSha = commitMatch ? commitMatch[1] : match[3];
+        entries.push({
+          lineIndex: i,
+          prefix: match[1],
+          subject: match[2].trim(),
+          shortSha: match[3],
+          fullSha,
+          suffix: match[5] || "",
+          rawLine: line
+        });
+      } else if (COMMIT_LINK_REGEX.test(line)) {
+        throw new Error(`Unrecognised entry: "${line.trim()}"`);
+      }
     }
   }
   return entries;
@@ -169,12 +186,18 @@ function findMergedBranchDuplicates(entries, sectionShas, resolveCommit, already
 
 /**
  * Identifies duplicate merge commit entries to drop within a release section.
+ * Fails closed if any commit cannot be resolved.
  */
 export function identifyDuplicateEntries(entries, resolveCommit) {
   const sectionShas = new Set();
   for (const entry of entries) {
     sectionShas.add(entry.fullSha);
     sectionShas.add(entry.shortSha);
+    try {
+      resolveCommit(entry.fullSha);
+    } catch (err) {
+      throw new Error(`Unresolvable commit in entry "${entry.rawLine.trim()}": ${err.message}`);
+    }
   }
 
   const bySubject = groupEntriesBySubject(entries);
@@ -305,29 +328,196 @@ export function checkChangelog(content, options = {}) {
   };
 }
 
+function getPrClientConfig(options) {
+  const env = options.env ?? process.env;
+  const token = env.GH_TOKEN || env.GITHUB_TOKEN;
+  const repository = env.GITHUB_REPOSITORY;
+  const apiUrl = (env.GITHUB_API_URL || "https://api.github.com").replace(/\/+$/, "");
+
+  if (!token) {
+    throw new Error("Missing GH_TOKEN environment variable for PR description cleanup");
+  }
+  if (!repository) {
+    throw new Error("Missing GITHUB_REPOSITORY environment variable for PR description cleanup");
+  }
+
+  return {
+    token,
+    repository,
+    apiUrl,
+    fetchFn: options.fetch ?? globalThis.fetch
+  };
+}
+
+async function fetchPullRequestBody(url, token, fetchFn) {
+  let res;
+  try {
+    res = await fetchFn(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "clean-release-changelog"
+      }
+    });
+  } catch (err) {
+    throw new Error(`GitHub API GET ${url} network failure: ${err.message}`);
+  }
+
+  if (!res.ok) {
+    throw new Error(`GitHub API GET ${url} failed with status ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.body ?? "";
+}
+
+async function updatePullRequestBody(target, prNumber, cleanedText) {
+  const { url, token, fetchFn } = target;
+  let res;
+  try {
+    res = await fetchFn(url, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "clean-release-changelog"
+      },
+      body: JSON.stringify({ body: cleanedText })
+    });
+  } catch (err) {
+    throw new Error(`GitHub API PATCH ${url} network failure: ${err.message}`);
+  }
+
+  if (!res.ok) {
+    throw new Error(`GitHub API PATCH ${url} failed with status ${res.status}`);
+  }
+
+  const data = await res.json();
+  const normalizedExpected = cleanedText.replace(/\r\n/g, "\n");
+  const normalizedActual = (data.body ?? "").replace(/\r\n/g, "\n");
+  if (normalizedExpected !== normalizedActual) {
+    throw new Error(`Verification mismatch after updating PR #${prNumber} description`);
+  }
+}
+
 /**
- * Cleans duplicate entries from a pull request description via gh CLI.
+ * Cleans duplicate entries from a pull request description via GitHub REST API.
+ * Fails closed on missing credentials, network errors, non-2xx responses, or verification mismatch.
  */
-export function cleanPullRequestBody(prNumber, resolveCommit) {
+export async function cleanPullRequestBody(prNumber, resolveCommit, options = {}) {
   if (!/^[0-9]+$/.test(String(prNumber))) {
     throw new Error(`Invalid PR number: "${prNumber}"`);
   }
-  try {
-    const body = execFileSync("gh", ["pr", "view", String(prNumber), "--json", "body", "-q", ".body"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"]
-    });
-    const { cleanedText, droppedEntries } = cleanSection(body, resolveCommit);
-    if (droppedEntries.length > 0 && cleanedText !== body) {
-      execFileSync("gh", ["pr", "edit", String(prNumber), "--body", cleanedText], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"]
-      });
-      console.log(`Cleaned ${droppedEntries.length} duplicate entry(ies) in PR #${prNumber} description.`);
-    }
-  } catch (err) {
-    console.warn(`Warning: unable to update PR #${prNumber} body: ${err.message}`);
+
+  const { token, repository, apiUrl, fetchFn } = getPrClientConfig(options);
+  const pullUrl = `${apiUrl}/repos/${repository}/pulls/${prNumber}`;
+  const body = await fetchPullRequestBody(pullUrl, token, fetchFn);
+
+  const { cleanedText, droppedEntries } = cleanSection(body, resolveCommit);
+  if (droppedEntries.length === 0 || cleanedText === body) {
+    console.log(`PR #${prNumber} description is already clean: no duplicate entries found.`);
+    return;
   }
+
+  await updatePullRequestBody({ url: pullUrl, token, fetchFn }, prNumber, cleanedText);
+  console.log(`Cleaned ${droppedEntries.length} duplicate entry(ies) in PR #${prNumber} description.`);
+}
+
+function readBaseVersion(execGit, releaseBase) {
+  try {
+    return execGit(["show", `${releaseBase}:version.txt`]).trim();
+  } catch {
+    return null;
+  }
+}
+
+function verifyChangelogSectionClean(filePath, rootDir, version, resolveCommit) {
+  const changelogPath = safeResolvePath(filePath, rootDir);
+  let changelogContent;
+  try {
+    changelogContent = readFileSync(changelogPath, "utf8");
+  } catch (err) {
+    throw new Error(`Unable to read changelog file at ${changelogPath}: ${err.message}`);
+  }
+
+  const sections = splitChangelogSections(changelogContent);
+  const targetSection = sections.find((s) => s.version === version);
+  if (!targetSection) {
+    throw new Error(`Release section [${version}] is missing from ${filePath}`);
+  }
+
+  const { droppedEntries } = cleanSection(targetSection.lines.join("\n"), resolveCommit);
+  if (droppedEntries.length > 0) {
+    throw new Error(`Found ${droppedEntries.length} duplicate entry(ies) in changelog section [${version}]`);
+  }
+}
+
+function readEventPullRequestBody(eventPath) {
+  if (!eventPath) {
+    throw new Error("Missing GITHUB_EVENT_PATH environment variable for --event-description check");
+  }
+
+  let eventData;
+  try {
+    eventData = JSON.parse(readFileSync(eventPath, "utf8"));
+  } catch (err) {
+    throw new Error(`Failed to read event file at ${eventPath}: ${err.message}`);
+  }
+
+  const pullRequest = eventData ? eventData.pull_request : null;
+  const body = pullRequest ? pullRequest.body : null;
+  if (typeof body !== "string") {
+    throw new Error(`Missing pull_request.body in event file ${eventPath}`);
+  }
+
+  return body;
+}
+
+function verifyEventDescriptionClean(eventPath, resolveCommit) {
+  const body = readEventPullRequestBody(eventPath);
+  const { droppedEntries } = cleanSection(body, resolveCommit);
+  if (droppedEntries.length > 0) {
+    throw new Error(`Found ${droppedEntries.length} duplicate entry(ies) in pull request description`);
+  }
+}
+
+/**
+ * Evaluates a release range against base ref version.txt and checks for duplicates.
+ */
+export function checkReleaseRange(options = {}, context = {}) {
+  const rootDir = context.rootDir ?? process.cwd();
+  const execGit = context.execGit ?? ((args) => execFileSync("git", args, {
+    cwd: rootDir,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"]
+  }));
+  const env = context.env ?? process.env;
+  const resolveCommit = context.resolveCommit ?? createGitResolver({ cwd: rootDir, execGit });
+
+  const versionPath = safeResolvePath("version.txt", rootDir);
+  const currentVersion = readFileSync(versionPath, "utf8").trim();
+  const baseVersion = readBaseVersion(execGit, options.releaseBase);
+
+  if (baseVersion === currentVersion) {
+    console.log(`No release in range (${currentVersion} unchanged): skipping changelog check.`);
+    return { skipped: true, version: currentVersion };
+  }
+
+  console.log(`Release detected: version changed from ${baseVersion ?? "(none)"} to ${currentVersion}. Checking changelog section and PR description...`);
+
+  const changelogFile = options.filePath ?? "CHANGELOG.md";
+  verifyChangelogSectionClean(changelogFile, rootDir, currentVersion, resolveCommit);
+
+  if (options.eventDescription) {
+    verifyEventDescriptionClean(env.GITHUB_EVENT_PATH, resolveCommit);
+  }
+
+  console.log(`Changelog check passed: section [${currentVersion}] and pull request description contain no duplicate entries.`);
+  return { skipped: false, version: currentVersion };
 }
 
 const CLI_FLAG_HANDLERS = {
@@ -341,6 +531,8 @@ const CLI_FLAG_HANDLERS = {
   "-s": (opts, val) => { opts.targetSection = val; return 1; },
   "--pr": (opts, val) => { opts.prNumber = val; return 1; },
   "-p": (opts, val) => { opts.prNumber = val; return 1; },
+  "--release-base": (opts, val) => { opts.releaseBase = val; return 1; },
+  "--event-description": (opts) => { opts.eventDescription = true; return 0; },
   "--help": (opts) => { opts.showHelp = true; return 0; },
   "-h": (opts) => { opts.showHelp = true; return 0; },
 };
@@ -355,6 +547,8 @@ export function parseArgs(args) {
     all: false,
     targetSection: null,
     prNumber: null,
+    releaseBase: null,
+    eventDescription: false,
     showHelp: false
   };
 
@@ -398,18 +592,20 @@ function processCleanResults(fullPath, filePath, cleanedContent, droppedEntries)
 /**
  * Main CLI entry point.
  */
-export function main(args = process.argv.slice(2)) {
+export async function main(args = process.argv.slice(2)) {
   const options = parseArgs(args);
 
   if (options.showHelp) {
     console.log(`Usage: clean-release-changelog.mjs [options]
 Options:
-  -f, --file <path>       Path to changelog file (default: CHANGELOG.md)
-  -c, --check             Fail with non-zero exit if uncleaned duplicates exist
-  -s, --section <version> Target a specific release version (e.g. 0.18.0)
-  -p, --pr <number>       Clean release notes in pull request body via gh CLI
-  -a, --all               Process all release sections
-  -h, --help              Show this help message`);
+  -f, --file <path>          Path to changelog file (default: CHANGELOG.md)
+  -c, --check                Fail with non-zero exit if uncleaned duplicates exist
+  -s, --section <version>    Target a specific release version (e.g. 0.18.0)
+  -p, --pr <number>          Clean release notes in pull request body via REST API
+  -a, --all                  Process all release sections
+  --release-base <ref>       Check release section and event description against base ref
+  --event-description        Include pull request description from GITHUB_EVENT_PATH in check
+  -h, --help                 Show this help message`);
     return 0;
   }
 
@@ -421,6 +617,18 @@ Options:
     return 1;
   }
 
+  const resolveCommit = createGitResolver();
+
+  if (options.releaseBase) {
+    try {
+      checkReleaseRange(options, { resolveCommit });
+      return 0;
+    } catch (err) {
+      console.error(`Check failed: ${err.message}`);
+      return 1;
+    }
+  }
+
   let content;
   try {
     content = readFileSync(fullPath, "utf8");
@@ -429,12 +637,20 @@ Options:
     return 1;
   }
 
-  const resolveCommit = createGitResolver();
-  const { cleanedContent, droppedEntries } = cleanChangelog(content, {
-    resolveCommit,
-    targetSection: options.targetSection,
-    all: options.all
-  });
+  let cleanedContent;
+  let droppedEntries;
+  try {
+    const res = cleanChangelog(content, {
+      resolveCommit,
+      targetSection: options.targetSection,
+      all: options.all
+    });
+    cleanedContent = res.cleanedContent;
+    droppedEntries = res.droppedEntries;
+  } catch (err) {
+    console.error(`Error: ${err.message}`);
+    return 1;
+  }
 
   if (options.checkOnly) {
     return processCheckResults(droppedEntries);
@@ -442,7 +658,12 @@ Options:
 
   const exitCode = processCleanResults(fullPath, options.filePath, cleanedContent, droppedEntries);
   if (options.prNumber) {
-    cleanPullRequestBody(options.prNumber, resolveCommit);
+    try {
+      await cleanPullRequestBody(options.prNumber, resolveCommit);
+    } catch (err) {
+      console.error(`Error cleaning PR #${options.prNumber} description: ${err.message}`);
+      return 1;
+    }
   }
 
   return exitCode;
@@ -450,5 +671,8 @@ Options:
 
 const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
 if (isDirectRun) {
-  process.exit(main());
+  main().then((code) => process.exit(code)).catch((err) => {
+    console.error(`Fatal error: ${err.message}`);
+    process.exit(1);
+  });
 }
