@@ -1,5 +1,93 @@
 # Changelog
 
+## [0.21.0](https://github.com/nandohdc/bloodtrail/compare/v0.20.0...v0.21.0) (2026-09-29)
+
+
+### Added
+
+* **governance:** enforce normative precedence lifecycle ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([28a1b75](https://github.com/nandohdc/bloodtrail/commit/28a1b754c8f36544e9ae75536701cfca3b4c083a))
+* **governance:** extend change-authorization schema for sequential supersession ([#541](https://github.com/nandohdc/bloodtrail/issues/541)) ([d3df67e](https://github.com/nandohdc/bloodtrail/commit/d3df67e4d3129728dbd0cb41d39ae9316d9ec31e))
+* **governance:** implement CB-018 debt retirement mechanism ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([d749dc8](https://github.com/nandohdc/bloodtrail/commit/d749dc89bb606cf58e07cbba614b72124651fa42))
+* **governance:** implement core sequential authorization graph traversal and invariants ([#541](https://github.com/nandohdc/bloodtrail/issues/541)) ([3c704a2](https://github.com/nandohdc/bloodtrail/commit/3c704a23afa4ebf614bb1e49a2cadf17c420cd03))
+* **governance:** implement normative precedence revision 3 ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([778640b](https://github.com/nandohdc/bloodtrail/commit/778640b2a50d6476fcb28866af120cbb83a538aa))
+* **governance:** integrate sequential authorization discovery and interval scope attribution ([#541](https://github.com/nandohdc/bloodtrail/issues/541)) ([a18e004](https://github.com/nandohdc/bloodtrail/commit/a18e004a89d882f2167b58990969b44f4f30f98d))
+* **sdk-node:** add per-request context, auth failure, and authz denial example ([#596](https://github.com/nandohdc/bloodtrail/issues/596)) ([b185d4f](https://github.com/nandohdc/bloodtrail/commit/b185d4fc18f914447a7d380bab32fa3757877212))
+* **sdk-node:** add sensitive resource view and committed modification example ([#597](https://github.com/nandohdc/bloodtrail/issues/597)) ([5ee6dee](https://github.com/nandohdc/bloodtrail/commit/5ee6deeed7f46721c8325293064c5e13aa19458f))
+* **sdk-node:** add the HTTP audit sink, one byte-exact POST per event ([#589](https://github.com/nandohdc/bloodtrail/issues/589)) ([29f19c8](https://github.com/nandohdc/bloodtrail/commit/29f19c8d6e479f1eb939d07bd0c49f165e9f31b5)), closes [#575](https://github.com/nandohdc/bloodtrail/issues/575)
+* **sdk-node:** build evaluation kit v0 with npm install check ([#593](https://github.com/nandohdc/bloodtrail/issues/593)) ([29596f6](https://github.com/nandohdc/bloodtrail/commit/29596f618dc6a27b40f899a84cd75996342a2b64))
+* **sdk-node:** deliver first event over HTTP from evaluation kit ([#594](https://github.com/nandohdc/bloodtrail/issues/594)) ([6ab3d07](https://github.com/nandohdc/bloodtrail/commit/6ab3d07cd583b46a54995af48cf416ad0e7c67b4))
+* **sdk-node:** flush waits for in-flight sends, and shutdown closes the HTTP sink ([#591](https://github.com/nandohdc/bloodtrail/issues/591)) ([6c9018d](https://github.com/nandohdc/bloodtrail/commit/6c9018d2bd7638f3e6a707da06c96c60c8a2cad1)), closes [#575](https://github.com/nandohdc/bloodtrail/issues/575)
+* **sdk-node:** kit identity and completeness verification ([#604](https://github.com/nandohdc/bloodtrail/issues/604)) ([0236540](https://github.com/nandohdc/bloodtrail/commit/023654051ca9a79c3b8f7651b99dae12fedff2cc))
+* **sdk-node:** split sink rejections from failures, and add onOutcome ([#590](https://github.com/nandohdc/bloodtrail/issues/590)) ([6bdc83e](https://github.com/nandohdc/bloodtrail/commit/6bdc83e774a1f5f0d21f06773626174d598895fa)), closes [#575](https://github.com/nandohdc/bloodtrail/issues/575)
+* **sdk-node:** support pnpm and verify single core copy in evaluation kit ([#599](https://github.com/nandohdc/bloodtrail/issues/599)) ([5862db9](https://github.com/nandohdc/bloodtrail/commit/5862db97ecdf656ce8ef59c086d73abf4aeef514))
+* **sdk-node:** verify consumer compatibility with TypeScript 6 and 7 ([#600](https://github.com/nandohdc/bloodtrail/issues/600)) ([ddfe541](https://github.com/nandohdc/bloodtrail/commit/ddfe541396b6e48be64f1febcc2acf2140fca5a1))
+
+
+### Fixed
+
+* **delivery:** keep delivery attempts out of the canonical event ([#577](https://github.com/nandohdc/bloodtrail/issues/577)) ([1d21ac9](https://github.com/nandohdc/bloodtrail/commit/1d21ac9d4da7662cdc531dd481fa66570e2bf2cd))
+* **governance:** bind active deltas to authorization ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([c218b78](https://github.com/nandohdc/bloodtrail/commit/c218b78843b9ea10030f25c18c4f774ec38c2861))
+* **governance:** bind apply scope and change-owned review freshness ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([174d52b](https://github.com/nandohdc/bloodtrail/commit/174d52bcd86b84fa45358bff9beb0f5316c22913))
+* **governance:** refine sequential discovery filtering and delta inheritance ([#541](https://github.com/nandohdc/bloodtrail/issues/541)) ([ca204e2](https://github.com/nandohdc/bloodtrail/commit/ca204e203e5b4798b00dde8131fcfa3d6e43a28e))
+* **governance:** scope precedence evidence to the governed change ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([24c05e5](https://github.com/nandohdc/bloodtrail/commit/24c05e5199fbc15eb92578169b43d431b1da3c05))
+* **scripts:** harden release changelog de-duplication and enforce in CI ([#642](https://github.com/nandohdc/bloodtrail/issues/642)) ([72bf907](https://github.com/nandohdc/bloodtrail/commit/72bf907a6e4cd1b65df528de11355d4b307031c3))
+* **sdk-core:** make authoritativeTenant's input type encode its scope rule ([#582](https://github.com/nandohdc/bloodtrail/issues/582)) ([722a628](https://github.com/nandohdc/bloodtrail/commit/722a6285b563a40425a47049278090a11023d520)), closes [#575](https://github.com/nandohdc/bloodtrail/issues/575)
+* **test:** isolate release changelog check test from ambient working directory version ([#646](https://github.com/nandohdc/bloodtrail/issues/646)) ([06222e4](https://github.com/nandohdc/bloodtrail/commit/06222e4cc5c03a2f1e4f9b0c9f8a4af5d61e6456))
+* **test:** remove unused imports in governance test suites ([#542](https://github.com/nandohdc/bloodtrail/issues/542)) ([3de27bf](https://github.com/nandohdc/bloodtrail/commit/3de27bff9b4b947ff6ab6c1b2a82e61786b70d50))
+
+
+### Documentation
+
+* **adr:** record ADR-0013 DAG-based sequential authorization lifecycle ([#542](https://github.com/nandohdc/bloodtrail/issues/542)) ([95c3308](https://github.com/nandohdc/bloodtrail/commit/95c3308ce979d54ddb927e51f8b94729a1603f9a))
+* correct node binding core and root READMEs ([#601](https://github.com/nandohdc/bloodtrail/issues/601)) ([4f65380](https://github.com/nandohdc/bloodtrail/commit/4f6538096f433b6c8ca72e82a5b05a0260040edd))
+* **governance:** authorize cb-001 revision 2 apply ([6eecbed](https://github.com/nandohdc/bloodtrail/commit/6eecbedd774d2d91426877a12e7a2476e85c0e17))
+* **governance:** authorize CB-001 revision 3 apply ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([e417de5](https://github.com/nandohdc/bloodtrail/commit/e417de5bb96a30ef64a9f6d0145ef840a06bc820))
+* **governance:** authorize CB-018 post-T3 test fixture repair ([#541](https://github.com/nandohdc/bloodtrail/issues/541)) ([fc1d17f](https://github.com/nandohdc/bloodtrail/commit/fc1d17ffaef0c88b7672f9eba89aadcfdf12019e))
+* **governance:** authorize CB-018 r3 debt resolution ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([ad62920](https://github.com/nandohdc/bloodtrail/commit/ad62920ab256e39676454a8a8df1afd87e882cb1))
+* **governance:** authorize CB-018 r3 implementation ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([63d635c](https://github.com/nandohdc/bloodtrail/commit/63d635cdd07a7c58f7d6bbdbaae661c4f421273d))
+* **governance:** point to the signed CB-018 Option A restoration authority ([#544](https://github.com/nandohdc/bloodtrail/issues/544)) ([7f5aef2](https://github.com/nandohdc/bloodtrail/commit/7f5aef21c3f33343d4094143b95dc1e2eb87083c))
+* **governance:** register schema compatibility test in sequential authorization assessment ([#542](https://github.com/nandohdc/bloodtrail/issues/542)) ([c2b9c9c](https://github.com/nandohdc/bloodtrail/commit/c2b9c9cd9719c1324bb425890ff5f5545f698a84))
+* **governance:** restore the frozen R5 assessment pair (CB-018 Option A gamma, [#544](https://github.com/nandohdc/bloodtrail/issues/544)) ([68e8e12](https://github.com/nandohdc/bloodtrail/commit/68e8e120d2919a17c8cf966e99a3ef6977b97840))
+* **governance:** select CB-018 r3 implementation authority ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([88540ac](https://github.com/nandohdc/bloodtrail/commit/88540acb563f7416216a055510bf0dc3f999028c))
+* **governance:** synthesize CB-018 cumulative review evidence and PR description ([#542](https://github.com/nandohdc/bloodtrail/issues/542)) ([38b8613](https://github.com/nandohdc/bloodtrail/commit/38b8613cf3582b8eadaaa8a6a81e772a6a9b75c3))
+* **openspec:** amend evaluation authorization to authorize evaluators ([#605](https://github.com/nandohdc/bloodtrail/issues/605)) ([b2234a7](https://github.com/nandohdc/bloodtrail/commit/b2234a7c5355d1947422deeed5d9a86ec2871a56))
+* **openspec:** archive add-sdk-node-http-audit-sink ([#607](https://github.com/nandohdc/bloodtrail/issues/607)) ([7285e10](https://github.com/nandohdc/bloodtrail/commit/7285e10208d6b4ec7415f7270426f924a433d6ff))
+* **openspec:** archive deliver-sdk-evaluation-alpha ([#607](https://github.com/nandohdc/bloodtrail/issues/607)) ([85851a2](https://github.com/nandohdc/bloodtrail/commit/85851a2dda29c3589f353b5d0eeb1df6827292a9))
+* **openspec:** archive fix-release-changelog-dedup-fails-open ([#642](https://github.com/nandohdc/bloodtrail/issues/642)) ([0895709](https://github.com/nandohdc/bloodtrail/commit/0895709f0391ead3e3bb2d77ab69162ea979f0a4))
+* **openspec:** archive isolate-release-changelog-check-test ([#646](https://github.com/nandohdc/bloodtrail/issues/646)) ([3568d54](https://github.com/nandohdc/bloodtrail/commit/3568d54c904564920af6c0e4b290c05225abd150))
+* **openspec:** archive separate-delivery-attempts-from-re-executions ([#577](https://github.com/nandohdc/bloodtrail/issues/577)) ([e882911](https://github.com/nandohdc/bloodtrail/commit/e882911da5bd350ca9658d1eae6620b205aa7226))
+* **openspec:** authorize assessment scope ([ec5c3a8](https://github.com/nandohdc/bloodtrail/commit/ec5c3a880341f9fd55f11a74583fba53e90d2aa4))
+* **openspec:** authorize CB-001 revision apply ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([6d1273d](https://github.com/nandohdc/bloodtrail/commit/6d1273d03c33e5b8e7ce59924424f9d1cf2b3a53))
+* **openspec:** authorize deepscan code-health cleanup ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([eb90dd6](https://github.com/nandohdc/bloodtrail/commit/eb90dd6cae0bdd0e957a57f362c03e47160db26b))
+* **openspec:** authorize review-record ownership association correction ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([ae897b8](https://github.com/nandohdc/bloodtrail/commit/ae897b85db01eb05b82992e89e780c2b7dfafd11))
+* **openspec:** correct CB-018 verification sequence ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([0be610e](https://github.com/nandohdc/bloodtrail/commit/0be610efe856a9ab67db3638dc307ec15ed5f5de))
+* **openspec:** fold add-sdk-node-http-audit-sink into canonical specs ([#606](https://github.com/nandohdc/bloodtrail/issues/606)) ([47aa95e](https://github.com/nandohdc/bloodtrail/commit/47aa95eb21242a1baf9e31b64a4f2d83ef5526fa))
+* **openspec:** fold deliver-sdk-evaluation-alpha into canonical specs ([#606](https://github.com/nandohdc/bloodtrail/issues/606)) ([9464866](https://github.com/nandohdc/bloodtrail/commit/9464866f377d28dde9276b8abb17cd0024c79a6a))
+* **openspec:** fold separate-delivery-attempts-from-re-executions into canonical specs ([#577](https://github.com/nandohdc/bloodtrail/issues/577)) ([76c1aba](https://github.com/nandohdc/bloodtrail/commit/76c1aba412b733fed44dd90d6904f9144174faee))
+* **openspec:** freeze normative precedence revision 3 proposal ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([5a49572](https://github.com/nandohdc/bloodtrail/commit/5a4957255f2e4830ceb15b38764e6bdb9824cae9))
+* **openspec:** narrow the evaluation alpha umbrella and authorize no evaluator yet ([#578](https://github.com/nandohdc/bloodtrail/issues/578)) ([bbc4e8a](https://github.com/nandohdc/bloodtrail/commit/bbc4e8a196ce75c0b7f23cd5b3fd4f5cc2c448b3)), closes [#575](https://github.com/nandohdc/bloodtrail/issues/575)
+* **openspec:** normalize precedence deltas ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([f6813dd](https://github.com/nandohdc/bloodtrail/commit/f6813dd0893214c631894940d98b681d8fe81aba))
+* **openspec:** own governance-core registration path ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([cd2a56e](https://github.com/nandohdc/bloodtrail/commit/cd2a56e3f8493a18a7ee1091b557c2f86f8501ad))
+* **openspec:** own the review record registration path ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([3c6b472](https://github.com/nandohdc/bloodtrail/commit/3c6b4729537065a88cd7d0e049651f158dfbd6eb))
+* **openspec:** propose fix-release-changelog-dedup-fails-open ([#642](https://github.com/nandohdc/bloodtrail/issues/642)) ([93ad99f](https://github.com/nandohdc/bloodtrail/commit/93ad99f393afebb09f735888dc74afca3b4282ca))
+* **openspec:** propose isolate-release-changelog-check-test ([#646](https://github.com/nandohdc/bloodtrail/issues/646)) ([8a6d77c](https://github.com/nandohdc/bloodtrail/commit/8a6d77cd831e669fec522bb464c676e18cec01cb))
+* **openspec:** propose normative precedence lifecycle ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([6fabafd](https://github.com/nandohdc/bloodtrail/commit/6fabafddcb1d7825562ba36eb8d26bad28d284aa))
+* **openspec:** propose separating delivery attempts from re-executions ([#577](https://github.com/nandohdc/bloodtrail/issues/577)) ([85f3aab](https://github.com/nandohdc/bloodtrail/commit/85f3aabedae11ed0793d70fbb523681ca4c6ae4a))
+* **openspec:** propose sequential authorization lifecycle correction ([#539](https://github.com/nandohdc/bloodtrail/issues/539)) ([5fbb22e](https://github.com/nandohdc/bloodtrail/commit/5fbb22e88db2094c871648f3d961e767c87078fe))
+* **openspec:** propose the HTTP audit sink as its own transport change ([#578](https://github.com/nandohdc/bloodtrail/issues/578)) ([24d3ca1](https://github.com/nandohdc/bloodtrail/commit/24d3ca1b440ae200570c21f7ad79c8bd4c13a623)), closes [#575](https://github.com/nandohdc/bloodtrail/issues/575)
+* **openspec:** propose the SDK evaluation alpha umbrella change ([#578](https://github.com/nandohdc/bloodtrail/issues/578)) ([ffc732b](https://github.com/nandohdc/bloodtrail/commit/ffc732bb53a4ac608f1e423dfb9150ac56f93ff9)), closes [#575](https://github.com/nandohdc/bloodtrail/issues/575)
+* **openspec:** record project-owner review decision ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([a21a1ff](https://github.com/nandohdc/bloodtrail/commit/a21a1ffdaac8fa734ed0dbf1625e10fc1213302f))
+* **openspec:** record project-owner review decision ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([be6eaf4](https://github.com/nandohdc/bloodtrail/commit/be6eaf4001f6b8e7a6ba671f52a0a96392e37a19))
+* **openspec:** record project-owner review decision ([#533](https://github.com/nandohdc/bloodtrail/issues/533)) ([81c18fb](https://github.com/nandohdc/bloodtrail/commit/81c18fbba742ec752a24063ecd837b2a7d82572a))
+* **openspec:** revise precedence governance plan ([e1ffc1a](https://github.com/nandohdc/bloodtrail/commit/e1ffc1a74a89ea42c555b3dedf9803d736a7153f))
+* **sdk-node:** add evaluation guide, questionnaire, and seeded invalid-call exercise ([#603](https://github.com/nandohdc/bloodtrail/issues/603)) ([53d36cc](https://github.com/nandohdc/bloodtrail/commit/53d36cca799325f47cb4b050db96af3cb4cdc331))
+* **sdk-node:** add privacy guidance, supported-versus-planned table, and known issues ([#602](https://github.com/nandohdc/bloodtrail/issues/602)) ([6b7ac88](https://github.com/nandohdc/bloodtrail/commit/6b7ac88b97c1cac7266dbc518a8d111cf769d146))
+* **sdk-node:** add quickstart v1 and doc code block type-checking ([#595](https://github.com/nandohdc/bloodtrail/issues/595)) ([1b05801](https://github.com/nandohdc/bloodtrail/commit/1b05801dcc3f42864cdff26a58ef792b897795d3))
+* **sdk-node:** complete the error catalog with the remaining 19 contract codes ([#584](https://github.com/nandohdc/bloodtrail/issues/584)) ([a25003c](https://github.com/nandohdc/bloodtrail/commit/a25003cb0d51440106899126101059a78a2ee2c8)), closes [#575](https://github.com/nandohdc/bloodtrail/issues/575)
+* **sdk-node:** document wire protocol and verify failure paths against peer ([#598](https://github.com/nandohdc/bloodtrail/issues/598)) ([29affad](https://github.com/nandohdc/bloodtrail/commit/29affad1749af3de02e34d64863409651560b60f))
+* **sdk-node:** start the error catalog with every SDK code and 12 contract codes ([#583](https://github.com/nandohdc/bloodtrail/issues/583)) ([a57233c](https://github.com/nandohdc/bloodtrail/commit/a57233c8a70af85876fd9899602e6ba82ca420ae)), closes [#575](https://github.com/nandohdc/bloodtrail/issues/575)
+* **specs:** fold fix-release-changelog-dedup-fails-open into release-versioning-tag-model ([#642](https://github.com/nandohdc/bloodtrail/issues/642)) ([f3ea235](https://github.com/nandohdc/bloodtrail/commit/f3ea235b99dc87ee7effae4504dfe1722a96bc68))
+
 ## [0.20.0](https://github.com/nandohdc/bloodtrail/compare/v0.19.0...v0.20.0) (2026-09-12)
 
 
