@@ -527,36 +527,29 @@ test("cleanPullRequestBody fails closed on missing env, non-2xx response, networ
 });
 
 test("checkReleaseRange skips check when base version equals current version", () => {
-  const execGit = (args) => {
-    if (args[0] === "show" && args[1] === "origin/main:version.txt") {
-      return "0.20.0\n";
-    }
-    throw new Error(`Unexpected git invocation: ${args.join(" ")}`);
-  };
+  const tempDir = mkdtempSync(join(tmpdir(), "bloodtrail-release-skip-"));
+  try {
+    writeFileSync(join(tempDir, "version.txt"), "0.20.0\n", "utf8");
+    const mockExecGit = (args) => {
+      if (args[0] === "show" && args[1] === "origin/main:version.txt") {
+        return "0.20.0\n";
+      }
+      throw new Error(`Unexpected git invocation: ${args.join(" ")}`);
+    };
 
-  let readChangelogCalled = false;
-  const result = checkReleaseRange(
-    { releaseBase: "origin/main" },
-    {
-      execGit,
-      rootDir: process.cwd()
-    }
-  );
+    const res = checkReleaseRange(
+      { releaseBase: "origin/main" },
+      {
+        execGit: mockExecGit,
+        rootDir: tempDir
+      }
+    );
 
-  // version.txt in this repo is 0.20.0 (or whatever it is)
-  const currentVersion = readFileSync("version.txt", "utf8").trim();
-  const mockExecGit = () => currentVersion;
-
-  const res = checkReleaseRange(
-    { releaseBase: "origin/main" },
-    {
-      execGit: mockExecGit,
-      rootDir: process.cwd()
-    }
-  );
-
-  assert.equal(res.skipped, true);
-  assert.equal(res.version, currentVersion);
+    assert.equal(res.skipped, true);
+    assert.equal(res.version, "0.20.0");
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
 });
 
 test("checkReleaseRange detects bumped version and validates changelog section and event description", () => {
