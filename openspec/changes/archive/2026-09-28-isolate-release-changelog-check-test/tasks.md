@@ -12,6 +12,6 @@
 
 ## 3. Verification and Lifecycle Completion
 
-- [ ] 3.1 Run repository script test suite (`node --test .github/scripts/*.test.mjs`) and product test loop (`make runtime-gates`); verify all tests pass.
-- [ ] 3.2 Run governance checks (`node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`, `node openspec/scripts/run-governance-dual-check.mjs --base origin/main --phase final`, `node openspec/scripts/check-normative-precedence.mjs --stage candidate`, and `node openspec/scripts/check-normative-precedence.mjs --stage merge --base origin/main`); verify all pass.
-- [ ] 3.3 Archive change `isolate-release-changelog-check-test` under `openspec/changes/archive/` and close issue #646.
+- [x] 3.1 Run repository script test suite (`node --test .github/scripts/*.test.mjs`) and product test loop (`make runtime-gates`); verify all tests pass.
+- [x] 3.2 Run governance checks (`node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`, `node openspec/scripts/run-governance-dual-check.mjs --base origin/main --phase final`, `node openspec/scripts/check-normative-precedence.mjs --stage candidate`, and `node openspec/scripts/check-normative-precedence.mjs --stage merge --base origin/main`); verify all pass.
+- [x] 3.3 Archive change `isolate-release-changelog-check-test` under `openspec/changes/archive/` and close issue #646.
