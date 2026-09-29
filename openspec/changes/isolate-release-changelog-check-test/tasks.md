@@ -7,8 +7,8 @@
 
 ## 2. Test Isolation Implementation
 
-- [ ] 2.1 Refactor `checkReleaseRange skips check when base version equals current version` in `.github/scripts/clean-release-changelog.test.mjs` to execute against a hermetic temporary directory created with `mkdtempSync` and cleaned up with `rmSync` in a `finally` block, removing redundant unasserted execution.
-- [ ] 2.2 Verify `.github/scripts/clean-release-changelog.test.mjs` passes with both matching version and bumped version in the root workspace (`node --test .github/scripts/clean-release-changelog.test.mjs`).
+- [x] 2.1 Refactor `checkReleaseRange skips check when base version equals current version` in `.github/scripts/clean-release-changelog.test.mjs` to execute against a hermetic temporary directory created with `mkdtempSync` and cleaned up with `rmSync` in a `finally` block, removing redundant unasserted execution.
+- [x] 2.2 Verify `.github/scripts/clean-release-changelog.test.mjs` passes with both matching version and bumped version in the root workspace (`node --test .github/scripts/clean-release-changelog.test.mjs`).
 
 ## 3. Verification and Lifecycle Completion
 
