@@ -36,5 +36,5 @@ This change fixes #642. The proposal and implementation are delivered as separat
 
 ## 7. Lifecycle Completion: Spec Fold and Archive
 
-- [ ] 7.1 Fold `release-versioning-tag-model` delta into canonical specification `openspec/specs/release-versioning-tag-model/spec.md`. Verify `openspec validate --all --strict` passes.
+- [x] 7.1 Fold `release-versioning-tag-model` delta into canonical specification `openspec/specs/release-versioning-tag-model/spec.md`. Verify `openspec validate --all --strict` passes.
 - [ ] 7.2 Archive change `fix-release-changelog-dedup-fails-open` under `openspec/changes/archive/`. Verify archive structure and close issue #642.
