@@ -8,9 +8,9 @@ import {
   assertOutsideRepository,
   buildEvaluationKit,
   computeKitDigest,
-  computeManifestDigest,
   computePackageSetDigest,
   packDirectory,
+  sealKitIdentity,
 } from "./build-evaluation-kit.mjs";
 import {
   FAILURE_PATHS_PROGRAM,
@@ -19,6 +19,7 @@ import {
   typescriptLegs,
   writeConsumerTsconfig,
 } from "./check-evaluation-kit.mjs";
+import { CHECKSUM_LIST_FILE, IDENTITY_FILE, runChecksumListCheck } from "./evaluation-kit-checksums.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
 import {
   PNPM_RELEASES,
@@ -44,6 +45,8 @@ const EXPECTED_CONTROLS = Object.freeze([
   "ignored pnpm setting reported (pnpm 11 and 12 legs)",
   "installer docs missing the supported pnpm majors",
   "builder packing the build output on disk (with a null control)",
+  "document changed after the build",
+  "evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block",
 ]);
 
 // A type-only defect: the program still runs and passes with a number id, so
@@ -72,20 +75,28 @@ async function captureFailure(run) {
   return null;
 }
 
-// Keeps the identity consistent with the rewritten manifest, so the planted defect,
-// not the identity check, is what the gate meets.
+// Rewrites the checksum list and the identity over a kit copy's edited files, so the planted defect, not
+// the identity check, is what the gate meets.
+async function resealKit(kitCopy) {
+  const { commit, distributable, artifacts } = JSON.parse(await readFile(resolve(kitCopy, IDENTITY_FILE), "utf8"));
+  await sealKitIdentity(kitCopy, { commit, distributable, artifacts });
+}
+
 async function rewriteKitManifest(kitCopy, mutate) {
   const pkgPath = resolve(kitCopy, "package.json");
   const pkg = JSON.parse(await readFile(pkgPath, "utf8"));
   mutate(pkg);
-  const newManifest = JSON.stringify(pkg, null, 2) + "\n";
-  await writeFile(pkgPath, newManifest, "utf8");
+  await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
+  await resealKit(kitCopy);
+}
 
-  const idPath = resolve(kitCopy, "identity.json");
-  const id = JSON.parse(await readFile(idPath, "utf8"));
-  id.manifest_digest = computeManifestDigest(newManifest);
-  id.kit_digest = computeKitDigest(id.package_set_digest, id.manifest_digest);
-  await writeFile(idPath, JSON.stringify(id, null, 2) + "\n", "utf8");
+async function rewriteKitFile(kitCopy, path, rewrite) {
+  const filePath = resolve(kitCopy, path);
+  const text = await readFile(filePath, "utf8");
+  const planted = rewrite(text);
+  assert.notEqual(planted, text, `the planted defect must change ${path}`);
+  await writeFile(filePath, planted, "utf8");
+  await resealKit(kitCopy);
 }
 
 function copyNpmOverrideIntoPnpmField(pkg) {
@@ -191,11 +202,7 @@ async function checkBrokenDocControl(kitDir) {
   const tempBrokenDoc = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-broken-doc-"));
   try {
     await cp(kitDir, tempBrokenDoc, { recursive: true });
-    const quickstartPath = resolve(tempBrokenDoc, "docs/quickstart.md");
-    const quickstartText = await readFile(quickstartPath, "utf8");
-    const brokenQuickstart = quickstartText.replace("timeoutMs: 5000,", "timeoutOption: 5000,");
-    assert.notEqual(brokenQuickstart, quickstartText, "renamed doc option must be planted in the quickstart");
-    await writeFile(quickstartPath, brokenQuickstart, "utf8");
+    await rewriteKitFile(tempBrokenDoc, "docs/quickstart.md", (text) => text.replace("timeoutMs: 5000,", "timeoutOption: 5000,"));
 
     let failed = false;
     try {
@@ -321,11 +328,7 @@ async function checkIgnoredPnpmSettingControl(kitDir) {
 
 async function checkInstallerDocsControl(kitDir) {
   await withKitCopy(kitDir, "bloodtrail-ctrl-installer-docs-", async (kitCopy) => {
-    const quickstartPath = resolve(kitCopy, "docs/quickstart.md");
-    const quickstartText = await readFile(quickstartPath, "utf8");
-    const plantedText = quickstartText.replaceAll(supportedPnpmPhrase(), "pnpm (v10+)");
-    assert.notEqual(plantedText, quickstartText, "stale installer claim must be planted in the quickstart");
-    await writeFile(quickstartPath, plantedText, "utf8");
+    await rewriteKitFile(kitCopy, "docs/quickstart.md", (text) => text.replaceAll(supportedPnpmPhrase(), "pnpm (v10+)"));
 
     const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
     assert.ok(failure, "gate must fail closed when the quickstart does not name the supported pnpm majors");
@@ -344,7 +347,7 @@ async function packOnDiskBuildOutput(root) {
       artifacts.push({ name, filename, sha256 });
     }
     const packageSetDigest = computePackageSetDigest(artifacts);
-    return { artifacts, package_set_digest: packageSetDigest, manifest_digest: "", kit_digest: computeKitDigest(packageSetDigest, "") };
+    return { artifacts, package_set_digest: packageSetDigest, manifest_digest: "", kit_digest: computeKitDigest(packageSetDigest, "", "") };
   } finally {
     await rm(packDir, { recursive: true, force: true });
   }
@@ -361,6 +364,47 @@ async function checkPackedBuildOutputControl() {
     `on-disk packing must fail the stale-output check itself: ${failure.message}`,
   );
   return "builder packing the build output on disk (with a null control)";
+}
+
+async function shasumCheckPasses(kitDir) {
+  return !(await captureFailure(() => runChecksumListCheck(kitDir)));
+}
+
+// No reseal: the edit is the defect. `shasum -a 256 -c` passes on the copy before the edit and fails after it.
+async function checkChangedDocumentControl(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-changed-document-", async (kitCopy) => {
+    assert.ok(await shasumCheckPasses(kitCopy), "shasum -a 256 -c must pass on the kit as built");
+    const privacyPath = resolve(kitCopy, "docs/privacy.md");
+    await writeFile(privacyPath, `${await readFile(privacyPath, "utf8")}\nEdited after the build.\n`, "utf8");
+    assert.ok(!(await shasumCheckPasses(kitCopy)), "shasum -a 256 -c must fail once a listed document changes");
+
+    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+    assert.ok(failure, "gate must fail closed when a document changes after the build");
+    assert.ok(
+      failure.message.includes("docs/privacy.md changed after the build"),
+      `a changed document must fail the gate's identity check: ${failure.message}`,
+    );
+  });
+  return "document changed after the build";
+}
+
+async function checkGuideIntegrityCommandControl(kitDir) {
+  const documented = `shasum -a 256 -c ${CHECKSUM_LIST_FILE}`;
+  const plants = [
+    { plant: (text) => text.replace(documented, `cat ${IDENTITY_FILE}`), expect: "must use only shasum" },
+    { plant: (text) => text.replace(documented, "shasum -a 256 kit-identity.json"), expect: "names a file the kit does not ship" },
+    { plant: (text) => text.replace(documented, `shasum -a 256 ${IDENTITY_FILE}`), expect: "printed a digest the kit does not record" },
+    { plant: (text) => text.replace("```sh", "```bash"), expect: "may hold only sh blocks" },
+  ];
+  for (const { plant, expect } of plants) {
+    await withKitCopy(kitDir, "bloodtrail-ctrl-guide-command-", async (kitCopy) => {
+      await rewriteKitFile(kitCopy, "docs/evaluation-guide.md", plant);
+      const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+      assert.ok(failure, `gate must fail closed on a guide that should fail with "${expect}"`);
+      assert.ok(failure.message.includes(expect), `the planted guide must fail with "${expect}": ${failure.message}`);
+    });
+  }
+  return "evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block";
 }
 
 export async function checkEvaluationKitControls() {
@@ -384,6 +428,8 @@ export async function checkEvaluationKitControls() {
       await checkIgnoredPnpmSettingControl(kitDir),
       await checkInstallerDocsControl(kitDir),
       await checkPackedBuildOutputControl(),
+      await checkChangedDocumentControl(kitDir),
+      await checkGuideIntegrityCommandControl(kitDir),
     );
     assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 
