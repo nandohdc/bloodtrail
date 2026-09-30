@@ -3,9 +3,15 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import process from "node:process";
 import {
   CollectorIngress,
+  DIAGNOSTIC_CODES,
+  EVENT_MAX_BYTES,
   SyntheticFixtureAuthenticator,
+  type IngressResult,
 } from "@bloodtrail/security-audit-collector";
 import { validateSecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
+
+// NON-PRODUCTION: an in-memory example of a careful ingress for the evaluation. It stores nothing, and its
+// synthetic fixture token authenticates nobody real.
 
 export interface EvaluationReceiverOptions {
   readonly port?: number;
@@ -14,102 +20,134 @@ export interface EvaluationReceiverOptions {
 }
 
 interface ReceiverState {
+  readonly authenticator: SyntheticFixtureAuthenticator;
   readonly ingress: CollectorIngress;
-  readonly acceptedEvents: string[];
+  readonly counts: { accepted: number; duplicates: number; rejected: number };
 }
 
-function sendJson(res: ServerResponse, statusCode: number, payload: unknown): void {
-  res.writeHead(statusCode, { "content-type": "application/json" });
-  res.end(JSON.stringify(payload));
+// What the receiver answers. A rejection carries a fixed reason and never any part of the request.
+interface Reply {
+  readonly status: number;
+  readonly body: unknown;
 }
 
-async function readBody(req: IncomingMessage): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+function reject(state: ReceiverState, status: number, reason: string): Reply {
+  state.counts.rejected += 1;
+  console.log(`receiver:rejected ${status} ${reason}`);
+  return { status, body: { error: reason } };
+}
+
+// The ingress runs its own checks too. Its rejections get the statuses the receiver's own checks use.
+const STATUS_BY_INGRESS_CATEGORY: Readonly<Record<string, number>> = {
+  authentication: 401,
+  size: 413,
+  parse: 400,
+  validation: 422,
+  version: 422,
+};
+
+function acknowledge(eventId: string): Reply {
+  return { status: 200, body: { acknowledgments: [{ event_id: eventId, outcome: "accepted" }] } };
+}
+
+function credentialsOf(req: IncomingMessage): { credential: string } | undefined {
+  const header = req.headers.authorization;
+  if (header === undefined) return undefined;
+  return { credential: header.startsWith("Bearer ") ? header.slice("Bearer ".length) : header };
+}
+
+// Reads the body up to EVENT_MAX_BYTES and stops buffering there. Past the bound it resolves null at once,
+// and Node discards whatever else the client sends after the reply.
+function readBoundedBody(req: IncomingMessage): Promise<string | null> {
+  return new Promise((resolveBody, rejectBody) => {
+    const chunks: Buffer[] = [];
+    let length = 0;
+    const onData = (chunk: Buffer): void => {
+      length += chunk.byteLength;
+      if (length > EVENT_MAX_BYTES) {
+        req.off("data", onData);
+        resolveBody(null);
+        return;
+      }
+      chunks.push(chunk);
+    };
+    req.on("data", onData);
+    req.on("end", () => resolveBody(Buffer.concat(chunks).toString("utf8")));
+    req.on("error", rejectBody);
+  });
+}
+
+// Only an event that passed SDK validation reaches the ingress. A duplicate is acknowledged and never
+// admitted twice; an event that reuses an admitted identifier with different content is a conflict.
+function admit(state: ReceiverState, credentials: unknown, body: string): Reply {
+  const result: IngressResult = state.ingress.submit({ credentials, body });
+  if (result.kind === "admitted" || result.kind === "persisted") {
+    state.counts.accepted += 1;
+    // The event in full, exactly as it arrived.
+    console.log(`receiver:accepted ${result.eventId} ${body}`);
+    return acknowledge(result.eventId);
   }
-  return Buffer.concat(chunks).toString("utf8");
+  if (result.kind === "duplicate") {
+    state.counts.duplicates += 1;
+    console.log(`receiver:duplicate ${result.eventId}`);
+    return acknowledge(result.eventId);
+  }
+  if (result.diagnostic.code === DIAGNOSTIC_CODES.DUPLICATE_CONFLICT) {
+    return reject(state, 409, "conflict");
+  }
+  return reject(state, STATUS_BY_INGRESS_CATEGORY[result.diagnostic.category] ?? 500, "ingress_rejected");
 }
 
-function extractToken(req: IncomingMessage): string {
-  const authHeader = req.headers["authorization"] ?? "";
-  return authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
-}
-
-function assertValidEventPayload(body: string): void {
+// Authenticate, bound the body, parse it, validate it with the SDK, and only then submit it.
+async function handleSubmission(req: IncomingMessage, state: ReceiverState): Promise<Reply> {
+  const credentials = credentialsOf(req);
+  if (state.authenticator.verify(credentials).kind !== "verified") {
+    return reject(state, 401, "unauthenticated");
+  }
+  const body = await readBoundedBody(req);
+  if (body === null) {
+    return reject(state, 413, "body_too_large");
+  }
   let parsed: unknown;
   try {
     parsed = JSON.parse(body);
   } catch {
-    throw new Error("invalid_json");
+    return reject(state, 400, "malformed_body");
   }
   const validated = validateSecurityAuditEvent(parsed);
   if (!validated.ok) {
-    throw new Error(`SDK validation failed: ${JSON.stringify(validated.error)}`);
+    console.log(`receiver:invalid ${validated.error.code} ${validated.error.path}`);
+    return reject(state, 422, "invalid_event");
   }
+  return admit(state, credentials, body);
 }
 
-async function handleAuditSubmission(
-  req: IncomingMessage,
-  res: ServerResponse,
-  state: ReceiverState,
-): Promise<void> {
-  const body = await readBody(req);
-  const token = extractToken(req);
-
-  const admission = state.ingress.submit({
-    credentials: { credential: token },
-    body,
-  });
-
-  if (admission.kind === "rejected") {
-    sendJson(res, 401, { error: admission.diagnostic });
-    return;
-  }
-
-  if (admission.kind !== "admitted" && admission.kind !== "persisted") {
-    sendJson(res, 400, { error: "unhandled_admission_kind" });
-    return;
-  }
-
-  try {
-    assertValidEventPayload(body);
-  } catch (err: unknown) {
-    const error = err instanceof Error ? err.message : String(err);
-    const statusCode = error === "invalid_json" ? 400 : 422;
-    sendJson(res, statusCode, { error });
-    throw err;
-  }
-
-  state.acceptedEvents.push(body);
-  // The event in full, exactly as it arrived.
-  console.log(`receiver:accepted ${admission.eventId} ${body}`);
-
-  sendJson(res, 200, {
-    acknowledgments: [
-      {
-        event_id: admission.eventId,
-        outcome: "accepted",
-      },
-    ],
-  });
+function send(res: ServerResponse, reply: Reply): void {
+  res.writeHead(reply.status, { "content-type": "application/json" });
+  res.end(JSON.stringify(reply.body));
 }
 
+// No request handler rethrows: an unexpected error is answered 500, and the receiver keeps serving.
 function createDispatchHandler(state: ReceiverState) {
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
-    if (req.method === "GET" && req.url === "/health") {
-      sendJson(res, 200, {
-        status: "healthy",
-        acceptedCount: state.acceptedEvents.length,
-        events: state.acceptedEvents.map((e) => JSON.parse(e)),
-      });
-      return;
+    try {
+      if (req.method === "GET" && req.url === "/health") {
+        send(res, { status: 200, body: { status: "healthy", acceptedCount: state.counts.accepted, duplicateCount: state.counts.duplicates, rejectedCount: state.counts.rejected } });
+        return;
+      }
+      if (req.method !== "POST") {
+        send(res, reject(state, 405, "method_not_allowed"));
+        return;
+      }
+      send(res, await handleSubmission(req, state));
+    } catch {
+      console.log("receiver:error 500");
+      if (res.headersSent) {
+        res.destroy();
+      } else {
+        send(res, reject(state, 500, "internal_error"));
+      }
     }
-    if (req.method !== "POST") {
-      sendJson(res, 405, { error: "method_not_allowed" });
-      return;
-    }
-    await handleAuditSubmission(req, res, state);
   };
 }
 
@@ -120,7 +158,7 @@ export function startEvaluationReceiver(options: EvaluationReceiverOptions = {})
 
   const authenticator = new SyntheticFixtureAuthenticator([validToken]);
   const ingress = new CollectorIngress({ authenticator });
-  const state: ReceiverState = { ingress, acceptedEvents: [] };
+  const state: ReceiverState = { authenticator, ingress, counts: { accepted: 0, duplicates: 0, rejected: 0 } };
 
   const server = createServer(createDispatchHandler(state));
 

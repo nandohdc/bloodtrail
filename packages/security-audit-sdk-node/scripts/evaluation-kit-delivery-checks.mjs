@@ -1,8 +1,11 @@
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
+import { pathToFileURL } from "node:url";
 import { assert, runChecked } from "./verification-helpers.mjs";
 
 // The five events the example service demonstrates, each emitted once and delivered to the receiver.
@@ -100,9 +103,24 @@ function assertDemonstratedSemantics(events) {
   assert(modified.correlation.operation_id === "22222222-2222-4222-8222-000000000301", "the modification must carry its operation identifier");
 }
 
-async function assertReceiverHealthCounts(origin) {
+const HEALTH_FIELDS = Object.freeze(["acceptedCount", "duplicateCount", "rejectedCount", "status"]);
+
+// The health endpoint reports status and counts only, never an event body.
+async function receiverHealth(origin) {
   const health = await (await fetch(`${origin}/health`)).json();
+  assert(
+    JSON.stringify(Object.keys(health).sort((a, b) => a.localeCompare(b))) === JSON.stringify(HEALTH_FIELDS),
+    `the receiver's health endpoint must report ${HEALTH_FIELDS.join(", ")} only, got ${Object.keys(health).join(", ")}`,
+  );
   assert(health.status === "healthy", `receiver unhealthy: ${JSON.stringify(health.status)}`);
+  for (const field of HEALTH_FIELDS.filter((name) => name !== "status")) {
+    assert(Number.isInteger(health[field]), `the receiver's ${field} must be a count`);
+  }
+  return health;
+}
+
+async function assertReceiverHealthCounts(origin) {
+  const health = await receiverHealth(origin);
   assert(
     health.acceptedCount === DEMONSTRATED_EVENTS.length,
     `the receiver must count ${DEMONSTRATED_EVENTS.length} accepted events, got ${health.acceptedCount}`,
@@ -118,9 +136,145 @@ async function waitForReceivedEvents(readOutput) {
   }
 }
 
+const SUBMISSION_PATH = "/v1/security-audit";
+const FIXTURE_TOKEN = "fixture-token-a";
+// Far past the receiver's bound, so a receiver that buffered the whole body could not answer before the
+// client had sent it all.
+const OVERSIZED_BODY_BYTES = 64 * 1024 * 1024;
+
+// A receiver that has stopped answering fails here, whichever request it stopped on.
+async function submit(origin, body, token = FIXTURE_TOKEN) {
+  try {
+    const response = await fetch(`${origin}${SUBMISSION_PATH}`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body,
+    });
+    return { status: response.status, text: await response.text() };
+  } catch (err) {
+    throw new Error(`the receiver must keep serving: ${err.message}`);
+  }
+}
+
+function assertAcknowledged(reply, eventId, label) {
+  assert(reply.status >= 200 && reply.status < 300, `${label}: expected 2xx, got ${reply.status} ${reply.text}`);
+  const { acknowledgments } = JSON.parse(reply.text);
+  assert(
+    acknowledgments.length === 1 && acknowledgments[0].event_id === eventId && acknowledgments[0].outcome === "accepted",
+    `${label}: expected exactly one accepted acknowledgment for ${eventId}, got ${reply.text}`,
+  );
+}
+
+function assertRejected(reply, status, label) {
+  assert(reply.status === status, `${label}: expected ${status}, got ${reply.status} ${reply.text}`);
+}
+
+// Streams a body far past the bound, and resolves as soon as the receiver answers, with how much was sent.
+async function submitOversizedBody(origin) {
+  const chunk = Buffer.alloc(1024 * 1024, 0x20);
+  let written = 0;
+  const stream = new ReadableStream({
+    pull(controller) {
+      if (written < OVERSIZED_BODY_BYTES) {
+        written += chunk.byteLength;
+        controller.enqueue(chunk);
+      } else {
+        controller.close();
+      }
+    },
+  });
+  const res = await fetch(`${origin}${SUBMISSION_PATH}`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${FIXTURE_TOKEN}`, "content-type": "application/json" },
+    body: stream,
+    duplex: "half",
+  });
+  return { status: res.status, written };
+}
+
+function withEventId(event, id) {
+  const copy = structuredClone(event);
+  copy.event.id = id;
+  return copy;
+}
+
+async function importInstalled(installDir, packageName) {
+  const packageDir = resolve(installDir, "node_modules", packageName);
+  const manifest = JSON.parse(await readFile(resolve(packageDir, "package.json"), "utf8"));
+  return import(pathToFileURL(resolve(packageDir, manifest.exports["."].import)).href);
+}
+
+// The installed SDK redelivers a byte-identical copy of an event the receiver has accepted: the receiver
+// must acknowledge it, so the SDK returns an ok result.
+async function assertRedeliveryAcknowledged(installDir, origin, event) {
+  const { createHttpAuditSink, createNodeSecurityAuditSdk } = await importInstalled(installDir, "@bloodtrail/security-audit-sdk-node");
+  const sdk = createNodeSecurityAuditSdk({
+    contractVersion: "2.1.0",
+    producer: { name: "evaluation-service", version: "0.1.0" },
+    environment: { name: "synthetic" },
+    service: { name: "evaluation-service" },
+    sink: createHttpAuditSink({ origin, path: SUBMISSION_PATH, timeoutMs: 5000, headers: { authorization: `Bearer ${FIXTURE_TOKEN}` } }),
+  });
+  try {
+    const result = await sdk.redeliver(event);
+    assert(
+      result.ok && result.value.status === "accepted",
+      `sdk.redeliver of an accepted event must return an ok result, got ${JSON.stringify(result)}`,
+    );
+  } finally {
+    await sdk.shutdown();
+  }
+}
+
+/**
+ * Proves the example receiver behaves as a careful ingress. Each rejection gets the status that names it,
+ * and the next valid event is accepted after it. A duplicate is acknowledged, and a conflict is refused.
+ * `events` are the demonstrated events the receiver has already accepted, parsed, by name.
+ */
+async function verifyCarefulIngress(installDir, origin, events) {
+  const template = events.get("bloodtrail.audit.authentication.succeeded");
+  const assertStillServing = async (after) => {
+    const next = withEventId(template, randomUUID());
+    assertAcknowledged(await submit(origin, JSON.stringify(next)), next.event.id, `the next valid event after ${after}`);
+  };
+
+  const unauthenticated = await submit(origin, JSON.stringify(withEventId(template, randomUUID())), "not-a-fixture-token");
+  assertRejected(unauthenticated, 401, "an unauthenticated submission");
+  assert(unauthenticated.text === JSON.stringify({ error: "unauthenticated" }), `a 401 must reveal nothing about the body, got ${unauthenticated.text}`);
+  await assertStillServing("a 401");
+
+  const oversized = await submitOversizedBody(origin);
+  assertRejected({ status: oversized.status, text: "" }, 413, "a body over the bound");
+  assert(oversized.written < OVERSIZED_BODY_BYTES, `a body over the bound must be refused before the client has sent it all, ${oversized.written} bytes sent`);
+  await assertStillServing("a 413");
+
+  assertRejected(await submit(origin, '{"event":'), 400, "a malformed body");
+  await assertStillServing("a 400");
+
+  const reusedId = randomUUID();
+  const invalid = withEventId(template, reusedId);
+  delete invalid.actor;
+  assertRejected(await submit(origin, JSON.stringify(invalid)), 422, "an SDK-invalid event");
+  assertAcknowledged(await submit(origin, JSON.stringify(withEventId(template, reusedId))), reusedId, "the corrected event with the SDK-invalid event's identity");
+
+  const admitted = events.get("bloodtrail.audit.authentication.failed");
+  const conflicting = structuredClone(admitted);
+  conflicting.service.name = "conflicting-service";
+  assertRejected(await submit(origin, JSON.stringify(conflicting)), 409, "an event that conflicts with an admitted event");
+  await assertStillServing("a 409");
+
+  const denied = events.get("bloodtrail.audit.authorization.denied");
+  assertAcknowledged(await submit(origin, JSON.stringify(denied)), denied.event.id, "a byte-identical duplicate");
+  await assertRedeliveryAcknowledged(installDir, origin, events.get("bloodtrail.audit.data.sensitive_resource.viewed"));
+  await assertStillServing("the duplicates");
+
+  await receiverHealth(origin);
+}
+
 /**
  * Runs the example service against the example receiver over loopback, in the installed kit. Every
- * demonstrated event must be accepted, and must arrive as exactly the bytes the SDK validated.
+ * demonstrated event must be accepted, and must arrive as exactly the bytes the SDK validated. Then the
+ * receiver must behave as a careful ingress.
  */
 export async function verifyHttpExchange(installDir) {
   const receiverScript = resolve(installDir, "examples/evaluation-receiver.ts");
@@ -138,8 +292,10 @@ export async function verifyHttpExchange(installDir) {
       assert(serviceOutput.includes(marker), `evaluation-service did not report ${marker}:\n${serviceOutput}`);
     }
     await waitForReceivedEvents(receiver.readOutput);
-    assertDemonstratedSemantics(assertDeliveredBytesIdentical(serviceOutput, receiver.readOutput()));
+    const events = assertDeliveredBytesIdentical(serviceOutput, receiver.readOutput());
+    assertDemonstratedSemantics(events);
     await assertReceiverHealthCounts(origin);
+    await verifyCarefulIngress(installDir, origin, events);
   } finally {
     receiver.child.kill("SIGTERM");
   }

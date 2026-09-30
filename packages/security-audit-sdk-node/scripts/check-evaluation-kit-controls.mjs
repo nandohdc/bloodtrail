@@ -48,6 +48,8 @@ const EXPECTED_CONTROLS = Object.freeze([
   "document changed after the build",
   "evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block",
   "sink rewriting service.name between the SDK and the receiver",
+  "receiver answering a duplicate with 400",
+  "receiver rethrowing after replying",
 ]);
 
 // A type-only defect: the program still runs and passes with a number id, so
@@ -429,6 +431,44 @@ async function checkRewritingSinkControl(kitDir) {
   return "sink rewriting service.name between the SDK and the receiver";
 }
 
+async function assertReceiverDefectFails(kitDir, { plant, expect, message }) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-receiver-", async (kitCopy) => {
+    await rewriteKitFile(kitCopy, "examples/evaluation-receiver.ts", plant);
+    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+    assert.ok(failure, message);
+    assert.ok(failure.message.includes(expect), `${message}, with "${expect}": ${failure.message}`);
+  });
+}
+
+async function checkDuplicateRejectedControl(kitDir) {
+  await assertReceiverDefectFails(kitDir, {
+    plant: (text) =>
+      text.replace(
+        "    console.log(`receiver:duplicate ${result.eventId}`);\n    return acknowledge(result.eventId);",
+        '    return reject(state, 400, "duplicate");',
+      ),
+    expect: "a byte-identical duplicate: expected 2xx, got 400",
+    message: "gate must fail closed when the receiver answers a duplicate with 400",
+  });
+  return "receiver answering a duplicate with 400";
+}
+
+// The receiver before #656: it replied, then rethrew out of the request handler, and the process died.
+async function checkRethrowingReceiverControl(kitDir) {
+  await assertReceiverDefectFails(kitDir, {
+    plant: (text) =>
+      text
+        .replace(
+          "      send(res, await handleSubmission(req, state));",
+          '      send(res, await handleSubmission(req, state));\n      if (res.statusCode >= 400) throw new Error("rethrown after replying");',
+        )
+        .replace('    } catch {\n      console.log("receiver:error 500");', "    } catch (err) {\n      throw err;"),
+    expect: "the receiver must keep serving",
+    message: "gate must fail closed when the receiver rethrows after replying",
+  });
+  return "receiver rethrowing after replying";
+}
+
 export async function checkEvaluationKitControls() {
   await assertOutsideRepository(tmpdir());
 
@@ -453,6 +493,8 @@ export async function checkEvaluationKitControls() {
       await checkChangedDocumentControl(kitDir),
       await checkGuideIntegrityCommandControl(kitDir),
       await checkRewritingSinkControl(kitDir),
+      await checkDuplicateRejectedControl(kitDir),
+      await checkRethrowingReceiverControl(kitDir),
     );
     assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 
