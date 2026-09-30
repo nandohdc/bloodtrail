@@ -9,6 +9,8 @@ import {
   buildEvaluationKit,
   computeKitDigest,
   computeManifestDigest,
+  computePackageSetDigest,
+  packDirectory,
 } from "./build-evaluation-kit.mjs";
 import {
   FAILURE_PATHS_PROGRAM,
@@ -24,6 +26,7 @@ import {
   supportedPnpmPhrase,
   verifyPnpmInstall,
 } from "./evaluation-kit-installers.mjs";
+import { KIT_PACKAGES, verifyStaleBuildOutputExcluded } from "./evaluation-kit-source-copy.mjs";
 import { runChecked } from "./verification-helpers.mjs";
 
 // Every planted defect the harness applies, in order. A control that did not
@@ -40,6 +43,7 @@ const EXPECTED_CONTROLS = Object.freeze([
   "pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)",
   "ignored pnpm setting reported (pnpm 11 and 12 legs)",
   "installer docs missing the supported pnpm majors",
+  "builder packing the build output on disk (with a null control)",
 ]);
 
 // A type-only defect: the program still runs and passes with a number id, so
@@ -330,6 +334,35 @@ async function checkInstallerDocsControl(kitDir) {
   return "installer docs missing the supported pnpm majors";
 }
 
+// The builder before #653: it packs whatever build output is on disk under `root` and never rebuilds it.
+async function packOnDiskBuildOutput(root) {
+  const packDir = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-on-disk-pack-"));
+  try {
+    const artifacts = [];
+    for (const [name, packageDir] of Object.entries(KIT_PACKAGES)) {
+      const { filename, sha256 } = await packDirectory(resolve(root, packageDir), packDir);
+      artifacts.push({ name, filename, sha256 });
+    }
+    const packageSetDigest = computePackageSetDigest(artifacts);
+    return { artifacts, package_set_digest: packageSetDigest, manifest_digest: "", kit_digest: computeKitDigest(packageSetDigest, "") };
+  } finally {
+    await rm(packDir, { recursive: true, force: true });
+  }
+}
+
+async function checkPackedBuildOutputControl() {
+  // Null control: with nothing planted, the on-disk packer reproduces itself, so the planted output is
+  // the only difference the check can see.
+  await verifyStaleBuildOutputExcluded(packOnDiskBuildOutput, { plant: async () => {} });
+  const failure = await captureFailure(() => verifyStaleBuildOutputExcluded(packOnDiskBuildOutput));
+  assert.ok(failure, "a builder that packs the build output on disk must fail the stale-output check");
+  assert.ok(
+    failure.message.includes("untracked files on disk reached the kit"),
+    `on-disk packing must fail the stale-output check itself: ${failure.message}`,
+  );
+  return "builder packing the build output on disk (with a null control)";
+}
+
 export async function checkEvaluationKitControls() {
   await assertOutsideRepository(tmpdir());
 
@@ -350,6 +383,7 @@ export async function checkEvaluationKitControls() {
       await checkPnpmFieldOnlyOverrideControl(kitDir),
       await checkIgnoredPnpmSettingControl(kitDir),
       await checkInstallerDocsControl(kitDir),
+      await checkPackedBuildOutputControl(),
     );
     assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 

@@ -5,12 +5,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import {
-  assertOutsideRepository,
-  buildEvaluationKit,
-  packTarball,
-  verifyKitIdentity,
-} from "./build-evaluation-kit.mjs";
+import { assertOutsideRepository, buildEvaluationKit, verifyKitIdentity } from "./build-evaluation-kit.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
 import {
   PNPM_RELEASES,
@@ -19,20 +14,22 @@ import {
   runInstaller,
   verifyPnpmInstalls,
 } from "./evaluation-kit-installers.mjs";
+import { assertSameIdentityDigests, verifyStaleBuildOutputExcluded } from "./evaluation-kit-source-copy.mjs";
 import { assert, packageRoot, runChecked } from "./verification-helpers.mjs";
 
-async function checkDeterminism(identity) {
-  const dCheck = await mkdtemp(resolve(tmpdir(), "bloodtrail-determinism-check-"));
-  try {
-    const coreRepack = await packTarball("core", dCheck);
-    const nodeRepack = await packTarball("node", dCheck);
-    const expectedCore = identity.artifacts.find((a) => a.name === "core");
-    const expectedNode = identity.artifacts.find((a) => a.name === "node");
-    assert(coreRepack.sha256 === expectedCore.sha256, "core tarball digest must be deterministic");
-    assert(nodeRepack.sha256 === expectedNode.sha256, "node tarball digest must be deterministic");
-  } finally {
-    await rm(dCheck, { recursive: true, force: true });
-  }
+async function buildVerificationIdentity(sourceRoot) {
+  const { identity, removeKit } = await buildEvaluationKit({ mode: "verification", sourceRoot });
+  await removeKit();
+  return identity;
+}
+
+// The gate's own kit is built from uncommitted work, so it is never distributable. Rebuilt from a copy of
+// the same tracked files, before and after stale output is planted in each package's build directory, it
+// reproduces every digest.
+async function checkReproducibleIdentity(identity) {
+  assert(identity.distributable === false, "a kit the gate builds must be marked non-distributable");
+  const rebuilt = await verifyStaleBuildOutputExcluded(buildVerificationIdentity);
+  assertSameIdentityDigests(identity, rebuilt, "a rebuild of the same tracked tree");
 }
 
 export const FAILURE_PATHS_PROGRAM = resolve(packageRoot, "scripts/evaluation-kit-failure-paths.ts");
@@ -295,12 +292,12 @@ export async function checkEvaluationKit({
   await assertOutsideRepository(tmpdir());
 
   let kitDir = existingKitDir;
-  let cleanupKit = false;
+  let removeBuiltKit = null;
 
   if (!kitDir) {
     const built = await buildEvaluationKit({ mode: "verification" });
     kitDir = built.kitDir;
-    cleanupKit = true;
+    removeBuiltKit = built.removeKit;
   }
 
   const tempInstall = await mkdtemp(resolve(tmpdir(), "bloodtrail-eval-install-"));
@@ -311,9 +308,9 @@ export async function checkEvaluationKit({
     // 1b. The kit's documents name exactly the pnpm majors this gate installs with
     await assertKitDocsNameInstallers(kitDir);
 
-    // 2. Determinism check: packing same packages produces identical digests
+    // 2. Reproducibility: the same tracked tree rebuilds to the same digests, with or without stale build output on disk
     if (!existingKitDir) {
-      await checkDeterminism(identity);
+      await checkReproducibleIdentity(identity);
     }
 
     // 3. Install kit with npm outside any workspace root
@@ -366,13 +363,13 @@ export async function checkEvaluationKit({
     await verifyPnpmInstalls(kitDir);
 
     process.stdout.write(
-      `evaluation kit verification passed: kit built, identity verified, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, doc blocks, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, events emitted and verified over HTTP, failure paths verified\n`,
+      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, doc blocks, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, events emitted and verified over HTTP, failure paths verified\n`,
     );
     return { success: true };
   } finally {
     await rm(tempInstall, { recursive: true, force: true });
-    if (cleanupKit && kitDir) {
-      await rm(kitDir, { recursive: true, force: true });
+    if (removeBuiltKit) {
+      await removeBuiltKit();
     }
   }
 }
