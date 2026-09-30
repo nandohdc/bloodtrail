@@ -50,7 +50,7 @@ task (9.1) stays unticked until its own ticket.
   - a dirty tree still refuses a distributable kit, and the gate's kit is still marked non-distributable;
   - artifact file names come from the package manifests, and every ordering is code-point order;
   - nothing is published, tagged or version-moved.
-- [ ] 2.4 #654 Cover every kit file with a checksum list. Verify that:
+- [x] 2.4 #654 Cover every kit file with a checksum list. Verify that:
   - `shasum -a 256 -c` over the list succeeds in an unpacked kit, and the gate asserts it;
   - the identity records an identity-format version, and the kit digest commits to the list;
   - changing one document after the build fails the gate's identity check;

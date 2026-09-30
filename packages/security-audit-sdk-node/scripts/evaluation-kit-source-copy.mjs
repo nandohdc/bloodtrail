@@ -61,13 +61,15 @@ export async function copyTrackedSources({ toRoot, commit = null, fromRoot = rep
   }
 }
 
-// Files a build must never see: output an out-of-date build would leave behind, and an untracked source
-// file, which the package build would compile into its tarball. Any of them inside a tarball changes that
-// tarball's digest.
+// Files a build must never see: output an out-of-date build would leave behind, an untracked source file,
+// which the package build would compile into its tarball, and an untracked document, which a kit that copies
+// its documents wholesale would list in its checksum list. Any of them changes a digest the identity
+// commits to.
 const PLANTED_UNTRACKED_FILES = Object.freeze({
   "dist/index.js": 'export const staleBuildOutput = "planted by the evaluation kit gate";\n',
   "dist/stale-build-output.js": 'export const staleBuildOutput = "planted by the evaluation kit gate";\n',
   "src/untracked-source.ts": 'export const untrackedSource = "planted by the evaluation kit gate";\n',
+  "docs/untracked-document.md": "# Planted by the evaluation kit gate\n",
 });
 
 async function plantUntrackedFiles(root) {
@@ -85,6 +87,7 @@ function identityDigests(identity) {
     artifacts: identity.artifacts.map(({ filename, sha256 }) => `${sha256}  ${filename}`),
     package_set_digest: identity.package_set_digest,
     manifest_digest: identity.manifest_digest,
+    checksum_list: identity.checksum_list,
     kit_digest: identity.kit_digest,
   };
 }
@@ -102,8 +105,8 @@ export function assertSameIdentityDigests(expected, actual, label) {
 
 /**
  * Builds the same tree twice from a disposable copy of its tracked files, the second time after stale
- * output is planted in each package's ignored `dist/` and an untracked file in its `src/`, and asserts both
- * builds have the same digests. `build(root)` returns a kit identity built from the sources under `root`.
+ * output is planted in each package's ignored `dist/` and untracked files in its `src/` and `docs/`, and
+ * asserts both builds have the same digests. `build(root)` returns a kit identity built from the sources under `root`.
  * The live tree is never written. Returns the first build's identity.
  */
 export async function verifyStaleBuildOutputExcluded(build, { plant = plantUntrackedFiles } = {}) {

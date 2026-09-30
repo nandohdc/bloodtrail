@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { assertOutsideRepository, buildEvaluationKit, verifyKitIdentity } from "./build-evaluation-kit.mjs";
+import { verifyUnpackedKitIntegrity } from "./evaluation-kit-checksums.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
 import {
   PNPM_RELEASES,
@@ -305,7 +306,10 @@ export async function checkEvaluationKit({
     // 1. Verify identity
     const { identity } = await verifyKitIdentity(kitDir);
 
-    // 1b. The kit's documents name exactly the pnpm majors this gate installs with
+    // 1b. Unpacked from an archive, the kit passes `shasum -a 256 -c` and every integrity command its guide documents
+    await verifyUnpackedKitIntegrity(kitDir);
+
+    // 1c. The kit's documents name exactly the pnpm majors this gate installs with
     await assertKitDocsNameInstallers(kitDir);
 
     // 2. Reproducibility: the same tracked tree rebuilds to the same digests, with or without stale build output on disk
@@ -363,7 +367,7 @@ export async function checkEvaluationKit({
     await verifyPnpmInstalls(kitDir);
 
     process.stdout.write(
-      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, doc blocks, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, events emitted and verified over HTTP, failure paths verified\n`,
+      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, doc blocks, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, events emitted and verified over HTTP, failure paths verified\n`,
     );
     return { success: true };
   } finally {

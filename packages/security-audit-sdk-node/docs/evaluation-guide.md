@@ -49,26 +49,46 @@ For non-critical defects (e.g., syntax errors, unexpected validation rejections,
 
 ## 3. How to Check Kit Identity
 
-Before installing or executing code from the evaluation kit, verify the integrity and provenance of the distribution:
+Check the kit before you install or run anything from it. Every check uses only `shasum`, which ships with
+macOS and, on Linux, with Perl. The checks inside the unpacked kit name only files the kit ships.
 
-1. **Inspect `kit-identity.json`:**
-   The kit distribution root includes `kit-identity.json` containing cryptographic SHA-256 digests for all bundled tarballs and manifests:
-   ```bash
-   cat kit-identity.json
+1. **Check the archive.** An archive cannot contain its own digest, so the facilitator records the
+   archive's SHA-256 on the evaluation issue when the kit is distributed. Before unpacking, run
+   `shasum -a 256` on the archive file, and compare the result with the value on the evaluation issue.
+
+2. **Check every file.** Inside the unpacked kit directory, run:
+
+   ```sh
+   shasum -a 256 -c checksums.sha256
    ```
 
-2. **Verify Tarball Checksums:**
-   Generate the SHA-256 digest of the downloaded tarballs and confirm exact matches against `kit-identity.json`:
-   ```bash
-   shasum -a 256 *.tgz
+   Every line must end in `OK`. The list covers every kit file except `identity.json` and the list itself:
+   the three tarballs, `package.json`, `pnpm-workspace.yaml`, the documents and the examples.
+
+3. **Check the list against the identity.** Run:
+
+   ```sh
+   shasum -a 256 checksums.sha256
    ```
 
-3. **Verify Single Core Copy:**
-   Confirm that the package manager installed exactly one authoritative copy of `@bloodtrail/security-audit-sdk-core`:
-   ```bash
-   node check-duplicate-core.mjs
-   # Output must report: duplicate-copy-probe:pass
-   ```
+   The digest it prints must equal `checksum_list.sha256` in `identity.json`.
+
+**How the identity is defined.** `identity.json` declares `identity_format_version` 2. It records the
+commit the kit was built from and each tarball's SHA-256, together with these digests, each a SHA-256 in
+lowercase hexadecimal:
+
+- `package_set_digest`: the digest of one line per tarball, `<sha256>  <file name>` followed by a newline,
+  in code-point order of file name;
+- `manifest_digest`: the digest of `package.json`;
+- `checksum_list.sha256`: the digest of `checksums.sha256`;
+- `kit_digest`: the digest of the package-set digest, the manifest digest and the checksum-list digest,
+  each followed by a newline, in that order.
+
+A kit built before format 2 declares no format version, and its kit digest does not cover a checksum list.
+Never compare its digests with a format 2 kit's.
+
+**Facilitator.** At distribution, run `shasum -a 256` on the archive and post the result on the evaluation
+issue, together with the kit's `kit_digest`. Evaluators compare the archive against that comment in step 1.
 
 ---
 
