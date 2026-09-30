@@ -78,6 +78,15 @@ describe("fetch delivery adapter", () => {
     assert.deepEqual([result.status, result.code], ["retryable", "timeout"]);
   });
 
+  it("maps a peer that stalls mid-body past the deadline to a retryable timeout", async () => {
+    const { origin } = await peer((_request, _body, response) => {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.write('{"acknowledgments":[');
+    });
+    const result = await deliverThrough({ origin, timeoutMs: 50 });
+    assert.deepEqual([result.status, result.code], ["retryable", "timeout"]);
+  });
+
   it("maps a refused connection to a retryable transport failure", async () => {
     const { origin } = await peer(acknowledge());
     const server = servers.pop();

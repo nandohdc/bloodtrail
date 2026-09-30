@@ -184,6 +184,13 @@ async function checkTimeout(): Promise<void> {
     status: undefined,
     absentErrorFields: [],
   });
+  await expectFailureCase(peerSinkOptions("stall-body", 50), "timeout-mid-body", {
+    label: "mid-body timeout",
+    code: "SDK_SINK_FAILURE",
+    outcome: "timeout",
+    status: undefined,
+    absentErrorFields: [],
+  });
 }
 
 /** 4. A refused connection maps to SDK_SINK_FAILURE and outcome transport_failure. */

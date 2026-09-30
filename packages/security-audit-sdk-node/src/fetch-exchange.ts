@@ -86,11 +86,35 @@ function parseAcknowledgments(body: string): readonly HttpAcknowledgment[] {
   }
 }
 
+function isEmptyBody(body: string | null): boolean {
+  if (body === null) return true;
+  return body.length === 0;
+}
+
 async function readAcknowledgments(response: Response, maxResponseBytes: number): Promise<readonly HttpAcknowledgment[]> {
   const body = await readBoundedBody(response, maxResponseBytes);
-  if (body === null) return UNREADABLE;
-  if (body.length === 0) return UNREADABLE;
-  return parseAcknowledgments(body);
+  if (isEmptyBody(body)) return UNREADABLE;
+  return parseAcknowledgments(body!);
+}
+
+function toUtf8(chunks: readonly Buffer[]): string {
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+async function collectStreamChunks(
+  body: AsyncIterable<Uint8Array>,
+  maxResponseBytes: number,
+): Promise<Buffer[] | null> {
+  const chunks: Buffer[] = [];
+  let received = 0;
+  for await (const chunk of body) {
+    received += chunk.byteLength;
+    if (received > maxResponseBytes) {
+      return null;
+    }
+    chunks.push(Buffer.from(chunk));
+  }
+  return chunks;
 }
 
 // Reads at most maxResponseBytes and cancels the stream beyond that, so a peer
@@ -99,27 +123,24 @@ async function readBoundedBody(response: Response, maxResponseBytes: number): Pr
   if (response.body === null) {
     return "";
   }
-  const chunks: Buffer[] = [];
-  let received = 0;
   try {
-    for await (const chunk of response.body) {
-      received += chunk.byteLength;
-      if (received > maxResponseBytes) {
-        return null;
-      }
-      chunks.push(Buffer.from(chunk));
-    }
-    return Buffer.concat(chunks).toString("utf8");
-  } catch {
+    const chunks = await collectStreamChunks(response.body, maxResponseBytes);
+    return chunks === null ? null : toUtf8(chunks);
+  } catch (error) {
+    if (isTimeout(error)) throw error;
     return null;
   }
+}
+
+function isTimeoutError(name: unknown): boolean {
+  return name === "TimeoutError";
 }
 
 function isTimeout(error: unknown): boolean {
   if (typeof error !== "object") return false;
   if (error === null) return false;
   if (!("name" in error)) return false;
-  return error.name === "TimeoutError";
+  return isTimeoutError(error.name);
 }
 
 function isValidOrigin(origin: unknown): origin is string {
