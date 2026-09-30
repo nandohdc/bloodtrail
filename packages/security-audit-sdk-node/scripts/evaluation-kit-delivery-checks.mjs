@@ -33,8 +33,8 @@ const OUTPUT_TIMEOUT_MS = 10000;
  * Starts a loopback server script with the current Node, and resolves with its origin once it prints
  * `<label>:ready <origin>`. Returns the child, its output so far, and the origin promise.
  */
-export function startLoopbackServer({ script, cwd, label }) {
-  const child = spawn(process.execPath, ["--no-warnings", script, "0"], { cwd, stdio: ["ignore", "pipe", "pipe"] });
+export function startLoopbackServer({ script, cwd, label, args = [] }) {
+  const child = spawn(process.execPath, ["--no-warnings", script, "0", ...args], { cwd, stdio: ["ignore", "pipe", "pipe"] });
   const chunks = [];
   const readOutput = () => chunks.join("");
   const readyLine = new RegExp(String.raw`${label}:ready\s+(http://127\.0\.0\.1:\d+)`);
@@ -101,6 +101,9 @@ function assertDemonstratedSemantics(events) {
   const modified = events.get("bloodtrail.audit.data.sensitive_resource.modified");
   assert(modified.event.commit_state === "committed", "the modification's commit state must come from the committed operation handle");
   assert(modified.correlation.operation_id === "22222222-2222-4222-8222-000000000301", "the modification must carry its operation identifier");
+  const authFailed = events.get("bloodtrail.audit.authentication.failed");
+  assert(authFailed.actor.type === "anonymous", "authentication.failed must use an anonymous actor");
+  assert(!authFailed.actor.id, "authentication.failed must never use an authenticated actor");
 }
 
 const HEALTH_FIELDS = Object.freeze(["acceptedCount", "duplicateCount", "rejectedCount", "status"]);
@@ -132,6 +135,23 @@ async function waitForReceivedEvents(readOutput) {
   const deadline = Date.now() + OUTPUT_TIMEOUT_MS;
   while ([...readOutput().matchAll(RECEIVED_LINE)].length < DEMONSTRATED_EVENTS.length) {
     assert(Date.now() < deadline, `timed out waiting for the receiver to print ${DEMONSTRATED_EVENTS.length} accepted events:\n${readOutput()}`);
+    await delay(50);
+  }
+}
+
+function hasCompleteServiceOutput(output) {
+  const validatedCount = [...output.matchAll(VALIDATED_LINE)].length;
+  if (validatedCount < DEMONSTRATED_EVENTS.length) return false;
+  if (!SERVICE_MARKERS.every((marker) => output.includes(marker))) return false;
+  const outcomeCount = [...output.matchAll(/^service:outcome (\S+) (\S+) (\S+)$/gm)].length;
+  return outcomeCount >= DEMONSTRATED_EVENTS.length;
+}
+
+// The service also prints asynchronously, so its output can trail the driver's completion.
+async function waitForServiceOutput(readOutput) {
+  const deadline = Date.now() + OUTPUT_TIMEOUT_MS;
+  while (!hasCompleteServiceOutput(readOutput())) {
+    assert(Date.now() < deadline, `timed out waiting for the service to print all validated events and markers:\n${readOutput()}`);
     await delay(50);
   }
 }
@@ -279,23 +299,48 @@ async function verifyCarefulIngress(installDir, origin, events) {
 export async function verifyHttpExchange(installDir) {
   const receiverScript = resolve(installDir, "examples/evaluation-receiver.ts");
   const serviceScript = resolve(installDir, "examples/evaluation-service.ts");
-  assert(existsSync(receiverScript) && existsSync(serviceScript), "the installed kit must contain the example service and receiver");
+  const driverScript = resolve(installDir, "examples/evaluation-driver.ts");
+  assert(
+    existsSync(receiverScript) && existsSync(serviceScript) && existsSync(driverScript),
+    "the installed kit must contain the example service, receiver, and driver",
+  );
 
   const receiver = startLoopbackServer({ script: receiverScript, cwd: installDir, label: "receiver" });
   try {
-    const origin = await receiver.origin;
-    const serviceOutput = runChecked(process.execPath, ["--no-warnings", serviceScript, origin], {
+    const receiverOrigin = await receiver.origin;
+    const service = startLoopbackServer({
+      script: serviceScript,
       cwd: installDir,
-      capture: true,
+      label: "service",
+      args: [receiverOrigin],
     });
-    for (const marker of SERVICE_MARKERS) {
-      assert(serviceOutput.includes(marker), `evaluation-service did not report ${marker}:\n${serviceOutput}`);
+    try {
+      const serviceOrigin = await service.origin;
+      const driverOutput = runChecked(process.execPath, ["--no-warnings", driverScript, serviceOrigin], {
+        cwd: installDir,
+        capture: true,
+      });
+      assert(driverOutput.includes("driver:completed"), `driver did not complete:\n${driverOutput}`);
+      await waitForReceivedEvents(receiver.readOutput);
+      await waitForServiceOutput(service.readOutput);
+      for (const marker of SERVICE_MARKERS) {
+        assert(service.readOutput().includes(marker), `evaluation-service did not report ${marker}:\n${service.readOutput()}`);
+      }
+      const events = assertDeliveredBytesIdentical(service.readOutput(), receiver.readOutput());
+      assertDemonstratedSemantics(events);
+
+      // Verify onOutcome reports were logged with eventId, outcome, and status only
+      const outcomes = [...service.readOutput().matchAll(/^service:outcome (\S+) (\S+) (\S+)$/gm)];
+      assert(
+        outcomes.length === DEMONSTRATED_EVENTS.length,
+        `service must log onOutcome for all ${DEMONSTRATED_EVENTS.length} events, got ${outcomes.length}`,
+      );
+
+      await assertReceiverHealthCounts(receiverOrigin);
+      await verifyCarefulIngress(installDir, receiverOrigin, events);
+    } finally {
+      service.child.kill("SIGTERM");
     }
-    await waitForReceivedEvents(receiver.readOutput);
-    const events = assertDeliveredBytesIdentical(serviceOutput, receiver.readOutput());
-    assertDemonstratedSemantics(events);
-    await assertReceiverHealthCounts(origin);
-    await verifyCarefulIngress(installDir, origin, events);
   } finally {
     receiver.child.kill("SIGTERM");
   }

@@ -475,7 +475,7 @@ assert.equal(modifyResult.ok, true);
 await sdk.shutdown();
 ```
 
-## Running the Example Receiver
+## Running the Example Service and Receiver
 
 To see audit events arriving and passing validation over HTTP:
 
@@ -483,9 +483,13 @@ To see audit events arriving and passing validation over HTTP:
    ```bash
    node examples/evaluation-receiver.ts 3000
    ```
-2. Run the evaluation service in a second terminal:
+2. Start the evaluation service in a second terminal:
    ```bash
-   node examples/evaluation-service.ts http://127.0.0.1:3000
+   node examples/evaluation-service.ts 3001 http://127.0.0.1:3000
+   ```
+3. Run the driver in a third terminal:
+   ```bash
+   node examples/evaluation-driver.ts http://127.0.0.1:3001
    ```
 The receiver authenticates the request, validates the event with `validateSecurityAuditEvent`, and responds with the wire-protocol acknowledgment.
 
