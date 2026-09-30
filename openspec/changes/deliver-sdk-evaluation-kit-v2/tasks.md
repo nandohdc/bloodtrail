@@ -66,7 +66,7 @@ task (9.1) stays unticked until its own ticket.
   - a sink that rewrites one field fails the check, and the applied count is asserted;
   - the gate no longer reads event bodies from the receiver's health endpoint;
   - the existing semantic assertions still hold, taken from the new source.
-- [ ] 3.2 #656 Make the example receiver a careful ingress. Verify that:
+- [x] 3.2 #656 Make the example receiver a careful ingress. Verify that:
   - unauthenticated, oversized, malformed, conflicting and SDK-invalid submissions get 401, 413, 400, 409
     and 422, and the next valid event is still accepted after each;
   - an SDK-invalid event is never admitted, so a corrected event with the same identity is admitted;

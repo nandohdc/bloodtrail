@@ -112,7 +112,9 @@ The following table maps each transport condition and peer response to its SDK r
 | Condition | HTTP Status / Transport State | SDK Result Code (`result.error.code`) | `onOutcome` Code (`outcome.outcome`) | Classification | Event ID in Result | Event ID in `onOutcome` | Description |
 |---|---|---|---|---|---|---|---|
 | **Successful Delivery** | `200` or `202` with valid matching acknowledgment | *N/A (`result.ok === true`)* | `acknowledged` | Success | No (`result.value.status === "accepted"`) | Yes (`outcome.eventId`) | Receiver accepted and acknowledged event |
+| **Duplicate** | `200` with exactly one acknowledgment for the event, whose outcome is `accepted` | *N/A (`result.ok === true`)* | `acknowledged` | Success | No (`result.value.status === "accepted"`) | Yes (`outcome.eventId`) | A byte-identical copy of an event the receiver already accepted, such as `sdk.redeliver` after a lost acknowledgment: acknowledged, and never admitted twice |
 | **Permanent Rejection** | `400`, `401`, `403`, `404`, `405`, `409`, `410`, `413`, `415`, `422` | `SDK_SINK_REJECTED` | `http_permanent` | Non-retryable rejection | No | Yes (`outcome.eventId`) | Permanent peer rejection; client request or authorization invalid |
+| **Conflict** | `409` | `SDK_SINK_REJECTED` | `http_permanent` | Non-retryable rejection | No | Yes (`outcome.eventId`) | The event reuses the identifier of an event the receiver already accepted, with different content |
 | **Request Timeout** | `408` | `SDK_SINK_FAILURE` | `http_retryable` | Retryable failure | No | Yes (`outcome.eventId`) | Receiver timed out waiting for request |
 | **Too Early** | `425` | `SDK_SINK_FAILURE` | `http_retryable` | Retryable failure | No | Yes (`outcome.eventId`) | Receiver refused request to prevent replay attacks |
 | **Rate Limited** | `429` | `SDK_SINK_FAILURE` | `http_retryable` | Retryable failure | No | Yes (`outcome.eventId`) | Receiver rate limit or load backpressure exceeded |
@@ -123,6 +125,11 @@ The following table maps each transport condition and peer response to its SDK r
 | **Malformed Acknowledgment** | `2xx` with missing, extra, or invalid acknowledgment | `SDK_SINK_FAILURE` | `malformed_acknowledgment` | Protocol error | No | Yes (`outcome.eventId`) | Response body is not valid JSON or lacks exact single matching acknowledgment |
 | **Emit During Shutdown** | None (emit called while `shutdown()` is draining) | `SDK_SHUTTING_DOWN` | *None (no request)* | Lifecycle | No | N/A | SDK is draining in-flight requests; refuses new emit calls |
 | **Emit After Shutdown** | None (emit called after `shutdown()` completed) | `SDK_SHUT_DOWN` | *None (no request)* | Lifecycle | No | N/A | SDK / sink is closed; immediately refuses further emit calls |
+
+A receiver answers a duplicate as it answered the original, with one `accepted` acknowledgment, so a redelivery after a
+lost acknowledgment succeeds. The kit's example receiver does exactly that. It answers the other rejections with the
+status that names them: `401` for failed authentication, `413` for a body over its bound, `400` for a malformed body,
+`409` for a conflict, and `422` for an event that fails SDK validation or has an unsupported version.
 
 ---
 
