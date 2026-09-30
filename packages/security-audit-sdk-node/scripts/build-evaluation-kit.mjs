@@ -93,6 +93,7 @@ export const REQUIRED_KIT_ITEMS = Object.freeze([
   "package.json",
   PNPM_SETTINGS_FILE,
   "examples/evaluation-service.ts",
+  "examples/evaluation-driver.ts",
   "examples/evaluation-receiver.ts",
   "examples/seeded-invalid-calls.ts",
   "docs/quickstart.md",

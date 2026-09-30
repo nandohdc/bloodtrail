@@ -74,7 +74,7 @@ task (9.1) stays unticked until its own ticket.
   - the health endpoint returns status and counts only;
   - the wire-protocol failure table gains the duplicate and conflict rows;
   - a receiver that answers a duplicate with 400, and one that rethrows after replying, each fail the gate.
-- [ ] 3.3 #657 Make the example service a real `node:http` service, with a driver. Verify that:
+- [x] 3.3 #657 Make the example service a real `node:http` service, with a driver. Verify that:
   - its handlers emit the five demonstrated events, the modification after `markCommitted()`;
   - the failed login uses `anonymousActor()`;
   - every `onOutcome` report is logged with the event identifier, outcome and status only;
