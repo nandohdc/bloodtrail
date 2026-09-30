@@ -16,7 +16,7 @@
 - [x] 3.1 In `packages/security-audit-sdk-core`, run `npm ci`, `npm run check:generated`, the complete
   `npm run validate` chain and `npm audit --audit-level=low`. Verify each passes and the audit reports
   zero vulnerabilities.
-- [ ] 3.2 Run the final design-pattern governance phase, both dual-check arms, the contract reuse check
+- [x] 3.2 Run the final design-pattern governance phase, both dual-check arms, the contract reuse check
   for every active change, the merge-stage normative precedence check and `git diff --check`. Verify each
   passes.
 
