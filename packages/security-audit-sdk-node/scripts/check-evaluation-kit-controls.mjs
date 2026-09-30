@@ -19,7 +19,7 @@ import {
   typescriptLegs,
   writeConsumerTsconfig,
 } from "./check-evaluation-kit.mjs";
-import { CHECKSUM_LIST_FILE, IDENTITY_FILE, runChecksumListCheck } from "./evaluation-kit-checksums.mjs";
+import { CHECKSUM_LIST_FILE, IDENTITY_FILE, runChecksumListCheck, sha256Hex } from "./evaluation-kit-checksums.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
 import {
   PNPM_RELEASES,
@@ -50,6 +50,7 @@ const EXPECTED_CONTROLS = Object.freeze([
   "sink rewriting service.name between the SDK and the receiver",
   "receiver answering a duplicate with 400",
   "receiver rethrowing after replying",
+  "mid-body stall mapped to malformed acknowledgment",
 ]);
 
 // A type-only defect: the program still runs and passes with a number id, so
@@ -469,6 +470,47 @@ async function checkRethrowingReceiverControl(kitDir) {
   return "receiver rethrowing after replying";
 }
 
+async function rewriteKitTarball(kitCopy, packageName, fileInTarball, rewrite) {
+  const identityPath = resolve(kitCopy, IDENTITY_FILE);
+  const identity = JSON.parse(await readFile(identityPath, "utf8"));
+  const artifact = identity.artifacts.find((a) => a.name === packageName);
+  assert.ok(artifact, `artifact ${packageName} must exist in identity`);
+  const tarballPath = resolve(kitCopy, artifact.filename);
+  const extractDir = await mkdtemp(resolve(tmpdir(), `bloodtrail-ctrl-${packageName}-`));
+  try {
+    runChecked("tar", ["-xzf", tarballPath, "-C", extractDir]);
+    const filePath = resolve(extractDir, "package", fileInTarball);
+    const text = await readFile(filePath, "utf8");
+    const mutated = rewrite(text);
+    assert.notEqual(mutated, text, `the planted defect must change ${fileInTarball}`);
+    await writeFile(filePath, mutated, "utf8");
+    runChecked("tar", ["-czf", tarballPath, "-C", extractDir, "package"]);
+    artifact.sha256 = sha256Hex(await readFile(tarballPath));
+    const { commit, distributable, artifacts } = identity;
+    await sealKitIdentity(kitCopy, { commit, distributable, artifacts });
+  } finally {
+    await rm(extractDir, { recursive: true, force: true });
+  }
+}
+
+async function checkMidBodyStallControl(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-mid-body-stall-", async (kitCopy) => {
+    await rewriteKitTarball(kitCopy, "node", "dist/fetch-exchange.js", (text) =>
+      text.replace(
+        "        if (isTimeout(error))\n            throw error;\n",
+        "",
+      ),
+    );
+    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+    assert.ok(failure, "gate must fail closed when mid-body stall maps to malformed acknowledgment");
+    assert.ok(
+      failure.message.includes("evaluation-kit-failure-paths.ts"),
+      `mid-body stall defect must fail the gate's failure-path check: ${failure.message}`,
+    );
+  });
+  return "mid-body stall mapped to malformed acknowledgment";
+}
+
 export async function checkEvaluationKitControls() {
   await assertOutsideRepository(tmpdir());
 
@@ -495,6 +537,7 @@ export async function checkEvaluationKitControls() {
       await checkRewritingSinkControl(kitDir),
       await checkDuplicateRejectedControl(kitDir),
       await checkRethrowingReceiverControl(kitDir),
+      await checkMidBodyStallControl(kitDir),
     );
     assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 

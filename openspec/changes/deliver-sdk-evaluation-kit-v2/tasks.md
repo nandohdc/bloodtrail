@@ -82,7 +82,7 @@ task (9.1) stays unticked until its own ticket.
     5.9.2 and the pinned 6.0.x and 7.0.x releases;
   - the byte check passes against the new service;
   - no framework dependency and no tracked manifest are added.
-- [ ] 3.4 #658 Report a deadline during the response body as `timeout`. Verify that:
+- [x] 3.4 #658 Report a deadline during the response body as `timeout`. Verify that:
   - a peer that stalls mid-body past the timeout yields `SDK_SINK_FAILURE` with the `onOutcome` cause
     `timeout`;
   - oversized, unparseable and empty bodies still map to a malformed acknowledgment;

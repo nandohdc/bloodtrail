@@ -124,6 +124,22 @@ async function handleTimeout(heldResolvers, body, response) {
   replyAck(body, response);
 }
 
+async function handleStallBody(heldResolvers, response) {
+  response.writeHead(200, { "content-type": "application/json" });
+  response.write('{"acknowledgments":[');
+  await new Promise((resolveHeld) => {
+    heldResolvers.push(resolveHeld);
+    setTimeout(resolveHeld, 30_000);
+  });
+  try {
+    if (!response.writableEnded && !response.destroyed) {
+      response.end("]}");
+    }
+  } catch {
+    // client abort may have already closed the socket
+  }
+}
+
 async function handlePeerBehavior(behavior, ctx) {
   const { request, response, body, heldResolvers } = ctx;
 
@@ -139,6 +155,11 @@ async function handlePeerBehavior(behavior, ctx) {
 
   if (behavior === "timeout") {
     await handleTimeout(heldResolvers, body, response);
+    return;
+  }
+
+  if (behavior === "stall-body") {
+    await handleStallBody(heldResolvers, response);
     return;
   }
 
