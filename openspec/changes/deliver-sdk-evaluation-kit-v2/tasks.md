@@ -96,7 +96,7 @@ task (9.1) stays unticked until its own ticket.
 
 ## 4. Evaluator documents
 
-- [ ] 4.1 #660 Ship the M3 exercise without its answers. Verify that:
+- [x] 4.1 #660 Ship the M3 exercise without its answers. Verify that:
   - the kit's seeded-call document lists the five calls and M3's rules only;
   - the seeded example prints each returned error with no verdict;
   - the facilitator answer key holds each call's expected code, path, diagnosis and fix, and every fix

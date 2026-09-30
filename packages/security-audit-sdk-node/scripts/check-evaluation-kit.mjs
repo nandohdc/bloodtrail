@@ -1,10 +1,16 @@
 import { existsSync } from "node:fs";
-import { copyFile, cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { assertOutsideRepository, buildEvaluationKit, verifyKitIdentity } from "./build-evaluation-kit.mjs";
+import {
+  ANSWER_KEY_PATH,
+  assertKitExcludesAnswerKey,
+  extractAnswerKeyFixBlocks,
+  verifySeededCallsOutput,
+} from "./evaluation-kit-answer-key.mjs";
 import { verifyUnpackedKitIntegrity } from "./evaluation-kit-checksums.mjs";
 import { startLoopbackServer, verifyHttpExchange } from "./evaluation-kit-delivery-checks.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
@@ -96,6 +102,9 @@ async function typecheckExamples(tempInstall) {
   if (existsSync(docsDir)) {
     await extractDocBlocksFromDir(docsDir, docBlocksDir);
   }
+  if (existsSync(ANSWER_KEY_PATH)) {
+    await extractAnswerKeyFixBlocks(docBlocksDir);
+  }
 
   const tsconfigPath = await writeConsumerTsconfig(tempInstall);
   for (const leg of typescriptLegs(tsconfigPath)) {
@@ -158,6 +167,9 @@ export async function checkEvaluationKit({
     // 1. Verify identity
     const { identity } = await verifyKitIdentity(kitDir);
 
+    // 1a. Kit excludes facilitator answer key and its contents
+    await assertKitExcludesAnswerKey(kitDir);
+
     // 1b. Unpacked from an archive, the kit passes `shasum -a 256 -c` and every integrity command its guide documents
     await verifyUnpackedKitIntegrity(kitDir);
 
@@ -182,7 +194,7 @@ export async function checkEvaluationKit({
     // 4. Verify single core copy in npm install (and fail closed if planted duplicate)
     await verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore);
 
-    // 5. Type-check examples, doc blocks and the gate's failure-path program in the installed kit with TypeScript matrix (5.9.2, 6.0.x, 7.0.x) under strict settings
+    // 5. Type-check examples, doc blocks, answer key fixes and the gate's failure-path program in the installed kit with TypeScript matrix (5.9.2, 6.0.x, 7.0.x) under strict settings
     await installGatePrograms(tempInstall, failurePathsProgram);
     await typecheckExamples(tempInstall);
 
@@ -199,17 +211,16 @@ export async function checkEvaluationKit({
     // 7. Run example-receiver and example-service end to end over loopback HTTP
     await verifyHttpExchange(tempInstall);
 
-    // 7b. Run seeded invalid calls exercise against installed kit
+    // 7b. Run seeded invalid calls exercise against installed kit and verify codes in the gate
     const seededScript = resolve(tempInstall, "examples/seeded-invalid-calls.ts");
     if (existsSync(seededScript)) {
       const seededRun = runChecked(process.execPath, ["--no-warnings", seededScript], {
         cwd: tempInstall,
         capture: true,
       });
-      assert(
-        seededRun.includes("seeded-invalid-calls:all-passed:5/5"),
-        `seeded invalid calls did not pass:\n${seededRun}`,
-      );
+      const catalogPath = resolve(tempInstall, "docs/error-catalog.md");
+      const catalogContent = existsSync(catalogPath) ? await readFile(catalogPath, "utf8") : "";
+      verifySeededCallsOutput(seededRun, catalogContent);
     }
 
     // 8. Drive HTTP sink failure paths and lifecycle transitions from installed kit against controllable loopback peer
@@ -219,7 +230,7 @@ export async function checkEvaluationKit({
     await verifyPnpmInstalls(kitDir);
 
     process.stdout.write(
-      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, doc blocks, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, every demonstrated event received as exactly the bytes the SDK validated, the receiver answering 401, 413, 400, 422 and 409, acknowledging duplicates and still serving, failure paths verified\n`,
+      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, doc blocks, facilitator answer-key fixes, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, every demonstrated event received as exactly the bytes the SDK validated, the receiver answering 401, 413, 400, 422 and 409, acknowledging duplicates and still serving, seeded invalid calls verified, failure paths verified\n`,
     );
     return { success: true };
   } finally {

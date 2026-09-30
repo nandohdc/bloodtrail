@@ -89,6 +89,9 @@ Never compare its digests with a format 2 kit's.
 
 **Facilitator.** At distribution, run `shasum -a 256` on the archive and post the result on the evaluation
 issue, together with the kit's `kit_digest`. Evaluators compare the archive against that comment in step 1.
+The facilitator answer key for the M3 seeded invalid-call exercise lives at
+`facilitator/seeded-invalid-calls-answer-key.md` in the repository tree; evaluators never receive it, and
+the kit builder never packages or copies it into the distributed evaluation kit.
 
 ---
 

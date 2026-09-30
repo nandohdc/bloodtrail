@@ -92,7 +92,7 @@ The debrief interview is conducted as a structured 30-minute conversation betwee
 ### 1. Developer Experience & Ergonomics
 1. *How natural did the authoritative context model feel (`runWithContext`, `authenticatedHumanActor`, `authoritativeTenant`)?*
 2. *Did you encounter any situations where context was lost across asynchronous promise chains or callbacks?*
-3. *How was your experience working with operation handles (`beginOperation`, `commit()`)? Did the commit lifecycle align with your database transaction flow?*
+3. *How was your experience working with operation handles (`beginOperation`, `markCommitted`)? Did the commit lifecycle align with your database transaction flow?*
 
 ### 2. Error Diagnostics & Catalog
 1. *When an SDK call was rejected, did the returned `code` and `path` immediately indicate what was wrong?*

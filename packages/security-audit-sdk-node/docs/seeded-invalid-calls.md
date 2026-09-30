@@ -1,29 +1,40 @@
 # Seeded Invalid-Call Diagnostic Exercise
 
-This exercise is used to measure evaluation metric **M3: Diagnosis of 5 seeded invalid calls from the error output and catalog alone**. Evaluators are presented with 5 code snippets that fail validation at runtime. To pass M3, an evaluator must diagnose at least 4 out of 5 failures using only the SDK's returned `AuditResult` error output and `docs/error-catalog.md`.
+This exercise measures evaluation metric **M3: Diagnosis of 5 seeded invalid calls from the error output and catalog alone**.
 
 ---
 
-## Overview
+## Exercise Rules (Metric M3)
 
-When an SDK operation is rejected by validation or invariant checks, it does not throw unhandled exceptions. Instead, it returns an `AuditResult` failure object:
+1. **Information Sources:** You must diagnose each failure using **only** the SDK's returned `SafeAuditError` error output (its `code`, `category`, and `path`) and `docs/error-catalog.md`.
+2. **Unassisted:** Do not consult external search engines, AI assistants, or project facilitators during the exercise.
+3. **Target Threshold:** To pass M3, an evaluator must correctly diagnose at least 4 out of the 5 failures.
+4. **Recording:** Record your diagnosis and proposed remediation for each call in `docs/evaluation-questionnaire.md`.
+
+---
+
+## Error Output Structure
+
+When an SDK operation is rejected by validation or authority checks, named methods return an `AuditResult` failure (`{ ok: false, error }`). The error shape is the exported `SafeAuditError`:
 
 ```typescript
-export interface DiagnosticAuditError {
+import type { AuditErrorCategory } from "@bloodtrail/security-audit-sdk-core";
+
+export interface SafeAuditError {
   readonly code: string;
-  readonly category: string;
-  readonly path: string;
-  readonly message: string;
+  readonly category: AuditErrorCategory;
+  readonly path?: string;
+  readonly eventName?: string;
+  readonly eventId?: string;
 }
 ```
 
-Evaluators should use `error.code` and `error.path` to look up the issue in `docs/error-catalog.md`.
+Use `error.code` and `error.path` to look up the entry in `docs/error-catalog.md`.
 
 ---
 
 ## Exercise 1: Sensitive Resource Viewed Without Actor
 
-### Code Snippet
 An engineer attempts to record a sensitive resource view without binding an actor in context or supplying one in parameters:
 
 ```typescript
@@ -33,6 +44,7 @@ import {
 } from "@bloodtrail/security-audit-sdk-node";
 import {
   CONTRACT_VERSION,
+  authenticatedPrincipal,
   authoritativeTenant,
   authoritativeResource,
   authorizationEvidence,
@@ -79,28 +91,25 @@ const authorization = authorizationEvidence({
   tenant_context: { effective_tenant_id: "t-1" },
 });
 
+const principal = authenticatedPrincipal({
+  type: "human_user",
+  id: "principal-1",
+});
+
 // Invalid Call: No actor bound in context or supplied in parameters
 const result = await (sdk.sensitiveResourceViewed as Function)({
   tenant,
   resource,
   authorization,
   request: { id: "req-1", method: "GET", route: "/docs/1" },
+  authenticated_principal: principal,
 });
 ```
-
-### Diagnostic Output
-- **Error Code:** `MISSING_REQUIRED_ACTOR`
-- **Error Path:** `/actor`
-- **Category:** `validation`
-
-### Fix & Explanation
-Audit events require an authenticated actor. The caller must either provide an actor via `authenticatedHumanActor({ id, displayName })` in the call or wrap the execution in `sdk.runWithContext({ actor, tenant }, ...)`.
 
 ---
 
 ## Exercise 2: Account Registration Without Tenant Context
 
-### Code Snippet
 An engineer attempts to emit an account registration attempt without tenant context:
 
 ```typescript
@@ -143,20 +152,11 @@ const result = await (sdk.accountRegistrationAttempted as Function)({
 });
 ```
 
-### Diagnostic Output
-- **Error Code:** `MISSING_TENANT_CONTEXT`
-- **Error Path:** `/tenant`
-- **Category:** `validation`
-
-### Fix & Explanation
-Contract 2.1.0 requires an explicit tenant scope on registration events. Bind authoritative tenant context via `authoritativeTenant({ scope: "tenant", actor_tenant_id: ..., effective_tenant_id: ..., resource_tenant_id: ... })`.
-
 ---
 
 ## Exercise 3: Premature Resource Creation Without Operation Handle
 
-### Code Snippet
-An engineer emits `sensitiveResourceCreated` without providing a committed operation handle:
+An engineer emits `sensitiveResourceCreated` without providing an operation handle:
 
 ```typescript
 import {
@@ -226,19 +226,10 @@ const result = await (sdk.sensitiveResourceCreated as Function)({
 });
 ```
 
-### Diagnostic Output
-- **Error Code:** `PREMATURE_SUCCESS`
-- **Error Path:** `/operation/state`
-- **Category:** `validation`
-
-### Fix & Explanation
-Modifications to sensitive resources must be guarded by an operation handle to guarantee transactional completion. Call `const op = sdk.beginOperation(...)`, perform the modification, call `op.commit()`, and pass `op` into `sdk.sensitiveResourceCreated(op, ...)`.
-
 ---
 
 ## Exercise 4: Authority Escalation With Plain Object
 
-### Code Snippet
 An engineer constructs an actor using an unbranded, plain JavaScript object:
 
 ```typescript
@@ -295,19 +286,10 @@ const result = await sdk.accountRegistrationAttempted({
 });
 ```
 
-### Diagnostic Output
-- **Error Code:** `AUTHORITY_ESCALATION`
-- **Error Path:** `/actor`
-- **Category:** `authority`
-
-### Fix & Explanation
-Plain JavaScript objects and type casts cannot forge authoritative context. You must construct actors using the factory functions exported by `@bloodtrail/security-audit-sdk-core`: `authenticatedHumanActor` or `apiCredentialActor`.
-
 ---
 
 ## Exercise 5: Prohibited Cleartext Credential in Payload
 
-### Code Snippet
 An engineer includes a cleartext password in the request metadata:
 
 ```typescript
@@ -362,11 +344,3 @@ const result = await (sdk.passwordResetRequested as Function)({
   },
 });
 ```
-
-### Diagnostic Output
-- **Error Code:** `PROHIBITED_DATA`
-- **Error Path:** `/request/password`
-- **Category:** `privacy`
-
-### Fix & Explanation
-The SDK automatically scans for prohibited credential keys and token patterns. Never pass raw passwords, secret tokens, or sensitive credentials into audit event payloads. Sanitize or strip credential properties before passing request metadata to the SDK.
