@@ -13,7 +13,7 @@ Get from the evaluation kit to your first accepted audit event delivered over HT
 
 ## Installation
 
-Inside the evaluation kit directory, install the local tarballs using either supported installer:
+The supported installers are npm, as bundled with Node 24 and Node 26, and pnpm 10, 11 and 12. Inside the evaluation kit directory, install the local tarballs with one of them:
 
 **Using npm:**
 ```bash
@@ -25,7 +25,7 @@ npm install
 pnpm install
 ```
 
-The generated manifest pins `@bloodtrail/security-audit-sdk-core` to the kit's own tarball via npm and pnpm overrides, ensuring exactly one core copy is resolved across all dependencies.
+The kit pins `@bloodtrail/security-audit-sdk-core` to its own tarball, so exactly one core copy is resolved across all dependencies. npm reads the pin from the `overrides` field of the generated `package.json`. pnpm reads it from the kit's generated `pnpm-workspace.yaml`, because pnpm 11 and later no longer read the `pnpm` field in `package.json`.
 
 > [!WARNING]
 > **Unsupported installers and configurations:**

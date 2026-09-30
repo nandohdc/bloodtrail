@@ -18,6 +18,12 @@ import {
   writeConsumerTsconfig,
 } from "./check-evaluation-kit.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
+import {
+  PNPM_RELEASES,
+  PNPM_SETTINGS_FILE,
+  supportedPnpmPhrase,
+  verifyPnpmInstall,
+} from "./evaluation-kit-installers.mjs";
 import { runChecked } from "./verification-helpers.mjs";
 
 // Every planted defect the harness applies, in order. A control that did not
@@ -31,11 +37,63 @@ const EXPECTED_CONTROLS = Object.freeze([
   "missing kit item",
   "dirty tree build attempt",
   "failure-path program type error (across all TypeScript matrix legs)",
+  "pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)",
+  "ignored pnpm setting reported (pnpm 11 and 12 legs)",
+  "installer docs missing the supported pnpm majors",
 ]);
 
 // A type-only defect: the program still runs and passes with a number id, so
 // only the gate's type-check can catch it.
 const FAILURE_PATHS_TYPE_ERROR = Object.freeze({ anchor: '"timeout-1"', replacement: "1" });
+
+// pnpm 11 and later no longer read the manifest's `pnpm` field.
+const [PNPM_READING_MANIFEST_FIELD, ...PNPM_IGNORING_MANIFEST_FIELD] = PNPM_RELEASES;
+
+async function withKitCopy(kitDir, tempPrefix, run) {
+  const kitCopy = await mkdtemp(resolve(tmpdir(), tempPrefix));
+  try {
+    await cp(kitDir, kitCopy, { recursive: true });
+    await run(kitCopy);
+  } finally {
+    await rm(kitCopy, { recursive: true, force: true });
+  }
+}
+
+async function captureFailure(run) {
+  try {
+    await run();
+  } catch (err) {
+    return err;
+  }
+  return null;
+}
+
+// Keeps the identity consistent with the rewritten manifest, so the planted defect,
+// not the identity check, is what the gate meets.
+async function rewriteKitManifest(kitCopy, mutate) {
+  const pkgPath = resolve(kitCopy, "package.json");
+  const pkg = JSON.parse(await readFile(pkgPath, "utf8"));
+  mutate(pkg);
+  const newManifest = JSON.stringify(pkg, null, 2) + "\n";
+  await writeFile(pkgPath, newManifest, "utf8");
+
+  const idPath = resolve(kitCopy, "identity.json");
+  const id = JSON.parse(await readFile(idPath, "utf8"));
+  id.manifest_digest = computeManifestDigest(newManifest);
+  id.kit_digest = computeKitDigest(id.package_set_digest, id.manifest_digest);
+  await writeFile(idPath, JSON.stringify(id, null, 2) + "\n", "utf8");
+}
+
+function copyNpmOverrideIntoPnpmField(pkg) {
+  pkg.pnpm = { overrides: { ...pkg.overrides } };
+}
+
+async function assertPnpmLegFails(kitCopy, release, expectInMessage) {
+  const failure = await captureFailure(() => verifyPnpmInstall(kitCopy, release));
+  assert.ok(failure, `pnpm ${release} leg must fail closed`);
+  assert.ok(failure.message.includes(`pnpm ${release}`), `pnpm ${release} leg failure must name its release: ${failure.message}`);
+  assert.ok(failure.message.includes(expectInMessage), `pnpm ${release} leg must report "${expectInMessage}": ${failure.message}`);
+}
 
 async function assertGateFailsWithoutKitFile(kitDir, { tempPrefix, removedFile, message }) {
   const tempKit = await mkdtemp(resolve(tmpdir(), tempPrefix));
@@ -66,32 +124,13 @@ async function checkMissingCoreControl(kitDir, identity) {
 }
 
 async function checkBrokenOverrideControl(kitDir) {
-  const tempBrokenOverride = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-broken-override-"));
-  try {
-    await cp(kitDir, tempBrokenOverride, { recursive: true });
-    const pkgPath = resolve(tempBrokenOverride, "package.json");
-    const pkg = JSON.parse(await readFile(pkgPath, "utf8"));
-    pkg.overrides["@bloodtrail/security-audit-sdk-core"] = "./nonexistent-core.tgz";
-    const newManifest = JSON.stringify(pkg, null, 2) + "\n";
-    await writeFile(pkgPath, newManifest, "utf8");
-
-    // Update identity so identity check passes and npm install failure is isolated
-    const idPath = resolve(tempBrokenOverride, "identity.json");
-    const id = JSON.parse(await readFile(idPath, "utf8"));
-    id.manifest_digest = computeManifestDigest(newManifest);
-    id.kit_digest = computeKitDigest(id.package_set_digest, id.manifest_digest);
-    await writeFile(idPath, JSON.stringify(id, null, 2) + "\n", "utf8");
-
-    let failed = false;
-    try {
-      await checkEvaluationKit({ kitDir: tempBrokenOverride });
-    } catch {
-      failed = true;
-    }
-    assert.ok(failed, "gate must fail closed when core override is broken");
-  } finally {
-    await rm(tempBrokenOverride, { recursive: true, force: true });
-  }
+  await withKitCopy(kitDir, "bloodtrail-ctrl-broken-override-", async (kitCopy) => {
+    await rewriteKitManifest(kitCopy, (pkg) => {
+      pkg.overrides["@bloodtrail/security-audit-sdk-core"] = "./nonexistent-core.tgz";
+    });
+    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+    assert.ok(failure, "gate must fail closed when core override is broken");
+  });
   return "wrong override";
 }
 
@@ -242,6 +281,55 @@ async function checkFailurePathTypeErrorControl(kitDir) {
   return "failure-path program type error (across all TypeScript matrix legs)";
 }
 
+// The kit as built before the settings file: pnpm 10 still reads the manifest field,
+// and pnpm 11 and 12 drop it and cannot resolve the core.
+async function checkPnpmFieldOnlyOverrideControl(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-pnpm-field-only-", async (kitCopy) => {
+    await rm(resolve(kitCopy, PNPM_SETTINGS_FILE));
+    await rewriteKitManifest(kitCopy, copyNpmOverrideIntoPnpmField);
+    await verifyPnpmInstall(kitCopy, PNPM_READING_MANIFEST_FIELD);
+    for (const release of PNPM_IGNORING_MANIFEST_FIELD) {
+      await assertPnpmLegFails(kitCopy, release, "no longer read");
+    }
+  });
+  return "pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)";
+}
+
+// With the settings file in place, pnpm 11 and 12 install successfully and only warn
+// about the manifest field, so the gate's ignored-setting check is all that fails.
+async function checkIgnoredPnpmSettingControl(kitDir) {
+  const reported = "reported an ignored kit setting";
+  await withKitCopy(kitDir, "bloodtrail-ctrl-ignored-pnpm-setting-", async (kitCopy) => {
+    await rewriteKitManifest(kitCopy, copyNpmOverrideIntoPnpmField);
+    const [firstIgnoring, ...laterIgnoring] = PNPM_IGNORING_MANIFEST_FIELD;
+    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+    assert.ok(failure, "gate must fail closed when an installer reports an ignored kit setting");
+    assert.ok(
+      failure.message.includes(`pnpm ${firstIgnoring} ${reported}`),
+      `gate must fail on the pnpm ${firstIgnoring} leg's ignored setting: ${failure.message}`,
+    );
+    for (const release of laterIgnoring) {
+      await assertPnpmLegFails(kitCopy, release, reported);
+    }
+  });
+  return "ignored pnpm setting reported (pnpm 11 and 12 legs)";
+}
+
+async function checkInstallerDocsControl(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-installer-docs-", async (kitCopy) => {
+    const quickstartPath = resolve(kitCopy, "docs/quickstart.md");
+    const quickstartText = await readFile(quickstartPath, "utf8");
+    const plantedText = quickstartText.replaceAll(supportedPnpmPhrase(), "pnpm (v10+)");
+    assert.notEqual(plantedText, quickstartText, "stale installer claim must be planted in the quickstart");
+    await writeFile(quickstartPath, plantedText, "utf8");
+
+    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+    assert.ok(failure, "gate must fail closed when the quickstart does not name the supported pnpm majors");
+    assert.ok(failure.message.includes("docs/quickstart.md"), `installer docs failure must name the quickstart: ${failure.message}`);
+  });
+  return "installer docs missing the supported pnpm majors";
+}
+
 export async function checkEvaluationKitControls() {
   await assertOutsideRepository(tmpdir());
 
@@ -259,6 +347,9 @@ export async function checkEvaluationKitControls() {
       await checkMissingItemControl(kitDir),
       await checkDirtyTreeControl(),
       await checkFailurePathTypeErrorControl(kitDir),
+      await checkPnpmFieldOnlyOverrideControl(kitDir),
+      await checkIgnoredPnpmSettingControl(kitDir),
+      await checkInstallerDocsControl(kitDir),
     );
     assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 

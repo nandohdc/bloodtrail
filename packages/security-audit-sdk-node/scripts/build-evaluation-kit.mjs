@@ -4,6 +4,7 @@ import { cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/p
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
+import { PNPM_SETTINGS_FILE, createPnpmSettings } from "./evaluation-kit-installers.mjs";
 import { assert, packageRoot, repositoryRoot, runChecked } from "./verification-helpers.mjs";
 
 const collectorRoot = resolve(repositoryRoot, "packages/security-audit-collector");
@@ -63,6 +64,7 @@ export function computeKitDigest(packageSetDigest, manifestDigest) {
 export const REQUIRED_KIT_ITEMS = Object.freeze([
   "identity.json",
   "package.json",
+  PNPM_SETTINGS_FILE,
   "bloodtrail-security-audit-sdk-core-0.4.0.tgz",
   "bloodtrail-security-audit-sdk-node-0.4.0.tgz",
   "bloodtrail-security-audit-collector-0.1.0.tgz",
@@ -158,11 +160,6 @@ function createConsumerManifest(tarballs) {
     overrides: {
       "@bloodtrail/security-audit-sdk-core": `./${tarballs.core.filename}`,
     },
-    pnpm: {
-      overrides: {
-        "@bloodtrail/security-audit-sdk-core": `./${tarballs.core.filename}`,
-      },
-    },
   };
 }
 
@@ -236,6 +233,7 @@ export async function buildEvaluationKit({
     const manifest = createConsumerManifest(tarballs);
     const manifestContent = JSON.stringify(manifest, null, 2) + "\n";
     await writeFile(resolve(kitDir, "package.json"), manifestContent, "utf8");
+    await writeFile(resolve(kitDir, PNPM_SETTINGS_FILE), createPnpmSettings(tarballs.core.filename), "utf8");
 
     await copyKitAssets(kitDir);
     const identity = await writeKitIdentity(kitDir, { commit, distributable, artifacts, manifestContent });
