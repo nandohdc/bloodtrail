@@ -18,6 +18,24 @@ export function extractTypeScriptDocBlocks(markdownText) {
   return blocks;
 }
 
+const TS_DECLARATION_PATTERN = /(?:function|const|let|var|class|type|interface)\s+([a-zA-Z0-9_$]+)/g;
+
+export function extractDeclaredDocBlockIdentifiers(markdownText) {
+  const blocks = extractTypeScriptDocBlocks(markdownText);
+  const identifiers = new Set();
+  for (const block of blocks) {
+    TS_DECLARATION_PATTERN.lastIndex = 0;
+    let match;
+    while ((match = TS_DECLARATION_PATTERN.exec(block)) !== null) {
+      const id = match[1];
+      if (id) {
+        identifiers.add(id);
+      }
+    }
+  }
+  return identifiers;
+}
+
 export async function extractDocBlocksFromDir(docsDir, outputDir) {
   await mkdir(outputDir, { recursive: true });
   const entries = await readdir(docsDir, { withFileTypes: true });

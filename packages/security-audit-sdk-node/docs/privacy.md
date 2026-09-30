@@ -105,7 +105,7 @@ const sdk = createNodeSecurityAuditSdk({
 });
 ```
 
-When `sdk.recordAccountAuthenticationSuccess` or another named event method emits an event with an `actor.id`, the SDK automatically runs the registered hook before final serialization and schema validation, preserving audit integrity without leaking plain user identifiers.
+When `sdk.authenticationSucceeded` or another named event method emits an event with an `actor.id`, the SDK automatically runs the registered hook before final serialization and schema validation, preserving audit integrity without leaking plain user identifiers.
 
 ---
 
