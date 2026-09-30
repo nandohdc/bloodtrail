@@ -10,27 +10,59 @@ import {
   computeKitDigest,
   computeManifestDigest,
 } from "./build-evaluation-kit.mjs";
-import { checkEvaluationKit } from "./check-evaluation-kit.mjs";
+import {
+  FAILURE_PATHS_PROGRAM,
+  checkEvaluationKit,
+  installGatePrograms,
+  typescriptLegs,
+  writeConsumerTsconfig,
+} from "./check-evaluation-kit.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
-import { packageRoot, runChecked } from "./verification-helpers.mjs";
+import { runChecked } from "./verification-helpers.mjs";
 
-async function checkMissingCoreControl(kitDir, identity) {
-  const tempMissingCore = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-missing-core-"));
+// Every planted defect the harness applies, in order. A control that did not
+// run, or ran twice, fails the harness even when every gate run failed closed.
+const EXPECTED_CONTROLS = Object.freeze([
+  "missing core tarball",
+  "wrong override",
+  "tampered identity",
+  "renamed doc option (across all TypeScript matrix legs)",
+  "planted duplicate core",
+  "missing kit item",
+  "dirty tree build attempt",
+  "failure-path program type error (across all TypeScript matrix legs)",
+]);
+
+// A type-only defect: the program still runs and passes with a number id, so
+// only the gate's type-check can catch it.
+const FAILURE_PATHS_TYPE_ERROR = Object.freeze({ anchor: '"timeout-1"', replacement: "1" });
+
+async function assertGateFailsWithoutKitFile(kitDir, { tempPrefix, removedFile, message }) {
+  const tempKit = await mkdtemp(resolve(tmpdir(), tempPrefix));
   try {
-    await cp(kitDir, tempMissingCore, { recursive: true });
-    const coreArtifact = identity.artifacts.find((a) => a.name === "core");
-    await rm(resolve(tempMissingCore, coreArtifact.filename));
+    await cp(kitDir, tempKit, { recursive: true });
+    await rm(resolve(tempKit, removedFile));
 
     let failed = false;
     try {
-      await checkEvaluationKit({ kitDir: tempMissingCore });
+      await checkEvaluationKit({ kitDir: tempKit });
     } catch {
       failed = true;
     }
-    assert.ok(failed, "gate must fail closed when core tarball is missing");
+    assert.ok(failed, message);
   } finally {
-    await rm(tempMissingCore, { recursive: true, force: true });
+    await rm(tempKit, { recursive: true, force: true });
   }
+}
+
+async function checkMissingCoreControl(kitDir, identity) {
+  const coreArtifact = identity.artifacts.find((a) => a.name === "core");
+  await assertGateFailsWithoutKitFile(kitDir, {
+    tempPrefix: "bloodtrail-ctrl-missing-core-",
+    removedFile: coreArtifact.filename,
+    message: "gate must fail closed when core tarball is missing",
+  });
+  return "missing core tarball";
 }
 
 async function checkBrokenOverrideControl(kitDir) {
@@ -60,6 +92,7 @@ async function checkBrokenOverrideControl(kitDir) {
   } finally {
     await rm(tempBrokenOverride, { recursive: true, force: true });
   }
+  return "wrong override";
 }
 
 async function checkTamperedIdentityControl(kitDir) {
@@ -81,12 +114,13 @@ async function checkTamperedIdentityControl(kitDir) {
   } finally {
     await rm(tempTamperedId, { recursive: true, force: true });
   }
+  return "tampered identity";
 }
 
-async function verifyMatrixLegsFailClosed(tempBrokenDoc) {
+async function verifyMatrixLegsFailClosed(kitCopy, { failurePathsProgram = FAILURE_PATHS_PROGRAM, expectInOutput }) {
   const brokenInstall = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-broken-install-"));
   try {
-    await cp(tempBrokenDoc, brokenInstall, { recursive: true });
+    await cp(kitCopy, brokenInstall, { recursive: true });
     runChecked("npm", ["install", "--omit=dev", "--no-audit", "--no-fund", "--ignore-scripts", "--offline"], {
       cwd: brokenInstall,
       capture: true,
@@ -94,41 +128,16 @@ async function verifyMatrixLegsFailClosed(tempBrokenDoc) {
     const docsDir = resolve(brokenInstall, "docs");
     const docBlocksDir = resolve(brokenInstall, "doc-blocks");
     await extractDocBlocksFromDir(docsDir, docBlocksDir);
+    await installGatePrograms(brokenInstall, failurePathsProgram);
 
-    const tsconfigPath = resolve(brokenInstall, "tsconfig.json");
-    const tsconfig = {
-      compilerOptions: {
-        target: "ES2024",
-        module: "NodeNext",
-        moduleResolution: "NodeNext",
-        strict: true,
-        noUncheckedIndexedAccess: true,
-        exactOptionalPropertyTypes: true,
-        useUnknownInCatchVariables: true,
-        noImplicitOverride: true,
-        noFallthroughCasesInSwitch: true,
-        noImplicitReturns: true,
-        verbatimModuleSyntax: true,
-        isolatedModules: true,
-        noEmit: true,
-        rootDir: ".",
-        skipLibCheck: true,
-        typeRoots: [resolve(packageRoot, "node_modules/@types")],
-        types: ["node"],
-      },
-      include: ["examples/**/*.ts", "doc-blocks/**/*.ts"],
-    };
-    await writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2), "utf8");
-
-    const legs = [
-      { version: "5.9.2", cmd: process.execPath, args: [resolve(packageRoot, "node_modules/typescript/bin/tsc"), "-p", tsconfigPath] },
-      { version: "6.0.3", cmd: "npx", args: ["--yes", "-p", "typescript@6.0.3", "tsc", "-p", tsconfigPath] },
-      { version: "7.0.2", cmd: "npx", args: ["--yes", "-p", "typescript@7.0.2", "tsc", "-p", tsconfigPath] },
-    ];
-
-    for (const leg of legs) {
-      const res = spawnSync(leg.cmd, leg.args, { cwd: brokenInstall, encoding: "utf8" });
+    const tsconfigPath = await writeConsumerTsconfig(brokenInstall);
+    for (const leg of typescriptLegs(tsconfigPath)) {
+      const res = spawnSync(leg.command, leg.args, { cwd: brokenInstall, encoding: "utf8" });
       assert.notEqual(res.status, 0, `TypeScript matrix leg ${leg.version} must fail closed on planted type error`);
+      assert.ok(
+        `${res.stdout}${res.stderr}`.includes(expectInOutput),
+        `TypeScript matrix leg ${leg.version} must report the planted type error in ${expectInOutput}`,
+      );
     }
   } finally {
     await rm(brokenInstall, { recursive: true, force: true });
@@ -142,6 +151,7 @@ async function checkBrokenDocControl(kitDir) {
     const quickstartPath = resolve(tempBrokenDoc, "docs/quickstart.md");
     const quickstartText = await readFile(quickstartPath, "utf8");
     const brokenQuickstart = quickstartText.replace("timeoutMs: 5000,", "timeoutOption: 5000,");
+    assert.notEqual(brokenQuickstart, quickstartText, "renamed doc option must be planted in the quickstart");
     await writeFile(quickstartPath, brokenQuickstart, "utf8");
 
     let failed = false;
@@ -153,10 +163,11 @@ async function checkBrokenDocControl(kitDir) {
     assert.ok(failed, "gate must fail closed when doc block uses renamed option");
 
     // Verify that every matrix leg fails individually on the planted type error
-    await verifyMatrixLegsFailClosed(tempBrokenDoc);
+    await verifyMatrixLegsFailClosed(tempBrokenDoc, { expectInOutput: "quickstart-block-" });
   } finally {
     await rm(tempBrokenDoc, { recursive: true, force: true });
   }
+  return "renamed doc option (across all TypeScript matrix legs)";
 }
 
 async function checkDuplicateCoreControl(kitDir) {
@@ -178,6 +189,57 @@ async function checkDuplicateCoreControl(kitDir) {
   } finally {
     await rm(tempDuplicateCore, { recursive: true, force: true });
   }
+  return "planted duplicate core";
+}
+
+async function checkMissingItemControl(kitDir) {
+  await assertGateFailsWithoutKitFile(kitDir, {
+    tempPrefix: "bloodtrail-ctrl-missing-item-",
+    removedFile: "docs/evaluation-guide.md",
+    message: "gate must fail closed when a required kit item is missing",
+  });
+  return "missing kit item";
+}
+
+async function checkDirtyTreeControl() {
+  let dirtyRefused = false;
+  try {
+    await buildEvaluationKit({ mode: "distributable", _gitStatus: " M dirty-file.ts\n" });
+  } catch (err) {
+    if (err.message?.includes("cannot build distributable evaluation kit from dirty git tree")) {
+      dirtyRefused = true;
+    }
+  }
+  assert.ok(dirtyRefused, "distributable build must refuse dirty git tree");
+  return "dirty tree build attempt";
+}
+
+async function checkFailurePathTypeErrorControl(kitDir) {
+  const tempProgramDir = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-failure-path-type-"));
+  try {
+    const { anchor, replacement } = FAILURE_PATHS_TYPE_ERROR;
+    const source = await readFile(FAILURE_PATHS_PROGRAM, "utf8");
+    assert.equal(source.split(anchor).length - 1, 1, `failure-path type error anchor ${anchor} must occur exactly once`);
+    const plantedProgram = resolve(tempProgramDir, "evaluation-kit-failure-paths.ts");
+    await writeFile(plantedProgram, source.replace(anchor, replacement), "utf8");
+
+    let failure = null;
+    try {
+      await checkEvaluationKit({ kitDir, failurePathsProgram: plantedProgram });
+    } catch (err) {
+      failure = err;
+    }
+    assert.ok(failure, "gate must fail closed when the failure-path program has a type error");
+    assert.ok(failure.message.includes("tsc -p"), `failure-path type error must fail the gate's type-check: ${failure.message}`);
+
+    await verifyMatrixLegsFailClosed(kitDir, {
+      failurePathsProgram: plantedProgram,
+      expectInOutput: "evaluation-kit-failure-paths.ts",
+    });
+  } finally {
+    await rm(tempProgramDir, { recursive: true, force: true });
+  }
+  return "failure-path program type error (across all TypeScript matrix legs)";
 }
 
 export async function checkEvaluationKitControls() {
@@ -187,51 +249,21 @@ export async function checkEvaluationKitControls() {
   const { kitDir, identity, removeKit } = await buildEvaluationKit({ mode: "verification" });
 
   try {
-    // Control 1: Missing core tarball fails the gate
-    await checkMissingCoreControl(kitDir, identity);
-
-    // Control 2: Broken core override in package.json fails the gate
-    await checkBrokenOverrideControl(kitDir);
-
-    // Control 3: Tampered identity fails the gate
-    await checkTamperedIdentityControl(kitDir);
-
-    // Control 4: Renamed option in doc block snippet fails every leg of the TypeScript matrix
-    await checkBrokenDocControl(kitDir);
-
-    // Control 5: Planted second core copy reports DUPLICATE_AUTHORITY and fails the gate
-    await checkDuplicateCoreControl(kitDir);
-
-    // Control 6: Removing any kit item fails the gate
-    const tempMissingItem = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-missing-item-"));
-    try {
-      await cp(kitDir, tempMissingItem, { recursive: true });
-      await rm(resolve(tempMissingItem, "docs/evaluation-guide.md"));
-
-      let failed = false;
-      try {
-        await checkEvaluationKit({ kitDir: tempMissingItem });
-      } catch {
-        failed = true;
-      }
-      assert.ok(failed, "gate must fail closed when a required kit item is missing");
-    } finally {
-      await rm(tempMissingItem, { recursive: true, force: true });
-    }
-
-    // Control 7: Distributable build refuses dirty tree
-    let dirtyRefused = false;
-    try {
-      await buildEvaluationKit({ mode: "distributable", _gitStatus: " M dirty-file.ts\n" });
-    } catch (err) {
-      if (err.message?.includes("cannot build distributable evaluation kit from dirty git tree")) {
-        dirtyRefused = true;
-      }
-    }
-    assert.ok(dirtyRefused, "distributable build must refuse dirty git tree");
+    const applied = [];
+    applied.push(
+      await checkMissingCoreControl(kitDir, identity),
+      await checkBrokenOverrideControl(kitDir),
+      await checkTamperedIdentityControl(kitDir),
+      await checkBrokenDocControl(kitDir),
+      await checkDuplicateCoreControl(kitDir),
+      await checkMissingItemControl(kitDir),
+      await checkDirtyTreeControl(),
+      await checkFailurePathTypeErrorControl(kitDir),
+    );
+    assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 
     process.stdout.write(
-      "evaluation kit negative controls passed: missing core tarball, wrong override, tampered identity, renamed doc option (across all TypeScript matrix legs), planted duplicate core, missing kit item, and dirty tree build attempt each failed closed\n",
+      `evaluation kit negative controls passed: ${applied.length} of ${EXPECTED_CONTROLS.length} planted defects applied, and each failed closed: ${applied.join(", ")}\n`,
     );
   } finally {
     await removeKit();

@@ -29,7 +29,7 @@ task (9.1) stays unticked until its own ticket.
 
 ## 2. Gate prefactor, installers and identity
 
-- [ ] 2.1 #651 Move the kit gate's failure-path program into a real, type-checked file. Verify that:
+- [x] 2.1 #651 Move the kit gate's failure-path program into a real, type-checked file. Verify that:
   - the same eight failure and lifecycle checks run from that file with unchanged assertions, and pass;
   - the file type-checks in the installed kit under TypeScript 5.9.2 and the pinned 6.0.x and 7.0.x
     releases;
