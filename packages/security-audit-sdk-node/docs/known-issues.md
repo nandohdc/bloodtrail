@@ -31,12 +31,12 @@ This document enumerates known issues, operational limitations, and pending arch
 ## 4. Installing the Node Binding on Its Own Breaks Silently
 
 - **Description:** `@bloodtrail/security-audit-sdk-node` depends directly on `@bloodtrail/security-audit-sdk-core`. In the evaluation alpha, packages are distributed via local tarballs rather than published npm registry artifacts. If an evaluator attempts to install `@bloodtrail/security-audit-sdk-node` in isolation without configuring package overrides or local tarball paths for `@bloodtrail/security-audit-sdk-core`, the package manager will fail to resolve the core dependency or fail silently with resolution conflicts.
-- **Status & Priority:** Claiming and configuring the `@bloodtrail` npm scope on the public registry is a **P1 priority** prior to public releases. During evaluation, evaluators must follow the installation instructions in `docs/quickstart.md` using the evaluation kit tarballs and `overrides`/`pnpm.overrides`.
+- **Status & Priority:** Claiming and configuring the `@bloodtrail` npm scope on the public registry is a **P1 priority** prior to public releases. During evaluation, evaluators must follow the installation instructions in `docs/quickstart.md` using the evaluation kit tarballs, whose core pin is in the generated `package.json` `overrides` for npm and in the generated `pnpm-workspace.yaml` for pnpm.
 
 ---
 
 ## 5. Yarn is Unsupported
 
-- **Description:** The evaluation kit and offline install harnesses are validated specifically for `npm` (v10+) and `pnpm` (v10+). Yarn (both Yarn v1 Classic and Yarn v2+ Berry / Plug'n'Play) is unsupported.
+- **Description:** The evaluation kit and offline install harnesses are validated specifically for npm, as bundled with Node 24 and Node 26, and pnpm 10, 11 and 12. Yarn (both Yarn v1 Classic and Yarn v2+ Berry / Plug'n'Play) is unsupported.
 - **Reason:** Yarn handles local tarball resolution, peer dependencies, and workspace override hoisting differently from npm and pnpm, leading to unresolvable package graph cycles or missing tarball links during offline evaluation installs.
 - **Requirement:** Evaluators must use `npm` or `pnpm` as documented in `docs/quickstart.md`.

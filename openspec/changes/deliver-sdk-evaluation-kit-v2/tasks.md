@@ -35,7 +35,7 @@ task (9.1) stays unticked until its own ticket.
     releases;
   - a planted type error in it fails the gate, and the control harness asserts the applied count;
   - the file is never a kit item.
-- [ ] 2.2 #652 pnpm 11 and 12 install the kit. Verify that:
+- [x] 2.2 #652 pnpm 11 and 12 install the kit. Verify that:
   - the kit contains a generated pnpm settings file, and the consumer manifest has no `pnpm` field;
   - npm and the pinned pnpm 10, 11 and 12 releases each install outside the repository, run the first
     event, and pass the one-core-copy probe, whose null control still fires;
