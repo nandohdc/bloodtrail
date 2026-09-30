@@ -15,7 +15,7 @@
 
 - [x] 3.1 In `contracts/security-audit`, run `npm ci`, `npm run check:generated`, `npm run validate`, and
   `npm audit` at `high` and at `low`. Verify each passes and no generated artifact changes.
-- [ ] 3.2 Run sdk-core's `test:changed-paths` and `test:contract-immutability`, the final design-pattern
+- [x] 3.2 Run sdk-core's `test:changed-paths` and `test:contract-immutability`, the final design-pattern
   governance phase, both dual-check arms, the contract reuse check for every active change, the merge-stage
   normative precedence check and `git diff --check`. Verify each passes.
 
