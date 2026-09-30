@@ -1,0 +1,139 @@
+{
+  "schema_version": "1.1",
+  "change_id": "upgrade-fast-uri-3-1-8",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The committed sdk-core lockfile resolves fast-uri 3.1.7, which GHSA-hrr3-gc8f-f4qj affects, so the required sdk check fails its npm audit --audit-level=low step on main and on every pull request.",
+    "AJV 8.20.0 already accepts fast-uri through ^3.0.1, and 3.1.8 is the first patched 3.x release, so the fix needs no direct dependency change.",
+    "The remediation must keep sdk-core's dependencies empty, the generated validator byte-identical and the audit threshold that DEPENDENCIES.md sets unchanged."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/package-lock.json",
+    "openspec/changes/upgrade-fast-uri-3-1-8/.openspec.yaml",
+    "openspec/changes/upgrade-fast-uri-3-1-8/assessment.json",
+    "openspec/changes/upgrade-fast-uri-3-1-8/assessment.source.json",
+    "openspec/changes/upgrade-fast-uri-3-1-8/design.md",
+    "openspec/changes/upgrade-fast-uri-3-1-8/proposal.md",
+    "openspec/changes/upgrade-fast-uri-3-1-8/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-refresh-transitive-lock-resolution",
+      "kind": "direct_implementation",
+      "summary": "Refresh only the existing transitive fast-uri lockfile entry to the patched 3.1.8 registry artifact with npm audit fix --package-lock-only, and keep every direct dependency declaration.",
+      "forces_addressed": [
+        "The committed sdk-core lockfile resolves fast-uri 3.1.7, which GHSA-hrr3-gc8f-f4qj affects, so the required sdk check fails its npm audit --audit-level=low step on main and on every pull request.",
+        "AJV 8.20.0 already accepts fast-uri through ^3.0.1, and 3.1.8 is the first patched 3.x release, so the fix needs no direct dependency change.",
+        "The remediation must keep sdk-core's dependencies empty, the generated validator byte-identical and the audit threshold that DEPENDENCIES.md sets unchanged."
+      ]
+    },
+    {
+      "id": "approach-add-direct-fast-uri-constraint",
+      "kind": "alternative",
+      "summary": "Add fast-uri as a direct development dependency or an npm override, so the manifest forces the patched transitive release.",
+      "forces_addressed": [
+        "The committed sdk-core lockfile resolves fast-uri 3.1.7, which GHSA-hrr3-gc8f-f4qj affects, so the required sdk check fails its npm audit --audit-level=low step on main and on every pull request."
+      ]
+    },
+    {
+      "id": "approach-upgrade-ajv",
+      "kind": "alternative",
+      "summary": "Upgrade the direct AJV development dependency and regenerate the lockfile to obtain a patched fast-uri indirectly.",
+      "forces_addressed": [
+        "The committed sdk-core lockfile resolves fast-uri 3.1.7, which GHSA-hrr3-gc8f-f4qj affects, so the required sdk check fails its npm audit --audit-level=low step on main and on every pull request."
+      ]
+    },
+    {
+      "id": "approach-lower-audit-threshold",
+      "kind": "alternative",
+      "summary": "Raise the sdk-core audit level above moderate, or waive this advisory, and leave the lockfile as it is.",
+      "forces_addressed": [
+        "The committed sdk-core lockfile resolves fast-uri 3.1.7, which GHSA-hrr3-gc8f-f4qj affects, so the required sdk check fails its npm audit --audit-level=low step on main and on every pull request."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-refresh-transitive-lock-resolution",
+  "rejected_alternative_ids": [
+    "approach-add-direct-fast-uri-constraint",
+    "approach-upgrade-ajv",
+    "approach-lower-audit-threshold"
+  ],
+  "rejection_reasons": {
+    "approach-add-direct-fast-uri-constraint": {
+      "forces": [
+        "AJV 8.20.0 already accepts fast-uri through ^3.0.1, and 3.1.8 is the first patched 3.x release, so the fix needs no direct dependency change.",
+        "The remediation must keep sdk-core's dependencies empty, the generated validator byte-identical and the audit threshold that DEPENDENCIES.md sets unchanged."
+      ],
+      "reason": "A direct constraint or override duplicates a range AJV already satisfies and adds a manifest-level obligation. Installing the package directly would also put fast-uri in dependencies, which must stay empty."
+    },
+    "approach-upgrade-ajv": {
+      "forces": [
+        "AJV 8.20.0 already accepts fast-uri through ^3.0.1, and 3.1.8 is the first patched 3.x release, so the fix needs no direct dependency change.",
+        "The remediation must keep sdk-core's dependencies empty, the generated validator byte-identical and the audit threshold that DEPENDENCIES.md sets unchanged."
+      ],
+      "reason": "AJV is not the vulnerable unit, and a new AJV release could change the generated validator, widening the change well beyond the three vulnerable lockfile fields."
+    },
+    "approach-lower-audit-threshold": {
+      "forces": [
+        "The remediation must keep sdk-core's dependencies empty, the generated validator byte-identical and the audit threshold that DEPENDENCIES.md sets unchanged."
+      ],
+      "reason": "DEPENDENCIES.md requires npm audit --audit-level=low to pass and says findings are not waived, and a patched release exists, so narrowing the gate would trade a real fix for a weaker check."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-fast-uri-patched-resolution",
+    "implementation-direct-dependencies-preserved",
+    "implementation-generated-validator-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-fast-uri-patched-resolution": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "the lockfile diff resolves node_modules/fast-uri to 3.1.8 with the registry integrity",
+        "npm audit --audit-level=low in sdk-core reports zero vulnerabilities"
+      ]
+    },
+    "implementation-direct-dependencies-preserved": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "packages/security-audit-sdk-core/package.json is unchanged and fast-uri stays dev: true",
+        "npm ci and the complete sdk-core validate chain pass"
+      ]
+    },
+    "implementation-generated-validator-unchanged": {
+      "task_ids": [
+        "3.1"
+      ],
+      "evidence_ids": [
+        "npm run check:generated passes against the committed generated files"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "f752e003e1ccf4144b8a2303a5863b92c44d23f3"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "3.1",
+    "3.2"
+  ]
+}
