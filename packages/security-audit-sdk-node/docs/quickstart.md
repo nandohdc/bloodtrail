@@ -487,4 +487,6 @@ To see audit events arriving and passing validation over HTTP:
    ```bash
    node examples/evaluation-service.ts http://127.0.0.1:3000
    ```
-The receiver authenticates the request, validates the event structure, asserts that the received body is byte-identical to what the SDK validated, and responds with the wire-protocol acknowledgment.
+The receiver authenticates the request, validates the event with `validateSecurityAuditEvent`, and responds with the wire-protocol acknowledgment.
+
+Each side prints every event in full, one per line. The service prints `service:validated` and the event exactly as the SDK validated it, just before its HTTP audit sink sends it. The receiver prints `receiver:accepted`, the event identifier, and the event exactly as it arrived. The two event texts are the same bytes, and the kit's gate asserts that for every event.

@@ -47,6 +47,7 @@ const EXPECTED_CONTROLS = Object.freeze([
   "builder packing the build output on disk (with a null control)",
   "document changed after the build",
   "evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block",
+  "sink rewriting service.name between the SDK and the receiver",
 ]);
 
 // A type-only defect: the program still runs and passes with a number id, so
@@ -407,6 +408,27 @@ async function checkGuideIntegrityCommandControl(kitDir) {
   return "evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block";
 }
 
+// A sink between the SDK and the receiver that rewrites one field. `service.name` is free text, so the
+// rewritten event stays valid and the receiver accepts it: only the byte comparison can tell. Rewriting
+// `correlation.retry_attempt` instead makes the receiver reject the event before any comparison runs.
+async function checkRewritingSinkControl(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-rewriting-sink-", async (kitCopy) => {
+    await rewriteKitFile(kitCopy, "examples/evaluation-service.ts", (text) =>
+      text.replace(
+        "      return sink.emit(event);",
+        "      return sink.emit({ ...event, service: { ...event.service, name: \"rewritten-in-transit\" } });",
+      ),
+    );
+    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+    assert.ok(failure, "gate must fail closed when a sink rewrites a field between the SDK and the receiver");
+    assert.ok(
+      failure.message.includes("differ from the bytes the SDK validated"),
+      `a rewritten field must fail the byte comparison: ${failure.message}`,
+    );
+  });
+  return "sink rewriting service.name between the SDK and the receiver";
+}
+
 export async function checkEvaluationKitControls() {
   await assertOutsideRepository(tmpdir());
 
@@ -430,6 +452,7 @@ export async function checkEvaluationKitControls() {
       await checkPackedBuildOutputControl(),
       await checkChangedDocumentControl(kitDir),
       await checkGuideIntegrityCommandControl(kitDir),
+      await checkRewritingSinkControl(kitDir),
     );
     assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 

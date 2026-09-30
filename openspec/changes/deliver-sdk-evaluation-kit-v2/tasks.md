@@ -60,7 +60,7 @@ task (9.1) stays unticked until its own ticket.
 
 ## 3. Delivery, receiver and service
 
-- [ ] 3.1 #655 Prove the receiver got exactly the bytes the SDK validated. Verify that:
+- [x] 3.1 #655 Prove the receiver got exactly the bytes the SDK validated. Verify that:
   - for each of the five demonstrated events, the gate compares the sender's validated bytes with the
     receiver's received bytes;
   - a sink that rewrites one field fails the check, and the applied count is asserted;

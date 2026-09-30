@@ -14,8 +14,21 @@ import {
   observedSource,
   authoritativeResource,
   authorizationEvidence,
+  type AuditEventSink,
 } from "@bloodtrail/security-audit-sdk-core";
 import assert from "node:assert/strict";
+
+// Prints each event exactly as the SDK validated it, then hands it to the HTTP audit sink unchanged. The
+// receiver prints each event exactly as it arrived, so the two outputs show the same bytes.
+function printValidatedEvents(sink: AuditEventSink): AuditEventSink {
+  return {
+    ...sink,
+    emit(event) {
+      console.log(`service:validated ${JSON.stringify(event)}`);
+      return sink.emit(event);
+    },
+  };
+}
 
 interface RecordAuthorizationOptions {
   readonly policyId: string;
@@ -54,7 +67,7 @@ function createRecordResource(id: string, operationType: "read" | "update") {
 
 export async function runEvaluationService(origin: string = "http://127.0.0.1:3000") {
   const outcomesReceived: unknown[] = [];
-  const sink = createHttpAuditSink({
+  const httpSink = createHttpAuditSink({
     origin,
     path: "/v1/security-audit",
     timeoutMs: 5000,
@@ -65,6 +78,7 @@ export async function runEvaluationService(origin: string = "http://127.0.0.1:30
       outcomesReceived.push(outcome);
     },
   });
+  const sink = printValidatedEvents(httpSink);
 
   const sdk = createNodeSecurityAuditSdk({
     contractVersion: "2.1.0",
