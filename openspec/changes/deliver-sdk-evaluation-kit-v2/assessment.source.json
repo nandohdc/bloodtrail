@@ -1,0 +1,294 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "#609 decided to continue only through independent validation, and #605 had one evaluator, the owner, so the decision still lacks evidence from developers new to Bloodtrail.",
+    "pnpm 11 and 12 no longer read the pnpm field in package.json, so the kit's override is dropped and install fails, while the gate pins pnpm 10 and CI stays green.",
+    "The example receiver crashes on an SDK-invalid event, rejects a byte-identical redelivery, answers every rejection with 401 and serves event bodies on an unauthenticated health endpoint.",
+    "The seeded invalid-call exercise ships its answers and names APIs that do not exist, so M3 cannot measure what the error output and catalog teach.",
+    "The builder packs ignored build output without rebuilding it, so a stale build yields a distributable kit with the right commit and a different digest, and no document is covered.",
+    "Four gate checks are weaker than their ratified requirements: byte identity, the response-body deadline, planted-defect controls and locale-independent ordering.",
+    "#575's authorization was archived with deliver-sdk-evaluation-alpha, and archived records cannot be amended, so kit v2 needs a new authorization under an active change.",
+    "Distribution to evaluators is the owner's decision, so kit v2 must carry an exact identity and ship only under an owner-approved amendment naming the evaluators.",
+    "No evaluator has been recruited and handles must never be invented, so the authorization must fail closed until an owner-approved amendment names them.",
+    "Each implementation PR must pass association without a proposal of its own, and parallel tickets share the gate, the builder and several documents.",
+    "The contract, the core package's source, the collector package, CI workflow files and governance-core documents are outside #649's lane, and two CB-018 changes own the workflow and core gates.",
+    "The kit gate is already 708 lines and codescene delta, a required context, fails any change to a file over 1000 lines."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "integration",
+      "lifecycle_or_state",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/deliver-sdk-evaluation-kit-v2/",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/README.md",
+    "packages/security-audit-sdk-node/src/fetch-exchange.ts",
+    "packages/security-audit-sdk-node/tests/fetch-exchange.test.ts",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
+    "packages/security-audit-sdk-node/scripts/build-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-controls.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-doc-blocks.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-peer.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-failure-paths.ts",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-installers.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-source-copy.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-checksums.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-delivery-checks.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-answer-key.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-doc-references.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-doc-claims.mjs",
+    "packages/security-audit-sdk-node/examples/evaluation-service.ts",
+    "packages/security-audit-sdk-node/examples/evaluation-driver.ts",
+    "packages/security-audit-sdk-node/examples/evaluation-receiver.ts",
+    "packages/security-audit-sdk-node/examples/seeded-invalid-calls.ts",
+    "packages/security-audit-sdk-node/docs/quickstart.md",
+    "packages/security-audit-sdk-node/docs/known-issues.md",
+    "packages/security-audit-sdk-node/docs/wire-protocol.md",
+    "packages/security-audit-sdk-node/docs/privacy.md",
+    "packages/security-audit-sdk-node/docs/supported-and-planned.md",
+    "packages/security-audit-sdk-node/docs/evaluation-guide.md",
+    "packages/security-audit-sdk-node/docs/evaluation-questionnaire.md",
+    "packages/security-audit-sdk-node/docs/seeded-invalid-calls.md",
+    "packages/security-audit-sdk-node/docs/error-catalog.md",
+    "packages/security-audit-sdk-node/docs/integration-and-testing.md",
+    "packages/security-audit-sdk-node/facilitator/seeded-invalid-calls-answer-key.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-kit-v2-change",
+      "kind": "direct_implementation",
+      "summary": "One active change on the Node binding capability that owns exact paths for every #649 ticket, modifies the three kit requirements and adds the example receiver requirement, puts new gate checks in their own modules, and carries a new evaluation authorization that names no evaluator until an owner-approved amendment names them and kit v2's identity.",
+      "forces_addressed": [
+        "#609 decided to continue only through independent validation, and #605 had one evaluator, the owner, so the decision still lacks evidence from developers new to Bloodtrail.",
+        "pnpm 11 and 12 no longer read the pnpm field in package.json, so the kit's override is dropped and install fails, while the gate pins pnpm 10 and CI stays green.",
+        "The example receiver crashes on an SDK-invalid event, rejects a byte-identical redelivery, answers every rejection with 401 and serves event bodies on an unauthenticated health endpoint.",
+        "The seeded invalid-call exercise ships its answers and names APIs that do not exist, so M3 cannot measure what the error output and catalog teach.",
+        "The builder packs ignored build output without rebuilding it, so a stale build yields a distributable kit with the right commit and a different digest, and no document is covered.",
+        "Four gate checks are weaker than their ratified requirements: byte identity, the response-body deadline, planted-defect controls and locale-independent ordering.",
+        "#575's authorization was archived with deliver-sdk-evaluation-alpha, and archived records cannot be amended, so kit v2 needs a new authorization under an active change.",
+        "Distribution to evaluators is the owner's decision, so kit v2 must carry an exact identity and ship only under an owner-approved amendment naming the evaluators.",
+        "No evaluator has been recruited and handles must never be invented, so the authorization must fail closed until an owner-approved amendment names them.",
+        "Each implementation PR must pass association without a proposal of its own, and parallel tickets share the gate, the builder and several documents.",
+        "The contract, the core package's source, the collector package, CI workflow files and governance-core documents are outside #649's lane, and two CB-018 changes own the workflow and core gates.",
+        "The kit gate is already 708 lines and codescene delta, a required context, fails any change to a file over 1000 lines."
+      ]
+    },
+    {
+      "id": "approach-reopen-archived-umbrella",
+      "kind": "alternative",
+      "summary": "Amend the archived deliver-sdk-evaluation-alpha change and its authorization to cover kit v2, instead of proposing a new change.",
+      "forces_addressed": [
+        "#575's authorization was archived with deliver-sdk-evaluation-alpha, and archived records cannot be amended, so kit v2 needs a new authorization under an active change.",
+        "Each implementation PR must pass association without a proposal of its own, and parallel tickets share the gate, the builder and several documents."
+      ]
+    },
+    {
+      "id": "approach-per-defect-changes",
+      "kind": "alternative",
+      "summary": "A separate OpenSpec change for each defect class, such as installers, identity, the receiver and the documents, each with its own proposal, assessment, fold and archive.",
+      "forces_addressed": [
+        "pnpm 11 and 12 no longer read the pnpm field in package.json, so the kit's override is dropped and install fails, while the gate pins pnpm 10 and CI stays green.",
+        "The example receiver crashes on an SDK-invalid event, rejects a byte-identical redelivery, answers every rejection with 401 and serves event bodies on an unauthenticated health endpoint.",
+        "The builder packs ignored build output without rebuilding it, so a stale build yields a distributable kit with the right commit and a different digest, and no document is covered."
+      ]
+    },
+    {
+      "id": "approach-document-pnpm-10-only",
+      "kind": "alternative",
+      "summary": "Keep the pnpm override in the manifest's pnpm field and document pnpm 10 as the only supported pnpm major, leaving the installers unchanged.",
+      "forces_addressed": [
+        "pnpm 11 and 12 no longer read the pnpm field in package.json, so the kit's override is dropped and install fails, while the gate pins pnpm 10 and CI stays green."
+      ]
+    },
+    {
+      "id": "approach-evaluate-kit-v1",
+      "kind": "alternative",
+      "summary": "Run the independent evaluation with kit v1 as it was distributed, and record the known defects as caveats for the evaluators.",
+      "forces_addressed": [
+        "#609 decided to continue only through independent validation, and #605 had one evaluator, the owner, so the decision still lacks evidence from developers new to Bloodtrail."
+      ]
+    },
+    {
+      "id": "approach-placeholder-evaluators",
+      "kind": "alternative",
+      "summary": "Approve the authorization now with placeholder evaluator handles and a placeholder kit identity that are filled in later, so the approval text already carries evaluator slots.",
+      "forces_addressed": [
+        "Distribution to evaluators is the owner's decision, so kit v2 must carry an exact identity and ship only under an owner-approved amendment naming the evaluators."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-kit-v2-change",
+  "rejected_alternative_ids": [
+    "approach-reopen-archived-umbrella",
+    "approach-per-defect-changes",
+    "approach-document-pnpm-10-only",
+    "approach-evaluate-kit-v1",
+    "approach-placeholder-evaluators"
+  ],
+  "rejection_reasons": {
+    "approach-reopen-archived-umbrella": {
+      "forces": [
+        "#575's authorization was archived with deliver-sdk-evaluation-alpha, and archived records cannot be amended, so kit v2 needs a new authorization under an active change."
+      ],
+      "reason": "An archived change is a relocated record: it can no longer own new paths, and editing its authorization would rewrite an approved record instead of adding one, so every implementation PR would still fail association."
+    },
+    "approach-per-defect-changes": {
+      "forces": [
+        "Each implementation PR must pass association without a proposal of its own, and parallel tickets share the gate, the builder and several documents."
+      ],
+      "reason": "Every defect class would need its own proposal PR, assessment, fold and archive, and the classes share the gate, the builder and the documents, so parallel changes would each claim the same paths and collide in the union."
+    },
+    "approach-document-pnpm-10-only": {
+      "forces": [
+        "pnpm 11 and 12 no longer read the pnpm field in package.json, so the kit's override is dropped and install fails, while the gate pins pnpm 10 and CI stays green."
+      ],
+      "reason": "pnpm 12 is npm's latest release, so an evaluator on a current pnpm would fail M1 at the first command, and the kit would keep a gate that stays green while evaluators cannot install."
+    },
+    "approach-evaluate-kit-v1": {
+      "forces": [
+        "The example receiver crashes on an SDK-invalid event, rejects a byte-identical redelivery, answers every rejection with 401 and serves event bodies on an unauthenticated health endpoint.",
+        "The seeded invalid-call exercise ships its answers and names APIs that do not exist, so M3 cannot measure what the error output and catalog teach.",
+        "The builder packs ignored build output without rebuilding it, so a stale build yields a distributable kit with the right commit and a different digest, and no document is covered."
+      ],
+      "reason": "Kit v1 crashes its receiver, ships the M3 answers and no longer matches main after #577, so the evaluation would measure known defects instead of the SDK, and its identity would not bind what evaluators ran."
+    },
+    "approach-placeholder-evaluators": {
+      "forces": [
+        "No evaluator has been recruited and handles must never be invented, so the authorization must fail closed until an owner-approved amendment names them."
+      ],
+      "reason": "Placeholder handles and identities would let an approved record appear to authorize distribution before the owner names anyone, which is exactly what failing closed until an owner-approved amendment prevents."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-kit-installs-with-every-supported-installer",
+    "implementation-identity-binds-tracked-sources",
+    "implementation-bytes-proven-end-to-end",
+    "implementation-receiver-models-careful-ingress",
+    "implementation-body-deadline-is-timeout",
+    "implementation-every-gate-check-has-a-control",
+    "implementation-answer-key-never-ships",
+    "implementation-documents-name-only-real-apis",
+    "implementation-no-release-or-publication",
+    "implementation-owner-authorizes-distribution"
+  ],
+  "invariant_evidence": {
+    "implementation-kit-installs-with-every-supported-installer": {
+      "task_ids": [
+        "2.2"
+      ],
+      "evidence_ids": [
+        "npm and the pinned pnpm 10, 11 and 12 releases each install with one core copy and no ignored setting, and an override only in the pnpm field fails the pnpm 11 and 12 legs"
+      ]
+    },
+    "implementation-identity-binds-tracked-sources": {
+      "task_ids": [
+        "2.3",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "a build after planted stale build output reproduces every digest, the checksum list verifies with shasum, and a changed document fails the identity check"
+      ]
+    },
+    "implementation-bytes-proven-end-to-end": {
+      "task_ids": [
+        "3.1"
+      ],
+      "evidence_ids": [
+        "the gate compares the sender's validated bytes with the receiver's received bytes for all five events, and a field-rewriting sink fails it"
+      ]
+    },
+    "implementation-receiver-models-careful-ingress": {
+      "task_ids": [
+        "3.2"
+      ],
+      "evidence_ids": [
+        "each rejection gets its named status, a redelivery returns ok, the receiver keeps serving, and a duplicate-400 receiver and a rethrowing receiver each fail the gate"
+      ]
+    },
+    "implementation-body-deadline-is-timeout": {
+      "task_ids": [
+        "3.4"
+      ],
+      "evidence_ids": [
+        "a peer stalling mid-body yields SDK_SINK_FAILURE with onOutcome timeout, and mapping it to a malformed acknowledgment fails the gate"
+      ]
+    },
+    "implementation-every-gate-check-has-a-control": {
+      "task_ids": [
+        "2.1",
+        "3.5"
+      ],
+      "evidence_ids": [
+        "each gate check, the failure mapping, the first-event run, the seeded calls and a removed export included, fails on a planted defect with the applied count asserted"
+      ]
+    },
+    "implementation-answer-key-never-ships": {
+      "task_ids": [
+        "4.1"
+      ],
+      "evidence_ids": [
+        "the kit's M3 materials carry no expected answers, every answer-key fix type-checks, and copying the answer key into the kit fails the gate"
+      ]
+    },
+    "implementation-documents-name-only-real-apis": {
+      "task_ids": [
+        "4.2",
+        "4.3"
+      ],
+      "evidence_ids": [
+        "a planted op.commit() and a planted supported retry row each fail the gate, and every code block type-checks in the installed kit"
+      ]
+    },
+    "implementation-no-release-or-publication": {
+      "task_ids": [
+        "2.3",
+        "5.1"
+      ],
+      "evidence_ids": [
+        "every package stays private and UNLICENSED at its current version, with no tag, publication or version move"
+      ]
+    },
+    "implementation-owner-authorizes-distribution": {
+      "task_ids": [
+        "1.1",
+        "6.1",
+        "7.1"
+      ],
+      "evidence_ids": [
+        "evaluation-authorization.md names no evaluator and forbids distribution until an owner-approved, SHA-bound amendment names the evaluators and kit v2's identity"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "The gate proves each demonstrated event reaches the receiver byte-identical to what the SDK validated, and a redelivered copy is acknowledged instead of being reported as a rejection.",
+    "authentication_or_authorization": "The example receiver authenticates before it reads or reveals anything about a body, and distribution needs the owner's SHA-bound approval of an amendment naming evaluators; this version names none.",
+    "authority_provenance": "No authority constructor, brand or registry changes; the example service records a failed login with an anonymous actor, never an unverified identity as server truth.",
+    "concurrency": "No concurrency is introduced; the kit gate runs its installations and loopback checks sequentially, and the sink's concurrency is unchanged.",
+    "confidentiality": "The health endpoint stops serving event bodies, outcome logs carry identifiers, outcomes and statuses only, and every kit value is synthetic.",
+    "cryptography": "No cryptography is implemented; SHA-256 digests identify kit files and artifacts, and do not establish trust.",
+    "error_disclosure": "An unauthenticated caller learns nothing about the body, error illustrations use only SafeAuditError's bounded fields, and the answer key stays with the facilitator.",
+    "external_security_integration": "The gate fetches pinned TypeScript and pnpm releases from the npm registry at gate time only, and nothing becomes a runtime dependency or reaches a production system.",
+    "fail_posture": "The gate fails closed on an ignored installer setting, a missing kit item, a planted defect, stale build output or an unreachable registry, and the authorization fails closed with no evaluator named.",
+    "lifecycle": "The evaluation starts only after the owner's amendment merges, the fold waits for the evaluation to close, and the archive lands after the fold as a merge commit.",
+    "mutation_ownership": "Changes are confined to the exact owned paths and the canonical Node binding spec through the fold; no contract, core source, collector, workflow, governance-core or CB-018-owned path is touched.",
+    "privacy_transformation": "The evaluation is synthetic-data only, with a stop-and-purge condition, and the receiver prints only synthetic events on loopback.",
+    "resource_retention": "Kits are built, installed and verified only in temporary directories outside the repository, and the receiver bounds each body before buffering it.",
+    "retry_or_redelivery": "The documents state one attempt with no retry, the delivery retry primitives are listed outside the evaluated path, and a byte-identical redelivery is acknowledged as the collector glossary requires.",
+    "trust_boundary": "The example receiver runs SDK validation before the collector ingress admits anything, so an SDK-invalid event never takes an identity, and a deadline during the body is a timeout, never acceptance."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "ad894dffdaf5b56742a32bf28627c28db3ce3fb9"
+  }
+}
