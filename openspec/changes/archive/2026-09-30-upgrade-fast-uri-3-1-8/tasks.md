@@ -22,5 +22,5 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After the owner merges the implementation, archive `upgrade-fast-uri-3-1-8` in a separate pull
+- [x] 4.1 After the owner merges the implementation, archive `upgrade-fast-uri-3-1-8` in a separate pull
   request.
