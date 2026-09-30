@@ -1,4 +1,3 @@
-import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { copyFile, cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -7,6 +6,7 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { assertOutsideRepository, buildEvaluationKit, verifyKitIdentity } from "./build-evaluation-kit.mjs";
 import { verifyUnpackedKitIntegrity } from "./evaluation-kit-checksums.mjs";
+import { startLoopbackServer, verifyHttpExchange } from "./evaluation-kit-delivery-checks.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
 import {
   PNPM_RELEASES,
@@ -103,162 +103,14 @@ async function typecheckExamples(tempInstall) {
   }
 }
 
-function findRequiredAcceptedEvent(events, eventName) {
-  const match = events.find((entry) => entry.event?.name === eventName);
-  assert(match, `${eventName} must be accepted at receiver`);
-  return match;
-}
-
-async function assertReceiverHealth(origin) {
-  const healthRes = await fetch(`${origin}/health`);
-  const healthJson = await healthRes.json();
-  assert(healthJson.status === "healthy", `receiver unhealthy: ${JSON.stringify(healthJson)}`);
-  assert(healthJson.acceptedCount === 5, `Expected receiver to accept 5 events, got ${healthJson.acceptedCount}`);
-  assert(Array.isArray(healthJson.events), "receiver /health must include events array");
-
-  const events = healthJson.events;
-  const authz = findRequiredAcceptedEvent(events, "bloodtrail.audit.authorization.denied");
-  assert(authz.actor?.id === "actor-eval-scoped-user", "authorization.denied must carry scoped actor");
-  assert(authz.tenant?.effective_tenant_id === "tenant-eval-scoped", "authorization.denied must carry scoped tenant");
-
-  findRequiredAcceptedEvent(events, "bloodtrail.audit.authentication.failed");
-  findRequiredAcceptedEvent(events, "bloodtrail.audit.authentication.succeeded");
-  findRequiredAcceptedEvent(events, "bloodtrail.audit.data.sensitive_resource.viewed");
-
-  const modified = findRequiredAcceptedEvent(events, "bloodtrail.audit.data.sensitive_resource.modified");
-  assert(modified.event?.commit_state === "committed", "modification commit state must be committed from operation handle");
-  assert(modified.correlation?.operation_id === "22222222-2222-4222-8222-000000000301", "modification must carry operation ID");
-}
-
-async function verifyHttpExchange(tempInstall) {
-  const receiverScript = resolve(tempInstall, "examples/evaluation-receiver.ts");
-  const serviceScript = resolve(tempInstall, "examples/evaluation-service.ts");
-  if (!existsSync(receiverScript) || !existsSync(serviceScript)) {
-    return;
-  }
-
-  const receiverProc = spawn(process.execPath, ["--no-warnings", receiverScript, "0"], {
-    cwd: tempInstall,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-
-  let receiverOrigin = null;
-  const receiverOutput = [];
-  const readyPromise = new Promise((resolveReady, rejectReady) => {
-    receiverProc.stdout.on("data", (chunk) => {
-      const text = chunk.toString("utf8");
-      receiverOutput.push(text);
-      const match = /receiver:ready\s+(http:\/\/127\.0\.0\.1:\d+)/.exec(text);
-      if (match) {
-        receiverOrigin = match[1];
-        resolveReady(receiverOrigin);
-      }
-    });
-    receiverProc.stderr.on("data", (chunk) => {
-      receiverOutput.push(chunk.toString("utf8"));
-    });
-    receiverProc.on("error", rejectReady);
-    receiverProc.on("exit", (code) => {
-      if (!receiverOrigin) {
-        rejectReady(
-          new Error(`receiver exited early with code ${code}:\n${receiverOutput.join("")}`),
-        );
-      }
-    });
-  });
-
-  try {
-    const origin = await Promise.race([
-      readyPromise,
-      new Promise((_, rejectTimeout) =>
-        setTimeout(
-          () => rejectTimeout(new Error("timed out waiting for evaluation-receiver to be ready")),
-          10000,
-        ),
-      ),
-    ]);
-
-    const serviceRun = runChecked(process.execPath, ["--no-warnings", serviceScript, origin], {
-      cwd: tempInstall,
-      capture: true,
-    });
-    assert(
-      serviceRun.includes("service:emitted:authentication.succeeded"),
-      `evaluation-service did not emit authentication.succeeded:\n${serviceRun}`,
-    );
-    assert(
-      serviceRun.includes("service:emitted:authentication.failed"),
-      `evaluation-service did not emit authentication.failed:\n${serviceRun}`,
-    );
-    assert(
-      serviceRun.includes("service:emitted:authorization.denied"),
-      `evaluation-service did not emit authorization.denied:\n${serviceRun}`,
-    );
-    assert(
-      serviceRun.includes("service:context-survives-await:pass"),
-      `context did not survive await in evaluation-service:\n${serviceRun}`,
-    );
-    assert(
-      serviceRun.includes("service:emitted:data.sensitive_resource.viewed"),
-      `evaluation-service did not emit data.sensitive_resource.viewed:\n${serviceRun}`,
-    );
-    assert(
-      serviceRun.includes("service:direct-commit-prevented:pass"),
-      `evaluation-service did not verify direct commit prevention:\n${serviceRun}`,
-    );
-    assert(
-      serviceRun.includes("service:operation-commit:pass"),
-      `evaluation-service did not verify operation commit:\n${serviceRun}`,
-    );
-    assert(
-      serviceRun.includes("service:emitted:data.sensitive_resource.modified"),
-      `evaluation-service did not emit data.sensitive_resource.modified:\n${serviceRun}`,
-    );
-
-    await assertReceiverHealth(origin);
-  } finally {
-    receiverProc.kill("SIGTERM");
-  }
-}
-
 async function verifyFailurePaths(tempInstall) {
-  const peerScript = resolve(packageRoot, "scripts/evaluation-kit-peer.mjs");
-  const peerProc = spawn(process.execPath, ["--no-warnings", peerScript, "0"], {
+  const peer = startLoopbackServer({
+    script: resolve(packageRoot, "scripts/evaluation-kit-peer.mjs"),
     cwd: packageRoot,
-    stdio: ["ignore", "pipe", "pipe"],
+    label: "peer",
   });
-
-  let peerOrigin = null;
-  const peerOutput = [];
-  const peerReadyPromise = new Promise((resolveReady, rejectReady) => {
-    peerProc.stdout.on("data", (chunk) => {
-      const text = chunk.toString("utf8");
-      peerOutput.push(text);
-      const match = /peer:ready\s+(http:\/\/127\.0\.0\.1:\d+)/.exec(text);
-      if (match) {
-        peerOrigin = match[1];
-        resolveReady(peerOrigin);
-      }
-    });
-    peerProc.stderr.on("data", (chunk) => {
-      peerOutput.push(chunk.toString("utf8"));
-    });
-    peerProc.on("error", rejectReady);
-    peerProc.on("exit", (code) => {
-      if (!peerOrigin) {
-        rejectReady(new Error(`peer exited early with code ${code}:\n${peerOutput.join("")}`));
-      }
-    });
-  });
-
   try {
-    const origin = await Promise.race([
-      peerReadyPromise,
-      new Promise((_, rejectTimeout) =>
-        setTimeout(() => rejectTimeout(new Error("timed out waiting for evaluation-kit-peer to be ready")), 10000),
-      ),
-    ]);
-
+    const origin = await peer.origin;
     const failureRun = runChecked(process.execPath, ["--no-warnings", INSTALLED_FAILURE_PATHS_PROGRAM, origin], {
       cwd: tempInstall,
       capture: true,
@@ -268,7 +120,7 @@ async function verifyFailurePaths(tempInstall) {
       `installed kit failure path check did not pass:\n${failureRun}`,
     );
   } finally {
-    peerProc.kill("SIGTERM");
+    peer.child.kill("SIGTERM");
   }
 }
 
@@ -367,7 +219,7 @@ export async function checkEvaluationKit({
     await verifyPnpmInstalls(kitDir);
 
     process.stdout.write(
-      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, doc blocks, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, events emitted and verified over HTTP, failure paths verified\n`,
+      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, doc blocks, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, every demonstrated event received as exactly the bytes the SDK validated, failure paths verified\n`,
     );
     return { success: true };
   } finally {

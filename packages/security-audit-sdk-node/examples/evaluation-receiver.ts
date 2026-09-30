@@ -1,7 +1,6 @@
 import { Buffer } from "node:buffer";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import process from "node:process";
-import assert from "node:assert/strict";
 import {
   CollectorIngress,
   SyntheticFixtureAuthenticator,
@@ -48,8 +47,6 @@ function assertValidEventPayload(body: string): void {
   if (!validated.ok) {
     throw new Error(`SDK validation failed: ${JSON.stringify(validated.error)}`);
   }
-  const serialized = JSON.stringify(validated.value);
-  assert.equal(body, serialized, "Received body must be byte-identical to what SDK validated");
 }
 
 async function handleAuditSubmission(
@@ -85,7 +82,8 @@ async function handleAuditSubmission(
   }
 
   state.acceptedEvents.push(body);
-  console.log(`receiver:accepted ${admission.eventId}`);
+  // The event in full, exactly as it arrived.
+  console.log(`receiver:accepted ${admission.eventId} ${body}`);
 
   sendJson(res, 200, {
     acknowledgments: [
