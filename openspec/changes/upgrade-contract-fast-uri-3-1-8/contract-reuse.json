@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@2.1.0",
+  "mode": "assessment",
+  "disposition": "reuse",
+  "mechanism_references": [
+    "metadata.contract",
+    "metadata.schema_version",
+    "compatibility_policy"
+  ],
+  "rationale": "The change touches the contract workspace only at contracts/security-audit/package-lock.json, moving the transitive dev dependency fast-uri from 3.1.7 to 3.1.8. The lockfile is build and test tooling, not contract content: contract-provenance.json does not declare it. metadata.contract and metadata.schema_version are consumed unchanged, and compatibility_policy is not engaged because no event, field, policy, registry, schema or fixture is redefined or extended, so security-audit@2.1.0 is reused exactly.",
+  "trust_boundary": "No trust boundary moves. fast-uri stays dev: true and is loaded only when the contract tests compile the generated schema with AJV; nothing crosses a process, network or tenancy boundary at runtime, and no shipped artifact changes. The governance boundary is unchanged: the lockfile was already the one path contract.toolchainExemptions exempts from the frozen-contract prefix rule.",
+  "transformation_ownership": "No transformation is added, removed or relocated. The canonical contract source keeps sole ownership of event identity and shape, the contract generator keeps sole ownership of the generated artifacts, and check-contract-immutability.mjs keeps sole ownership of proving that every path contract-provenance.json declares is unchanged.",
+  "alternatives": [
+    {
+      "approach": "extend",
+      "rejection_reason": "Extending security-audit@2.1.0 would claim a contract change in order to remediate a dev dependency advisory. The advisory is in the test toolchain, and no contract input or output changes, so no compatibility classification applies."
+    },
+    {
+      "approach": "new_contract",
+      "rejection_reason": "A new contract would duplicate a frozen and correct security-audit@2.1.0 to move one transitive development dependency. Nothing about the event contract is wrong."
+    }
+  ],
+  "author": {
+    "name": "Claude Code, under direct instruction from Fernando Homem da Costa",
+    "handle": "nandohdc"
+  },
+  "evidence_references": [
+    "openspec/changes/upgrade-contract-fast-uri-3-1-8/proposal.md",
+    "openspec/changes/upgrade-contract-fast-uri-3-1-8/design.md",
+    "packages/security-audit-sdk-core/verification-lifecycle.json",
+    "packages/security-audit-sdk-core/contract-provenance.json",
+    "packages/security-audit-sdk-core/tests/verification/contract-toolchain-exemption.test.mjs"
+  ],
+  "assurance_limitations": [
+    "This record classifies only reuse of security-audit@2.1.0; structural acceptance is not signed review, not owner approval, and not authorization to land the change.",
+    "The claim that no generated contract artifact moves rests on npm run check:generated after reinstalling the workspace on fast-uri 3.1.8 on 2026-09-30; it is evidence for this bump only.",
+    "This record was drafted by an agent session; the author field records the account the work is committed under, not a confirmed human assessment."
+  ]
+}
