@@ -7,13 +7,13 @@
 
 ## 2. Refresh the vulnerable transitive dependency
 
-- [ ] 2.1 Run `npm audit fix --package-lock-only` in `packages/security-audit-sdk-core`. Verify the diff
+- [x] 2.1 Run `npm audit fix --package-lock-only` in `packages/security-audit-sdk-core`. Verify the diff
   changes only the `node_modules/fast-uri` version, registry URL and integrity, to 3.1.8, and that
   `package.json` is unchanged.
 
 ## 3. Verify
 
-- [ ] 3.1 In `packages/security-audit-sdk-core`, run `npm ci`, `npm run check:generated`, the complete
+- [x] 3.1 In `packages/security-audit-sdk-core`, run `npm ci`, `npm run check:generated`, the complete
   `npm run validate` chain and `npm audit --audit-level=low`. Verify each passes and the audit reports
   zero vulnerabilities.
 - [ ] 3.2 Run the final design-pattern governance phase, both dual-check arms, the contract reuse check
