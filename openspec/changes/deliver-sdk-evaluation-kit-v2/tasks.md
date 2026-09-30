@@ -43,7 +43,7 @@ task (9.1) stays unticked until its own ticket.
   - with the override only in the manifest's `pnpm` field, the gate fails on the pnpm 11 and 12 legs;
   - the quickstart and known issues name npm and pnpm 10, 11 and 12 exactly;
   - the PR records, as a measurement, the time the pnpm legs add.
-- [ ] 2.3 #653 Build kit artifacts from tracked sources. Verify that:
+- [x] 2.3 #653 Build kit artifacts from tracked sources. Verify that:
   - two builds of the same tree, the second after stale content is planted in each package's ignored build
     output, produce identical artifact and kit digests;
   - a builder that packs the build output on disk fails that check;

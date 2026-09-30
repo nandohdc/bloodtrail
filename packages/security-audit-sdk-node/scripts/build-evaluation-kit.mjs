@@ -5,10 +5,8 @@ import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { PNPM_SETTINGS_FILE, createPnpmSettings } from "./evaluation-kit-installers.mjs";
-import { assert, packageRoot, repositoryRoot, runChecked } from "./verification-helpers.mjs";
-
-const collectorRoot = resolve(repositoryRoot, "packages/security-audit-collector");
-const coreRoot = resolve(repositoryRoot, "packages/security-audit-sdk-core");
+import { KIT_PACKAGES, copyTrackedSources } from "./evaluation-kit-source-copy.mjs";
+import { assert, byCodePoint, readJson, repositoryRoot, runChecked } from "./verification-helpers.mjs";
 
 export async function assertOutsideRepository(directory) {
   const path = relative(await realpath(repositoryRoot), await realpath(directory));
@@ -16,39 +14,62 @@ export async function assertOutsideRepository(directory) {
   assert(outside, `temporary directory ${directory} is inside the repository tree`);
 }
 
-async function buildCollectorCopy(tempRoot) {
-  const copyRoot = resolve(tempRoot, "collector-build");
-  await cp(collectorRoot, copyRoot, {
-    recursive: true,
-    filter: (source) => relative(collectorRoot, source).split(sep)[0] !== "node_modules",
-  });
-  runChecked("npm", ["ci", "--ignore-scripts", "--no-audit", "--no-fund"], { cwd: copyRoot, capture: true });
-  runChecked("npm", ["run", "build"], { cwd: copyRoot, capture: true });
-  return copyRoot;
+// npm's tarball name for a package manifest, so no package version is ever hard-coded here.
+function artifactFilename(manifest) {
+  return `${manifest.name.replace(/^@/, "").replaceAll("/", "-")}-${manifest.version}.tgz`;
 }
 
-export const PACK_DIRECTORIES = {
-  core: async () => coreRoot,
-  node: async () => packageRoot,
-  collector: buildCollectorCopy,
-};
+async function readPackedManifest(tarballPath) {
+  return JSON.parse(runChecked("tar", ["-xzOf", tarballPath, "package/package.json"], { capture: true }));
+}
 
-export async function packTarball(name, destDir, tempRoot = destDir) {
+// Recomputes each artifact's file name from the manifest packed inside it, and checks that the identity
+// declares exactly the kit's packages, in code-point order of file name.
+async function verifyArtifactNames(kitDir, artifacts) {
+  const names = artifacts.map((artifact) => artifact.name).sort(byCodePoint);
+  const expectedNames = Object.keys(KIT_PACKAGES).sort(byCodePoint);
+  assert(JSON.stringify(names) === JSON.stringify(expectedNames), `identity.json must declare one artifact per kit package: ${expectedNames.join(", ")}`);
+  const filenames = artifacts.map((artifact) => artifact.filename);
+  const ordered = [...filenames].sort(byCodePoint);
+  assert(JSON.stringify(filenames) === JSON.stringify(ordered), `identity.json artifacts must be in code-point order: ${filenames.join(", ")}`);
+  for (const { filename } of artifacts) {
+    const manifest = await readPackedManifest(resolve(kitDir, filename));
+    assert(filename === artifactFilename(manifest), `${filename} must be named after its packed manifest: ${artifactFilename(manifest)}`);
+  }
+}
+
+function buildPackage(packageDir) {
+  runChecked("npm", ["ci", "--ignore-scripts", "--no-audit", "--no-fund"], { cwd: packageDir, capture: true });
+  runChecked("npm", ["run", "build"], { cwd: packageDir, capture: true });
+}
+
+// Packs whatever `packageDir` holds, exactly as it is on disk, into `destDir`.
+export async function packDirectory(packageDir, destDir) {
   const packOut = JSON.parse(
     runChecked("npm", ["pack", "--json", "--pack-destination", destDir, "--ignore-scripts"], {
-      cwd: await PACK_DIRECTORIES[name](tempRoot),
+      cwd: packageDir,
       capture: true,
     }),
   );
   const filename = (Array.isArray(packOut) ? packOut[0] : packOut).filename;
   const path = resolve(destDir, filename);
-  const data = await readFile(path);
-  const sha256 = createHash("sha256").update(data).digest("hex");
-  return { name, filename, path, sha256 };
+  const sha256 = createHash("sha256").update(await readFile(path)).digest("hex");
+  return { filename, path, sha256 };
+}
+
+async function packArtifact(name, packageDir, destDir) {
+  const manifest = await readJson(resolve(packageDir, "package.json"));
+  assert(
+    manifest.private === true && manifest.license === "UNLICENSED",
+    `${manifest.name} must stay private and UNLICENSED`,
+  );
+  const packed = await packDirectory(packageDir, destDir);
+  assert(packed.filename === artifactFilename(manifest), `npm packed ${packed.filename}, expected ${artifactFilename(manifest)}`);
+  return { name, ...packed };
 }
 
 export function computePackageSetDigest(artifacts) {
-  const sorted = [...artifacts].sort((a, b) => a.filename.localeCompare(b.filename));
+  const sorted = [...artifacts].sort((a, b) => byCodePoint(a.filename, b.filename));
   const lines = sorted.map((a) => `${a.sha256}  ${a.filename}\n`).join("");
   return createHash("sha256").update(lines, "utf8").digest("hex");
 }
@@ -61,13 +82,11 @@ export function computeKitDigest(packageSetDigest, manifestDigest) {
   return createHash("sha256").update(`${packageSetDigest}\n${manifestDigest}\n`, "utf8").digest("hex");
 }
 
+// Every kit file other than the artifacts, whose names come from the package manifests.
 export const REQUIRED_KIT_ITEMS = Object.freeze([
   "identity.json",
   "package.json",
   PNPM_SETTINGS_FILE,
-  "bloodtrail-security-audit-sdk-core-0.4.0.tgz",
-  "bloodtrail-security-audit-sdk-node-0.4.0.tgz",
-  "bloodtrail-security-audit-collector-0.1.0.tgz",
   "examples/evaluation-service.ts",
   "examples/evaluation-receiver.ts",
   "examples/seeded-invalid-calls.ts",
@@ -88,7 +107,6 @@ export async function verifyKitIdentity(kitDir) {
   assert(existsSync(identityPath), `identity.json missing in ${kitDir}`);
   assert(existsSync(manifestPath), `package.json missing in ${kitDir}`);
 
-  // Assert all required kit items are present
   for (const item of REQUIRED_KIT_ITEMS) {
     const itemPath = resolve(kitDir, item);
     assert(existsSync(itemPath), `Required kit item missing: ${item}`);
@@ -98,7 +116,7 @@ export async function verifyKitIdentity(kitDir) {
   assert(identity.commit, "identity.json must contain commit SHA");
   assert(/^[0-9a-f]{40}$/i.test(identity.commit), "identity.json commit must be a valid 40-character SHA");
   assert(typeof identity.distributable === "boolean", "identity.json must declare distributable boolean");
-  assert(Array.isArray(identity.artifacts) && identity.artifacts.length === 3, "identity.json must declare 3 artifacts");
+  assert(Array.isArray(identity.artifacts), "identity.json must declare its artifacts");
 
   for (const artifact of identity.artifacts) {
     const artifactPath = resolve(kitDir, artifact.filename);
@@ -107,6 +125,7 @@ export async function verifyKitIdentity(kitDir) {
     const actualSha = createHash("sha256").update(data).digest("hex");
     assert(actualSha === artifact.sha256, `SHA-256 mismatch for ${artifact.filename}: expected ${artifact.sha256}, got ${actualSha}`);
   }
+  await verifyArtifactNames(kitDir, identity.artifacts);
 
   const expectedPkgSetDigest = computePackageSetDigest(identity.artifacts);
   assert(identity.package_set_digest === expectedPkgSetDigest, `package_set_digest mismatch: expected ${expectedPkgSetDigest}, got ${identity.package_set_digest}`);
@@ -134,15 +153,18 @@ function resolveKitGitState(mode, _gitStatus = null) {
   return { commit, distributable };
 }
 
-async function packKitArtifacts(kitDir, parentTemp) {
+// Builds and packs every kit package inside `buildRoot`, a copy of the tracked sources, in build order.
+async function packKitArtifacts(kitDir, buildRoot) {
   const tarballs = {};
   const artifacts = [];
-  for (const name of ["core", "node", "collector"]) {
-    const art = await packTarball(name, kitDir, parentTemp);
-    tarballs[name] = art;
-    artifacts.push({ name: art.name, filename: art.filename, sha256: art.sha256 });
+  for (const [name, packageDir] of Object.entries(KIT_PACKAGES)) {
+    const builtPackageDir = resolve(buildRoot, packageDir);
+    buildPackage(builtPackageDir);
+    const packed = await packArtifact(name, builtPackageDir, kitDir);
+    tarballs[name] = packed;
+    artifacts.push({ name, filename: packed.filename, sha256: packed.sha256 });
   }
-  artifacts.sort((a, b) => a.filename.localeCompare(b.filename));
+  artifacts.sort((a, b) => byCodePoint(a.filename, b.filename));
   return { tarballs, artifacts };
 }
 
@@ -163,25 +185,26 @@ function createConsumerManifest(tarballs) {
   };
 }
 
-async function copyKitAssets(kitDir) {
-  const examplesSrc = resolve(packageRoot, "examples");
+async function copyKitAssets(kitDir, buildRoot) {
+  const nodeRoot = resolve(buildRoot, KIT_PACKAGES.node);
+  const examplesSrc = resolve(nodeRoot, "examples");
   if (existsSync(examplesSrc)) {
     await cp(examplesSrc, resolve(kitDir, "examples"), { recursive: true });
   }
-  const docsSrc = resolve(packageRoot, "docs");
+  const docsSrc = resolve(nodeRoot, "docs");
   if (existsSync(docsSrc)) {
     await cp(docsSrc, resolve(kitDir, "docs"), { recursive: true });
   }
   // Copy READMEs into kit docs so their code blocks are type-checked by the evaluation kit gate
-  const nodeReadme = resolve(packageRoot, "README.md");
+  const nodeReadme = resolve(nodeRoot, "README.md");
   if (existsSync(nodeReadme)) {
     await cp(nodeReadme, resolve(kitDir, "docs/node-readme.md"));
   }
-  const coreReadme = resolve(coreRoot, "README.md");
+  const coreReadme = resolve(buildRoot, KIT_PACKAGES.core, "README.md");
   if (existsSync(coreReadme)) {
     await cp(coreReadme, resolve(kitDir, "docs/core-readme.md"));
   }
-  const rootReadme = resolve(repositoryRoot, "README.md");
+  const rootReadme = resolve(buildRoot, "README.md");
   if (existsSync(rootReadme)) {
     await cp(rootReadme, resolve(kitDir, "docs/root-readme.md"));
   }
@@ -210,32 +233,45 @@ function createKitArchive(kitDir, commit) {
   return archivePath;
 }
 
+/**
+ * Builds a kit from a clean temporary copy of the tracked sources: at the identity commit for a
+ * distributable kit, and from the working tree's tracked files otherwise. `sourceRoot` lets the gate
+ * build a verification kit from a disposable copy of those files instead of the repository.
+ */
 export async function buildEvaluationKit({
   destDir = null,
   mode = "distributable",
   createArchive = true,
+  sourceRoot = repositoryRoot,
   _gitStatus = null,
 } = {}) {
   await assertOutsideRepository(tmpdir());
+  assert(mode !== "distributable" || sourceRoot === repositoryRoot, "a distributable kit is built from the identity commit only");
 
   const { commit, distributable } = resolveKitGitState(mode, _gitStatus);
 
-  const parentTemp = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-build-"));
+  const parentTemp = destDir ? null : await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-build-"));
   const kitDir = destDir ? resolve(destDir) : resolve(parentTemp, "evaluation-kit");
-  const cleanupTarget = destDir ? kitDir : parentTemp;
+  const cleanupTarget = parentTemp ?? kitDir;
   await assertOutsideRepository(dirname(kitDir));
   await mkdir(kitDir, { recursive: true });
 
   const removeKit = () => rm(cleanupTarget, { recursive: true, force: true });
+  const buildRoot = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-sources-"));
 
   try {
-    const { tarballs, artifacts } = await packKitArtifacts(kitDir, parentTemp);
+    await copyTrackedSources({
+      toRoot: buildRoot,
+      commit: distributable ? commit : null,
+      fromRoot: sourceRoot,
+    });
+    const { tarballs, artifacts } = await packKitArtifacts(kitDir, buildRoot);
     const manifest = createConsumerManifest(tarballs);
     const manifestContent = JSON.stringify(manifest, null, 2) + "\n";
     await writeFile(resolve(kitDir, "package.json"), manifestContent, "utf8");
     await writeFile(resolve(kitDir, PNPM_SETTINGS_FILE), createPnpmSettings(tarballs.core.filename), "utf8");
 
-    await copyKitAssets(kitDir);
+    await copyKitAssets(kitDir, buildRoot);
     const identity = await writeKitIdentity(kitDir, { commit, distributable, artifacts, manifestContent });
 
     const archivePath = distributable && createArchive ? createKitArchive(kitDir, commit) : null;
@@ -244,6 +280,8 @@ export async function buildEvaluationKit({
   } catch (err) {
     await removeKit();
     throw err;
+  } finally {
+    await rm(buildRoot, { recursive: true, force: true });
   }
 }
 
