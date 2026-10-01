@@ -125,7 +125,7 @@ task (9.1) stays unticked until its own ticket.
 
 ## 5. Final kit
 
-- [ ] 5.1 #664 Build and verify kit v2. Verify that:
+- [x] 5.1 #664 Build and verify kit v2. Verify that:
   - every implementation ticket is closed, and all ten required contexts are green on the build commit;
   - a distributable kit, built from a clean checkout of that commit, records the full identity;
   - unpacked from its archive in a fresh directory, the checksum list verifies, every supported installer
