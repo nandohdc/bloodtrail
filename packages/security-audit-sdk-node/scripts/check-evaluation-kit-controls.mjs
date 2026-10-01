@@ -55,6 +55,10 @@ const EXPECTED_CONTROLS = Object.freeze([
   "facilitator answer key content copied into the kit",
   "invented API calls named in a kit document (op.commit(), handle.commit())",
   "retries listed as supported in the supported-versus-planned table",
+  "429 classified as a permanent failure in the packed Node binding",
+  "first-event example whose sink rejects the event",
+  "seeded invalid call 1 given the actor it omits",
+  "createHttpAuditSink removed from the packed entry point's runtime exports",
 ]);
 
 // A type-only defect: the program still runs and passes with a number id, so
@@ -568,6 +572,70 @@ async function checkSupportedRetryRowControl(kitDir) {
   return "retries listed as supported in the supported-versus-planned table";
 }
 
+// Plants a defect, runs the whole gate on the kit copy, and asserts the gate failed at the expected check.
+async function assertGateFailsAt(kitCopy, { expectInMessage, defect }) {
+  const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+  assert.ok(failure, `gate must fail closed on ${defect}`);
+  assert.ok(failure.message.includes(expectInMessage), `${defect} must fail at its own check: ${failure.message}`);
+}
+
+async function checkMisclassifiedStatusControl(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-misclassified-status-", async (kitCopy) => {
+    await rewriteKitTarball(kitCopy, "node", "dist/http-response-classification.js", (text) =>
+      text.replace("new Set([408, 425, 429])", "new Set([408, 425])"),
+    );
+    await assertGateFailsAt(kitCopy, {
+      expectInMessage: "evaluation-kit-failure-paths.ts",
+      defect: "a packed classifier that treats 429 as permanent",
+    });
+  });
+  return "429 classified as a permanent failure in the packed Node binding";
+}
+
+async function checkBrokenFirstEventControl(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-broken-first-event-", async (kitCopy) => {
+    // A type-correct defect, so the run, not the type-check, is what fails.
+    await rewriteKitFile(kitCopy, "examples/first-event.ts", (text) =>
+      text.replace('return { status: "accepted" };', 'return { status: "rejected", code: "planted_rejection" };'),
+    );
+    await assertGateFailsAt(kitCopy, {
+      expectInMessage: "examples/first-event.ts",
+      defect: "a first-event run whose sink rejects the event",
+    });
+  });
+  return "first-event example whose sink rejects the event";
+}
+
+async function checkSeededCallNoLongerFailsControl(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-seeded-call-fixed-", async (kitCopy) => {
+    await rewriteKitFile(kitCopy, "examples/seeded-invalid-calls.ts", (text) =>
+      text.replace(
+        "  const call1 = await (sdk.sensitiveResourceViewed as Function)({\n",
+        "  const call1 = await (sdk.sensitiveResourceViewed as Function)({\n    actor: syntheticHumanActor,\n",
+      ),
+    );
+    await assertGateFailsAt(kitCopy, {
+      expectInMessage: "seeded invalid call 1 output mismatch",
+      defect: "a seeded invalid call that no longer fails",
+    });
+  });
+  return "seeded invalid call 1 given the actor it omits";
+}
+
+async function checkRemovedExportControl(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-removed-export-", async (kitCopy) => {
+    // The declarations still name the export, so only running the packed entry point can catch it.
+    await rewriteKitTarball(kitCopy, "node", "dist/index.js", (text) =>
+      text.replace('export { createHttpAuditSink } from "./http-audit-sink.js";\n', ""),
+    );
+    await assertGateFailsAt(kitCopy, {
+      expectInMessage: "does not provide an export named 'createHttpAuditSink'",
+      defect: "an export removed from the packed entry point",
+    });
+  });
+  return "createHttpAuditSink removed from the packed entry point's runtime exports";
+}
+
 export async function checkEvaluationKitControls() {
   await assertOutsideRepository(tmpdir());
 
@@ -598,6 +666,10 @@ export async function checkEvaluationKitControls() {
       await checkAnswerKeyInKitControl(kitDir),
       await checkInventedApiControl(kitDir),
       await checkSupportedRetryRowControl(kitDir),
+      await checkMisclassifiedStatusControl(kitDir),
+      await checkBrokenFirstEventControl(kitDir),
+      await checkSeededCallNoLongerFailsControl(kitDir),
+      await checkRemovedExportControl(kitDir),
     );
     assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 
