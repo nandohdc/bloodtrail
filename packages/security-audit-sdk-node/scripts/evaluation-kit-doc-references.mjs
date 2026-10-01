@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import ts from "typescript";
-import { declaredDocBlockNames } from "./evaluation-kit-doc-blocks.mjs";
+import { declaredDocBlockNames, proseOutsideFencedBlocks } from "./evaluation-kit-doc-blocks.mjs";
 import { assert, packageRoot } from "./verification-helpers.mjs";
 
 // The installed kit's entry points. A kit document may name a function one of them exports, or a member of
@@ -50,7 +50,6 @@ const CONSTRUCTION = new RegExp(String.raw`^new\s+(${IDENTIFIER})\s*\(.*\)$`);
 const MEMBER_REFERENCE = new RegExp(String.raw`^((?:${IDENTIFIER}\.)*)(${IDENTIFIER})\.(${IDENTIFIER})(\(.*\))?$`);
 const BARE_CALL = new RegExp(String.raw`^(${IDENTIFIER})\s*\(.*\)$`);
 const FACTORY_OR_VALIDATOR = /^(?:create|validate)[A-Z][\w$]*$/;
-const FENCE_MARKER = /^[ \t]*(`*)/;
 const INLINE_CODE = /`([^`\r\n]+)`/g;
 
 function resolveEntryPoint(specifier, installDir) {
@@ -170,26 +169,8 @@ function unresolvedReference(span, api, localNames) {
   return FACTORY_OR_VALIDATOR.test(span) ? checkFunctionName(span, api, localNames) : null;
 }
 
-function closesFence(line, marker, fence) {
-  return marker.length >= fence.length && line.trim() === marker;
-}
-
-// A document without its fenced code blocks, which the gate type-checks instead. A fence closes on a line of
-// at least as many backticks as opened it.
-function proseOf(markdownText) {
-  const prose = [];
-  let fence = "";
-  for (const line of markdownText.split("\n")) {
-    const marker = FENCE_MARKER.exec(line)[1];
-    if (fence) fence = closesFence(line, marker, fence) ? "" : fence;
-    else if (marker.length >= 3) fence = marker;
-    else prose.push(line);
-  }
-  return prose.join("\n");
-}
-
 function inlineCodeSpans(markdownText) {
-  const prose = proseOf(markdownText);
+  const prose = proseOutsideFencedBlocks(markdownText);
   return [...prose.matchAll(INLINE_CODE)].map(([, code]) => code.trim()).filter(Boolean);
 }
 

@@ -4,11 +4,11 @@ This document enumerates known issues, operational limitations, and pending arch
 
 ---
 
-## 1. Collector Validates Structure Only
+## 1. The Collector Ingress Checks Structure Only
 
-- **Description:** The reference audit event collector (`@bloodtrail/security-audit-collector`) included with the evaluation suite validates incoming HTTP payloads against the JSON schema definitions of Contract 2.1.0 events. It checks schema shape, required properties, and field type constraints.
-- **Impact:** Semantic rules, authoritative tenant ownership consistency, cryptographic signature checks, and fine-grained cross-field invariant enforcement are not executed by the evaluation collector. Evaluators must rely on SDK-side semantic validation (`@bloodtrail/security-audit-sdk-core`) to catch cross-field invariant violations.
-- **Status:** Expected evaluation alpha limitation. Server-side deep semantic validation is planned for the collector production release.
+- **Description:** The collector ingress (`CollectorIngress` in `@bloodtrail/security-audit-collector`), which the example receiver wraps, checks an event's structure against the JSON schema generated from Contract 2.1.0, and checks its contract version. It runs none of the SDK's semantic checks: tenant-scope policy, causality, authority, and the field rules beyond shape.
+- **Impact:** Acceptance at the ingress is admission, not validity. For example, the ingress admits an event whose `schema.name` is wrong, because any string of the right shape passes. That is why the example receiver runs SDK validation (`validateSecurityAuditEvent`) before it submits an event to the ingress.
+- **Status:** A known limitation of the evaluation alpha.
 
 ---
 
@@ -31,7 +31,7 @@ This document enumerates known issues, operational limitations, and pending arch
 ## 4. Installing the Node Binding on Its Own Breaks Silently
 
 - **Description:** `@bloodtrail/security-audit-sdk-node` depends directly on `@bloodtrail/security-audit-sdk-core`. In the evaluation alpha, packages are distributed via local tarballs rather than published npm registry artifacts. If an evaluator attempts to install `@bloodtrail/security-audit-sdk-node` in isolation without configuring package overrides or local tarball paths for `@bloodtrail/security-audit-sdk-core`, the package manager will fail to resolve the core dependency or fail silently with resolution conflicts.
-- **Status & Priority:** Claiming and configuring the `@bloodtrail` npm scope on the public registry is a **P1 priority** prior to public releases. During evaluation, evaluators must follow the installation instructions in `docs/quickstart.md` using the evaluation kit tarballs, whose core pin is in the generated `package.json` `overrides` for npm and in the generated `pnpm-workspace.yaml` for pnpm.
+- **Status:** Installing the Node binding on its own is unsupported. Install the complete evaluation kit as `docs/quickstart.md` describes. The kit's core pin is in the generated `package.json` `overrides` for npm, and in the generated `pnpm-workspace.yaml` for pnpm.
 
 ---
 
@@ -40,3 +40,11 @@ This document enumerates known issues, operational limitations, and pending arch
 - **Description:** The evaluation kit and offline install harnesses are validated specifically for npm, as bundled with Node 24 and Node 26, and pnpm 10, 11 and 12. Yarn (both Yarn v1 Classic and Yarn v2+ Berry / Plug'n'Play) is unsupported.
 - **Reason:** Yarn handles local tarball resolution, peer dependencies, and workspace override hoisting differently from npm and pnpm, leading to unresolvable package graph cycles or missing tarball links during offline evaluation installs.
 - **Requirement:** Evaluators must use `npm` or `pnpm` as documented in `docs/quickstart.md`.
+
+---
+
+## 6. The Named-Method Input Types Require Context the Runtime Can Supply
+
+- **Description:** Each named method's input type requires its event's context: 23 of the 24 methods require `actor`, 20 require `tenant`, and 7, such as `accountRegistrationAttempted` and `authenticationFailed`, also require `correlation`. The types require these even where the runtime supplies them: an active context scope (`sdk.runWithContext`) or the configuration's `authoritativeContext` can supply `actor` and `tenant`, and the SDK generates the correlation identifier.
+- **Impact:** A call inside a context scope still has to pass `actor`, `tenant` and, for those 7 methods, `correlation`, or it does not type-check. `docs/quickstart.md` shows a call reading them back from the active scope.
+- **Status:** Disclosed, not fixed. Whether to relax these types is a question for this evaluation.

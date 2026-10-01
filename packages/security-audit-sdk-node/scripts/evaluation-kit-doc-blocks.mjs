@@ -52,6 +52,26 @@ export function declaredDocBlockNames(markdownText) {
   return names;
 }
 
+const FENCE_MARKER = /^[ \t]*(`*)/;
+
+function closesFence(line, marker, fence) {
+  return marker.length >= fence.length && line.trim() === marker;
+}
+
+// A document without its fenced code blocks, which the gate type-checks instead. A fence closes on a line of
+// at least as many backticks as opened it.
+export function proseOutsideFencedBlocks(markdownText) {
+  const prose = [];
+  let fence = "";
+  for (const line of markdownText.split("\n")) {
+    const marker = FENCE_MARKER.exec(line)[1];
+    if (fence) fence = closesFence(line, marker, fence) ? "" : fence;
+    else if (marker.length >= 3) fence = marker;
+    else prose.push(line);
+  }
+  return prose.join("\n");
+}
+
 export async function extractDocBlocksFromDir(docsDir, outputDir) {
   await mkdir(outputDir, { recursive: true });
   const entries = await readdir(docsDir, { withFileTypes: true });

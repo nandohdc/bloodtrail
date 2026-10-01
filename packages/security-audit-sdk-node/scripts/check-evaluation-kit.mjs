@@ -14,6 +14,7 @@ import {
 import { verifyUnpackedKitIntegrity } from "./evaluation-kit-checksums.mjs";
 import { startLoopbackServer, verifyHttpExchange } from "./evaluation-kit-delivery-checks.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
+import { assertKitDocsClaimOnlyWhatShips } from "./evaluation-kit-doc-claims.mjs";
 import { assertKitDocReferences } from "./evaluation-kit-doc-references.mjs";
 import {
   PNPM_RELEASES,
@@ -177,6 +178,9 @@ export async function checkEvaluationKit({
     // 1c. The kit's documents name exactly the pnpm majors this gate installs with
     await assertKitDocsNameInstallers(kitDir);
 
+    // 1d. The kit's documents describe OCSF export, OpenTelemetry transport, CloudEvents envelopes, retries, queues and framework adapters only as planned
+    await assertKitDocsClaimOnlyWhatShips(kitDir);
+
     // 2. Reproducibility: the same tracked tree rebuilds to the same digests, with or without stale build output on disk
     if (!existingKitDir) {
       await checkReproducibleIdentity(identity);
@@ -234,7 +238,7 @@ export async function checkEvaluationKit({
     await verifyPnpmInstalls(kitDir);
 
     process.stdout.write(
-      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, every call-shaped document reference resolved against the installed packages' type declarations, doc blocks, facilitator answer-key fixes, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, every demonstrated event received as exactly the bytes the SDK validated, the receiver answering 401, 413, 400, 422 and 409, acknowledging duplicates and still serving, seeded invalid calls verified, failure paths verified\n`,
+      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, planned features described only as planned, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, every call-shaped document reference resolved against the installed packages' type declarations, doc blocks, facilitator answer-key fixes, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, every demonstrated event received as exactly the bytes the SDK validated, the receiver answering 401, 413, 400, 422 and 409, acknowledging duplicates and still serving, seeded invalid calls verified, failure paths verified\n`,
     );
     return { success: true };
   } finally {

@@ -107,7 +107,7 @@ task (9.1) stays unticked until its own ticket.
   - every call-shaped inline reference in the kit's documents resolves against the installed packages;
   - every current offender is fixed, the privacy guidance's method name included;
   - a planted `op.commit()` in a kit document fails the gate.
-- [ ] 4.3 #662 Make the evaluator documents tell the truth about the alpha. Verify that:
+- [x] 4.3 #662 Make the evaluator documents tell the truth about the alpha. Verify that:
   - the Node binding README states its frozen status, and no longer says "provisional";
   - the quickstart describes the core as a regular dependency, and states exactly what a context scope
     supplies and what the types require;
