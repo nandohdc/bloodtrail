@@ -87,6 +87,7 @@ interface ReceivedRequest {
   readonly url: string | undefined;
   readonly headers: IncomingHttpHeaders;
   readonly body: Buffer;
+  readonly bodyText: string;
 }
 
 type Handler = (request: IncomingMessage, body: string, response: ServerResponse) => void;
@@ -111,8 +112,10 @@ async function peer(handler: Handler): Promise<Peer> {
     request.on("data", (chunk: Buffer) => chunks.push(chunk));
     request.on("end", () => {
       const body = Buffer.concat(chunks);
-      received.push({ method: request.method, url: request.url, headers: request.headers, body });
-      handler(request, body.toString("utf8"), response);
+      const bodyText = body.toString("utf8");
+      const url = request.url === PATH ? PATH : undefined;
+      received.push({ method: request.method, url, headers: request.headers, body, bodyText });
+      handler(request, bodyText, response);
     });
   });
   servers.push(server);
@@ -166,9 +169,29 @@ function slowly(handler: Handler, delayMs = 400): Handler {
   return (request, body, response) => setTimeout(() => handler(request, body, response), delayMs);
 }
 
+interface ElsewherePeer {
+  readonly origin: string;
+  readonly count: () => number;
+}
+
+async function elsewherePeer(): Promise<ElsewherePeer> {
+  let count = 0;
+  const server = createServer((_request, response) => {
+    count += 1;
+    response.writeHead(200);
+    response.end();
+  });
+  servers.push(server);
+  await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  return { origin: `http://127.0.0.1:${address.port}`, count: () => count };
+}
+
 function redirectTo(target: string, status = 302): Handler {
+  const safeLocation = new URL(PATH, target).href;
   return (_request, _body, response) => {
-    response.writeHead(status, { location: `${target}${PATH}` });
+    response.writeHead(status, { location: safeLocation });
     response.end();
   };
 }
@@ -310,7 +333,7 @@ describe("HTTP audit sink", () => {
     assert.equal(request.url, PATH);
     assert.equal(request.headers["content-type"], "application/json");
     assert.ok(request.body.equals(await validatedBody()), "the body must be the validated event's exact bytes");
-    assert.equal((JSON.parse(request.body.toString("utf8")) as SecurityAuditEvent).correlation.retry_attempt, 3);
+    assert.equal((JSON.parse(request.bodyText) as SecurityAuditEvent).correlation.retry_attempt, 3);
   });
 
   it("sends exactly one request per emit, and never a second one for a failed send", async () => {
@@ -333,7 +356,7 @@ describe("HTTP audit sink", () => {
   });
 
   it("never follows a redirect, and the SDK reports the send as failed", async () => {
-    const elsewhere = await peer(acknowledge());
+    const elsewhere = await elsewherePeer();
     for (const status of [301, 302, 303, 307, 308]) {
       const { origin, received } = await peer(redirectTo(elsewhere.origin, status));
       const { sink, reports } = recordingSinkFor(origin);
@@ -341,7 +364,7 @@ describe("HTTP audit sink", () => {
       assert.deepEqual(reports, [{ eventId, outcome: "unexpected_response", status }], `status ${status}`);
       assert.equal(received.length, 1, `status ${status}`);
     }
-    assert.equal(elsewhere.received.length, 0);
+    assert.equal(elsewhere.count(), 0);
   });
 
   it("accepts only the exact acknowledgment for this event", async () => {
@@ -410,7 +433,7 @@ describe("HTTP audit sink", () => {
   it("keeps a sentinel credential on the wire to the configured origin, out of every outcome, result, error and log", async () => {
     const sentinel = "sentinel-credential-7d2e";
     const headers = { authorization: `Bearer ${sentinel}` };
-    const elsewhere = await peer(acknowledge());
+    const elsewhere = await elsewherePeer();
     const seen: unknown[] = [];
     const logged = await captureLogs(async () => {
       for (const { handler, outcome, timeoutMs } of [
@@ -430,7 +453,7 @@ describe("HTTP audit sink", () => {
       }
     });
 
-    assert.equal(elsewhere.received.length, 0, "a redirect must not carry the credential elsewhere");
+    assert.equal(elsewhere.count(), 0, "a redirect must not carry the credential elsewhere");
     // Two results and two reports for each of the five peers.
     assert.equal(seen.length, 20);
     assert.ok(!inspect(seen, { depth: null, showHidden: true }).includes(sentinel), "no outcome, result or error may carry it");
@@ -605,7 +628,7 @@ describe("HTTP audit sink", () => {
 
     assert.deepEqual((await Promise.all(sending)).map(sdkOutcome), events.map(() => "accepted"));
     const ids = events.map((event) => event.event.id);
-    const sentIds = received.map((request) => (JSON.parse(request.body.toString("utf8")) as SecurityAuditEvent).event.id);
+    const sentIds = received.map((request) => (JSON.parse(request.bodyText) as SecurityAuditEvent).event.id);
     assert.equal(received.length, CONCURRENT_EMITS);
     assert.deepEqual(new Set(sentIds), new Set(ids));
     assert.equal(reports.length, CONCURRENT_EMITS);

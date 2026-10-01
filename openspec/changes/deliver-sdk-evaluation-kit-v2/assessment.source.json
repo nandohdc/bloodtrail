@@ -33,6 +33,7 @@
     "packages/security-audit-sdk-node/README.md",
     "packages/security-audit-sdk-node/src/fetch-exchange.ts",
     "packages/security-audit-sdk-node/tests/fetch-exchange.test.ts",
+    "packages/security-audit-sdk-node/tests/http-audit-sink.test.ts",
     "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
     "packages/security-audit-sdk-node/scripts/build-evaluation-kit.mjs",
     "packages/security-audit-sdk-node/scripts/check-evaluation-kit.mjs",
