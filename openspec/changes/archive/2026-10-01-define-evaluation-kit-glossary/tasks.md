@@ -21,5 +21,5 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After the implementation merges, archive `define-evaluation-kit-glossary` in a separate pull
+- [x] 4.1 After the implementation merges, archive `define-evaluation-kit-glossary` in a separate pull
   request.
