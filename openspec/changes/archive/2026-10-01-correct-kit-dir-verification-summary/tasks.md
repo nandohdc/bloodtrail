@@ -30,5 +30,5 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After the implementation merges, archive `correct-kit-dir-verification-summary` in a separate pull
+- [x] 4.1 After the implementation merges, archive `correct-kit-dir-verification-summary` in a separate pull
   request.
