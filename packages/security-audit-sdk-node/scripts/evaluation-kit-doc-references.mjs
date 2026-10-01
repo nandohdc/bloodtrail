@@ -1,226 +1,221 @@
 import { readdir, readFile } from "node:fs/promises";
 import { extname, resolve } from "node:path";
-import process from "node:process";
-import { pathToFileURL } from "node:url";
-import * as coreSdk from "@bloodtrail/security-audit-sdk-core";
-import * as coreTesting from "@bloodtrail/security-audit-sdk-core/testing";
-import * as nodeSdk from "@bloodtrail/security-audit-sdk-node";
-import { extractDeclaredDocBlockIdentifiers } from "./evaluation-kit-doc-blocks.mjs";
-import { assert } from "./verification-helpers.mjs";
+import ts from "typescript";
+import { declaredDocBlockNames } from "./evaluation-kit-doc-blocks.mjs";
+import { assert, packageRoot } from "./verification-helpers.mjs";
 
-const FENCED_BLOCK_PATTERN = /```[\s\S]*?```|````[\s\S]*?````/g;
-const INLINE_CODE_PATTERN = /`([^`\r\n]+)`/g;
-const DOTTED_CALL_PATTERN = /^([a-zA-Z0-9_$]+)\.([a-zA-Z0-9_$]+)(?:\(.*\))?$/;
-const CALL_PATTERN = /^([a-zA-Z0-9_$]+)\s*\(.*\)$/;
-const FACTORY_VALIDATOR_PATTERN = /^(?:create|validate)[A-Z][a-zA-Z0-9_$]*$/;
+// The installed kit's entry points. A kit document may name a function one of them exports, or a member of
+// a type one of them exports.
+const KIT_ENTRY_POINTS = Object.freeze([
+  "@bloodtrail/security-audit-sdk-core",
+  "@bloodtrail/security-audit-sdk-core/testing",
+  "@bloodtrail/security-audit-sdk-node",
+  "@bloodtrail/security-audit-collector",
+]);
 
-const SINK_METHODS = Object.freeze(new Set(["emit", "flush", "shutdown"]));
-const OP_METHODS = Object.freeze(
-  new Set([
-    "snapshot",
-    "markCommitted",
-    "markNotCommitted",
-    "markPartiallyCommitted",
-    "markCompensated",
-    "markCancelled",
-  ]),
+// The receiver names the documents give the SDK's objects, and the exported type each one stands for.
+const DOCUMENTED_RECEIVERS = new Map([
+  ["sdk", "SecurityAuditSdk"],
+  ["audit", "SecurityAuditSdk"],
+  ["op", "AuditOperationHandle"],
+  ["sink", "AuditEventSink"],
+  ["clock", "AuditClock"],
+]);
+
+const COMPILER_OPTIONS = {
+  module: ts.ModuleKind.NodeNext,
+  moduleResolution: ts.ModuleResolutionKind.NodeNext,
+  target: ts.ScriptTarget.ES2024,
+  strict: true,
+  noEmit: true,
+  skipLibCheck: true,
+  typeRoots: [resolve(packageRoot, "node_modules/@types")],
+  types: ["node"],
+};
+
+const TYPE_SYMBOLS = ts.SymbolFlags.Interface | ts.SymbolFlags.TypeAlias | ts.SymbolFlags.Class;
+
+// Methods of the platform's own objects, such as an event timestamp's `toISOString()`.
+const PLATFORM_METHODS = new Set(
+  [Object, Array, String, Number, Date, Promise, Map, Set, RegExp, Error, URL, Headers, Response]
+    .flatMap((type) => Object.entries(Object.getOwnPropertyDescriptors(type.prototype)))
+    .filter(([, descriptor]) => typeof descriptor.value === "function")
+    .map(([name]) => name),
 );
-const CLOCK_METHODS = Object.freeze(new Set(["now"]));
-const HANDOFF_METHODS = Object.freeze(new Set(["submit"]));
-const SHUTDOWN_METHODS = Object.freeze(new Set(["submit", "shutdown"]));
-const STANDARD_METHODS = Object.freeze(
-  new Set(["now", "toISOString", "toJSON", "sort", "unref", "submit", "randomUUID", "byteLength", "exit"]),
-);
-const IGNORED_PREFIXES = Object.freeze(["{", "[", '"', "'", "<", "npm ", "node ", "git ", "shasum "]);
 
-export function stripFencedCodeBlocks(markdownText) {
-  return markdownText.replace(FENCED_BLOCK_PATTERN, "");
-}
+// Inline code that is not a code reference: a literal, a path, a shell command or a module specifier.
+const NOT_A_CODE_REFERENCE = /^(?:[{["'</]|(?:npm|npx|pnpm|node|git|shasum|tar|cd)\s|node:)/;
+const IDENTIFIER = String.raw`[A-Za-z_$][\w$]*`;
+const CONSTRUCTION = new RegExp(String.raw`^new\s+(${IDENTIFIER})\s*\(.*\)$`);
+const MEMBER_REFERENCE = new RegExp(String.raw`^((?:${IDENTIFIER}\.)*)(${IDENTIFIER})\.(${IDENTIFIER})(\(.*\))?$`);
+const BARE_CALL = new RegExp(String.raw`^(${IDENTIFIER})\s*\(.*\)$`);
+const FACTORY_OR_VALIDATOR = /^(?:create|validate)[A-Z][\w$]*$/;
+const FENCE_MARKER = /^[ \t]*(`*)/;
+const INLINE_CODE = /`([^`\r\n]+)`/g;
 
-export function extractInlineCodeSpans(markdownText) {
-  const prose = stripFencedCodeBlocks(markdownText);
-  const spans = [];
-  let match;
-  INLINE_CODE_PATTERN.lastIndex = 0;
-  while ((match = INLINE_CODE_PATTERN.exec(prose)) !== null) {
-    const code = match[1]?.trim();
-    if (code) {
-      spans.push(code);
-    }
-  }
-  return spans;
-}
-
-function isIgnoredSpan(span) {
-  return IGNORED_PREFIXES.some((prefix) => span.startsWith(prefix));
-}
-
-function parseStandardBuiltin(span) {
-  if (span.startsWith("new Date")) return { kind: "standard", name: "Date", raw: span };
-  if (span.startsWith("node:crypto.randomUUID")) return { kind: "standard", name: "randomUUID", raw: span };
-  if (span.startsWith("Buffer.byteLength")) return { kind: "standard", name: "byteLength", raw: span };
-  return null;
-}
-
-function parseDottedReference(span, allowedReceivers) {
-  const match = DOTTED_CALL_PATTERN.exec(span);
-  if (!match) return null;
-  const receiver = match[1];
-  const member = match[2];
-  if (allowedReceivers.has(receiver)) {
-    return { kind: "receiver", receiver, member, raw: span };
-  }
-  return null;
-}
-
-function parseCallReference(span) {
-  const match = CALL_PATTERN.exec(span);
-  if (!match) return null;
-  return { kind: "call", name: match[1], raw: span };
-}
-
-function parseFactoryOrValidator(span) {
-  if (FACTORY_VALIDATOR_PATTERN.test(span)) {
-    return { kind: "function", name: span, raw: span };
-  }
-  return null;
-}
-
-export function parseCallShapedReference(span, allowedReceivers) {
-  if (isIgnoredSpan(span)) return null;
-  const standard = parseStandardBuiltin(span);
-  if (standard) return standard;
-  const dotted = parseDottedReference(span, allowedReceivers);
-  if (dotted) return dotted;
-  const call = parseCallReference(span);
-  if (call) return call;
-  return parseFactoryOrValidator(span);
-}
-
-export function buildReceiverMethodMaps() {
-  const eventMethods = coreSdk.EVENT_METHODS.map((m) => m.method);
-  const sdkMethods = new Set([
-    ...eventMethods,
-    "emit",
-    "redeliver",
-    "beginOperation",
-    "runWithContext",
-    "flush",
-    "shutdown",
-  ]);
-  return {
-    sdk: sdkMethods,
-    audit: sdkMethods,
-    op: OP_METHODS,
-    sink: SINK_METHODS,
-    clock: CLOCK_METHODS,
-    AuditEventSink: SINK_METHODS,
-    DeliveryShutdown: SHUTDOWN_METHODS,
-    HttpDeliveryHandoff: HANDOFF_METHODS,
-  };
-}
-
-export function buildExportedFunctionSet() {
-  return new Set([
-    ...Object.keys(nodeSdk).filter((k) => typeof nodeSdk[k] === "function"),
-    ...Object.keys(coreSdk).filter((k) => typeof coreSdk[k] === "function"),
-    ...Object.keys(coreTesting).filter((k) => typeof coreTesting[k] === "function"),
-  ]);
-}
-
-export function buildAllKnownMethodsSet(receiverMaps) {
-  const allMethods = new Set(STANDARD_METHODS);
-  for (const methodSet of Object.values(receiverMaps)) {
-    for (const method of methodSet) {
-      allMethods.add(method);
-    }
-  }
-  return allMethods;
-}
-
-export function createDefaultContext() {
-  const receiverMaps = buildReceiverMethodMaps();
-  const exportedFunctions = buildExportedFunctionSet();
-  const allKnownMethods = buildAllKnownMethodsSet(receiverMaps);
-  return { receiverMaps, exportedFunctions, allKnownMethods };
-}
-
-function resolveReceiverReference(ref, receiverMaps) {
-  const allowed = receiverMaps[ref.receiver];
-  if (allowed?.has(ref.member)) return null;
-  return `Unknown method "${ref.member}" on "${ref.receiver}"`;
-}
-
-function resolveCallReference(ref, context) {
-  const { exportedFunctions, allKnownMethods, localHelpers } = context;
-  if (exportedFunctions.has(ref.name)) return null;
-  if (allKnownMethods.has(ref.name)) return null;
-  if (localHelpers?.has(ref.name)) return null;
-  return `Unknown function or method "${ref.name}()"`;
-}
-
-function resolveFunctionReference(ref, context) {
-  const { exportedFunctions, localHelpers } = context;
-  if (exportedFunctions.has(ref.name)) return null;
-  if (localHelpers?.has(ref.name)) return null;
-  return `Unknown exported function "${ref.name}"`;
-}
-
-export function resolveReference(ref, context) {
-  if (ref.kind === "standard") return null;
-  if (ref.kind === "receiver") {
-    return resolveReceiverReference(ref, context.receiverMaps);
-  }
-  if (ref.kind === "call") {
-    return resolveCallReference(ref, context);
-  }
-  if (ref.kind === "function") {
-    return resolveFunctionReference(ref, context);
-  }
-  return null;
-}
-
-export function verifyDocumentText(text, baseContext) {
-  const localHelpers = extractDeclaredDocBlockIdentifiers(text);
-  const context = { ...baseContext, localHelpers };
-  const allowedReceivers = new Set(Object.keys(baseContext.receiverMaps));
-  const spans = extractInlineCodeSpans(text);
-  const errors = [];
-
-  for (const span of spans) {
-    const ref = parseCallShapedReference(span, allowedReceivers);
-    if (!ref) continue;
-    const failure = resolveReference(ref, context);
-    if (failure) {
-      errors.push({ raw: span, reason: failure });
-    }
-  }
-  return errors;
-}
-
-export async function assertKitDocReferences(docsDir, baseContext = createDefaultContext()) {
-  const entries = await readdir(docsDir, { withFileTypes: true });
-  const failures = [];
-
-  for (const entry of entries) {
-    if (entry.isFile() && extname(entry.name).toLowerCase() === ".md") {
-      const filePath = resolve(docsDir, entry.name);
-      const text = await readFile(filePath, "utf8");
-      const errors = verifyDocumentText(text, baseContext);
-      for (const err of errors) {
-        failures.push(`${entry.name}: \`${err.raw}\` (${err.reason})`);
-      }
-    }
-  }
-
-  assert(
-    failures.length === 0,
-    `evaluation kit doc references check failed with ${failures.length} unresolved reference(s):\n  ${failures.join("\n  ")}`,
+function resolveEntryPoint(specifier, installDir) {
+  const { resolvedModule } = ts.resolveModuleName(
+    specifier,
+    resolve(installDir, "doc-references.mts"),
+    COMPILER_OPTIONS,
+    ts.sys,
+    undefined,
+    undefined,
+    ts.ModuleKind.ESNext,
   );
+  assert(resolvedModule?.extension === ts.Extension.Dts, `the installed kit has no type declarations for ${specifier}`);
+  return resolvedModule.resolvedFileName;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const docsDir = process.argv[2] ? resolve(process.argv[2]) : resolve(process.cwd(), "docs");
-  await assertKitDocReferences(docsDir);
-  process.stdout.write(`kit doc references valid: all call-shaped references in ${docsDir} resolve\n`);
+function recordMembers(checker, type, members, api) {
+  for (const property of checker.getPropertiesOfType(type)) {
+    const callable = checker.getNonNullableType(checker.getTypeOfSymbol(property)).getCallSignatures().length > 0;
+    members.set(property.name, callable);
+    if (callable) api.methods.add(property.name);
+  }
+}
+
+function recordExport(checker, exported, api) {
+  const symbol = exported.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(exported) : exported;
+  if (symbol.flags & TYPE_SYMBOLS) {
+    const members = new Map();
+    recordMembers(checker, checker.getDeclaredTypeOfSymbol(symbol), members, api);
+    api.membersByType.set(exported.name, members);
+  }
+  if (symbol.flags & ts.SymbolFlags.Class) {
+    // A class's static members, beside its instance members.
+    recordMembers(checker, checker.getTypeOfSymbol(symbol), api.membersByType.get(exported.name), api);
+    api.classes.add(exported.name);
+  } else if (symbol.flags & ts.SymbolFlags.Value && checker.getTypeOfSymbol(symbol).getCallSignatures().length > 0) {
+    api.functions.add(exported.name);
+  }
+}
+
+/**
+ * Reads the installed packages' type declarations: every function they export, every class, and the
+ * members of every type, each marked as callable or not.
+ */
+function readInstalledApi(installDir) {
+  const files = KIT_ENTRY_POINTS.map((specifier) => resolveEntryPoint(specifier, installDir));
+  const program = ts.createProgram(files, COMPILER_OPTIONS);
+  const checker = program.getTypeChecker();
+  const api = { functions: new Set(), classes: new Set(), methods: new Set(), membersByType: new Map() };
+  for (const file of files) {
+    const moduleSymbol = checker.getSymbolAtLocation(program.getSourceFile(file));
+    assert(moduleSymbol, `${file} declares no module`);
+    for (const exported of checker.getExportsOfModule(moduleSymbol)) {
+      recordExport(checker, exported, api);
+    }
+  }
+  for (const typeName of DOCUMENTED_RECEIVERS.values()) {
+    assert(api.membersByType.has(typeName), `the installed kit exports no type ${typeName}, which documents name`);
+  }
+  return api;
+}
+
+function isPlatformGlobal(name) {
+  return Object.hasOwn(globalThis, name);
+}
+
+function isDeclaredCallable(name, api, localNames) {
+  return api.functions.has(name) || api.methods.has(name) || localNames.has(name) || PLATFORM_METHODS.has(name);
+}
+
+function checkTypeMember(typeName, member, called, api) {
+  const members = api.membersByType.get(typeName);
+  if (!members.has(member)) return `${typeName} has no member ${member}`;
+  return called && !members.get(member) ? `${typeName}.${member} is not a method` : null;
+}
+
+function receiverType(path, receiver, api) {
+  if (path) return null;
+  return DOCUMENTED_RECEIVERS.get(receiver) ?? (api.membersByType.has(receiver) ? receiver : null);
+}
+
+// `sdk.x`, `op.x()` and `SomeType.x` must name a member of that type. Any other `a.b.x()` must name a method
+// some installed type declares. A path with no call, such as `event.actor.id`, names a field, not an API.
+function checkMemberReference([, path, receiver, member, call], api, localNames) {
+  const typeName = receiverType(path, receiver, api);
+  if (typeName) return checkTypeMember(typeName, member, Boolean(call), api);
+  if (!call || isPlatformGlobal(receiver)) return null;
+  return isDeclaredCallable(member, api, localNames) ? null : `no installed package declares a method ${member}`;
+}
+
+function checkBareCall(name, api, localNames) {
+  if (isDeclaredCallable(name, api, localNames) || isPlatformGlobal(name)) return null;
+  return `no installed package exports a function or declares a method ${name}`;
+}
+
+function checkConstruction(name, api, localNames) {
+  const constructible = api.classes.has(name) || localNames.has(name) || isPlatformGlobal(name);
+  return constructible ? null : `no installed package exports a class ${name}`;
+}
+
+function checkFunctionName(name, api, localNames) {
+  return api.functions.has(name) || localNames.has(name) ? null : `no installed package exports a function ${name}`;
+}
+
+/**
+ * Returns why a span of inline code names an API that does not exist, or null when it names one that does,
+ * or is not a call-shaped reference at all.
+ */
+function unresolvedReference(span, api, localNames) {
+  if (NOT_A_CODE_REFERENCE.test(span)) return null;
+  const construction = CONSTRUCTION.exec(span);
+  if (construction) return checkConstruction(construction[1], api, localNames);
+  const member = MEMBER_REFERENCE.exec(span);
+  if (member) return checkMemberReference(member, api, localNames);
+  const call = BARE_CALL.exec(span);
+  if (call) return checkBareCall(call[1], api, localNames);
+  return FACTORY_OR_VALIDATOR.test(span) ? checkFunctionName(span, api, localNames) : null;
+}
+
+function closesFence(line, marker, fence) {
+  return marker.length >= fence.length && line.trim() === marker;
+}
+
+// A document without its fenced code blocks, which the gate type-checks instead. A fence closes on a line of
+// at least as many backticks as opened it.
+function proseOf(markdownText) {
+  const prose = [];
+  let fence = "";
+  for (const line of markdownText.split("\n")) {
+    const marker = FENCE_MARKER.exec(line)[1];
+    if (fence) fence = closesFence(line, marker, fence) ? "" : fence;
+    else if (marker.length >= 3) fence = marker;
+    else prose.push(line);
+  }
+  return prose.join("\n");
+}
+
+function inlineCodeSpans(markdownText) {
+  const prose = proseOf(markdownText);
+  return [...prose.matchAll(INLINE_CODE)].map(([, code]) => code.trim()).filter(Boolean);
+}
+
+async function documentFailures(docsDir, name, api) {
+  const text = await readFile(resolve(docsDir, name), "utf8");
+  const localNames = declaredDocBlockNames(text);
+  return inlineCodeSpans(text)
+    .map((span) => [span, unresolvedReference(span, api, localNames)])
+    .filter(([, reason]) => reason)
+    .map(([span, reason]) => `docs/${name}: \`${span}\`: ${reason}`);
+}
+
+/**
+ * Every call-shaped reference in inline code across the installed kit's documents must name a function an
+ * installed package exports, a member of a type one exports, or a helper its document declares in a checked
+ * code block.
+ */
+export async function assertKitDocReferences(installDir) {
+  const api = readInstalledApi(installDir);
+  const docsDir = resolve(installDir, "docs");
+  const documents = (await readdir(docsDir, { withFileTypes: true }))
+    .filter((entry) => entry.isFile() && extname(entry.name) === ".md")
+    .map((entry) => entry.name);
+  const failures = [];
+  for (const name of documents) {
+    failures.push(...(await documentFailures(docsDir, name, api)));
+  }
+  assert(failures.length === 0, `kit documents name APIs the installed packages do not declare:\n  ${failures.join("\n  ")}`);
 }

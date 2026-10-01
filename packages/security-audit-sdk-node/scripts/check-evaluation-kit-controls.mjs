@@ -53,7 +53,7 @@ const EXPECTED_CONTROLS = Object.freeze([
   "receiver rethrowing after replying",
   "mid-body stall mapped to malformed acknowledgment",
   "facilitator answer key content copied into the kit",
-  "planted op.commit() in kit document",
+  "invented API calls named in a kit document (op.commit(), handle.commit())",
 ]);
 
 // A type-only defect: the program still runs and passes with a number id, so
@@ -528,17 +528,22 @@ async function checkAnswerKeyInKitControl(kitDir) {
   return "facilitator answer key content copied into the kit";
 }
 
-async function checkPlantedOpCommitControl(kitDir) {
-  await withKitCopy(kitDir, "bloodtrail-ctrl-planted-op-commit-", async (kitCopy) => {
-    await rewriteKitFile(kitCopy, "docs/quickstart.md", (text) => `${text}\n\nCall \`op.commit()\` to commit.\n`);
-    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-    assert.ok(failure, "gate must fail closed when op.commit() is planted in a kit document");
-    assert.ok(
-      failure.message.includes("op.commit"),
-      `planted op.commit() defect must fail the gate's doc references check: ${failure.message}`,
-    );
-  });
-  return "planted op.commit() in kit document";
+// Invented calls: one on a receiver the documents name, one on a receiver they do not.
+const INVENTED_API_CALLS = Object.freeze(["op.commit()", "handle.commit()"]);
+
+async function checkInventedApiControl(kitDir) {
+  for (const call of INVENTED_API_CALLS) {
+    await withKitCopy(kitDir, "bloodtrail-ctrl-invented-api-", async (kitCopy) => {
+      await rewriteKitFile(kitCopy, "docs/quickstart.md", (text) => `${text}\nCall \`${call}\` to commit.\n`);
+      const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+      assert.ok(failure, `gate must fail closed when a kit document names ${call}`);
+      assert.ok(
+        failure.message.includes(`\`${call}\`: `),
+        `a kit document naming ${call} must fail the gate's doc references check: ${failure.message}`,
+      );
+    });
+  }
+  return "invented API calls named in a kit document (op.commit(), handle.commit())";
 }
 
 export async function checkEvaluationKitControls() {
@@ -569,7 +574,7 @@ export async function checkEvaluationKitControls() {
       await checkRethrowingReceiverControl(kitDir),
       await checkMidBodyStallControl(kitDir),
       await checkAnswerKeyInKitControl(kitDir),
-      await checkPlantedOpCommitControl(kitDir),
+      await checkInventedApiControl(kitDir),
     );
     assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 
