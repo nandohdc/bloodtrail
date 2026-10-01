@@ -1,10 +1,14 @@
 # @bloodtrail/security-audit-sdk-node
 
-Provisional first-party Node.js platform binding for Bloodtrail security audit events.
+First-party Node.js platform binding for Bloodtrail security audit events.
 
 ## API Stability: Frozen
 
-The public API surface of this package is **frozen** (governed by issue #111, with amendments #112, #113, and #589). All exports, types, and runtime behaviours are locked.
+The public API surface of this package is **frozen** under ADR-NODE-001 (#111), which fixed it at 13 value
+exports and 24 type-only exports. It widens only additively, each time through a governed change that records
+an amendment: ADR-NODE-002 (#112), ADR-NODE-003 (#113) and ADR-NODE-004 (#589), which added the HTTP audit
+sink. It now has 19 value exports and 44 type-only exports. `npm run test:exports` fails on any export added,
+removed or renamed outside such a change.
 
 ## Overview
 
@@ -25,7 +29,14 @@ Per ADR 0009:
 - **Zero third-party runtime dependencies**; depends strictly on first-party `@bloodtrail/security-audit-sdk-core`.
 - Supported engines: Node `>=24 <25 || >=26 <27`.
 
-## Single-attempt HTTP handoff (provisional)
+## Delivery primitives outside the evaluated path
+
+The evaluation alpha delivers through `createHttpAuditSink`: one attempt per event over the fetch delivery
+adapter below, with no retry, no queue and no ordering. The other four primitives below, the single-attempt
+handoff, bounded retry, bounded backpressure and deadline-bounded shutdown, are frozen exports of this
+package, but no evaluated path uses them, and the evaluation does not exercise them.
+
+## Single-attempt HTTP handoff
 
 `createHttpDeliveryHandoff` projects one canonical occurrence into a bounded
 `POST` request descriptor and delegates the exchange to caller-owned code. It
@@ -92,7 +103,7 @@ echoes them. The scope gate lets `src/fetch-exchange.ts`, and nothing else, reac
 `AbortSignal`. **Non-production:** the adapter authorizes no deployment and no delivery infrastructure;
 it proves mapped observable behavior, not the peer's durability or security.
 
-## Bounded delivery retry (provisional)
+## Bounded delivery retry
 
 `createBoundedDeliveryRetry` composes a `HttpDeliveryHandoff` with a bounded,
 jittered retry schedule. Only a `retryable` outcome is ever retried; any other
@@ -135,7 +146,7 @@ maxDelayMs) * jitterSource())`. An optional `observability` hook exposes
 `onAttemptScheduled` and `onExhausted` for callers that need retry-exhaustion
 alerting.
 
-## Bounded delivery backpressure (provisional)
+## Bounded delivery backpressure
 
 `createBoundedDeliveryBackpressure` gates admission to any async delivery
 operation by a bounded in-flight capacity, independent of what that operation
@@ -176,7 +187,7 @@ settles, whether it resolves or rejects, so a failure never leaks a slot. An
 optional `observability` hook exposes `onAdmitted`, `onRejectedOverload`, and
 `onReleased`, each receiving only numeric depth and capacity values.
 
-## Deadline-bounded delivery shutdown (provisional)
+## Deadline-bounded delivery shutdown
 
 `createDeliveryShutdown` gates admission to any async delivery operation with
 a lifecycle boundary, independent of what that operation does. It composes

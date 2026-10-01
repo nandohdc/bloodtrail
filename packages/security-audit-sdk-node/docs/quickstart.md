@@ -30,7 +30,7 @@ The kit pins `@bloodtrail/security-audit-sdk-core` to its own tarball, so exactl
 > [!WARNING]
 > **Unsupported installers and configurations:**
 > - **Yarn is unsupported:** Yarn's hoisting algorithms do not honor the required single-copy Core resolution constraints and will lead to authority resolution failures.
-> - **Standalone Node binding install is unsupported:** Installing `@bloodtrail/security-audit-sdk-node` on its own without the kit's companion packages exits 0 during package installation, but fails immediately at runtime import because `@bloodtrail/security-audit-sdk-core` is a required peer dependency. Always install the complete kit via its generated `package.json`.
+> - **Standalone Node binding install is unsupported:** `@bloodtrail/security-audit-sdk-node` lists `@bloodtrail/security-audit-sdk-core` as a regular dependency, not a peer dependency. The kit provides that core as its own tarball and pins it, so installing the Node binding on its own has no core to resolve. Always install the complete kit through its generated `package.json`.
 
 ## Package Responsibilities
 
@@ -187,7 +187,11 @@ await sdk.shutdown();
 
 ## Authentication Failure and Per-Request Context Scope
 
-When authentication fails, emit `authenticationFailed` before a session or context is created. For authenticated requests, establish a per-request context scope using `sdk.runWithContext`. The active scope's `actor` and `tenant` automatically apply to all audit calls inside the callback, even after asynchronous operations (`await`), eliminating boilerplate and preventing identity drifting:
+When authentication fails, emit `authenticationFailed` before a session or context is created. For authenticated requests, open a per-request context scope with `sdk.runWithContext`.
+
+**What the scope supplies at runtime.** The SDK builds each event's context from three sources, each overriding the one before: the configuration's `authoritativeContext`, the active scope, and the call's own input. Inside the callback, including after `await`, the scope's `actor`, `tenant` and other context fields fill in whatever a call leaves out. The SDK generates the correlation identifier and the operation identifier when none of the three supplies them.
+
+**What the types still require.** The named-method input types do not know about the scope. Each method's type requires its event's context: 23 of the 24 methods require `actor`, 20 require `tenant`, and 7, such as `accountRegistrationAttempted` and `authenticationFailed`, also require `correlation`. A call inside a scope therefore still passes them. Below, the call reads them back from the active scope with `nodeContextProvider.get()`. See the known issue on over-required input types.
 
 ```typescript
 import {

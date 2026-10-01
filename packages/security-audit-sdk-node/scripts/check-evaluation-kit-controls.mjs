@@ -54,6 +54,7 @@ const EXPECTED_CONTROLS = Object.freeze([
   "mid-body stall mapped to malformed acknowledgment",
   "facilitator answer key content copied into the kit",
   "invented API calls named in a kit document (op.commit(), handle.commit())",
+  "retries listed as supported in the supported-versus-planned table",
 ]);
 
 // A type-only defect: the program still runs and passes with a number id, so
@@ -546,6 +547,27 @@ async function checkInventedApiControl(kitDir) {
   return "invented API calls named in a kit document (op.commit(), handle.commit())";
 }
 
+// The ratified scenario's planted defect: the table lists retries as supported.
+const SUPPORTED_RETRY_ROW = Object.freeze({
+  anchor: "| **Retries** | **Planned (Not Implemented)** |",
+  replacement: "| **Retries** | **Supported** |",
+});
+
+async function checkSupportedRetryRowControl(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-supported-retry-", async (kitCopy) => {
+    await rewriteKitFile(kitCopy, "docs/supported-and-planned.md", (text) =>
+      text.replace(SUPPORTED_RETRY_ROW.anchor, SUPPORTED_RETRY_ROW.replacement),
+    );
+    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+    assert.ok(failure, "gate must fail closed when the kit's table lists retries as supported");
+    assert.ok(
+      failure.message.includes("describes retries as available"),
+      `a supported retry row must fail the gate's planned-features check: ${failure.message}`,
+    );
+  });
+  return "retries listed as supported in the supported-versus-planned table";
+}
+
 export async function checkEvaluationKitControls() {
   await assertOutsideRepository(tmpdir());
 
@@ -575,6 +597,7 @@ export async function checkEvaluationKitControls() {
       await checkMidBodyStallControl(kitDir),
       await checkAnswerKeyInKitControl(kitDir),
       await checkInventedApiControl(kitDir),
+      await checkSupportedRetryRowControl(kitDir),
     );
     assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 
