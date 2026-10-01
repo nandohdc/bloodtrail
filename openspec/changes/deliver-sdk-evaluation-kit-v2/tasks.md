@@ -146,7 +146,7 @@ task (9.1) stays unticked until its own ticket.
 
 ## 7. Evaluation
 
-- [ ] 7.1 #666 The evaluation is closed. Before distribution:
+- [x] 7.1 #666 The evaluation is closed. Before distribution:
   - the kit and archive digests matched #664's comment on #666;
   - the evaluators' handles matched the amended authorization.
 
@@ -161,7 +161,7 @@ task (9.1) stays unticked until its own ticket.
 
 ## 8. Fold
 
-- [ ] 8.1 #667 While this change is still active, fold its deltas into
+- [x] 8.1 #667 While this change is still active, fold its deltas into
   `openspec/specs/security-audit-sdk-node/spec.md`, in a PR of its own. Verify that:
   - each MODIFIED requirement replaces its canonical block in full, with no appended or contradictory SHALL
     left behind;
