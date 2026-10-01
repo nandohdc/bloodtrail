@@ -105,6 +105,7 @@ export const REQUIRED_KIT_ITEMS = Object.freeze([
   "docs/evaluation-guide.md",
   "docs/evaluation-questionnaire.md",
   "docs/seeded-invalid-calls.md",
+  "docs/integration-and-testing.md",
 ]);
 
 export async function verifyKitIdentity(kitDir) {

@@ -116,7 +116,7 @@ task (9.1) stays unticked until its own ticket.
   - the known issues describe the collector ingress as structural only, and disclose the over-required
     input types;
   - a planted "Supported" retry row fails the gate.
-- [ ] 4.4 #663 Document framework wiring, the test sinks and deterministic providers. Verify that:
+- [x] 4.4 #663 Document framework wiring, the test sinks and deterministic providers. Verify that:
   - the Express and Fastify snippets type-check with no framework dependency, under TypeScript 5.9.2 and
     the pinned 6.0.x and 7.0.x releases;
   - the test-sink example asserts on a captured event;
