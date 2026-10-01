@@ -2,6 +2,7 @@ import { readdir, readFile, writeFile, mkdir } from "node:fs/promises";
 import { basename, extname, resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import ts from "typescript";
 
 const TS_CODE_BLOCK_PATTERN = /```(?:typescript|ts)\r?\n([\s\S]*?)```/g;
 
@@ -16,6 +17,39 @@ export function extractTypeScriptDocBlocks(markdownText) {
     }
   }
   return blocks;
+}
+
+const DECLARATION_KINDS = new Set([
+  ts.SyntaxKind.FunctionDeclaration,
+  ts.SyntaxKind.VariableDeclaration,
+  ts.SyntaxKind.BindingElement,
+  ts.SyntaxKind.ClassDeclaration,
+  ts.SyntaxKind.InterfaceDeclaration,
+  ts.SyntaxKind.TypeAliasDeclaration,
+  ts.SyntaxKind.MethodDeclaration,
+  ts.SyntaxKind.MethodSignature,
+]);
+
+function declaredName(node) {
+  const declares =
+    DECLARATION_KINDS.has(node.kind) || (ts.isPropertyAssignment(node) && ts.isFunctionLike(node.initializer));
+  return declares && node.name && ts.isIdentifier(node.name) ? node.name.text : null;
+}
+
+// The names a document's checked code blocks declare: functions, variables, classes, interfaces and types,
+// and the methods they declare. A local helper a document names in prose is declared here, where the gate
+// type-checks it.
+export function declaredDocBlockNames(markdownText) {
+  const names = new Set();
+  const visit = (node) => {
+    const name = declaredName(node);
+    if (name) names.add(name);
+    ts.forEachChild(node, visit);
+  };
+  for (const block of extractTypeScriptDocBlocks(markdownText)) {
+    visit(ts.createSourceFile("doc-block.ts", block, ts.ScriptTarget.Latest));
+  }
+  return names;
 }
 
 export async function extractDocBlocksFromDir(docsDir, outputDir) {

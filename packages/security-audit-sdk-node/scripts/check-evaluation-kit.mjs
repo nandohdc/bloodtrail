@@ -14,6 +14,7 @@ import {
 import { verifyUnpackedKitIntegrity } from "./evaluation-kit-checksums.mjs";
 import { startLoopbackServer, verifyHttpExchange } from "./evaluation-kit-delivery-checks.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
+import { assertKitDocReferences } from "./evaluation-kit-doc-references.mjs";
 import {
   PNPM_RELEASES,
   assertKitDocsNameInstallers,
@@ -191,6 +192,9 @@ export async function checkEvaluationKit({
       tempInstall,
     );
 
+    // 3a. Every call-shaped reference in the kit's documents names an API the installed packages declare
+    await assertKitDocReferences(tempInstall);
+
     // 4. Verify single core copy in npm install (and fail closed if planted duplicate)
     await verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore);
 
@@ -230,7 +234,7 @@ export async function checkEvaluationKit({
     await verifyPnpmInstalls(kitDir);
 
     process.stdout.write(
-      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, doc blocks, facilitator answer-key fixes, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, every demonstrated event received as exactly the bytes the SDK validated, the receiver answering 401, 413, 400, 422 and 409, acknowledging duplicates and still serving, seeded invalid calls verified, failure paths verified\n`,
+      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, every call-shaped document reference resolved against the installed packages' type declarations, doc blocks, facilitator answer-key fixes, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, every demonstrated event received as exactly the bytes the SDK validated, the receiver answering 401, 413, 400, 422 and 409, acknowledging duplicates and still serving, seeded invalid calls verified, failure paths verified\n`,
     );
     return { success: true };
   } finally {

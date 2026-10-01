@@ -103,7 +103,7 @@ task (9.1) stays unticked until its own ticket.
     type-checks against the installed kit;
   - error illustrations use `SafeAuditError`'s real fields, and the questionnaire uses real API names;
   - copying the answer key's content into the kit fails the gate.
-- [ ] 4.2 #661 Allow kit documents to name only APIs that exist. Verify that:
+- [x] 4.2 #661 Allow kit documents to name only APIs that exist. Verify that:
   - every call-shaped inline reference in the kit's documents resolves against the installed packages;
   - every current offender is fixed, the privacy guidance's method name included;
   - a planted `op.commit()` in a kit document fails the gate.
