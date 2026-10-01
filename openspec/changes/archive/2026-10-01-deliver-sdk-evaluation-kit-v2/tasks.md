@@ -171,7 +171,7 @@ task (9.1) stays unticked until its own ticket.
 
 ## 9. Archive
 
-- [ ] 9.1 #668 Archive this change in a PR of its own. Cut the PR from `main` after the fold has merged,
+- [x] 9.1 #668 Archive this change in a PR of its own. Cut the PR from `main` after the fold has merged,
   and merge it as a merge commit. Verify that:
   - the local archive dry run passes;
   - both sides of the move are staged;
