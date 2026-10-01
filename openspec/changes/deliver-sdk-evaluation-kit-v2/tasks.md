@@ -88,7 +88,7 @@ task (9.1) stays unticked until its own ticket.
   - oversized, unparseable and empty bodies still map to a malformed acknowledgment;
   - the existing fetch-exchange and handoff tests stay green;
   - mapping the stall to a malformed acknowledgment fails the gate.
-- [ ] 3.5 #659 Add planted-defect controls for the gate checks that have none. Verify that:
+- [x] 3.5 #659 Add planted-defect controls for the gate checks that have none. Verify that:
   - a misclassified failure status, a broken first-event run, a seeded invalid call that no longer fails,
     and an export removed from the packed entry point each fail the gate;
   - each control runs on a disposable copy, and the harness asserts the applied count;
