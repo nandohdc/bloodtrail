@@ -148,6 +148,16 @@ async function verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore) {
   await runCoreCopyProbe(tempInstall, "npm");
 }
 
+// Every clause names a check the run performed. A kit given with --kit-dir is checked as given and never
+// rebuilt, so its line says that reproducibility was not checked.
+function verificationSummary({ buildsOwnKit }) {
+  const identityClause = buildsOwnKit
+    ? "kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted"
+    : "kit checked as given, identity verified, reproducibility not checked because --kit-dir skips the rebuild";
+  return `evaluation kit verification passed: ${identityClause}, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, planned features described only as planned, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, every call-shaped document reference resolved against the installed packages' type declarations, doc blocks, facilitator answer-key fixes, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, every demonstrated event received as exactly the bytes the SDK validated, the receiver answering 401, 413, 400, 422 and 409, acknowledging duplicates and still serving, seeded invalid calls verified, failure paths verified\n`;
+}
+
+// Returns the success line, which the command line prints, so a control can read it from a passing run.
 export async function checkEvaluationKit({
   kitDir: existingKitDir,
   plantDuplicateCore = false,
@@ -155,10 +165,12 @@ export async function checkEvaluationKit({
 } = {}) {
   await assertOutsideRepository(tmpdir());
 
+  // A kit given with --kit-dir is checked as given: the gate neither builds it nor proves that it reproduces.
+  const buildsOwnKit = !existingKitDir;
   let kitDir = existingKitDir;
   let removeBuiltKit = null;
 
-  if (!kitDir) {
+  if (buildsOwnKit) {
     const built = await buildEvaluationKit({ mode: "verification" });
     kitDir = built.kitDir;
     removeBuiltKit = built.removeKit;
@@ -182,7 +194,7 @@ export async function checkEvaluationKit({
     await assertKitDocsClaimOnlyWhatShips(kitDir);
 
     // 2. Reproducibility: the same tracked tree rebuilds to the same digests, with or without stale build output on disk
-    if (!existingKitDir) {
+    if (buildsOwnKit) {
       await checkReproducibleIdentity(identity);
     }
 
@@ -237,10 +249,7 @@ export async function checkEvaluationKit({
     // 9. Install kit with one pinned release of each supported pnpm major outside workspace root, run one-event script and duplicate-copy probe
     await verifyPnpmInstalls(kitDir);
 
-    process.stdout.write(
-      `evaluation kit verification passed: kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, planned features described only as planned, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, every call-shaped document reference resolved against the installed packages' type declarations, doc blocks, facilitator answer-key fixes, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, every demonstrated event received as exactly the bytes the SDK validated, the receiver answering 401, 413, 400, 422 and 409, acknowledging duplicates and still serving, seeded invalid calls verified, failure paths verified\n`,
-    );
-    return { success: true };
+    return { success: true, summary: verificationSummary({ buildsOwnKit }) };
   } finally {
     await rm(tempInstall, { recursive: true, force: true });
     if (removeBuiltKit) {
@@ -255,5 +264,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--kit-dir" && args[i + 1]) kitDir = args[++i];
   }
-  await checkEvaluationKit({ kitDir });
+  const { summary } = await checkEvaluationKit({ kitDir });
+  process.stdout.write(summary);
 }

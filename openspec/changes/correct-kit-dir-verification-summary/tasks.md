@@ -7,20 +7,20 @@
 
 ## 2. Success line
 
-- [ ] 2.1 Make `checkEvaluationKit` return its success line and the command-line entry point print it. Add
+- [x] 2.1 Make `checkEvaluationKit` return its success line and the command-line entry point print it. Add
   the `--kit-dir` null control to `check-evaluation-kit-controls.mjs`. Verify the null control fails against
   the current line.
-- [ ] 2.2 Make the success line name only checks that ran. Verify the following:
+- [x] 2.2 Make the success line name only checks that ran. Verify the following:
   - the null control passes;
   - a run that builds its own kit prints the same line as before;
   - the null control fails again when a `--kit-dir` run is made to claim the rebuild.
 
 ## 3. Verify
 
-- [ ] 3.1 Run `npm run validate --prefix packages/security-audit-sdk-node` on Node 26.5.0, and
+- [x] 3.1 Run `npm run validate --prefix packages/security-audit-sdk-node` on Node 26.5.0, and
   `npm test --prefix packages/security-audit-sdk-node` on Node 24.2.0. Verify both pass, and that every
   planted-defect control is applied exactly once.
-- [ ] 3.2 Run these, and verify each passes:
+- [x] 3.2 Run these, and verify each passes:
   - `npx --yes @fission-ai/openspec@latest validate --all --strict`;
   - sdk-core `test:git` and `test:changed-paths`;
   - `git diff --check`;
