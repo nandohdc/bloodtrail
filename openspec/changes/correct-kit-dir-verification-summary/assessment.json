@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.1",
+  "change_id": "correct-kit-dir-verification-summary",
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "Run with --kit-dir, the kit gate checks an existing kit and skips the rebuild, yet its success line says the kit was built from tracked sources and reproduced with stale output and untracked sources planted, so it reports a check that never ran.",
+    "#664 verified the distributable kit v2 in --kit-dir mode and had to disclaim the success line by hand, and any later kit or re-issue checked that way inherits the false claim.",
+    "deliver-sdk-evaluation-kit-v2 owned the gate and is archived, so the fix needs a change of its own that changes no gate check, planted-defect control, kit file or requirement."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ],
+    "full_trigger_absence_proof": "No full assessment trigger applies. The change rewords the success line of the Node binding's kit gate script, returns that line to the script's own command-line entry point, and adds one passing null control to the kit controls, with skip_specs: true. Neither script ships in the evaluation kit or is a package export. It changes no public API, integration, lifecycle or state machine, concurrency, persistence or security-sensitive behaviour, touches no governance-core path, and changes no canonical capability requirement."
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-controls.mjs",
+    "openspec/changes/correct-kit-dir-verification-summary/.openspec.yaml",
+    "openspec/changes/correct-kit-dir-verification-summary/assessment.json",
+    "openspec/changes/correct-kit-dir-verification-summary/assessment.source.json",
+    "openspec/changes/correct-kit-dir-verification-summary/design.md",
+    "openspec/changes/correct-kit-dir-verification-summary/proposal.md",
+    "openspec/changes/correct-kit-dir-verification-summary/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-mode-aware-success-line",
+      "kind": "direct_implementation",
+      "summary": "Derive one flag from whether a kit directory was given, and let it decide the build, the reproducibility step and the success line's identity clause. Return the line from checkEvaluationKit, print it from the command line, and add a --kit-dir null control that reads it.",
+      "forces_addressed": [
+        "Run with --kit-dir, the kit gate checks an existing kit and skips the rebuild, yet its success line says the kit was built from tracked sources and reproduced with stale output and untracked sources planted, so it reports a check that never ran.",
+        "#664 verified the distributable kit v2 in --kit-dir mode and had to disclaim the success line by hand, and any later kit or re-issue checked that way inherits the false claim.",
+        "deliver-sdk-evaluation-kit-v2 owned the gate and is archived, so the fix needs a change of its own that changes no gate check, planted-defect control, kit file or requirement."
+      ]
+    },
+    {
+      "id": "approach-rebuild-under-kit-dir",
+      "kind": "alternative",
+      "summary": "Make a --kit-dir run rebuild the kit from the commit its identity records and compare the digests, so that today's success line becomes true in both modes.",
+      "forces_addressed": [
+        "Run with --kit-dir, the kit gate checks an existing kit and skips the rebuild, yet its success line says the kit was built from tracked sources and reproduced with stale output and untracked sources planted, so it reports a check that never ran.",
+        "#664 verified the distributable kit v2 in --kit-dir mode and had to disclaim the success line by hand, and any later kit or re-issue checked that way inherits the false claim."
+      ]
+    },
+    {
+      "id": "approach-drop-reproduction-clause",
+      "kind": "alternative",
+      "summary": "Remove the build and reproduction clause from the success line in both modes.",
+      "forces_addressed": [
+        "Run with --kit-dir, the kit gate checks an existing kit and skips the rebuild, yet its success line says the kit was built from tracked sources and reproduced with stale output and untracked sources planted, so it reports a check that never ran.",
+        "deliver-sdk-evaluation-kit-v2 owned the gate and is archived, so the fix needs a change of its own that changes no gate check, planted-defect control, kit file or requirement."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-mode-aware-success-line",
+  "rejected_alternative_ids": [
+    "approach-rebuild-under-kit-dir",
+    "approach-drop-reproduction-clause"
+  ],
+  "rejection_reasons": {
+    "approach-rebuild-under-kit-dir": {
+      "forces": [
+        "deliver-sdk-evaluation-kit-v2 owned the gate and is archived, so the fix needs a change of its own that changes no gate check, planted-defect control, kit file or requirement."
+      ],
+      "reason": "It changes what the gate checks and needs a clean checkout of the identity commit, while the fix must change no gate check. A distributable kit is reproduced from clean clones of its commit, as #664 did."
+    },
+    "approach-drop-reproduction-clause": {
+      "forces": [
+        "#664 verified the distributable kit v2 in --kit-dir mode and had to disclaim the success line by hand, and any later kit or re-issue checked that way inherits the false claim."
+      ],
+      "reason": "A run that builds its own kit does reproduce the identity, so dropping the clause would hide a check that ran, and a reader of a --kit-dir run still could not tell that the rebuild was skipped."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-kit-gate-success-line-names-only-checks-that-ran",
+    "implementation-kit-gate-checks-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-kit-gate-success-line-names-only-checks-that-ran": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "the --kit-dir null control fails against the old success line, passes against the new one, and fails again when a --kit-dir run is made to claim the rebuild",
+        "a run that builds its own kit prints the same success line as before, compared in the implementation pull request"
+      ]
+    },
+    "implementation-kit-gate-checks-unchanged": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "test:kit and test:kit-controls pass on Node 26.5.0 and 24.2.0, with every planted-defect control applied exactly once",
+        "git diff --name-only against the base lists only the two kit gate scripts and this change's directory"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "The audit event contract, its generation, validation and integrity are untouched. The gate still compares each demonstrated event's bytes as before.",
+    "authentication_or_authorization": "No authentication or authorization mechanism changes. The gate still proves the example receiver answers 401 exactly as before.",
+    "authority_provenance": "No authority constructor, brand registry or provenance rule changes. The gate and its controls check synthetic kits only.",
+    "concurrency": "No concurrent execution, scheduling or shared state is introduced. The null control runs the gate once, in sequence, like every other control.",
+    "confidentiality": "No secret, credential or confidential data is handled. The success line names checks only, never kit contents, tokens or digests.",
+    "cryptography": "No cryptographic operation, digest computation or key handling changes. Identity verification and the checksum list check run exactly as before.",
+    "error_disclosure": "No error code, diagnostic or disclosure path changes. Only the success line's wording changes, and it carries no caller data.",
+    "external_security_integration": "No external security system, SIEM or exporter is integrated or referenced as available.",
+    "fail_posture": "Every gate check still throws on failure exactly as before, and the new null control fails the control harness if a --kit-dir run claims the rebuild it skipped.",
+    "lifecycle": "No SDK, sink or operation lifecycle state machine changes. The gate drives the same lifecycle transitions in the installed kit as before.",
+    "mutation_ownership": "No runtime object, freezing rule or mutation ownership changes. Only a gate script's return value and output text change.",
+    "privacy_transformation": "No privacy transformation hook or field redaction changes. Every kit the gate checks carries synthetic data only.",
+    "resource_retention": "No storage, retention store or resource lifetime changes. The null control's kit copy is removed in a finally block, like every other control's copy.",
+    "retry_or_redelivery": "No retry, redelivery or delivery attempt behaviour changes. The gate's failure-path program runs unchanged.",
+    "trust_boundary": "No trust boundary is defined, moved or crossed. The change rewords a gate script's success line and adds one passing gate run to its controls."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "2934fe8e5762737461e868da6a8724a1dced56ca"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2"
+  ]
+}
