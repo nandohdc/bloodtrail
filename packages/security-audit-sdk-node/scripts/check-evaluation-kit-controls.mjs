@@ -61,6 +61,9 @@ const EXPECTED_CONTROLS = Object.freeze([
   "createHttpAuditSink removed from the packed entry point's runtime exports",
 ]);
 
+// What a run that builds its own kit claims about that build. A --kit-dir run builds and rebuilds nothing.
+const REBUILD_CLAIMS = Object.freeze(["built from tracked sources", "reproduced", "planted"]);
+
 // A type-only defect: the program still runs and passes with a number id, so
 // only the gate's type-check can catch it.
 const FAILURE_PATHS_TYPE_ERROR = Object.freeze({ anchor: '"timeout-1"', replacement: "1" });
@@ -636,6 +639,23 @@ async function checkRemovedExportControl(kitDir) {
   return "createHttpAuditSink removed from the packed entry point's runtime exports";
 }
 
+// Null control: an unmodified copy of the base kit, checked as given with --kit-dir like most planted-defect
+// controls' copies, passes the gate. That run never builds or rebuilds the kit, so its success line must say
+// that reproducibility was not checked, and claim none of the rebuild.
+async function checkKitDirNullControl(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-kit-dir-null-", async (kitCopy) => {
+    const { summary } = await checkEvaluationKit({ kitDir: kitCopy });
+    assert.ok(
+      summary.includes("reproducibility not checked"),
+      `a --kit-dir run must say its reproducibility was not checked: ${summary}`,
+    );
+    for (const claim of REBUILD_CLAIMS) {
+      assert.ok(!summary.includes(claim), `a --kit-dir run must not claim "${claim}": ${summary}`);
+    }
+  });
+  return "an unmodified kit copy, checked with --kit-dir, passed and claimed no rebuild";
+}
+
 export async function checkEvaluationKitControls() {
   await assertOutsideRepository(tmpdir());
 
@@ -643,6 +663,7 @@ export async function checkEvaluationKitControls() {
   const { kitDir, identity, removeKit } = await buildEvaluationKit({ mode: "verification" });
 
   try {
+    const nullControl = await checkKitDirNullControl(kitDir);
     const applied = [];
     applied.push(
       await checkMissingCoreControl(kitDir, identity),
@@ -674,7 +695,7 @@ export async function checkEvaluationKitControls() {
     assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 
     process.stdout.write(
-      `evaluation kit negative controls passed: ${applied.length} of ${EXPECTED_CONTROLS.length} planted defects applied, and each failed closed: ${applied.join(", ")}\n`,
+      `evaluation kit negative controls passed: null control: ${nullControl}; ${applied.length} of ${EXPECTED_CONTROLS.length} planted defects applied, and each failed closed: ${applied.join(", ")}\n`,
     );
   } finally {
     await removeKit();
