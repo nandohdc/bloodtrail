@@ -135,7 +135,7 @@ task (9.1) stays unticked until its own ticket.
 
 ## 6. Evaluator amendment
 
-- [ ] 6.1 #665 The owner's amendment. It belongs to the owner, and an agent drafts it only after the owner
+- [x] 6.1 #665 The owner's amendment. It belongs to the owner, and an agent drafts it only after the owner
   supplies the handles. The owner amends `evaluation-authorization.md` to name each evaluator by GitHub
   handle, together with kit v2's kit digest and archive SHA-256. The amendment takes effect only through the
   owner's SHA-bound approval comment and the owner's own merge. Verify that:

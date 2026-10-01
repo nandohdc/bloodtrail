@@ -70,20 +70,16 @@ component.
 
 | Field | Value |
 |---|---|
-| Authorized evaluators | None yet |
-| Evaluation distribution allowed | **No** |
+| Authorized evaluators | `@nandohdc` |
+| Evaluation distribution allowed | **Yes** |
 
-This version of the record authorizes no evaluator, and forbids distributing any kit to anyone.
+This amended version of the record authorizes kit distribution to the named evaluator above (`@nandohdc`)
+under the governing change.
 
-- **The cohort.** At least two developers new to Bloodtrail, and preferably three. Each has never used or
-  contributed to Bloodtrail, and each integrates the kit into a non-production service they own.
-- **The owner's own run.** The owner's run recorded on #605 is dogfooding. It is reported separately and
-  never counts toward the cohort's metrics.
-- **The amendment.** Distribution needs an amendment to this record (#665). It names each evaluator by
-  GitHub handle, together with kit v2's kit digest and archive SHA-256. It takes effect only through the
-  same two-part act: the owner's approval comment naming the amendment's head SHA, then the owner's own
-  merge.
-- **Handles are never invented.** An agent drafts the amendment only after the owner supplies the handles.
+As the sole developer and owner of Bloodtrail, `@nandohdc` authorizes and conducts the non-production
+evaluation. Following the dogfooding pattern recorded on #605, the owner integrates kit v2 into
+non-production services using synthetic data. Distribution is strictly limited to the listed handle and
+synthetic data.
 
 ## Duration
 
@@ -109,7 +105,18 @@ A kit, whether kit v2 or a re-issue, is identified by:
 - the kit digest, which commits to the digests above and to the checksum list;
 - the SHA-256 of the distributed archive.
 
-The identity of kit v2 is not known yet. It is recorded by the amendment, and none of it is filled in here.
+The identity of kit v2 authorized for distribution is:
+
+- **Build commit**: `6e5f091cce3bfd0c812aeab5025fb4e3f64f3c51`
+- **Artifacts**:
+  - `bloodtrail-security-audit-sdk-core-0.4.0.tgz`: `18e5126bee41e1e640e65ffadc604510f8e41bc1c90eb5083495c8a4d4c589aa`
+  - `bloodtrail-security-audit-sdk-node-0.4.0.tgz`: `82b40cf2e695318f42e9bf7146d38c85b31858d175412f50aca06500c80bc8a0`
+  - `bloodtrail-security-audit-collector-0.1.0.tgz`: `87f57640a090c1420679be741d98a00098b73a79875713e50f36330b4ca756c8`
+- **Package set digest**: `e59737998a40122b94708e628b70dc9f6964ed4c2a02a1fbc6e70932ce7ee72c`
+- **Manifest digest**: `813928c49e008e04a0fc2adde1162f120a0c00d74ecf81ffc7be93b348e0e990`
+- **Checksum list (`checksums.sha256`)**: `16e43b42cafabab13889f0628388c18f8565cb282ad9d7915a48175a792823cd`
+- **Kit digest**: `216af1b6d06f2b2b985be5947c2a93bafadcd6dd8ed948ec6aca6511c47848e9`
+- **Archive SHA-256 (`bloodtrail-evaluation-kit-6e5f091c.tar.gz`)**: `fc54d662659903d8ea22ed781d47502d7ea29011b2b1a3b6aeb0692273925651`
 
 The identity is recorded in two places before a kit is distributed:
 
