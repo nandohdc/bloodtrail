@@ -22,8 +22,8 @@ import {
   type AuditEventSink,
 } from "@bloodtrail/security-audit-sdk-core";
 
-// Prints each event exactly as the SDK validated it, then hands it to the HTTP audit sink unchanged. The
-// receiver prints each event exactly as it arrived, so the two outputs show the same bytes.
+// Prints each event exactly as the SDK hands it to the HTTP audit sink unchanged. The receiver prints each
+// event exactly as it arrived, so the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink.
 function printValidatedEvents(sink: AuditEventSink): AuditEventSink {
   return {
     ...sink,

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   assertOutsideRepository,
   buildEvaluationKit,
@@ -11,10 +11,14 @@ import {
   computePackageSetDigest,
   packDirectory,
   sealKitIdentity,
+  verifyKitIdentity,
 } from "./build-evaluation-kit.mjs";
 import {
   FAILURE_PATHS_PROGRAM,
+  KIT_DIR_NOTE,
+  KIT_GATE_CHECK_IDENTITIES,
   checkEvaluationKit,
+  composeVerificationSummary,
   installGatePrograms,
   typescriptLegs,
   writeConsumerTsconfig,
@@ -62,7 +66,13 @@ const EXPECTED_CONTROLS = Object.freeze([
 ]);
 
 // What a run that builds its own kit claims about that build. A --kit-dir run builds and rebuilds nothing.
-const REBUILD_CLAIMS = Object.freeze(["built from tracked sources", "reproduced", "planted"]);
+const REBUILD_CLAIMS = Object.freeze([
+  "verification kit built from tracked sources",
+  "verification-kit identity reproduced after stale build output and untracked sources were planted",
+]);
+const BUILD_MODE_ONLY_IDENTITIES = Object.freeze(["verification-kit-build", "reproducible-identity"]);
+const VERIFICATION_SUMMARY_PREFIX = "evaluation kit verification passed: ";
+const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 
 // A type-only defect: the program still runs and passes with a number id, so
 // only the gate's type-check can catch it.
@@ -79,6 +89,23 @@ async function withKitCopy(kitDir, tempPrefix, run) {
   } finally {
     await rm(kitCopy, { recursive: true, force: true });
   }
+}
+
+async function withExternalScriptSymlink(scriptName, run) {
+  const linkDirectory = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-script-symlink-"));
+  const linkPath = resolve(linkDirectory, scriptName);
+  try {
+    await symlink(resolve(SCRIPT_DIRECTORY, scriptName), linkPath);
+    return await run(linkPath);
+  } finally {
+    await rm(linkDirectory, { recursive: true, force: true });
+  }
+}
+
+function clauseForCheck(check) {
+  const summary = composeVerificationSummary([check]);
+  assert.ok(summary.startsWith(VERIFICATION_SUMMARY_PREFIX), `verification summary must start with ${VERIFICATION_SUMMARY_PREFIX}`);
+  return summary.slice(VERIFICATION_SUMMARY_PREFIX.length, -1);
 }
 
 async function captureFailure(run) {
@@ -436,7 +463,7 @@ async function checkRewritingSinkControl(kitDir) {
     const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
     assert.ok(failure, "gate must fail closed when a sink rewrites a field between the SDK and the receiver");
     assert.ok(
-      failure.message.includes("differ from the bytes the SDK validated"),
+      failure.message.includes("differ from the bytes the SDK handed to the HTTP audit sink"),
       `a rewritten field must fail the byte comparison: ${failure.message}`,
     );
   });
@@ -639,21 +666,81 @@ async function checkRemovedExportControl(kitDir) {
   return "createHttpAuditSink removed from the packed entry point's runtime exports";
 }
 
-// Null control: an unmodified copy of the base kit, checked as given with --kit-dir like most planted-defect
-// controls' copies, passes the gate. That run never builds or rebuilds the kit, so its success line must say
-// that reproducibility was not checked, and claim none of the rebuild.
+// Null control: an unmodified copy of the base kit, checked as given with --kit-dir through an external
+// symlink, passes the gate. The printed success line proves that the command-line entry ran, that it says
+// the kit was checked as given, and that this existing-kit run claimed none of the build-mode checks.
 async function checkKitDirNullControl(kitDir) {
   await withKitCopy(kitDir, "bloodtrail-ctrl-kit-dir-null-", async (kitCopy) => {
-    const { summary } = await checkEvaluationKit({ kitDir: kitCopy });
+    const summary = await withExternalScriptSymlink("check-evaluation-kit.mjs", (gatePath) =>
+      runChecked(process.execPath, [gatePath, "--kit-dir", kitCopy], { capture: true }),
+    );
+    assert.ok(summary.startsWith(VERIFICATION_SUMMARY_PREFIX), `a symlinked --kit-dir gate must print its verification summary: ${summary}`);
     assert.ok(
-      summary.includes("reproducibility not checked"),
-      `a --kit-dir run must say its reproducibility was not checked: ${summary}`,
+      summary.startsWith(`${VERIFICATION_SUMMARY_PREFIX}${KIT_DIR_NOTE}; `),
+      `a --kit-dir run must first say that it checked the kit as given: ${summary}`,
     );
     for (const claim of REBUILD_CLAIMS) {
       assert.ok(!summary.includes(claim), `a --kit-dir run must not claim "${claim}": ${summary}`);
     }
   });
-  return "an unmodified kit copy, checked with --kit-dir, passed and claimed no rebuild";
+  return "an unmodified kit copy, checked through an external symlink with --kit-dir, passed, said it was checked as given, and claimed no rebuild";
+}
+
+async function checkBuilderSymlinkProof() {
+  const destinationParent = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-builder-symlink-"));
+  const kitDir = resolve(destinationParent, "evaluation-kit");
+  try {
+    const output = await withExternalScriptSymlink("build-evaluation-kit.mjs", (builderPath) =>
+      runChecked(process.execPath, [builderPath, "--verification", "--dest", kitDir], { capture: true }),
+    );
+    assert.ok(output.includes(`evaluation kit built successfully at ${kitDir}`), `a symlinked builder must report its kit: ${output}`);
+    const { identity } = await verifyKitIdentity(kitDir);
+    assert.equal(identity.distributable, false, "a symlinked verification builder must produce a non-distributable kit");
+  } finally {
+    await rm(destinationParent, { recursive: true, force: true });
+  }
+  return "a builder invoked through an external symlink produced a verified verification kit";
+}
+
+async function checkSummaryCompositionProof(kitDir) {
+  const buildMode = await checkEvaluationKit();
+  assert.deepEqual(
+    buildMode.checkIdentities,
+    KIT_GATE_CHECK_IDENTITIES,
+    "a build-mode run must record every stable kit-gate check identity in order",
+  );
+
+  const kitDirMode = await checkEvaluationKit({ kitDir });
+  const expectedKitDirIdentities = buildMode.checkIdentities.filter((identity) => !BUILD_MODE_ONLY_IDENTITIES.includes(identity));
+  assert.deepEqual(
+    kitDirMode.checkIdentities,
+    expectedKitDirIdentities,
+    "a --kit-dir run must record the build-mode identities except checks that rebuild",
+  );
+
+  const fullClauses = buildMode.verificationChecks.map(clauseForCheck);
+  assert.equal(
+    buildMode.summary,
+    `${VERIFICATION_SUMMARY_PREFIX}${fullClauses.join("; ")}\n`,
+    "a build-mode summary must compose its recorded checks in order",
+  );
+  assert.equal(
+    kitDirMode.summary,
+    composeVerificationSummary(kitDirMode.verificationChecks, { checkedAsGiven: true }),
+    "a --kit-dir summary must state that the kit was checked as given, then compose its recorded checks in order",
+  );
+
+  for (const [index, check] of buildMode.verificationChecks.entries()) {
+    const withoutCheck = buildMode.verificationChecks.filter(({ identity }) => identity !== check.identity);
+    const expectedClauses = fullClauses.slice(0, index).concat(fullClauses.slice(index + 1));
+    assert.equal(
+      composeVerificationSummary(withoutCheck),
+      `${VERIFICATION_SUMMARY_PREFIX}${expectedClauses.join("; ")}\n`,
+      `removing ${check.identity} must remove only its verification-summary clause`,
+    );
+  }
+
+  return "complete build-mode and --kit-dir identities were recorded, and each identity's removed composition lost only its clause";
 }
 
 export async function checkEvaluationKitControls() {
@@ -663,7 +750,9 @@ export async function checkEvaluationKitControls() {
   const { kitDir, identity, removeKit } = await buildEvaluationKit({ mode: "verification" });
 
   try {
-    const nullControl = await checkKitDirNullControl(kitDir);
+    const summaryCompositionProof = await checkSummaryCompositionProof(kitDir);
+    const builderSymlinkProof = await checkBuilderSymlinkProof();
+    const gateSymlinkProof = await checkKitDirNullControl(kitDir);
     const applied = [];
     applied.push(
       await checkMissingCoreControl(kitDir, identity),
@@ -695,13 +784,16 @@ export async function checkEvaluationKitControls() {
     assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
 
     process.stdout.write(
-      `evaluation kit negative controls passed: null control: ${nullControl}; ${applied.length} of ${EXPECTED_CONTROLS.length} planted defects applied, and each failed closed: ${applied.join(", ")}\n`,
+      `evaluation kit summary and symlink proofs passed: ${summaryCompositionProof}; ${builderSymlinkProof}; ${gateSymlinkProof}\n`,
+    );
+    process.stdout.write(
+      `evaluation kit negative controls passed: ${applied.length} of ${EXPECTED_CONTROLS.length} planted defects applied, and each failed closed: ${applied.join(", ")}\n`,
     );
   } finally {
     await removeKit();
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(await realpath(process.argv[1])).href) {
   await checkEvaluationKitControls();
 }

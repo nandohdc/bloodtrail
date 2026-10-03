@@ -5,7 +5,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 1. #702 — Kit-gate verification summary prefactor
 
-- [ ] 1.1 Give every executed kit-gate check a stable identity and assemble the verification summary from
+- [x] 1.1 Give every executed kit-gate check a stable identity and assemble the verification summary from
   only the checks that ran in both build and existing-kit modes. Make the gate, builder, and controls run
   through a symlink, and prove the matching planted-defect controls fail closed.
 
