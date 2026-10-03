@@ -161,6 +161,10 @@ async function verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore) {
 
 const TYPESCRIPT_MATRIX = "TypeScript 5.9.2, 6.0.3, and 7.0.2";
 
+function codeSpans(commands) {
+  return commands.map((command) => `\`${command}\``).join(", ");
+}
+
 // Every entry has one stable identity and one clause. The summary is composed only from entries recorded
 // after their checks complete, so a check that did not run cannot claim a result.
 export const KIT_GATE_CHECKS = Object.freeze({
@@ -174,7 +178,7 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: () => "facilitator answer-key file names and recognized content markers excluded",
   }),
   "unpacked-kit-integrity": Object.freeze({
-    clause: ({ commands }) => `unpacked-kit integrity commands verified: ${commands.map((command) => `\`${command}\``).join(", ")}`,
+    clause: ({ commands }) => `unpacked-kit integrity commands verified: ${codeSpans(commands)}`,
   }),
   "installer-documentation": Object.freeze({
     clause: () => "the quickstart and known-issues pages name the supported pnpm majors",
