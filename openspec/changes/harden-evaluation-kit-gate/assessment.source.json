@@ -1,0 +1,247 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The evaluation-kit gate and its planted-defect controls can claim checks that did not run or pass without the named check, so its non-production evidence does not reliably fail closed.",
+    "Format-2 identity material and a distributable build can vary or be relabelled without binding the full kit, so integrity claims do not identify the kit the facilitator publishes.",
+    "The example receiver can continue consuming a body after it decides an authentication, size, or routing response, and can admit an SDK-invalid event through the collector ingress.",
+    "Document, answer-key, installer, and synthetic-value gaps allow an evaluator kit to misstate its checked API, planned features, or material without a gate failure.",
+    "A non-deadline response-body read error currently becomes a terminal protocol path instead of transport_failure, so the existing delivery retry cannot redeliver the unchanged occurrence.",
+    "Eighteen dependent tickets share gate, builder, receiver, documentation, fetch-adapter, verification, fold, and archive paths, while CI workflow and OpenSpec-context ownership remain outside this candidate."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "integration",
+      "lifecycle_or_state",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "CONTEXT-MAP.md",
+    "openspec/changes/harden-evaluation-kit-gate/",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/CONTEXT.md",
+    "packages/security-audit-sdk-node/package.json",
+    "packages/security-audit-sdk-node/src/fetch-exchange.ts",
+    "packages/security-audit-sdk-node/tests/fetch-exchange.test.ts",
+    "packages/security-audit-sdk-node/tests/delivery-retry.test.ts",
+    "packages/security-audit-sdk-node/tests/http-audit-sink.test.ts",
+    "packages/security-audit-sdk-node/tests/http-handoff.test.ts",
+    "packages/security-audit-sdk-node/tests/http-audit-sink-mutations.test.ts",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
+    "packages/security-audit-sdk-node/scripts/build-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-controls.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-answer-key.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-checksums.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-delivery-checks.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-doc-blocks.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-doc-claims.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-doc-references.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-failure-paths.ts",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-installers.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-peer.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-source-copy.mjs",
+    "packages/security-audit-sdk-node/examples/evaluation-service.ts",
+    "packages/security-audit-sdk-node/examples/evaluation-driver.ts",
+    "packages/security-audit-sdk-node/examples/evaluation-receiver.ts",
+    "packages/security-audit-sdk-node/examples/first-event.ts",
+    "packages/security-audit-sdk-node/examples/seeded-invalid-calls.ts",
+    "packages/security-audit-sdk-node/docs/quickstart.md",
+    "packages/security-audit-sdk-node/docs/evaluation-guide.md",
+    "packages/security-audit-sdk-node/docs/wire-protocol.md",
+    "packages/security-audit-sdk-node/docs/seeded-invalid-calls.md",
+    "packages/security-audit-sdk-node/docs/known-issues.md",
+    "packages/security-audit-sdk-node/docs/supported-and-planned.md",
+    "packages/security-audit-sdk-node/docs/error-catalog.md",
+    "packages/security-audit-sdk-node/docs/evaluation-questionnaire.md",
+    "packages/security-audit-sdk-node/docs/integration-and-testing.md",
+    "packages/security-audit-sdk-node/docs/privacy.md",
+    "packages/security-audit-sdk-core/README.md",
+    "packages/security-audit-sdk-node/README.md",
+    "packages/security-audit-sdk-node/facilitator/seeded-invalid-calls-answer-key.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-ticket-bounded-hardening",
+      "kind": "direct_implementation",
+      "summary": "Use one security-sensitive Node-binding change with exact path ownership, five complete requirement replacements, ticket-bounded implementation invariants, and a separate fold then archive for the gate, identity, receiver, documents, and fetch-adapter corrections.",
+      "forces_addressed": [
+        "The evaluation-kit gate and its planted-defect controls can claim checks that did not run or pass without the named check, so its non-production evidence does not reliably fail closed.",
+        "Format-2 identity material and a distributable build can vary or be relabelled without binding the full kit, so integrity claims do not identify the kit the facilitator publishes.",
+        "The example receiver can continue consuming a body after it decides an authentication, size, or routing response, and can admit an SDK-invalid event through the collector ingress.",
+        "Document, answer-key, installer, and synthetic-value gaps allow an evaluator kit to misstate its checked API, planned features, or material without a gate failure.",
+        "A non-deadline response-body read error currently becomes a terminal protocol path instead of transport_failure, so the existing delivery retry cannot redeliver the unchanged occurrence.",
+        "Eighteen dependent tickets share gate, builder, receiver, documentation, fetch-adapter, verification, fold, and archive paths, while CI workflow and OpenSpec-context ownership remain outside this candidate."
+      ]
+    },
+    {
+      "id": "approach-per-ticket-proposals",
+      "kind": "alternative",
+      "summary": "Open a separate change and assessment for each ticket or defect family, allowing each proposal to own its own gate, builder, receiver, documentation, fetch-adapter, fold, and archive scope.",
+      "forces_addressed": [
+        "The evaluation-kit gate and its planted-defect controls can claim checks that did not run or pass without the named check, so its non-production evidence does not reliably fail closed.",
+        "Eighteen dependent tickets share gate, builder, receiver, documentation, fetch-adapter, verification, fold, and archive paths, while CI workflow and OpenSpec-context ownership remain outside this candidate."
+      ]
+    },
+    {
+      "id": "approach-amend-archived-kit-change",
+      "kind": "alternative",
+      "summary": "Add the hardening paths and requirement changes to the archived evaluation-kit-v2 record, treating it as the continuing authority for the kit implementation and its former gate paths.",
+      "forces_addressed": [
+        "Format-2 identity material and a distributable build can vary or be relabelled without binding the full kit, so integrity claims do not identify the kit the facilitator publishes.",
+        "Eighteen dependent tickets share gate, builder, receiver, documentation, fetch-adapter, verification, fold, and archive paths, while CI workflow and OpenSpec-context ownership remain outside this candidate."
+      ]
+    },
+    {
+      "id": "approach-ci-workflow-control-surface",
+      "kind": "alternative",
+      "summary": "Keep the Node binding test script unchanged and make the CI workflow invoke the planted-defect controls on every supported Node version as a workflow-specific control surface.",
+      "forces_addressed": [
+        "The evaluation-kit gate and its planted-defect controls can claim checks that did not run or pass without the named check, so its non-production evidence does not reliably fail closed.",
+        "Eighteen dependent tickets share gate, builder, receiver, documentation, fetch-adapter, verification, fold, and archive paths, while CI workflow and OpenSpec-context ownership remain outside this candidate."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-ticket-bounded-hardening",
+  "rejected_alternative_ids": [
+    "approach-per-ticket-proposals",
+    "approach-amend-archived-kit-change",
+    "approach-ci-workflow-control-surface"
+  ],
+  "rejection_reasons": {
+    "approach-per-ticket-proposals": {
+      "forces": [
+        "Eighteen dependent tickets share gate, builder, receiver, documentation, fetch-adapter, verification, fold, and archive paths, while CI workflow and OpenSpec-context ownership remain outside this candidate."
+      ],
+      "reason": "The tickets repeatedly change the same gate, builder, controls, receiver, and document inventory, so separate active changes would overlap their exact ownership and could not preserve one ordered fold and archive record for the five related requirement replacements."
+    },
+    "approach-amend-archived-kit-change": {
+      "forces": [
+        "Format-2 identity material and a distributable build can vary or be relabelled without binding the full kit, so integrity claims do not identify the kit the facilitator publishes.",
+        "Eighteen dependent tickets share gate, builder, receiver, documentation, fetch-adapter, verification, fold, and archive paths, while CI workflow and OpenSpec-context ownership remain outside this candidate."
+      ],
+      "reason": "The prior kit change is an archived record and cannot acquire implementation ownership or replace its historical requirements, so using it would erase the active candidate boundary needed to associate the new fixes and their later fold."
+    },
+    "approach-ci-workflow-control-surface": {
+      "forces": [
+        "The evaluation-kit gate and its planted-defect controls can claim checks that did not run or pass without the named check, so its non-production evidence does not reliably fail closed.",
+        "Eighteen dependent tickets share gate, builder, receiver, documentation, fetch-adapter, verification, fold, and archive paths, while CI workflow and OpenSpec-context ownership remain outside this candidate."
+      ],
+      "reason": "A workflow-only invocation would leave the Node binding's per-version test surface incomplete and would require the excluded governance-core workflow path, while the selected path makes the controls runtime gates wherever that package test script runs."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-verification-summary-and-isolated-controls",
+    "implementation-format-three-identity-and-deterministic-kit",
+    "implementation-bounded-receiver-and-sdk-admission",
+    "implementation-document-and-answer-key-gates",
+    "implementation-response-body-failure-redelivery",
+    "implementation-folds-five-complete-requirements",
+    "implementation-archives-after-the-fold"
+  ],
+  "invariant_evidence": {
+    "implementation-verification-summary-and-isolated-controls": {
+      "task_ids": [
+        "1.1",
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "The kit gate reports only stable check identities that ran in build and existing-kit modes, and every planted-defect control changes one measured condition, fails at its named identity, and fails itself when that check is disabled.",
+        "The Node binding test script runs the kit controls on every supported Node version without a CI-workflow edit."
+      ]
+    },
+    "implementation-format-three-identity-and-deterministic-kit": {
+      "task_ids": [
+        "4.1",
+        "5.1",
+        "6.1"
+      ],
+      "evidence_ids": [
+        "A format-3 identity includes identity.json in checksums.sha256 and writes the outside-list SHA-256 of that list in kit-digest.sha256, while format 2 is refused by name.",
+        "A disposable clean clone produces a distributable kit whose artifacts and checksum list match the verification kit, and controls reject a dirty tree, attributes, filters, line endings, umask variation, and non-regular files."
+      ]
+    },
+    "implementation-bounded-receiver-and-sdk-admission": {
+      "task_ids": [
+        "7.1",
+        "8.1",
+        "9.1"
+      ],
+      "evidence_ids": [
+        "Receiver probes prove it reads an in-bound body before answering and, after the bound, answers, closes, and reads nothing more for 401, 413, wrong-path, and method cases.",
+        "A structurally valid SDK-invalid event is rejected before ingress admission, its corrected same-identity event is admitted, and strict Bearer, 404, 405 Allow: POST, and client-abort controls pass."
+      ]
+    },
+    "implementation-document-and-answer-key-gates": {
+      "task_ids": [
+        "10.1",
+        "11.1",
+        "12.1",
+        "13.1",
+        "14.1",
+        "15.1"
+      ],
+      "evidence_ids": [
+        "The gate type-checks every answer-key fix and detects each fix code and expected code-and-path pair in every kit file and packed-artifact text entry.",
+        "Controls prove case-insensitive fenced-language handling, runnable blocks, identifier resolution, planned-feature markers, shipped-setting warnings, and non-synthetic document or example values fail at their named checks."
+      ]
+    },
+    "implementation-response-body-failure-redelivery": {
+      "task_ids": [
+        "16.1"
+      ],
+      "evidence_ids": [
+        "Fetch-adapter and HTTP-sink probes map reset, short-body, and malformed-chunk read errors other than a deadline to transport_failure, preserve deadline and malformed-acknowledgment behavior, and show the existing delivery retry redelivers the unchanged occurrence.",
+        "The scope-inventory and HTTP-audit-sink mutation controls remain pinned to the governed fetch-adapter source."
+      ]
+    },
+    "implementation-folds-five-complete-requirements": {
+      "task_ids": [
+        "17.1"
+      ],
+      "evidence_ids": [
+        "The fold replaces exactly the five complete canonical requirement blocks after all implementation tickets, with each retained scenario and heading unique and no delta header or contradictory SHALL."
+      ]
+    },
+    "implementation-archives-after-the-fold": {
+      "task_ids": [
+        "18.1"
+      ],
+      "evidence_ids": [
+        "An archive pull request follows the completed fold, moves the active change without a canonical write, and leaves the archive task unchecked until that separate work is ready."
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "0f3f8a4eb9dac6768cb02581e2c4b07389e6419b"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "3.1",
+    "4.1",
+    "5.1",
+    "6.1",
+    "7.1",
+    "8.1",
+    "9.1",
+    "10.1",
+    "11.1",
+    "12.1",
+    "13.1",
+    "14.1",
+    "15.1",
+    "16.1",
+    "17.1",
+    "18.1"
+  ]
+}
