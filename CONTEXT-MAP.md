@@ -4,7 +4,7 @@
 
 - [OpenSpec Governance](./openspec/CONTEXT.md): defines the repository's evidence-bearing change and governance concepts.
 - [Security Audit SDK Core](./packages/security-audit-sdk-core/CONTEXT.md): defines the isolated TypeScript SDK's compatibility and authorization-boundary concepts.
-- [Security Audit SDK Node Binding](./packages/security-audit-sdk-node/CONTEXT.md): defines the delivery vocabulary (occurrences, re-executions, redelivery, delivery attempts, and the HTTP audit sink versus the delivery handoff) and the evaluation kit vocabulary (evaluator, facilitator, answer key, example receiver, evaluated path).
+- [Security Audit SDK Node Binding](./packages/security-audit-sdk-node/CONTEXT.md): defines the delivery vocabulary (occurrences, re-executions, redelivery, delivery attempts, and the HTTP audit sink versus the delivery handoff), the evaluation-kit vocabulary (evaluator, facilitator, answer key, example receiver, evaluated path), and the kit-verification vocabulary (kit gate, verification summary, planted-defect control, distributable kit, verification kit, kit identity, kit digest, and archive digest).
 - [Security Audit Collector](./packages/security-audit-collector/CONTEXT.md): defines the synthetic collector ingress's identities and its duplicate and conflict outcomes.
 
 ## Relationships

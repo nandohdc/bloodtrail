@@ -58,10 +58,44 @@ The non-production bundle that evaluators install outside the repository: the pa
 service, its driver and the example receiver, the evaluator documents, and the kit identity.
 _Avoid_: release, distribution, package
 
+**Kit gate**:
+The non-production verifier that builds or checks an evaluation kit and fails closed when a required kit
+condition does not hold.
+_Avoid_: kit test, evaluator test
+
+**Verification summary**:
+The kit gate's result statement, which identifies only the checks that ran and what each verified.
+_Avoid_: success line, pass message
+
+**Planted-defect control**:
+A disposable verification control that introduces one measured defect and proves the named kit-gate check fails
+closed at its identity.
+_Avoid_: mutation test, negative test
+
+**Distributable kit**:
+An evaluation kit built from its clean identity commit for distribution as both an unpacked directory and a
+single archive.
+_Avoid_: release, published package
+
+**Verification kit**:
+A non-distributable evaluation kit that the kit gate builds from the checked tree solely to verify it.
+_Avoid_: distributable kit, evaluator kit
+
 **Kit identity**:
-The record a kit carries of the commit it was built from and of the digest of every file in it, which an
-evaluator checks the kit against with standard tools.
+The format 3 record that binds a built kit's build commit, distributability and integrity values, including the
+identity file in the checksum list and the separately recorded kit digest; it identifies a kit and authorizes no
+release.
 _Avoid_: version, signature, manifest
+
+**Kit digest**:
+The SHA-256 of `checksums.sha256`, kept outside that checksum list and written in `kit-digest.sha256` in the
+`shasum -c` format.
+_Avoid_: archive digest, signature
+
+**Archive digest**:
+The SHA-256 of a distributable kit's archive, recorded outside that archive because an archive cannot contain
+its own digest.
+_Avoid_: kit digest, signature
 
 **Evaluator**:
 A person whom an owner-approved amendment names, and who uses the evaluation kit with synthetic data in
@@ -69,8 +103,8 @@ non-production services they own.
 _Avoid_: user, customer, tester
 
 **Evaluation facilitator**:
-The person who distributes the evaluation kit, publishes its archive digest, and holds the facilitator
-answer key. They do not evaluate.
+The person who distributes the evaluation kit, publishes its kit digest and archive digest, and holds the
+facilitator answer key. They do not evaluate.
 _Avoid_: evaluator, organizer
 
 **Facilitator answer key**:
@@ -90,7 +124,7 @@ _Avoid_: collector, server, backend
 
 **Demonstrated event**:
 One of the five events the example service emits, each of which the evaluation proves the example receiver
-got exactly as the SDK validated it.
+got exactly the bytes the SDK handed to the HTTP audit sink.
 _Avoid_: sample event, test event
 
 **Evaluated path**:
