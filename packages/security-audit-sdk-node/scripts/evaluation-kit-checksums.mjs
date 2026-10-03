@@ -150,16 +150,19 @@ async function withUnpackedKit(kitDir, run) {
 /**
  * Archives the kit, unpacks it in a fresh directory, and there runs `shasum -a 256 -c` over the checksum
  * list, then every integrity command the kit's evaluation guide documents. Each command must pass, and
- * every digest it prints must be one the kit records.
+ * every digest it prints must be one the kit records. Returns the guide commands that ran so the kit gate's
+ * verification summary can name them without claiming the guide's archive command.
  */
 export async function verifyUnpackedKitIntegrity(kitDir) {
-  await withUnpackedKit(kitDir, async (unpacked) => {
+  return withUnpackedKit(kitDir, async (unpacked) => {
     runChecksumListCheck(unpacked);
     const records = await recordedDigests(unpacked);
     const guideText = await readFile(resolve(unpacked, GUIDE), "utf8");
-    for (const command of guideIntegrityCommands(guideText)) {
+    const commands = guideIntegrityCommands(guideText);
+    for (const command of commands) {
       const output = runShasum(integrityCommandArgs(command, unpacked), unpacked, `${GUIDE} integrity command \`${command}\``);
       assertPrintedDigestsRecorded(output, records, command);
     }
+    return commands;
   });
 }

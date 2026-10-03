@@ -69,8 +69,8 @@ function eventRecords(lines, label) {
   return byName;
 }
 
-// For each demonstrated event, the bytes the receiver printed as received must equal, exactly, the bytes
-// the service printed as validated by the SDK. Returns each received event, parsed, by name.
+// For each demonstrated event, the bytes the receiver received must equal the bytes the SDK handed to the
+// HTTP audit sink. Returns each received event, parsed, by name.
 function assertDeliveredBytesIdentical(serviceOutput, receiverOutput) {
   const validated = eventRecords([...serviceOutput.matchAll(VALIDATED_LINE)].map(([, raw]) => ({ raw })), "the service");
   const receivedLines = [...receiverOutput.matchAll(RECEIVED_LINE)].map(([, acknowledgedId, raw]) => ({ raw, acknowledgedId }));
@@ -82,7 +82,7 @@ function assertDeliveredBytesIdentical(serviceOutput, receiverOutput) {
     assert(sent && arrived, `${name} must be validated by the service and accepted by the receiver`);
     assert(
       arrived.raw === sent.raw,
-      `${name}: the bytes the receiver received differ from the bytes the SDK validated:\nvalidated ${sent.raw}\nreceived  ${arrived.raw}`,
+      `${name}: the bytes the receiver received differ from the bytes the SDK handed to the HTTP audit sink:\nhanded   ${sent.raw}\nreceived ${arrived.raw}`,
     );
     assert(
       arrived.acknowledgedId === arrived.event.event.id,
@@ -293,7 +293,8 @@ async function verifyCarefulIngress(installDir, origin, events) {
 
 /**
  * Runs the example service against the example receiver over loopback, in the installed kit. Every
- * demonstrated event must be accepted, and must arrive as exactly the bytes the SDK validated. Then the
+ * demonstrated event must be accepted, and the bytes the receiver received must equal the bytes the SDK
+ * handed to the HTTP audit sink. Then the
  * receiver must behave as a careful ingress.
  */
 export async function verifyHttpExchange(installDir) {

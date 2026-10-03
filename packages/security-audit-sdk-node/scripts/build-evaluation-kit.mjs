@@ -312,7 +312,7 @@ export async function buildEvaluationKit({
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(await realpath(process.argv[1])).href) {
   const args = process.argv.slice(2);
   let destDir = null;
   let mode = "distributable";

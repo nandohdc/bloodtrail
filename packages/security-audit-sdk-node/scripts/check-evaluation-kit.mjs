@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { copyFile, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import process from "node:process";
@@ -50,7 +50,10 @@ export async function installGatePrograms(installDir, failurePathsProgram = FAIL
   await copyFile(failurePathsProgram, resolve(installDir, INSTALLED_FAILURE_PATHS_PROGRAM));
 }
 
-export async function writeConsumerTsconfig(installDir) {
+export async function writeConsumerTsconfig(
+  installDir,
+  include = ["examples/**/*.ts", "doc-blocks/**/*.ts", "gate/**/*.ts"],
+) {
   const tsconfigPath = resolve(installDir, "tsconfig.json");
   const tsconfig = {
     compilerOptions: {
@@ -72,7 +75,7 @@ export async function writeConsumerTsconfig(installDir) {
       typeRoots: [resolve(packageRoot, "node_modules/@types")],
       types: ["node"],
     },
-    include: ["examples/**/*.ts", "doc-blocks/**/*.ts", "gate/**/*.ts"],
+    include,
   };
   await writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2), "utf8");
   return tsconfigPath;
@@ -98,20 +101,28 @@ export function typescriptLegs(tsconfigPath) {
   ];
 }
 
-async function typecheckExamples(tempInstall) {
+async function typecheckSources(tempInstall, include) {
+  const tsconfigPath = await writeConsumerTsconfig(tempInstall, include);
+  for (const leg of typescriptLegs(tsconfigPath)) {
+    runChecked(leg.command, leg.args, { cwd: tempInstall, capture: true });
+  }
+}
+
+async function typecheckKitSources(tempInstall) {
   const docsDir = resolve(tempInstall, "docs");
   const docBlocksDir = resolve(tempInstall, "doc-blocks");
   if (existsSync(docsDir)) {
     await extractDocBlocksFromDir(docsDir, docBlocksDir);
   }
-  if (existsSync(ANSWER_KEY_PATH)) {
-    await extractAnswerKeyFixBlocks(docBlocksDir);
-  }
+  await typecheckSources(tempInstall, ["examples/**/*.ts", "doc-blocks/**/*.ts", "gate/**/*.ts"]);
+}
 
-  const tsconfigPath = await writeConsumerTsconfig(tempInstall);
-  for (const leg of typescriptLegs(tsconfigPath)) {
-    runChecked(leg.command, leg.args, { cwd: tempInstall, capture: true });
-  }
+async function typecheckAnswerKeyFixes(tempInstall) {
+  if (!existsSync(ANSWER_KEY_PATH)) return false;
+  const answerKeyBlocksDir = resolve(tempInstall, "answer-key-blocks");
+  await extractAnswerKeyFixBlocks(answerKeyBlocksDir);
+  await typecheckSources(tempInstall, ["answer-key-blocks/**/*.ts"]);
+  return true;
 }
 
 async function verifyFailurePaths(tempInstall) {
@@ -148,13 +159,87 @@ async function verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore) {
   await runCoreCopyProbe(tempInstall, "npm");
 }
 
-// Every clause names a check the run performed. A kit given with --kit-dir is checked as given and never
-// rebuilt, so its line says that reproducibility was not checked.
-function verificationSummary({ buildsOwnKit }) {
-  const identityClause = buildsOwnKit
-    ? "kit built from tracked sources, identity verified and reproduced with stale build output and untracked sources planted"
-    : "kit checked as given, identity verified, reproducibility not checked because --kit-dir skips the rebuild";
-  return `evaluation kit verification passed: ${identityClause}, checksum list and the evaluation guide's integrity commands verified with shasum in an unpacked kit, planned features described only as planned, installed outside workspace with npm and pnpm ${PNPM_RELEASES.join(", ")} with no ignored setting, every call-shaped document reference resolved against the installed packages' type declarations, doc blocks, facilitator answer-key fixes, examples and failure-path program type-checked across TypeScript matrix (5.9.2, 6.0.3, 7.0.2), single core copy verified, every demonstrated event received as exactly the bytes the SDK validated, the receiver answering 401, 413, 400, 422 and 409, acknowledging duplicates and still serving, seeded invalid calls verified, failure paths verified\n`;
+const TYPESCRIPT_MATRIX = "TypeScript 5.9.2, 6.0.3, and 7.0.2";
+
+function codeSpans(commands) {
+  return commands.map((command) => `\`${command}\``).join(", ");
+}
+
+// Every entry has one stable identity and one clause. The summary is composed only from entries recorded
+// after their checks complete, so a check that did not run cannot claim a result.
+export const KIT_GATE_CHECKS = Object.freeze({
+  "verification-kit-build": Object.freeze({
+    clause: () => "verification kit built from tracked sources",
+  }),
+  "kit-identity": Object.freeze({
+    clause: () => "kit identity verified",
+  }),
+  "answer-key-exclusion": Object.freeze({
+    clause: () => "facilitator answer-key file names and recognized content markers excluded",
+  }),
+  "unpacked-kit-integrity": Object.freeze({
+    clause: ({ commands }) => `unpacked-kit integrity commands verified: ${codeSpans(commands)}`,
+  }),
+  "installer-documentation": Object.freeze({
+    clause: () => "the quickstart and known-issues pages name the supported pnpm majors",
+  }),
+  "planned-feature-documentation": Object.freeze({
+    clause: () => "kit documents describe planned features only as planned",
+  }),
+  "reproducible-identity": Object.freeze({
+    clause: () => "verification-kit identity reproduced after stale build output and untracked sources were planted",
+  }),
+  "npm-installation": Object.freeze({
+    clause: () => "kit installed outside any workspace with npm and no ignored setting",
+  }),
+  "document-references": Object.freeze({
+    clause: () => "call-shaped document references resolved against installed package type declarations",
+  }),
+  "npm-single-core-copy": Object.freeze({
+    clause: () => "single core copy verified after the npm installation",
+  }),
+  "kit-source-typecheck": Object.freeze({
+    clause: () => `examples, document blocks, and failure-path program type-checked under strict consumer settings with ${TYPESCRIPT_MATRIX}`,
+  }),
+  "facilitator-answer-key-fix-typecheck": Object.freeze({
+    clause: () => `facilitator answer-key fixes type-checked under strict consumer settings with ${TYPESCRIPT_MATRIX}`,
+  }),
+  "first-event-example": Object.freeze({
+    clause: () => "first-event example ran successfully after the npm installation",
+  }),
+  "loopback-example-exchange": Object.freeze({
+    clause: () => "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, acknowledged a byte-identical duplicate and a redelivered event, and kept serving after each",
+  }),
+  "seeded-invalid-calls": Object.freeze({
+    clause: () => "seeded invalid calls returned their documented code, category, and path",
+  }),
+  "http-audit-sink-failure-paths": Object.freeze({
+    clause: () => "HTTP audit sink failure paths and lifecycle transitions verified",
+  }),
+  "pnpm-installations": Object.freeze({
+    clause: () => `kit installed outside any workspace with pnpm ${PNPM_RELEASES.join(", ")}, with no ignored setting, a passing first-event example, and one core copy per installation`,
+  }),
+});
+
+export const KIT_GATE_CHECK_IDENTITIES = Object.freeze(Object.keys(KIT_GATE_CHECKS));
+
+function recordCompletedCheck(completedChecks, identity, details = {}) {
+  assert(KIT_GATE_CHECKS[identity], `unknown kit gate check identity: ${identity}`);
+  assert(!completedChecks.some((check) => check.identity === identity), `kit gate check recorded twice: ${identity}`);
+  completedChecks.push({ identity, details });
+}
+
+// Not a check: it says what a --kit-dir run skipped, so the absent build clauses cannot pass unnoticed.
+export const KIT_DIR_NOTE = "kit checked as given with --kit-dir, so it was neither built nor reproduced";
+
+export function composeVerificationSummary(completedChecks, { checkedAsGiven = false } = {}) {
+  const clauses = completedChecks.map(({ identity, details }) => {
+    const check = KIT_GATE_CHECKS[identity];
+    assert(check, `unknown kit gate check identity: ${identity}`);
+    return check.clause(details);
+  });
+  const parts = checkedAsGiven ? [KIT_DIR_NOTE, ...clauses] : clauses;
+  return `evaluation kit verification passed: ${parts.join("; ")}\n`;
 }
 
 // Returns the success line, which the command line prints, so a control can read it from a passing run.
@@ -167,6 +252,7 @@ export async function checkEvaluationKit({
 
   // A kit given with --kit-dir is checked as given: the gate neither builds it nor proves that it reproduces.
   const buildsOwnKit = !existingKitDir;
+  const completedChecks = [];
   let kitDir = existingKitDir;
   let removeBuiltKit = null;
 
@@ -174,28 +260,35 @@ export async function checkEvaluationKit({
     const built = await buildEvaluationKit({ mode: "verification" });
     kitDir = built.kitDir;
     removeBuiltKit = built.removeKit;
+    recordCompletedCheck(completedChecks, "verification-kit-build");
   }
 
   const tempInstall = await mkdtemp(resolve(tmpdir(), "bloodtrail-eval-install-"));
   try {
     // 1. Verify identity
     const { identity } = await verifyKitIdentity(kitDir);
+    recordCompletedCheck(completedChecks, "kit-identity");
 
     // 1a. Kit excludes facilitator answer key and its contents
     await assertKitExcludesAnswerKey(kitDir);
+    recordCompletedCheck(completedChecks, "answer-key-exclusion");
 
     // 1b. Unpacked from an archive, the kit passes `shasum -a 256 -c` and every integrity command its guide documents
-    await verifyUnpackedKitIntegrity(kitDir);
+    const integrityCommands = await verifyUnpackedKitIntegrity(kitDir);
+    recordCompletedCheck(completedChecks, "unpacked-kit-integrity", { commands: integrityCommands });
 
     // 1c. The kit's documents name exactly the pnpm majors this gate installs with
     await assertKitDocsNameInstallers(kitDir);
+    recordCompletedCheck(completedChecks, "installer-documentation");
 
     // 1d. The kit's documents describe OCSF export, OpenTelemetry transport, CloudEvents envelopes, retries, queues and framework adapters only as planned
     await assertKitDocsClaimOnlyWhatShips(kitDir);
+    recordCompletedCheck(completedChecks, "planned-feature-documentation");
 
     // 2. Reproducibility: the same tracked tree rebuilds to the same digests, with or without stale build output on disk
     if (buildsOwnKit) {
       await checkReproducibleIdentity(identity);
+      recordCompletedCheck(completedChecks, "reproducible-identity");
     }
 
     // 3. Install kit with npm outside any workspace root
@@ -207,16 +300,25 @@ export async function checkEvaluationKit({
       ["install", "--omit=dev", "--no-audit", "--no-fund", "--ignore-scripts", "--offline"],
       tempInstall,
     );
+    recordCompletedCheck(completedChecks, "npm-installation");
 
     // 3a. Every call-shaped reference in the kit's documents names an API the installed packages declare
     await assertKitDocReferences(tempInstall);
+    recordCompletedCheck(completedChecks, "document-references");
 
     // 4. Verify single core copy in npm install (and fail closed if planted duplicate)
     await verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore);
+    recordCompletedCheck(completedChecks, "npm-single-core-copy");
 
-    // 5. Type-check examples, doc blocks, answer key fixes and the gate's failure-path program in the installed kit with TypeScript matrix (5.9.2, 6.0.x, 7.0.x) under strict settings
+    // 5. Type-check examples, doc blocks, and the gate's failure-path program in the installed kit with TypeScript matrix under strict settings
     await installGatePrograms(tempInstall, failurePathsProgram);
-    await typecheckExamples(tempInstall);
+    await typecheckKitSources(tempInstall);
+    recordCompletedCheck(completedChecks, "kit-source-typecheck");
+
+    // 5a. Type-check facilitator answer-key fixes only when the facilitator answer key is present.
+    if (await typecheckAnswerKeyFixes(tempInstall)) {
+      recordCompletedCheck(completedChecks, "facilitator-answer-key-fix-typecheck");
+    }
 
     // 6. Run examples/first-event.ts
     const firstEventScript = resolve(tempInstall, "examples/first-event.ts");
@@ -227,9 +329,11 @@ export async function checkEvaluationKit({
       capture: true,
     });
     assert(output.includes("first-event:pass"), `examples/first-event.ts did not succeed:\n${output}`);
+    recordCompletedCheck(completedChecks, "first-event-example");
 
     // 7. Run example-receiver and example-service end to end over loopback HTTP
     await verifyHttpExchange(tempInstall);
+    recordCompletedCheck(completedChecks, "loopback-example-exchange");
 
     // 7b. Run seeded invalid calls exercise against installed kit and verify codes in the gate
     const seededScript = resolve(tempInstall, "examples/seeded-invalid-calls.ts");
@@ -241,15 +345,23 @@ export async function checkEvaluationKit({
       const catalogPath = resolve(tempInstall, "docs/error-catalog.md");
       const catalogContent = existsSync(catalogPath) ? await readFile(catalogPath, "utf8") : "";
       verifySeededCallsOutput(seededRun, catalogContent);
+      recordCompletedCheck(completedChecks, "seeded-invalid-calls");
     }
 
     // 8. Drive HTTP sink failure paths and lifecycle transitions from installed kit against controllable loopback peer
     await verifyFailurePaths(tempInstall);
+    recordCompletedCheck(completedChecks, "http-audit-sink-failure-paths");
 
     // 9. Install kit with one pinned release of each supported pnpm major outside workspace root, run one-event script and duplicate-copy probe
     await verifyPnpmInstalls(kitDir);
+    recordCompletedCheck(completedChecks, "pnpm-installations");
 
-    return { success: true, summary: verificationSummary({ buildsOwnKit }) };
+    return {
+      success: true,
+      summary: composeVerificationSummary(completedChecks, { checkedAsGiven: !buildsOwnKit }),
+      checkIdentities: completedChecks.map((check) => check.identity),
+      verificationChecks: completedChecks.map(({ identity, details }) => ({ identity, details })),
+    };
   } finally {
     await rm(tempInstall, { recursive: true, force: true });
     if (removeBuiltKit) {
@@ -258,7 +370,7 @@ export async function checkEvaluationKit({
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(await realpath(process.argv[1])).href) {
   const args = process.argv.slice(2);
   let kitDir = null;
   for (let i = 0; i < args.length; i++) {
