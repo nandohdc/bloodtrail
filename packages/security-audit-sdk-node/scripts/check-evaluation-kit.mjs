@@ -147,15 +147,7 @@ async function verifyFailurePaths(tempInstall) {
 }
 
 async function verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore) {
-  if (plantDuplicateCore) {
-    const nestedCore = resolve(
-      tempInstall,
-      "node_modules/@bloodtrail/security-audit-sdk-node/node_modules/@bloodtrail/security-audit-sdk-core",
-    );
-    await cp(resolve(tempInstall, "node_modules/@bloodtrail/security-audit-sdk-core"), nestedCore, {
-      recursive: true,
-    });
-  }
+  if (plantDuplicateCore) await plantDuplicateCore(tempInstall);
   await runCoreCopyProbe(tempInstall, "npm");
 }
 
@@ -229,6 +221,41 @@ function recordCompletedCheck(completedChecks, identity, details = {}) {
   completedChecks.push({ identity, details });
 }
 
+function normalizeDisabledChecks(disabledChecks) {
+  assert(Array.isArray(disabledChecks), "_disabledChecks must be an array of kit gate check identities");
+  for (const identity of disabledChecks) {
+    assert(KIT_GATE_CHECKS[identity], `unknown kit gate check identity: ${identity}`);
+  }
+  return new Set(disabledChecks);
+}
+
+function checkFailure(identity, cause) {
+  const error = new Error(`kit gate check ${identity} failed: ${cause.message}`, { cause });
+  error.checkIdentity = identity;
+  return error;
+}
+
+async function runCheck(completedChecks, disabledChecks, identity, run) {
+  assert(KIT_GATE_CHECKS[identity], `unknown kit gate check identity: ${identity}`);
+  if (disabledChecks.has(identity)) return undefined;
+  try {
+    const details = await run();
+    recordCompletedCheck(completedChecks, identity, details);
+    return details;
+  } catch (cause) {
+    throw checkFailure(identity, cause);
+  }
+}
+
+// The controls use this same runner when they exercise a check helper directly. It is JavaScript-only,
+// like _disabledChecks on checkEvaluationKit, and never becomes a command-line gate option.
+export async function runKitGateCheck({ identity, _disabledChecks = [], run }) {
+  const disabledChecks = normalizeDisabledChecks(_disabledChecks);
+  const completedChecks = [];
+  const details = await runCheck(completedChecks, disabledChecks, identity, run);
+  return { details, skipped: disabledChecks.has(identity) };
+}
+
 // Not a check: it says what a --kit-dir run skipped, so the absent build clauses cannot pass unnoticed.
 export const KIT_DIR_NOTE = "kit checked as given with --kit-dir, so it was neither built nor reproduced";
 
@@ -245,116 +272,129 @@ export function composeVerificationSummary(completedChecks, { checkedAsGiven = f
 // Returns the success line, which the command line prints, so a control can read it from a passing run.
 export async function checkEvaluationKit({
   kitDir: existingKitDir,
-  plantDuplicateCore = false,
   failurePathsProgram = FAILURE_PATHS_PROGRAM,
+  _disabledChecks = [],
+  _plantDuplicateCore = null,
 } = {}) {
+  const disabledChecks = normalizeDisabledChecks(_disabledChecks);
+  assert(_plantDuplicateCore === null || typeof _plantDuplicateCore === "function", "_plantDuplicateCore must be a function");
+  // Not a check: every check below writes under the temporary directory, so it must lie outside the repository.
   await assertOutsideRepository(tmpdir());
 
   // A kit given with --kit-dir is checked as given: the gate neither builds it nor proves that it reproduces.
   const buildsOwnKit = !existingKitDir;
   const completedChecks = [];
+  let identity;
   let kitDir = existingKitDir;
   let removeBuiltKit = null;
+  let tempInstall = null;
 
-  if (buildsOwnKit) {
-    const built = await buildEvaluationKit({ mode: "verification" });
-    kitDir = built.kitDir;
-    removeBuiltKit = built.removeKit;
-    recordCompletedCheck(completedChecks, "verification-kit-build");
-  }
-
-  const tempInstall = await mkdtemp(resolve(tmpdir(), "bloodtrail-eval-install-"));
   try {
-    // 1. Verify identity
-    const { identity } = await verifyKitIdentity(kitDir);
-    recordCompletedCheck(completedChecks, "kit-identity");
+    if (buildsOwnKit) {
+      await runCheck(completedChecks, disabledChecks, "verification-kit-build", async () => {
+        const built = await buildEvaluationKit({ mode: "verification" });
+        kitDir = built.kitDir;
+        removeBuiltKit = built.removeKit;
+        return undefined;
+      });
+    }
+
+    await runCheck(completedChecks, disabledChecks, "kit-identity", async () => {
+      ({ identity } = await verifyKitIdentity(kitDir));
+      return undefined;
+    });
 
     // 1a. Kit excludes facilitator answer key and its contents
-    await assertKitExcludesAnswerKey(kitDir);
-    recordCompletedCheck(completedChecks, "answer-key-exclusion");
+    await runCheck(completedChecks, disabledChecks, "answer-key-exclusion", () => assertKitExcludesAnswerKey(kitDir));
 
     // 1b. Unpacked from an archive, the kit passes `shasum -a 256 -c` and every integrity command its guide documents
-    const integrityCommands = await verifyUnpackedKitIntegrity(kitDir);
-    recordCompletedCheck(completedChecks, "unpacked-kit-integrity", { commands: integrityCommands });
+    await runCheck(completedChecks, disabledChecks, "unpacked-kit-integrity", async () => {
+      const commands = await verifyUnpackedKitIntegrity(kitDir);
+      return { commands };
+    });
 
     // 1c. The kit's documents name exactly the pnpm majors this gate installs with
-    await assertKitDocsNameInstallers(kitDir);
-    recordCompletedCheck(completedChecks, "installer-documentation");
+    await runCheck(completedChecks, disabledChecks, "installer-documentation", () => assertKitDocsNameInstallers(kitDir));
 
     // 1d. The kit's documents describe OCSF export, OpenTelemetry transport, CloudEvents envelopes, retries, queues and framework adapters only as planned
-    await assertKitDocsClaimOnlyWhatShips(kitDir);
-    recordCompletedCheck(completedChecks, "planned-feature-documentation");
+    await runCheck(completedChecks, disabledChecks, "planned-feature-documentation", () => assertKitDocsClaimOnlyWhatShips(kitDir));
 
     // 2. Reproducibility: the same tracked tree rebuilds to the same digests, with or without stale build output on disk
     if (buildsOwnKit) {
-      await checkReproducibleIdentity(identity);
-      recordCompletedCheck(completedChecks, "reproducible-identity");
+      await runCheck(completedChecks, disabledChecks, "reproducible-identity", async () => {
+        await checkReproducibleIdentity(identity);
+        return undefined;
+      });
     }
 
-    // 3. Install kit with npm outside any workspace root
-    await cp(kitDir, tempInstall, { recursive: true });
-
-    runInstaller(
-      "npm",
-      "npm",
-      ["install", "--omit=dev", "--no-audit", "--no-fund", "--ignore-scripts", "--offline"],
-      tempInstall,
-    );
-    recordCompletedCheck(completedChecks, "npm-installation");
+    // 3. Copy and install the kit with npm outside any workspace root.
+    await runCheck(completedChecks, disabledChecks, "npm-installation", async () => {
+      tempInstall = await mkdtemp(resolve(tmpdir(), "bloodtrail-eval-install-"));
+      await cp(kitDir, tempInstall, { recursive: true });
+      runInstaller(
+        "npm",
+        "npm",
+        ["install", "--omit=dev", "--no-audit", "--no-fund", "--ignore-scripts", "--offline"],
+        tempInstall,
+      );
+      return undefined;
+    });
 
     // 3a. Every call-shaped reference in the kit's documents names an API the installed packages declare
-    await assertKitDocReferences(tempInstall);
-    recordCompletedCheck(completedChecks, "document-references");
+    await runCheck(completedChecks, disabledChecks, "document-references", () => assertKitDocReferences(tempInstall));
 
     // 4. Verify single core copy in npm install (and fail closed if planted duplicate)
-    await verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore);
-    recordCompletedCheck(completedChecks, "npm-single-core-copy");
+    await runCheck(completedChecks, disabledChecks, "npm-single-core-copy", () => verifyDuplicateCoreProbe(tempInstall, _plantDuplicateCore));
 
-    // 5. Type-check examples, doc blocks, and the gate's failure-path program in the installed kit with TypeScript matrix under strict settings
-    await installGatePrograms(tempInstall, failurePathsProgram);
-    await typecheckKitSources(tempInstall);
-    recordCompletedCheck(completedChecks, "kit-source-typecheck");
+    // 5. Install the gate program, then type-check the installed sources under the TypeScript matrix.
+    await runCheck(completedChecks, disabledChecks, "kit-source-typecheck", async () => {
+      await installGatePrograms(tempInstall, failurePathsProgram);
+      await typecheckKitSources(tempInstall);
+      return undefined;
+    });
 
     // 5a. Type-check facilitator answer-key fixes only when the facilitator answer key is present.
-    if (await typecheckAnswerKeyFixes(tempInstall)) {
-      recordCompletedCheck(completedChecks, "facilitator-answer-key-fix-typecheck");
+    if (existsSync(ANSWER_KEY_PATH)) {
+      await runCheck(completedChecks, disabledChecks, "facilitator-answer-key-fix-typecheck", async () => {
+        await typecheckAnswerKeyFixes(tempInstall);
+        return undefined;
+      });
     }
 
     // 6. Run examples/first-event.ts
-    const firstEventScript = resolve(tempInstall, "examples/first-event.ts");
-    assert(existsSync(firstEventScript), "examples/first-event.ts missing from installed kit");
-
-    const output = runChecked(process.execPath, ["--no-warnings", "examples/first-event.ts"], {
-      cwd: tempInstall,
-      capture: true,
-    });
-    assert(output.includes("first-event:pass"), `examples/first-event.ts did not succeed:\n${output}`);
-    recordCompletedCheck(completedChecks, "first-event-example");
-
-    // 7. Run example-receiver and example-service end to end over loopback HTTP
-    await verifyHttpExchange(tempInstall);
-    recordCompletedCheck(completedChecks, "loopback-example-exchange");
-
-    // 7b. Run seeded invalid calls exercise against installed kit and verify codes in the gate
-    const seededScript = resolve(tempInstall, "examples/seeded-invalid-calls.ts");
-    if (existsSync(seededScript)) {
-      const seededRun = runChecked(process.execPath, ["--no-warnings", seededScript], {
+    await runCheck(completedChecks, disabledChecks, "first-event-example", () => {
+      const firstEventScript = resolve(tempInstall, "examples/first-event.ts");
+      assert(existsSync(firstEventScript), "examples/first-event.ts missing from installed kit");
+      const output = runChecked(process.execPath, ["--no-warnings", "examples/first-event.ts"], {
         cwd: tempInstall,
         capture: true,
       });
-      const catalogPath = resolve(tempInstall, "docs/error-catalog.md");
-      const catalogContent = existsSync(catalogPath) ? await readFile(catalogPath, "utf8") : "";
-      verifySeededCallsOutput(seededRun, catalogContent);
-      recordCompletedCheck(completedChecks, "seeded-invalid-calls");
+      assert(output.includes("first-event:pass"), `examples/first-event.ts did not succeed:\n${output}`);
+    });
+
+    // 7. Run example-receiver and example-service end to end over loopback HTTP
+    await runCheck(completedChecks, disabledChecks, "loopback-example-exchange", () => verifyHttpExchange(tempInstall));
+
+    // 7b. Run seeded invalid calls exercise against installed kit and verify codes in the gate.
+    // The install directory is absent only when its serving check is disabled through the JavaScript-only seam.
+    if (tempInstall) {
+      const seededScript = resolve(tempInstall, "examples/seeded-invalid-calls.ts");
+      if (existsSync(seededScript)) {
+        await runCheck(completedChecks, disabledChecks, "seeded-invalid-calls", async () => {
+          const seededRun = runChecked(process.execPath, ["--no-warnings", seededScript], { cwd: tempInstall, capture: true });
+          const catalogPath = resolve(tempInstall, "docs/error-catalog.md");
+          const catalogContent = existsSync(catalogPath) ? await readFile(catalogPath, "utf8") : "";
+          verifySeededCallsOutput(seededRun, catalogContent);
+          return undefined;
+        });
+      }
     }
 
     // 8. Drive HTTP sink failure paths and lifecycle transitions from installed kit against controllable loopback peer
-    await verifyFailurePaths(tempInstall);
-    recordCompletedCheck(completedChecks, "http-audit-sink-failure-paths");
+    await runCheck(completedChecks, disabledChecks, "http-audit-sink-failure-paths", () => verifyFailurePaths(tempInstall));
 
-    // 9. Install kit with one pinned release of each supported pnpm major outside workspace root, run one-event script and duplicate-copy probe
-    await verifyPnpmInstalls(kitDir);
-    recordCompletedCheck(completedChecks, "pnpm-installations");
+    // 9. Install kit with each pinned pnpm release outside workspace root, run one-event script and duplicate-copy probe
+    await runCheck(completedChecks, disabledChecks, "pnpm-installations", () => verifyPnpmInstalls(kitDir));
 
     return {
       success: true,
@@ -363,10 +403,8 @@ export async function checkEvaluationKit({
       verificationChecks: completedChecks.map(({ identity, details }) => ({ identity, details })),
     };
   } finally {
-    await rm(tempInstall, { recursive: true, force: true });
-    if (removeBuiltKit) {
-      await removeBuiltKit();
-    }
+    if (tempInstall) await rm(tempInstall, { recursive: true, force: true });
+    if (removeBuiltKit) await removeBuiltKit();
   }
 }
 
@@ -374,7 +412,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(await realpath(process.
   const args = process.argv.slice(2);
   let kitDir = null;
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--kit-dir" && args[i + 1]) kitDir = args[++i];
+    if (args[i] !== "--kit-dir" || !args[i + 1]) throw new Error(`unknown or incomplete kit gate option: ${args[i]}`);
+    kitDir = args[++i];
   }
   const { summary } = await checkEvaluationKit({ kitDir });
   process.stdout.write(summary);

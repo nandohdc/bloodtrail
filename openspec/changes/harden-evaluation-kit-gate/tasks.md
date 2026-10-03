@@ -16,7 +16,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 3. #703 — Isolate every planted-defect control
 
-- [ ] 3.1 Make each control alter one measured condition, fail only at its named check identity, and fail
+- [x] 3.1 Make each control alter one measured condition, fail only at its named check identity, and fail
   itself when disabling that check permits its plant. Reseal disposable copies where removal would otherwise
   trigger identity verification first.
 
