@@ -1,7 +1,9 @@
+import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import process from "node:process";
 import { assert, repositoryRoot, runChecked } from "./verification-helpers.mjs";
 
 // The packages a kit packs, in build order: the Node binding compiles against the core's build output.
@@ -15,14 +17,19 @@ export const KIT_PACKAGES = Object.freeze({
 // root README the kit copies.
 const KIT_SOURCE_PATHS = Object.freeze([...Object.values(KIT_PACKAGES), "contracts/security-audit", "README.md"]);
 
-// The paths the repository index tracks under KIT_SOURCE_PATHS, including uncommitted edits and files
-// staged with intent to add. Tracked files deleted from the working tree are left out.
-function listTrackedSources(fromRoot) {
+// Every path the repository index tracks under KIT_SOURCE_PATHS, including uncommitted edits and files
+// staged with intent to add.
+function trackedKitPaths() {
   const listed = runChecked("git", ["ls-files", "-z", "--cached", "--", ...KIT_SOURCE_PATHS], {
     cwd: repositoryRoot,
     capture: true,
   });
-  return listed.split("\0").filter((path) => path && existsSync(resolve(fromRoot, path)));
+  return listed.split("\0").filter(Boolean);
+}
+
+// The tracked kit paths that exist on disk under `fromRoot`; files deleted from the working tree are left out.
+function listTrackedSources(fromRoot) {
+  return trackedKitPaths().filter((path) => existsSync(resolve(fromRoot, path)));
 }
 
 async function exportCommit(commit, toRoot) {
@@ -59,6 +66,133 @@ export async function copyTrackedSources({ toRoot, commit = null, fromRoot = rep
     await mkdir(dirname(target), { recursive: true });
     await copyFile(resolve(fromRoot, path), target);
   }
+}
+
+// Asserts `directory` lies outside the repository tree. Defined here because the builder, which imports
+// this module, re-exports it under the same name; this module cannot import the builder back.
+export async function assertOutsideRepository(directory) {
+  const path = relative(await realpath(repositoryRoot), await realpath(directory));
+  const outside = path === ".." || path.startsWith(`..${sep}`) || isAbsolute(path);
+  assert(outside, `temporary directory ${directory} is inside the repository tree`);
+}
+
+// Overlays the live working tree's tracked files under KIT_SOURCE_PATHS onto the clone at `cloneRoot`, so
+// uncommitted edits become part of the tree under test. Files the working tree deleted are removed from the
+// clone; untracked files are never copied.
+async function overlayLiveTrackedSources(cloneRoot) {
+  for (const path of trackedKitPaths()) {
+    const target = resolve(cloneRoot, path);
+    if (existsSync(resolve(repositoryRoot, path))) {
+      await mkdir(dirname(target), { recursive: true });
+      await copyFile(resolve(repositoryRoot, path), target);
+    } else {
+      await rm(target, { force: true });
+    }
+  }
+}
+
+// Commits whatever changed in the clone, if anything, under a fixed kit-gate identity with no hooks or
+// signing, and returns the clone's HEAD commit. Environment identity overrides are cleared first, so an
+// ambient GIT_AUTHOR_* or GIT_COMMITTER_* setting cannot leak into the tree under test.
+function commitCloneChanges(cloneRoot) {
+  const status = runChecked("git", ["status", "--porcelain"], { cwd: cloneRoot, capture: true }).trim();
+  if (status) {
+    runChecked("git", ["add", "-A"], { cwd: cloneRoot, capture: true });
+    const commitEnv = { ...process.env };
+    for (const key of ["GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL"]) {
+      delete commitEnv[key];
+    }
+    runChecked(
+      "git",
+      [
+        "-c",
+        "user.name=bloodtrail kit gate",
+        "-c",
+        "user.email=kit-gate@example.invalid",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--quiet",
+        "--no-verify",
+        "-m",
+        "kit gate: tree under test",
+      ],
+      { cwd: cloneRoot, capture: true, env: commitEnv },
+    );
+  }
+  return runChecked("git", ["rev-parse", "HEAD"], { cwd: cloneRoot, capture: true }).trim();
+}
+
+/**
+ * Clones the repository into a fresh temporary directory outside the repository, overlays the live working
+ * tree's tracked files under KIT_SOURCE_PATHS, runs the optional `plant(cloneRoot)` hook (a controls-only
+ * JavaScript seam), and commits the result under a fixed kit-gate identity. The live repository is only
+ * read. Returns the clone root, its HEAD commit, and a remover.
+ */
+export async function createKitTreeClone({ plant = null } = {}) {
+  const cloneRoot = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-tree-clone-"));
+  try {
+    await assertOutsideRepository(cloneRoot);
+    runChecked("git", ["clone", "--quiet", "--no-hardlinks", "--", repositoryRoot, cloneRoot], {
+      capture: true,
+    });
+    await overlayLiveTrackedSources(cloneRoot);
+    if (plant) {
+      await plant(cloneRoot);
+    }
+    const headCommit = commitCloneChanges(cloneRoot);
+    return { cloneRoot, headCommit, remove: () => rm(cloneRoot, { recursive: true, force: true }) };
+  } catch (error) {
+    await rm(cloneRoot, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+// Parses the one builder output line that starts with `prefix` and returns the rest of the line.
+function parseBuilderLine(output, prefix) {
+  const lines = output.split("\n").filter((line) => line.startsWith(prefix));
+  assert(lines.length === 1, `builder output must print exactly one ${prefix.trim()} line:\n${output}`);
+  return lines[0].slice(prefix.length);
+}
+
+// True when spawnSync stopped the builder before it exited: either the timeout killed it or it died
+// by a signal, both of which leave `status` null.
+function cloneBuilderWasStopped(run) {
+  return run.error?.code === "ETIMEDOUT" || (run.status === null && run.signal !== null);
+}
+
+/**
+ * Runs the clone's own builder as a child process with the clone as its working directory, so the code
+ * under test builds from the clone: the builder resolves `repositoryRoot` from its own script location,
+ * which makes the clone its repository. Returns the kit directory, archive path, and digests the builder
+ * printed. A nonzero exit throws with the captured output, which a dirty-tree refusal needs to name its
+ * changed path.
+ */
+export function runCloneBuilder(cloneRoot, destDir) {
+  const builderPath = resolve(cloneRoot, KIT_PACKAGES.node, "scripts/build-evaluation-kit.mjs");
+  const run = spawnSync(process.execPath, [builderPath, "--distributable", "--dest", destDir], {
+    cwd: cloneRoot,
+    encoding: "utf8",
+    timeout: 15 * 60 * 1000,
+  });
+  const output = `${run.stdout}${run.stderr}`;
+  if (cloneBuilderWasStopped(run)) {
+    const error = new Error(`clone builder was stopped by ${run.signal}, probably its 15-minute deadline:\n${output}`);
+    error.output = output;
+    throw error;
+  }
+  if (run.error) throw run.error;
+  if (run.status !== 0) {
+    const error = new Error(`clone builder failed with exit status ${String(run.status)}:\n${output}`);
+    error.output = output;
+    throw error;
+  }
+  return {
+    kitDir: parseBuilderLine(output, "evaluation kit built successfully at "),
+    archivePath: parseBuilderLine(output, "evaluation kit archive created at "),
+    kitDigest: parseBuilderLine(output, "kit digest: "),
+    archiveDigest: parseBuilderLine(output, "archive digest: "),
+  };
 }
 
 // Files a build must never see: output an out-of-date build would leave behind, an untracked source file,

@@ -28,7 +28,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 5. #705 — Build and compare a distributable kit
 
-- [ ] 5.1 Build the distributable kit from a disposable clean clone and prove it matches the verification
+- [x] 5.1 Build the distributable kit from a disposable clean clone and prove it matches the verification
   kit for the same tree. Prove a dropped source path and a real dirty tree fail the respective controls without
   writing inside the live repository.
 

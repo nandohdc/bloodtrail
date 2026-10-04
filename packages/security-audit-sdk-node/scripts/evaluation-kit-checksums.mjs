@@ -49,7 +49,7 @@ export async function writeKitDigest(kitDir) {
   return checksumListDigest;
 }
 
-function parseChecksumList(content) {
+export function parseChecksumList(content) {
   const listed = new Map();
   for (const line of content.split("\n").filter(Boolean)) {
     const match = /^([0-9a-f]{64}) {2}(.+)$/.exec(line);
