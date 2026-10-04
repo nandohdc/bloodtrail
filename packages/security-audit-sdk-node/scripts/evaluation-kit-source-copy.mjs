@@ -102,15 +102,10 @@ async function listExportedFiles(directory, relativeDirectory = "") {
   return paths.sort(byCodePoint);
 }
 
+// One git hash-object call hashes every exported file, in the order given, without applying any filter.
 function hashExportedFiles(toRoot, paths) {
-  const hashed = spawnSync("git", ["hash-object", "--no-filters", "--stdin-paths"], {
-    cwd: toRoot,
-    encoding: "utf8",
-    input: `${paths.join("\n")}\n`,
-  });
-  if (hashed.error) throw hashed.error;
-  assert(hashed.status === 0, "git hash-object could not hash the exported files");
-  const hashes = hashed.stdout.trimEnd().split("\n");
+  const hashed = runChecked("git", ["hash-object", "--no-filters", "--", ...paths], { cwd: toRoot, capture: true });
+  const hashes = hashed.trimEnd().split("\n");
   assert(hashes.length === paths.length, "git hash-object returned the wrong number of exported file hashes");
   return hashes;
 }
