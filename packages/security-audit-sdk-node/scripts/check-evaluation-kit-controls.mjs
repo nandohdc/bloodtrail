@@ -37,6 +37,7 @@ import {
 } from "./evaluation-kit-installers.mjs";
 import { KIT_PACKAGES, createKitTreeClone, verifyStaleBuildOutputExcluded } from "./evaluation-kit-source-copy.mjs";
 import { CLONE_PLANT_CONTROLS, checkCloneUmaskProof, createClonePlantControlRunners } from "./check-evaluation-kit-clone-controls.mjs";
+import { RECEIVER_CONTROL_DEFINITIONS, createReceiverControlRunners } from "./check-evaluation-kit-receiver-controls.mjs";
 import { byCodePoint, runChecked } from "./verification-helpers.mjs";
 
 // Every planted-defect control declares the one check that must reject its measured plant. This remains the
@@ -60,8 +61,7 @@ const CONTROL_DEFINITIONS = Object.freeze([
   { label: "document changed after the build", identity: "kit-identity" },
   { label: "evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block", identity: "unpacked-kit-integrity" },
   { label: "sink rewriting service.name between the SDK and the receiver", identity: "loopback-example-exchange" },
-  { label: "receiver answering a duplicate with 400", identity: "loopback-example-exchange" },
-  { label: "receiver rethrowing after replying", identity: "loopback-example-exchange" },
+  ...RECEIVER_CONTROL_DEFINITIONS,
   { label: "mid-body stall mapped to malformed acknowledgment", identity: "http-audit-sink-failure-paths" },
   { label: "facilitator answer key content copied into the kit", identity: "answer-key-exclusion" },
   { label: "invented API calls named in a kit document (op.commit(), handle.commit())", identity: "document-references" },
@@ -96,6 +96,7 @@ const REBUILD_CLAIMS = Object.freeze([
 ]);
 const BUILD_MODE_ONLY_IDENTITIES = Object.freeze(["verification-kit-build", "reproducible-identity", "distributable-kit-match", "dirty-tree-refusal"]);
 const VERIFICATION_SUMMARY_PREFIX = "evaluation kit verification passed: ";
+const LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE = "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, acknowledged a byte-identical duplicate and a redelivered event, and kept serving after each; after answering 401 and 413 to a body past its bound it closed the connection, accepting no more than the socket buffers hold";
 const DISTRIBUTABLE_KIT_UMASK_CLAUSE = "distributable kit built under umask 077 from a disposable clean clone of the tree under test, with the same artifacts and checksum list as the verification kit apart from its identity file";
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const NON_REGULAR_SOURCE_PATH = `${KIT_PACKAGES.node}/docs/planted-link.md`;
@@ -750,43 +751,6 @@ async function checkRewritingSinkControl(kitDir, { _disabledChecks = [] } = {}) 
   return completeControl(control, measurements);
 }
 
-async function checkDuplicateRejectedControl(kitDir, { _disabledChecks = [] } = {}) {
-  const control = controlFor("receiver answering a duplicate with 400");
-  const measurements = await assertMeasuredKitDefectFails(kitDir, control, {
-    tempPrefix: "bloodtrail-ctrl-receiver-duplicate-",
-    path: "examples/evaluation-receiver.ts",
-    plant: (text) =>
-      text.replace(
-        "    console.log(`receiver:duplicate ${result.eventId}`);\n    return acknowledge(result.eventId);",
-        '    return reject(state, 400, "duplicate");',
-      ),
-    expectCondition: "a byte-identical duplicate: expected 2xx, got 400",
-    _disabledChecks,
-  });
-  assert.equal(measurements.length, 1, "duplicate receiver control must record one measured plant");
-  return completeControl(control, measurements);
-}
-
-// The receiver before #656: it replied, then rethrew out of the request handler, and the process died.
-async function checkRethrowingReceiverControl(kitDir, { _disabledChecks = [] } = {}) {
-  const control = controlFor("receiver rethrowing after replying");
-  const measurements = await assertMeasuredKitDefectFails(kitDir, control, {
-    tempPrefix: "bloodtrail-ctrl-receiver-rethrow-",
-    path: "examples/evaluation-receiver.ts",
-    plant: (text) =>
-      text
-        .replace(
-          "      send(res, await handleSubmission(req, state));",
-          '      send(res, await handleSubmission(req, state));\n      if (res.statusCode >= 400) throw new Error("rethrown after replying");',
-        )
-        .replace('    } catch {\n      console.log("receiver:error 500");', "    } catch (err) {\n      throw err;"),
-    expectCondition: "the receiver must keep serving",
-    _disabledChecks,
-  });
-  assert.equal(measurements.length, 1, "rethrowing receiver control must record one measured plant");
-  return completeControl(control, measurements);
-}
-
 async function rewriteMeasuredKitTarball({ kitCopy, measurements }, packageName, fileInTarball, rewrite) {
   const identityPath = resolve(kitCopy, IDENTITY_FILE);
   const identity = JSON.parse(await readFile(identityPath, "utf8"));
@@ -971,8 +935,7 @@ const CONTROL_RUNNERS = Object.freeze([
   ["document changed after the build", ({ kitDir, _disabledChecks }) => checkChangedDocumentControl(kitDir, { _disabledChecks })],
   ["evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block", ({ kitDir, _disabledChecks }) => checkGuideIntegrityCommandControl(kitDir, { _disabledChecks })],
   ["sink rewriting service.name between the SDK and the receiver", ({ kitDir, _disabledChecks }) => checkRewritingSinkControl(kitDir, { _disabledChecks })],
-  ["receiver answering a duplicate with 400", ({ kitDir, _disabledChecks }) => checkDuplicateRejectedControl(kitDir, { _disabledChecks })],
-  ["receiver rethrowing after replying", ({ kitDir, _disabledChecks }) => checkRethrowingReceiverControl(kitDir, { _disabledChecks })],
+  ...createReceiverControlRunners({ controlFor, assertMeasuredKitDefectFails, completeControl }),
   ["mid-body stall mapped to malformed acknowledgment", ({ kitDir, _disabledChecks }) => checkMidBodyStallControl(kitDir, { _disabledChecks })],
   ["facilitator answer key content copied into the kit", ({ kitDir, _disabledChecks }) => checkAnswerKeyInKitControl(kitDir, { _disabledChecks })],
   ["invented API calls named in a kit document (op.commit(), handle.commit())", ({ kitDir, _disabledChecks }) => checkInventedApiControl(kitDir, { _disabledChecks })],
@@ -1112,7 +1075,7 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 34, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 35, "the control table must declare every expected control");
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label, identity }) => controlFor(label).identity), CLONE_PLANT_CONTROLS.map(({ identity }) => identity));
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label }) => CONTROL_RUNNERS_BY_LABEL.has(label)), CLONE_PLANT_CONTROLS.map(() => true));
   assert.throws(
@@ -1202,6 +1165,8 @@ async function checkSummaryCompositionProof(kitDir) {
 
   const fullClauses = buildMode.verificationChecks.map(clauseForCheck);
   assert.ok(buildMode.summary.includes(DISTRIBUTABLE_KIT_UMASK_CLAUSE), `the build-mode summary must name the clone's fixed umask: ${buildMode.summary}`);
+  assert.ok(buildMode.summary.includes(LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE), `the build-mode summary must include the complete loopback clause: ${buildMode.summary}`);
+  assert.ok(kitDirMode.summary.includes(LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE), `the --kit-dir summary must include the complete loopback clause: ${kitDirMode.summary}`);
   assert.equal(
     buildMode.summary,
     `${VERIFICATION_SUMMARY_PREFIX}${fullClauses.join("; ")}\n`,

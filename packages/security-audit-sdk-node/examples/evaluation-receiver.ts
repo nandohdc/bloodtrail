@@ -56,8 +56,7 @@ function credentialsOf(req: IncomingMessage): { credential: string } | undefined
   return { credential: header.startsWith("Bearer ") ? header.slice("Bearer ".length) : header };
 }
 
-// Reads the body up to EVENT_MAX_BYTES and stops buffering there. Past the bound it resolves null at once,
-// and Node discards whatever else the client sends after the reply.
+// Reads the body up to EVENT_MAX_BYTES and stops the stream at once when it goes past the bound.
 function readBoundedBody(req: IncomingMessage): Promise<string | null> {
   return new Promise((resolveBody, rejectBody) => {
     const chunks: Buffer[] = [];
@@ -66,6 +65,7 @@ function readBoundedBody(req: IncomingMessage): Promise<string | null> {
       length += chunk.byteLength;
       if (length > EVENT_MAX_BYTES) {
         req.off("data", onData);
+        req.pause();
         resolveBody(null);
         return;
       }
@@ -98,33 +98,50 @@ function admit(state: ReceiverState, credentials: unknown, body: string): Reply 
   return reject(state, STATUS_BY_INGRESS_CATEGORY[result.diagnostic.category] ?? 500, "ingress_rejected");
 }
 
-// Authenticate, bound the body, parse it, validate it with the SDK, and only then submit it.
-async function handleSubmission(req: IncomingMessage, state: ReceiverState): Promise<Reply> {
-  const credentials = credentialsOf(req);
-  if (state.authenticator.verify(credentials).kind !== "verified") {
-    return reject(state, 401, "unauthenticated");
-  }
+interface SubmissionReply {
+  readonly reply: Reply;
+  readonly close: boolean;
+}
+
+// Bound the body before authenticating it, then parse, validate, and submit only a bounded authenticated event.
+async function handleSubmission(req: IncomingMessage, state: ReceiverState): Promise<SubmissionReply> {
   const body = await readBoundedBody(req);
+  const credentials = credentialsOf(req);
+  const authenticated = state.authenticator.verify(credentials).kind === "verified";
   if (body === null) {
-    return reject(state, 413, "body_too_large");
+    return {
+      reply: authenticated ? reject(state, 413, "body_too_large") : reject(state, 401, "unauthenticated"),
+      close: true,
+    };
   }
+  if (!authenticated) return { reply: reject(state, 401, "unauthenticated"), close: false };
   let parsed: unknown;
   try {
     parsed = JSON.parse(body);
   } catch {
-    return reject(state, 400, "malformed_body");
+    return { reply: reject(state, 400, "malformed_body"), close: false };
   }
   const validated = validateSecurityAuditEvent(parsed);
   if (!validated.ok) {
     console.log(`receiver:invalid ${validated.error.code} ${validated.error.path}`);
-    return reject(state, 422, "invalid_event");
+    return { reply: reject(state, 422, "invalid_event"), close: false };
   }
-  return admit(state, credentials, body);
+  return { reply: admit(state, credentials, body), close: false };
 }
 
 function send(res: ServerResponse, reply: Reply): void {
   res.writeHead(reply.status, { "content-type": "application/json" });
   res.end(JSON.stringify(reply.body));
+}
+
+// A body that exceeded the bound must not make Node drain the remaining request to preserve this connection.
+function sendAndClose(req: IncomingMessage, res: ServerResponse, reply: Reply): void {
+  const socket = res.socket;
+  req.pause();
+  res.writeHead(reply.status, { connection: "close", "content-type": "application/json" });
+  res.end(JSON.stringify(reply.body), () => {
+    if (socket) socket.destroySoon();
+  });
 }
 
 // No request handler rethrows: an unexpected error is answered 500, and the receiver keeps serving.
@@ -139,7 +156,12 @@ function createDispatchHandler(state: ReceiverState) {
         send(res, reject(state, 405, "method_not_allowed"));
         return;
       }
-      send(res, await handleSubmission(req, state));
+      const submission = await handleSubmission(req, state);
+      if (submission.close) {
+        sendAndClose(req, res, submission.reply);
+      } else {
+        send(res, submission.reply);
+      }
     } catch {
       console.log("receiver:error 500");
       if (res.headersSent) {

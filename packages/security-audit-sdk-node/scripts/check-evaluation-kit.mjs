@@ -367,7 +367,7 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: () => "first-event example ran successfully after the npm installation",
   }),
   "loopback-example-exchange": Object.freeze({
-    clause: () => "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, acknowledged a byte-identical duplicate and a redelivered event, and kept serving after each",
+    clause: () => "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, acknowledged a byte-identical duplicate and a redelivered event, and kept serving after each; after answering 401 and 413 to a body past its bound it closed the connection, accepting no more than the socket buffers hold",
   }),
   "seeded-invalid-calls": Object.freeze({
     clause: () => "seeded invalid calls returned their documented code, category, and path",
