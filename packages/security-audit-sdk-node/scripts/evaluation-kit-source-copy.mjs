@@ -1,10 +1,10 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { copyFile, lstat, mkdir, mkdtemp, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import process from "node:process";
-import { assert, repositoryRoot, runChecked } from "./verification-helpers.mjs";
+import { assert, byCodePoint, repositoryRoot, runChecked } from "./verification-helpers.mjs";
 
 // The packages a kit packs, in build order: the Node binding compiles against the core's build output.
 export const KIT_PACKAGES = Object.freeze({
@@ -19,17 +19,120 @@ const KIT_SOURCE_PATHS = Object.freeze([...Object.values(KIT_PACKAGES), "contrac
 
 // Every path the repository index tracks under KIT_SOURCE_PATHS, including uncommitted edits and files
 // staged with intent to add.
-function trackedKitPaths() {
-  const listed = runChecked("git", ["ls-files", "-z", "--cached", "--", ...KIT_SOURCE_PATHS], {
+function parseIndexEntry(record) {
+  const separator = record.indexOf("\t");
+  assert(separator !== -1, `unparseable index entry: ${record}`);
+  const [mode] = record.slice(0, separator).split(" ");
+  return { mode, path: record.slice(separator + 1) };
+}
+
+function trackedKitEntries() {
+  const listed = runChecked("git", ["ls-files", "--stage", "-z", "--cached", "--", ...KIT_SOURCE_PATHS], {
     cwd: repositoryRoot,
     capture: true,
   });
-  return listed.split("\0").filter(Boolean);
+  return listed.split("\0").filter(Boolean).map(parseIndexEntry);
 }
 
-// The tracked kit paths that exist on disk under `fromRoot`; files deleted from the working tree are left out.
-function listTrackedSources(fromRoot) {
-  return trackedKitPaths().filter((path) => existsSync(resolve(fromRoot, path)));
+function trackedKitPaths() {
+  return trackedKitEntries().map(({ path }) => path);
+}
+
+async function lstatTrackedSource(fromRoot, path) {
+  try {
+    return await lstat(resolve(fromRoot, path));
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+// The tracked regular files that exist on disk under `fromRoot`; files deleted from the working tree are left out.
+async function listTrackedSources(fromRoot) {
+  const paths = [];
+  for (const { mode, path } of trackedKitEntries()) {
+    assert(
+      mode === "100644" || mode === "100755",
+      `non-regular file in the build tree: ${path}`,
+    );
+    const status = await lstatTrackedSource(fromRoot, path);
+    if (status === null) continue;
+    assert(status.isFile(), `non-regular file in the build tree: ${path}`);
+    paths.push(path);
+  }
+  return paths;
+}
+
+function parseTreeEntry(record) {
+  const separator = record.indexOf("\t");
+  assert(separator !== -1, `unparseable commit tree entry: ${record}`);
+  const [mode, type, blob] = record.slice(0, separator).split(" ");
+  return { mode, type, blob, path: record.slice(separator + 1) };
+}
+
+function listCommitTreeEntries(commit) {
+  const listed = runChecked("git", ["ls-tree", "-r", "-z", commit, "--", ...KIT_SOURCE_PATHS], {
+    cwd: repositoryRoot,
+    capture: true,
+  });
+  return listed.split("\0").filter(Boolean).map(parseTreeEntry);
+}
+
+function assertRegularCommitEntries(entries, shortCommit) {
+  for (const { mode, path } of entries) {
+    assert(
+      mode === "100644" || mode === "100755",
+      `non-regular file in commit ${shortCommit}: ${path} (mode ${mode})`,
+    );
+  }
+}
+
+async function listExportedFiles(directory, relativeDirectory = "") {
+  const paths = [];
+  const entries = await readdir(directory);
+  for (const entry of entries) {
+    const path = relativeDirectory ? `${relativeDirectory}/${entry}` : entry;
+    const filePath = resolve(directory, entry);
+    if ((await lstat(filePath)).isDirectory()) {
+      paths.push(...(await listExportedFiles(filePath, path)));
+    } else {
+      paths.push(path);
+    }
+  }
+  return paths.sort(byCodePoint);
+}
+
+function hashExportedFiles(toRoot, paths) {
+  const hashed = spawnSync("git", ["hash-object", "--no-filters", "--stdin-paths"], {
+    cwd: toRoot,
+    encoding: "utf8",
+    input: `${paths.join("\n")}\n`,
+  });
+  if (hashed.error) throw hashed.error;
+  assert(hashed.status === 0, "git hash-object could not hash the exported files");
+  const hashes = hashed.stdout.trimEnd().split("\n");
+  assert(hashes.length === paths.length, "git hash-object returned the wrong number of exported file hashes");
+  return hashes;
+}
+
+function assertExportedFileSet(entries, exportedPaths, shortCommit) {
+  const exported = new Set(exportedPaths);
+  for (const { path } of entries) {
+    assert(exported.has(path), `missing from the export of ${shortCommit}: ${path}`);
+  }
+  const expected = new Set(entries.map(({ path }) => path));
+  const unexpected = exportedPaths.find((path) => !expected.has(path));
+  assert(!unexpected, `unexpected file in the export of ${shortCommit}: ${unexpected}`);
+}
+
+function assertExportedBlobs(entries, exportedPaths, hashes, shortCommit) {
+  const expected = new Map(entries.map((entry) => [entry.path, entry.blob]));
+  for (const [index, path] of exportedPaths.entries()) {
+    assert(
+      hashes[index] === expected.get(path),
+      `exported file differs from commit ${shortCommit}: ${path}`,
+    );
+  }
 }
 
 async function exportCommit(commit, toRoot) {
@@ -41,6 +144,12 @@ async function exportCommit(commit, toRoot) {
       capture: true,
     });
     runChecked("tar", ["-xf", archive, "-C", toRoot], { capture: true });
+    const shortCommit = commit.slice(0, 8);
+    const entries = listCommitTreeEntries(commit);
+    assertRegularCommitEntries(entries, shortCommit);
+    const exportedPaths = await listExportedFiles(toRoot);
+    assertExportedFileSet(entries, exportedPaths, shortCommit);
+    assertExportedBlobs(entries, exportedPaths, hashExportedFiles(toRoot, exportedPaths), shortCommit);
   } finally {
     await rm(archiveDir, { recursive: true, force: true });
   }
@@ -59,7 +168,7 @@ export async function copyTrackedSources({ toRoot, commit = null, fromRoot = rep
     await exportCommit(commit, toRoot);
     return;
   }
-  const paths = listTrackedSources(fromRoot);
+  const paths = await listTrackedSources(fromRoot);
   assert(paths.length > 0, "no tracked kit sources found");
   for (const path of paths) {
     const target = resolve(toRoot, path);
@@ -126,10 +235,11 @@ function commitCloneChanges(cloneRoot) {
 /**
  * Clones the repository into a fresh temporary directory outside the repository, overlays the live working
  * tree's tracked files under KIT_SOURCE_PATHS, runs the optional `plant(cloneRoot)` hook (a controls-only
- * JavaScript seam), and commits the result under a fixed kit-gate identity. The live repository is only
- * read. Returns the clone root, its HEAD commit, and a remover.
+ * JavaScript seam), and commits the result under a fixed kit-gate identity. `afterCommit(cloneRoot)` may
+ * set clone-local Git state that must stay outside that commit. The live repository is only read. Returns
+ * the clone root, its HEAD commit, and a remover.
  */
-export async function createKitTreeClone({ plant = null } = {}) {
+export async function createKitTreeClone({ plant = null, afterCommit = null } = {}) {
   const cloneRoot = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-tree-clone-"));
   try {
     await assertOutsideRepository(cloneRoot);
@@ -141,6 +251,9 @@ export async function createKitTreeClone({ plant = null } = {}) {
       await plant(cloneRoot);
     }
     const headCommit = commitCloneChanges(cloneRoot);
+    if (afterCommit) {
+      await afterCommit(cloneRoot);
+    }
     return { cloneRoot, headCommit, remove: () => rm(cloneRoot, { recursive: true, force: true }) };
   } catch (error) {
     await rm(cloneRoot, { recursive: true, force: true });
@@ -170,7 +283,7 @@ function cloneBuilderWasStopped(run) {
  */
 export function runCloneBuilder(cloneRoot, destDir) {
   const builderPath = resolve(cloneRoot, KIT_PACKAGES.node, "scripts/build-evaluation-kit.mjs");
-  const run = spawnSync(process.execPath, [builderPath, "--distributable", "--dest", destDir], {
+  const run = spawnSync("/bin/sh", ["-c", 'umask 077 && exec "$@"', "sh", process.execPath, builderPath, "--distributable", "--dest", destDir], {
     cwd: cloneRoot,
     encoding: "utf8",
     timeout: 15 * 60 * 1000,

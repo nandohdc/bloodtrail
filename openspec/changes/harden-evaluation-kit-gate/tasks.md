@@ -34,7 +34,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 6. #706 — Make a distributable kit depend only on its commit
 
-- [ ] 6.1 Prove local attributes, filters, line endings, umask, and non-regular files cannot alter the
+- [x] 6.1 Prove local attributes, filters, line endings, umask, and non-regular files cannot alter the
   distributable kit. Preserve npm's measured-stable entry order within artifacts and record the measurement.
 
 ## 7. #707 — Stop reading past the receiver bound

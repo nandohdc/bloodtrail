@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, relative, resolve, sep } from "node:path";
 import { assert, byCodePoint, runChecked } from "./verification-helpers.mjs";
@@ -19,13 +19,28 @@ export function sha256Hex(data) {
   return createHash("sha256").update(data).digest("hex");
 }
 
+async function collectKitFiles(kitDir, directory, paths) {
+  for (const entry of await readdir(directory)) {
+    const filePath = resolve(directory, entry);
+    const path = relative(kitDir, filePath).split(sep).join("/");
+    const status = await lstat(filePath);
+    if (status.isDirectory()) {
+      await collectKitFiles(kitDir, filePath, paths);
+    } else {
+      assert(status.isFile(), `non-regular file in the kit: ${path}`);
+      paths.push(path);
+    }
+  }
+}
+
+export async function assertRegularKitEntries(kitDir) {
+  const paths = [];
+  await collectKitFiles(kitDir, kitDir, paths);
+  return paths;
+}
+
 async function listKitFiles(kitDir) {
-  const entries = await readdir(kitDir, { recursive: true, withFileTypes: true });
-  return entries
-    .filter((entry) => entry.isFile())
-    .map((entry) => relative(kitDir, resolve(entry.parentPath, entry.name)).split(sep).join("/"))
-    .filter((path) => !UNLISTED_FILES.has(path))
-    .sort(byCodePoint);
+  return (await assertRegularKitEntries(kitDir)).filter((path) => !UNLISTED_FILES.has(path)).sort(byCodePoint);
 }
 
 /**

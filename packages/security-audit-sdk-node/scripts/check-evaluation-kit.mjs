@@ -343,7 +343,7 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: () => "verification-kit identity reproduced after stale build output and untracked sources were planted",
   }),
   "distributable-kit-match": Object.freeze({
-    clause: () => "distributable kit built from a disposable clean clone of the tree under test, with the same artifacts and checksum list as the verification kit apart from its identity file",
+    clause: () => "distributable kit built under umask 077 from a disposable clean clone of the tree under test, with the same artifacts and checksum list as the verification kit apart from its identity file",
   }),
   "dirty-tree-refusal": Object.freeze({
     clause: () => "distributable build refused in that clone once it held an uncommitted change",
