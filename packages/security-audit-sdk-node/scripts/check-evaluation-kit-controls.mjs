@@ -18,8 +18,6 @@ import {
   FAILURE_PATHS_PROGRAM,
   KIT_DIR_NOTE,
   KIT_GATE_CHECK_IDENTITIES,
-  checkDirtyTreeRefusal,
-  checkDistributableKitMatch,
   checkEvaluationKit,
   composeVerificationSummary,
   runKitGateCheck,
@@ -28,7 +26,7 @@ import {
   typescriptLegs,
   writeConsumerTsconfig,
 } from "./check-evaluation-kit.mjs";
-import { CHECKSUM_LIST_FILE, IDENTITY_FILE, KIT_DIGEST_FILE, runChecksumListCheck, runKitDigestCheck, sha256Hex } from "./evaluation-kit-checksums.mjs";
+import { CHECKSUM_LIST_FILE, IDENTITY_FILE, KIT_DIGEST_FILE, runChecksumListCheck, runKitDigestCheck, sha256Hex, writeChecksumList } from "./evaluation-kit-checksums.mjs";
 import { ANSWER_KEY_PATH } from "./evaluation-kit-answer-key.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
 import {
@@ -38,6 +36,7 @@ import {
   verifyPnpmInstall,
 } from "./evaluation-kit-installers.mjs";
 import { KIT_PACKAGES, createKitTreeClone, verifyStaleBuildOutputExcluded } from "./evaluation-kit-source-copy.mjs";
+import { CLONE_PLANT_CONTROLS, checkCloneUmaskProof, createClonePlantControlRunners } from "./check-evaluation-kit-clone-controls.mjs";
 import { byCodePoint, runChecked } from "./verification-helpers.mjs";
 
 // Every planted-defect control declares the one check that must reject its measured plant. This remains the
@@ -52,8 +51,7 @@ const CONTROL_DEFINITIONS = Object.freeze([
   { label: "renamed doc option (across all TypeScript matrix legs)", identity: "kit-source-typecheck" },
   { label: "planted duplicate core", identity: "npm-single-core-copy" },
   { label: "missing kit item", identity: "kit-identity" },
-  { label: "builder dropping a source path from distributable kits", identity: "distributable-kit-match" },
-  { label: "builder that never reads the real tree state", identity: "dirty-tree-refusal" },
+  ...CLONE_PLANT_CONTROLS.map(({ label, identity }) => ({ label, identity })),
   { label: "failure-path program type error (across all TypeScript matrix legs)", identity: "kit-source-typecheck" },
   { label: "pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)", identity: "pnpm-installations" },
   { label: "ignored pnpm setting reported (pnpm 11 and 12 legs)", identity: "pnpm-installations" },
@@ -98,7 +96,10 @@ const REBUILD_CLAIMS = Object.freeze([
 ]);
 const BUILD_MODE_ONLY_IDENTITIES = Object.freeze(["verification-kit-build", "reproducible-identity", "distributable-kit-match", "dirty-tree-refusal"]);
 const VERIFICATION_SUMMARY_PREFIX = "evaluation kit verification passed: ";
+const DISTRIBUTABLE_KIT_UMASK_CLAUSE = "distributable kit built under umask 077 from a disposable clean clone of the tree under test, with the same artifacts and checksum list as the verification kit apart from its identity file";
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
+const NON_REGULAR_SOURCE_PATH = `${KIT_PACKAGES.node}/docs/planted-link.md`;
+const NON_REGULAR_KIT_PATH = "docs/planted-link.md";
 
 // A type-only defect: the program still runs and passes with a number id, so
 // only the gate's type-check can catch it.
@@ -485,78 +486,6 @@ async function checkMissingItemControl(kitDir, { _disabledChecks = [] } = {}) {
     );
     assert.equal(measurements.length, 1, "missing item control must record one measured plant");
   });
-  return completeControl(control, measurements);
-}
-
-// Controls that plant a defect in the clone's copy of a builder module, before the clone's commit, and
-// then run the named gate check directly against the controls' base verification kit, as the on-disk
-// packer control does. Each plant is string-anchored: its anchor must occur exactly once in the clone's
-// file, and the file's SHA-256 before and after the replacement is the measured plant.
-const CLONE_PLANT_CONTROLS = Object.freeze([
-  {
-    label: "builder dropping a source path from distributable kits",
-    identity: "distributable-kit-match",
-    plantFile: `${KIT_PACKAGES.node}/scripts/evaluation-kit-source-copy.mjs`,
-    anchor: 'runChecked("git", ["archive", "--format=tar", "-o", archive, commit, "--", ...KIT_SOURCE_PATHS], {',
-    replacement: 'const archivedPaths = listTrackedSources(repositoryRoot).filter((path) => path !== "packages/security-audit-collector/README.md");\n    runChecked("git", ["archive", "--format=tar", "-o", archive, commit, "--", ...archivedPaths], {',
-    expectCondition: "distributable kit artifacts differ from the verification kit's",
-  },
-  {
-    label: "builder that never reads the real tree state",
-    identity: "dirty-tree-refusal",
-    plantFile: `${KIT_PACKAGES.node}/scripts/build-evaluation-kit.mjs`,
-    anchor: 'const gitStatus = runChecked("git", ["status", "--porcelain"], { cwd: repositoryRoot, capture: true }).trim();',
-    replacement: 'const gitStatus = "";',
-    expectCondition: "a dirty clone produced a distributable kit",
-  },
-]);
-
-// The clone's own builder is the code under test, so each check runs inside the planted clone; the base
-// verification kit supplies the tree the distributable-match check compares against.
-function runClonePlantedCheck(entry, cloneRoot, kitDir, identity) {
-  if (entry.identity === "dirty-tree-refusal") return checkDirtyTreeRefusal({ cloneRoot });
-  if (entry.identity === "distributable-kit-match") {
-    return checkDistributableKitMatch({ cloneRoot, verificationKitDir: kitDir, verificationIdentity: identity });
-  }
-  assert.fail(`no clone-planted check for ${entry.identity}`);
-}
-
-async function checkClonePlantedBuilderControl(label, kitDir, identity, { _disabledChecks = [] } = {}) {
-  const entry = CLONE_PLANT_CONTROLS.find(({ label: entryLabel }) => entryLabel === label);
-  assert.ok(entry, `clone-planted control must be declared: ${label}`);
-  const control = controlFor(entry.label);
-  assert.equal(control.identity, entry.identity, `${control.label} must declare identity ${entry.identity}`);
-  const measurements = [];
-  const { cloneRoot, remove } = await createKitTreeClone({
-    plant: async (root) => {
-      const filePath = resolve(root, entry.plantFile);
-      const before = sha256Hex(await readFile(filePath));
-      const source = await readFile(filePath, "utf8");
-      assert.equal(
-        source.split(entry.anchor).length - 1,
-        1,
-        `${control.label} anchor must occur exactly once in ${entry.plantFile}: ${entry.anchor}`,
-      );
-      await writeFile(filePath, source.replace(entry.anchor, entry.replacement), "utf8");
-      const after = sha256Hex(await readFile(filePath));
-      assert.notEqual(after, before, `the measured plant must change ${entry.plantFile}`);
-      measurements.push({ path: entry.plantFile, before, after });
-    },
-  });
-  try {
-    const failure = await captureDirectCheckFailure(
-      control,
-      () => runClonePlantedCheck(entry, cloneRoot, kitDir, identity),
-      _disabledChecks,
-    );
-    assert.ok(
-      failure.cause.message.includes(entry.expectCondition),
-      `${control.label} must report its specific condition "${entry.expectCondition}": ${failure.cause.message}`,
-    );
-  } finally {
-    await remove();
-  }
-  assert.equal(measurements.length, 1, `${control.label} must record one measured plant`);
   return completeControl(control, measurements);
 }
 
@@ -1033,8 +962,7 @@ const CONTROL_RUNNERS = Object.freeze([
   ["renamed doc option (across all TypeScript matrix legs)", ({ kitDir, _disabledChecks }) => checkBrokenDocControl(kitDir, { _disabledChecks })],
   ["planted duplicate core", ({ kitDir, _disabledChecks }) => checkDuplicateCoreControl(kitDir, { _disabledChecks })],
   ["missing kit item", ({ kitDir, _disabledChecks }) => checkMissingItemControl(kitDir, { _disabledChecks })],
-  ["builder dropping a source path from distributable kits", ({ kitDir, identity, _disabledChecks }) => checkClonePlantedBuilderControl("builder dropping a source path from distributable kits", kitDir, identity, { _disabledChecks })],
-  ["builder that never reads the real tree state", ({ kitDir, identity, _disabledChecks }) => checkClonePlantedBuilderControl("builder that never reads the real tree state", kitDir, identity, { _disabledChecks })],
+  ...createClonePlantControlRunners({ controlFor, captureDirectCheckFailure, completeControl }),
   ["failure-path program type error (across all TypeScript matrix legs)", ({ kitDir, _disabledChecks }) => checkFailurePathTypeErrorControl(kitDir, { _disabledChecks })],
   ["pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)", ({ kitDir, _disabledChecks }) => checkPnpmFieldOnlyOverrideControl(kitDir, { _disabledChecks })],
   ["ignored pnpm setting reported (pnpm 11 and 12 legs)", ({ kitDir, _disabledChecks }) => checkIgnoredPnpmSettingControl(kitDir, { _disabledChecks })],
@@ -1118,6 +1046,55 @@ async function checkKitDirNullControl(kitDir) {
   return "an unmodified kit copy, checked through an external symlink with --kit-dir, passed, said it was checked as given, and claimed no rebuild";
 }
 
+async function assertSourceCopySymlinkRefusal(cloneRoot, path) {
+  const sourceCopyRoot = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-source-link-"));
+  try {
+    const sourceModule = await import(
+      pathToFileURL(resolve(cloneRoot, KIT_PACKAGES.node, "scripts/evaluation-kit-source-copy.mjs")).href,
+    );
+    const failure = await captureFailure(() => sourceModule.copyTrackedSources({ toRoot: sourceCopyRoot }));
+    assert.ok(failure, "a source-copy symlink must be refused");
+    assert.ok(failure.message.includes(`non-regular file in the build tree: ${path}`), `source-copy refusal must name its symlink: ${failure.message}`);
+  } finally {
+    await rm(sourceCopyRoot, { recursive: true, force: true });
+  }
+}
+
+async function checkNonRegularEntryProof(kitDir) {
+  const trackedLink = await createKitTreeClone({ plant: (root) => symlink("privacy.md", resolve(root, NON_REGULAR_SOURCE_PATH)) });
+  try {
+    await assertSourceCopySymlinkRefusal(trackedLink.cloneRoot, NON_REGULAR_SOURCE_PATH);
+  } finally {
+    await trackedLink.remove();
+  }
+  const workingTreeLink = await createKitTreeClone();
+  const workingTreePath = `${KIT_PACKAGES.node}/docs/privacy.md`;
+  try {
+    await rm(resolve(workingTreeLink.cloneRoot, workingTreePath));
+    await symlink("known-issues.md", resolve(workingTreeLink.cloneRoot, workingTreePath));
+    await assertSourceCopySymlinkRefusal(workingTreeLink.cloneRoot, workingTreePath);
+  } finally {
+    await workingTreeLink.remove();
+  }
+  await withKitCopy(kitDir, "bloodtrail-ctrl-kit-link-", async (kitCopy) => {
+    await symlink("privacy.md", resolve(kitCopy, NON_REGULAR_KIT_PATH));
+    const expected = `non-regular file in the kit: ${NON_REGULAR_KIT_PATH}`;
+    const sealFailure = await captureFailure(() => writeChecksumList(kitCopy));
+    const identityFailure = await captureFailure(() => verifyKitIdentity(kitCopy));
+    assert.ok(sealFailure, "checksum sealing must refuse the symlink");
+    assert.ok(identityFailure, "kit identity must refuse the symlink");
+    assert.ok(sealFailure.message.includes(expected), `checksum sealing must refuse the symlink: ${sealFailure.message}`);
+    assert.ok(identityFailure.message.includes(expected), `kit identity must refuse the symlink: ${identityFailure.message}`);
+    const gate = spawnSync(process.execPath, [resolve(SCRIPT_DIRECTORY, "check-evaluation-kit.mjs"), "--kit-dir", kitCopy], { encoding: "utf8" });
+    assert.notEqual(gate.status, 0, "a --kit-dir gate must refuse a symlink");
+    assert.ok(
+      `${gate.stdout}${gate.stderr}`.includes(`kit gate check kit-identity failed: ${expected}`),
+      `a --kit-dir gate must report the kit symlink: ${gate.stdout}${gate.stderr}`,
+    );
+  });
+  return "tracked and working-tree source symlinks plus a --kit-dir symlink were refused before copying or identity verification";
+}
+
 async function checkBuilderSymlinkProof() {
   const destinationParent = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-builder-symlink-"));
   const kitDir = resolve(destinationParent, "evaluation-kit");
@@ -1135,7 +1112,9 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 29, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 34, "the control table must declare every expected control");
+  assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label, identity }) => controlFor(label).identity), CLONE_PLANT_CONTROLS.map(({ identity }) => identity));
+  assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label }) => CONTROL_RUNNERS_BY_LABEL.has(label)), CLONE_PLANT_CONTROLS.map(() => true));
   assert.throws(
     () => validateControlDefinitions([...CONTROL_DEFINITIONS, { label: "unknown identity proof", identity: "not-a-kit-gate-check" }]),
     /unknown kit gate identity: not-a-kit-gate-check/,
@@ -1222,6 +1201,7 @@ async function checkSummaryCompositionProof(kitDir) {
   );
 
   const fullClauses = buildMode.verificationChecks.map(clauseForCheck);
+  assert.ok(buildMode.summary.includes(DISTRIBUTABLE_KIT_UMASK_CLAUSE), `the build-mode summary must name the clone's fixed umask: ${buildMode.summary}`);
   assert.equal(
     buildMode.summary,
     `${VERIFICATION_SUMMARY_PREFIX}${fullClauses.join("; ")}\n`,
@@ -1262,6 +1242,8 @@ export async function checkEvaluationKitControls({ _controlLabels = EXPECTED_CON
     const controlInfrastructureProof = await checkControlInfrastructureProof(kitDir);
     const identityAndDisableSeamProof = await checkIdentityAndDisableSeamProof(kitDir);
     const summaryCompositionProof = await checkSummaryCompositionProof(kitDir);
+    const nonRegularEntryProof = await checkNonRegularEntryProof(kitDir);
+    const cloneUmaskProof = await checkCloneUmaskProof();
     const builderSymlinkProof = await checkBuilderSymlinkProof();
     const gateSymlinkProof = await checkKitDirNullControl(kitDir);
     const applied = await runControls(runners, kitDir, identity);
@@ -1274,7 +1256,7 @@ export async function checkEvaluationKitControls({ _controlLabels = EXPECTED_CON
     const declaredControls = applied.map(({ label, identity: checkIdentity }) => `${label} [${checkIdentity}]`).join(", ");
 
     process.stdout.write(
-      `evaluation kit summary and symlink proofs passed: ${controlInfrastructureProof}; ${identityAndDisableSeamProof}; ${summaryCompositionProof}; ${builderSymlinkProof}; ${gateSymlinkProof}\n`,
+      `evaluation kit summary and symlink proofs passed: ${controlInfrastructureProof}; ${identityAndDisableSeamProof}; ${summaryCompositionProof}; ${nonRegularEntryProof}; ${cloneUmaskProof}; ${builderSymlinkProof}; ${gateSymlinkProof}\n`,
     );
     process.stdout.write(
       `evaluation kit negative controls passed: ${measuredPlants} measured plants across ${applied.length} of ${EXPECTED_CONTROLS.length} controls, and each failed closed at its declared identity: ${declaredControls}\n`,

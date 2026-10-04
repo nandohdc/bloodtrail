@@ -1,11 +1,12 @@
 import { existsSync } from "node:fs";
-import { cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { chmod, cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   CHECKSUM_LIST_FILE,
   IDENTITY_FILE,
+  assertRegularKitEntries,
   KIT_DIGEST_FILE,
   readKitDigest,
   sha256Hex,
@@ -61,12 +62,30 @@ export async function packDirectory(packageDir, destDir) {
   return { filename, path, sha256: sha256Hex(await readFile(path)) };
 }
 
+// Normalizes all packed entries so tarball modes never inherit the caller's umask. node_modules stays
+// untouched because npm pack excludes it and its install state is not part of a package artifact.
+async function normalizePackageModes(packageDir) {
+  await chmod(packageDir, 0o755);
+  const entries = await readdir(packageDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === "node_modules") continue;
+    const entryPath = resolve(packageDir, entry.name);
+    if (entry.isDirectory()) {
+      await normalizePackageModes(entryPath);
+      continue;
+    }
+    const { mode } = await lstat(entryPath);
+    await chmod(entryPath, mode & 0o111 ? 0o755 : 0o644);
+  }
+}
+
 async function packArtifact(name, packageDir, destDir) {
   const manifest = await readJson(resolve(packageDir, "package.json"));
   assert(
     manifest.private === true && manifest.license === "UNLICENSED",
     `${manifest.name} must stay private and UNLICENSED`,
   );
+  await normalizePackageModes(packageDir);
   const packed = await packDirectory(packageDir, destDir);
   assert(packed.filename === artifactFilename(manifest), `npm packed ${packed.filename}, expected ${artifactFilename(manifest)}`);
   return { name, ...packed };
@@ -141,6 +160,7 @@ export const REQUIRED_KIT_ITEMS = Object.freeze([
 ]);
 
 export async function verifyKitIdentity(kitDir) {
+  await assertRegularKitEntries(kitDir);
   const identityPath = resolve(kitDir, IDENTITY_FILE);
   const manifestPath = resolve(kitDir, "package.json");
   assert(existsSync(identityPath), `identity.json missing in ${kitDir}`);
