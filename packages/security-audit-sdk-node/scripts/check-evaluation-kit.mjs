@@ -24,19 +24,17 @@ import {
   verifyPnpmInstalls,
 } from "./evaluation-kit-installers.mjs";
 import { assertSameIdentityDigests, verifyStaleBuildOutputExcluded } from "./evaluation-kit-source-copy.mjs";
-import { assert, packageRoot, runChecked } from "./verification-helpers.mjs";
+import { assert, packageRoot, repositoryRoot, runChecked } from "./verification-helpers.mjs";
 
 async function buildVerificationIdentity(sourceRoot) {
-  const { identity, removeKit } = await buildEvaluationKit({ mode: "verification", sourceRoot });
+  const { identity, kitDigest, removeKit } = await buildEvaluationKit({ mode: "verification", sourceRoot });
   await removeKit();
-  return identity;
+  return { ...identity, kitDigest };
 }
 
-// The gate's own kit is built from uncommitted work, so it is never distributable. Rebuilt from a copy of
-// the same tracked files, before and after stale output is planted in each package's build directory, it
-// reproduces every digest.
+// Rebuilt from a copy of the same tracked files, before and after stale output is planted in each package's
+// build directory, a verification kit reproduces every format-3 identity value.
 async function checkReproducibleIdentity(identity) {
-  assert(identity.distributable === false, "a kit the gate builds must be marked non-distributable");
   const rebuilt = await verifyStaleBuildOutputExcluded(buildVerificationIdentity);
   assertSameIdentityDigests(identity, rebuilt, "a rebuild of the same tracked tree");
 }
@@ -151,6 +149,19 @@ async function verifyDuplicateCoreProbe(tempInstall, plantDuplicateCore) {
   await runCoreCopyProbe(tempInstall, "npm");
 }
 
+// Only the gate that built a verification kit knows the tree it came from. Existing kits retain a valid
+// format-3 identity without making a claim about a local tree that did not build them.
+export async function verifyBuiltKitIdentity(kitDir) {
+  const verified = await verifyKitIdentity(kitDir);
+  const treeCommit = runChecked("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, capture: true }).trim();
+  assert(
+    verified.identity.commit === treeCommit,
+    `identity.json commit must match the tree the gate built from: expected ${treeCommit}, got ${verified.identity.commit}`,
+  );
+  assert(verified.identity.distributable === false, "a kit the gate builds must be marked non-distributable");
+  return verified;
+}
+
 const TYPESCRIPT_MATRIX = "TypeScript 5.9.2, 6.0.3, and 7.0.2";
 
 function codeSpans(commands) {
@@ -164,7 +175,10 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: () => "verification kit built from tracked sources",
   }),
   "kit-identity": Object.freeze({
-    clause: () => "kit identity verified",
+    clause: ({ buildMode }) =>
+      buildMode
+        ? "kit identity verified in format 3, with its commit and distributable flag checked against the tree the gate built from"
+        : "kit identity verified in format 3",
   }),
   "answer-key-exclusion": Object.freeze({
     clause: () => "facilitator answer-key file names and recognized content markers excluded",
@@ -257,7 +271,7 @@ export async function runKitGateCheck({ identity, _disabledChecks = [], run }) {
 }
 
 // Not a check: it says what a --kit-dir run skipped, so the absent build clauses cannot pass unnoticed.
-export const KIT_DIR_NOTE = "kit checked as given with --kit-dir, so it was neither built nor reproduced";
+export const KIT_DIR_NOTE = "kit checked as given with --kit-dir, so it was neither built nor reproduced, and its commit and distributable flag were not checked against any tree";
 
 export function composeVerificationSummary(completedChecks, { checkedAsGiven = false } = {}) {
   const clauses = completedChecks.map(({ identity, details }) => {
@@ -284,7 +298,7 @@ export async function checkEvaluationKit({
   // A kit given with --kit-dir is checked as given: the gate neither builds it nor proves that it reproduces.
   const buildsOwnKit = !existingKitDir;
   const completedChecks = [];
-  let identity;
+  let identityMaterial;
   let kitDir = existingKitDir;
   let removeBuiltKit = null;
   let tempInstall = null;
@@ -300,8 +314,9 @@ export async function checkEvaluationKit({
     }
 
     await runCheck(completedChecks, disabledChecks, "kit-identity", async () => {
-      ({ identity } = await verifyKitIdentity(kitDir));
-      return undefined;
+      const verified = buildsOwnKit ? await verifyBuiltKitIdentity(kitDir) : await verifyKitIdentity(kitDir);
+      identityMaterial = { ...verified.identity, kitDigest: verified.kitDigest };
+      return { buildMode: buildsOwnKit };
     });
 
     // 1a. Kit excludes facilitator answer key and its contents
@@ -322,7 +337,7 @@ export async function checkEvaluationKit({
     // 2. Reproducibility: the same tracked tree rebuilds to the same digests, with or without stale build output on disk
     if (buildsOwnKit) {
       await runCheck(completedChecks, disabledChecks, "reproducible-identity", async () => {
-        await checkReproducibleIdentity(identity);
+        await checkReproducibleIdentity(identityMaterial);
         return undefined;
       });
     }

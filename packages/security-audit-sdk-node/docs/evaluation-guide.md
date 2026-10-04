@@ -49,49 +49,56 @@ For non-critical defects (e.g., syntax errors, unexpected validation rejections,
 
 ## 3. How to Check Kit Identity
 
-Check the kit before you install or run anything from it. Every check uses only `shasum`, which ships with
-macOS and, on Linux, with Perl. The checks inside the unpacked kit name only files the kit ships.
+Check the kit before you install or run anything from it. Every integrity command below uses only `shasum`,
+which ships with macOS and, on Linux, with Perl. The commands inside the unpacked kit name only files the
+kit ships.
 
-1. **Check the archive.** An archive cannot contain its own digest, so the facilitator records the
-   archive's SHA-256 on the evaluation issue when the kit is distributed. Before unpacking, run
-   `shasum -a 256` on the archive file, and compare the result with the value on the evaluation issue.
+1. **Check the archive.** An archive cannot contain its own digest, so the evaluation facilitator records the
+   archive's SHA-256 on the evaluation issue when the distributable kit is distributed. Before unpacking,
+   run `shasum -a 256` on the archive file, and compare the result with the archive digest on the
+   evaluation issue.
 
-2. **Check every file.** Inside the unpacked kit directory, run:
+2. **Check the kit digest.** Inside the unpacked kit directory, run:
 
    ```sh
-   shasum -a 256 -c checksums.sha256
+   shasum -a 256 -c kit-digest.sha256
    ```
 
-   Every line must end in `OK`. The list covers every kit file except `identity.json` and the list itself:
-   the three tarballs, `package.json`, `pnpm-workspace.yaml`, the documents and the examples.
-
-3. **Check the list against the identity.** Run:
+   It must print `checksums.sha256: OK`. Then run:
 
    ```sh
    shasum -a 256 checksums.sha256
    ```
 
-   The digest it prints must equal `checksum_list.sha256` in `identity.json`.
+   The digest it prints must equal the kit digest the evaluation facilitator posted on the evaluation issue.
 
-**How the identity is defined.** `identity.json` declares `identity_format_version` 2. It records the
-commit the kit was built from and each tarball's SHA-256, together with these digests, each a SHA-256 in
-lowercase hexadecimal:
+3. **Check every listed file.** Run:
 
-- `package_set_digest`: the digest of one line per tarball, `<sha256>  <file name>` followed by a newline,
-  in code-point order of file name;
-- `manifest_digest`: the digest of `package.json`;
-- `checksum_list.sha256`: the digest of `checksums.sha256`;
-- `kit_digest`: the digest of the package-set digest, the manifest digest and the checksum-list digest,
-  each followed by a newline, in that order.
+   ```sh
+   shasum -a 256 -c checksums.sha256
+   ```
 
-A kit built before format 2 declares no format version, and its kit digest does not cover a checksum list.
-Never compare its digests with a format 2 kit's.
+   Every line must end in `OK`. The list covers every kit file except itself and `kit-digest.sha256`,
+   including `identity.json`: the three tarballs, `package.json`, `pnpm-workspace.yaml`, the documents and
+   the examples.
 
-**Facilitator.** At distribution, run `shasum -a 256` on the archive and post the result on the evaluation
-issue, together with the kit's `kit_digest`. Evaluators compare the archive against that comment in step 1.
-The facilitator answer key for the M3 seeded invalid-call exercise lives at
-`facilitator/seeded-invalid-calls-answer-key.md` in the repository tree; evaluators never receive it, and
-the kit builder never packages or copies it into the distributed evaluation kit.
+**How the identity is defined.** `identity.json` declares these six format-3 keys:
+`identity_format_version` (3), `commit`, `distributable`, `artifacts`, `package_set_digest`, and
+`manifest_digest`. `commit` is the commit the kit was built from, `distributable` records whether the kit
+is distributable, and `artifacts` records each tarball's SHA-256. `package_set_digest` is the SHA-256 of
+one line per tarball, `<sha256>  <file name>` followed by a newline, in code-point order of file name;
+`manifest_digest` is the SHA-256 of `package.json`. The kit digest is the SHA-256 of
+`checksums.sha256`; it is recorded in `kit-digest.sha256`, outside the checksum list.
+
+A kit whose identity declares format 2, or no format version (a kit v1 identity), computes its kit digest
+differently. Never compare either format's digests with a format-3 kit's. The kit gate refuses format 2 and
+kit v1 identities by name.
+
+**Evaluation facilitator.** At distribution, post both the archive digest and the kit digest on the
+evaluation issue. Evaluators compare the archive digest against that issue in step 1 and the kit digest in
+step 2. Neither digest authorizes a release. The facilitator answer key for the M3 seeded invalid-call
+exercise lives at `facilitator/seeded-invalid-calls-answer-key.md` in the repository tree; evaluators
+never receive it, and the kit builder never packages or copies it into the distributed evaluation kit.
 
 ---
 

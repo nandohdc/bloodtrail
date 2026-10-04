@@ -7,10 +7,10 @@ import { assert, byCodePoint, runChecked } from "./verification-helpers.mjs";
 
 export const IDENTITY_FILE = "identity.json";
 export const CHECKSUM_LIST_FILE = "checksums.sha256";
+export const KIT_DIGEST_FILE = "kit-digest.sha256";
 
-// The checksum list covers every kit file except these two: the identity commits to the list, and the
-// list cannot contain its own digest.
-const UNLISTED_FILES = new Set([IDENTITY_FILE, CHECKSUM_LIST_FILE]);
+// The checksum list covers every kit file except itself and the digest that records its own SHA-256.
+const UNLISTED_FILES = new Set([CHECKSUM_LIST_FILE, KIT_DIGEST_FILE]);
 
 const GUIDE = "docs/evaluation-guide.md";
 const GUIDE_INTEGRITY_SECTION = /^## .*How to Check Kit Identity\s*$/m;
@@ -40,6 +40,13 @@ export async function writeChecksumList(kitDir) {
   const content = lines.join("");
   await writeFile(resolve(kitDir, CHECKSUM_LIST_FILE), content, "utf8");
   return sha256Hex(content);
+}
+
+// Writes the checksum-list digest in the same one-line format that `shasum -a 256 -c` accepts.
+export async function writeKitDigest(kitDir) {
+  const checksumListDigest = sha256Hex(await readFile(resolve(kitDir, CHECKSUM_LIST_FILE)));
+  await writeFile(resolve(kitDir, KIT_DIGEST_FILE), `${checksumListDigest}  ${CHECKSUM_LIST_FILE}\n`, "utf8");
+  return checksumListDigest;
 }
 
 function parseChecksumList(content) {
@@ -102,11 +109,19 @@ function integrityCommandArgs(command, kitDir) {
   return args;
 }
 
-// Every digest the kit records: each listed file's, and the checksum list's own, from the identity.
+// Reads the sole checksum-list digest recorded outside the checksum list. Keeping this parser strict makes
+// the file usable directly with `shasum -a 256 -c` and prevents a second line from changing its meaning.
+export async function readKitDigest(kitDir) {
+  const content = await readFile(resolve(kitDir, KIT_DIGEST_FILE), "utf8");
+  const match = /^([0-9a-f]{64}) {2}checksums\.sha256\n$/.exec(content);
+  assert(match, `${KIT_DIGEST_FILE} must contain exactly one ${CHECKSUM_LIST_FILE} digest`);
+  return match[1];
+}
+
+// Every digest the kit records: each listed file's, and the checksum list's own, from its separate digest file.
 async function recordedDigests(kitDir) {
   const records = parseChecksumList(await readFile(resolve(kitDir, CHECKSUM_LIST_FILE), "utf8"));
-  const identity = JSON.parse(await readFile(resolve(kitDir, IDENTITY_FILE), "utf8"));
-  records.set(CHECKSUM_LIST_FILE, identity.checksum_list.sha256);
+  records.set(CHECKSUM_LIST_FILE, await readKitDigest(kitDir));
   return records;
 }
 
@@ -133,6 +148,10 @@ export function runChecksumListCheck(kitDir) {
   return runShasum(["-a", "256", "-c", CHECKSUM_LIST_FILE], kitDir, `shasum -a 256 -c ${CHECKSUM_LIST_FILE}`);
 }
 
+export function runKitDigestCheck(kitDir) {
+  return runShasum(["-a", "256", "-c", KIT_DIGEST_FILE], kitDir, `shasum -a 256 -c ${KIT_DIGEST_FILE}`);
+}
+
 async function withUnpackedKit(kitDir, run) {
   const workDir = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-unpacked-"));
   try {
@@ -156,6 +175,7 @@ async function withUnpackedKit(kitDir, run) {
 export async function verifyUnpackedKitIntegrity(kitDir) {
   return withUnpackedKit(kitDir, async (unpacked) => {
     runChecksumListCheck(unpacked);
+    runKitDigestCheck(unpacked);
     const records = await recordedDigests(unpacked);
     const guideText = await readFile(resolve(unpacked, GUIDE), "utf8");
     const commands = guideIntegrityCommands(guideText);
