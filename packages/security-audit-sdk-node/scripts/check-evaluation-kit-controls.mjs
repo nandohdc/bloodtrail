@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { cp, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
@@ -19,6 +20,7 @@ import {
   KIT_GATE_CHECK_IDENTITIES,
   checkEvaluationKit,
   composeVerificationSummary,
+  runKitGateCheck,
   installGatePrograms,
   typescriptLegs,
   writeConsumerTsconfig,
@@ -35,35 +37,56 @@ import {
 import { KIT_PACKAGES, verifyStaleBuildOutputExcluded } from "./evaluation-kit-source-copy.mjs";
 import { runChecked } from "./verification-helpers.mjs";
 
-// Every planted defect the harness applies, in order. A control that did not
-// run, or ran twice, fails the harness even when every gate run failed closed.
-const EXPECTED_CONTROLS = Object.freeze([
-  "missing core tarball",
-  "wrong override",
-  "tampered identity",
-  "renamed doc option (across all TypeScript matrix legs)",
-  "planted duplicate core",
-  "missing kit item",
-  "dirty tree build attempt",
-  "failure-path program type error (across all TypeScript matrix legs)",
-  "pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)",
-  "ignored pnpm setting reported (pnpm 11 and 12 legs)",
-  "installer docs missing the supported pnpm majors",
-  "builder packing the build output on disk (with a null control)",
-  "document changed after the build",
-  "evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block",
-  "sink rewriting service.name between the SDK and the receiver",
-  "receiver answering a duplicate with 400",
-  "receiver rethrowing after replying",
-  "mid-body stall mapped to malformed acknowledgment",
-  "facilitator answer key content copied into the kit",
-  "invented API calls named in a kit document (op.commit(), handle.commit())",
-  "retries listed as supported in the supported-versus-planned table",
-  "429 classified as a permanent failure in the packed Node binding",
-  "first-event example whose sink rejects the event",
-  "seeded invalid call 1 given the actor it omits",
-  "createHttpAuditSink removed from the packed entry point's runtime exports",
+// The dirty-tree builder refusal is not a kit-gate check until #705. Keeping it local prevents a
+// builder-only refusal from entering KIT_GATE_CHECKS or a verification summary.
+const BUILDER_REFUSAL_IDENTITY = "builder-dirty-tree-refusal";
+
+// Every planted-defect control declares the one check that must reject its measured plant. This remains the
+// completeness list's source, so a missing, duplicate, or unknown control identity fails the harness early.
+const CONTROL_DEFINITIONS = Object.freeze([
+  { label: "missing core tarball", identity: "kit-identity" },
+  { label: "wrong override", identity: "npm-installation" },
+  { label: "tampered identity", identity: "kit-identity" },
+  { label: "renamed doc option (across all TypeScript matrix legs)", identity: "kit-source-typecheck" },
+  { label: "planted duplicate core", identity: "npm-single-core-copy" },
+  { label: "missing kit item", identity: "kit-identity" },
+  { label: "dirty tree build attempt", identity: BUILDER_REFUSAL_IDENTITY },
+  { label: "failure-path program type error (across all TypeScript matrix legs)", identity: "kit-source-typecheck" },
+  { label: "pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)", identity: "pnpm-installations" },
+  { label: "ignored pnpm setting reported (pnpm 11 and 12 legs)", identity: "pnpm-installations" },
+  { label: "installer docs missing the supported pnpm majors", identity: "installer-documentation" },
+  { label: "builder packing the build output on disk (with a null control)", identity: "reproducible-identity" },
+  { label: "document changed after the build", identity: "kit-identity" },
+  { label: "evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block", identity: "unpacked-kit-integrity" },
+  { label: "sink rewriting service.name between the SDK and the receiver", identity: "loopback-example-exchange" },
+  { label: "receiver answering a duplicate with 400", identity: "loopback-example-exchange" },
+  { label: "receiver rethrowing after replying", identity: "loopback-example-exchange" },
+  { label: "mid-body stall mapped to malformed acknowledgment", identity: "http-audit-sink-failure-paths" },
+  { label: "facilitator answer key content copied into the kit", identity: "answer-key-exclusion" },
+  { label: "invented API calls named in a kit document (op.commit(), handle.commit())", identity: "document-references" },
+  { label: "retries listed as supported in the supported-versus-planned table", identity: "planned-feature-documentation" },
+  { label: "429 classified as a permanent failure in the packed Node binding", identity: "http-audit-sink-failure-paths" },
+  { label: "first-event example whose sink rejects the event", identity: "first-event-example" },
+  { label: "seeded invalid call 1 given the actor it omits", identity: "seeded-invalid-calls" },
+  { label: "createHttpAuditSink removed from the packed entry point's runtime exports", identity: "loopback-example-exchange" },
 ]);
+
+function validateControlDefinitions(definitions) {
+  const labels = new Set();
+  for (const control of definitions) {
+    assert.ok(control.label, "every control must declare a label");
+    assert.ok(!labels.has(control.label), `control declared twice: ${control.label}`);
+    assert.ok(
+      control.identity === BUILDER_REFUSAL_IDENTITY || KIT_GATE_CHECK_IDENTITIES.includes(control.identity),
+      `control ${control.label} declares an unknown kit gate identity: ${control.identity}`,
+    );
+    labels.add(control.label);
+  }
+}
+
+validateControlDefinitions(CONTROL_DEFINITIONS);
+const EXPECTED_CONTROLS = Object.freeze(CONTROL_DEFINITIONS.map(({ label }) => label));
+const CONTROLS_BY_LABEL = new Map(CONTROL_DEFINITIONS.map((control) => [control.label, control]));
 
 // What a run that builds its own kit claims about that build. A --kit-dir run builds and rebuilds nothing.
 const REBUILD_CLAIMS = Object.freeze([
@@ -117,6 +140,81 @@ async function captureFailure(run) {
   return null;
 }
 
+function controlFor(label) {
+  const control = CONTROLS_BY_LABEL.get(label);
+  assert.ok(control, `control must be declared: ${label}`);
+  return control;
+}
+
+function completeControl(control, measurements) {
+  assert.ok(measurements.length > 0, `${control.label} must record a measured plant`);
+  return { label: control.label, identity: control.identity, measuredPlants: measurements.length };
+}
+
+function assertTaggedFailure(control, failure) {
+  assert.ok(failure, `${control.label} must fail closed`);
+  assert.equal(
+    failure.checkIdentity,
+    control.identity,
+    `${control.label} must fail at ${control.identity}, got ${failure.checkIdentity ?? "an untagged failure"}`,
+  );
+  return failure;
+}
+
+async function captureGateFailure(control, kitDir, options = {}) {
+  const failure = await captureFailure(() => checkEvaluationKit({ kitDir, ...options }));
+  return assertTaggedFailure(control, failure);
+}
+
+async function captureDirectCheckFailure(control, run, _disabledChecks = []) {
+  const failure = await captureFailure(() => runKitGateCheck({ identity: control.identity, _disabledChecks, run }));
+  return assertTaggedFailure(control, failure);
+}
+
+async function captureBuilderRefusalFailure(control, run, _disabledChecks = []) {
+  assert.equal(control.identity, BUILDER_REFUSAL_IDENTITY, "only the local builder-refusal control uses this runner");
+  if (_disabledChecks.includes(control.identity)) return assertTaggedFailure(control, null);
+  const cause = await captureFailure(run);
+  if (!cause) return assertTaggedFailure(control, null);
+  const failure = new Error(`control check ${control.identity} failed: ${cause.message}`, { cause });
+  failure.checkIdentity = control.identity;
+  return assertTaggedFailure(control, failure);
+}
+
+async function measureFilePlant(kitCopy, path, rewrite) {
+  const filePath = resolve(kitCopy, path);
+  const before = sha256Hex(await readFile(filePath));
+  const original = await readFile(filePath, "utf8");
+  const planted = rewrite(original);
+  await writeFile(filePath, planted, "utf8");
+  const after = sha256Hex(await readFile(filePath));
+  assert.notEqual(after, before, `the measured plant must change ${path}`);
+  return { path, before, after };
+}
+
+async function removeMeasuredKitFile(kitCopy, path) {
+  const filePath = resolve(kitCopy, path);
+  const before = sha256Hex(await readFile(filePath));
+  await rm(filePath);
+  const after = await captureFailure(() => readFile(filePath));
+  assert.ok(after, `the measured plant must remove ${path}`);
+  return { path, before, after: null };
+}
+
+async function applyMeasuredPlant(measurements, apply) {
+  const measurement = await apply();
+  assert.notEqual(measurement.before, measurement.after, `the measured plant must change ${measurement.path}`);
+  measurements.push(measurement);
+  return measurement;
+}
+
+// A plant context pairs a disposable kit copy with the list that records what each plant measurably changed.
+async function rewriteMeasuredKitFile({ kitCopy, measurements }, path, rewrite, { reseal = true } = {}) {
+  const measurement = await applyMeasuredPlant(measurements, () => measureFilePlant(kitCopy, path, rewrite));
+  if (reseal) await resealKit(kitCopy);
+  return measurement;
+}
+
 // Rewrites the checksum list and the identity over a kit copy's edited files, so the planted defect, not
 // the identity check, is what the gate meets.
 async function resealKit(kitCopy) {
@@ -124,26 +222,17 @@ async function resealKit(kitCopy) {
   await sealKitIdentity(kitCopy, { commit, distributable, artifacts });
 }
 
-async function rewriteKitManifest(kitCopy, mutate) {
-  const pkgPath = resolve(kitCopy, "package.json");
-  const pkg = JSON.parse(await readFile(pkgPath, "utf8"));
-  mutate(pkg);
-  await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
-  await resealKit(kitCopy);
-}
-
-async function rewriteKitFile(kitCopy, path, rewrite) {
-  const filePath = resolve(kitCopy, path);
-  const text = await readFile(filePath, "utf8");
-  const planted = rewrite(text);
-  assert.notEqual(planted, text, `the planted defect must change ${path}`);
-  await writeFile(filePath, planted, "utf8");
-  await resealKit(kitCopy);
+function rewriteManifest(text, mutate) {
+  const manifest = JSON.parse(text);
+  mutate(manifest);
+  return JSON.stringify(manifest, null, 2) + "\n";
 }
 
 function copyNpmOverrideIntoPnpmField(pkg) {
   pkg.pnpm = { overrides: { ...pkg.overrides } };
 }
+
+const PNPM_SETTINGS_WITHOUT_OVERRIDE = "packages: []\noverrides: {}\n";
 
 async function assertPnpmLegFails(kitCopy, release, expectInMessage) {
   const failure = await captureFailure(() => verifyPnpmInstall(kitCopy, release));
@@ -152,65 +241,68 @@ async function assertPnpmLegFails(kitCopy, release, expectInMessage) {
   assert.ok(failure.message.includes(expectInMessage), `pnpm ${release} leg must report "${expectInMessage}": ${failure.message}`);
 }
 
-async function assertGateFailsWithoutKitFile(kitDir, { tempPrefix, removedFile, message }) {
-  const tempKit = await mkdtemp(resolve(tmpdir(), tempPrefix));
-  try {
-    await cp(kitDir, tempKit, { recursive: true });
-    await rm(resolve(tempKit, removedFile));
-
-    let failed = false;
-    try {
-      await checkEvaluationKit({ kitDir: tempKit });
-    } catch {
-      failed = true;
-    }
-    assert.ok(failed, message);
-  } finally {
-    await rm(tempKit, { recursive: true, force: true });
-  }
-}
-
-async function checkMissingCoreControl(kitDir, identity) {
-  const coreArtifact = identity.artifacts.find((a) => a.name === "core");
-  await assertGateFailsWithoutKitFile(kitDir, {
-    tempPrefix: "bloodtrail-ctrl-missing-core-",
-    removedFile: coreArtifact.filename,
-    message: "gate must fail closed when core tarball is missing",
+async function checkMissingCoreControl(kitDir, identity, { _disabledChecks = [] } = {}) {
+  const control = controlFor("missing core tarball");
+  const measurements = [];
+  const coreArtifact = identity.artifacts.find((artifact) => artifact.name === "core");
+  assert.ok(coreArtifact, "the base kit must contain the core artifact");
+  await withKitCopy(kitDir, "bloodtrail-ctrl-missing-core-", async (kitCopy) => {
+    await applyMeasuredPlant(measurements, () => removeMeasuredKitFile(kitCopy, coreArtifact.filename));
+    // Without a reseal the checksum list inside kit-identity also rejects the removal. Resealed, the
+    // artifact-name check still reads the missing tarball, so the message pins the existence condition.
+    await resealKit(kitCopy);
+    const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
+    assert.ok(
+      failure.cause.message.includes(`artifact file ${coreArtifact.filename} missing`),
+      `missing core tarball must fail the artifact existence condition: ${failure.cause.message}`,
+    );
+    assert.equal(measurements.length, 1, "missing core control must record one measured plant");
   });
-  return "missing core tarball";
+  return completeControl(control, measurements);
 }
 
-async function checkBrokenOverrideControl(kitDir) {
+async function checkBrokenOverrideControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("wrong override");
+  const measurements = [];
   await withKitCopy(kitDir, "bloodtrail-ctrl-broken-override-", async (kitCopy) => {
-    await rewriteKitManifest(kitCopy, (pkg) => {
-      pkg.overrides["@bloodtrail/security-audit-sdk-core"] = "./nonexistent-core.tgz";
-    });
-    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-    assert.ok(failure, "gate must fail closed when core override is broken");
+    await rewriteMeasuredKitFile(
+      { kitCopy, measurements },
+      "package.json",
+      (text) =>
+        rewriteManifest(text, (pkg) => {
+          pkg.overrides["@bloodtrail/security-audit-sdk-core"] = "./nonexistent-core.tgz";
+        }),
+    );
+    await captureGateFailure(control, kitCopy, { _disabledChecks });
+    assert.equal(measurements.length, 1, "wrong override control must record one measured plant");
   });
-  return "wrong override";
+  return completeControl(control, measurements);
 }
 
-async function checkTamperedIdentityControl(kitDir) {
-  const tempTamperedId = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-tampered-id-"));
-  try {
-    await cp(kitDir, tempTamperedId, { recursive: true });
-    const idPath = resolve(tempTamperedId, "identity.json");
-    const id = JSON.parse(await readFile(idPath, "utf8"));
-    id.artifacts[0].sha256 = "0000000000000000000000000000000000000000000000000000000000000000";
-    await writeFile(idPath, JSON.stringify(id, null, 2) + "\n", "utf8");
-
-    let failed = false;
-    try {
-      await checkEvaluationKit({ kitDir: tempTamperedId });
-    } catch {
-      failed = true;
-    }
-    assert.ok(failed, "gate must fail closed when identity is tampered with");
-  } finally {
-    await rm(tempTamperedId, { recursive: true, force: true });
-  }
-  return "tampered identity";
+async function checkTamperedIdentityControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("tampered identity");
+  const measurements = [];
+  await withKitCopy(kitDir, "bloodtrail-ctrl-tampered-id-", async (kitCopy) => {
+    await rewriteMeasuredKitFile(
+      { kitCopy, measurements },
+      IDENTITY_FILE,
+      (text) => {
+        const identity = JSON.parse(text);
+        assert.ok(identity.artifacts[0], "the base kit identity must declare an artifact");
+        identity.artifacts[0].sha256 = "0".repeat(64);
+        return JSON.stringify(identity, null, 2) + "\n";
+      },
+    );
+    // Resealing updates the list over the tampered artifact record, leaving its SHA-256 comparison as the
+    // only kit-identity condition that can reject the copy.
+    const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
+    assert.ok(
+      failure.cause.message.includes("SHA-256 mismatch for "),
+      `tampered identity must fail the artifact SHA-256 condition: ${failure.cause.message}`,
+    );
+    assert.equal(measurements.length, 1, "tampered identity control must record one measured plant");
+  });
+  return completeControl(control, measurements);
 }
 
 async function verifyMatrixLegsFailClosed(kitCopy, { failurePathsProgram = FAILURE_PATHS_PROGRAM, expectInOutput }) {
@@ -240,143 +332,188 @@ async function verifyMatrixLegsFailClosed(kitCopy, { failurePathsProgram = FAILU
   }
 }
 
-async function checkBrokenDocControl(kitDir) {
-  const tempBrokenDoc = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-broken-doc-"));
-  try {
-    await cp(kitDir, tempBrokenDoc, { recursive: true });
-    await rewriteKitFile(tempBrokenDoc, "docs/quickstart.md", (text) => text.replace("timeoutMs: 5000,", "timeoutOption: 5000,"));
-
-    let failed = false;
-    try {
-      await checkEvaluationKit({ kitDir: tempBrokenDoc });
-    } catch {
-      failed = true;
-    }
-    assert.ok(failed, "gate must fail closed when doc block uses renamed option");
-
-    // Verify that every matrix leg fails individually on the planted type error
-    await verifyMatrixLegsFailClosed(tempBrokenDoc, { expectInOutput: "quickstart-block-" });
-  } finally {
-    await rm(tempBrokenDoc, { recursive: true, force: true });
-  }
-  return "renamed doc option (across all TypeScript matrix legs)";
-}
-
-async function checkDuplicateCoreControl(kitDir) {
-  const tempDuplicateCore = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-dup-core-"));
-  try {
-    await cp(kitDir, tempDuplicateCore, { recursive: true });
-    let failed = false;
-    let reportedDuplicateAuthority = false;
-    try {
-      await checkEvaluationKit({ kitDir: tempDuplicateCore, plantDuplicateCore: true });
-    } catch (err) {
-      failed = true;
-      if (err.message?.includes("DUPLICATE_AUTHORITY")) {
-        reportedDuplicateAuthority = true;
-      }
-    }
-    assert.ok(failed, "gate must fail closed when duplicate core is planted");
-    assert.ok(reportedDuplicateAuthority, "planted duplicate core must report DUPLICATE_AUTHORITY");
-  } finally {
-    await rm(tempDuplicateCore, { recursive: true, force: true });
-  }
-  return "planted duplicate core";
-}
-
-async function checkMissingItemControl(kitDir) {
-  await assertGateFailsWithoutKitFile(kitDir, {
-    tempPrefix: "bloodtrail-ctrl-missing-item-",
-    removedFile: "docs/evaluation-guide.md",
-    message: "gate must fail closed when a required kit item is missing",
+async function checkBrokenDocControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("renamed doc option (across all TypeScript matrix legs)");
+  const measurements = [];
+  await withKitCopy(kitDir, "bloodtrail-ctrl-broken-doc-", async (kitCopy) => {
+    await rewriteMeasuredKitFile(
+      { kitCopy, measurements },
+      "docs/quickstart.md",
+      (text) => text.replace("timeoutMs: 5000,", "timeoutOption: 5000,"),
+    );
+    await captureGateFailure(control, kitCopy, { _disabledChecks });
+    // Verify that every matrix leg fails individually after the tagged kit-gate failure.
+    await verifyMatrixLegsFailClosed(kitCopy, { expectInOutput: "quickstart-block-" });
+    assert.equal(measurements.length, 1, "renamed document option control must record one measured plant");
   });
-  return "missing kit item";
+  return completeControl(control, measurements);
 }
 
-async function checkDirtyTreeControl() {
-  let dirtyRefused = false;
-  try {
-    await buildEvaluationKit({ mode: "distributable", _gitStatus: " M dirty-file.ts\n" });
-  } catch (err) {
-    if (err.message?.includes("cannot build distributable evaluation kit from dirty git tree")) {
-      dirtyRefused = true;
-    }
-  }
-  assert.ok(dirtyRefused, "distributable build must refuse dirty git tree");
-  return "dirty tree build attempt";
+async function plantMeasuredDuplicateCore(tempInstall, measurements) {
+  const nestedCore = resolve(
+    tempInstall,
+    "node_modules/@bloodtrail/security-audit-sdk-node/node_modules/@bloodtrail/security-audit-sdk-core",
+  );
+  await applyMeasuredPlant(measurements, async () => {
+    assert.ok(!existsSync(nestedCore), "duplicate core plant must start without a nested core copy");
+    await cp(resolve(tempInstall, "node_modules/@bloodtrail/security-audit-sdk-core"), nestedCore, { recursive: true });
+    return { path: "nested core copy", before: "absent", after: existsSync(nestedCore) ? "present" : "absent" };
+  });
+  assert.ok(existsSync(nestedCore), "duplicate core plant must create the nested core copy");
 }
 
-async function checkFailurePathTypeErrorControl(kitDir) {
+async function checkDuplicateCoreControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("planted duplicate core");
+  const measurements = [];
+  await withKitCopy(kitDir, "bloodtrail-ctrl-dup-core-", async (kitCopy) => {
+    await captureGateFailure(control, kitCopy, {
+      _disabledChecks,
+      _plantDuplicateCore: (tempInstall) => plantMeasuredDuplicateCore(tempInstall, measurements),
+    });
+    assert.equal(measurements.length, 1, "duplicate core control must record one measured plant");
+  });
+  return completeControl(control, measurements);
+}
+
+async function checkMissingItemControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("missing kit item");
+  const measurements = [];
+  await withKitCopy(kitDir, "bloodtrail-ctrl-missing-item-", async (kitCopy) => {
+    await applyMeasuredPlant(measurements, () => removeMeasuredKitFile(kitCopy, "docs/evaluation-guide.md"));
+    // Resealing removes the deleted guide from the checksum list, so the required-item loop is the only
+    // kit-identity condition that can reject it.
+    await resealKit(kitCopy);
+    const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
+    assert.ok(
+      failure.cause.message.includes("Required kit item missing: docs/evaluation-guide.md"),
+      `missing kit item failure must name the one absent item: ${failure.cause.message}`,
+    );
+    assert.equal(measurements.length, 1, "missing item control must record one measured plant");
+  });
+  return completeControl(control, measurements);
+}
+
+async function checkDirtyTreeControl({ _disabledChecks = [] } = {}) {
+  const control = controlFor("dirty tree build attempt");
+  const status = " M dirty-file.ts\n";
+  const measurements = [];
+  await applyMeasuredPlant(measurements, async () => ({ path: "dirty-file.ts", before: "", after: status }));
+  assert.ok(measurements[0].after.includes(measurements[0].path), "dirty-tree plant must name its path in the injected status");
+  const failure = await captureBuilderRefusalFailure(
+    control,
+    () => buildEvaluationKit({ mode: "distributable", _gitStatus: status }),
+    _disabledChecks,
+  );
+  assert.ok(
+    failure.cause.message.includes(status.trim()),
+    `dirty-tree refusal must receive the measured status: ${failure.cause.message}`,
+  );
+  assert.equal(measurements.length, 1, "dirty-tree control must record one measured plant");
+  return completeControl(control, measurements);
+}
+
+async function checkFailurePathTypeErrorControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("failure-path program type error (across all TypeScript matrix legs)");
+  const measurements = [];
   const tempProgramDir = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-failure-path-type-"));
   try {
     const { anchor, replacement } = FAILURE_PATHS_TYPE_ERROR;
     const source = await readFile(FAILURE_PATHS_PROGRAM, "utf8");
     assert.equal(source.split(anchor).length - 1, 1, `failure-path type error anchor ${anchor} must occur exactly once`);
     const plantedProgram = resolve(tempProgramDir, "evaluation-kit-failure-paths.ts");
-    await writeFile(plantedProgram, source.replace(anchor, replacement), "utf8");
-
-    let failure = null;
-    try {
-      await checkEvaluationKit({ kitDir, failurePathsProgram: plantedProgram });
-    } catch (err) {
-      failure = err;
-    }
-    assert.ok(failure, "gate must fail closed when the failure-path program has a type error");
-    assert.ok(failure.message.includes("tsc -p"), `failure-path type error must fail the gate's type-check: ${failure.message}`);
-
+    await applyMeasuredPlant(measurements, async () => {
+      await writeFile(plantedProgram, source.replace(anchor, replacement), "utf8");
+      return {
+        path: "evaluation-kit-failure-paths.ts",
+        before: sha256Hex(source),
+        after: sha256Hex(await readFile(plantedProgram)),
+      };
+    });
+    await captureGateFailure(control, kitDir, { failurePathsProgram: plantedProgram, _disabledChecks });
+    // Verify that every matrix leg fails individually after the tagged kit-gate failure.
     await verifyMatrixLegsFailClosed(kitDir, {
       failurePathsProgram: plantedProgram,
       expectInOutput: "evaluation-kit-failure-paths.ts",
     });
+    assert.equal(measurements.length, 1, "failure-path type error control must record one measured plant");
   } finally {
     await rm(tempProgramDir, { recursive: true, force: true });
   }
-  return "failure-path program type error (across all TypeScript matrix legs)";
+  return completeControl(control, measurements);
 }
 
-// The kit as built before the settings file: pnpm 10 still reads the manifest field,
-// and pnpm 11 and 12 drop it and cannot resolve the core.
-async function checkPnpmFieldOnlyOverrideControl(kitDir) {
+// pnpm 10 reads the manifest field; pnpm 11 and 12 ignore it. Keep a valid settings file without
+// overrides so only the pnpm-installations check can reject the manifest-only override.
+async function checkPnpmFieldOnlyOverrideControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)");
+  const measurements = [];
   await withKitCopy(kitDir, "bloodtrail-ctrl-pnpm-field-only-", async (kitCopy) => {
-    await rm(resolve(kitCopy, PNPM_SETTINGS_FILE));
-    await rewriteKitManifest(kitCopy, copyNpmOverrideIntoPnpmField);
+    await rewriteMeasuredKitFile(
+      { kitCopy, measurements },
+      "package.json",
+      (text) => rewriteManifest(text, copyNpmOverrideIntoPnpmField),
+      { reseal: false },
+    );
+    await rewriteMeasuredKitFile(
+      { kitCopy, measurements },
+      PNPM_SETTINGS_FILE,
+      () => PNPM_SETTINGS_WITHOUT_OVERRIDE,
+      { reseal: false },
+    );
+    await resealKit(kitCopy);
+    await captureGateFailure(control, kitCopy, { _disabledChecks });
     await verifyPnpmInstall(kitCopy, PNPM_READING_MANIFEST_FIELD);
     for (const release of PNPM_IGNORING_MANIFEST_FIELD) {
       await assertPnpmLegFails(kitCopy, release, "no longer read");
     }
+    assert.equal(measurements.length, 2, "manifest-only pnpm override control must record both measured plants");
   });
-  return "pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)";
+  return completeControl(control, measurements);
 }
 
-// With the settings file in place, pnpm 11 and 12 install successfully and only warn
-// about the manifest field, so the gate's ignored-setting check is all that fails.
-async function checkIgnoredPnpmSettingControl(kitDir) {
+// With a valid settings override, pnpm 11 and 12 install successfully and only warn about the manifest
+// field, so the gate's ignored-setting condition is the one that fails.
+async function checkIgnoredPnpmSettingControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("ignored pnpm setting reported (pnpm 11 and 12 legs)");
+  const measurements = [];
   const reported = "reported an ignored kit setting";
   await withKitCopy(kitDir, "bloodtrail-ctrl-ignored-pnpm-setting-", async (kitCopy) => {
-    await rewriteKitManifest(kitCopy, copyNpmOverrideIntoPnpmField);
+    await rewriteMeasuredKitFile(
+      { kitCopy, measurements },
+      "package.json",
+      (text) => rewriteManifest(text, copyNpmOverrideIntoPnpmField),
+    );
     const [firstIgnoring, ...laterIgnoring] = PNPM_IGNORING_MANIFEST_FIELD;
-    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-    assert.ok(failure, "gate must fail closed when an installer reports an ignored kit setting");
+    const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
     assert.ok(
-      failure.message.includes(`pnpm ${firstIgnoring} ${reported}`),
-      `gate must fail on the pnpm ${firstIgnoring} leg's ignored setting: ${failure.message}`,
+      failure.cause.message.includes(`pnpm ${firstIgnoring} ${reported}`),
+      `pnpm ${firstIgnoring} must report its ignored setting: ${failure.cause.message}`,
     );
     for (const release of laterIgnoring) {
       await assertPnpmLegFails(kitCopy, release, reported);
     }
+    assert.equal(measurements.length, 1, "ignored pnpm setting control must record one measured plant");
   });
-  return "ignored pnpm setting reported (pnpm 11 and 12 legs)";
+  return completeControl(control, measurements);
 }
 
-async function checkInstallerDocsControl(kitDir) {
+async function checkInstallerDocsControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("installer docs missing the supported pnpm majors");
+  const measurements = [];
   await withKitCopy(kitDir, "bloodtrail-ctrl-installer-docs-", async (kitCopy) => {
-    await rewriteKitFile(kitCopy, "docs/quickstart.md", (text) => text.replaceAll(supportedPnpmPhrase(), "pnpm (v10+)"));
-
-    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-    assert.ok(failure, "gate must fail closed when the quickstart does not name the supported pnpm majors");
-    assert.ok(failure.message.includes("docs/quickstart.md"), `installer docs failure must name the quickstart: ${failure.message}`);
+    await rewriteMeasuredKitFile(
+      { kitCopy, measurements },
+      "docs/quickstart.md",
+      (text) => text.replaceAll(supportedPnpmPhrase(), "pnpm (v10+)"),
+    );
+    const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
+    assert.ok(
+      failure.cause.message.includes("docs/quickstart.md"),
+      `installer documentation must name the changed document: ${failure.cause.message}`,
+    );
+    assert.equal(measurements.length, 1, "installer documentation control must record one measured plant");
   });
-  return "installer docs missing the supported pnpm majors";
+  return completeControl(control, measurements);
 }
 
 // The builder before #653: it packs whatever build output is on disk under `root` and never rebuilds it.
@@ -395,42 +532,66 @@ async function packOnDiskBuildOutput(root) {
   }
 }
 
-async function checkPackedBuildOutputControl() {
+async function checkPackedBuildOutputControl({ _disabledChecks = [] } = {}) {
+  const control = controlFor("builder packing the build output on disk (with a null control)");
   // Null control: with nothing planted, the on-disk packer reproduces itself, so the planted output is
   // the only difference the check can see.
-  await verifyStaleBuildOutputExcluded(packOnDiskBuildOutput, { plant: async () => {} });
-  const failure = await captureFailure(() => verifyStaleBuildOutputExcluded(packOnDiskBuildOutput));
-  assert.ok(failure, "a builder that packs the build output on disk must fail the stale-output check");
-  assert.ok(
-    failure.message.includes("untracked files on disk reached the kit"),
-    `on-disk packing must fail the stale-output check itself: ${failure.message}`,
+  const nullControl = await runKitGateCheck({
+    identity: control.identity,
+    _disabledChecks,
+    run: () => verifyStaleBuildOutputExcluded(packOnDiskBuildOutput, { plant: async () => {} }),
+  });
+  assert.ok(!nullControl.skipped, "the on-disk packer null control must run before measuring its plant");
+
+  const measuredOutputs = [];
+  const failure = await captureDirectCheckFailure(
+    control,
+    async () =>
+      verifyStaleBuildOutputExcluded(async (root) => {
+        const identity = await packOnDiskBuildOutput(root);
+        measuredOutputs.push(identity.kit_digest);
+        return identity;
+      }),
+    _disabledChecks,
   );
-  return "builder packing the build output on disk (with a null control)";
+  assert.equal(measuredOutputs.length, 2, "the on-disk packer must produce clean and planted outputs");
+  assert.notEqual(measuredOutputs[0], measuredOutputs[1], "the on-disk packer plant must change its packed output");
+  assert.ok(
+    failure.cause.message.includes("untracked files on disk reached the kit"),
+    `on-disk packing must fail the stale-output check itself: ${failure.cause.message}`,
+  );
+  return completeControl(control, [{ path: "packed build output", before: measuredOutputs[0], after: measuredOutputs[1] }]);
 }
 
 async function shasumCheckPasses(kitDir) {
   return !(await captureFailure(() => runChecksumListCheck(kitDir)));
 }
 
-// No reseal: the edit is the defect. `shasum -a 256 -c` passes on the copy before the edit and fails after it.
-async function checkChangedDocumentControl(kitDir) {
+// No reseal: the document change is the integrity defect. Resealing would hide it from kit-identity.
+async function checkChangedDocumentControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("document changed after the build");
+  const measurements = [];
   await withKitCopy(kitDir, "bloodtrail-ctrl-changed-document-", async (kitCopy) => {
     assert.ok(await shasumCheckPasses(kitCopy), "shasum -a 256 -c must pass on the kit as built");
-    const privacyPath = resolve(kitCopy, "docs/privacy.md");
-    await writeFile(privacyPath, `${await readFile(privacyPath, "utf8")}\nEdited after the build.\n`, "utf8");
-    assert.ok(!(await shasumCheckPasses(kitCopy)), "shasum -a 256 -c must fail once a listed document changes");
-
-    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-    assert.ok(failure, "gate must fail closed when a document changes after the build");
-    assert.ok(
-      failure.message.includes("docs/privacy.md changed after the build"),
-      `a changed document must fail the gate's identity check: ${failure.message}`,
+    await rewriteMeasuredKitFile(
+      { kitCopy, measurements },
+      "docs/privacy.md",
+      (text) => `${text}\nEdited after the build.\n`,
+      { reseal: false },
     );
+    assert.ok(!(await shasumCheckPasses(kitCopy)), "shasum -a 256 -c must fail once a listed document changes");
+    const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
+    assert.ok(
+      failure.cause.message.includes("docs/privacy.md changed after the build"),
+      `a changed document must fail the gate's identity check: ${failure.cause.message}`,
+    );
+    assert.equal(measurements.length, 1, "changed document control must record one measured plant");
   });
-  return "document changed after the build";
+  return completeControl(control, measurements);
 }
 
-async function checkGuideIntegrityCommandControl(kitDir) {
+async function checkGuideIntegrityCommandControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block");
   const documented = `shasum -a 256 -c ${CHECKSUM_LIST_FILE}`;
   const plants = [
     { plant: (text) => text.replace(documented, `cat ${IDENTITY_FILE}`), expect: "must use only shasum" },
@@ -438,63 +599,83 @@ async function checkGuideIntegrityCommandControl(kitDir) {
     { plant: (text) => text.replace(documented, `shasum -a 256 ${IDENTITY_FILE}`), expect: "printed a digest the kit does not record" },
     { plant: (text) => text.replace("```sh", "```bash"), expect: "may hold only sh blocks" },
   ];
+  const measurements = [];
   for (const { plant, expect } of plants) {
     await withKitCopy(kitDir, "bloodtrail-ctrl-guide-command-", async (kitCopy) => {
-      await rewriteKitFile(kitCopy, "docs/evaluation-guide.md", plant);
-      const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-      assert.ok(failure, `gate must fail closed on a guide that should fail with "${expect}"`);
-      assert.ok(failure.message.includes(expect), `the planted guide must fail with "${expect}": ${failure.message}`);
+      await rewriteMeasuredKitFile({ kitCopy, measurements }, "docs/evaluation-guide.md", plant);
+      const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
+      assert.ok(
+        failure.cause.message.includes(expect),
+        `the planted guide must fail with its specific condition "${expect}": ${failure.cause.message}`,
+      );
     });
   }
-  return "evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block";
+  assert.equal(measurements.length, plants.length, "each guide-command plant must be measured");
+  return completeControl(control, measurements);
+}
+
+async function assertMeasuredKitDefectFails(kitDir, control, {
+  tempPrefix,
+  path,
+  plant,
+  expectCondition,
+  _disabledChecks = [],
+}) {
+  const measurements = [];
+  await withKitCopy(kitDir, tempPrefix, async (kitCopy) => {
+    await rewriteMeasuredKitFile({ kitCopy, measurements }, path, plant);
+    const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
+    assert.ok(
+      failure.cause.message.includes(expectCondition),
+      `${control.label} must report its specific condition "${expectCondition}": ${failure.cause.message}`,
+    );
+  });
+  return measurements;
 }
 
 // A sink between the SDK and the receiver that rewrites one field. `service.name` is free text, so the
 // rewritten event stays valid and the receiver accepts it: only the byte comparison can tell. Rewriting
 // `correlation.retry_attempt` instead makes the receiver reject the event before any comparison runs.
-async function checkRewritingSinkControl(kitDir) {
-  await withKitCopy(kitDir, "bloodtrail-ctrl-rewriting-sink-", async (kitCopy) => {
-    await rewriteKitFile(kitCopy, "examples/evaluation-service.ts", (text) =>
+async function checkRewritingSinkControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("sink rewriting service.name between the SDK and the receiver");
+  const measurements = await assertMeasuredKitDefectFails(kitDir, control, {
+    tempPrefix: "bloodtrail-ctrl-rewriting-sink-",
+    path: "examples/evaluation-service.ts",
+    plant: (text) =>
       text.replace(
         "      return sink.emit(event);",
         "      return sink.emit({ ...event, service: { ...event.service, name: \"rewritten-in-transit\" } });",
       ),
-    );
-    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-    assert.ok(failure, "gate must fail closed when a sink rewrites a field between the SDK and the receiver");
-    assert.ok(
-      failure.message.includes("differ from the bytes the SDK handed to the HTTP audit sink"),
-      `a rewritten field must fail the byte comparison: ${failure.message}`,
-    );
+    expectCondition: "differ from the bytes the SDK handed to the HTTP audit sink",
+    _disabledChecks,
   });
-  return "sink rewriting service.name between the SDK and the receiver";
+  assert.equal(measurements.length, 1, "rewriting sink control must record one measured plant");
+  return completeControl(control, measurements);
 }
 
-async function assertReceiverDefectFails(kitDir, { plant, expect, message }) {
-  await withKitCopy(kitDir, "bloodtrail-ctrl-receiver-", async (kitCopy) => {
-    await rewriteKitFile(kitCopy, "examples/evaluation-receiver.ts", plant);
-    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-    assert.ok(failure, message);
-    assert.ok(failure.message.includes(expect), `${message}, with "${expect}": ${failure.message}`);
-  });
-}
-
-async function checkDuplicateRejectedControl(kitDir) {
-  await assertReceiverDefectFails(kitDir, {
+async function checkDuplicateRejectedControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("receiver answering a duplicate with 400");
+  const measurements = await assertMeasuredKitDefectFails(kitDir, control, {
+    tempPrefix: "bloodtrail-ctrl-receiver-duplicate-",
+    path: "examples/evaluation-receiver.ts",
     plant: (text) =>
       text.replace(
         "    console.log(`receiver:duplicate ${result.eventId}`);\n    return acknowledge(result.eventId);",
         '    return reject(state, 400, "duplicate");',
       ),
-    expect: "a byte-identical duplicate: expected 2xx, got 400",
-    message: "gate must fail closed when the receiver answers a duplicate with 400",
+    expectCondition: "a byte-identical duplicate: expected 2xx, got 400",
+    _disabledChecks,
   });
-  return "receiver answering a duplicate with 400";
+  assert.equal(measurements.length, 1, "duplicate receiver control must record one measured plant");
+  return completeControl(control, measurements);
 }
 
 // The receiver before #656: it replied, then rethrew out of the request handler, and the process died.
-async function checkRethrowingReceiverControl(kitDir) {
-  await assertReceiverDefectFails(kitDir, {
+async function checkRethrowingReceiverControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("receiver rethrowing after replying");
+  const measurements = await assertMeasuredKitDefectFails(kitDir, control, {
+    tempPrefix: "bloodtrail-ctrl-receiver-rethrow-",
+    path: "examples/evaluation-receiver.ts",
     plant: (text) =>
       text
         .replace(
@@ -502,18 +683,20 @@ async function checkRethrowingReceiverControl(kitDir) {
           '      send(res, await handleSubmission(req, state));\n      if (res.statusCode >= 400) throw new Error("rethrown after replying");',
         )
         .replace('    } catch {\n      console.log("receiver:error 500");', "    } catch (err) {\n      throw err;"),
-    expect: "the receiver must keep serving",
-    message: "gate must fail closed when the receiver rethrows after replying",
+    expectCondition: "the receiver must keep serving",
+    _disabledChecks,
   });
-  return "receiver rethrowing after replying";
+  assert.equal(measurements.length, 1, "rethrowing receiver control must record one measured plant");
+  return completeControl(control, measurements);
 }
 
-async function rewriteKitTarball(kitCopy, packageName, fileInTarball, rewrite) {
+async function rewriteMeasuredKitTarball({ kitCopy, measurements }, packageName, fileInTarball, rewrite) {
   const identityPath = resolve(kitCopy, IDENTITY_FILE);
   const identity = JSON.parse(await readFile(identityPath, "utf8"));
-  const artifact = identity.artifacts.find((a) => a.name === packageName);
+  const artifact = identity.artifacts.find((candidate) => candidate.name === packageName);
   assert.ok(artifact, `artifact ${packageName} must exist in identity`);
   const tarballPath = resolve(kitCopy, artifact.filename);
+  const before = sha256Hex(await readFile(tarballPath));
   const extractDir = await mkdtemp(resolve(tmpdir(), `bloodtrail-ctrl-${packageName}-`));
   try {
     runChecked("tar", ["-xzf", tarballPath, "-C", extractDir]);
@@ -522,8 +705,11 @@ async function rewriteKitTarball(kitCopy, packageName, fileInTarball, rewrite) {
     const mutated = rewrite(text);
     assert.notEqual(mutated, text, `the planted defect must change ${fileInTarball}`);
     await writeFile(filePath, mutated, "utf8");
-    runChecked("tar", ["-czf", tarballPath, "-C", extractDir, "package"]);
-    artifact.sha256 = sha256Hex(await readFile(tarballPath));
+    const measurement = await applyMeasuredPlant(measurements, async () => {
+      runChecked("tar", ["-czf", tarballPath, "-C", extractDir, "package"]);
+      return { path: artifact.filename, before, after: sha256Hex(await readFile(tarballPath)) };
+    });
+    artifact.sha256 = measurement.after;
     const { commit, distributable, artifacts } = identity;
     await sealKitIdentity(kitCopy, { commit, distributable, artifacts });
   } finally {
@@ -531,54 +717,55 @@ async function rewriteKitTarball(kitCopy, packageName, fileInTarball, rewrite) {
   }
 }
 
-async function checkMidBodyStallControl(kitDir) {
+async function checkMidBodyStallControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("mid-body stall mapped to malformed acknowledgment");
+  const measurements = [];
   await withKitCopy(kitDir, "bloodtrail-ctrl-mid-body-stall-", async (kitCopy) => {
-    await rewriteKitTarball(kitCopy, "node", "dist/fetch-exchange.js", (text) =>
-      text.replace(
-        "        if (isTimeout(error))\n            throw error;\n",
-        "",
-      ),
+    await rewriteMeasuredKitTarball(
+      { kitCopy, measurements },
+      "node",
+      "dist/fetch-exchange.js",
+      (text) => text.replace("        if (isTimeout(error))\n            throw error;\n", ""),
     );
-    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-    assert.ok(failure, "gate must fail closed when mid-body stall maps to malformed acknowledgment");
-    assert.ok(
-      failure.message.includes("evaluation-kit-failure-paths.ts"),
-      `mid-body stall defect must fail the gate's failure-path check: ${failure.message}`,
-    );
+    await captureGateFailure(control, kitCopy, { _disabledChecks });
   });
-  return "mid-body stall mapped to malformed acknowledgment";
+  assert.equal(measurements.length, 1, "mid-body stall control must record one measured tarball plant");
+  return completeControl(control, measurements);
 }
 
-async function checkAnswerKeyInKitControl(kitDir) {
+async function checkAnswerKeyInKitControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("facilitator answer key content copied into the kit");
   const answerKeyText = await readFile(ANSWER_KEY_PATH, "utf8");
-  await withKitCopy(kitDir, "bloodtrail-ctrl-answer-key-in-kit-", async (kitCopy) => {
-    await rewriteKitFile(kitCopy, "docs/seeded-invalid-calls.md", (text) => `${text}\n\n${answerKeyText}`);
-    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-    assert.ok(failure, "gate must fail closed when facilitator answer key content is copied into the kit");
-    assert.ok(
-      failure.message.toLowerCase().includes("answer key"),
-      `answer key in kit defect must fail the gate's answer key exclusion check: ${failure.message}`,
-    );
+  const measurements = await assertMeasuredKitDefectFails(kitDir, control, {
+    tempPrefix: "bloodtrail-ctrl-answer-key-in-kit-",
+    path: "docs/seeded-invalid-calls.md",
+    plant: (text) => `${text}\n\n${answerKeyText}`,
+    expectCondition: "evaluation kit must never contain facilitator answer key content in docs/seeded-invalid-calls.md",
+    _disabledChecks,
   });
-  return "facilitator answer key content copied into the kit";
+  assert.equal(measurements.length, 1, "answer key control must record one measured plant");
+  return completeControl(control, measurements);
 }
 
 // Invented calls: one on a receiver the documents name, one on a receiver they do not.
 const INVENTED_API_CALLS = Object.freeze(["op.commit()", "handle.commit()"]);
 
-async function checkInventedApiControl(kitDir) {
+async function checkInventedApiControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("invented API calls named in a kit document (op.commit(), handle.commit())");
+  const measurements = [];
   for (const call of INVENTED_API_CALLS) {
-    await withKitCopy(kitDir, "bloodtrail-ctrl-invented-api-", async (kitCopy) => {
-      await rewriteKitFile(kitCopy, "docs/quickstart.md", (text) => `${text}\nCall \`${call}\` to commit.\n`);
-      const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-      assert.ok(failure, `gate must fail closed when a kit document names ${call}`);
-      assert.ok(
-        failure.message.includes(`\`${call}\`: `),
-        `a kit document naming ${call} must fail the gate's doc references check: ${failure.message}`,
-      );
-    });
+    measurements.push(
+      ...(await assertMeasuredKitDefectFails(kitDir, control, {
+        tempPrefix: "bloodtrail-ctrl-invented-api-",
+        path: "docs/quickstart.md",
+        plant: (text) => `${text}\nCall \`${call}\` to commit.\n`,
+        expectCondition: `docs/quickstart.md: \`${call}\`: `,
+        _disabledChecks,
+      })),
+    );
   }
-  return "invented API calls named in a kit document (op.commit(), handle.commit())";
+  assert.equal(measurements.length, INVENTED_API_CALLS.length, "each invented API plant must be measured");
+  return completeControl(control, measurements);
 }
 
 // The ratified scenario's planted defect: the table lists retries as supported.
@@ -587,83 +774,156 @@ const SUPPORTED_RETRY_ROW = Object.freeze({
   replacement: "| **Retries** | **Supported** |",
 });
 
-async function checkSupportedRetryRowControl(kitDir) {
-  await withKitCopy(kitDir, "bloodtrail-ctrl-supported-retry-", async (kitCopy) => {
-    await rewriteKitFile(kitCopy, "docs/supported-and-planned.md", (text) =>
-      text.replace(SUPPORTED_RETRY_ROW.anchor, SUPPORTED_RETRY_ROW.replacement),
-    );
-    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-    assert.ok(failure, "gate must fail closed when the kit's table lists retries as supported");
-    assert.ok(
-      failure.message.includes("describes retries as available"),
-      `a supported retry row must fail the gate's planned-features check: ${failure.message}`,
-    );
+async function checkSupportedRetryRowControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("retries listed as supported in the supported-versus-planned table");
+  const measurements = await assertMeasuredKitDefectFails(kitDir, control, {
+    tempPrefix: "bloodtrail-ctrl-supported-retry-",
+    path: "docs/supported-and-planned.md",
+    plant: (text) => text.replace(SUPPORTED_RETRY_ROW.anchor, SUPPORTED_RETRY_ROW.replacement),
+    expectCondition: "docs/supported-and-planned.md describes retries as available",
+    _disabledChecks,
   });
-  return "retries listed as supported in the supported-versus-planned table";
+  assert.equal(measurements.length, 1, "supported retry control must record one measured plant");
+  return completeControl(control, measurements);
 }
 
-// Plants a defect, runs the whole gate on the kit copy, and asserts the gate failed at the expected check.
-async function assertGateFailsAt(kitCopy, { expectInMessage, defect }) {
-  const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
-  assert.ok(failure, `gate must fail closed on ${defect}`);
-  assert.ok(failure.message.includes(expectInMessage), `${defect} must fail at its own check: ${failure.message}`);
-}
-
-async function checkMisclassifiedStatusControl(kitDir) {
+async function checkMisclassifiedStatusControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("429 classified as a permanent failure in the packed Node binding");
+  const measurements = [];
   await withKitCopy(kitDir, "bloodtrail-ctrl-misclassified-status-", async (kitCopy) => {
-    await rewriteKitTarball(kitCopy, "node", "dist/http-response-classification.js", (text) =>
-      text.replace("new Set([408, 425, 429])", "new Set([408, 425])"),
+    await rewriteMeasuredKitTarball(
+      { kitCopy, measurements },
+      "node",
+      "dist/http-response-classification.js",
+      (text) => text.replace("new Set([408, 425, 429])", "new Set([408, 425])"),
     );
-    await assertGateFailsAt(kitCopy, {
-      expectInMessage: "evaluation-kit-failure-paths.ts",
-      defect: "a packed classifier that treats 429 as permanent",
-    });
+    await captureGateFailure(control, kitCopy, { _disabledChecks });
   });
-  return "429 classified as a permanent failure in the packed Node binding";
+  assert.equal(measurements.length, 1, "429 control must record one measured tarball plant");
+  return completeControl(control, measurements);
 }
 
-async function checkBrokenFirstEventControl(kitDir) {
+async function checkBrokenFirstEventControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("first-event example whose sink rejects the event");
+  const measurements = [];
   await withKitCopy(kitDir, "bloodtrail-ctrl-broken-first-event-", async (kitCopy) => {
     // A type-correct defect, so the run, not the type-check, is what fails.
-    await rewriteKitFile(kitCopy, "examples/first-event.ts", (text) =>
-      text.replace('return { status: "accepted" };', 'return { status: "rejected", code: "planted_rejection" };'),
+    await rewriteMeasuredKitFile(
+      { kitCopy, measurements },
+      "examples/first-event.ts",
+      (text) => text.replace('return { status: "accepted" };', 'return { status: "rejected", code: "planted_rejection" };'),
     );
-    await assertGateFailsAt(kitCopy, {
-      expectInMessage: "examples/first-event.ts",
-      defect: "a first-event run whose sink rejects the event",
-    });
+    await captureGateFailure(control, kitCopy, { _disabledChecks });
+    assert.equal(measurements.length, 1, "first-event control must record one measured plant");
   });
-  return "first-event example whose sink rejects the event";
+  return completeControl(control, measurements);
 }
 
-async function checkSeededCallNoLongerFailsControl(kitDir) {
-  await withKitCopy(kitDir, "bloodtrail-ctrl-seeded-call-fixed-", async (kitCopy) => {
-    await rewriteKitFile(kitCopy, "examples/seeded-invalid-calls.ts", (text) =>
+async function checkSeededCallNoLongerFailsControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("seeded invalid call 1 given the actor it omits");
+  const measurements = await assertMeasuredKitDefectFails(kitDir, control, {
+    tempPrefix: "bloodtrail-ctrl-seeded-call-fixed-",
+    path: "examples/seeded-invalid-calls.ts",
+    plant: (text) =>
       text.replace(
         "  const call1 = await (sdk.sensitiveResourceViewed as Function)({\n",
         "  const call1 = await (sdk.sensitiveResourceViewed as Function)({\n    actor: syntheticHumanActor,\n",
       ),
-    );
-    await assertGateFailsAt(kitCopy, {
-      expectInMessage: "seeded invalid call 1 output mismatch",
-      defect: "a seeded invalid call that no longer fails",
-    });
+    expectCondition: "seeded invalid call 1 output mismatch",
+    _disabledChecks,
   });
-  return "seeded invalid call 1 given the actor it omits";
+  assert.equal(measurements.length, 1, "seeded-call control must record one measured plant");
+  return completeControl(control, measurements);
 }
 
-async function checkRemovedExportControl(kitDir) {
+async function checkRemovedExportControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("createHttpAuditSink removed from the packed entry point's runtime exports");
+  const measurements = [];
   await withKitCopy(kitDir, "bloodtrail-ctrl-removed-export-", async (kitCopy) => {
     // The declarations still name the export, so only running the packed entry point can catch it.
-    await rewriteKitTarball(kitCopy, "node", "dist/index.js", (text) =>
-      text.replace('export { createHttpAuditSink } from "./http-audit-sink.js";\n', ""),
+    await rewriteMeasuredKitTarball(
+      { kitCopy, measurements },
+      "node",
+      "dist/index.js",
+      (text) => text.replace('export { createHttpAuditSink } from "./http-audit-sink.js";\n', ""),
     );
-    await assertGateFailsAt(kitCopy, {
-      expectInMessage: "does not provide an export named 'createHttpAuditSink'",
-      defect: "an export removed from the packed entry point",
-    });
+    // The example service is the first program the gate runs that imports this export, so the loopback
+    // exchange is the check that meets the omission.
+    await captureGateFailure(control, kitCopy, { _disabledChecks });
   });
-  return "createHttpAuditSink removed from the packed entry point's runtime exports";
+  assert.equal(measurements.length, 1, "removed export control must record one measured tarball plant");
+  return completeControl(control, measurements);
+}
+
+const CONTROL_RUNNERS = Object.freeze([
+  ["missing core tarball", ({ kitDir, identity, _disabledChecks }) => checkMissingCoreControl(kitDir, identity, { _disabledChecks })],
+  ["wrong override", ({ kitDir, _disabledChecks }) => checkBrokenOverrideControl(kitDir, { _disabledChecks })],
+  ["tampered identity", ({ kitDir, _disabledChecks }) => checkTamperedIdentityControl(kitDir, { _disabledChecks })],
+  ["renamed doc option (across all TypeScript matrix legs)", ({ kitDir, _disabledChecks }) => checkBrokenDocControl(kitDir, { _disabledChecks })],
+  ["planted duplicate core", ({ kitDir, _disabledChecks }) => checkDuplicateCoreControl(kitDir, { _disabledChecks })],
+  ["missing kit item", ({ kitDir, _disabledChecks }) => checkMissingItemControl(kitDir, { _disabledChecks })],
+  ["dirty tree build attempt", ({ _disabledChecks }) => checkDirtyTreeControl({ _disabledChecks })],
+  ["failure-path program type error (across all TypeScript matrix legs)", ({ kitDir, _disabledChecks }) => checkFailurePathTypeErrorControl(kitDir, { _disabledChecks })],
+  ["pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)", ({ kitDir, _disabledChecks }) => checkPnpmFieldOnlyOverrideControl(kitDir, { _disabledChecks })],
+  ["ignored pnpm setting reported (pnpm 11 and 12 legs)", ({ kitDir, _disabledChecks }) => checkIgnoredPnpmSettingControl(kitDir, { _disabledChecks })],
+  ["installer docs missing the supported pnpm majors", ({ kitDir, _disabledChecks }) => checkInstallerDocsControl(kitDir, { _disabledChecks })],
+  ["builder packing the build output on disk (with a null control)", ({ _disabledChecks }) => checkPackedBuildOutputControl({ _disabledChecks })],
+  ["document changed after the build", ({ kitDir, _disabledChecks }) => checkChangedDocumentControl(kitDir, { _disabledChecks })],
+  ["evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block", ({ kitDir, _disabledChecks }) => checkGuideIntegrityCommandControl(kitDir, { _disabledChecks })],
+  ["sink rewriting service.name between the SDK and the receiver", ({ kitDir, _disabledChecks }) => checkRewritingSinkControl(kitDir, { _disabledChecks })],
+  ["receiver answering a duplicate with 400", ({ kitDir, _disabledChecks }) => checkDuplicateRejectedControl(kitDir, { _disabledChecks })],
+  ["receiver rethrowing after replying", ({ kitDir, _disabledChecks }) => checkRethrowingReceiverControl(kitDir, { _disabledChecks })],
+  ["mid-body stall mapped to malformed acknowledgment", ({ kitDir, _disabledChecks }) => checkMidBodyStallControl(kitDir, { _disabledChecks })],
+  ["facilitator answer key content copied into the kit", ({ kitDir, _disabledChecks }) => checkAnswerKeyInKitControl(kitDir, { _disabledChecks })],
+  ["invented API calls named in a kit document (op.commit(), handle.commit())", ({ kitDir, _disabledChecks }) => checkInventedApiControl(kitDir, { _disabledChecks })],
+  ["retries listed as supported in the supported-versus-planned table", ({ kitDir, _disabledChecks }) => checkSupportedRetryRowControl(kitDir, { _disabledChecks })],
+  ["429 classified as a permanent failure in the packed Node binding", ({ kitDir, _disabledChecks }) => checkMisclassifiedStatusControl(kitDir, { _disabledChecks })],
+  ["first-event example whose sink rejects the event", ({ kitDir, _disabledChecks }) => checkBrokenFirstEventControl(kitDir, { _disabledChecks })],
+  ["seeded invalid call 1 given the actor it omits", ({ kitDir, _disabledChecks }) => checkSeededCallNoLongerFailsControl(kitDir, { _disabledChecks })],
+  ["createHttpAuditSink removed from the packed entry point's runtime exports", ({ kitDir, _disabledChecks }) => checkRemovedExportControl(kitDir, { _disabledChecks })],
+]);
+
+const CONTROL_RUNNERS_BY_LABEL = new Map(CONTROL_RUNNERS);
+assert.equal(CONTROL_RUNNERS_BY_LABEL.size, CONTROL_DEFINITIONS.length, "every control must have one runner");
+
+function selectControlRunners(labels) {
+  assert.ok(Array.isArray(labels), "_controlLabels must be an array of declared control labels");
+  const selectedLabels = new Set(labels);
+  assert.equal(selectedLabels.size, labels.length, "_controlLabels must not repeat a control label");
+  for (const label of selectedLabels) {
+    assert.ok(CONTROL_RUNNERS_BY_LABEL.has(label), `control runner must be declared: ${label}`);
+  }
+  return CONTROL_DEFINITIONS.filter(({ label }) => selectedLabels.has(label)).map((control) => ({
+    control,
+    run: CONTROL_RUNNERS_BY_LABEL.get(control.label),
+  }));
+}
+
+async function runControls(runners, kitDir, identity, _disabledChecks = []) {
+  const applied = [];
+  for (const { run } of runners) {
+    applied.push(await run({ kitDir, identity, _disabledChecks }));
+  }
+  return applied;
+}
+
+function describeSweepFailure(control, failure) {
+  const failedIdentity = failure.checkIdentity || failure.actual;
+  if (KIT_GATE_CHECK_IDENTITIES.includes(failedIdentity) && failedIdentity !== control.identity) {
+    return `the gate failed at ${failedIdentity}`;
+  }
+  return `harness assertion fired: ${failure.message.replace(/\s+/g, " ").trim()}`;
+}
+
+async function sweepControls(runners, kitDir, identity) {
+  const passingControls = [];
+  for (const { control, run } of runners) {
+    const failure = await captureFailure(() => run({ kitDir, identity, _disabledChecks: [control.identity] }));
+    const outcome = failure ? describeSweepFailure(control, failure) : "the gate passed";
+    process.stdout.write(`sweep ${control.label} | disabled ${control.identity} | ${outcome}\n`);
+    if (!failure) passingControls.push(control.label);
+  }
+  assert.deepEqual(passingControls, [], `controls passed when their named check was disabled: ${passingControls.join(", ")}`);
 }
 
 // Null control: an unmodified copy of the base kit, checked as given with --kit-dir through an external
@@ -700,6 +960,75 @@ async function checkBuilderSymlinkProof() {
     await rm(destinationParent, { recursive: true, force: true });
   }
   return "a builder invoked through an external symlink produced a verified verification kit";
+}
+
+async function checkControlInfrastructureProof(kitDir) {
+  assert.equal(CONTROL_DEFINITIONS.length, 25, "the control table must declare every expected control");
+  assert.throws(
+    () => validateControlDefinitions([...CONTROL_DEFINITIONS, { label: "unknown identity proof", identity: "not-a-kit-gate-check" }]),
+    /unknown kit gate identity: not-a-kit-gate-check/,
+  );
+  await withKitCopy(kitDir, "bloodtrail-ctrl-no-change-", async (kitCopy) => {
+    const failure = await captureFailure(() =>
+      rewriteMeasuredKitFile({ kitCopy, measurements: [] }, "docs/privacy.md", (text) => text, { reseal: false }),
+    );
+    assert.ok(failure, "a plant that changes no bytes must fail the harness");
+    assert.match(failure.message, /measured plant must change docs\/privacy\.md/);
+  });
+  return "control definitions reject unknown identities and a no-change plant fails the harness";
+}
+
+async function checkIdentityAndDisableSeamProof(kitDir) {
+  await withKitCopy(kitDir, "bloodtrail-ctrl-identity-tag-", async (kitCopy) => {
+    const identityPath = resolve(kitCopy, IDENTITY_FILE);
+    const identity = JSON.parse(await readFile(identityPath, "utf8"));
+    identity.kit_digest = "0".repeat(64);
+    await writeFile(identityPath, JSON.stringify(identity, null, 2) + "\n", "utf8");
+    const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
+    assert.ok(failure, "a tampered identity must fail the gate");
+    assert.equal(failure.checkIdentity, "kit-identity", "a kit identity failure must carry its stable identity");
+    assert.ok(failure.cause, "a tagged kit gate failure must retain its original cause");
+    assert.ok(failure.message.includes("kit gate check kit-identity failed"), `a tagged failure must name its check: ${failure.message}`);
+    assert.ok(KIT_GATE_CHECK_IDENTITIES.includes(failure.checkIdentity), "a tagged failure must carry a known identity");
+  });
+
+  const disabled = await checkEvaluationKit({ kitDir, _disabledChecks: ["answer-key-exclusion"] });
+  assert.ok(!disabled.checkIdentities.includes("answer-key-exclusion"), "a disabled check must not be recorded");
+  assert.ok(!disabled.summary.includes(clauseForCheck({ identity: "answer-key-exclusion" })), "a disabled check must not claim its clause");
+  let duplicateCoreHookRan = false;
+  const withoutDuplicateProbe = await checkEvaluationKit({
+    kitDir,
+    _disabledChecks: ["npm-single-core-copy"],
+    _plantDuplicateCore: async () => {
+      duplicateCoreHookRan = true;
+    },
+  });
+  assert.ok(!duplicateCoreHookRan, "a disabled duplicate-core check must not run its plant hook");
+  assert.ok(
+    !withoutDuplicateProbe.checkIdentities.includes("npm-single-core-copy"),
+    "a disabled duplicate-core check must not be recorded",
+  );
+  assert.ok(
+    !withoutDuplicateProbe.summary.includes(clauseForCheck({ identity: "npm-single-core-copy" })),
+    "a disabled duplicate-core check must not claim its clause",
+  );
+  const allDisabled = await checkEvaluationKit({ kitDir, _disabledChecks: KIT_GATE_CHECK_IDENTITIES });
+  assert.deepEqual(allDisabled.checkIdentities, [], "all disabled checks must not execute or be recorded");
+  assert.equal(
+    allDisabled.summary,
+    `${VERIFICATION_SUMMARY_PREFIX}${KIT_DIR_NOTE}\n`,
+    "an all-disabled existing-kit run must report only that the kit was checked as given",
+  );
+  await assert.rejects(
+    () => checkEvaluationKit({ kitDir, _disabledChecks: ["not-a-kit-gate-check"] }),
+    /unknown kit gate check identity: not-a-kit-gate-check/,
+  );
+  const gatePath = resolve(SCRIPT_DIRECTORY, "check-evaluation-kit.mjs");
+  const cli = spawnSync(process.execPath, [gatePath, "--disabled-check", "answer-key-exclusion"], { encoding: "utf8" });
+  assert.notEqual(cli.status, 0, "the kit gate command line must reject a disabled-check option");
+  assert.ok(cli.stderr.includes("unknown or incomplete kit gate option"), `the kit gate CLI must reject unknown options: ${cli.stderr}`);
+
+  return "tagged failures retain their causes, and the JavaScript-only disabled-check seam skips and does not claim checks or their duplicate-core plant hook";
 }
 
 async function checkSummaryCompositionProof(kitDir) {
@@ -743,51 +1072,38 @@ async function checkSummaryCompositionProof(kitDir) {
   return "complete build-mode and --kit-dir identities were recorded, and each identity's removed composition lost only its clause";
 }
 
-export async function checkEvaluationKitControls() {
+export async function checkEvaluationKitControls({ _controlLabels = EXPECTED_CONTROLS, sweep = false } = {}) {
   await assertOutsideRepository(tmpdir());
+  const runners = selectControlRunners(_controlLabels);
 
-  // Build a base verification kit to derive controls from
+  // Build a base verification kit to derive controls from.
   const { kitDir, identity, removeKit } = await buildEvaluationKit({ mode: "verification" });
 
   try {
+    if (sweep) {
+      await sweepControls(runners, kitDir, identity);
+      return;
+    }
+
+    const controlInfrastructureProof = await checkControlInfrastructureProof(kitDir);
+    const identityAndDisableSeamProof = await checkIdentityAndDisableSeamProof(kitDir);
     const summaryCompositionProof = await checkSummaryCompositionProof(kitDir);
     const builderSymlinkProof = await checkBuilderSymlinkProof();
     const gateSymlinkProof = await checkKitDirNullControl(kitDir);
-    const applied = [];
-    applied.push(
-      await checkMissingCoreControl(kitDir, identity),
-      await checkBrokenOverrideControl(kitDir),
-      await checkTamperedIdentityControl(kitDir),
-      await checkBrokenDocControl(kitDir),
-      await checkDuplicateCoreControl(kitDir),
-      await checkMissingItemControl(kitDir),
-      await checkDirtyTreeControl(),
-      await checkFailurePathTypeErrorControl(kitDir),
-      await checkPnpmFieldOnlyOverrideControl(kitDir),
-      await checkIgnoredPnpmSettingControl(kitDir),
-      await checkInstallerDocsControl(kitDir),
-      await checkPackedBuildOutputControl(),
-      await checkChangedDocumentControl(kitDir),
-      await checkGuideIntegrityCommandControl(kitDir),
-      await checkRewritingSinkControl(kitDir),
-      await checkDuplicateRejectedControl(kitDir),
-      await checkRethrowingReceiverControl(kitDir),
-      await checkMidBodyStallControl(kitDir),
-      await checkAnswerKeyInKitControl(kitDir),
-      await checkInventedApiControl(kitDir),
-      await checkSupportedRetryRowControl(kitDir),
-      await checkMisclassifiedStatusControl(kitDir),
-      await checkBrokenFirstEventControl(kitDir),
-      await checkSeededCallNoLongerFailsControl(kitDir),
-      await checkRemovedExportControl(kitDir),
+    const applied = await runControls(runners, kitDir, identity);
+    assert.deepEqual(
+      applied.map(({ label }) => label),
+      runners.map(({ control }) => control.label),
+      "control harness must apply every selected planted defect exactly once",
     );
-    assert.deepEqual(applied, EXPECTED_CONTROLS, "control harness must apply every planted defect exactly once");
+    const measuredPlants = applied.reduce((count, control) => count + control.measuredPlants, 0);
+    const declaredControls = applied.map(({ label, identity: checkIdentity }) => `${label} [${checkIdentity}]`).join(", ");
 
     process.stdout.write(
-      `evaluation kit summary and symlink proofs passed: ${summaryCompositionProof}; ${builderSymlinkProof}; ${gateSymlinkProof}\n`,
+      `evaluation kit summary and symlink proofs passed: ${controlInfrastructureProof}; ${identityAndDisableSeamProof}; ${summaryCompositionProof}; ${builderSymlinkProof}; ${gateSymlinkProof}\n`,
     );
     process.stdout.write(
-      `evaluation kit negative controls passed: ${applied.length} of ${EXPECTED_CONTROLS.length} planted defects applied, and each failed closed: ${applied.join(", ")}\n`,
+      `evaluation kit negative controls passed: ${measuredPlants} measured plants across ${applied.length} of ${EXPECTED_CONTROLS.length} controls, and each failed closed at its declared identity: ${declaredControls}\n`,
     );
   } finally {
     await removeKit();
@@ -795,5 +1111,8 @@ export async function checkEvaluationKitControls() {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(await realpath(process.argv[1])).href) {
-  await checkEvaluationKitControls();
+  const args = process.argv.slice(2);
+  const sweep = args.includes("--sweep");
+  assert.deepEqual(args, sweep ? ["--sweep"] : [], `unknown controls harness option: ${args.join(" ")}`);
+  await checkEvaluationKitControls({ sweep });
 }
