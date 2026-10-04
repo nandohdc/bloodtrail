@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   CHECKSUM_LIST_FILE,
@@ -14,14 +14,10 @@ import {
   writeKitDigest,
 } from "./evaluation-kit-checksums.mjs";
 import { PNPM_SETTINGS_FILE, createPnpmSettings } from "./evaluation-kit-installers.mjs";
-import { KIT_PACKAGES, copyTrackedSources } from "./evaluation-kit-source-copy.mjs";
+import { KIT_PACKAGES, assertOutsideRepository, copyTrackedSources } from "./evaluation-kit-source-copy.mjs";
+// Re-exported under the same name so existing imports of the builder keep working, the controls' included.
+export { assertOutsideRepository };
 import { assert, byCodePoint, readJson, repositoryRoot, runChecked } from "./verification-helpers.mjs";
-
-export async function assertOutsideRepository(directory) {
-  const path = relative(await realpath(repositoryRoot), await realpath(directory));
-  const outside = path === ".." || path.startsWith(`..${sep}`) || isAbsolute(path);
-  assert(outside, `temporary directory ${directory} is inside the repository tree`);
-}
 
 // npm's tarball name for a package manifest, so no package version is ever hard-coded here.
 function artifactFilename(manifest) {
@@ -187,8 +183,8 @@ export async function verifyKitIdentity(kitDir) {
   return { verified: true, identity, kitDigest };
 }
 
-function resolveKitGitState(mode, _gitStatus = null) {
-  const gitStatus = _gitStatus ?? runChecked("git", ["status", "--porcelain"], { cwd: repositoryRoot, capture: true }).trim();
+function resolveKitGitState(mode) {
+  const gitStatus = runChecked("git", ["status", "--porcelain"], { cwd: repositoryRoot, capture: true }).trim();
   const isClean = gitStatus.length === 0;
 
   if (mode === "distributable" && !isClean) {
@@ -301,12 +297,11 @@ export async function buildEvaluationKit({
   mode = "distributable",
   createArchive = true,
   sourceRoot = repositoryRoot,
-  _gitStatus = null,
 } = {}) {
   await assertOutsideRepository(tmpdir());
   assert(mode !== "distributable" || sourceRoot === repositoryRoot, "a distributable kit is built from the identity commit only");
 
-  const { commit, distributable } = resolveKitGitState(mode, _gitStatus);
+  const { commit, distributable } = resolveKitGitState(mode);
 
   const parentTemp = destDir ? null : await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-build-"));
   const kitDir = destDir ? resolve(destDir) : resolve(parentTemp, "evaluation-kit");

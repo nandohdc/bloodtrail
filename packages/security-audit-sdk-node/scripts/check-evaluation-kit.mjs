@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { copyFile, cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { appendFile, copyFile, cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import process from "node:process";
@@ -11,7 +11,7 @@ import {
   extractAnswerKeyFixBlocks,
   verifySeededCallsOutput,
 } from "./evaluation-kit-answer-key.mjs";
-import { verifyUnpackedKitIntegrity } from "./evaluation-kit-checksums.mjs";
+import { CHECKSUM_LIST_FILE, IDENTITY_FILE, parseChecksumList, sha256Hex, verifyUnpackedKitIntegrity } from "./evaluation-kit-checksums.mjs";
 import { startLoopbackServer, verifyHttpExchange } from "./evaluation-kit-delivery-checks.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
 import { assertKitDocsClaimOnlyWhatShips } from "./evaluation-kit-doc-claims.mjs";
@@ -23,7 +23,13 @@ import {
   runInstaller,
   verifyPnpmInstalls,
 } from "./evaluation-kit-installers.mjs";
-import { assertSameIdentityDigests, verifyStaleBuildOutputExcluded } from "./evaluation-kit-source-copy.mjs";
+import {
+  KIT_PACKAGES,
+  assertSameIdentityDigests,
+  createKitTreeClone,
+  runCloneBuilder,
+  verifyStaleBuildOutputExcluded,
+} from "./evaluation-kit-source-copy.mjs";
 import { assert, packageRoot, repositoryRoot, runChecked } from "./verification-helpers.mjs";
 
 async function buildVerificationIdentity(sourceRoot) {
@@ -162,6 +168,147 @@ export async function verifyBuiltKitIdentity(kitDir) {
   return verified;
 }
 
+// The live repository's porcelain status, captured before and after the clone checks so the gate can
+// prove it never wrote into the live tree.
+function liveGitStatus() {
+  return runChecked("git", ["status", "--porcelain"], { cwd: repositoryRoot, capture: true });
+}
+
+// Builds a distributable kit in the clone, with the clone's own builder, into a fresh temporary
+// destination. Returns the builder's parsed output plus a remover for the destination tree.
+async function buildDistributableKitInClone(cloneRoot) {
+  const parentDir = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-distributable-"));
+  const destDir = resolve(parentDir, "evaluation-kit");
+  try {
+    const built = runCloneBuilder(cloneRoot, destDir);
+    return { ...built, remove: () => rm(parentDir, { recursive: true, force: true }) };
+  } catch (error) {
+    await rm(parentDir, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+// Reads a kit's checksum list through the checksum module's own strict one-line parser.
+async function checksumEntries(kitDir) {
+  const content = await readFile(resolve(kitDir, CHECKSUM_LIST_FILE), "utf8");
+  return parseChecksumList(content);
+}
+
+// The two checksum lists must agree on every line except the identity line, whose values the clone's
+// different commit and distributable flag legitimately change. A missing, extra, or changed path names
+// that path.
+async function assertSameChecksumListExceptIdentity(distributableKitDir, verificationKitDir) {
+  const verification = await checksumEntries(verificationKitDir);
+  const distributable = await checksumEntries(distributableKitDir);
+  verification.delete(IDENTITY_FILE);
+  distributable.delete(IDENTITY_FILE);
+  for (const [path, digest] of verification) {
+    assert(distributable.has(path), `distributable kit checksum list is missing ${path}`);
+    assert(
+      distributable.get(path) === digest,
+      `distributable kit checksum entry changed for ${path}: expected ${digest}, got ${distributable.get(path)}`,
+    );
+  }
+  for (const path of distributable.keys()) {
+    assert(verification.has(path), `distributable kit checksum list has an extra entry for ${path}`);
+  }
+}
+
+// Builds a distributable kit in the clone and proves it carries the same artifacts, digests, and checksum
+// list (apart from its identity file) as the verification kit, plus the archive the builder printed.
+export async function checkDistributableKitMatch({ cloneRoot, verificationKitDir, verificationIdentity }) {
+  const built = await buildDistributableKitInClone(cloneRoot);
+  try {
+    const verified = await verifyKitIdentity(built.kitDir);
+    assert(verified.identity.distributable === true, "the distributable kit must be marked distributable");
+    const headCommit = runChecked("git", ["rev-parse", "HEAD"], { cwd: cloneRoot, capture: true }).trim();
+    assert(
+      verified.identity.commit === headCommit,
+      `distributable kit identity commit must be the clone's HEAD: expected ${headCommit}, got ${verified.identity.commit}`,
+    );
+    const expectedArtifacts = verificationIdentity.artifacts.map(({ filename, sha256 }) => ({ filename, sha256 }));
+    const builtArtifacts = verified.identity.artifacts.map(({ filename, sha256 }) => ({ filename, sha256 }));
+    assert(
+      JSON.stringify(builtArtifacts) === JSON.stringify(expectedArtifacts),
+      `distributable kit artifacts differ from the verification kit's: expected ${JSON.stringify(expectedArtifacts)}, got ${JSON.stringify(builtArtifacts)}`,
+    );
+    assert(
+      verified.identity.package_set_digest === verificationIdentity.package_set_digest,
+      `distributable kit package_set_digest differs from the verification kit's: expected ${verificationIdentity.package_set_digest}, got ${verified.identity.package_set_digest}`,
+    );
+    assert(
+      verified.identity.manifest_digest === verificationIdentity.manifest_digest,
+      `distributable kit manifest_digest differs from the verification kit's: expected ${verificationIdentity.manifest_digest}, got ${verified.identity.manifest_digest}`,
+    );
+    await assertSameChecksumListExceptIdentity(built.kitDir, verificationKitDir);
+    assert(existsSync(built.archivePath), `distributable kit archive missing: ${built.archivePath}`);
+    const archiveSha256 = sha256Hex(await readFile(built.archivePath));
+    assert(
+      archiveSha256 === built.archiveDigest,
+      `distributable kit archive digest differs from the builder's: expected ${built.archiveDigest}, got ${archiveSha256}`,
+    );
+  } finally {
+    await built.remove();
+  }
+}
+
+const DIRTY_TREE_PROBE_PATH = `${KIT_PACKAGES.node}/docs/privacy.md`;
+
+// After the distributable build, appends one line to a tracked kit file in the clone, without committing,
+// and requires the clone's builder to refuse a second distributable build: a nonzero exit whose output
+// names the changed path, and no kit directory at the destination.
+export async function checkDirtyTreeRefusal({ cloneRoot }) {
+  const probePath = resolve(cloneRoot, DIRTY_TREE_PROBE_PATH);
+  await appendFile(probePath, "kit gate: dirty-tree probe\n", "utf8");
+  const parentDir = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-dirty-refusal-"));
+  const destDir = resolve(parentDir, "evaluation-kit");
+  try {
+    let built = null;
+    let builderFailure = null;
+    try {
+      built = runCloneBuilder(cloneRoot, destDir);
+    } catch (error) {
+      builderFailure = error;
+    }
+    assert(built === null, "a dirty clone produced a distributable kit");
+    assert(builderFailure !== null, "a dirty clone's distributable build must be refused");
+    const output = builderFailure.output;
+    assert(typeof output === "string", `dirty-tree refusal must carry its builder output: ${builderFailure.message}`);
+    assert(
+      output.includes("cannot build distributable evaluation kit from dirty git tree"),
+      `dirty-tree refusal must come from the builder: ${output}`,
+    );
+    assert(
+      output.includes(DIRTY_TREE_PROBE_PATH),
+      `dirty-tree refusal must name the changed path ${DIRTY_TREE_PROBE_PATH}:\n${output}`,
+    );
+    assert(!existsSync(destDir), `dirty-tree refusal must produce no kit directory at ${destDir}`);
+  } finally {
+    await rm(parentDir, { recursive: true, force: true });
+  }
+}
+
+// Runs the two clone checks against one disposable clone. The clone is removed in a finally, and the live
+// repository's porcelain status is compared before and after only once the try block has completed, so a
+// check failure always propagates unchanged.
+async function runCloneChecks(completedChecks, disabledChecks, kitDir, identityMaterial) {
+  const statusBefore = liveGitStatus();
+  const { cloneRoot, remove } = await createKitTreeClone();
+  try {
+    await runCheck(completedChecks, disabledChecks, "distributable-kit-match", () =>
+      checkDistributableKitMatch({ cloneRoot, verificationKitDir: kitDir, verificationIdentity: identityMaterial }),
+    );
+    await runCheck(completedChecks, disabledChecks, "dirty-tree-refusal", () => checkDirtyTreeRefusal({ cloneRoot }));
+  } finally {
+    await remove();
+  }
+  const statusAfter = liveGitStatus();
+  assert(
+    statusAfter === statusBefore,
+    `the live repository changed while the kit gate ran its clone checks: before ${JSON.stringify(statusBefore)}, after ${JSON.stringify(statusAfter)}`,
+  );
+}
+
 const TYPESCRIPT_MATRIX = "TypeScript 5.9.2, 6.0.3, and 7.0.2";
 
 function codeSpans(commands) {
@@ -194,6 +341,12 @@ export const KIT_GATE_CHECKS = Object.freeze({
   }),
   "reproducible-identity": Object.freeze({
     clause: () => "verification-kit identity reproduced after stale build output and untracked sources were planted",
+  }),
+  "distributable-kit-match": Object.freeze({
+    clause: () => "distributable kit built from a disposable clean clone of the tree under test, with the same artifacts and checksum list as the verification kit apart from its identity file",
+  }),
+  "dirty-tree-refusal": Object.freeze({
+    clause: () => "distributable build refused in that clone once it held an uncommitted change",
   }),
   "npm-installation": Object.freeze({
     clause: () => "kit installed outside any workspace with npm and no ignored setting",
@@ -340,6 +493,13 @@ export async function checkEvaluationKit({
         await checkReproducibleIdentity(identityMaterial);
         return undefined;
       });
+    }
+
+    // 2a. Build a distributable kit from a disposable clean clone of the tree under test and prove it
+    // matches the verification kit; the same clone then proves a real dirty tree is refused. The live
+    // repository must read the same before and after.
+    if (buildsOwnKit) {
+      await runCloneChecks(completedChecks, disabledChecks, kitDir, identityMaterial);
     }
 
     // 3. Copy and install the kit with npm outside any workspace root.
