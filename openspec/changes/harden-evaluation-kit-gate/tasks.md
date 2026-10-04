@@ -11,7 +11,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 2. #717 — Run planted-defect controls on every supported Node version
 
-- [ ] 2.1 Add the kit controls to the Node binding's `test` script and prove their summary appears on every
+- [x] 2.1 Add the kit controls to the Node binding's `test` script and prove their summary appears on every
   supported Node version. Do not edit `.github/workflows/ci.yml`.
 
 ## 3. #703 — Isolate every planted-defect control
