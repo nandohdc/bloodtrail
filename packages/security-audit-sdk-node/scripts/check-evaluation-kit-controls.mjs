@@ -8,9 +8,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   assertOutsideRepository,
   buildEvaluationKit,
-  computeKitDigest,
   computePackageSetDigest,
   packDirectory,
+  sealKitChecksumMaterial,
   sealKitIdentity,
   verifyKitIdentity,
 } from "./build-evaluation-kit.mjs";
@@ -21,11 +21,12 @@ import {
   checkEvaluationKit,
   composeVerificationSummary,
   runKitGateCheck,
+  verifyBuiltKitIdentity,
   installGatePrograms,
   typescriptLegs,
   writeConsumerTsconfig,
 } from "./check-evaluation-kit.mjs";
-import { CHECKSUM_LIST_FILE, IDENTITY_FILE, runChecksumListCheck, sha256Hex } from "./evaluation-kit-checksums.mjs";
+import { CHECKSUM_LIST_FILE, IDENTITY_FILE, KIT_DIGEST_FILE, runChecksumListCheck, runKitDigestCheck, sha256Hex } from "./evaluation-kit-checksums.mjs";
 import { ANSWER_KEY_PATH } from "./evaluation-kit-answer-key.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
 import {
@@ -35,7 +36,7 @@ import {
   verifyPnpmInstall,
 } from "./evaluation-kit-installers.mjs";
 import { KIT_PACKAGES, verifyStaleBuildOutputExcluded } from "./evaluation-kit-source-copy.mjs";
-import { runChecked } from "./verification-helpers.mjs";
+import { byCodePoint, runChecked } from "./verification-helpers.mjs";
 
 // The dirty-tree builder refusal is not a kit-gate check until #705. Keeping it local prevents a
 // builder-only refusal from entering KIT_GATE_CHECKS or a verification summary.
@@ -47,6 +48,9 @@ const CONTROL_DEFINITIONS = Object.freeze([
   { label: "missing core tarball", identity: "kit-identity" },
   { label: "wrong override", identity: "npm-installation" },
   { label: "tampered identity", identity: "kit-identity" },
+  { label: "kit commit changed after the build", identity: "kit-identity" },
+  { label: "kit distributable flag flipped after the build", identity: "kit-identity" },
+  { label: "identity in format 2 or with no format version", identity: "kit-identity" },
   { label: "renamed doc option (across all TypeScript matrix legs)", identity: "kit-source-typecheck" },
   { label: "planted duplicate core", identity: "npm-single-core-copy" },
   { label: "missing kit item", identity: "kit-identity" },
@@ -222,6 +226,22 @@ async function resealKit(kitCopy) {
   await sealKitIdentity(kitCopy, { commit, distributable, artifacts });
 }
 
+// All format-3 identity plants change the identity first, then optionally reseal only the material their
+// scenario permits. A resealed identity must also change the facilitator-visible kit digest.
+async function rewriteIdentityPlant({ kitCopy, measurements }, rewrite, reseal = null) {
+  const kitDigestBefore = await readFile(resolve(kitCopy, KIT_DIGEST_FILE), "utf8");
+  await rewriteMeasuredKitFile({ kitCopy, measurements }, IDENTITY_FILE, (text) => {
+    const identity = JSON.parse(text);
+    rewrite(identity);
+    return JSON.stringify(identity, null, 2) + "\n";
+  }, { reseal: false });
+  if (reseal) {
+    await reseal(kitCopy);
+    const kitDigestAfter = await readFile(resolve(kitCopy, KIT_DIGEST_FILE), "utf8");
+    assert.notEqual(kitDigestAfter, kitDigestBefore, "resealing an identity plant must change kit-digest.sha256");
+  }
+}
+
 function rewriteManifest(text, mutate) {
   const manifest = JSON.parse(text);
   mutate(manifest);
@@ -302,6 +322,92 @@ async function checkTamperedIdentityControl(kitDir, { _disabledChecks = [] } = {
     );
     assert.equal(measurements.length, 1, "tampered identity control must record one measured plant");
   });
+  return completeControl(control, measurements);
+}
+
+function differentCommit(commit) {
+  assert(/^[0-9a-f]{40}$/i.test(commit), "the recorded commit must be a well-formed SHA");
+  const last = commit.slice(-1).toLowerCase();
+  return `${commit.slice(0, -1)}${last === "0" ? "1" : "0"}`;
+}
+
+const TREE_BOUND_IDENTITY_CONTROLS = Object.freeze([
+  {
+    label: "kit commit changed after the build",
+    rewrite: (identity) => (identity.commit = differentCommit(identity.commit)),
+    directCondition: "identity.json commit must match the tree the gate built from",
+  },
+  {
+    label: "kit distributable flag flipped after the build",
+    rewrite(identity) {
+      assert.equal(identity.distributable, false, "the built verification kit must start non-distributable");
+      identity.distributable = true;
+    },
+    directCondition: "a kit the gate builds must be marked non-distributable",
+  },
+]);
+
+async function checkTreeBoundIdentityControl(kitDir, definition, { _disabledChecks = [] } = {}) {
+  const control = controlFor(definition.label);
+  const measurements = [];
+  await withKitCopy(kitDir, "bloodtrail-ctrl-identity-unresealed-", async (kitCopy) => {
+    await rewriteIdentityPlant({ kitCopy, measurements }, definition.rewrite);
+    const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
+    assert.ok(
+      failure.cause.message.includes(`${CHECKSUM_LIST_FILE}: ${IDENTITY_FILE} changed after the build`),
+      `${control.label} must fail the changed identity checksum condition: ${failure.cause.message}`,
+    );
+  });
+  await withKitCopy(kitDir, "bloodtrail-ctrl-identity-resealed-", async (kitCopy) => {
+    await rewriteIdentityPlant({ kitCopy, measurements }, definition.rewrite, resealKit);
+    const failure = await captureDirectCheckFailure(control, () => verifyBuiltKitIdentity(kitCopy), _disabledChecks);
+    assert.ok(
+      failure.cause.message.includes(definition.directCondition),
+      `${control.label} must fail its tree-bound identity condition: ${failure.cause.message}`,
+    );
+  });
+  assert.equal(measurements.length, 2, `${control.label} must record two measured plants`);
+  return completeControl(control, measurements);
+}
+
+function formatTwoIdentity(identity, checksumList) {
+  const formatTwoChecksumList = checksumList.split("\n").filter((line) => !line.endsWith(`  ${IDENTITY_FILE}`)).join("\n");
+  const checksumListDigest = sha256Hex(formatTwoChecksumList);
+  return {
+    ...identity,
+    identity_format_version: 2,
+    checksum_list: { path: CHECKSUM_LIST_FILE, sha256: checksumListDigest },
+    kit_digest: sha256Hex(`${identity.package_set_digest}\n${identity.manifest_digest}\n${checksumListDigest}\n`),
+  };
+}
+
+const OLDER_IDENTITY_FORMAT_PLANTS = Object.freeze([
+  {
+    prefix: "bloodtrail-ctrl-format-two-identity-",
+    refusal: "format-2 identity must be refused by name",
+    rewrite: (identity, checksumList) => Object.assign(identity, formatTwoIdentity(identity, checksumList)),
+    expectedMessage: "identity.json declares format 2, which is refused",
+  },
+  {
+    prefix: "bloodtrail-ctrl-versionless-identity-",
+    refusal: "versionless identity must be refused as kit v1 by name",
+    rewrite: (identity) => delete identity.identity_format_version,
+    expectedMessage: "identity.json is a kit v1 identity and is refused",
+  },
+]);
+
+async function checkOlderIdentityFormatControl(kitDir, { _disabledChecks = [] } = {}) {
+  const control = controlFor("identity in format 2 or with no format version");
+  const measurements = [];
+  for (const plant of OLDER_IDENTITY_FORMAT_PLANTS) {
+    await withKitCopy(kitDir, plant.prefix, async (kitCopy) => {
+      const checksumList = await readFile(resolve(kitCopy, CHECKSUM_LIST_FILE), "utf8");
+      await rewriteIdentityPlant({ kitCopy, measurements }, (identity) => plant.rewrite(identity, checksumList), sealKitChecksumMaterial);
+      const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
+      assert.ok(failure.cause.message.includes(plant.expectedMessage), `${plant.refusal}: ${failure.cause.message}`);
+    });
+  }
+  assert.equal(measurements.length, 2, "older identity format control must record two measured plants");
   return completeControl(control, measurements);
 }
 
@@ -516,6 +622,16 @@ async function checkInstallerDocsControl(kitDir, { _disabledChecks = [] } = {}) 
   return completeControl(control, measurements);
 }
 
+function formatThreeChecksumMaterial(identity) {
+  const entries = identity.artifacts.map(({ filename, sha256 }) => ({ path: filename, sha256 }));
+  entries.push(
+    { path: "package.json", sha256: identity.manifest_digest },
+    { path: IDENTITY_FILE, sha256: sha256Hex(JSON.stringify(identity, null, 2) + "\n") },
+  );
+  entries.sort((left, right) => byCodePoint(left.path, right.path));
+  return entries.map(({ path, sha256 }) => `${sha256}  ${path}\n`).join("");
+}
+
 // The builder before #653: it packs whatever build output is on disk under `root` and never rebuilds it.
 async function packOnDiskBuildOutput(root) {
   const packDir = await mkdtemp(resolve(tmpdir(), "bloodtrail-ctrl-on-disk-pack-"));
@@ -525,8 +641,16 @@ async function packOnDiskBuildOutput(root) {
       const { filename, sha256 } = await packDirectory(resolve(root, packageDir), packDir);
       artifacts.push({ name, filename, sha256 });
     }
-    const packageSetDigest = computePackageSetDigest(artifacts);
-    return { artifacts, package_set_digest: packageSetDigest, manifest_digest: "", kit_digest: computeKitDigest(packageSetDigest, "", "") };
+    artifacts.sort((left, right) => byCodePoint(left.filename, right.filename));
+    const identity = {
+      identity_format_version: 3,
+      commit: "0".repeat(40),
+      distributable: false,
+      artifacts,
+      package_set_digest: computePackageSetDigest(artifacts),
+      manifest_digest: sha256Hex("{}\n"),
+    };
+    return { ...identity, kitDigest: sha256Hex(formatThreeChecksumMaterial(identity)) };
   } finally {
     await rm(packDir, { recursive: true, force: true });
   }
@@ -549,7 +673,7 @@ async function checkPackedBuildOutputControl({ _disabledChecks = [] } = {}) {
     async () =>
       verifyStaleBuildOutputExcluded(async (root) => {
         const identity = await packOnDiskBuildOutput(root);
-        measuredOutputs.push(identity.kit_digest);
+        measuredOutputs.push(identity.kitDigest);
         return identity;
       }),
     _disabledChecks,
@@ -563,8 +687,8 @@ async function checkPackedBuildOutputControl({ _disabledChecks = [] } = {}) {
   return completeControl(control, [{ path: "packed build output", before: measuredOutputs[0], after: measuredOutputs[1] }]);
 }
 
-async function shasumCheckPasses(kitDir) {
-  return !(await captureFailure(() => runChecksumListCheck(kitDir)));
+async function shasumCheckPasses(kitDir, runCheck) {
+  return !(await captureFailure(() => runCheck(kitDir)));
 }
 
 // No reseal: the document change is the integrity defect. Resealing would hide it from kit-identity.
@@ -572,14 +696,16 @@ async function checkChangedDocumentControl(kitDir, { _disabledChecks = [] } = {}
   const control = controlFor("document changed after the build");
   const measurements = [];
   await withKitCopy(kitDir, "bloodtrail-ctrl-changed-document-", async (kitCopy) => {
-    assert.ok(await shasumCheckPasses(kitCopy), "shasum -a 256 -c must pass on the kit as built");
+    assert.ok(await shasumCheckPasses(kitCopy, runChecksumListCheck), `shasum -a 256 -c ${CHECKSUM_LIST_FILE} must pass on the kit as built`);
+    assert.ok(await shasumCheckPasses(kitCopy, runKitDigestCheck), `shasum -a 256 -c ${KIT_DIGEST_FILE} must pass on the kit as built`);
     await rewriteMeasuredKitFile(
       { kitCopy, measurements },
       "docs/privacy.md",
       (text) => `${text}\nEdited after the build.\n`,
       { reseal: false },
     );
-    assert.ok(!(await shasumCheckPasses(kitCopy)), "shasum -a 256 -c must fail once a listed document changes");
+    assert.ok(await shasumCheckPasses(kitCopy, runKitDigestCheck), `shasum -a 256 -c ${KIT_DIGEST_FILE} must remain valid after a listed document changes`);
+    assert.ok(!(await shasumCheckPasses(kitCopy, runChecksumListCheck)), `shasum -a 256 -c ${CHECKSUM_LIST_FILE} must fail once a listed document changes`);
     const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
     assert.ok(
       failure.cause.message.includes("docs/privacy.md changed after the build"),
@@ -596,7 +722,7 @@ async function checkGuideIntegrityCommandControl(kitDir, { _disabledChecks = [] 
   const plants = [
     { plant: (text) => text.replace(documented, `cat ${IDENTITY_FILE}`), expect: "must use only shasum" },
     { plant: (text) => text.replace(documented, "shasum -a 256 kit-identity.json"), expect: "names a file the kit does not ship" },
-    { plant: (text) => text.replace(documented, `shasum -a 256 ${IDENTITY_FILE}`), expect: "printed a digest the kit does not record" },
+    { plant: (text) => text.replace(documented, `shasum -a 256 ${KIT_DIGEST_FILE}`), expect: "printed a digest the kit does not record" },
     { plant: (text) => text.replace("```sh", "```bash"), expect: "may hold only sh blocks" },
   ];
   const measurements = [];
@@ -859,6 +985,9 @@ const CONTROL_RUNNERS = Object.freeze([
   ["missing core tarball", ({ kitDir, identity, _disabledChecks }) => checkMissingCoreControl(kitDir, identity, { _disabledChecks })],
   ["wrong override", ({ kitDir, _disabledChecks }) => checkBrokenOverrideControl(kitDir, { _disabledChecks })],
   ["tampered identity", ({ kitDir, _disabledChecks }) => checkTamperedIdentityControl(kitDir, { _disabledChecks })],
+  ["kit commit changed after the build", ({ kitDir, _disabledChecks }) => checkTreeBoundIdentityControl(kitDir, TREE_BOUND_IDENTITY_CONTROLS[0], { _disabledChecks })],
+  ["kit distributable flag flipped after the build", ({ kitDir, _disabledChecks }) => checkTreeBoundIdentityControl(kitDir, TREE_BOUND_IDENTITY_CONTROLS[1], { _disabledChecks })],
+  ["identity in format 2 or with no format version", ({ kitDir, _disabledChecks }) => checkOlderIdentityFormatControl(kitDir, { _disabledChecks })],
   ["renamed doc option (across all TypeScript matrix legs)", ({ kitDir, _disabledChecks }) => checkBrokenDocControl(kitDir, { _disabledChecks })],
   ["planted duplicate core", ({ kitDir, _disabledChecks }) => checkDuplicateCoreControl(kitDir, { _disabledChecks })],
   ["missing kit item", ({ kitDir, _disabledChecks }) => checkMissingItemControl(kitDir, { _disabledChecks })],
@@ -963,7 +1092,7 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 25, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 28, "the control table must declare every expected control");
   assert.throws(
     () => validateControlDefinitions([...CONTROL_DEFINITIONS, { label: "unknown identity proof", identity: "not-a-kit-gate-check" }]),
     /unknown kit gate identity: not-a-kit-gate-check/,
@@ -982,8 +1111,10 @@ async function checkIdentityAndDisableSeamProof(kitDir) {
   await withKitCopy(kitDir, "bloodtrail-ctrl-identity-tag-", async (kitCopy) => {
     const identityPath = resolve(kitCopy, IDENTITY_FILE);
     const identity = JSON.parse(await readFile(identityPath, "utf8"));
-    identity.kit_digest = "0".repeat(64);
+    assert.equal(identity.identity_format_version, 3, "the identity-tag proof must plant a format-3 identity");
+    identity.manifest_digest = "0".repeat(64);
     await writeFile(identityPath, JSON.stringify(identity, null, 2) + "\n", "utf8");
+    await sealKitChecksumMaterial(kitCopy);
     const failure = await captureFailure(() => checkEvaluationKit({ kitDir: kitCopy }));
     assert.ok(failure, "a tampered identity must fail the gate");
     assert.equal(failure.checkIdentity, "kit-identity", "a kit identity failure must carry its stable identity");

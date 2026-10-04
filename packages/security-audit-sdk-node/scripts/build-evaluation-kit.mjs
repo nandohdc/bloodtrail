@@ -6,9 +6,12 @@ import { pathToFileURL } from "node:url";
 import {
   CHECKSUM_LIST_FILE,
   IDENTITY_FILE,
+  KIT_DIGEST_FILE,
+  readKitDigest,
   sha256Hex,
   verifyChecksumList,
   writeChecksumList,
+  writeKitDigest,
 } from "./evaluation-kit-checksums.mjs";
 import { PNPM_SETTINGS_FILE, createPnpmSettings } from "./evaluation-kit-installers.mjs";
 import { KIT_PACKAGES, copyTrackedSources } from "./evaluation-kit-source-copy.mjs";
@@ -73,23 +76,56 @@ async function packArtifact(name, packageDir, destDir) {
   return { name, ...packed };
 }
 
-// Format 2 adds the checksum list, and its kit digest commits to that list. Kit v1 identities carry no
-// format version, so a v1 kit digest is never compared with a v2 one.
-const IDENTITY_FORMAT_VERSION = 2;
+const IDENTITY_FORMAT_VERSION = 3;
+const IDENTITY_FORMAT_THREE_KEYS = Object.freeze([
+  "identity_format_version",
+  "commit",
+  "distributable",
+  "artifacts",
+  "package_set_digest",
+  "manifest_digest",
+]);
+
+function assertIdentityFormat(identity) {
+  assert(identity && typeof identity === "object" && !Array.isArray(identity), "identity.json must contain an object");
+  if (identity.identity_format_version === undefined) {
+    throw new Error("identity.json is a kit v1 identity and is refused");
+  }
+  if (identity.identity_format_version === 2) {
+    throw new Error("identity.json declares format 2, which is refused");
+  }
+  assert(
+    identity.identity_format_version === IDENTITY_FORMAT_VERSION,
+    `identity.json must declare identity format ${IDENTITY_FORMAT_VERSION}, got ${identity.identity_format_version}`,
+  );
+}
+
+function assertIdentityKeys(identity) {
+  const actualKeys = Object.keys(identity).sort(byCodePoint);
+  const expectedKeys = [...IDENTITY_FORMAT_THREE_KEYS].sort(byCodePoint);
+  assert(
+    JSON.stringify(actualKeys) === JSON.stringify(expectedKeys),
+    `identity.json format 3 must contain exactly these keys: ${IDENTITY_FORMAT_THREE_KEYS.join(", ")}`,
+  );
+}
+
+function assertArtifactRecord(artifact) {
+  assert(artifact && typeof artifact === "object" && !Array.isArray(artifact), "identity.json artifact must contain an object");
+  assert(typeof artifact.name === "string" && artifact.name.length > 0, "identity.json artifact must declare a name");
+  assert(typeof artifact.filename === "string" && artifact.filename.length > 0, "identity.json artifact must declare a filename");
+  assert(/^[0-9a-f]{64}$/i.test(artifact.sha256), `identity.json artifact ${artifact.filename} must declare a valid SHA-256`);
+}
 
 export function computePackageSetDigest(artifacts) {
   const sorted = [...artifacts].sort((a, b) => byCodePoint(a.filename, b.filename));
   return sha256Hex(sorted.map((a) => `${a.sha256}  ${a.filename}\n`).join(""));
 }
 
-export function computeKitDigest(packageSetDigest, manifestDigest, checksumListDigest) {
-  return sha256Hex(`${packageSetDigest}\n${manifestDigest}\n${checksumListDigest}\n`);
-}
-
 // Every kit file other than the artifacts, whose names come from the package manifests.
 export const REQUIRED_KIT_ITEMS = Object.freeze([
   IDENTITY_FILE,
   CHECKSUM_LIST_FILE,
+  KIT_DIGEST_FILE,
   "package.json",
   PNPM_SETTINGS_FILE,
   "examples/evaluation-service.ts",
@@ -112,24 +148,25 @@ export async function verifyKitIdentity(kitDir) {
   const identityPath = resolve(kitDir, IDENTITY_FILE);
   const manifestPath = resolve(kitDir, "package.json");
   assert(existsSync(identityPath), `identity.json missing in ${kitDir}`);
-  assert(existsSync(manifestPath), `package.json missing in ${kitDir}`);
 
+  // Format refusal comes before any identity digest or checksum material is read.
+  const identity = JSON.parse(await readFile(identityPath, "utf8"));
+  assertIdentityFormat(identity);
+  assertIdentityKeys(identity);
+
+  assert(existsSync(manifestPath), `package.json missing in ${kitDir}`);
   for (const item of REQUIRED_KIT_ITEMS) {
     const itemPath = resolve(kitDir, item);
     assert(existsSync(itemPath), `Required kit item missing: ${item}`);
   }
 
-  const identity = JSON.parse(await readFile(identityPath, "utf8"));
-  assert(
-    identity.identity_format_version === IDENTITY_FORMAT_VERSION,
-    `identity.json must declare identity_format_version ${IDENTITY_FORMAT_VERSION}, got ${identity.identity_format_version}`,
-  );
-  assert(identity.commit, "identity.json must contain commit SHA");
+  assert(typeof identity.commit === "string", "identity.json must contain commit SHA");
   assert(/^[0-9a-f]{40}$/i.test(identity.commit), "identity.json commit must be a valid 40-character SHA");
   assert(typeof identity.distributable === "boolean", "identity.json must declare distributable boolean");
   assert(Array.isArray(identity.artifacts), "identity.json must declare its artifacts");
 
   for (const artifact of identity.artifacts) {
+    assertArtifactRecord(artifact);
     const artifactPath = resolve(kitDir, artifact.filename);
     assert(existsSync(artifactPath), `artifact file ${artifact.filename} missing in ${kitDir}`);
     const actualSha = sha256Hex(await readFile(artifactPath));
@@ -143,22 +180,11 @@ export async function verifyKitIdentity(kitDir) {
   const expectedManifestDigest = sha256Hex(await readFile(manifestPath));
   assert(identity.manifest_digest === expectedManifestDigest, `manifest_digest mismatch: expected ${expectedManifestDigest}, got ${identity.manifest_digest}`);
 
-  const checksumListDigest = await verifyRecordedChecksumList(kitDir, identity.checksum_list);
-
-  const expectedKitDigest = computeKitDigest(identity.package_set_digest, identity.manifest_digest, checksumListDigest);
-  assert(identity.kit_digest === expectedKitDigest, `kit_digest mismatch: expected ${expectedKitDigest}, got ${identity.kit_digest}`);
-
-  return { verified: true, identity };
-}
-
-async function verifyRecordedChecksumList(kitDir, recorded) {
   const checksumListDigest = await verifyChecksumList(kitDir);
-  const expected = { path: CHECKSUM_LIST_FILE, sha256: checksumListDigest };
-  assert(
-    JSON.stringify(recorded) === JSON.stringify(expected),
-    `checksum_list mismatch: expected ${JSON.stringify(expected)}, got ${JSON.stringify(recorded)}`,
-  );
-  return checksumListDigest;
+  const kitDigest = await readKitDigest(kitDir);
+  assert(kitDigest === checksumListDigest, `${KIT_DIGEST_FILE} must record the SHA-256 of ${CHECKSUM_LIST_FILE}`);
+
+  return { verified: true, identity, kitDigest };
 }
 
 function resolveKitGitState(mode, _gitStatus = null) {
@@ -232,32 +258,37 @@ async function copyKitAssets(kitDir, buildRoot) {
 }
 
 /**
- * Writes the checksum list over every other kit file, then the identity, which commits to the list. Call it
- * after every other kit file is in place. Returns the identity.
+ * Rewrites the checksum material over the identity already on disk. This keeps format-3's identity in the
+ * checksum list while letting a caller reseal a deliberately rewritten identity without recreating it.
+ */
+export async function sealKitChecksumMaterial(kitDir) {
+  await writeChecksumList(kitDir);
+  return writeKitDigest(kitDir);
+}
+
+/**
+ * Writes the identity, then seals the checksum list over every other kit file and its separately stored digest.
+ * Call it after every other kit file is in place. Returns the identity.
  */
 export async function sealKitIdentity(kitDir, { commit, distributable, artifacts }) {
-  const packageSetDigest = computePackageSetDigest(artifacts);
-  const manifestDigest = sha256Hex(await readFile(resolve(kitDir, "package.json")));
-  const checksumListDigest = await writeChecksumList(kitDir);
-
   const identity = {
     identity_format_version: IDENTITY_FORMAT_VERSION,
     commit,
     distributable,
     artifacts,
-    package_set_digest: packageSetDigest,
-    manifest_digest: manifestDigest,
-    checksum_list: { path: CHECKSUM_LIST_FILE, sha256: checksumListDigest },
-    kit_digest: computeKitDigest(packageSetDigest, manifestDigest, checksumListDigest),
+    package_set_digest: computePackageSetDigest(artifacts),
+    manifest_digest: sha256Hex(await readFile(resolve(kitDir, "package.json"))),
   };
   await writeFile(resolve(kitDir, IDENTITY_FILE), JSON.stringify(identity, null, 2) + "\n", "utf8");
+  await sealKitChecksumMaterial(kitDir);
   return identity;
 }
 
-function createKitArchive(kitDir, commit) {
+async function createKitArchive(kitDir, commit, makeArchive) {
+  if (!makeArchive) return { archivePath: null, archiveDigest: null };
   const archivePath = resolve(dirname(kitDir), `bloodtrail-evaluation-kit-${commit.slice(0, 8)}.tar.gz`);
   runChecked("tar", ["-czf", archivePath, "-C", dirname(kitDir), basename(kitDir)]);
-  return archivePath;
+  return { archivePath, archiveDigest: sha256Hex(await readFile(archivePath)) };
 }
 
 /**
@@ -300,10 +331,10 @@ export async function buildEvaluationKit({
 
     await copyKitAssets(kitDir, buildRoot);
     const identity = await sealKitIdentity(kitDir, { commit, distributable, artifacts });
+    const kitDigest = await readKitDigest(kitDir);
+    const archive = await createKitArchive(kitDir, commit, distributable && createArchive);
 
-    const archivePath = distributable && createArchive ? createKitArchive(kitDir, commit) : null;
-
-    return { kitDir, archivePath, identity, tarballs, removeKit };
+    return { kitDir, ...archive, identity, kitDigest, tarballs, removeKit };
   } catch (err) {
     await removeKit();
     throw err;
@@ -326,5 +357,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(await realpath(process.
   if (result.archivePath) {
     process.stdout.write(`evaluation kit archive created at ${result.archivePath}\n`);
   }
-  process.stdout.write(`identity kit_digest: ${result.identity.kit_digest}\n`);
+  process.stdout.write(`kit digest: ${result.kitDigest}\n`);
+  if (result.archiveDigest) {
+    process.stdout.write(`archive digest: ${result.archiveDigest}\n`);
+  }
 }

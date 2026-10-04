@@ -22,7 +22,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 4. #704 — Bind format 3 identity material
 
-- [ ] 4.1 Create and verify format 3 identity material: include `identity.json` in `checksums.sha256`, write
+- [x] 4.1 Create and verify format 3 identity material: include `identity.json` in `checksums.sha256`, write
   the outside-list SHA-256 of that list to `kit-digest.sha256` in `shasum -c` format, and refuse format 2 by
   name. Prove changed identity values fail their named controls.
 

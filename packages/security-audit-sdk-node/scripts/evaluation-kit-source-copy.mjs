@@ -83,12 +83,16 @@ async function plantUntrackedFiles(root) {
 }
 
 function identityDigests(identity) {
+  const artifacts = Array.isArray(identity.artifacts)
+    ? identity.artifacts.map(({ filename, sha256 }) => `${sha256}  ${filename}`)
+    : undefined;
   return {
-    artifacts: identity.artifacts.map(({ filename, sha256 }) => `${sha256}  ${filename}`),
+    commit: identity.commit,
+    distributable: identity.distributable,
+    artifacts,
     package_set_digest: identity.package_set_digest,
     manifest_digest: identity.manifest_digest,
-    checksum_list: identity.checksum_list,
-    kit_digest: identity.kit_digest,
+    kit_digest: identity.kitDigest,
   };
 }
 
@@ -96,6 +100,8 @@ export function assertSameIdentityDigests(expected, actual, label) {
   const want = identityDigests(expected);
   const got = identityDigests(actual);
   for (const key of Object.keys(want)) {
+    assert(want[key] !== undefined, `${label}: expected ${key} is missing`);
+    assert(got[key] !== undefined, `${label}: rebuilt ${key} is missing`);
     assert(
       JSON.stringify(want[key]) === JSON.stringify(got[key]),
       `${label}: ${key} differs: expected ${JSON.stringify(want[key])}, got ${JSON.stringify(got[key])}`,
