@@ -159,10 +159,11 @@ async function waitForServiceOutput(readOutput) {
 
 const SUBMISSION_PATH = "/v1/security-audit";
 const FIXTURE_TOKEN = "fixture-token-a";
-// Far past the receiver's bound, so a receiver that buffered the whole body could not answer before the
-// client had sent it all.
+// Declared far past the receiver's bound. The probe sends the body only one chunk past the bound before the
+// answer, so a receiver that waits for the whole declared body never answers.
 const OVERSIZED_BODY_BYTES = 64 * 1024 * 1024;
 const PROBE_CHUNK_BYTES = 64 * 1024;
+const ANSWER_TIMEOUT_MS = 10000;
 const POST_ANSWER_CLOSE_LIMIT_MS = 2000;
 const POST_ANSWER_WRITE_WINDOW_MS = 3000;
 // This covers loopback socket buffers with room to spare, against the gigabytes a draining receiver takes.
@@ -280,11 +281,20 @@ function observeProbeSocket(socket) {
   return probe;
 }
 
-async function writeUntilResponse(socket, chunk, probe) {
-  for (let written = 0; written < OVERSIZED_BODY_BYTES; written += chunk.byteLength) {
+// Writes until the body is one chunk past the bound, then stops. A receiver that answers then closes with the
+// rest of the body unread resets the connection, and a write issued after that reset fails with EPIPE, which
+// makes Node discard the answer before the probe has read it.
+async function writePastBound(socket, chunk, bound) {
+  for (let written = 0; written <= bound; written += chunk.byteLength) {
     if (!(await writeProbeChunk(socket, chunk))) return;
+  }
+}
+
+async function awaitAnswer(probe) {
+  const deadline = Date.now() + ANSWER_TIMEOUT_MS;
+  while (probe.status === null && probe.closedAt === null) {
+    if (Date.now() >= deadline) return;
     await delay(1);
-    if (probe.status !== null) return;
   }
 }
 
@@ -298,9 +308,13 @@ async function writeAfterResponse(socket, chunk, probe) {
   return accepted;
 }
 
+function unansweredCause(probe) {
+  if (probe.socketError) return probe.socketError.message;
+  return probe.closedAt === null ? `no answer within ${ANSWER_TIMEOUT_MS} ms` : "closed with no status line";
+}
+
 function assertProbeResponded(probe) {
-  const cause = probe.socketError ? probe.socketError.message : "no status line";
-  assert(probe.status !== null, `the receiver closed before answering an oversized body: ${cause}`);
+  assert(probe.status !== null, `the receiver did not answer an oversized body: ${unansweredCause(probe)}`);
 }
 
 function answerToCloseMilliseconds(probe) {
@@ -308,17 +322,22 @@ function answerToCloseMilliseconds(probe) {
 }
 
 // Probes a receiver with a raw body stream, including writes it accepts after its response has arrived.
-async function probeOversizedBody(origin, token) {
+// `bound` is the body size the receiver enforces.
+async function probeOversizedBody(origin, token, bound) {
   const socket = await connectToReceiver(origin);
-  const chunk = Buffer.alloc(PROBE_CHUNK_BYTES, 0x20);
-  const probe = observeProbeSocket(socket);
-  socket.write(oversizedSubmissionHeaders(origin, token));
-  await writeUntilResponse(socket, chunk, probe);
-  assertProbeResponded(probe);
-  const bytesAcceptedAfterAnswer = await writeAfterResponse(socket, chunk, probe);
-  const answerToCloseMs = answerToCloseMilliseconds(probe);
-  socket.destroy();
-  return { status: probe.status, bytesAcceptedAfterAnswer, answerToCloseMs };
+  try {
+    const chunk = Buffer.alloc(PROBE_CHUNK_BYTES, 0x20);
+    const probe = observeProbeSocket(socket);
+    socket.write(oversizedSubmissionHeaders(origin, token));
+    await writePastBound(socket, chunk, bound);
+    await awaitAnswer(probe);
+    assertProbeResponded(probe);
+    const bytesAcceptedAfterAnswer = await writeAfterResponse(socket, chunk, probe);
+    const answerToCloseMs = answerToCloseMilliseconds(probe);
+    return { status: probe.status, bytesAcceptedAfterAnswer, answerToCloseMs };
+  } finally {
+    socket.destroy();
+  }
 }
 
 function assertBoundedPostAnswer(probe, expectedStatus) {
@@ -384,11 +403,13 @@ async function verifyCarefulIngress(installDir, origin, events) {
   assert(unauthenticated.text === JSON.stringify({ error: "unauthenticated" }), `a 401 must reveal nothing about the body, got ${unauthenticated.text}`);
   await assertStillServing("a 401");
 
-  const unauthenticatedOversized = await probeOversizedBody(origin, "not-a-fixture-token");
+  const { EVENT_MAX_BYTES } = await importInstalled(installDir, "@bloodtrail/security-audit-collector");
+  assert(Number.isSafeInteger(EVENT_MAX_BYTES) && EVENT_MAX_BYTES > 0, "the installed collector must export its EVENT_MAX_BYTES bound");
+  const unauthenticatedOversized = await probeOversizedBody(origin, "not-a-fixture-token", EVENT_MAX_BYTES);
   assertBoundedPostAnswer(unauthenticatedOversized, 401);
   await assertStillServing("an oversized unauthenticated submission");
 
-  const oversized = await probeOversizedBody(origin, FIXTURE_TOKEN);
+  const oversized = await probeOversizedBody(origin, FIXTURE_TOKEN, EVENT_MAX_BYTES);
   assertBoundedPostAnswer(oversized, 413);
   await assertStillServing("a 413");
 
