@@ -39,7 +39,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 7. #707 — Stop reading past the receiver bound
 
-- [ ] 7.1 Make the receiver read an in-bound body before answering, but once past the bound answer, close,
+- [x] 7.1 Make the receiver read an in-bound body before answering, but once past the bound answer, close,
   and read nothing more for 401, 413, and wrong-path cases. Prove the post-answer read control fails closed.
 
 ## 8. #708 — Prove receiver SDK validation
