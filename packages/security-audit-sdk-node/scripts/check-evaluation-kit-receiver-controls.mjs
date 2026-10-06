@@ -4,9 +4,10 @@ export const RECEIVER_CONTROL_DEFINITIONS = Object.freeze([
   { label: "receiver answering a duplicate with 400", identity: "loopback-example-exchange" },
   { label: "receiver rethrowing after replying", identity: "loopback-example-exchange" },
   { label: "receiver reading on after it answers a body past its bound", identity: "loopback-example-exchange" },
+  { label: "receiver admitting an event that fails SDK validation", identity: "loopback-example-exchange" },
 ]);
 
-const [DUPLICATE_REJECTED_CONTROL, RETHROWING_RECEIVER_CONTROL, POST_ANSWER_READ_CONTROL] = RECEIVER_CONTROL_DEFINITIONS;
+const [DUPLICATE_REJECTED_CONTROL, RETHROWING_RECEIVER_CONTROL, POST_ANSWER_READ_CONTROL, SKIPPED_SDK_VALIDATION_CONTROL] = RECEIVER_CONTROL_DEFINITIONS;
 const RECEIVER_SOURCE_PATH = "examples/evaluation-receiver.ts";
 const POST_ANSWER_READ_PLANTS = Object.freeze([
   {
@@ -98,10 +99,39 @@ async function checkPostAnswerReadControl(kitDir, _disabledChecks, helpers) {
   return helpers.completeControl(control, measurements);
 }
 
+// The receiver before #708: it parsed the body and admitted it without SDK validation, so the gate's
+// structurally valid but SDK-invalid probe event was answered 2xx instead of 422. The planted kit still
+// type-checks: the consumer tsconfig sets no noUnusedLocals, so the unused validateSecurityAuditEvent
+// import and the read-but-unused `parsed` stay clean.
+const SKIPPED_SDK_VALIDATION_ANCHOR =
+  "  const validated = validateSecurityAuditEvent(parsed);\n" +
+  "  if (!validated.ok) {\n" +
+  "    console.log(`receiver:invalid ${validated.error.code} ${validated.error.path}`);\n" +
+  '    return { reply: reject(state, 422, "invalid_event"), close: false };\n' +
+  "  }\n";
+
+async function checkSkippedSdkValidationControl(kitDir, _disabledChecks, helpers) {
+  const control = helpers.controlFor(SKIPPED_SDK_VALIDATION_CONTROL.label);
+  const measurements = await helpers.assertMeasuredKitDefectFails(kitDir, control, {
+    tempPrefix: "bloodtrail-ctrl-receiver-skipped-validation-",
+    path: RECEIVER_SOURCE_PATH,
+    plant: (text) => {
+      const matches = text.split(SKIPPED_SDK_VALIDATION_ANCHOR).length - 1;
+      assert.equal(matches, 1, "SDK-validation plant anchor must occur exactly once");
+      return text.replace(SKIPPED_SDK_VALIDATION_ANCHOR, "");
+    },
+    expectCondition: "an SDK-invalid event: expected 422",
+    _disabledChecks,
+  });
+  assert.equal(measurements.length, 1, "skipped-SDK-validation receiver control must record one measured plant");
+  return helpers.completeControl(control, measurements);
+}
+
 export function createReceiverControlRunners(helpers) {
   return Object.freeze([
     [DUPLICATE_REJECTED_CONTROL.label, ({ kitDir, _disabledChecks }) => checkDuplicateRejectedControl(kitDir, _disabledChecks, helpers)],
     [RETHROWING_RECEIVER_CONTROL.label, ({ kitDir, _disabledChecks }) => checkRethrowingReceiverControl(kitDir, _disabledChecks, helpers)],
     [POST_ANSWER_READ_CONTROL.label, ({ kitDir, _disabledChecks }) => checkPostAnswerReadControl(kitDir, _disabledChecks, helpers)],
+    [SKIPPED_SDK_VALIDATION_CONTROL.label, ({ kitDir, _disabledChecks }) => checkSkippedSdkValidationControl(kitDir, _disabledChecks, helpers)],
   ]);
 }

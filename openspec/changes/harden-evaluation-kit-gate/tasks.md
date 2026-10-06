@@ -44,7 +44,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 8. #708 — Prove receiver SDK validation
 
-- [ ] 8.1 Drive a structurally valid but SDK-invalid event through the receiver, prove it is not admitted,
+- [x] 8.1 Drive a structurally valid but SDK-invalid event through the receiver, prove it is not admitted,
   and prove a corrected event with the same identity is accepted. A receiver that skips SDK validation must
   fail its planted-defect control.
 
