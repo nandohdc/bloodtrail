@@ -50,7 +50,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 9. #709 — Route and authenticate the example receiver strictly
 
-- [ ] 9.1 Require a case-insensitive Bearer scheme, return 404 for a POST to another path, return 405 with
+- [x] 9.1 Require a case-insensitive Bearer scheme, return 404 for a POST to another path, return 405 with
   `Allow: POST` for every other method, and classify client aborts without a 500 or rejection count. Prove the
   wire-protocol and gate cases.
 

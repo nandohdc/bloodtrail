@@ -367,7 +367,7 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: () => "first-event example ran successfully after the npm installation",
   }),
   "loopback-example-exchange": Object.freeze({
-    clause: () => "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, the 422 to an event that passed the ingress's structural check but failed SDK validation, acknowledged the corrected event with the SDK-invalid event's identity, a byte-identical duplicate and a redelivered event, and kept serving after each; after answering 401 and 413 to a body past its bound it closed the connection, accepting no more than the socket buffers hold",
+    clause: () => "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, the 422 to an event that passed the ingress's structural check but failed SDK validation, acknowledged the corrected event with the SDK-invalid event's identity, a byte-identical duplicate and a redelivered event, and kept serving after each; it required the Bearer scheme in any letter case, answered 404 to a POST on another path and 405 with Allow: POST to another method, and counted a client abort as neither a 500 nor a rejection; after answering 401, 404 and 413 to a body past its bound it closed the connection, accepting no more than the socket buffers hold",
   }),
   "seeded-invalid-calls": Object.freeze({
     clause: () => "seeded invalid calls returned their documented code, category, and path",
