@@ -96,7 +96,7 @@ const REBUILD_CLAIMS = Object.freeze([
 ]);
 const BUILD_MODE_ONLY_IDENTITIES = Object.freeze(["verification-kit-build", "reproducible-identity", "distributable-kit-match", "dirty-tree-refusal"]);
 const VERIFICATION_SUMMARY_PREFIX = "evaluation kit verification passed: ";
-const LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE = "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, acknowledged a byte-identical duplicate and a redelivered event, and kept serving after each; after answering 401 and 413 to a body past its bound it closed the connection, accepting no more than the socket buffers hold";
+const LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE = "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, the 422 to an event that passed the ingress's structural check but failed SDK validation, acknowledged the corrected event with the SDK-invalid event's identity, a byte-identical duplicate and a redelivered event, and kept serving after each; after answering 401 and 413 to a body past its bound it closed the connection, accepting no more than the socket buffers hold";
 const DISTRIBUTABLE_KIT_UMASK_CLAUSE = "distributable kit built under umask 077 from a disposable clean clone of the tree under test, with the same artifacts and checksum list as the verification kit apart from its identity file";
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const NON_REGULAR_SOURCE_PATH = `${KIT_PACKAGES.node}/docs/planted-link.md`;
