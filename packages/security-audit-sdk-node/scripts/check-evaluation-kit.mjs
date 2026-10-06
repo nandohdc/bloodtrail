@@ -121,12 +121,14 @@ async function typecheckKitSources(tempInstall) {
   await typecheckSources(tempInstall, ["examples/**/*.ts", "doc-blocks/**/*.ts", "gate/**/*.ts"]);
 }
 
-async function typecheckAnswerKeyFixes(tempInstall) {
-  if (!existsSync(ANSWER_KEY_PATH)) return false;
+export const ANSWER_KEY_MISSING_MESSAGE = "facilitator answer key missing: facilitator/seeded-invalid-calls-answer-key.md";
+
+// The controls call this JavaScript-only seam with disposable answer-key paths; it is not a command-line option.
+export async function checkAnswerKeyFixTypecheck({ tempInstall, answerKeyPath = ANSWER_KEY_PATH }) {
+  assert(existsSync(answerKeyPath), ANSWER_KEY_MISSING_MESSAGE);
   const answerKeyBlocksDir = resolve(tempInstall, "answer-key-blocks");
-  await extractAnswerKeyFixBlocks(answerKeyBlocksDir);
+  await extractAnswerKeyFixBlocks(answerKeyBlocksDir, answerKeyPath);
   await typecheckSources(tempInstall, ["answer-key-blocks/**/*.ts"]);
-  return true;
 }
 
 async function verifyFailurePaths(tempInstall) {
@@ -328,7 +330,7 @@ export const KIT_GATE_CHECKS = Object.freeze({
         : "kit identity verified in format 3",
   }),
   "answer-key-exclusion": Object.freeze({
-    clause: () => "facilitator answer-key file names and recognized content markers excluded",
+    clause: () => "facilitator answer key excluded: no answer-key file name, marker, fix code or code-to-path mapping in any kit file or packed artifact text entry",
   }),
   "unpacked-kit-integrity": Object.freeze({
     clause: ({ commands }) => `unpacked-kit integrity commands verified: ${codeSpans(commands)}`,
@@ -528,13 +530,11 @@ export async function checkEvaluationKit({
       return undefined;
     });
 
-    // 5a. Type-check facilitator answer-key fixes only when the facilitator answer key is present.
-    if (existsSync(ANSWER_KEY_PATH)) {
-      await runCheck(completedChecks, disabledChecks, "facilitator-answer-key-fix-typecheck", async () => {
-        await typecheckAnswerKeyFixes(tempInstall);
-        return undefined;
-      });
-    }
+    // 5a. Type-check facilitator answer-key fixes under every consumer TypeScript leg.
+    await runCheck(completedChecks, disabledChecks, "facilitator-answer-key-fix-typecheck", async () => {
+      await checkAnswerKeyFixTypecheck({ tempInstall });
+      return undefined;
+    });
 
     // 6. Run examples/first-event.ts
     await runCheck(completedChecks, disabledChecks, "first-event-example", () => {

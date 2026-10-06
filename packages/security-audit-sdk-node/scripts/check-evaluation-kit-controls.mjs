@@ -37,6 +37,7 @@ import {
 } from "./evaluation-kit-installers.mjs";
 import { KIT_PACKAGES, createKitTreeClone, verifyStaleBuildOutputExcluded } from "./evaluation-kit-source-copy.mjs";
 import { CLONE_PLANT_CONTROLS, checkCloneUmaskProof, createClonePlantControlRunners } from "./check-evaluation-kit-clone-controls.mjs";
+import { ANSWER_KEY_CONTROL_DEFINITIONS, createAnswerKeyControlRunners } from "./check-evaluation-kit-answer-key-controls.mjs";
 import { RECEIVER_CONTROL_DEFINITIONS, createReceiverControlRunners } from "./check-evaluation-kit-receiver-controls.mjs";
 import { byCodePoint, runChecked } from "./verification-helpers.mjs";
 
@@ -64,6 +65,7 @@ const CONTROL_DEFINITIONS = Object.freeze([
   ...RECEIVER_CONTROL_DEFINITIONS,
   { label: "mid-body stall mapped to malformed acknowledgment", identity: "http-audit-sink-failure-paths" },
   { label: "facilitator answer key content copied into the kit", identity: "answer-key-exclusion" },
+  ...ANSWER_KEY_CONTROL_DEFINITIONS,
   { label: "invented API calls named in a kit document (op.commit(), handle.commit())", identity: "document-references" },
   { label: "retries listed as supported in the supported-versus-planned table", identity: "planned-feature-documentation" },
   { label: "429 classified as a permanent failure in the packed Node binding", identity: "http-audit-sink-failure-paths" },
@@ -938,6 +940,7 @@ const CONTROL_RUNNERS = Object.freeze([
   ...createReceiverControlRunners({ controlFor, assertMeasuredKitDefectFails, completeControl }),
   ["mid-body stall mapped to malformed acknowledgment", ({ kitDir, _disabledChecks }) => checkMidBodyStallControl(kitDir, { _disabledChecks })],
   ["facilitator answer key content copied into the kit", ({ kitDir, _disabledChecks }) => checkAnswerKeyInKitControl(kitDir, { _disabledChecks })],
+  ...createAnswerKeyControlRunners({ controlFor, captureGateFailure, completeControl }),
   ["invented API calls named in a kit document (op.commit(), handle.commit())", ({ kitDir, _disabledChecks }) => checkInventedApiControl(kitDir, { _disabledChecks })],
   ["retries listed as supported in the supported-versus-planned table", ({ kitDir, _disabledChecks }) => checkSupportedRetryRowControl(kitDir, { _disabledChecks })],
   ["429 classified as a permanent failure in the packed Node binding", ({ kitDir, _disabledChecks }) => checkMisclassifiedStatusControl(kitDir, { _disabledChecks })],
@@ -1075,7 +1078,7 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 40, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 47, "the control table must declare every expected control");
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label, identity }) => controlFor(label).identity), CLONE_PLANT_CONTROLS.map(({ identity }) => identity));
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label }) => CONTROL_RUNNERS_BY_LABEL.has(label)), CLONE_PLANT_CONTROLS.map(() => true));
   assert.throws(
