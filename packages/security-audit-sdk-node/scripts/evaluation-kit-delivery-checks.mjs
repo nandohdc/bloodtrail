@@ -389,9 +389,11 @@ async function assertRedeliveryAcknowledged(installDir, origin, event) {
 /**
  * Proves the example receiver behaves as a careful ingress. Each rejection gets the status that names it,
  * and the next valid event is accepted after it. A duplicate is acknowledged, and a conflict is refused.
- * `events` are the demonstrated events the receiver has already accepted, parsed, by name.
+ * `events` are the demonstrated events the receiver has already accepted, parsed, by name. The SDK-invalid
+ * probe passes the ingress's structural check and fails SDK validation, so the 422 pins the rejection to the
+ * receiver's SDK validation, and `receiverReadOutput` records the receiver's own log of that rejection.
  */
-async function verifyCarefulIngress(installDir, origin, events) {
+async function verifyCarefulIngress(installDir, origin, events, receiverReadOutput) {
   const template = events.get("bloodtrail.audit.authentication.succeeded");
   const assertStillServing = async (after) => {
     const next = withEventId(template, randomUUID());
@@ -416,11 +418,30 @@ async function verifyCarefulIngress(installDir, origin, events) {
   assertRejected(await submit(origin, '{"event":'), 400, "a malformed body");
   await assertStillServing("a 400");
 
+  const denied = events.get("bloodtrail.audit.authorization.denied");
   const reusedId = randomUUID();
-  const invalid = withEventId(template, reusedId);
-  delete invalid.actor;
+  const invalid = withEventId(denied, reusedId);
+  invalid.authorization.decision = "allow";
+  // Prove the probe mechanically before submitting it: the installed collector admits it structurally, and
+  // the installed core rejects it with the authorization-outcome conflict.
+  const { validateStructural } = await importInstalled(installDir, "@bloodtrail/security-audit-collector");
+  const { validateSecurityAuditEvent } = await importInstalled(installDir, "@bloodtrail/security-audit-sdk-core");
+  const structural = validateStructural(invalid);
+  assert(
+    structural.valid === true,
+    `the SDK-invalid probe must pass the ingress's structural check, got ${JSON.stringify(structural)}`,
+  );
+  const sdkValidation = validateSecurityAuditEvent(invalid);
+  assert(
+    sdkValidation.ok === false && sdkValidation.error.code === "AUTHORIZATION_OUTCOME_CONFLICT" && sdkValidation.error.path === "/authorization/decision",
+    `the SDK-invalid probe must fail SDK validation with AUTHORIZATION_OUTCOME_CONFLICT at /authorization/decision, got ${JSON.stringify(sdkValidation)}`,
+  );
   assertRejected(await submit(origin, JSON.stringify(invalid)), 422, "an SDK-invalid event");
-  assertAcknowledged(await submit(origin, JSON.stringify(withEventId(template, reusedId))), reusedId, "the corrected event with the SDK-invalid event's identity");
+  assert(
+    receiverReadOutput().includes("receiver:invalid AUTHORIZATION_OUTCOME_CONFLICT /authorization/decision"),
+    `the receiver must log the SDK validation that rejected the probe:\n${receiverReadOutput()}`,
+  );
+  assertAcknowledged(await submit(origin, JSON.stringify(withEventId(denied, reusedId))), reusedId, "the corrected event with the SDK-invalid event's identity");
 
   const admitted = events.get("bloodtrail.audit.authentication.failed");
   const conflicting = structuredClone(admitted);
@@ -428,7 +449,6 @@ async function verifyCarefulIngress(installDir, origin, events) {
   assertRejected(await submit(origin, JSON.stringify(conflicting)), 409, "an event that conflicts with an admitted event");
   await assertStillServing("a 409");
 
-  const denied = events.get("bloodtrail.audit.authorization.denied");
   assertAcknowledged(await submit(origin, JSON.stringify(denied)), denied.event.id, "a byte-identical duplicate");
   await assertRedeliveryAcknowledged(installDir, origin, events.get("bloodtrail.audit.data.sensitive_resource.viewed"));
   await assertStillServing("the duplicates");
@@ -483,7 +503,7 @@ export async function verifyHttpExchange(installDir) {
       );
 
       await assertReceiverHealthCounts(receiverOrigin);
-      await verifyCarefulIngress(installDir, receiverOrigin, events);
+      await verifyCarefulIngress(installDir, receiverOrigin, events, receiver.readOutput);
     } finally {
       service.child.kill("SIGTERM");
     }
