@@ -158,6 +158,8 @@ async function waitForServiceOutput(readOutput) {
 }
 
 const SUBMISSION_PATH = "/v1/security-audit";
+// A path the receiver must refuse: a POST to it is not a submission, however valid the event.
+const WRONG_PATH = "/v1/not-the-submission-path";
 const FIXTURE_TOKEN = "fixture-token-a";
 // Declared far past the receiver's bound. The probe sends the body only one chunk past the bound before the
 // answer, so a receiver that waits for the whole declared body never answers.
@@ -169,15 +171,25 @@ const POST_ANSWER_WRITE_WINDOW_MS = 3000;
 // This covers loopback socket buffers with room to spare, against the gigabytes a draining receiver takes.
 const POST_ANSWER_ACCEPT_LIMIT_BYTES = 16 * 1024 * 1024;
 
+// A string is the bearer token; an options object can instead send an arbitrary authorization value, path,
+// or method. The default is an authenticated POST to the submission path.
+function submissionOptions(tokenOrOptions) {
+  if (typeof tokenOrOptions === "string") {
+    return { path: SUBMISSION_PATH, method: "POST", authorization: `Bearer ${tokenOrOptions}` };
+  }
+  return { path: SUBMISSION_PATH, method: "POST", authorization: `Bearer ${FIXTURE_TOKEN}`, ...tokenOrOptions };
+}
+
 // A receiver that has stopped answering fails here, whichever request it stopped on.
-async function submit(origin, body, token = FIXTURE_TOKEN) {
+async function submit(origin, body, tokenOrOptions = FIXTURE_TOKEN) {
+  const options = submissionOptions(tokenOrOptions);
   try {
-    const response = await fetch(`${origin}${SUBMISSION_PATH}`, {
-      method: "POST",
-      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    const response = await fetch(`${origin}${options.path}`, {
+      method: options.method,
+      headers: { authorization: options.authorization, "content-type": "application/json" },
       body,
     });
-    return { status: response.status, text: await response.text() };
+    return { status: response.status, text: await response.text(), headers: response.headers };
   } catch (err) {
     throw new Error(`the receiver must keep serving: ${err.message}`);
   }
@@ -209,10 +221,41 @@ function connectToReceiver(origin) {
   });
 }
 
-function oversizedSubmissionHeaders(origin, token) {
+// Starts a submission with a declared 1000-byte body, writes ten bytes of it, and destroys the socket: a
+// client abort mid-body, from the receiver's side of the connection.
+async function abortSubmission(origin) {
+  const endpoint = new URL(origin);
+  const socket = await connectToReceiver(origin);
+  socket.write(
+    [
+      `POST ${SUBMISSION_PATH} HTTP/1.1`,
+      `Host: ${endpoint.host}`,
+      `authorization: Bearer ${FIXTURE_TOKEN}`,
+      "content-type: application/json",
+      "Content-Length: 1000",
+      "",
+      "",
+    ].join("\r\n"),
+  );
+  socket.write('{"event":{', () => socket.destroy());
+}
+
+// The receiver logs an abort after the connection reset, which is asynchronous to the driver.
+async function waitForAbortLog(readOutput, outputStart) {
+  const deadline = Date.now() + 2000;
+  while (!readOutput().slice(outputStart).includes("receiver:aborted")) {
+    assert(
+      Date.now() < deadline,
+      `a client abort: the receiver did not log receiver:aborted within 2 s:\n${readOutput().slice(outputStart)}`,
+    );
+    await delay(10);
+  }
+}
+
+function oversizedSubmissionHeaders(origin, token, path) {
   const endpoint = new URL(origin);
   return [
-    `POST ${SUBMISSION_PATH} HTTP/1.1`,
+    `POST ${path} HTTP/1.1`,
     `Host: ${endpoint.host}`,
     `authorization: Bearer ${token}`,
     "content-type: application/json",
@@ -322,13 +365,13 @@ function answerToCloseMilliseconds(probe) {
 }
 
 // Probes a receiver with a raw body stream, including writes it accepts after its response has arrived.
-// `bound` is the body size the receiver enforces.
-async function probeOversizedBody(origin, token, bound) {
+// `bound` is the body size the receiver enforces, and `path` the POST's target.
+async function probeOversizedBody(origin, token, bound, path) {
   const socket = await connectToReceiver(origin);
   try {
     const chunk = Buffer.alloc(PROBE_CHUNK_BYTES, 0x20);
     const probe = observeProbeSocket(socket);
-    socket.write(oversizedSubmissionHeaders(origin, token));
+    socket.write(oversizedSubmissionHeaders(origin, token, path));
     await writePastBound(socket, chunk, bound);
     await awaitAnswer(probe);
     assertProbeResponded(probe);
@@ -392,6 +435,9 @@ async function assertRedeliveryAcknowledged(installDir, origin, event) {
  * `events` are the demonstrated events the receiver has already accepted, parsed, by name. The SDK-invalid
  * probe passes the ingress's structural check and fails SDK validation, so the 422 pins the rejection to the
  * receiver's SDK validation, and `receiverReadOutput` records the receiver's own log of that rejection.
+ * verifyStrictRouting then proves only the Bearer scheme authenticates, only a POST to the submission path
+ * is a submission, any other method is refused with Allow: POST, and the read rule holds for refused routes
+ * too; verifyAbortIsNotARejection proves a client abort is counted as neither a 500 nor a rejection.
  */
 async function verifyCarefulIngress(installDir, origin, events, receiverReadOutput) {
   const template = events.get("bloodtrail.audit.authentication.succeeded");
@@ -407,11 +453,11 @@ async function verifyCarefulIngress(installDir, origin, events, receiverReadOutp
 
   const { EVENT_MAX_BYTES } = await importInstalled(installDir, "@bloodtrail/security-audit-collector");
   assert(Number.isSafeInteger(EVENT_MAX_BYTES) && EVENT_MAX_BYTES > 0, "the installed collector must export its EVENT_MAX_BYTES bound");
-  const unauthenticatedOversized = await probeOversizedBody(origin, "not-a-fixture-token", EVENT_MAX_BYTES);
+  const unauthenticatedOversized = await probeOversizedBody(origin, "not-a-fixture-token", EVENT_MAX_BYTES, SUBMISSION_PATH);
   assertBoundedPostAnswer(unauthenticatedOversized, 401);
   await assertStillServing("an oversized unauthenticated submission");
 
-  const oversized = await probeOversizedBody(origin, FIXTURE_TOKEN, EVENT_MAX_BYTES);
+  const oversized = await probeOversizedBody(origin, FIXTURE_TOKEN, EVENT_MAX_BYTES, SUBMISSION_PATH);
   assertBoundedPostAnswer(oversized, 413);
   await assertStillServing("a 413");
 
@@ -452,6 +498,97 @@ async function verifyCarefulIngress(installDir, origin, events, receiverReadOutp
   assertAcknowledged(await submit(origin, JSON.stringify(denied)), denied.event.id, "a byte-identical duplicate");
   await assertRedeliveryAcknowledged(installDir, origin, events.get("bloodtrail.audit.data.sensitive_resource.viewed"));
   await assertStillServing("the duplicates");
+
+  await verifyStrictRouting(origin, template, EVENT_MAX_BYTES, assertStillServing);
+  await verifyAbortIsNotARejection(origin, receiverReadOutput, assertStillServing);
+}
+
+// The strict-routing cases: only the Bearer scheme authenticates, only a POST to the submission path is a
+// submission, any other method is refused with Allow: POST, and the read rule covers a refused route too.
+async function verifyStrictRouting(origin, template, eventMaxBytes, assertStillServing) {
+  // Strict authentication: only the Bearer scheme authenticates, and its letter case does not matter.
+  const bareToken = await submit(origin, JSON.stringify(withEventId(template, randomUUID())), { authorization: FIXTURE_TOKEN });
+  assertRejected(bareToken, 401, "a bare token");
+  assert(
+    bareToken.text === JSON.stringify({ error: "unauthenticated" }),
+    `a bare token: expected {"error":"unauthenticated"}, got ${bareToken.text}`,
+  );
+  await assertStillServing("a bare token");
+
+  const lowerCaseScheme = withEventId(template, randomUUID());
+  assertAcknowledged(
+    await submit(origin, JSON.stringify(lowerCaseScheme), { authorization: `bearer ${FIXTURE_TOKEN}` }),
+    lowerCaseScheme.event.id,
+    "a lowercase bearer scheme",
+  );
+  await assertStillServing("a lowercase bearer scheme");
+
+  const upperCaseScheme = withEventId(template, randomUUID());
+  assertAcknowledged(
+    await submit(origin, JSON.stringify(upperCaseScheme), { authorization: `BEARER ${FIXTURE_TOKEN}` }),
+    upperCaseScheme.event.id,
+    "an uppercase bearer scheme",
+  );
+  await assertStillServing("an uppercase bearer scheme");
+
+  // Strict routing: a POST to another path is refused and admits nothing, and the same event is then accepted.
+  const healthBeforeWrongPath = await receiverHealth(origin);
+  const wrongPath = withEventId(template, randomUUID());
+  const wrongPathReply = await submit(origin, JSON.stringify(wrongPath), { path: WRONG_PATH });
+  assert(
+    wrongPathReply.status === 404,
+    `a POST to another path admitted an event: expected 404, got ${wrongPathReply.status} ${wrongPathReply.text}`,
+  );
+  assert(
+    wrongPathReply.text === JSON.stringify({ error: "not_found" }),
+    `a POST to another path: expected {"error":"not_found"}, got ${wrongPathReply.text}`,
+  );
+  assertAcknowledged(await submit(origin, JSON.stringify(wrongPath)), wrongPath.event.id, "the event a POST to another path refused");
+  const healthAfterWrongPath = await receiverHealth(origin);
+  assert(
+    healthAfterWrongPath.acceptedCount === healthBeforeWrongPath.acceptedCount + 1,
+    `a POST to another path admitted an event: acceptedCount rose from ${healthBeforeWrongPath.acceptedCount} to ${healthAfterWrongPath.acceptedCount}, not by exactly one`,
+  );
+  await assertStillServing("a POST to another path");
+
+  // Strict routing: any other method on the submission path is refused with an Allow: POST header.
+  for (const method of ["PUT", "GET"]) {
+    const body = method === "GET" ? undefined : JSON.stringify(withEventId(template, randomUUID()));
+    const methodReply = await submit(origin, body, { method });
+    assert(methodReply.status === 405, `${method} on the submission path: expected 405, got ${methodReply.status} ${methodReply.text}`);
+    assert(
+      methodReply.headers.get("allow") === "POST",
+      `${method} on the submission path: expected Allow: POST, got ${JSON.stringify(methodReply.headers.get("allow"))}`,
+    );
+    assert(
+      methodReply.text === JSON.stringify({ error: "method_not_allowed" }),
+      `${method} on the submission path: expected {"error":"method_not_allowed"}, got ${methodReply.text}`,
+    );
+    await assertStillServing(`${method} on the submission path`);
+  }
+
+  // The read rule covers a refused route too: past the bound, a POST to another path answers 404 and closes.
+  const oversizedWrongPath = await probeOversizedBody(origin, FIXTURE_TOKEN, eventMaxBytes, WRONG_PATH);
+  assertBoundedPostAnswer(oversizedWrongPath, 404);
+  await assertStillServing("an oversized body on another path");
+}
+
+// A client abort mid-body is an abort: logged, answered nothing, and counted as neither a 500 nor a rejection.
+async function verifyAbortIsNotARejection(origin, receiverReadOutput, assertStillServing) {
+  const healthBeforeAbort = await receiverHealth(origin);
+  const outputBeforeAbort = receiverReadOutput().length;
+  await abortSubmission(origin);
+  await waitForAbortLog(receiverReadOutput, outputBeforeAbort);
+  const healthAfterAbort = await receiverHealth(origin);
+  assert(
+    healthAfterAbort.rejectedCount === healthBeforeAbort.rejectedCount,
+    `a client abort was counted as a rejection: rejectedCount rose from ${healthBeforeAbort.rejectedCount} to ${healthAfterAbort.rejectedCount}`,
+  );
+  assert(
+    !receiverReadOutput().slice(outputBeforeAbort).includes("receiver:error 500"),
+    "a client abort was logged as a 500",
+  );
+  await assertStillServing("a client abort");
 
   await receiverHealth(origin);
 }

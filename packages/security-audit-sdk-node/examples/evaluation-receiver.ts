@@ -50,17 +50,32 @@ function acknowledge(eventId: string): Reply {
   return { status: 200, body: { acknowledgments: [{ event_id: eventId, outcome: "accepted" }] } };
 }
 
+// Only the Bearer scheme, matched in any letter case and followed by the credential, authenticates. A bare
+// token, a credential with no scheme, or any other scheme yields no credential and therefore a 401.
 function credentialsOf(req: IncomingMessage): { credential: string } | undefined {
   const header = req.headers.authorization;
   if (header === undefined) return undefined;
-  return { credential: header.startsWith("Bearer ") ? header.slice("Bearer ".length) : header };
+  const separator = header.indexOf(" ");
+  if (separator === -1) return undefined;
+  if (header.slice(0, separator).toLowerCase() !== "bearer") return undefined;
+  return { credential: header.slice(separator + 1) };
 }
 
-// Reads the body up to EVENT_MAX_BYTES and stops the stream at once when it goes past the bound.
+// A client abort mid-body is its own outcome, apart from a past-bound body and apart from an unexpected error.
+class RequestAborted extends Error {
+  constructor() {
+    super("the client aborted the request body");
+    this.name = "RequestAborted";
+  }
+}
+
+// Reads the body up to EVENT_MAX_BYTES and stops the stream at once when it goes past the bound. A client
+// abort mid-body — a close before end or a reset error — rejects with RequestAborted instead of resolving.
 function readBoundedBody(req: IncomingMessage): Promise<string | null> {
   return new Promise((resolveBody, rejectBody) => {
     const chunks: Buffer[] = [];
     let length = 0;
+    let ended = false;
     const onData = (chunk: Buffer): void => {
       length += chunk.byteLength;
       if (length > EVENT_MAX_BYTES) {
@@ -72,9 +87,28 @@ function readBoundedBody(req: IncomingMessage): Promise<string | null> {
       chunks.push(chunk);
     };
     req.on("data", onData);
-    req.on("end", () => resolveBody(Buffer.concat(chunks).toString("utf8")));
-    req.on("error", rejectBody);
+    req.on("end", () => {
+      ended = true;
+      resolveBody(Buffer.concat(chunks).toString("utf8"));
+    });
+    req.on("aborted", () => rejectBody(new RequestAborted()));
+    req.on("close", () => {
+      if (!ended) rejectBody(new RequestAborted());
+    });
+    req.on("error", (error: NodeJS.ErrnoException) => {
+      rejectBody(error.code === "ECONNRESET" ? new RequestAborted() : error);
+    });
   });
+}
+
+// Separates the three bounded-read outcomes: an in-bound body, a body past the bound, and a client abort.
+async function readBodyOrAbort(req: IncomingMessage): Promise<{ body: string | null; aborted: boolean }> {
+  try {
+    return { body: await readBoundedBody(req), aborted: false };
+  } catch (error) {
+    if (error instanceof RequestAborted) return { body: null, aborted: true };
+    throw error;
+  }
 }
 
 // Only an event that passed SDK validation reaches the ingress. A duplicate is acknowledged and never
@@ -103,9 +137,17 @@ interface SubmissionReply {
   readonly close: boolean;
 }
 
+// A client abort mid-body is not a submission reply: the handler logs it and answers nothing.
+const SUBMISSION_ABORTED = Symbol("client aborted the submission");
+
 // Bound the body before authenticating it, then parse, validate, and submit only a bounded authenticated event.
-async function handleSubmission(req: IncomingMessage, state: ReceiverState): Promise<SubmissionReply> {
-  const body = await readBoundedBody(req);
+async function handleSubmission(
+  req: IncomingMessage,
+  state: ReceiverState,
+): Promise<SubmissionReply | typeof SUBMISSION_ABORTED> {
+  const read = await readBodyOrAbort(req);
+  if (read.aborted) return SUBMISSION_ABORTED;
+  const body = read.body;
   const credentials = credentialsOf(req);
   const authenticated = state.authenticator.verify(credentials).kind === "verified";
   if (body === null) {
@@ -144,7 +186,73 @@ function sendAndClose(req: IncomingMessage, res: ServerResponse, reply: Reply): 
   });
 }
 
-// No request handler rethrows: an unexpected error is answered 500, and the receiver keeps serving.
+// The submission path is the only POST the receiver treats as a submission.
+const SUBMISSION_PATH = "/v1/security-audit";
+
+// What the receiver answers a request that is neither the health check nor a submission: the status that
+// names the refusal, and whether the 405 answer must carry an Allow header.
+interface Refusal {
+  readonly status: number;
+  readonly reason: string;
+  readonly allowPost: boolean;
+}
+
+function refusalOf(req: IncomingMessage): Refusal | undefined {
+  if (req.method !== "POST") return { status: 405, reason: "method_not_allowed", allowPost: true };
+  if (req.url !== SUBMISSION_PATH) return { status: 404, reason: "not_found", allowPost: false };
+  return undefined;
+}
+
+// A refused route still honours the read rule: an in-bound body is read before the answer, and a body past
+// the bound is answered with the connection closed and nothing more read. An abort answers nothing.
+async function answerRefusedRoute(
+  req: IncomingMessage,
+  res: ServerResponse,
+  state: ReceiverState,
+  refusal: Refusal,
+): Promise<boolean> {
+  const read = await readBodyOrAbort(req);
+  if (read.aborted) return true;
+  const reply = reject(state, refusal.status, refusal.reason);
+  if (read.body === null) {
+    sendAndClose(req, res, reply);
+  } else {
+    send(res, reply);
+  }
+  return false;
+}
+
+// A refused route answers with its named status, and the 405 carries its Allow header. An abort mid-body is
+// logged and answered nothing.
+async function answerRoute(
+  req: IncomingMessage,
+  res: ServerResponse,
+  state: ReceiverState,
+  refusal: Refusal,
+): Promise<void> {
+  if (refusal.allowPost) res.setHeader("allow", "POST");
+  if (await answerRefusedRoute(req, res, state, refusal)) {
+    console.log("receiver:aborted");
+  }
+}
+
+// A submission answers with its reply, closing the connection when the body went past the bound. An abort
+// mid-body is logged and answered nothing.
+async function answerSubmission(req: IncomingMessage, res: ServerResponse, state: ReceiverState): Promise<void> {
+  const submission = await handleSubmission(req, state);
+  if (submission === SUBMISSION_ABORTED) {
+    console.log("receiver:aborted");
+    return;
+  }
+  if (submission.close) {
+    sendAndClose(req, res, submission.reply);
+  } else {
+    send(res, submission.reply);
+  }
+}
+
+// The dispatcher only chooses health, refusal or submission. No request handler rethrows: an unexpected error
+// is answered 500, and the receiver keeps serving.
 function createDispatchHandler(state: ReceiverState) {
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     try {
@@ -152,15 +260,11 @@ function createDispatchHandler(state: ReceiverState) {
         send(res, { status: 200, body: { status: "healthy", acceptedCount: state.counts.accepted, duplicateCount: state.counts.duplicates, rejectedCount: state.counts.rejected } });
         return;
       }
-      if (req.method !== "POST") {
-        send(res, reject(state, 405, "method_not_allowed"));
-        return;
-      }
-      const submission = await handleSubmission(req, state);
-      if (submission.close) {
-        sendAndClose(req, res, submission.reply);
+      const refusal = refusalOf(req);
+      if (refusal !== undefined) {
+        await answerRoute(req, res, state, refusal);
       } else {
-        send(res, submission.reply);
+        await answerSubmission(req, res, state);
       }
     } catch {
       console.log("receiver:error 500");

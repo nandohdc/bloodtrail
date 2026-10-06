@@ -129,7 +129,11 @@ The following table maps each transport condition and peer response to its SDK r
 A receiver answers a duplicate as it answered the original, with one `accepted` acknowledgment, so a redelivery after a
 lost acknowledgment succeeds. The kit's example receiver does exactly that. It answers the other rejections with the
 status that names them: `401` for failed authentication, `413` for a body over its bound, `400` for a malformed body,
-`409` for a conflict, and `422` for an event that fails SDK validation or has an unsupported version.
+`409` for a conflict, and `422` for an event that fails SDK validation or has an unsupported version. It authenticates
+only the Bearer scheme in any letter case, so any other `Authorization` value gets `401`; it answers a POST to any
+path other than the submission path with `404` and admits nothing; and it answers any other method with `405` and an
+`Allow: POST` header. Whatever the answer, it reads a body within its bound before answering and, past the bound,
+answers and closes the connection. A client that aborts mid-body is counted as neither a `500` nor a rejection.
 
 ---
 
