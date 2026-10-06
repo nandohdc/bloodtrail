@@ -40,6 +40,7 @@
     "packages/security-audit-sdk-node/scripts/check-evaluation-kit.mjs",
     "packages/security-audit-sdk-node/scripts/check-evaluation-kit-clone-controls.mjs",
     "packages/security-audit-sdk-node/scripts/check-evaluation-kit-controls.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-answer-key-controls.mjs",
     "packages/security-audit-sdk-node/scripts/check-evaluation-kit-receiver-controls.mjs",
     "packages/security-audit-sdk-node/scripts/evaluation-kit-answer-key.mjs",
     "packages/security-audit-sdk-node/scripts/evaluation-kit-checksums.mjs",

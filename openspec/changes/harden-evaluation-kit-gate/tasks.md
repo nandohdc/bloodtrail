@@ -56,7 +56,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 10. #710 — Type-check and exclude the facilitator answer key
 
-- [ ] 10.1 Type-check every answer-key fix and fail when the key is absent or invalid. Scan every kit file
+- [x] 10.1 Type-check every answer-key fix and fail when the key is absent or invalid. Scan every kit file
   and every artifact text entry for each fix code and each expected code-and-path pair, with controls for
   renamed, marker-free, and copied key content.
 

@@ -1,9 +1,13 @@
-import { readdir, readFile, writeFile, mkdir } from "node:fs/promises";
-import { resolve, relative, extname } from "node:path";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { relative, resolve } from "node:path";
+import { TextDecoder } from "node:util";
 import { extractTypeScriptDocBlocks } from "./evaluation-kit-doc-blocks.mjs";
-import { assert, packageRoot } from "./verification-helpers.mjs";
+import { assert, byCodePoint, packageRoot, runChecked } from "./verification-helpers.mjs";
 
 export const ANSWER_KEY_PATH = resolve(packageRoot, "facilitator/seeded-invalid-calls-answer-key.md");
+const SEEDED_EXAMPLE_PATH = resolve(packageRoot, "examples/seeded-invalid-calls.ts");
+const SEEDED_DOCUMENT_PATH = resolve(packageRoot, "docs/seeded-invalid-calls.md");
 
 export const EXPECTED_SEEDED_CALLS = Object.freeze([
   {
@@ -38,12 +42,19 @@ export const EXPECTED_SEEDED_CALLS = Object.freeze([
   },
 ]);
 
-const SCANNABLE_EXTENSIONS = new Set([".md", ".ts", ".js", ".json"]);
+// Set by measurement. On the clean verification kit the highest fix-code score is 7, in
+// docs/seeded-invalid-calls.md, and the highest mapping score is 2, in the core package's
+// dist/validation/semantic.js. Fixes 2, 4 and 5 have the fewest distinctive lines, 10 each, and the
+// answer key itself maps all five pairs.
+export const FIX_CODE_RUN_THRESHOLD = 9;
+export const MAPPING_LINE_WINDOW = 4;
+export const MAPPING_PAIR_THRESHOLD = 3;
+const DISTINCTIVE_FIX_LINE_MIN_LENGTH = 12;
 
-const FORBIDDEN_ANSWER_KEY_MARKERS = [
+export const ANSWER_KEY_MARKERS = Object.freeze([
   "Facilitator Answer Key",
   "This document is for evaluation facilitators only",
-];
+]);
 
 const FORBIDDEN_SEEDED_SECTIONS = [
   "Fix & Explanation",
@@ -51,6 +62,9 @@ const FORBIDDEN_SEEDED_SECTIONS = [
   "### Expected Error",
   "### Verified Fix",
 ];
+
+const ANSWER_KEY_MAPPING_PATTERN = /### Expected Error\r?\n- \*\*Error Code:\*\* `([^`]+)`\r?\n- \*\*Error Path:\*\* `([^`]+)`/g;
+const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
 
 /**
  * Extracts TypeScript fix code blocks from the facilitator answer key and writes them into outputDir.
@@ -72,41 +86,191 @@ export async function extractAnswerKeyFixBlocks(outputDir, answerKeyPath = ANSWE
   return writtenFiles;
 }
 
-async function appendEntryFiles(files, dir, entry) {
-  const fullPath = resolve(dir, entry.name);
-  if (entry.isDirectory()) {
-    files.push(...(await collectFiles(fullPath)));
-    return;
+function collapsedLine(line) {
+  return line.trim().replaceAll(/\s+/g, " ");
+}
+
+function substantialLines(text) {
+  return text
+    .split(/\r?\n/)
+    .map(collapsedLine)
+    .filter((line) => line.length >= DISTINCTIVE_FIX_LINE_MIN_LENGTH);
+}
+
+function answerKeyMappings(text) {
+  const mappings = [...text.matchAll(ANSWER_KEY_MAPPING_PATTERN)].map((match, index) => ({
+    callNumber: index + 1,
+    code: match[1],
+    path: match[2],
+  }));
+  assert(
+    mappings.length === EXPECTED_SEEDED_CALLS.length,
+    `answer key must contain exactly ${EXPECTED_SEEDED_CALLS.length} expected code-to-path mappings, found ${mappings.length}`,
+  );
+  return mappings;
+}
+
+function expectedMappings() {
+  return EXPECTED_SEEDED_CALLS.map(({ callNumber, code, path }) => ({ callNumber, code, path }));
+}
+
+function assertExpectedMappings(mappings) {
+  assert(
+    JSON.stringify(mappings) === JSON.stringify(expectedMappings()),
+    "answer key expected code-to-path mappings must match the seeded invalid-call exercise",
+  );
+}
+
+function seededExerciseBlocks(text) {
+  const blocks = extractTypeScriptDocBlocks(text).slice(-EXPECTED_SEEDED_CALLS.length);
+  assert(
+    blocks.length === EXPECTED_SEEDED_CALLS.length,
+    `seeded invalid-call document must contain ${EXPECTED_SEEDED_CALLS.length} exercise blocks`,
+  );
+  return blocks;
+}
+
+function fixFingerprints(blocks, sharedExampleLines, publicExerciseBlocks) {
+  return blocks.map((block, index) => {
+    const lines = substantialLines(block).filter((line) => !sharedExampleLines.has(line));
+    const publicLines = new Set(substantialLines(publicExerciseBlocks[index]));
+    assert(
+      lines.length >= FIX_CODE_RUN_THRESHOLD,
+      `answer key fix ${index + 1} must have at least ${FIX_CODE_RUN_THRESHOLD} distinctive lines`,
+    );
+    return Object.freeze({
+      fixNumber: index + 1,
+      lines: Object.freeze(lines),
+      anchorLines: new Set(lines.filter((line) => !publicLines.has(line))),
+    });
+  });
+}
+
+/**
+ * Reads the live facilitator key to derive independent fix-code and code-to-path recognizers for a gate run.
+ */
+export async function createAnswerKeyContentRecognizers(answerKeyPath = ANSWER_KEY_PATH) {
+  const [answerKeyText, seededExampleText, seededDocumentText] = await Promise.all([
+    readFile(answerKeyPath, "utf8"),
+    readFile(SEEDED_EXAMPLE_PATH, "utf8"),
+    readFile(SEEDED_DOCUMENT_PATH, "utf8"),
+  ]);
+  const sharedExampleLines = new Set(substantialLines(seededExampleText));
+  const blocks = extractTypeScriptDocBlocks(answerKeyText);
+  assert(
+    blocks.length === EXPECTED_SEEDED_CALLS.length,
+    `answer key must contain exactly ${EXPECTED_SEEDED_CALLS.length} verified fix blocks, found ${blocks.length}`,
+  );
+  const mappings = answerKeyMappings(answerKeyText);
+  assertExpectedMappings(mappings);
+  return Object.freeze({
+    fixCode: Object.freeze({
+      fingerprints: Object.freeze(fixFingerprints(blocks, sharedExampleLines, seededExerciseBlocks(seededDocumentText))),
+      threshold: FIX_CODE_RUN_THRESHOLD,
+    }),
+    mapping: Object.freeze({
+      pairs: Object.freeze(mappings.map((mapping) => Object.freeze(mapping))),
+      threshold: MAPPING_PAIR_THRESHOLD,
+      window: MAPPING_LINE_WINDOW,
+    }),
+    sharedExampleLines,
+  });
+}
+
+function distinctCandidateLines(text, sharedExampleLines) {
+  return substantialLines(text).filter((line) => !sharedExampleLines.has(line));
+}
+
+function runUsesFixAnchor(fingerprint, start, size) {
+  if (fingerprint.anchorLines.size === 0) return true;
+  return fingerprint.lines.slice(start, start + size).some((line) => fingerprint.anchorLines.has(line));
+}
+
+function sharedRunLength(fingerprintLines, candidateLines, fingerprintIndex, candidateIndex) {
+  const limit = Math.min(fingerprintLines.length - fingerprintIndex, candidateLines.length - candidateIndex);
+  for (let size = 0; size < limit; size++) {
+    if (fingerprintLines[fingerprintIndex + size] !== candidateLines[candidateIndex + size]) return size;
   }
-  if (entry.isFile()) {
-    files.push(fullPath);
+  return limit;
+}
+
+function longestSharedLineRun(fingerprint, candidateLines) {
+  let longest = 0;
+  for (let fingerprintIndex = 0; fingerprintIndex < fingerprint.lines.length; fingerprintIndex++) {
+    for (let candidateIndex = 0; candidateIndex < candidateLines.length; candidateIndex++) {
+      const size = sharedRunLength(fingerprint.lines, candidateLines, fingerprintIndex, candidateIndex);
+      if (size <= longest) continue;
+      if (runUsesFixAnchor(fingerprint, fingerprintIndex, size)) longest = size;
+    }
+  }
+  return longest;
+}
+
+function higherFixScore(best, candidate) {
+  if (candidate.score > best.score) return candidate;
+  return best;
+}
+
+/**
+ * Returns the highest normalized contiguous distinctive-line score for a facilitator fix in text.
+ */
+export function scoreAnswerKeyFixCode(text, recognizers) {
+  const candidateLines = distinctCandidateLines(text, recognizers.sharedExampleLines);
+  return recognizers.fixCode.fingerprints.reduce(
+    (best, fingerprint) =>
+      higherFixScore(best, {
+        fixNumber: fingerprint.fixNumber,
+        score: longestSharedLineRun(fingerprint, candidateLines),
+        threshold: recognizers.fixCode.threshold,
+      }),
+    { fixNumber: 0, score: 0, threshold: recognizers.fixCode.threshold },
+  );
+}
+
+function pairIsNear(lines, index, pair, window) {
+  const first = Math.max(0, index - window);
+  const last = Math.min(lines.length, index + window + 1);
+  return lines.slice(first, last).some((line) => line.includes(pair.path));
+}
+
+function pairOccursWithinWindow(lines, pair, window) {
+  return lines.some((line, index) => line.includes(pair.code) && pairIsNear(lines, index, pair, window));
+}
+
+/**
+ * Returns the count of expected code-to-path pairs whose two values occur within the configured line window.
+ */
+export function scoreAnswerKeyMapping(text, recognizers) {
+  const lines = text.split(/\r?\n/).map(collapsedLine);
+  const matchedPairs = recognizers.mapping.pairs.filter((pair) => pairOccursWithinWindow(lines, pair, recognizers.mapping.window));
+  return {
+    matchedPairs,
+    score: matchedPairs.length,
+    threshold: recognizers.mapping.threshold,
+    window: recognizers.mapping.window,
+  };
+}
+
+function assertNoAnswerKeyMarkers(text, location) {
+  for (const marker of ANSWER_KEY_MARKERS) {
+    assert(
+      !text.includes(marker),
+      `evaluation kit must never contain facilitator answer key content in ${location} (marker recognizer: ${marker})`,
+    );
   }
 }
 
-async function collectFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    await appendEntryFiles(files, dir, entry);
-  }
-  return files;
-}
-
-function isAnswerKeyFilename(rel) {
-  const lower = rel.toLowerCase();
-  if (lower.includes("answer-key")) return true;
-  if (lower.includes("facilitator")) return true;
-  return false;
-}
-
-function isScannableFile(file) {
-  return SCANNABLE_EXTENSIONS.has(extname(file).toLowerCase());
-}
-
-function assertNoAnswerKeyMarkers(text, rel) {
-  for (const marker of FORBIDDEN_ANSWER_KEY_MARKERS) {
-    assert(!text.includes(marker), `evaluation kit must never contain facilitator answer key content in ${rel}`);
-  }
+function assertNoRecognizedAnswerKeyContent(text, location, recognizers) {
+  const fixCode = scoreAnswerKeyFixCode(text, recognizers);
+  const mapping = scoreAnswerKeyMapping(text, recognizers);
+  assert(
+    fixCode.score < fixCode.threshold,
+    `evaluation kit must never contain facilitator answer key content in ${location} (fix-code recognizer: fix ${fixCode.fixNumber}, score ${fixCode.score}/${fixCode.threshold})`,
+  );
+  assert(
+    mapping.score < mapping.threshold,
+    `evaluation kit must never contain facilitator answer key content in ${location} (code-to-path mapping recognizer: score ${mapping.score}/${mapping.threshold} within ${mapping.window} lines)`,
+  );
 }
 
 function assertCleanSeededDoc(seededDoc) {
@@ -121,22 +285,98 @@ function assertCleanSeededDoc(seededDoc) {
   }
 }
 
-async function assertKitFileClean(kitDir, file) {
+async function appendEntryFiles(files, dir, entry) {
+  const fullPath = resolve(dir, entry.name);
+  if (entry.isDirectory()) {
+    files.push(...(await collectFiles(fullPath)));
+    return;
+  }
+  if (entry.isFile()) files.push(fullPath);
+}
+
+async function collectFiles(dir) {
+  const entries = await readdir(dir, { withFileTypes: true });
+  entries.sort((left, right) => byCodePoint(left.name, right.name));
+  const files = [];
+  for (const entry of entries) {
+    await appendEntryFiles(files, dir, entry);
+  }
+  return files;
+}
+
+function isAnswerKeyFilename(rel) {
+  const lower = rel.toLowerCase();
+  if (lower.includes("answer-key")) return true;
+  if (lower.includes("facilitator")) return true;
+  return false;
+}
+
+function decodeUtf8(bytes) {
+  try {
+    return UTF8_DECODER.decode(bytes);
+  } catch (error) {
+    if (error instanceof TypeError) return null;
+    throw error;
+  }
+}
+
+async function readValidUtf8Text(file) {
+  return decodeUtf8(await readFile(file));
+}
+
+async function assertTextHasNoAnswerKey(text, location, recognizers) {
+  if (text === null) return;
+  assertNoAnswerKeyMarkers(text, location);
+  assertNoRecognizedAnswerKeyContent(text, location, recognizers);
+}
+
+async function assertKitFileClean(kitDir, file, recognizers) {
   const rel = relative(kitDir, file);
-  assert(!isAnswerKeyFilename(rel), `evaluation kit must never contain facilitator answer key file: ${rel}`);
-  if (!isScannableFile(file)) return;
-  const text = await readFile(file, "utf8");
-  assertNoAnswerKeyMarkers(text, rel);
+  assert(!isAnswerKeyFilename(rel), `evaluation kit must never contain facilitator answer key file: ${rel} (file-name rule)`);
+  const text = await readValidUtf8Text(file);
+  await assertTextHasNoAnswerKey(text, rel, recognizers);
+}
+
+function artifactEntries(identity) {
+  assert(Array.isArray(identity.artifacts), "identity.json must list packed artifacts");
+  return identity.artifacts.map(({ filename }) => filename).sort(byCodePoint);
+}
+
+async function assertArtifactEntriesClean(kitDir, artifactName, recognizers) {
+  const extractionDir = await mkdtemp(resolve(tmpdir(), "bloodtrail-answer-key-artifact-"));
+  try {
+    const artifactPath = resolve(kitDir, artifactName);
+    runChecked("tar", ["-xzf", artifactPath, "-C", extractionDir]);
+    const entries = await collectFiles(extractionDir);
+    for (const entry of entries) {
+      const entryName = relative(extractionDir, entry);
+      const location = `packed artifact ${artifactName} entry ${entryName}`;
+      assert(!isAnswerKeyFilename(entryName), `evaluation kit must never contain facilitator answer key file: ${location} (file-name rule)`);
+      const text = await readValidUtf8Text(entry);
+      await assertTextHasNoAnswerKey(text, location, recognizers);
+    }
+  } finally {
+    await rm(extractionDir, { recursive: true, force: true });
+  }
+}
+
+async function assertPackedArtifactsExcludeAnswerKey(kitDir, recognizers) {
+  const identity = JSON.parse(await readFile(resolve(kitDir, "identity.json"), "utf8"));
+  for (const artifactName of artifactEntries(identity)) {
+    await assertArtifactEntriesClean(kitDir, artifactName, recognizers);
+  }
 }
 
 /**
- * Asserts that the kit directory contains no answer key files and no answer key content.
+ * Asserts that the kit directory and every valid UTF-8 packed-artifact entry contain no answer-key material.
  */
 export async function assertKitExcludesAnswerKey(kitDir) {
+  const recognizers = await createAnswerKeyContentRecognizers();
   const allFiles = await collectFiles(kitDir);
   for (const file of allFiles) {
-    await assertKitFileClean(kitDir, file);
+    await assertKitFileClean(kitDir, file, recognizers);
   }
+  await assertPackedArtifactsExcludeAnswerKey(kitDir, recognizers);
 
   const seededDocPath = resolve(kitDir, "docs/seeded-invalid-calls.md");
   if (allFiles.includes(seededDocPath)) {
