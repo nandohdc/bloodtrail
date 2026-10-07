@@ -80,7 +80,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 14. #714 — Reject installer warnings about shipped settings
 
-- [ ] 14.1 Fail an installation whose output names a shipped setting as unknown, ignored, or no longer read,
+- [x] 14.1 Fail an installation whose output names a shipped setting as unknown, ignored, or no longer read,
   and prove the pnpm-only-setting controls fail at that check.
 
 ## 15. #715 — Require synthetic document and example values

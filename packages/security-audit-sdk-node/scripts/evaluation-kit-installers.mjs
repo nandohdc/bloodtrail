@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
@@ -15,12 +16,112 @@ export const PNPM_SETTINGS_FILE = "pnpm-workspace.yaml";
 
 const CORE_PACKAGE = "@bloodtrail/security-audit-sdk-core";
 
-// What an installer prints when it drops a kit setting, as measured on the pinned
-// pnpm releases: `The "pnpm" field in package.json is no longer read by pnpm. The
-// following keys were ignored: "pnpm.overrides".`
-const IGNORED_SETTING_PATTERNS = Object.freeze([/no longer read/i, /\bwere ignored\b/i]);
-
 const INSTALLER_DOCS = Object.freeze(["docs/quickstart.md", "docs/known-issues.md"]);
+const SETTING_WARNING_PHRASE = /\bunknown\b|\bignored\b|\bno longer read\b/i;
+const TOKEN_CHARACTER = /[\p{L}\p{N}_-]/u;
+const NPM_SETTINGS_FILE = ".npmrc";
+const MANIFEST_FILE = "package.json";
+
+function settingRecord(name, source) {
+  return { name, source };
+}
+
+function npmrcSettingName(line) {
+  const trimmed = line.trim();
+  if (trimmed.startsWith("#")) return null;
+  if (trimmed.startsWith(";")) return null;
+  const separator = trimmed.indexOf("=");
+  if (separator <= 0) return null;
+  return trimmed.slice(0, separator).trim() || null;
+}
+
+function readNpmrcSettings(installDir) {
+  const source = NPM_SETTINGS_FILE;
+  const path = resolve(installDir, source);
+  if (!existsSync(path)) return [];
+  return readFileSync(path, "utf8")
+    .split(/\r?\n/)
+    .flatMap((line) => {
+      const name = npmrcSettingName(line);
+      return name ? [settingRecord(name, source)] : [];
+    });
+}
+
+function pnpmWorkspaceSettingName(line) {
+  if (line !== line.trimStart()) return null;
+  if (line.startsWith("#")) return null;
+  const separator = line.indexOf(":");
+  if (separator <= 0) return null;
+  return line.slice(0, separator).trim() || null;
+}
+
+function readPnpmWorkspaceSettings(installDir) {
+  const source = PNPM_SETTINGS_FILE;
+  const path = resolve(installDir, source);
+  if (!existsSync(path)) return [];
+  return readFileSync(path, "utf8")
+    .split(/\r?\n/)
+    .flatMap((line) => {
+      const name = pnpmWorkspaceSettingName(line);
+      return name ? [settingRecord(name, source)] : [];
+    });
+}
+
+function objectKeys(value) {
+  if (!value || typeof value !== "object") return [];
+  if (Array.isArray(value)) return [];
+  return Object.keys(value);
+}
+
+function readManifestSettings(installDir) {
+  const source = MANIFEST_FILE;
+  const path = resolve(installDir, source);
+  if (!existsSync(path)) return [];
+  const manifest = JSON.parse(readFileSync(path, "utf8"));
+  const settings = [];
+  if (Object.hasOwn(manifest, "overrides")) settings.push(settingRecord("overrides", source));
+  if (Object.hasOwn(manifest, "pnpm")) {
+    settings.push(settingRecord("pnpm", source));
+    for (const key of objectKeys(manifest.pnpm)) {
+      settings.push(settingRecord(`pnpm.${key}`, source));
+    }
+  }
+  return settings;
+}
+
+function readShippedSettings(installDir) {
+  return [
+    ...readNpmrcSettings(installDir),
+    ...readPnpmWorkspaceSettings(installDir),
+    ...readManifestSettings(installDir),
+  ];
+}
+
+function isTokenCharacter(character = "") {
+  return TOKEN_CHARACTER.test(character);
+}
+
+function isSettingBoundary(before, after) {
+  return !isTokenCharacter(before) && !isTokenCharacter(after);
+}
+
+function lineNamesSetting(line, name) {
+  const segments = line.split(name);
+  return segments.slice(0, -1).some((before, index) => isSettingBoundary(before.at(-1), segments[index + 1].at(0)));
+}
+
+function reportedSettingsOnLine(line, settings) {
+  if (!SETTING_WARNING_PHRASE.test(line)) return [];
+  return settings.filter(({ name }) => lineNamesSetting(line, name)).map((setting) => ({ ...setting, line }));
+}
+
+function findReportedSettings(output, settings) {
+  return output.split(/\r?\n/).flatMap((line) => reportedSettingsOnLine(line, settings));
+}
+
+function formatSettingFindings(findings) {
+  return findings.map(({ name, source, line }) => `${name} from ${source}: ${JSON.stringify(line)}`).join("\n");
+}
 
 function pnpmMajor(release) {
   return release.split(".")[0];
@@ -39,12 +140,16 @@ export function createPnpmSettings(coreFilename) {
 }
 
 export function runInstaller(label, command, args, cwd) {
+  const shippedSettings = readShippedSettings(cwd);
   const result = spawnSync(command, args, { cwd, encoding: "utf8" });
   if (result.error) throw result.error;
   const output = `${result.stdout}${result.stderr}`;
   assert(result.status === 0, `${label} install failed with exit status ${String(result.status)}:\n${output}`);
-  const ignored = IGNORED_SETTING_PATTERNS.find((pattern) => pattern.test(output));
-  assert(!ignored, `${label} reported an ignored kit setting (${String(ignored)}):\n${output}`);
+  const findings = findReportedSettings(output, shippedSettings);
+  assert(
+    findings.length === 0,
+    `${label} reported a shipped kit setting as unknown, ignored or no longer read:\n${formatSettingFindings(findings)}`,
+  );
   return output;
 }
 

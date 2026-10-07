@@ -420,7 +420,7 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: () => "distributable build refused in that clone once it held an uncommitted change",
   }),
   "npm-installation": Object.freeze({
-    clause: () => "kit installed outside any workspace with npm and no ignored setting",
+    clause: () => "kit installed outside any workspace with npm, and no setting the kit ships reported as unknown, ignored or no longer read",
   }),
   "document-references": Object.freeze({
     clause: () =>
@@ -452,7 +452,7 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: () => "HTTP audit sink failure paths and lifecycle transitions verified",
   }),
   "pnpm-installations": Object.freeze({
-    clause: () => `kit installed outside any workspace with pnpm ${PNPM_RELEASES.join(", ")}, with no ignored setting, a passing first-event example, and one core copy per installation`,
+    clause: () => `kit installed outside any workspace with pnpm ${PNPM_RELEASES.join(", ")}, with no setting the kit ships reported as unknown, ignored or no longer read, a passing first-event example, and one core copy per installation`,
   }),
 });
 

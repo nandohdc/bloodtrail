@@ -29,17 +29,13 @@ import {
 import { CHECKSUM_LIST_FILE, IDENTITY_FILE, KIT_DIGEST_FILE, runChecksumListCheck, runKitDigestCheck, sha256Hex, writeChecksumList } from "./evaluation-kit-checksums.mjs";
 import { ANSWER_KEY_PATH } from "./evaluation-kit-answer-key.mjs";
 import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
-import {
-  PNPM_RELEASES,
-  PNPM_SETTINGS_FILE,
-  supportedPnpmPhrase,
-  verifyPnpmInstall,
-} from "./evaluation-kit-installers.mjs";
+import { verifyPnpmInstall } from "./evaluation-kit-installers.mjs";
 import { KIT_PACKAGES, createKitTreeClone, verifyStaleBuildOutputExcluded } from "./evaluation-kit-source-copy.mjs";
 import { CLONE_PLANT_CONTROLS, checkCloneUmaskProof, createClonePlantControlRunners } from "./check-evaluation-kit-clone-controls.mjs";
 import { ANSWER_KEY_CONTROL_DEFINITIONS, createAnswerKeyControlRunners } from "./check-evaluation-kit-answer-key-controls.mjs";
 import { DOCUMENT_CONTROL_DEFINITIONS, createDocumentControlRunners } from "./check-evaluation-kit-document-controls.mjs";
 import { RECEIVER_CONTROL_DEFINITIONS, createReceiverControlRunners } from "./check-evaluation-kit-receiver-controls.mjs";
+import { INSTALLER_CONTROL_DEFINITIONS, createInstallerControlRunners } from "./check-evaluation-kit-installer-controls.mjs";
 import { byCodePoint, runChecked } from "./verification-helpers.mjs";
 
 // Every planted-defect control declares the one check that must reject its measured plant. This remains the
@@ -56,9 +52,7 @@ const CONTROL_DEFINITIONS = Object.freeze([
   { label: "missing kit item", identity: "kit-identity" },
   ...CLONE_PLANT_CONTROLS.map(({ label, identity }) => ({ label, identity })),
   { label: "failure-path program type error (across all TypeScript matrix legs)", identity: "kit-source-typecheck" },
-  { label: "pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)", identity: "pnpm-installations" },
-  { label: "ignored pnpm setting reported (pnpm 11 and 12 legs)", identity: "pnpm-installations" },
-  { label: "installer docs missing the supported pnpm majors", identity: "installer-documentation" },
+  ...INSTALLER_CONTROL_DEFINITIONS,
   { label: "builder packing the build output on disk (with a null control)", identity: "reproducible-identity" },
   { label: "document changed after the build", identity: "kit-identity" },
   { label: "evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block", identity: "unpacked-kit-integrity" },
@@ -98,7 +92,58 @@ const REBUILD_CLAIMS = Object.freeze([
   "verification kit built from tracked sources",
   "verification-kit identity reproduced after stale build output and untracked sources were planted",
 ]);
-const BUILD_MODE_ONLY_IDENTITIES = Object.freeze(["verification-kit-build", "reproducible-identity", "distributable-kit-match", "dirty-tree-refusal"]);
+const EXPECTED_BUILD_CHECK_IDENTITIES = Object.freeze([
+  "verification-kit-build",
+  "kit-identity",
+  "answer-key-exclusion",
+  "unpacked-kit-integrity",
+  "installer-documentation",
+  "planned-feature-documentation",
+  "document-fence-languages",
+  "reproducible-identity",
+  "distributable-kit-match",
+  "dirty-tree-refusal",
+  "npm-installation",
+  "document-references",
+  "npm-single-core-copy",
+  "kit-source-typecheck",
+  "document-block-execution",
+  "facilitator-answer-key-fix-typecheck",
+  "first-event-example",
+  "loopback-example-exchange",
+  "seeded-invalid-calls",
+  "http-audit-sink-failure-paths",
+  "pnpm-installations",
+]);
+const EXPECTED_KIT_DIR_CHECK_IDENTITIES = Object.freeze([
+  "kit-identity",
+  "answer-key-exclusion",
+  "unpacked-kit-integrity",
+  "installer-documentation",
+  "planned-feature-documentation",
+  "document-fence-languages",
+  "npm-installation",
+  "document-references",
+  "npm-single-core-copy",
+  "kit-source-typecheck",
+  "document-block-execution",
+  "facilitator-answer-key-fix-typecheck",
+  "first-event-example",
+  "loopback-example-exchange",
+  "seeded-invalid-calls",
+  "http-audit-sink-failure-paths",
+  "pnpm-installations",
+]);
+const REVISED_INSTALLER_CLAUSES = Object.freeze([
+  {
+    identity: "npm-installation",
+    clause: "kit installed outside any workspace with npm, and no setting the kit ships reported as unknown, ignored or no longer read",
+  },
+  {
+    identity: "pnpm-installations",
+    clause: "kit installed outside any workspace with pnpm 10.17.0, 11.28.2, 12.8.1, with no setting the kit ships reported as unknown, ignored or no longer read, a passing first-event example, and one core copy per installation",
+  },
+]);
 const VERIFICATION_SUMMARY_PREFIX = "evaluation kit verification passed: ";
 const LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE = "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, the 422 to an event that passed the ingress's structural check but failed SDK validation, acknowledged the corrected event with the SDK-invalid event's identity, a byte-identical duplicate and a redelivered event, and kept serving after each; it required the Bearer scheme in any letter case, answered 404 to a POST on another path and 405 with Allow: POST to another method, and counted a client abort as neither a 500 nor a rejection; after answering 401, 404 and 413 to a body past its bound it closed the connection, accepting no more than the socket buffers hold";
 const DISTRIBUTABLE_KIT_UMASK_CLAUSE = "distributable kit built under umask 077 from a disposable clean clone of the tree under test, with the same artifacts and checksum list as the verification kit apart from its identity file";
@@ -110,8 +155,6 @@ const NON_REGULAR_KIT_PATH = "docs/planted-link.md";
 // only the gate's type-check can catch it.
 const FAILURE_PATHS_TYPE_ERROR = Object.freeze({ anchor: '"timeout-1"', replacement: "1" });
 
-// pnpm 11 and later no longer read the manifest's `pnpm` field.
-const [PNPM_READING_MANIFEST_FIELD, ...PNPM_IGNORING_MANIFEST_FIELD] = PNPM_RELEASES;
 
 async function withKitCopy(kitDir, tempPrefix, run) {
   const kitCopy = await mkdtemp(resolve(tmpdir(), tempPrefix));
@@ -243,17 +286,13 @@ function rewriteManifest(text, mutate) {
   return JSON.stringify(manifest, null, 2) + "\n";
 }
 
-function copyNpmOverrideIntoPnpmField(pkg) {
-  pkg.pnpm = { overrides: { ...pkg.overrides } };
-}
-
-const PNPM_SETTINGS_WITHOUT_OVERRIDE = "packages: []\noverrides: {}\n";
-
-async function assertPnpmLegFails(kitCopy, release, expectInMessage) {
+async function assertPnpmLegFails(kitCopy, release, expectedPhrases) {
   const failure = await captureFailure(() => verifyPnpmInstall(kitCopy, release));
   assert.ok(failure, `pnpm ${release} leg must fail closed`);
   assert.ok(failure.message.includes(`pnpm ${release}`), `pnpm ${release} leg failure must name its release: ${failure.message}`);
-  assert.ok(failure.message.includes(expectInMessage), `pnpm ${release} leg must report "${expectInMessage}": ${failure.message}`);
+  for (const phrase of expectedPhrases) {
+    assert.ok(failure.message.includes(phrase), `pnpm ${release} leg must report "${phrase}": ${failure.message}`);
+  }
 }
 
 async function checkMissingCoreControl(kitDir, identity, { _disabledChecks = [] } = {}) {
@@ -524,79 +563,6 @@ async function checkFailurePathTypeErrorControl(kitDir, { _disabledChecks = [] }
   return completeControl(control, measurements);
 }
 
-// pnpm 10 reads the manifest field; pnpm 11 and 12 ignore it. Keep a valid settings file without
-// overrides so only the pnpm-installations check can reject the manifest-only override.
-async function checkPnpmFieldOnlyOverrideControl(kitDir, { _disabledChecks = [] } = {}) {
-  const control = controlFor("pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)");
-  const measurements = [];
-  await withKitCopy(kitDir, "bloodtrail-ctrl-pnpm-field-only-", async (kitCopy) => {
-    await rewriteMeasuredKitFile(
-      { kitCopy, measurements },
-      "package.json",
-      (text) => rewriteManifest(text, copyNpmOverrideIntoPnpmField),
-      { reseal: false },
-    );
-    await rewriteMeasuredKitFile(
-      { kitCopy, measurements },
-      PNPM_SETTINGS_FILE,
-      () => PNPM_SETTINGS_WITHOUT_OVERRIDE,
-      { reseal: false },
-    );
-    await resealKit(kitCopy);
-    await captureGateFailure(control, kitCopy, { _disabledChecks });
-    await verifyPnpmInstall(kitCopy, PNPM_READING_MANIFEST_FIELD);
-    for (const release of PNPM_IGNORING_MANIFEST_FIELD) {
-      await assertPnpmLegFails(kitCopy, release, "no longer read");
-    }
-    assert.equal(measurements.length, 2, "manifest-only pnpm override control must record both measured plants");
-  });
-  return completeControl(control, measurements);
-}
-
-// With a valid settings override, pnpm 11 and 12 install successfully and only warn about the manifest
-// field, so the gate's ignored-setting condition is the one that fails.
-async function checkIgnoredPnpmSettingControl(kitDir, { _disabledChecks = [] } = {}) {
-  const control = controlFor("ignored pnpm setting reported (pnpm 11 and 12 legs)");
-  const measurements = [];
-  const reported = "reported an ignored kit setting";
-  await withKitCopy(kitDir, "bloodtrail-ctrl-ignored-pnpm-setting-", async (kitCopy) => {
-    await rewriteMeasuredKitFile(
-      { kitCopy, measurements },
-      "package.json",
-      (text) => rewriteManifest(text, copyNpmOverrideIntoPnpmField),
-    );
-    const [firstIgnoring, ...laterIgnoring] = PNPM_IGNORING_MANIFEST_FIELD;
-    const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
-    assert.ok(
-      failure.cause.message.includes(`pnpm ${firstIgnoring} ${reported}`),
-      `pnpm ${firstIgnoring} must report its ignored setting: ${failure.cause.message}`,
-    );
-    for (const release of laterIgnoring) {
-      await assertPnpmLegFails(kitCopy, release, reported);
-    }
-    assert.equal(measurements.length, 1, "ignored pnpm setting control must record one measured plant");
-  });
-  return completeControl(control, measurements);
-}
-
-async function checkInstallerDocsControl(kitDir, { _disabledChecks = [] } = {}) {
-  const control = controlFor("installer docs missing the supported pnpm majors");
-  const measurements = [];
-  await withKitCopy(kitDir, "bloodtrail-ctrl-installer-docs-", async (kitCopy) => {
-    await rewriteMeasuredKitFile(
-      { kitCopy, measurements },
-      "docs/quickstart.md",
-      (text) => text.replaceAll(supportedPnpmPhrase(), "pnpm (v10+)"),
-    );
-    const failure = await captureGateFailure(control, kitCopy, { _disabledChecks });
-    assert.ok(
-      failure.cause.message.includes("docs/quickstart.md"),
-      `installer documentation must name the changed document: ${failure.cause.message}`,
-    );
-    assert.equal(measurements.length, 1, "installer documentation control must record one measured plant");
-  });
-  return completeControl(control, measurements);
-}
 
 function formatThreeChecksumMaterial(identity) {
   const entries = identity.artifacts.map(({ filename, sha256 }) => ({ path: filename, sha256 }));
@@ -932,9 +898,18 @@ const CONTROL_RUNNERS = Object.freeze([
   ["missing kit item", ({ kitDir, _disabledChecks }) => checkMissingItemControl(kitDir, { _disabledChecks })],
   ...createClonePlantControlRunners({ controlFor, captureDirectCheckFailure, completeControl }),
   ["failure-path program type error (across all TypeScript matrix legs)", ({ kitDir, _disabledChecks }) => checkFailurePathTypeErrorControl(kitDir, { _disabledChecks })],
-  ["pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)", ({ kitDir, _disabledChecks }) => checkPnpmFieldOnlyOverrideControl(kitDir, { _disabledChecks })],
-  ["ignored pnpm setting reported (pnpm 11 and 12 legs)", ({ kitDir, _disabledChecks }) => checkIgnoredPnpmSettingControl(kitDir, { _disabledChecks })],
-  ["installer docs missing the supported pnpm majors", ({ kitDir, _disabledChecks }) => checkInstallerDocsControl(kitDir, { _disabledChecks })],
+  ...createInstallerControlRunners({
+    applyMeasuredPlant,
+    assertPnpmLegFails,
+    captureFailure,
+    captureGateFailure,
+    completeControl,
+    controlFor,
+    resealKit,
+    rewriteManifest,
+    rewriteMeasuredKitFile,
+    withKitCopy,
+  }),
   ["builder packing the build output on disk (with a null control)", ({ _disabledChecks }) => checkPackedBuildOutputControl({ _disabledChecks })],
   ["document changed after the build", ({ kitDir, _disabledChecks }) => checkChangedDocumentControl(kitDir, { _disabledChecks })],
   ["evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block", ({ kitDir, _disabledChecks }) => checkGuideIntegrityCommandControl(kitDir, { _disabledChecks })],
@@ -1081,7 +1056,7 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 66, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 67, "the control table must declare every expected control");
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label, identity }) => controlFor(label).identity), CLONE_PLANT_CONTROLS.map(({ identity }) => identity));
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label }) => CONTROL_RUNNERS_BY_LABEL.has(label)), CLONE_PLANT_CONTROLS.map(() => true));
   assert.throws(
@@ -1153,21 +1128,31 @@ async function checkIdentityAndDisableSeamProof(kitDir) {
   return "tagged failures retain their causes, and the JavaScript-only disabled-check seam skips and does not claim checks or their duplicate-core plant hook";
 }
 
+function assertRevisedInstallerClauses(result, mode) {
+  for (const expected of REVISED_INSTALLER_CLAUSES) {
+    const check = result.verificationChecks.find(({ identity }) => identity === expected.identity);
+    assert.ok(check, `${mode} run must record ${expected.identity}`);
+    assert.equal(clauseForCheck(check), expected.clause, `${mode} run must preserve the ${expected.identity} clause`);
+    assert.ok(result.summary.includes(expected.clause), `${mode} summary must include the ${expected.identity} clause`);
+  }
+}
+
 async function checkSummaryCompositionProof(kitDir) {
   const buildMode = await checkEvaluationKit();
   assert.deepEqual(
     buildMode.checkIdentities,
-    KIT_GATE_CHECK_IDENTITIES,
+    EXPECTED_BUILD_CHECK_IDENTITIES,
     "a build-mode run must record every stable kit-gate check identity in order",
   );
 
   const kitDirMode = await checkEvaluationKit({ kitDir });
-  const expectedKitDirIdentities = buildMode.checkIdentities.filter((identity) => !BUILD_MODE_ONLY_IDENTITIES.includes(identity));
   assert.deepEqual(
     kitDirMode.checkIdentities,
-    expectedKitDirIdentities,
-    "a --kit-dir run must record the build-mode identities except checks that rebuild",
+    EXPECTED_KIT_DIR_CHECK_IDENTITIES,
+    "a --kit-dir run must record every stable kit-gate check identity that does not rebuild",
   );
+  assertRevisedInstallerClauses(buildMode, "build-mode");
+  assertRevisedInstallerClauses(kitDirMode, "--kit-dir");
 
   const fullClauses = buildMode.verificationChecks.map(clauseForCheck);
   assert.ok(buildMode.summary.includes(DISTRIBUTABLE_KIT_UMASK_CLAUSE), `the build-mode summary must name the clone's fixed umask: ${buildMode.summary}`);
