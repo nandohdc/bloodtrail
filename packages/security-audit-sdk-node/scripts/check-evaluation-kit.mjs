@@ -1,7 +1,8 @@
+import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { appendFile, copyFile, cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { assertOutsideRepository, buildEvaluationKit, verifyKitIdentity } from "./build-evaluation-kit.mjs";
@@ -13,7 +14,13 @@ import {
 } from "./evaluation-kit-answer-key.mjs";
 import { CHECKSUM_LIST_FILE, IDENTITY_FILE, parseChecksumList, sha256Hex, verifyUnpackedKitIntegrity } from "./evaluation-kit-checksums.mjs";
 import { startLoopbackServer, verifyHttpExchange } from "./evaluation-kit-delivery-checks.mjs";
-import { extractDocBlocksFromDir } from "./evaluation-kit-doc-blocks.mjs";
+import {
+  assertKitDocFenceLanguages,
+  containsDeclareKeyword,
+  extractDocBlocksFromDir,
+  extractTypeScriptFencedBlocks,
+  markdownDocumentNames,
+} from "./evaluation-kit-doc-blocks.mjs";
 import { assertKitDocsClaimOnlyWhatShips } from "./evaluation-kit-doc-claims.mjs";
 import { assertKitDocReferences } from "./evaluation-kit-doc-references.mjs";
 import {
@@ -119,6 +126,64 @@ async function typecheckKitSources(tempInstall) {
     await extractDocBlocksFromDir(docsDir, docBlocksDir);
   }
   await typecheckSources(tempInstall, ["examples/**/*.ts", "doc-blocks/**/*.ts", "gate/**/*.ts"]);
+}
+
+const DOC_BLOCK_RUN_DIR = "doc-block-runs";
+const DOC_BLOCK_RUN_DEADLINE_MS = 30_000;
+const DOC_BLOCK_RUN_STDERR_LINES = 8;
+
+// The first lines of a failed run's stderr, so the failure names the block's own diagnostic.
+function stderrHead(stderr) {
+  const head = stderr.trim().split("\n").slice(0, DOC_BLOCK_RUN_STDERR_LINES).join("\n");
+  return head ? `\n${head}` : "";
+}
+
+// How one failed run is reported: the document, the block's index and opening line, the exit code or
+// signal, and the first lines of its stderr.
+function documentBlockRunFailure(run, result) {
+  if (result.error) {
+    const cause =
+      result.error.code === "ETIMEDOUT"
+        ? `killed by the ${DOC_BLOCK_RUN_DEADLINE_MS / 1000}-second deadline (${result.signal})`
+        : `could not start: ${result.error.message}`;
+    return `docs/${run.document} block ${run.index} (line ${run.openingLine}): ${cause}${stderrHead(result.stderr)}`;
+  }
+  if (result.status !== 0) {
+    const outcome = result.signal ? `killed by signal ${result.signal}` : `exit status ${result.status}`;
+    return `docs/${run.document} block ${run.index} (line ${run.openingLine}): ${outcome}${stderrHead(result.stderr)}`;
+  }
+  return null;
+}
+
+// Runs every TypeScript document block without a declare keyword inside the installed kit: each block is
+// written as its own document-and-index file and run under a per-block deadline with the installation as
+// the working directory. Returns how many blocks ran.
+async function runRunnableDocBlocks(tempInstall) {
+  const docsDir = resolve(tempInstall, "docs");
+  const runsDir = resolve(tempInstall, DOC_BLOCK_RUN_DIR);
+  await mkdir(runsDir, { recursive: true });
+  const documents = await markdownDocumentNames(docsDir);
+  let ranCount = 0;
+  for (const name of documents) {
+    const text = await readFile(resolve(docsDir, name), "utf8");
+    for (const [index, block] of extractTypeScriptFencedBlocks(text).entries()) {
+      if (containsDeclareKeyword(block.body)) continue;
+      const filePath = resolve(runsDir, `${basename(name, ".md")}-block-${index + 1}.ts`);
+      await writeFile(filePath, `${block.body}\n`, "utf8");
+      const result = spawnSync(process.execPath, ["--no-warnings", filePath], {
+        cwd: tempInstall,
+        encoding: "utf8",
+        timeout: DOC_BLOCK_RUN_DEADLINE_MS,
+      });
+      const failure = documentBlockRunFailure(
+        { document: name, index: index + 1, openingLine: block.openingLine },
+        result,
+      );
+      assert(failure === null, failure);
+      ranCount += 1;
+    }
+  }
+  return ranCount;
 }
 
 export const ANSWER_KEY_MISSING_MESSAGE = "facilitator answer key missing: facilitator/seeded-invalid-calls-answer-key.md";
@@ -341,6 +406,9 @@ export const KIT_GATE_CHECKS = Object.freeze({
   "planned-feature-documentation": Object.freeze({
     clause: () => "kit documents describe planned features only as planned",
   }),
+  "document-fence-languages": Object.freeze({
+    clause: () => "every kit document fence names an allowlisted language, matched in any letter case with any info string: bash, http, json, sh, ts, typescript",
+  }),
   "reproducible-identity": Object.freeze({
     clause: () => "verification-kit identity reproduced after stale build output and untracked sources were planted",
   }),
@@ -361,6 +429,10 @@ export const KIT_GATE_CHECKS = Object.freeze({
   }),
   "kit-source-typecheck": Object.freeze({
     clause: () => `examples, document blocks, and failure-path program type-checked under strict consumer settings with ${TYPESCRIPT_MATRIX}`,
+  }),
+  "document-block-execution": Object.freeze({
+    clause: ({ ranCount }) =>
+      `every TypeScript kit document block without declare ran to completion in the installed kit (${ranCount} blocks)`,
   }),
   "facilitator-answer-key-fix-typecheck": Object.freeze({
     clause: () => `facilitator answer-key fixes type-checked under strict consumer settings with ${TYPESCRIPT_MATRIX}`,
@@ -489,6 +561,9 @@ export async function checkEvaluationKit({
     // 1d. The kit's documents describe OCSF export, OpenTelemetry transport, CloudEvents envelopes, retries, queues and framework adapters only as planned
     await runCheck(completedChecks, disabledChecks, "planned-feature-documentation", () => assertKitDocsClaimOnlyWhatShips(kitDir));
 
+    // 1e. Every fence in the kit's documents names an allowlisted language, matched in any letter case and with any info string
+    await runCheck(completedChecks, disabledChecks, "document-fence-languages", () => assertKitDocFenceLanguages(kitDir));
+
     // 2. Reproducibility: the same tracked tree rebuilds to the same digests, with or without stale build output on disk
     if (buildsOwnKit) {
       await runCheck(completedChecks, disabledChecks, "reproducible-identity", async () => {
@@ -530,7 +605,13 @@ export async function checkEvaluationKit({
       return undefined;
     });
 
-    // 5a. Type-check facilitator answer-key fixes under every consumer TypeScript leg.
+    // 5b. Run every TypeScript document block that contains no declare, in the installed kit, each under a deadline.
+    await runCheck(completedChecks, disabledChecks, "document-block-execution", async () => {
+      const ranCount = await runRunnableDocBlocks(tempInstall);
+      return { ranCount };
+    });
+
+    // 5c. Type-check facilitator answer-key fixes under every consumer TypeScript leg.
     await runCheck(completedChecks, disabledChecks, "facilitator-answer-key-fix-typecheck", async () => {
       await checkAnswerKeyFixTypecheck({ tempInstall });
       return undefined;

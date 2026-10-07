@@ -38,6 +38,7 @@ import {
 import { KIT_PACKAGES, createKitTreeClone, verifyStaleBuildOutputExcluded } from "./evaluation-kit-source-copy.mjs";
 import { CLONE_PLANT_CONTROLS, checkCloneUmaskProof, createClonePlantControlRunners } from "./check-evaluation-kit-clone-controls.mjs";
 import { ANSWER_KEY_CONTROL_DEFINITIONS, createAnswerKeyControlRunners } from "./check-evaluation-kit-answer-key-controls.mjs";
+import { DOCUMENT_CONTROL_DEFINITIONS, createDocumentControlRunners } from "./check-evaluation-kit-document-controls.mjs";
 import { RECEIVER_CONTROL_DEFINITIONS, createReceiverControlRunners } from "./check-evaluation-kit-receiver-controls.mjs";
 import { byCodePoint, runChecked } from "./verification-helpers.mjs";
 
@@ -63,6 +64,7 @@ const CONTROL_DEFINITIONS = Object.freeze([
   { label: "evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block", identity: "unpacked-kit-integrity" },
   { label: "sink rewriting service.name between the SDK and the receiver", identity: "loopback-example-exchange" },
   ...RECEIVER_CONTROL_DEFINITIONS,
+  ...DOCUMENT_CONTROL_DEFINITIONS,
   { label: "mid-body stall mapped to malformed acknowledgment", identity: "http-audit-sink-failure-paths" },
   { label: "facilitator answer key content copied into the kit", identity: "answer-key-exclusion" },
   ...ANSWER_KEY_CONTROL_DEFINITIONS,
@@ -71,7 +73,7 @@ const CONTROL_DEFINITIONS = Object.freeze([
   { label: "429 classified as a permanent failure in the packed Node binding", identity: "http-audit-sink-failure-paths" },
   { label: "first-event example whose sink rejects the event", identity: "first-event-example" },
   { label: "seeded invalid call 1 given the actor it omits", identity: "seeded-invalid-calls" },
-  { label: "createHttpAuditSink removed from the packed entry point's runtime exports", identity: "loopback-example-exchange" },
+  { label: "createHttpAuditSink removed from the packed entry point's runtime exports", identity: "document-block-execution" },
 ]);
 
 function validateControlDefinitions(definitions) {
@@ -910,8 +912,8 @@ async function checkRemovedExportControl(kitDir, { _disabledChecks = [] } = {}) 
       "dist/index.js",
       (text) => text.replace('export { createHttpAuditSink } from "./http-audit-sink.js";\n', ""),
     );
-    // The example service is the first program the gate runs that imports this export, so the loopback
-    // exchange is the check that meets the omission.
+    // Document blocks run before the examples, so the first importer is a kit document block, and
+    // document-block-execution is the check that meets the omission.
     await captureGateFailure(control, kitCopy, { _disabledChecks });
   });
   assert.equal(measurements.length, 1, "removed export control must record one measured tarball plant");
@@ -938,6 +940,7 @@ const CONTROL_RUNNERS = Object.freeze([
   ["evaluation guide integrity commands that are not shasum, name an unshipped file, print an unrecorded digest, or sit outside an sh block", ({ kitDir, _disabledChecks }) => checkGuideIntegrityCommandControl(kitDir, { _disabledChecks })],
   ["sink rewriting service.name between the SDK and the receiver", ({ kitDir, _disabledChecks }) => checkRewritingSinkControl(kitDir, { _disabledChecks })],
   ...createReceiverControlRunners({ controlFor, assertMeasuredKitDefectFails, completeControl }),
+  ...createDocumentControlRunners({ controlFor, captureGateFailure, completeControl }),
   ["mid-body stall mapped to malformed acknowledgment", ({ kitDir, _disabledChecks }) => checkMidBodyStallControl(kitDir, { _disabledChecks })],
   ["facilitator answer key content copied into the kit", ({ kitDir, _disabledChecks }) => checkAnswerKeyInKitControl(kitDir, { _disabledChecks })],
   ...createAnswerKeyControlRunners({ controlFor, captureGateFailure, completeControl }),
@@ -1078,7 +1081,7 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 47, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 52, "the control table must declare every expected control");
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label, identity }) => controlFor(label).identity), CLONE_PLANT_CONTROLS.map(({ identity }) => identity));
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label }) => CONTROL_RUNNERS_BY_LABEL.has(label)), CLONE_PLANT_CONTROLS.map(() => true));
   assert.throws(
