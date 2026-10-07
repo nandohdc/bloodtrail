@@ -97,7 +97,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 17. #718 — Fold the five deltas
 
-- [ ] 17.1 After #702 through #717 are complete, replace the five canonical Node binding requirement blocks
+- [x] 17.1 After #702 through #717 are complete, replace the five canonical Node binding requirement blocks
   with the complete deltas, prove heading and scenario uniqueness, and leave no delta header or contradictory
   SHALL.
 
