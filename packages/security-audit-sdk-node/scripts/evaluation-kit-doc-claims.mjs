@@ -450,7 +450,7 @@ function environmentObjectValues(file, text) {
     const objectText = text.slice(openingIndex, closingIndex + 1);
     const name = ENVIRONMENT_NAME.exec(objectText);
     if (!name) continue;
-    const value = name[1];
+    const value = String(name[1]);
     const valueIndex = openingIndex + name.index + name[0].lastIndexOf(value);
     values.push(valueAt(file, text, valueIndex, { kind: "environment name", value }));
   }

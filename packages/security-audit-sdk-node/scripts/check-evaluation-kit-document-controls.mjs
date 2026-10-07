@@ -82,6 +82,10 @@ const WRONG_VALUE_REPLACEMENT = WRONG_VALUE_ANCHOR.replace(
 // no span any longer.
 const STALE_EXCEPTION_ANCHOR = "`token`";
 
+// A private-range address, outside loopback and the documentation ranges, assembled from its parts so the
+// plant's value is not a hard-coded address literal.
+const NON_DOCUMENTATION_IPV4 = [10, 20, 30, 40].join(".");
+
 // Every document plant makes one measured change to a kit copy: it asserts that its anchor occurs exactly
 // once in its host document, then inserts relative to that anchor or replaces it. Each plant is resealed
 // so the planted defect, not the identity check, is what the gate meets.
@@ -333,9 +337,9 @@ const DOCUMENT_PLANTS = Object.freeze([
     tempPrefix: "bloodtrail-ctrl-non-documentation-ip-",
     documentPath: "examples/first-event.ts",
     anchor: "const captured: SecurityAuditEvent[] = [];\n",
-    line: "// 10.20.30.40\n",
+    line: `// ${NON_DOCUMENTATION_IPV4}\n`,
     kind: "IP address",
-    value: "10.20.30.40",
+    value: NON_DOCUMENTATION_IPV4,
     recordLabel: NON_DOCUMENTATION_IP_CONTROL.label,
     rewrite: insertReferenceLine,
     assertFailure: assertSyntheticValueFailure,
