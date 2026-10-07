@@ -100,6 +100,7 @@ const EXPECTED_BUILD_CHECK_IDENTITIES = Object.freeze([
   "installer-documentation",
   "planned-feature-documentation",
   "document-fence-languages",
+  "synthetic-values",
   "reproducible-identity",
   "distributable-kit-match",
   "dirty-tree-refusal",
@@ -122,6 +123,7 @@ const EXPECTED_KIT_DIR_CHECK_IDENTITIES = Object.freeze([
   "installer-documentation",
   "planned-feature-documentation",
   "document-fence-languages",
+  "synthetic-values",
   "npm-installation",
   "document-references",
   "npm-single-core-copy",
@@ -147,6 +149,7 @@ const REVISED_INSTALLER_CLAUSES = Object.freeze([
 const VERIFICATION_SUMMARY_PREFIX = "evaluation kit verification passed: ";
 const LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE = "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, the 422 to an event that passed the ingress's structural check but failed SDK validation, acknowledged the corrected event with the SDK-invalid event's identity, a byte-identical duplicate and a redelivered event, and kept serving after each; it required the Bearer scheme in any letter case, answered 404 to a POST on another path and 405 with Allow: POST to another method, and counted a client abort as neither a 500 nor a rejection; after answering 401, 404 and 413 to a body past its bound it closed the connection, accepting no more than the socket buffers hold";
 const DISTRIBUTABLE_KIT_UMASK_CLAUSE = "distributable kit built under umask 077 from a disposable clean clone of the tree under test, with the same artifacts and checksum list as the verification kit apart from its identity file";
+const SYNTHETIC_VALUES_CLAUSE = "every host, email address, IP address and environment name in the kit's documents and examples, links included, is synthetic, with no reviewed exception";
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const NON_REGULAR_SOURCE_PATH = `${KIT_PACKAGES.node}/docs/planted-link.md`;
 const NON_REGULAR_KIT_PATH = "docs/planted-link.md";
@@ -1056,7 +1059,7 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 67, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 72, "the control table must declare every expected control");
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label, identity }) => controlFor(label).identity), CLONE_PLANT_CONTROLS.map(({ identity }) => identity));
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label }) => CONTROL_RUNNERS_BY_LABEL.has(label)), CLONE_PLANT_CONTROLS.map(() => true));
   assert.throws(
@@ -1137,6 +1140,13 @@ function assertRevisedInstallerClauses(result, mode) {
   }
 }
 
+function assertSyntheticValuesClause(result, mode) {
+  const check = result.verificationChecks.find(({ identity }) => identity === "synthetic-values");
+  assert.ok(check, `${mode} run must record synthetic-values`);
+  assert.equal(clauseForCheck(check), SYNTHETIC_VALUES_CLAUSE, `${mode} run must preserve the synthetic-values clause`);
+  assert.ok(result.summary.includes(SYNTHETIC_VALUES_CLAUSE), `${mode} summary must include the synthetic-values clause`);
+}
+
 async function checkSummaryCompositionProof(kitDir) {
   const buildMode = await checkEvaluationKit();
   assert.deepEqual(
@@ -1153,6 +1163,8 @@ async function checkSummaryCompositionProof(kitDir) {
   );
   assertRevisedInstallerClauses(buildMode, "build-mode");
   assertRevisedInstallerClauses(kitDirMode, "--kit-dir");
+  assertSyntheticValuesClause(buildMode, "build-mode");
+  assertSyntheticValuesClause(kitDirMode, "--kit-dir");
 
   const fullClauses = buildMode.verificationChecks.map(clauseForCheck);
   assert.ok(buildMode.summary.includes(DISTRIBUTABLE_KIT_UMASK_CLAUSE), `the build-mode summary must name the clone's fixed umask: ${buildMode.summary}`);
