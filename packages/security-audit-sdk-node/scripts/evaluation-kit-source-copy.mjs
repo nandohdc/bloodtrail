@@ -13,9 +13,8 @@ export const KIT_PACKAGES = Object.freeze({
   collector: "packages/security-audit-collector",
 });
 
-// Everything a kit build reads: the packed packages, the contract the core generates from, and the
-// root README the kit copies.
-const KIT_SOURCE_PATHS = Object.freeze([...Object.values(KIT_PACKAGES), "contracts/security-audit", "README.md"]);
+// Everything a kit build reads: the packed packages and the contract the core generates from.
+const KIT_SOURCE_PATHS = Object.freeze([...Object.values(KIT_PACKAGES), "contracts/security-audit"]);
 
 // Every path the repository index tracks under KIT_SOURCE_PATHS, including uncommitted edits and files
 // staged with intent to add.

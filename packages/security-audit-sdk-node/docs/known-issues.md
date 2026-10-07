@@ -22,7 +22,7 @@ This document enumerates known issues, operational limitations, and pending arch
 
 ## 3. Contract Clock-Skew Bound is Not Enforced for Complete Events
 
-- **Description:** Contract 2.1.0 defines acceptable clock-skew limits (maximum acceptable drift between the event's recorded `occurred_at` timestamp and processing time). However, when pre-constructed or complete events are passed directly through generic emission pathways, clock skew is not actively validated against host time.
+- **Description:** Contract 2.1.0 defines acceptable clock-skew limits: the maximum acceptable drift between the event's recorded `event.timestamp` and the time it was observed, `event.observed_at`. However, when pre-constructed or complete events are passed directly through generic emission pathways, clock skew is not actively validated against host time.
 - **Impact:** Synthesized test events or historical replayed events with timestamps significantly in the past or future are accepted without clock-skew validation errors.
 - **Status:** Planned for strict enforcement once distributed synchronization policies are formalized.
 
