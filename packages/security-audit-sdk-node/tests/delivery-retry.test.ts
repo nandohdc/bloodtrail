@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { describe, it } from "node:test";
+import { createServer, type Server } from "node:http";
+import { after, describe, it } from "node:test";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@bloodtrail/security-audit-sdk-core";
 import {
   createBoundedDeliveryRetry,
+  createFetchHttpExchange,
   createHttpDeliveryHandoff,
   type DeliveryRetryOptions,
   type HttpDeliveryHandoff,
@@ -28,6 +30,9 @@ const fixtureEvent = fixtures[0]!;
 const foundRegistration = fixtures.find((event) => event.event.name === "bloodtrail.audit.account.registration.completed");
 assert.ok(foundRegistration, "registration completed fixture must be present");
 const registrationCompleted = foundRegistration;
+
+const servers: Server[] = [];
+after(() => Promise.all(servers.map((server) => new Promise<void>((done) => server.close(() => done())))));
 
 function eventFixture(): SecurityAuditEvent {
   return JSON.parse(JSON.stringify(fixtureEvent)) as SecurityAuditEvent;
@@ -215,6 +220,33 @@ describe("Bounded delivery retry", () => {
   });
 });
 
+async function resetThenAcknowledgePeer(): Promise<{ readonly origin: string; readonly bodies: string[] }> {
+  const bodies: string[] = [];
+  const server = createServer((request, response) => {
+    const chunks: Buffer[] = [];
+    request.on("data", (chunk: Buffer) => chunks.push(chunk));
+    request.on("end", () => {
+      const body = Buffer.concat(chunks).toString("utf8");
+      bodies.push(body);
+      if (bodies.length === 1) {
+        const socket = response.socket;
+        assert.ok(socket);
+        response.writeHead(202, { "content-type": "application/json", "content-length": "64" });
+        response.write('{"acknowledgments":[', () => socket.destroy());
+        return;
+      }
+      const event = JSON.parse(body) as SecurityAuditEvent;
+      response.writeHead(202, { "content-type": "application/json" });
+      response.end(JSON.stringify({ acknowledgments: [{ event_id: event.event.id, outcome: "accepted" }] }));
+    });
+  });
+  servers.push(server);
+  await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  return { origin: `http://127.0.0.1:${address.port}`, bodies };
+}
+
 /** Answers the first `retryableCount` requests with a 503, then acknowledges, recording every request. */
 function recordingExchange(retryableCount: number): { exchange: HttpExchange; requests: HttpExchangeRequest[] } {
   const requests: HttpExchangeRequest[] = [];
@@ -248,6 +280,17 @@ describe("Bounded delivery retry over the delivery handoff", () => {
     const expectedBody = JSON.stringify(event);
     assert.deepEqual(bodies, [expectedBody, expectedBody, expectedBody], "every attempt must send the exact canonical serialization");
     assert.deepEqual(JSON.parse(bodies[0]!), event);
+  });
+
+  it("redelivers a byte-identical copy after the fetch adapter reads a reset body", async () => {
+    const { origin, bodies } = await resetThenAcknowledgePeer();
+    const exchange = createFetchHttpExchange({ origin, timeoutMs: 2_000 });
+
+    const result = await retryOverHandoff(exchange).deliver(eventFixture());
+
+    assert.deepEqual([result.status, result.attempts], ["acknowledged", 2]);
+    assert.equal(bodies.length, 2);
+    assert.equal(bodies[1], bodies[0], "the acknowledged delivery attempt must receive the first copy's exact bytes");
   });
 
   it("keeps a re-execution's retry attempt on every delivery attempt", async () => {

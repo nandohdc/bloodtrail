@@ -84,6 +84,7 @@ outcome onto the handoff's closed set:
 | response with a body | `response` + parsed `acknowledgments` | decided by the handoff (acknowledged, retryable, permanent, protocol error) |
 | per-attempt deadline elapsed | `timeout` | `retryable` |
 | connection refused, reset, DNS failure | `transport_failure` | `retryable` |
+| body-read error other than deadline | `transport_failure` | `retryable` |
 | unparseable, empty, shapeless, or oversized 2xx body | `response` with an unacceptable acknowledgment | `protocol_error` |
 | redirect | the 3xx itself, never followed | `protocol_error` |
 

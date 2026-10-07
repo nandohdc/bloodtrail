@@ -164,6 +164,38 @@ function acknowledge(): Handler {
   };
 }
 
+function resetDuringResponseBody(): Handler {
+  return (_request, _body, response) => {
+    const socket = response.socket;
+    assert.ok(socket);
+    response.writeHead(202, { "content-type": "application/json", "content-length": "64" });
+    response.write('{"acknowledgments":[', () => socket.destroy());
+  };
+}
+
+function shortResponseBody(): Handler {
+  return (_request, _body, response) => {
+    const body = '{"acknowledgments":[]}';
+    response.writeHead(202, {
+      "content-type": "application/json",
+      "content-length": String(Buffer.byteLength(body) + 1),
+      connection: "close",
+    });
+    response.end(body);
+  };
+}
+
+function malformedChunkedResponse(): Handler {
+  return (_request, _body, response) => {
+    const socket = response.socket;
+    assert.ok(socket);
+    socket.write(
+      "HTTP/1.1 202 Accepted\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\ninvalid-chunk\r\n{}\r\n0\r\n\r\n",
+    );
+    socket.end();
+  };
+}
+
 // Answers only after the given delay, which outlives a short sink deadline.
 function slowly(handler: Handler, delayMs = 400): Handler {
   return (request, body, response) => setTimeout(() => handler(request, body, response), delayMs);
@@ -428,6 +460,19 @@ describe("HTTP audit sink", () => {
     assert.deepEqual(await refused.sink.emit(retriedEvent), { status: "unknown", code: "transport_failure" });
     assert.equal(sdkOutcome(await emitThroughSdk(refused.sink)), "SDK_SINK_FAILURE");
     assert.deepEqual(refused.reports, [{ eventId, outcome: "transport_failure" }, { eventId, outcome: "transport_failure" }]);
+  });
+
+  it("reports every non-deadline response body read error as transport failure", async () => {
+    for (const [label, handler] of [
+      ["reset mid-body", resetDuringResponseBody()],
+      ["short declared-length body", shortResponseBody()],
+      ["malformed chunked body", malformedChunkedResponse()],
+    ] as const) {
+      const { origin } = await peer(handler);
+      const { sink, reports } = recordingSinkFor(origin);
+      assert.equal(sdkOutcome(await emitThroughSdk(sink)), "SDK_SINK_FAILURE", label);
+      assert.deepEqual(reports, [{ eventId, outcome: "transport_failure" }], label);
+    }
   });
 
   it("keeps a sentinel credential on the wire to the configured origin, out of every outcome, result, error and log", async () => {

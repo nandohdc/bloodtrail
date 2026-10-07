@@ -91,7 +91,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 16. #716 — Classify response-body failures as transport failures
 
-- [ ] 16.1 Map every non-deadline response-body read error to `transport_failure`, retain deadline and
+- [x] 16.1 Map every non-deadline response-body read error to `transport_failure`, retain deadline and
   malformed-acknowledgment behavior, and prove the existing delivery retry retries reset, short-body, and
   malformed-chunk cases.
 

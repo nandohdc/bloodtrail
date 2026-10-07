@@ -196,6 +196,79 @@ export async function checkAnswerKeyFixTypecheck({ tempInstall, answerKeyPath = 
   await typecheckSources(tempInstall, ["answer-key-blocks/**/*.ts"]);
 }
 
+const FAILURE_PATH_STATUSES_PREFIX = "failure-paths:statuses:";
+const FAILURE_TABLE_HEADING = "### The Failure Table";
+const FAILURE_TABLE_END = "\nA receiver answers";
+const SUCCESS_STATUSES = new Set([200, 202]);
+
+function failureTableSection(document) {
+  const start = document.indexOf(FAILURE_TABLE_HEADING);
+  const end = document.indexOf(FAILURE_TABLE_END, start);
+  assert(start >= 0, "wire-protocol.md must contain the failure table heading");
+  assert(end > start, "wire-protocol.md must end the failure table before receiver behavior");
+  return document.slice(start, end);
+}
+
+function failureTableStatusColumn(line) {
+  const cells = line.split("|");
+  if (cells.length < 3) return "";
+  return cells[2].trim();
+}
+
+function statusCodes(value) {
+  const matches = value.match(/\b\d{3}\b/g);
+  return matches === null ? [] : matches.map(Number);
+}
+
+function statusesInFailureTable(document) {
+  const statuses = failureTableSection(document)
+    .split("\n")
+    .filter((line) => line.startsWith("|"))
+    .flatMap((line) => statusCodes(failureTableStatusColumn(line)))
+    .filter((status) => !SUCCESS_STATUSES.has(status));
+  return new Set(statuses);
+}
+
+function statusesFromFailurePathProgram(output) {
+  const lines = output.split("\n").filter((line) => line.startsWith(FAILURE_PATH_STATUSES_PREFIX));
+  assert(lines.length === 1, `failure path program must print one ${FAILURE_PATH_STATUSES_PREFIX} line`);
+  const line = lines[0];
+  assert(line, `failure path program must print one ${FAILURE_PATH_STATUSES_PREFIX} line`);
+  const serialized = line.slice(FAILURE_PATH_STATUSES_PREFIX.length);
+  assert(/^\d{3}(?:,\d{3})*$/.test(serialized), "failure path statuses must be three-digit HTTP codes");
+  const statuses = statusCodes(serialized);
+  assert(new Set(statuses).size === statuses.length, "failure path statuses must not repeat a status");
+  return new Set(statuses);
+}
+
+function statusesMissingFrom(expected, actual) {
+  return [...expected].filter((status) => !actual.has(status));
+}
+
+function assertFailurePathStatusParity(failureRun, wireProtocol) {
+  const programStatuses = statusesFromFailurePathProgram(failureRun);
+  const tableStatuses = statusesInFailureTable(wireProtocol);
+  const missingFromProgram = statusesMissingFrom(tableStatuses, programStatuses);
+  const missingFromTable = statusesMissingFrom(programStatuses, tableStatuses);
+  assert(
+    missingFromProgram.length === 0 && missingFromTable.length === 0,
+    `failure status parity mismatch; missing from failure-path program: ${missingFromProgram.join(",")}; missing from wire-protocol failure table: ${missingFromTable.join(",")}`,
+  );
+}
+
+function runFailurePathProgram(tempInstall, origin) {
+  const result = spawnSync(process.execPath, ["--no-warnings", INSTALLED_FAILURE_PATHS_PROGRAM, origin], {
+    cwd: tempInstall,
+    encoding: "utf8",
+  });
+  if (result.error) {
+    throw new Error(`installed kit failure path program could not start: ${result.error.message}`);
+  }
+  const output = result.stdout + result.stderr;
+  assert(result.status === 0, `installed kit failure path check failed:\n${output}`);
+  return output;
+}
+
 async function verifyFailurePaths(tempInstall) {
   const peer = startLoopbackServer({
     script: resolve(packageRoot, "scripts/evaluation-kit-peer.mjs"),
@@ -204,14 +277,13 @@ async function verifyFailurePaths(tempInstall) {
   });
   try {
     const origin = await peer.origin;
-    const failureRun = runChecked(process.execPath, ["--no-warnings", INSTALLED_FAILURE_PATHS_PROGRAM, origin], {
-      cwd: tempInstall,
-      capture: true,
-    });
+    const failureRun = runFailurePathProgram(tempInstall, origin);
     assert(
       failureRun.includes("failure-paths:all:pass"),
       `installed kit failure path check did not pass:\n${failureRun}`,
     );
+    const wireProtocol = await readFile(resolve(tempInstall, "docs/wire-protocol.md"), "utf8");
+    assertFailurePathStatusParity(failureRun, wireProtocol);
   } finally {
     peer.child.kill("SIGTERM");
   }
@@ -452,7 +524,7 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: () => "seeded invalid calls returned their documented code, category, and path",
   }),
   "http-audit-sink-failure-paths": Object.freeze({
-    clause: () => "HTTP audit sink failure paths and lifecycle transitions verified",
+    clause: () => "HTTP audit sink failure paths verified for every status in the wire-protocol failure table, a refused connection, a deadline before and during the response body, a body reset, short body and malformed chunked encoding as transport failures, and the flush and shutdown lifecycle",
   }),
   "pnpm-installations": Object.freeze({
     clause: () => `kit installed outside any workspace with pnpm ${PNPM_RELEASES.join(", ")}, with no setting the kit ships reported as unknown, ignored or no longer read, a passing first-event example, and one core copy per installation`,

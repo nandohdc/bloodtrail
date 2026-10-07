@@ -27,9 +27,9 @@ export interface FetchHttpExchangeOptions {
 const DEFAULT_MAX_RESPONSE_BYTES = 65_536;
 const MAX_TIMEOUT_MS = 60_000;
 const ORIGIN_PATTERN = /^https?:\/\/(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::\d{1,5})?$/;
-// A value the shared classifier's acknowledgment check can never accept, so an
-// unreadable or oversized body becomes malformed_acknowledgment rather than a
-// guess here.
+// A value the shared classifier's acknowledgment check can never accept, so
+// an oversized body, or a fully read body that does not parse, becomes
+// malformed_acknowledgment rather than a guess here.
 const UNREADABLE: readonly HttpAcknowledgment[] = Object.freeze([]);
 
 export function createFetchHttpExchange(options: FetchHttpExchangeOptions): HttpExchange {
@@ -123,13 +123,8 @@ async function readBoundedBody(response: Response, maxResponseBytes: number): Pr
   if (response.body === null) {
     return "";
   }
-  try {
-    const chunks = await collectStreamChunks(response.body, maxResponseBytes);
-    return chunks === null ? null : toUtf8(chunks);
-  } catch (error) {
-    if (isTimeout(error)) throw error;
-    return null;
-  }
+  const chunks = await collectStreamChunks(response.body, maxResponseBytes);
+  return chunks === null ? null : toUtf8(chunks);
 }
 
 function isTimeoutError(name: unknown): boolean {
