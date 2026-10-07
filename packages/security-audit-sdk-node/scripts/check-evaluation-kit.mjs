@@ -21,7 +21,7 @@ import {
   extractTypeScriptFencedBlocks,
   markdownDocumentNames,
 } from "./evaluation-kit-doc-blocks.mjs";
-import { REVIEWED_PAIRS, assertKitDocsClaimOnlyWhatShips } from "./evaluation-kit-doc-claims.mjs";
+import { REVIEWED_PAIRS, assertKitDocsClaimOnlyWhatShips, assertKitSyntheticValues } from "./evaluation-kit-doc-claims.mjs";
 import { REVIEWED_EXCEPTIONS, assertKitDocReferences } from "./evaluation-kit-doc-references.mjs";
 import {
   PNPM_RELEASES,
@@ -410,6 +410,9 @@ export const KIT_GATE_CHECKS = Object.freeze({
   "document-fence-languages": Object.freeze({
     clause: () => "every kit document fence names an allowlisted language, matched in any letter case with any info string: bash, http, json, sh, ts, typescript",
   }),
+  "synthetic-values": Object.freeze({
+    clause: () => "every host, email address, IP address and environment name in the kit's documents and examples, links included, is synthetic, with no reviewed exception",
+  }),
   "reproducible-identity": Object.freeze({
     clause: () => "verification-kit identity reproduced after stale build output and untracked sources were planted",
   }),
@@ -565,6 +568,9 @@ export async function checkEvaluationKit({
 
     // 1e. Every fence in the kit's documents names an allowlisted language, matched in any letter case and with any info string
     await runCheck(completedChecks, disabledChecks, "document-fence-languages", () => assertKitDocFenceLanguages(kitDir));
+
+    // 1f. Every host, email address, IP address, and environment name in kit documents and examples is synthetic.
+    await runCheck(completedChecks, disabledChecks, "synthetic-values", () => assertKitSyntheticValues(kitDir));
 
     // 2. Reproducibility: the same tracked tree rebuilds to the same digests, with or without stale build output on disk
     if (buildsOwnKit) {

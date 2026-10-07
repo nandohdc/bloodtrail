@@ -85,7 +85,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 15. #715 — Require synthetic document and example values
 
-- [ ] 15.1 Stop shipping the root README and scan every document, example, and link for hosts, emails, IPs,
+- [x] 15.1 Stop shipping the root README and scan every document, example, and link for hosts, emails, IPs,
   and environment names that are not synthetic or on the reviewed list, initially empty. Prove planted
   non-synthetic values fail.
 

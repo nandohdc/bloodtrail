@@ -25,6 +25,11 @@ export const DOCUMENT_CONTROL_DEFINITIONS = Object.freeze([
   { label: "sentence saying OpenTelemetry transport works", identity: "planned-feature-documentation" },
   { label: "planned row not named in glossary terms", identity: "planned-feature-documentation" },
   { label: "reviewed section that covers no planned feature", identity: "planned-feature-documentation" },
+  { label: "real host in a kit document link", identity: "synthetic-values" },
+  { label: "email address in a kit document", identity: "synthetic-values" },
+  { label: "production environment name in a kit document", identity: "synthetic-values" },
+  { label: "non-documentation IP address in an example", identity: "synthetic-values" },
+  { label: "bare real domain in a kit document", identity: "synthetic-values" },
 ]);
 
 const [
@@ -47,6 +52,11 @@ const [
   OPEN_TELEMETRY_WORKS_CONTROL,
   NON_GLOSSARY_ROW_CONTROL,
   STALE_REVIEWED_SECTION_CONTROL,
+  REAL_HOST_LINK_CONTROL,
+  EMAIL_ADDRESS_CONTROL,
+  PRODUCTION_ENVIRONMENT_CONTROL,
+  NON_DOCUMENTATION_IP_CONTROL,
+  BARE_REAL_DOMAIN_CONTROL,
 ] = DOCUMENT_CONTROL_DEFINITIONS;
 const DOCUMENT_PATH = "docs/quickstart.md";
 const INSERTION_ANCHOR = "## Package Responsibilities\n";
@@ -280,6 +290,68 @@ const DOCUMENT_PLANTS = Object.freeze([
     rewrite: replaceAnchoredText,
     assertFailure: assertStaleReviewedSectionFailure,
   },
+  {
+    definition: REAL_HOST_LINK_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-real-host-link-",
+    documentPath: DOCUMENT_PATH,
+    anchor: INSERTION_ANCHOR,
+    // The leading link proves a scheme URL host stops before its query rather than relying on bare-domain matching.
+    line: "[query](https://audit.corp?fixture=1)\n[ingest](https://audit.acme-corp.com/v1/security-audit)\n",
+    kind: "host",
+    value: "audit.acme-corp.com",
+    regressionValue: "audit.corp",
+    recordLabel: REAL_HOST_LINK_CONTROL.label,
+    rewrite: insertReferenceLine,
+    assertFailure: assertSyntheticValueFailure,
+  },
+  {
+    definition: EMAIL_ADDRESS_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-email-address-",
+    documentPath: DOCUMENT_PATH,
+    anchor: INSERTION_ANCHOR,
+    line: "Contact security@acme-corp.com for the evaluation fixture.\n",
+    kind: "email address",
+    value: "security@acme-corp.com",
+    recordLabel: EMAIL_ADDRESS_CONTROL.label,
+    rewrite: insertReferenceLine,
+    assertFailure: assertSyntheticValueFailure,
+  },
+  {
+    definition: PRODUCTION_ENVIRONMENT_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-production-environment-",
+    documentPath: DOCUMENT_PATH,
+    anchor: INSERTION_ANCHOR,
+    line: "`environment: { name: \"production\" }`\n",
+    kind: "environment name",
+    value: "production",
+    recordLabel: PRODUCTION_ENVIRONMENT_CONTROL.label,
+    rewrite: insertReferenceLine,
+    assertFailure: assertSyntheticValueFailure,
+  },
+  {
+    definition: NON_DOCUMENTATION_IP_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-non-documentation-ip-",
+    documentPath: "examples/first-event.ts",
+    anchor: "const captured: SecurityAuditEvent[] = [];\n",
+    line: "// 10.20.30.40\n",
+    kind: "IP address",
+    value: "10.20.30.40",
+    recordLabel: NON_DOCUMENTATION_IP_CONTROL.label,
+    rewrite: insertReferenceLine,
+    assertFailure: assertSyntheticValueFailure,
+  },
+  {
+    definition: BARE_REAL_DOMAIN_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-bare-real-domain-",
+    documentPath: "docs/privacy.md",
+    anchor: "## 4. Heuristic Prohibited-Data Value Scan\n",
+    line: "The evaluation fixture does not send data to audit.acme-corp.com.\n",
+    kind: "host",
+    value: "audit.acme-corp.com",
+    recordLabel: BARE_REAL_DOMAIN_CONTROL.label,
+    rewrite: insertReferenceLine,
+    assertFailure: assertSyntheticValueFailure,
+  },
 ]);
 
 async function withKitCopy(kitDir, tempPrefix, run) {
@@ -427,6 +499,23 @@ function assertStaleReviewedSectionFailure(control, failure, plant) {
     failure.cause.message.includes("stale reviewed-pair rule"),
     `${control.label} must name its stale reviewed pair: ${failure.cause.message}`,
   );
+}
+
+function assertSyntheticValueFailure(control, failure, plant) {
+  assert.ok(
+    failure.cause.message.includes(`${plant.documentPath} line `),
+    `${control.label} must name ${plant.documentPath}: ${failure.cause.message}`,
+  );
+  assert.ok(
+    failure.cause.message.includes(`${plant.kind} "${plant.value}"`),
+    `${control.label} must name its ${plant.kind} value ${plant.value}: ${failure.cause.message}`,
+  );
+  if (plant.regressionValue) {
+    assert.ok(
+      failure.cause.message.includes(`${plant.kind} "${plant.regressionValue}"`),
+      `${control.label} must reject the URL-query host ${plant.regressionValue}: ${failure.cause.message}`,
+    );
+  }
 }
 
 async function checkDocumentPlantControl(kitDir, _disabledChecks, helpers, plant) {

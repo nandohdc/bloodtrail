@@ -1,7 +1,8 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { isIP } from "node:net";
 import { markdownDocumentNames, proseLinesOutsideFencedBlocks } from "./evaluation-kit-doc-blocks.mjs";
-import { assert } from "./verification-helpers.mjs";
+import { assert, byCodePoint } from "./verification-helpers.mjs";
 
 const INLINE_CODE_TOKEN = "DOCUMENT_CODE";
 const HEADING = /^(#{1,6})\s+(\S.*)$/;
@@ -308,6 +309,248 @@ async function documentFailures(docsDir, document, reviewedCoverage, plannedRows
   const text = await readFile(resolve(docsDir, document), "utf8");
   const units = readDocumentUnits(text);
   return rowRuleFailures(document, units, plannedRows).concat(documentSentenceFailures(document, units, reviewedCoverage));
+}
+
+const URL_HOST = /\b[a-z][a-z\d+.-]*:\/\/([^\s/?#"'`),]+)/gi;
+const EMAIL_ADDRESS = /\b[a-z\d._%+-]+@([a-z\d.-]+\.[a-z]{2,})\b/gi;
+const BARE_DOMAIN = /\b(?:[a-z\d-]+\.)+[a-z]{2,}\b/gi;
+const BARE_DOMAIN_TLDS = new Set([
+  "com",
+  "net",
+  "org",
+  "io",
+  "dev",
+  "app",
+  "co",
+  "ai",
+  "cloud",
+  "info",
+  "biz",
+  "me",
+  "us",
+  "uk",
+  "de",
+  "fr",
+  "br",
+  "jp",
+  "in",
+  "gov",
+  "edu",
+]);
+const IPV4_ADDRESS = /(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?![\w.])/g;
+const ENVIRONMENT_OBJECT = /(?:["']environment["']|\benvironment)\s*:\s*\{/g;
+const ENVIRONMENT_NAME = /(?:["']name["']|\bname)\s*:\s*["']([^"']+)["']/;
+const NODE_ENV_ASSIGNMENT = /\bNODE_ENV\s*=\s*(?:"([^"]*)"|'([^']*)'|([a-z\d_-]+))/gi;
+const SYNTHETIC_HOST_NAMES = new Set(["localhost", "example.com", "example.net", "example.org"]);
+const SYNTHETIC_HOST_SUFFIXES = Object.freeze([
+  ".test",
+  ".example",
+  ".invalid",
+  ".localhost",
+  ".example.com",
+  ".example.net",
+  ".example.org",
+]);
+const SYNTHETIC_IPV4_CIDRS = Object.freeze([
+  "127.0.0.0/8",
+  "192.0.2.0/24",
+  "198.51.100.0/24",
+  "203.0.113.0/24",
+]);
+const SYNTHETIC_IPV4_RANGES = Object.freeze(SYNTHETIC_IPV4_CIDRS.map(ipv4Range));
+const SYNTHETIC_ENVIRONMENT_NAMES = new Set(["development", "test", "synthetic"]);
+
+// A reviewed pair identifies the kit-relative file and one value that has been explicitly accepted despite
+// not being synthetic. The initial empty list ensures every current kit value proves its own classification.
+export const REVIEWED_SYNTHETIC_VALUE_PAIRS = Object.freeze([]);
+
+function ipv4Range(cidr) {
+  const [address, prefixText] = cidr.split("/");
+  const first = ipv4Number(address);
+  const size = 2 ** (32 - Number(prefixText));
+  return { first, last: first + size - 1 };
+}
+
+function ipv4Number(address) {
+  return address.split(".").reduce((number, part) => number * 256 + Number(part), 0);
+}
+
+function lineFor(text, index) {
+  return text.slice(0, index).split("\n").length;
+}
+
+function valueAt(file, text, index, found) {
+  return { file, line: lineFor(text, index), ...found };
+}
+
+function urlHost(authority) {
+  const bracketed = /^\[([^\]]+)\]/.exec(authority);
+  if (bracketed) return bracketed[1];
+  return authority.replace(/:\d+$/, "");
+}
+
+function urlHostValues(file, text) {
+  return [...text.matchAll(URL_HOST)].flatMap((match) => {
+    const authority = match[1];
+    if (authority.includes("${")) return [];
+    const host = urlHost(authority);
+    const hostIndex = match.index + match[0].lastIndexOf(host);
+    const hostValue = valueAt(file, text, hostIndex, { kind: "host", value: host });
+    if (isIP(host) !== 6) return [hostValue];
+    return [hostValue, valueAt(file, text, hostIndex, { kind: "IP address", value: host })];
+  });
+}
+
+function emailValues(file, text) {
+  return [...text.matchAll(EMAIL_ADDRESS)].flatMap((match) => {
+    const email = match[0];
+    const domain = match[1];
+    const domainIndex = match.index + email.lastIndexOf(domain);
+    return [
+      valueAt(file, text, domainIndex, { kind: "host", value: domain }),
+      valueAt(file, text, match.index, { kind: "email address", value: email }),
+    ];
+  });
+}
+
+function matchedValues(file, text, definition) {
+  return [...text.matchAll(definition.pattern)].flatMap((match) => {
+    const value = definition.valueAtMatch(match);
+    if (!value) return [];
+    const index = match.index + match[0].lastIndexOf(value);
+    return [valueAt(file, text, index, { kind: definition.kind, value })];
+  });
+}
+
+function allowedBareDomain(value) {
+  return value
+    .toLowerCase()
+    .split(".")
+    .slice(1)
+    .some((label) => BARE_DOMAIN_TLDS.has(label));
+}
+
+function closingBrace(text, openingIndex) {
+  let depth = 0;
+  for (let index = openingIndex; index < text.length; index += 1) {
+    if (text[index] === "{") depth += 1;
+    if (text[index] === "}") depth -= 1;
+    if (depth === 0) return index;
+  }
+  return -1;
+}
+
+function environmentObjectValues(file, text) {
+  const values = [];
+  for (const match of text.matchAll(ENVIRONMENT_OBJECT)) {
+    const openingIndex = match.index + match[0].lastIndexOf("{");
+    if (openingIndex < 0) continue;
+    const closingIndex = closingBrace(text, openingIndex);
+    if (closingIndex < 0) continue;
+    const objectText = text.slice(openingIndex, closingIndex + 1);
+    const name = ENVIRONMENT_NAME.exec(objectText);
+    if (!name) continue;
+    const value = name[1];
+    const valueIndex = openingIndex + name.index + name[0].lastIndexOf(value);
+    values.push(valueAt(file, text, valueIndex, { kind: "environment name", value }));
+  }
+  return values;
+}
+
+function assignedEnvironmentValue(match) {
+  if (match[1] !== undefined) return match[1];
+  if (match[2] !== undefined) return match[2];
+  return match[3];
+}
+
+function kitValues(file, text) {
+  return urlHostValues(file, text).concat(
+    emailValues(file, text),
+    matchedValues(file, text, {
+      pattern: BARE_DOMAIN,
+      kind: "host",
+      valueAtMatch: (match) => (allowedBareDomain(match[0]) ? match[0] : null),
+    }),
+    matchedValues(file, text, { pattern: IPV4_ADDRESS, kind: "IP address", valueAtMatch: (match) => match[0] }),
+    environmentObjectValues(file, text),
+    matchedValues(file, text, {
+      pattern: NODE_ENV_ASSIGNMENT,
+      kind: "environment name",
+      valueAtMatch: assignedEnvironmentValue,
+    }),
+  );
+}
+
+function isSyntheticIpv4(value) {
+  const number = ipv4Number(value);
+  return SYNTHETIC_IPV4_RANGES.some(({ first, last }) => number >= first && number <= last);
+}
+
+function isSyntheticIpv6(value) {
+  if (value === "::1") return true;
+  const [first, second] = value.toLowerCase().split(":");
+  return first === "2001" && Number.parseInt(second, 16) === 0x0db8;
+}
+
+function isSyntheticHost(value) {
+  const normalized = value.toLowerCase();
+  if (SYNTHETIC_HOST_NAMES.has(normalized)) return true;
+  if (isIP(normalized) === 4) return isSyntheticIpv4(normalized);
+  if (isIP(normalized) === 6) return isSyntheticIpv6(normalized);
+  return SYNTHETIC_HOST_SUFFIXES.some((suffix) => normalized.endsWith(suffix));
+}
+
+function isSyntheticValue(value) {
+  if (value.kind === "host") return isSyntheticHost(value.value);
+  if (value.kind === "IP address") return isSyntheticIpv4(value.value) || isSyntheticIpv6(value.value);
+  if (value.kind === "email address") return isSyntheticHost(value.value.split("@")[1]);
+  return SYNTHETIC_ENVIRONMENT_NAMES.has(value.value);
+}
+
+function isReviewedSyntheticValue(value) {
+  return REVIEWED_SYNTHETIC_VALUE_PAIRS.some(
+    ([reviewedFile, reviewedValue]) => reviewedFile === value.file && reviewedValue === value.value,
+  );
+}
+
+async function exampleFileNames(examplesDir, prefix = "") {
+  const entries = await readdir(resolve(examplesDir, prefix), { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const entryPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isFile()) files.push(entryPath);
+    if (entry.isDirectory()) files.push(...(await exampleFileNames(examplesDir, entryPath)));
+  }
+  return files.sort(byCodePoint);
+}
+
+async function syntheticValueSources(kitDir) {
+  const docsDir = resolve(kitDir, "docs");
+  const examplesDir = resolve(kitDir, "examples");
+  const documents = await markdownDocumentNames(docsDir);
+  const examples = await exampleFileNames(examplesDir);
+  const docSources = documents.map((name) => ({ file: `docs/${name}`, path: resolve(docsDir, name) }));
+  const exampleSources = examples.map((name) => ({ file: `examples/${name}`, path: resolve(examplesDir, name) }));
+  return docSources.concat(exampleSources);
+}
+
+function syntheticValueFailure(value) {
+  return `${value.file} line ${value.line}: ${value.kind} "${value.value}" is not synthetic`;
+}
+
+/**
+ * Every host, email address, IP address, and environment name in the kit's documents and examples is
+ * synthetic, unless a reviewed file-and-value pair explicitly accepts it.
+ */
+export async function assertKitSyntheticValues(kitDir) {
+  const failures = [];
+  for (const source of await syntheticValueSources(kitDir)) {
+    const text = await readFile(source.path, "utf8");
+    for (const value of kitValues(source.file, text)) {
+      if (!isSyntheticValue(value) && !isReviewedSyntheticValue(value)) failures.push(syntheticValueFailure(value));
+    }
+  }
+  assert(failures.length === 0, `kit files contain non-synthetic values:\n  ${failures.join("\n  ")}`);
 }
 
 /**
