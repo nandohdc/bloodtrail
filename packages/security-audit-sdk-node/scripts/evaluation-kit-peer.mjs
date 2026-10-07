@@ -140,6 +140,42 @@ async function handleStallBody(heldResolvers, response) {
   }
 }
 
+function resetResponseBody(response) {
+  const socket = response.socket;
+  response.writeHead(202, { "content-type": "application/json", "content-length": "64" });
+  response.write('{"acknowledgments":[', () => socket.destroy());
+}
+
+function sendShortResponseBody(response) {
+  const body = '{"acknowledgments":[]}';
+  response.writeHead(202, {
+    "content-type": "application/json",
+    "content-length": String(Buffer.byteLength(body) + 1),
+    connection: "close",
+  });
+  response.end(body);
+}
+
+function sendMalformedChunkedResponse(response) {
+  response.socket.write(
+    "HTTP/1.1 202 Accepted\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\ninvalid-chunk\r\n{}\r\n0\r\n\r\n",
+  );
+  response.socket.end();
+}
+
+const BODY_READ_FAILURE_HANDLERS = new Map([
+  ["body-reset", resetResponseBody],
+  ["short-body", sendShortResponseBody],
+  ["malformed-chunk", sendMalformedChunkedResponse],
+]);
+
+function handleBodyReadFailure(behavior, response) {
+  const handler = BODY_READ_FAILURE_HANDLERS.get(behavior);
+  if (!handler) return false;
+  handler(response);
+  return true;
+}
+
 async function handlePeerBehavior(behavior, ctx) {
   const { request, response, body, heldResolvers } = ctx;
 
@@ -160,6 +196,10 @@ async function handlePeerBehavior(behavior, ctx) {
 
   if (behavior === "stall-body") {
     await handleStallBody(heldResolvers, response);
+    return;
+  }
+
+  if (handleBodyReadFailure(behavior, response)) {
     return;
   }
 

@@ -21,6 +21,14 @@ import {
 } from "@bloodtrail/security-audit-sdk-core";
 
 const SINK_PATH = "/v1/security-audit";
+const PERMANENT_STATUSES = Object.freeze([400, 401, 403, 404, 405, 409, 410, 413, 415, 422]);
+const RETRYABLE_STATUSES = Object.freeze([408, 425, 429, 500, 502, 503, 504]);
+const REDIRECT_STATUSES = Object.freeze([301, 302, 303, 307, 308]);
+const BODY_READ_FAILURES = Object.freeze([
+  { behavior: "body-reset", label: "body reset" },
+  { behavior: "short-body", label: "short body" },
+  { behavior: "malformed-chunk", label: "malformed chunked encoding" },
+]);
 
 interface FailureExpectation {
   readonly label: string;
@@ -37,6 +45,7 @@ interface TrackedPromise<T> {
 }
 
 const peerOrigin = readPeerOrigin();
+const drivenHttpStatuses = new Set<number>();
 
 function readPeerOrigin(): string {
   const origin = process.argv[2];
@@ -102,12 +111,13 @@ function assertOutcomeReport(
   reports: ReadonlyArray<HttpAuditSinkOutcome>,
   expectedOutcome: HttpAuditSinkOutcome["outcome"],
   expectedStatus: number | undefined,
+  label: string,
 ): void {
-  assert.equal(reports.length, 1, "must produce 1 outcome report");
+  assert.equal(reports.length, 1, label + " must produce 1 outcome report");
   const report = reports[0]!;
-  assert.equal(report.outcome, expectedOutcome, "must report outcome " + expectedOutcome);
-  assert.equal(report.status, expectedStatus, "report must carry status " + expectedStatus);
-  assert.ok(typeof report.eventId === "string" && report.eventId.length > 0, "report must carry eventId");
+  assert.equal(report.outcome, expectedOutcome, label + " must report outcome " + expectedOutcome);
+  assert.equal(report.status, expectedStatus, label + " report must carry status " + expectedStatus);
+  assert.ok(typeof report.eventId === "string" && report.eventId.length > 0, label + " report must carry eventId");
 }
 
 async function expectFailureCase(
@@ -130,7 +140,7 @@ async function expectFailureCase(
   for (const field of expected.absentErrorFields) {
     assert.equal(Reflect.get(result.error, field), undefined, "result error must carry no " + field);
   }
-  assertOutcomeReport(reports, expected.outcome, expected.status);
+  assertOutcomeReport(reports, expected.outcome, expected.status, expected.label);
 }
 
 function track<T>(promise: Promise<T>): TrackedPromise<T> {
@@ -154,21 +164,22 @@ async function expectStatusFailures(
       label: "status " + status,
       status,
     });
+    drivenHttpStatuses.add(status);
   }
 }
 
 /** 1. Permanent 4xx status codes map to SDK_SINK_REJECTED and outcome http_permanent. */
 function checkPermanentRejection(): Promise<void> {
-  return expectStatusFailures([400, 401, 403, 404, 422], {
+  return expectStatusFailures(PERMANENT_STATUSES, {
     code: "SDK_SINK_REJECTED",
     outcome: "http_permanent",
     absentErrorFields: ["eventId", "event_id"],
   });
 }
 
-/** 2. Retryable status codes (5xx, 408, 425, 429) map to SDK_SINK_FAILURE and outcome http_retryable. */
+/** 2. Retryable status codes map to SDK_SINK_FAILURE and outcome http_retryable. */
 function checkRetryableFailure(): Promise<void> {
-  return expectStatusFailures([408, 425, 429, 500, 503], {
+  return expectStatusFailures(RETRYABLE_STATUSES, {
     code: "SDK_SINK_FAILURE",
     outcome: "http_retryable",
     absentErrorFields: ["eventId"],
@@ -204,7 +215,20 @@ async function checkTransportFailure(): Promise<void> {
   });
 }
 
-/** 5. Malformed acknowledgments map to SDK_SINK_FAILURE and outcome malformed_acknowledgment. */
+/** 5. Every non-deadline response-body read error maps to transport_failure. */
+async function checkBodyReadFailure(): Promise<void> {
+  for (const failure of BODY_READ_FAILURES) {
+    await expectFailureCase(peerSinkOptions(failure.behavior, 2000), failure.behavior, {
+      label: failure.label,
+      code: "SDK_SINK_FAILURE",
+      outcome: "transport_failure",
+      status: undefined,
+      absentErrorFields: [],
+    });
+  }
+}
+
+/** 6. Malformed acknowledgments map to SDK_SINK_FAILURE and outcome malformed_acknowledgment. */
 async function checkMalformedAcknowledgment(): Promise<void> {
   for (const malformedCase of [
     "malformed-empty",
@@ -223,9 +247,9 @@ async function checkMalformedAcknowledgment(): Promise<void> {
   }
 }
 
-/** 6. A redirection maps to SDK_SINK_FAILURE and outcome unexpected_response, and is never followed. */
+/** 7. A redirection maps to SDK_SINK_FAILURE and outcome unexpected_response, and is never followed. */
 async function checkRedirect(): Promise<void> {
-  for (const redirectStatus of [301, 302, 307, 308]) {
+  for (const redirectStatus of REDIRECT_STATUSES) {
     await expectFailureCase(peerSinkOptions("redirect-" + redirectStatus, 2000), "redirect-" + redirectStatus, {
       label: "redirect " + redirectStatus,
       code: "SDK_SINK_FAILURE",
@@ -233,10 +257,11 @@ async function checkRedirect(): Promise<void> {
       status: redirectStatus,
       absentErrorFields: [],
     });
+    drivenHttpStatuses.add(redirectStatus);
   }
 }
 
-/** 7. Flush waits for in-flight requests. */
+/** 8. Flush waits for in-flight requests. */
 async function checkFlush(): Promise<void> {
   const sdk = createTestSdk(createHttpAuditSink(peerSinkOptions("hold", 5000)));
 
@@ -255,7 +280,7 @@ async function checkFlush(): Promise<void> {
   assert.equal(flushResult.ok, true, "flush must succeed once earlier requests settle");
 }
 
-/** 8. Shutdown drains in-flight requests, and calls after shutdown return SDK_SHUT_DOWN. */
+/** 9. Shutdown drains in-flight requests, and calls after shutdown return SDK_SHUT_DOWN. */
 async function checkShutdown(): Promise<void> {
   const sdk = createTestSdk(createHttpAuditSink(peerSinkOptions("hold", 5000)), 5000);
 
@@ -293,10 +318,13 @@ await checkTimeout();
 console.log("failure-paths:timeout:pass");
 await checkTransportFailure();
 console.log("failure-paths:transport-failure:pass");
+await checkBodyReadFailure();
+console.log("failure-paths:body-read-failure:pass");
 await checkMalformedAcknowledgment();
 console.log("failure-paths:malformed-acknowledgment:pass");
 await checkRedirect();
 console.log("failure-paths:redirect:pass");
+console.log("failure-paths:statuses:" + Array.from(drivenHttpStatuses).sort((first, second) => first - second).join(","));
 await checkFlush();
 console.log("failure-paths:flush:pass");
 await checkShutdown();

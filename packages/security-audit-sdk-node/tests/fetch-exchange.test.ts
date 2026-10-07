@@ -12,7 +12,12 @@ import { setTimeout } from "node:timers";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
-import { createFetchHttpExchange, createHttpDeliveryHandoff, type FetchHttpExchangeOptions } from "../dist/index.js";
+import {
+  createFetchHttpExchange,
+  createHttpDeliveryHandoff,
+  type FetchHttpExchangeOptions,
+  type HttpExchangeOutcome,
+} from "../dist/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixtureEvent = JSON.parse(
@@ -56,6 +61,50 @@ function acknowledge(): Handler {
   };
 }
 
+function resetDuringResponseBody(): Handler {
+  return (_request, _body, response) => {
+    const socket = response.socket;
+    assert.ok(socket);
+    response.writeHead(202, { "content-type": "application/json", "content-length": "64" });
+    response.write('{"acknowledgments":[', () => socket.destroy());
+  };
+}
+
+function shortResponseBody(): Handler {
+  return (_request, _body, response) => {
+    const body = '{"acknowledgments":[]}';
+    response.writeHead(202, {
+      "content-type": "application/json",
+      "content-length": String(Buffer.byteLength(body) + 1),
+      connection: "close",
+    });
+    response.end(body);
+  };
+}
+
+function malformedChunkedResponse(): Handler {
+  return (_request, _body, response) => {
+    const socket = response.socket;
+    assert.ok(socket);
+    socket.write(
+      "HTTP/1.1 202 Accepted\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\ninvalid-chunk\r\n{}\r\n0\r\n\r\n",
+    );
+    socket.end();
+  };
+}
+
+async function exchangeThrough(options: FetchHttpExchangeOptions): Promise<HttpExchangeOutcome> {
+  const exchange = createFetchHttpExchange(options);
+  return exchange({
+    method: "POST",
+    path: "/v1/security-audit",
+    headers: { "content-type": "application/json", "content-length": "2" },
+    body: "{}",
+    event_id: fixtureEvent.event.id,
+    attempt: 0,
+  });
+}
+
 async function deliverThrough(options: FetchHttpExchangeOptions) {
   const handoff = createHttpDeliveryHandoff({ path: "/v1/security-audit", exchange: createFetchHttpExchange(options) });
   return handoff.handoff(structuredClone(fixtureEvent));
@@ -83,6 +132,7 @@ describe("fetch delivery adapter", () => {
       response.writeHead(200, { "content-type": "application/json" });
       response.write('{"acknowledgments":[');
     });
+    assert.deepEqual(await exchangeThrough({ origin, timeoutMs: 50 }), { kind: "timeout" });
     const result = await deliverThrough({ origin, timeoutMs: 50 });
     assert.deepEqual([result.status, result.code], ["retryable", "timeout"]);
   });
@@ -104,8 +154,23 @@ describe("fetch delivery adapter", () => {
     }
   });
 
+  it("maps every non-deadline response body read error to transport failure", async () => {
+    for (const [label, handler] of [
+      ["reset mid-body", resetDuringResponseBody()],
+      ["short declared-length body", shortResponseBody()],
+      ["malformed chunked body", malformedChunkedResponse()],
+    ] as const) {
+      const { origin } = await peer(handler);
+      assert.deepEqual(await exchangeThrough({ origin, timeoutMs: 2_000 }), { kind: "transport_failure" }, label);
+    }
+  });
+
   it("stops reading an oversized response and treats it as malformed", async () => {
     const { origin } = await peer(reply(202, JSON.stringify({ acknowledgments: [], padding: "x".repeat(4_096) })));
+    assert.deepEqual(
+      await exchangeThrough({ origin, timeoutMs: 2_000, maxResponseBytes: 1_024 }),
+      { kind: "response", status: 202, acknowledgments: [] },
+    );
     const result = await deliverThrough({ origin, timeoutMs: 2_000, maxResponseBytes: 1_024 });
     assert.deepEqual([result.status, result.code], ["protocol_error", "malformed_acknowledgment"]);
   });

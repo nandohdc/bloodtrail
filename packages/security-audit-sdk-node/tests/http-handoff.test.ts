@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { describe, it } from "node:test";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { after, describe, it } from "node:test";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  createFetchHttpExchange,
   createHttpDeliveryHandoff,
   type HttpExchangeOutcome,
   type HttpExchangeRequest,
@@ -13,6 +15,61 @@ import type { SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturePath = resolve(__dirname, "../../../contracts/security-audit/examples/positive/all-events.json");
 const fixtureEvent = JSON.parse(readFileSync(fixturePath, "utf8"))[0] as SecurityAuditEvent;
+
+type Handler = (request: IncomingMessage, response: ServerResponse) => void;
+
+const servers: Server[] = [];
+after(() => Promise.all(servers.map((server) => new Promise<void>((done) => server.close(() => done())))));
+
+async function peer(handler: Handler): Promise<string> {
+  const server = createServer((request, response) => {
+    request.resume();
+    request.on("end", () => handler(request, response));
+  });
+  servers.push(server);
+  await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  return `http://127.0.0.1:${address.port}`;
+}
+
+function resetDuringResponseBody(): Handler {
+  return (_request, response) => {
+    const socket = response.socket;
+    assert.ok(socket);
+    response.writeHead(202, { "content-type": "application/json", "content-length": "64" });
+    response.write('{"acknowledgments":[', () => socket.destroy());
+  };
+}
+
+function shortResponseBody(): Handler {
+  return (_request, response) => {
+    const body = '{"acknowledgments":[]}';
+    response.writeHead(202, {
+      "content-type": "application/json",
+      "content-length": String(Buffer.byteLength(body) + 1),
+      connection: "close",
+    });
+    response.end(body);
+  };
+}
+
+function malformedChunkedResponse(): Handler {
+  return (_request, response) => {
+    const socket = response.socket;
+    assert.ok(socket);
+    socket.write(
+      "HTTP/1.1 202 Accepted\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\ninvalid-chunk\r\n{}\r\n0\r\n\r\n",
+    );
+    socket.end();
+  };
+}
+
+async function handoffThrough(handler: Handler) {
+  const origin = await peer(handler);
+  const exchange = createFetchHttpExchange({ origin, timeoutMs: 2_000 });
+  return createHttpDeliveryHandoff({ path: "/v1/security-audit", exchange }).handoff(eventFixture());
+}
 
 function eventFixture(): SecurityAuditEvent {
   return JSON.parse(JSON.stringify(fixtureEvent)) as SecurityAuditEvent;
@@ -79,6 +136,21 @@ describe("HTTP delivery handoff", () => {
       const result = await handoff.handoff(event);
       assert.deepEqual(result, { status: "retryable", code, event_id: event.event.id, attempt: 0 });
       assert.equal(requests.length, 1);
+    }
+  });
+
+  it("classifies every broken 2xx response body as a retryable transport failure", async () => {
+    for (const [label, handler] of [
+      ["reset mid-body", resetDuringResponseBody()],
+      ["short declared-length body", shortResponseBody()],
+      ["malformed chunked body", malformedChunkedResponse()],
+    ] as const) {
+      const result = await handoffThrough(handler);
+      assert.deepEqual(
+        [result.status, result.code],
+        ["retryable", "transport_failure"],
+        label,
+      );
     }
   });
 
