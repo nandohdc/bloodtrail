@@ -322,8 +322,10 @@ export async function assertKitDocsClaimOnlyWhatShips(kitDir) {
   for (const document of documents) {
     failures.push(...(await documentFailures(docsDir, document, reviewedCoverage, plannedRows)));
   }
-  failures.push(...plannedRowInventoryFailures(plannedRows));
-  failures.push(...deliveryRetryTermFailures(plannedRows));
-  failures.push(...stalePairFailures(reviewedCoverage));
+  failures.push(
+    ...plannedRowInventoryFailures(plannedRows),
+    ...deliveryRetryTermFailures(plannedRows),
+    ...stalePairFailures(reviewedCoverage),
+  );
   assert(failures.length === 0, `kit documents violate planned-feature documentation:\n  ${failures.join("\n  ")}`);
 }
