@@ -267,10 +267,6 @@ async function copyKitAssets(kitDir, buildRoot) {
   if (existsSync(coreReadme)) {
     await cp(coreReadme, resolve(kitDir, "docs/core-readme.md"));
   }
-  const rootReadme = resolve(buildRoot, "README.md");
-  if (existsSync(rootReadme)) {
-    await cp(rootReadme, resolve(kitDir, "docs/root-readme.md"));
-  }
 }
 
 /**

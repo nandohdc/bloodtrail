@@ -68,7 +68,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 12. #712 — Resolve document identifier spans
 
-- [ ] 12.1 Resolve every identifier-shaped document span against installed declarations except reviewed
+- [x] 12.1 Resolve every identifier-shaped document span against installed declarations except reviewed
   exceptions, replace `occurred_at` with `event.timestamp` and `event.observed_at`, and prove invented APIs
   fail the gate.
 

@@ -22,7 +22,7 @@ import {
   markdownDocumentNames,
 } from "./evaluation-kit-doc-blocks.mjs";
 import { assertKitDocsClaimOnlyWhatShips } from "./evaluation-kit-doc-claims.mjs";
-import { assertKitDocReferences } from "./evaluation-kit-doc-references.mjs";
+import { REVIEWED_EXCEPTIONS, assertKitDocReferences } from "./evaluation-kit-doc-references.mjs";
 import {
   PNPM_RELEASES,
   assertKitDocsNameInstallers,
@@ -422,7 +422,8 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: () => "kit installed outside any workspace with npm and no ignored setting",
   }),
   "document-references": Object.freeze({
-    clause: () => "call-shaped document references resolved against installed package type declarations",
+    clause: () =>
+      `every callee and identifier-shaped inline code span in the kit documents resolved against installed package type declarations, except ${REVIEWED_EXCEPTIONS.length} reviewed exceptions`,
   }),
   "npm-single-core-copy": Object.freeze({
     clause: () => "single core copy verified after the npm installation",
@@ -592,7 +593,8 @@ export async function checkEvaluationKit({
       return undefined;
     });
 
-    // 3a. Every call-shaped reference in the kit's documents names an API the installed packages declare
+    // 3a. Every callee and identifier-shaped reference in the kit's documents names an API the installed
+    // packages declare, except the reviewed exceptions
     await runCheck(completedChecks, disabledChecks, "document-references", () => assertKitDocReferences(tempInstall));
 
     // 4. Verify single core copy in npm install (and fail closed if planted duplicate)
