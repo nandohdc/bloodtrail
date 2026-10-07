@@ -103,5 +103,5 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 18. #719 — Archive the hardening change
 
-- [ ] 18.1 After the fold has merged, archive `harden-evaluation-kit-gate` in its own pull request and keep
+- [x] 18.1 After the fold has merged, archive `harden-evaluation-kit-gate` in its own pull request and keep
   the archive task unchecked until that archive work is ready.
