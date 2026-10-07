@@ -3,20 +3,84 @@ import { basename, extname, resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import ts from "typescript";
+import { assert, byCodePoint } from "./verification-helpers.mjs";
 
-const TS_CODE_BLOCK_PATTERN = /```(?:typescript|ts)\r?\n([\s\S]*?)```/g;
+// Fence lines may be indented by any leading spaces or tabs, as in a nested list item. The lookaheads keep
+// the marker run whole, so the info string never re-reads it.
+const FENCE_OPENING = /^([ \t]*)(`{3,}(?!`)|~{3,}(?!~))(.*)$/;
+const FENCE_CLOSING = /^([ \t]*)(`+|~+)[ \t]*\r?$/;
+
+function fenceHeader(line) {
+  const match = FENCE_OPENING.exec(line);
+  if (!match) return null;
+  const infoString = match[3].trim();
+  const language = infoString.split(/\s+/, 1)[0] ?? "";
+  return { marker: match[2], language, infoString };
+}
+
+function closesFence(line, marker) {
+  const match = FENCE_CLOSING.exec(line);
+  if (!match) return false;
+  if (!match[2].startsWith(marker[0])) return false;
+  return match[2].length >= marker.length;
+}
+
+function readFencedBlocks(markdownText) {
+  const fences = [];
+  let openFence = null;
+  const lines = markdownText.split("\n");
+  for (const [index, line] of lines.entries()) {
+    if (openFence) {
+      if (closesFence(line, openFence.marker)) {
+        fences.push({ ...openFence, endLine: index + 1, body: openFence.body.join("\n") });
+        openFence = null;
+      } else {
+        openFence.body.push(line);
+      }
+      continue;
+    }
+    const header = fenceHeader(line);
+    if (header) openFence = { ...header, openingLine: index + 1, body: [] };
+  }
+  if (openFence) fences.push({ ...openFence, endLine: lines.length, body: openFence.body.join("\n") });
+  return fences;
+}
+
+/**
+ * Returns every fenced block in a document, with its language, complete info string, opening line, and body.
+ */
+export function extractFencedBlocks(markdownText) {
+  return readFencedBlocks(markdownText).map(({ language, infoString, openingLine, body }) => ({
+    language,
+    infoString,
+    openingLine,
+    body,
+  }));
+}
+
+// Every TypeScript fence, matched in any letter case with whatever follows the language, with its opening
+// line and body, so checks can name where a block sits in its document.
+export function extractTypeScriptFencedBlocks(markdownText) {
+  return extractFencedBlocks(markdownText).filter(({ language }) =>
+    ["ts", "typescript"].includes(language.toLowerCase()),
+  );
+}
 
 export function extractTypeScriptDocBlocks(markdownText) {
-  const blocks = [];
-  let match;
-  TS_CODE_BLOCK_PATTERN.lastIndex = 0;
-  while ((match = TS_CODE_BLOCK_PATTERN.exec(markdownText)) !== null) {
-    const code = match[1]?.trim();
-    if (code) {
-      blocks.push(code);
-    }
+  return extractTypeScriptFencedBlocks(markdownText)
+    .map(({ body }) => body.trim())
+    .filter(Boolean);
+}
+
+// The TypeScript scanner skips comments and reads a string's contents as one token, so only a declare
+// keyword token marks a block as declaration-only; `declare` inside a comment or string does not count.
+export function containsDeclareKeyword(blockText) {
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, true);
+  scanner.setText(blockText);
+  while (scanner.scan() !== ts.SyntaxKind.EndOfFileToken) {
+    if (scanner.getToken() === ts.SyntaxKind.DeclareKeyword) return true;
   }
-  return blocks;
+  return false;
 }
 
 const DECLARATION_KINDS = new Set([
@@ -52,24 +116,16 @@ export function declaredDocBlockNames(markdownText) {
   return names;
 }
 
-const FENCE_MARKER = /^[ \t]*(`*)/;
-
-function closesFence(line, marker, fence) {
-  return marker.length >= fence.length && line.trim() === marker;
-}
-
-// A document without its fenced code blocks, which the gate type-checks instead. A fence closes on a line of
-// at least as many backticks as opened it.
+// A document without its fenced code blocks, which the gate type-checks instead.
 export function proseOutsideFencedBlocks(markdownText) {
-  const prose = [];
-  let fence = "";
-  for (const line of markdownText.split("\n")) {
-    const marker = FENCE_MARKER.exec(line)[1];
-    if (fence) fence = closesFence(line, marker, fence) ? "" : fence;
-    else if (marker.length >= 3) fence = marker;
-    else prose.push(line);
+  const fencedLines = new Set();
+  for (const { openingLine, endLine } of readFencedBlocks(markdownText)) {
+    for (let line = openingLine; line <= endLine; line++) fencedLines.add(line);
   }
-  return prose.join("\n");
+  return markdownText
+    .split("\n")
+    .filter((_, index) => !fencedLines.has(index + 1))
+    .join("\n");
 }
 
 export async function extractDocBlocksFromDir(docsDir, outputDir) {
@@ -94,6 +150,52 @@ export async function extractDocBlocksFromDir(docsDir, outputDir) {
   }
 
   return writtenFiles;
+}
+
+export const ALLOWED_FENCE_LANGUAGES = Object.freeze(["bash", "http", "json", "sh", "ts", "typescript"]);
+
+// How a failure shows a fence that names no language, so an anonymous fence is distinguishable from prose.
+const EMPTY_LANGUAGE_DISPLAY = "(none)";
+
+function unallowlistedFence(documentName, fence) {
+  const language = fence.language.toLowerCase();
+  if (ALLOWED_FENCE_LANGUAGES.includes(language)) return null;
+  const shown = fence.language === "" ? EMPTY_LANGUAGE_DISPLAY : fence.language;
+  return `docs/${documentName} line ${fence.openingLine}: fence language ${shown} is not allowlisted`;
+}
+
+// Markdown document names in code-point order, so every check that reports failures lists them the same
+// way on every filesystem.
+export async function markdownDocumentNames(docsDir) {
+  const entries = await readdir(docsDir, { withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isFile() && extname(entry.name).toLowerCase() === ".md")
+    .map((entry) => entry.name)
+    .sort(byCodePoint);
+}
+
+/**
+ * Every fence in the kit's documents names an allowlisted language, matched in any letter case and with
+ * any info string after it. A failure names the document and the fence's opening line.
+ */
+export async function assertKitDocFenceLanguages(kitDir) {
+  const docsDir = resolve(kitDir, "docs");
+  const documents = await markdownDocumentNames(docsDir);
+  const failures = [];
+  for (const name of documents) {
+    failures.push(...(await documentFenceFailures(docsDir, name)));
+  }
+  assert(failures.length === 0, `kit document fences name unallowlisted languages:\n  ${failures.join("\n  ")}`);
+}
+
+async function documentFenceFailures(docsDir, name) {
+  const text = await readFile(resolve(docsDir, name), "utf8");
+  const failures = [];
+  for (const fence of extractFencedBlocks(text)) {
+    const failure = unallowlistedFence(name, fence);
+    if (failure) failures.push(failure);
+  }
+  return failures;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

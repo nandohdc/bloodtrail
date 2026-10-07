@@ -62,7 +62,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 11. #711 — Check and run document fences
 
-- [ ] 11.1 Recognize TypeScript fence names case-insensitively with optional info strings, require an
+- [x] 11.1 Recognize TypeScript fence names case-insensitively with optional info strings, require an
   allowlisted language on every fence, type-check every TypeScript block, and run each block without `declare`.
   Prove fence and runnable-block defects fail.
 
