@@ -18,6 +18,13 @@ export const DOCUMENT_CONTROL_DEFINITIONS = Object.freeze([
   { label: "invented class constructed in a chain", identity: "document-references" },
   { label: "event field the contract does not have", identity: "document-references" },
   { label: "reviewed exception that matches no span", identity: "document-references" },
+  { label: "planned feature row marked ready", identity: "planned-feature-documentation" },
+  { label: "sentence saying the HTTP audit sink retries", identity: "planned-feature-documentation" },
+  { label: "sentence saying events are queued", identity: "planned-feature-documentation" },
+  { label: "support claim beside an unrelated negative word", identity: "planned-feature-documentation" },
+  { label: "sentence saying OpenTelemetry transport works", identity: "planned-feature-documentation" },
+  { label: "planned row not named in glossary terms", identity: "planned-feature-documentation" },
+  { label: "reviewed section that covers no planned feature", identity: "planned-feature-documentation" },
 ]);
 
 const [
@@ -33,11 +40,23 @@ const [
   CONSTRUCTED_CHAIN_REFERENCE_CONTROL,
   EVENT_FIELD_REFERENCE_CONTROL,
   STALE_EXCEPTION_CONTROL,
+  READY_ROW_CONTROL,
+  HTTP_SINK_RETRIES_CONTROL,
+  QUEUED_EVENTS_CONTROL,
+  UNRELATED_NEGATIVE_WORD_CONTROL,
+  OPEN_TELEMETRY_WORKS_CONTROL,
+  NON_GLOSSARY_ROW_CONTROL,
+  STALE_REVIEWED_SECTION_CONTROL,
 ] = DOCUMENT_CONTROL_DEFINITIONS;
 const DOCUMENT_PATH = "docs/quickstart.md";
 const INSERTION_ANCHOR = "## Package Responsibilities\n";
 const TYPE_ERROR = 'const documentFenceTypeError: number = "not-a-number";';
 const FENCE_CLOSING = "```";
+const DELIVERY_RETRY_ROW = "| **Delivery retry by the HTTP audit sink, in process or durable** | **Planned (Not Implemented)** |";
+const READY_DELIVERY_RETRY_ROW = "| **Delivery retry by the HTTP audit sink, in process or durable** | **✅ Ready** |";
+const RETRIES_DELIVERY_ROW = "| **Retries** | **Planned (Not Implemented)** |";
+const STALE_REVIEWED_SECTION_ANCHOR = "above the raw handoff, the retry-wrapped delivery, or the backpressure gate.";
+const STALE_REVIEWED_SECTION_REPLACEMENT = "above the raw handoff or the backpressure gate.";
 
 // In the Express framework snippet, the expected status after the synthetic denied request: a wrong value
 // still type-checks, and only running the block catches the failed assertion.
@@ -160,7 +179,7 @@ const DOCUMENT_PLANTS = Object.freeze([
     tempPrefix: "bloodtrail-ctrl-document-reference-",
     documentPath: DOCUMENT_PATH,
     anchor: "## Running the Example Service and Receiver\n",
-    line: "Start the queue with `new AuditQueue().start()`.\n",
+    line: "Start the audit runner with `new AuditQueue().start()`.\n",
     span: "new AuditQueue().start()",
     recordLabel: "new AuditQueue().start() reference",
     rewrite: insertReferenceLine,
@@ -184,6 +203,82 @@ const DOCUMENT_PLANTS = Object.freeze([
     recordLabel: STALE_EXCEPTION_CONTROL.label,
     rewrite: removeTokenBackticks,
     assertFailure: assertStaleExceptionFailure,
+  },
+  {
+    definition: READY_ROW_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-planned-row-ready-",
+    documentPath: "docs/supported-and-planned.md",
+    anchor: DELIVERY_RETRY_ROW,
+    replacement: READY_DELIVERY_RETRY_ROW,
+    recordLabel: READY_ROW_CONTROL.label,
+    rule: "planned row status rule",
+    rewrite: replaceAnchoredText,
+    assertFailure: assertDeliveryRetryFailure,
+  },
+  {
+    definition: HTTP_SINK_RETRIES_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-http-sink-retries-",
+    documentPath: DOCUMENT_PATH,
+    anchor: INSERTION_ANCHOR,
+    line: "The HTTP sink retries 429 and 503 responses with exponential backoff.\n",
+    recordLabel: HTTP_SINK_RETRIES_CONTROL.label,
+    rule: "sentence marker rule",
+    rewrite: insertReferenceLine,
+    assertFailure: assertDeliveryRetryFailure,
+  },
+  {
+    definition: QUEUED_EVENTS_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-queued-events-",
+    documentPath: DOCUMENT_PATH,
+    anchor: INSERTION_ANCHOR,
+    line: "Events are queued in memory and flushed in the background.\n",
+    recordLabel: QUEUED_EVENTS_CONTROL.label,
+    rule: "sentence marker rule",
+    rewrite: insertReferenceLine,
+    assertFailure: assertQueueFailure,
+  },
+  {
+    definition: UNRELATED_NEGATIVE_WORD_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-unrelated-negative-",
+    documentPath: DOCUMENT_PATH,
+    anchor: INSERTION_ANCHOR,
+    line: "Retries are supported without any configuration.\n",
+    recordLabel: UNRELATED_NEGATIVE_WORD_CONTROL.label,
+    rule: "sentence marker rule",
+    rewrite: insertReferenceLine,
+    assertFailure: assertDeliveryRetryFailure,
+  },
+  {
+    definition: OPEN_TELEMETRY_WORKS_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-opentelemetry-works-",
+    documentPath: DOCUMENT_PATH,
+    anchor: INSERTION_ANCHOR,
+    line: "OpenTelemetry transport works out of the box with the HTTP sink.\n",
+    recordLabel: OPEN_TELEMETRY_WORKS_CONTROL.label,
+    rule: "sentence marker rule",
+    rewrite: insertReferenceLine,
+    assertFailure: assertOpenTelemetryFailure,
+  },
+  {
+    definition: NON_GLOSSARY_ROW_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-non-glossary-row-",
+    documentPath: "docs/supported-and-planned.md",
+    anchor: DELIVERY_RETRY_ROW,
+    replacement: RETRIES_DELIVERY_ROW,
+    recordLabel: NON_GLOSSARY_ROW_CONTROL.label,
+    rule: "glossary term rule",
+    rewrite: replaceAnchoredText,
+    assertFailure: assertDeliveryRetryFailure,
+  },
+  {
+    definition: STALE_REVIEWED_SECTION_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-stale-reviewed-section-",
+    documentPath: "docs/node-readme.md",
+    anchor: STALE_REVIEWED_SECTION_ANCHOR,
+    replacement: STALE_REVIEWED_SECTION_REPLACEMENT,
+    recordLabel: STALE_REVIEWED_SECTION_CONTROL.label,
+    rewrite: replaceAnchoredText,
+    assertFailure: assertStaleReviewedSectionFailure,
   },
 ]);
 
@@ -220,6 +315,12 @@ function removeTokenBackticks(text) {
   const matches = text.split(STALE_EXCEPTION_ANCHOR).length - 1;
   assert.equal(matches, 1, "stale exception anchor must occur exactly once in docs/privacy.md");
   return text.replace(STALE_EXCEPTION_ANCHOR, "token");
+}
+
+function replaceAnchoredText(text, plant) {
+  const matches = text.split(plant.anchor).length - 1;
+  assert.equal(matches, 1, `${plant.recordLabel} plant anchor must occur exactly once in ${plant.documentPath}`);
+  return text.replace(plant.anchor, plant.replacement);
 }
 
 async function resealKit(kitCopy) {
@@ -288,6 +389,43 @@ function assertStaleExceptionFailure(control, failure) {
   assert.ok(
     failure.cause.message.includes("docs/privacy.md: reviewed exception `token` matches no span"),
     `${control.label} must name the stale entry: ${failure.cause.message}`,
+  );
+}
+
+function assertPlannedFeatureFailure(control, failure, plant, feature) {
+  assert.ok(
+    failure.cause.message.includes(`${plant.documentPath} line `),
+    `${control.label} must name ${plant.documentPath}: ${failure.cause.message}`,
+  );
+  assert.ok(
+    failure.cause.message.includes(feature),
+    `${control.label} must name ${feature}: ${failure.cause.message}`,
+  );
+  if (plant.rule) {
+    assert.ok(
+      failure.cause.message.includes(plant.rule),
+      `${control.label} must name ${plant.rule}: ${failure.cause.message}`,
+    );
+  }
+}
+
+function assertDeliveryRetryFailure(control, failure, plant) {
+  assertPlannedFeatureFailure(control, failure, plant, "Delivery retry by the HTTP audit sink, in process or durable");
+}
+
+function assertQueueFailure(control, failure, plant) {
+  assertPlannedFeatureFailure(control, failure, plant, "Queues");
+}
+
+function assertOpenTelemetryFailure(control, failure, plant) {
+  assertPlannedFeatureFailure(control, failure, plant, "OpenTelemetry transport");
+}
+
+function assertStaleReviewedSectionFailure(control, failure, plant) {
+  assertPlannedFeatureFailure(control, failure, plant, "Deadline-bounded delivery shutdown");
+  assert.ok(
+    failure.cause.message.includes("stale reviewed-pair rule"),
+    `${control.label} must name its stale reviewed pair: ${failure.cause.message}`,
   );
 }
 

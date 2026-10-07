@@ -9,9 +9,9 @@ This document specifies the wire protocol used by `@bloodtrail/security-audit-sd
 The evaluation alpha provides a minimal, non-buffering delivery model designed for straightforward evaluation:
 
 - **One attempt**: The SDK sends exactly one HTTP `POST` request per emit call.
-- **No automatic retries**: If delivery fails (e.g. transient 5xx, timeout, network error), the SDK does not retry the request.
+- **No delivery retry (planned)**: If delivery fails (e.g. transient 5xx, timeout, network error), the SDK does not send the request again.
 - **No ordering**: Concurrently emitted events may reach the receiver and settle in any order.
-- **No delivery-class conformance**: Delivery class policies (such as durable spooling, local queues, or multi-sink fanout) are not evaluated or guaranteed in the alpha.
+- **No delivery-class conformance**: Delivery class policies (such as durable spooling, local queues, or multi-sink fanout) are planned, and not evaluated or guaranteed in the alpha.
 
 ---
 

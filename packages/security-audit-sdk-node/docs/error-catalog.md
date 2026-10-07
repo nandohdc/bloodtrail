@@ -254,7 +254,7 @@ will not accept this event, so sending it again unchanged will not help.
 
 **Fix.** Read the precise cause from the HTTP sink's `onOutcome` callback. It reports `http_permanent`,
 the HTTP `status`, and the event's `eventId`. Then correct the request, the sink's options, or the
-receiver's configuration. The SDK never retries.
+receiver's configuration. The SDK never redelivers the event.
 
 **Fields.** `category` is `sink`, `path` is `/sink`, and `eventName` names the event. The result has
 no event identifier, but `onOutcome` has.
@@ -286,9 +286,9 @@ The code has causes that `onOutcome` does not report:
 - raise `timeoutMs` if the receiver is slow;
 - check that the receiver acknowledges each event exactly.
 
-The SDK never retries, and the HTTP sink makes one attempt per event, so whether to send again is your
-decision. The receiver may already hold the event. A terminal success that failed here does not count
-as delivered, so its operation handle can send it again.
+The SDK never redelivers, and the HTTP sink makes one delivery attempt per event, so whether to send
+again is your decision. The receiver may already hold the event. A terminal success that failed here
+does not count as delivered, so its operation handle can send it again.
 
 **Fields.** `category` is `sink`. From sending an event, `path` is `/sink` and `eventName` names the
 event. From `flush()` or `shutdown()`, there is no `path` and no `eventName`.
@@ -387,8 +387,8 @@ hook's own error is never reported.
 **Meaning.** This operation handle already delivered a terminal success for this event, or one is
 being sent now.
 
-**Common causes.** The same completed success sent twice with one handle, for example from a retry loop,
-from two code paths, or concurrently.
+**Common causes.** The same completed success sent twice with one handle, for example from a loop that
+sends it again, from two code paths, or concurrently.
 
 **Fix.** Send each terminal success once per operation. A success that the sink did not accept does not
 count, so the handle can send it again. A deliberate re-attempt passes
@@ -668,7 +668,7 @@ event method from the same decision.
 - A successful `accountRegistrationCompleted` or `passwordResetCompleted` without `causation_id` and
   `original_event_id`. These completions must point at the event that started them. The path is
   `/correlation`.
-- A retry, whose `retry_attempt` is above zero, without `original_event_id`. The path is
+- A re-execution, whose `retry_attempt` is above zero, without `original_event_id`. The path is
   `/correlation/original_event_id`.
 - A `causation_id` or `original_event_id` equal to the event's own identifier. The path is
   `/correlation/causation_id`.
@@ -677,7 +677,7 @@ event method from the same decision.
 
 **Fix.** For a completion, pass the starting event's identifier as
 `correlation: { causation_id, original_event_id }`. A named call's result does not include the
-identifier of the event it sent, but the HTTP sink's `onOutcome` reports it. For a retry, pass
+identifier of the event it sent, but the HTTP sink's `onOutcome` reports it. For a re-execution, pass
 `retry: { retry_attempt, original_event_id }`.
 
 **Fields.** `category` is `validation`. `path` is `/correlation`, or a field under it.
@@ -944,8 +944,9 @@ another component reports it.
 
 ### `ENVELOPE_PAYLOAD_CONFLICT`
 
-**Meaning.** A CloudEvents envelope disagrees with the canonical event that it carries. The event in
-`data` is authoritative, and the envelope may only repeat it.
+**Meaning.** A CloudEvents envelope disagrees with the canonical event that it carries; CloudEvents
+envelopes are planned, so only a consumer builds one today. The event in `data` is authoritative, and
+the envelope may only repeat it.
 
 **Common causes.** In the contract's rules, an envelope conflicts when it has no `data`, or when one of
 these attributes differs from the event:

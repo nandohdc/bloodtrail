@@ -7,8 +7,8 @@ Every value on this page is synthetic, and no snippet sets a production environm
 
 ## Wiring a Framework Handler by Hand
 
-The alpha ships no framework adapter. Framework adapters are planned, as `docs/supported-and-planned.md`
-records. You wire the SDK into a handler yourself:
+Framework adapters are planned, as `docs/supported-and-planned.md` records, and the alpha ships
+none. You wire the SDK into a handler yourself:
 
 1. Resolve the authenticated actor and tenant, as your authentication middleware already does.
 2. Open a per-request context scope with `sdk.runWithContext`.

@@ -835,8 +835,8 @@ async function checkInventedApiControl(kitDir, { _disabledChecks = [] } = {}) {
 
 // The ratified scenario's planted defect: the table lists retries as supported.
 const SUPPORTED_RETRY_ROW = Object.freeze({
-  anchor: "| **Retries** | **Planned (Not Implemented)** |",
-  replacement: "| **Retries** | **Supported** |",
+  anchor: "| **Delivery retry by the HTTP audit sink, in process or durable** | **Planned (Not Implemented)** |",
+  replacement: "| **Delivery retry by the HTTP audit sink, in process or durable** | **Supported** |",
 });
 
 async function checkSupportedRetryRowControl(kitDir, { _disabledChecks = [] } = {}) {
@@ -845,10 +845,10 @@ async function checkSupportedRetryRowControl(kitDir, { _disabledChecks = [] } = 
     tempPrefix: "bloodtrail-ctrl-supported-retry-",
     path: "docs/supported-and-planned.md",
     plant: (text) => text.replace(SUPPORTED_RETRY_ROW.anchor, SUPPORTED_RETRY_ROW.replacement),
-    expectCondition: "docs/supported-and-planned.md describes retries as available",
+    expectCondition: "docs/supported-and-planned.md line 20: Delivery retry by the HTTP audit sink, in process or durable violates planned row status rule",
     _disabledChecks,
   });
-  assert.equal(measurements.length, 1, "supported retry control must record one measured plant");
+  assert.equal(measurements.length, 1, "supported delivery-retry control must record one measured plant");
   return completeControl(control, measurements);
 }
 
@@ -1081,7 +1081,7 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 59, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 66, "the control table must declare every expected control");
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label, identity }) => controlFor(label).identity), CLONE_PLANT_CONTROLS.map(({ identity }) => identity));
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label }) => CONTROL_RUNNERS_BY_LABEL.has(label)), CLONE_PLANT_CONTROLS.map(() => true));
   assert.throws(
