@@ -21,7 +21,7 @@ import {
   extractTypeScriptFencedBlocks,
   markdownDocumentNames,
 } from "./evaluation-kit-doc-blocks.mjs";
-import { assertKitDocsClaimOnlyWhatShips } from "./evaluation-kit-doc-claims.mjs";
+import { REVIEWED_PAIRS, assertKitDocsClaimOnlyWhatShips } from "./evaluation-kit-doc-claims.mjs";
 import { REVIEWED_EXCEPTIONS, assertKitDocReferences } from "./evaluation-kit-doc-references.mjs";
 import {
   PNPM_RELEASES,
@@ -404,7 +404,8 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: () => "the quickstart and known-issues pages name the supported pnpm majors",
   }),
   "planned-feature-documentation": Object.freeze({
-    clause: () => "kit documents describe planned features only as planned",
+    clause: () =>
+      `every planned-feature row marked planned and named in glossary terms, and every kit document sentence naming a planned feature carries a planned marker, except under ${REVIEWED_PAIRS.length} reviewed sections`,
   }),
   "document-fence-languages": Object.freeze({
     clause: () => "every kit document fence names an allowlisted language, matched in any letter case with any info string: bash, http, json, sh, ts, typescript",
@@ -559,7 +560,7 @@ export async function checkEvaluationKit({
     // 1c. The kit's documents name exactly the pnpm majors this gate installs with
     await runCheck(completedChecks, disabledChecks, "installer-documentation", () => assertKitDocsNameInstallers(kitDir));
 
-    // 1d. The kit's documents describe OCSF export, OpenTelemetry transport, CloudEvents envelopes, retries, queues and framework adapters only as planned
+    // 1d. Planned rows use glossary terms and every planned-feature sentence carries a marker or reviewed exemption.
     await runCheck(completedChecks, disabledChecks, "planned-feature-documentation", () => assertKitDocsClaimOnlyWhatShips(kitDir));
 
     // 1e. Every fence in the kit's documents names an allowlisted language, matched in any letter case and with any info string

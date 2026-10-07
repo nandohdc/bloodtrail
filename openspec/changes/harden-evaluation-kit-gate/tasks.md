@@ -74,7 +74,7 @@ evidence. Groups are in native `blockedBy` order. The proposal does not tick a t
 
 ## 13. #713 — Mark planned features as planned
 
-- [ ] 13.1 Require glossary-named planned features in every planned row, flag any unmarked planned-feature
+- [x] 13.1 Require glossary-named planned features in every planned row, flag any unmarked planned-feature
   sentence in any verb form, preserve only reviewed Node-README frozen-primitive and Core-README re-execution
   sections, and use `re-execution` rather than `retry` in kit prose.
 

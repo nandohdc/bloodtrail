@@ -116,15 +116,27 @@ export function declaredDocBlockNames(markdownText) {
   return names;
 }
 
-// A document without its fenced code blocks, which the gate type-checks instead.
-export function proseOutsideFencedBlocks(markdownText) {
+function fencedLineNumbers(markdownText) {
   const fencedLines = new Set();
   for (const { openingLine, endLine } of readFencedBlocks(markdownText)) {
     for (let line = openingLine; line <= endLine; line++) fencedLines.add(line);
   }
+  return fencedLines;
+}
+
+// Prose lines retain their original positions so document checks can report a source line after ignoring fences.
+export function proseLinesOutsideFencedBlocks(markdownText) {
+  const fencedLines = fencedLineNumbers(markdownText);
   return markdownText
     .split("\n")
-    .filter((_, index) => !fencedLines.has(index + 1))
+    .map((text, index) => ({ text, line: index + 1 }))
+    .filter(({ line }) => !fencedLines.has(line));
+}
+
+// A document without its fenced code blocks, which the gate type-checks instead.
+export function proseOutsideFencedBlocks(markdownText) {
+  return proseLinesOutsideFencedBlocks(markdownText)
+    .map(({ text }) => text)
     .join("\n");
 }
 
