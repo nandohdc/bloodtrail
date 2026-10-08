@@ -97,6 +97,11 @@ The SHA-256 of a distributable kit's archive, recorded outside that archive beca
 its own digest.
 _Avoid_: kit digest, signature
 
+**Kit destination**:
+The directory a kit build writes the unpacked kit into. A distributable kit's archive is written beside it, in its
+parent.
+_Avoid_: output directory, dest
+
 **Evaluator**:
 A person whom an owner-approved amendment names, and who uses the evaluation kit with synthetic data in
 non-production services they own.
