@@ -1,0 +1,151 @@
+{
+  "schema_version": "1.1",
+  "change_id": "clarify-quickstart-first-accepted-event",
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "The quickstart puts the first emit before receiver instructions and does not say how to save and run a block from the kit directory, so an evaluator must infer the receiver-first M1 setup.",
+    "The authentication-success block has no program-side success line, leaving the receiver as the only confirmation that its accepted event reached the evaluation path.",
+    "The shipped first-event example is undocumented and uses an in-memory sink, yet the ratified kit gate runs it without a receiver; it must remain a distinct offline check."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ],
+    "full_trigger_absence_proof": "No full assessment trigger applies. This one bounded correction adds evaluator prose and one console line to a quickstart document block, with no API change. It introduces no abstraction, module, class, or interface; changes no public API, integration, lifecycle or state, concurrency, persistence, security-sensitive behavior, governance-core path, or canonical capability requirement."
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/docs/quickstart.md",
+    "openspec/changes/clarify-quickstart-first-accepted-event/.openspec.yaml",
+    "openspec/changes/clarify-quickstart-first-accepted-event/assessment.json",
+    "openspec/changes/clarify-quickstart-first-accepted-event/assessment.source.json",
+    "openspec/changes/clarify-quickstart-first-accepted-event/design.md",
+    "openspec/changes/clarify-quickstart-first-accepted-event/proposal.md",
+    "openspec/changes/clarify-quickstart-first-accepted-event/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-ordered-receiver-first-quickstart",
+      "kind": "direct_implementation",
+      "summary": "Add a receiver-first section before package responsibilities, describe how to save and run the authentication-success block from the kit directory, log its accepted status, name first-event as an offline check, and refer to an already-running receiver in the bottom section.",
+      "forces_addressed": [
+        "The quickstart puts the first emit before receiver instructions and does not say how to save and run a block from the kit directory, so an evaluator must infer the receiver-first M1 setup.",
+        "The authentication-success block has no program-side success line, leaving the receiver as the only confirmation that its accepted event reached the evaluation path.",
+        "The shipped first-event example is undocumented and uses an in-memory sink, yet the ratified kit gate runs it without a receiver; it must remain a distinct offline check."
+      ]
+    },
+    {
+      "id": "approach-deliver-first-event-over-http",
+      "kind": "alternative",
+      "summary": "Change examples/first-event.ts to deliver an event to the example receiver over HTTP, so the shipped example itself becomes the first accepted-event path.",
+      "forces_addressed": [
+        "The quickstart puts the first emit before receiver instructions and does not say how to save and run a block from the kit directory, so an evaluator must infer the receiver-first M1 setup.",
+        "The shipped first-event example is undocumented and uses an in-memory sink, yet the ratified kit gate runs it without a receiver; it must remain a distinct offline check."
+      ]
+    },
+    {
+      "id": "approach-add-kit-gate-path-check",
+      "kind": "alternative",
+      "summary": "Add a dedicated kit-gate check that starts the receiver and follows a copied quickstart path to assert an accepted event.",
+      "forces_addressed": [
+        "The quickstart puts the first emit before receiver instructions and does not say how to save and run a block from the kit directory, so an evaluator must infer the receiver-first M1 setup.",
+        "The authentication-success block has no program-side success line, leaving the receiver as the only confirmation that its accepted event reached the evaluation path."
+      ]
+    },
+    {
+      "id": "approach-move-bottom-receiver-section",
+      "kind": "alternative",
+      "summary": "Move the existing bottom receiver section to the top unchanged, leaving its later walkthrough as the only connection between installation and the first emit.",
+      "forces_addressed": [
+        "The quickstart puts the first emit before receiver instructions and does not say how to save and run a block from the kit directory, so an evaluator must infer the receiver-first M1 setup.",
+        "The authentication-success block has no program-side success line, leaving the receiver as the only confirmation that its accepted event reached the evaluation path."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-ordered-receiver-first-quickstart",
+  "rejected_alternative_ids": [
+    "approach-deliver-first-event-over-http",
+    "approach-add-kit-gate-path-check",
+    "approach-move-bottom-receiver-section"
+  ],
+  "rejection_reasons": {
+    "approach-deliver-first-event-over-http": {
+      "forces": [
+        "The shipped first-event example is undocumented and uses an in-memory sink, yet the ratified kit gate runs it without a receiver; it must remain a distinct offline check."
+      ],
+      "reason": "It fails the offline-check force: delivering first-event over HTTP would require a receiver even though the ratified kit gate runs it receiverless, and would remove the distinct package-and-emit check that #756 requires."
+    },
+    "approach-add-kit-gate-path-check": {
+      "forces": [
+        "The quickstart puts the first emit before receiver instructions and does not say how to save and run a block from the kit directory, so an evaluator must infer the receiver-first M1 setup."
+      ],
+      "reason": "It fails the bounded correction: #756 rules out a new kit-gate check, and the existing gate already executes every quickstart TypeScript block, so a new check would expand the change without resolving the document ordering itself."
+    },
+    "approach-move-bottom-receiver-section": {
+      "forces": [
+        "The quickstart puts the first emit before receiver instructions and does not say how to save and run a block from the kit directory, so an evaluator must infer the receiver-first M1 setup.",
+        "The authentication-success block has no program-side success line, leaving the receiver as the only confirmation that its accepted event reached the evaluation path."
+      ],
+      "reason": "It fails the ordered-path and visible-success forces because unchanged receiver prose does not explain saving or running a block, does not expose the program success line, and does not distinguish the receiverless first-event check."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-quickstart-first-accepted-event-path-is-ordered",
+    "implementation-kit-gate-checks-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-quickstart-first-accepted-event-path-is-ordered": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "the unpacked-kit dogfood walk starts the receiver before a byte-for-byte copied authentication-success block and records quickstart:accepted plus one receiver:accepted line",
+        "the quickstart diff places the ordered section after installation and before Package Responsibilities, while the offline command records first-event:pass"
+      ]
+    },
+    "implementation-kit-gate-checks-unchanged": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "Node 26 validate and Node 24.2.0 npm test run the existing Node binding kit checks and controls without a new gate or reviewed exception",
+        "the final governance chain and changed-path evidence show that no gate script or control path changed"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No audit event, contract, validation, or integrity assertion changes; the proposed edit only clarifies how an evaluator observes an existing event.",
+    "authentication_or_authorization": "No authentication or authorization mechanism changes; the existing receiver and its synthetic fixture authentication remain unchanged.",
+    "authority_provenance": "No authority constructor, provenance field, brand, or trust assertion changes; the quickstart only describes existing evaluator commands.",
+    "concurrency": "No concurrent execution, scheduling, shared state, or synchronization changes; the documented second terminal uses the existing receiver process.",
+    "confidentiality": "No secret or confidential data handling changes; the path continues to use the existing synthetic fixture token and event data.",
+    "cryptography": "No cryptographic algorithm, digest, key, signing, or verification behavior changes in this documentation-only correction.",
+    "error_disclosure": "No error type or disclosure behavior changes; the quickstart only tells an evaluator how to recognize an existing failed emit.",
+    "external_security_integration": "No external security product, collector deployment, SIEM, exporter, or third-party integration is added or changed.",
+    "fail_posture": "No failure handling changes; receiverless document-block execution keeps using the existing failure branch and existing kit gate.",
+    "lifecycle": "No SDK, sink, receiver, operation, or resource lifecycle state transition changes; only the order in which prose presents commands changes.",
+    "mutation_ownership": "No runtime object ownership or mutation rule changes; the sole code-block edit adds a console line after an existing assertion.",
+    "privacy_transformation": "No privacy transformation, field redaction, prohibited-data scan, or data classification behavior changes.",
+    "resource_retention": "No storage, retention, queue, buffer, file lifetime, or receiver resource-management behavior changes.",
+    "retry_or_redelivery": "No retry, re-execution, redelivery, ordering, or delivery-class behavior changes; the page continues to describe the existing one-attempt path.",
+    "trust_boundary": "No trust boundary is moved or crossed; evaluator prose and one document-block console line leave all package boundaries unchanged."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "d28ad1ee5478d7019c65eaca90b083437fe6e630"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "3.3"
+  ]
+}
