@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile, readlink, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { checkDirtyTreeRefusal, checkDistributableKitMatch } from "./check-evaluation-kit.mjs";
+import { checkDestinationRefusal, checkDirtyTreeRefusal, checkDistributableKitMatch } from "./check-evaluation-kit.mjs";
 import { sha256Hex } from "./evaluation-kit-checksums.mjs";
 import { KIT_PACKAGES, createKitTreeClone, runCloneBuilder } from "./evaluation-kit-source-copy.mjs";
 import { runChecked } from "./verification-helpers.mjs";
@@ -31,6 +31,19 @@ export const CLONE_PLANT_CONTROLS = Object.freeze([
         replacement:
           'const archivedPaths = (await listTrackedSources(repositoryRoot)).filter((path) => path !== "packages/security-audit-collector/README.md");\n' +
           '    runChecked("git", ["archive", "--format=tar", "-o", archive, commit, "--", ...archivedPaths], {',
+      }),
+    afterCommit: noCloneChange,
+  },
+  {
+    label: "builder that creates the destination's directories before checking where they are",
+    identity: "destination-refusal",
+    expectConditions: ["destination-refusal: must create no directory at"],
+    plant: (root, measurements) =>
+      replaceMeasuredCloneFile(root, measurements, BUILD_EVALUATION_KIT_PATH, {
+        anchor: "  await assertOutsideRepository(\n    nearestExistingDestinationPath,",
+        replacement:
+          "  await mkdir(kitDir, { recursive: true });\n" +
+          "  await assertOutsideRepository(\n    nearestExistingDestinationPath,",
       }),
     afterCommit: noCloneChange,
   },
@@ -188,6 +201,9 @@ async function writeMeasuredCloneSymlink(root, measurements, path, target) {
 }
 
 function runClonePlantedCheck(entry, cloneRoot, kitDir, identity) {
+  if (entry.identity === "destination-refusal") {
+    return checkDestinationRefusal({ cloneRoot });
+  }
   if (entry.identity === "dirty-tree-refusal") {
     return checkDirtyTreeRefusal({ cloneRoot });
   }

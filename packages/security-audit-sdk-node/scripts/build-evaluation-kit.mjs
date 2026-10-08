@@ -303,6 +303,21 @@ async function createKitArchive(kitDir, commit, makeArchive) {
   return { archivePath, archiveDigest: sha256Hex(await readFile(archivePath)) };
 }
 
+async function nearestExistingPath(path) {
+  let candidate = path;
+  while (true) {
+    try {
+      await realpath(candidate);
+      return candidate;
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+      const parent = dirname(candidate);
+      assert(parent !== candidate, `no existing ancestor found for ${path}`);
+      candidate = parent;
+    }
+  }
+}
+
 /**
  * Builds a kit from a clean temporary copy of the tracked sources: at the identity commit for a
  * distributable kit, and from the working tree's tracked files otherwise. `sourceRoot` lets the gate
@@ -321,9 +336,15 @@ export async function buildEvaluationKit({
 
   const parentTemp = destDir ? null : await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-build-"));
   const kitDir = destDir ? resolve(destDir) : resolve(parentTemp, "evaluation-kit");
-  const cleanupTarget = parentTemp ?? kitDir;
-  await assertOutsideRepository(dirname(kitDir));
-  await mkdir(kitDir, { recursive: true });
+  const nearestExistingDestinationPath = await nearestExistingPath(kitDir);
+  await assertOutsideRepository(
+    nearestExistingDestinationPath,
+    destDir
+      ? `destination ${kitDir} is inside the repository ${repositoryRoot}; choose a destination outside it`
+      : undefined,
+  );
+  const createdDirectory = await mkdir(kitDir, { recursive: true });
+  const cleanupTarget = parentTemp ?? createdDirectory ?? kitDir;
 
   const removeKit = () => rm(cleanupTarget, { recursive: true, force: true });
   const buildRoot = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-sources-"));

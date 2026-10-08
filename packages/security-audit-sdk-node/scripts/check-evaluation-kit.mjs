@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { appendFile, copyFile, cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { assertOutsideRepository, buildEvaluationKit, verifyKitIdentity } from "./build-evaluation-kit.mjs";
@@ -317,10 +317,11 @@ function liveGitStatus() {
 // destination. Returns the builder's parsed output plus a remover for the destination tree.
 async function buildDistributableKitInClone(cloneRoot) {
   const parentDir = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-distributable-"));
-  const destDir = resolve(parentDir, "evaluation-kit");
+  const archiveDir = resolve(parentDir, "absent", "nested");
+  const destDir = resolve(archiveDir, "evaluation-kit");
   try {
     const built = runCloneBuilder(cloneRoot, destDir);
-    return { ...built, remove: () => rm(parentDir, { recursive: true, force: true }) };
+    return { ...built, destDir, archiveDir, remove: () => rm(parentDir, { recursive: true, force: true }) };
   } catch (error) {
     await rm(parentDir, { recursive: true, force: true });
     throw error;
@@ -358,6 +359,14 @@ async function assertSameChecksumListExceptIdentity(distributableKitDir, verific
 export async function checkDistributableKitMatch({ cloneRoot, verificationKitDir, verificationIdentity }) {
   const built = await buildDistributableKitInClone(cloneRoot);
   try {
+    assert(
+      built.kitDir === built.destDir,
+      `distributable kit builder reported ${built.kitDir}, expected destination ${built.destDir}`,
+    );
+    assert(
+      dirname(built.archivePath) === built.archiveDir,
+      `distributable kit archive ${built.archivePath} must lie in ${built.archiveDir}`,
+    );
     const verified = await verifyKitIdentity(built.kitDir);
     assert(verified.identity.distributable === true, "the distributable kit must be marked distributable");
     const headCommit = runChecked("git", ["rev-parse", "HEAD"], { cwd: cloneRoot, capture: true }).trim();
@@ -393,6 +402,36 @@ export async function checkDistributableKitMatch({ cloneRoot, verificationKitDir
 
 const DIRTY_TREE_PROBE_PATH = `${KIT_PACKAGES.node}/docs/privacy.md`;
 
+// Uses a clean clone to prove a destination under it is refused before the builder creates its missing
+// parent directories. This must precede the dirty-tree check because that check deliberately dirties it.
+export async function checkDestinationRefusal({ cloneRoot }) {
+  const destinationParent = resolve(cloneRoot, "kit-gate-absent-destination");
+  const destDir = resolve(destinationParent, "evaluation-kit");
+  try {
+    let built = null;
+    let builderFailure = null;
+    try {
+      built = runCloneBuilder(cloneRoot, destDir);
+    } catch (error) {
+      builderFailure = error;
+    }
+    assert(built === null, "destination-refusal: a clone-internal destination produced a distributable kit");
+    assert(builderFailure !== null, "destination-refusal: a clone-internal destination must make the builder exit nonzero");
+    const output = builderFailure.output;
+    assert(typeof output === "string", `destination-refusal: builder output is missing: ${builderFailure.message}`);
+    assert(
+      output.includes(`destination ${destDir} is inside the repository`),
+      `destination-refusal: builder output must name the inside-repository destination ${destDir}: ${output}`,
+    );
+    assert(
+      !existsSync(destinationParent),
+      `destination-refusal: must create no directory at ${destinationParent}`,
+    );
+  } finally {
+    await rm(destinationParent, { recursive: true, force: true });
+  }
+}
+
 // After the distributable build, appends one line to a tracked kit file in the clone, without committing,
 // and requires the clone's builder to refuse a second distributable build: a nonzero exit whose output
 // names the changed path, and no kit directory at the destination.
@@ -427,7 +466,7 @@ export async function checkDirtyTreeRefusal({ cloneRoot }) {
   }
 }
 
-// Runs the two clone checks against one disposable clone. The clone is removed in a finally, and the live
+// Runs the clone checks against one disposable clone. The clone is removed in a finally, and the live
 // repository's porcelain status is compared before and after only once the try block has completed, so a
 // check failure always propagates unchanged.
 async function runCloneChecks(completedChecks, disabledChecks, kitDir, identityMaterial) {
@@ -437,6 +476,7 @@ async function runCloneChecks(completedChecks, disabledChecks, kitDir, identityM
     await runCheck(completedChecks, disabledChecks, "distributable-kit-match", () =>
       checkDistributableKitMatch({ cloneRoot, verificationKitDir: kitDir, verificationIdentity: identityMaterial }),
     );
+    await runCheck(completedChecks, disabledChecks, "destination-refusal", () => checkDestinationRefusal({ cloneRoot }));
     await runCheck(completedChecks, disabledChecks, "dirty-tree-refusal", () => checkDirtyTreeRefusal({ cloneRoot }));
   } finally {
     await remove();
@@ -489,7 +529,10 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: () => "verification-kit identity reproduced after stale build output and untracked sources were planted",
   }),
   "distributable-kit-match": Object.freeze({
-    clause: () => "distributable kit built under umask 077 from a disposable clean clone of the tree under test, with the same artifacts and checksum list as the verification kit apart from its identity file",
+    clause: () => "distributable kit built under umask 077 from a disposable clean clone of the tree under test, into a destination whose parent directories did not exist, with the same artifacts and checksum list as the verification kit apart from its identity file",
+  }),
+  "destination-refusal": Object.freeze({
+    clause: () => "distributable build refused in that clone for a destination inside it whose parent did not exist, with no directory created",
   }),
   "dirty-tree-refusal": Object.freeze({
     clause: () => "distributable build refused in that clone once it held an uncommitted change",

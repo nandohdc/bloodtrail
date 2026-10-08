@@ -173,10 +173,10 @@ export async function copyTrackedSources({ toRoot, commit = null, fromRoot = rep
 
 // Asserts `directory` lies outside the repository tree. Defined here because the builder, which imports
 // this module, re-exports it under the same name; this module cannot import the builder back.
-export async function assertOutsideRepository(directory) {
+export async function assertOutsideRepository(directory, failureMessage = `temporary directory ${directory} is inside the repository tree`) {
   const path = relative(await realpath(repositoryRoot), await realpath(directory));
   const outside = path === ".." || path.startsWith(`..${sep}`) || isAbsolute(path);
-  assert(outside, `temporary directory ${directory} is inside the repository tree`);
+  assert(outside, failureMessage);
 }
 
 // Overlays the live working tree's tracked files under KIT_SOURCE_PATHS onto the clone at `cloneRoot`, so
