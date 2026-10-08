@@ -1,0 +1,169 @@
+{
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "A --dest below missing parents must create those parents and yield both a kit and a distributable archive for the facilitator.",
+    "A destination inside the repository, including its root, must be refused before creation so no repository directory is written.",
+    "A build whose destination parent already exists must retain its existing behaviour, leaving the separate #760 cleanup hazard unchanged.",
+    "Every kit-gate check must have a stable identity, a clause emitted only when it ran, and a planted-defect control that fails both at that identity and when the check is disabled."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "full_trigger_absence_proof": "No full assessment trigger applies. This is one bounded correction to unshipped Node builder and gate scripts; it introduces no abstraction, module, class, interface, or public API. It changes no integration, lifecycle or state machine, concurrency, persistence, or security-sensitive behavior; it touches no governance-core path and changes no canonical capability requirement. The guard only refuses more destinations, including an existing destination inside the repository, which existing requirements already require to remain outside the repository; no requirement text changes.",
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/scripts/build-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-source-copy.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-clone-controls.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-controls.mjs",
+    "openspec/changes/create-kit-destination-parents/.openspec.yaml",
+    "openspec/changes/create-kit-destination-parents/assessment.json",
+    "openspec/changes/create-kit-destination-parents/assessment.source.json",
+    "openspec/changes/create-kit-destination-parents/design.md",
+    "openspec/changes/create-kit-destination-parents/proposal.md",
+    "openspec/changes/create-kit-destination-parents/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-guard-nearest-existing-destination-path",
+      "kind": "direct_implementation",
+      "summary": "Walk from the requested kit directory to its nearest existing path, prove that path lies outside the repository before recursive creation, and extend the clone gate and planted controls to prove creation and refusal.",
+      "forces_addressed": [
+        "A --dest below missing parents must create those parents and yield both a kit and a distributable archive for the facilitator.",
+        "A destination inside the repository, including its root, must be refused before creation so no repository directory is written.",
+        "A build whose destination parent already exists must retain its existing behaviour, leaving the separate #760 cleanup hazard unchanged.",
+        "Every kit-gate check must have a stable identity, a clause emitted only when it ran, and a planted-defect control that fails both at that identity and when the check is disabled."
+      ]
+    },
+    {
+      "id": "approach-create-directories-before-checking",
+      "kind": "alternative",
+      "summary": "Run recursive directory creation before checking whether the requested destination is outside the repository, then continue with the existing builder flow.",
+      "forces_addressed": [
+        "A --dest below missing parents must create those parents and yield both a kit and a distributable archive for the facilitator.",
+        "A destination inside the repository, including its root, must be refused before creation so no repository directory is written."
+      ]
+    },
+    {
+      "id": "approach-skip-missing-ancestor-checks",
+      "kind": "alternative",
+      "summary": "Start at the destination parent and skip missing ancestors while searching upward for a path the current parent-oriented guard can resolve.",
+      "forces_addressed": [
+        "A --dest below missing parents must create those parents and yield both a kit and a distributable archive for the facilitator.",
+        "A destination inside the repository, including its root, must be refused before creation so no repository directory is written."
+      ]
+    },
+    {
+      "id": "approach-refuse-missing-parent",
+      "kind": "alternative",
+      "summary": "Keep refusing destinations below missing parents, but replace the bare realpath error with a diagnostic that tells the facilitator to create the parent first.",
+      "forces_addressed": [
+        "A --dest below missing parents must create those parents and yield both a kit and a distributable archive for the facilitator.",
+        "A build whose destination parent already exists must retain its existing behaviour, leaving the separate #760 cleanup hazard unchanged."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-guard-nearest-existing-destination-path",
+  "rejected_alternative_ids": [
+    "approach-create-directories-before-checking",
+    "approach-skip-missing-ancestor-checks",
+    "approach-refuse-missing-parent"
+  ],
+  "rejection_reasons": {
+    "approach-create-directories-before-checking": {
+      "forces": [
+        "A destination inside the repository, including its root, must be refused before creation so no repository directory is written."
+      ],
+      "reason": "Creating before the guard writes missing directory components inside the repository before the refusal can occur, directly failing the no-creation destination-refusal force."
+    },
+    "approach-skip-missing-ancestor-checks": {
+      "forces": [
+        "A destination inside the repository, including its root, must be refused before creation so no repository directory is written."
+      ],
+      "reason": "Skipping missing ancestors preserves the parent-only reasoning that lets the repository root pass, so it cannot prove that an in-repository destination is refused before any write."
+    },
+    "approach-refuse-missing-parent": {
+      "forces": [
+        "A --dest below missing parents must create those parents and yield both a kit and a distributable archive for the facilitator."
+      ],
+      "reason": "A clearer refusal still leaves the facilitator without a kit or archive and therefore fails the required missing-parent outcome rather than implementing it."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-kit-destination-missing-parents-created",
+    "implementation-kit-destination-inside-repository-refused-before-creation",
+    "implementation-kit-destination-existing-parent-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-kit-destination-missing-parents-created": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "the distributable clone gate builds into absent/nested/evaluation-kit and asserts the reported kit and archive paths",
+        "the recorded missing-parent probe builds a kit and archive below a fresh empty temporary directory"
+      ]
+    },
+    "implementation-kit-destination-inside-repository-refused-before-creation": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "2.3",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "destination-refusal requires a clean clone builder to fail with the destination diagnostic and leave its absent parent missing",
+        "the measured planted control creates directories before the guard and must make the gate fail at destination-refusal, and the control itself fails when that check is disabled",
+        "recorded disposable-clone probes cover both a missing-parent destination and the clone root with empty porcelain"
+      ]
+    },
+    "implementation-kit-destination-existing-parent-unchanged": {
+      "task_ids": [
+        "3.1",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "Node 26 validation and Node 24.2.0 tests exercise the existing kit builder and gate contracts",
+        "the recorded existing-parent probe produces the same kit digest as the missing-parent probe"
+      ]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "a9ca5ef2abf2ed1420927a8e575ed299dd521db6"
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No audit event, contract, identity calculation, or integrity assertion changes; the correction only bounds where an evaluation kit builder may write.",
+    "authentication_or_authorization": "No authentication or authorization mechanism changes; the builder and gate operate on local synthetic evaluation-kit files only.",
+    "authority_provenance": "No authority source, signing record, provenance field, or decision record changes; the destination guard only rejects an invalid local path.",
+    "concurrency": "No concurrent scheduling, shared state, locking, or asynchronous coordination model changes; the path walk and directory creation remain one builder operation.",
+    "confidentiality": "No secret, credential, or confidential payload handling changes; diagnostics contain only local destination and repository paths already supplied to the builder.",
+    "cryptography": "No cryptographic algorithm, digest format, key handling, signing, or verification behavior changes; existing kit identity material remains unchanged.",
+    "error_disclosure": "The new refusal explains an invalid local destination without exposing credentials, kit contents, or caller data beyond the provided path and repository root.",
+    "external_security_integration": "No external security product, network service, exporter, collector deployment, or third-party integration is introduced or altered.",
+    "fail_posture": "The guard fails before directory creation for an in-repository destination, and a measured gate control proves that moving creation before it fails closed.",
+    "lifecycle": "No SDK, sink, operation, or package lifecycle transition changes; the builder's existing temporary-directory cleanup policy is only made precise for new paths.",
+    "mutation_ownership": "The builder creates only the requested outside-repository destination after its guard; clone checks and controls use disposable copies and clean them up.",
+    "privacy_transformation": "No privacy transformation, data classification, redaction, prohibited-data scan, or personal-data processing behavior changes.",
+    "resource_retention": "No storage or retention policy changes; recursive mkdir and existing cleanup govern only transient evaluation-kit directories.",
+    "retry_or_redelivery": "No retry, delivery, redelivery, queueing, or attempt behavior changes; the correction concerns local kit construction before any evaluation run.",
+    "trust_boundary": "The existing repository boundary is enforced more completely without moving or adding a trust boundary, and no new principal crosses it."
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3"
+  ]
+}
