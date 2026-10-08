@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { appendFile, copyFile, cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { appendFile, copyFile, cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, resolve } from "node:path";
 import process from "node:process";
@@ -432,6 +432,75 @@ export async function checkDestinationRefusal({ cloneRoot }) {
   }
 }
 
+// Proves the builder refuses output it did not create before it can copy, seal, archive, or clean it up.
+// Each probe gets its own temporary parent so its expected absence assertions are independent.
+export async function checkExistingOutputRefusal({ cloneRoot }) {
+  const destinationParent = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-existing-destination-"));
+  const destinationDir = resolve(destinationParent, "evaluation-kit");
+  const destinationFile = resolve(destinationDir, "notes.txt");
+  const destinationContents = "existing destination bytes must remain unchanged\n";
+  try {
+    await mkdir(destinationDir);
+    await writeFile(destinationFile, destinationContents, "utf8");
+    let built = null;
+    let builderFailure = null;
+    try {
+      built = runCloneBuilder(cloneRoot, destinationDir);
+    } catch (error) {
+      builderFailure = error;
+    }
+    assert(built === null, "existing-output-refusal: an existing destination produced a distributable kit");
+    assert(builderFailure !== null, "existing-output-refusal: an existing destination must make the builder exit nonzero");
+    const destinationOutput = builderFailure.output;
+    assert(typeof destinationOutput === "string", `existing-output-refusal: existing destination output is missing: ${builderFailure.message}`);
+    assert(
+      destinationOutput.includes(`destination ${destinationDir} already exists`),
+      `existing-output-refusal: existing destination output must name ${destinationDir}: ${destinationOutput}`,
+    );
+    assert(
+      (await readFile(destinationFile, "utf8")) === destinationContents,
+      `existing-output-refusal: existing destination file changed at ${destinationFile}`,
+    );
+    assert(
+      !(await readdir(destinationParent)).some((entry) => /^bloodtrail-evaluation-kit-[0-9a-f]{8}\.tar\.gz$/i.test(entry)),
+      `existing-output-refusal: existing destination created an archive in ${destinationParent}`,
+    );
+  } finally {
+    await rm(destinationParent, { recursive: true, force: true });
+  }
+
+  const archiveCommit = runChecked("git", ["rev-parse", "HEAD"], { cwd: cloneRoot, capture: true }).trim();
+  const archiveParent = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-existing-archive-"));
+  const archiveDestination = resolve(archiveParent, "evaluation-kit");
+  const archivePath = resolve(archiveParent, `bloodtrail-evaluation-kit-${archiveCommit.slice(0, 8)}.tar.gz`);
+  const archiveContents = "existing archive bytes must remain unchanged\n";
+  try {
+    await writeFile(archivePath, archiveContents, "utf8");
+    let built = null;
+    let builderFailure = null;
+    try {
+      built = runCloneBuilder(cloneRoot, archiveDestination);
+    } catch (error) {
+      builderFailure = error;
+    }
+    assert(built === null, "existing-output-refusal: an existing archive produced a distributable kit");
+    assert(builderFailure !== null, "existing-output-refusal: an existing archive must make the builder exit nonzero");
+    const archiveOutput = builderFailure.output;
+    assert(typeof archiveOutput === "string", `existing-output-refusal: existing archive output is missing: ${builderFailure.message}`);
+    assert(
+      archiveOutput.includes(`archive ${archivePath} already exists`),
+      `existing-output-refusal: existing archive output must name ${archivePath}: ${archiveOutput}`,
+    );
+    assert(
+      (await readFile(archivePath, "utf8")) === archiveContents,
+      `existing-output-refusal: existing archive changed at ${archivePath}`,
+    );
+    assert(!existsSync(archiveDestination), `existing-output-refusal: existing archive created ${archiveDestination}`);
+  } finally {
+    await rm(archiveParent, { recursive: true, force: true });
+  }
+}
+
 // After the distributable build, appends one line to a tracked kit file in the clone, without committing,
 // and requires the clone's builder to refuse a second distributable build: a nonzero exit whose output
 // names the changed path, and no kit directory at the destination.
@@ -477,6 +546,7 @@ async function runCloneChecks(completedChecks, disabledChecks, kitDir, identityM
       checkDistributableKitMatch({ cloneRoot, verificationKitDir: kitDir, verificationIdentity: identityMaterial }),
     );
     await runCheck(completedChecks, disabledChecks, "destination-refusal", () => checkDestinationRefusal({ cloneRoot }));
+    await runCheck(completedChecks, disabledChecks, "existing-output-refusal", () => checkExistingOutputRefusal({ cloneRoot }));
     await runCheck(completedChecks, disabledChecks, "dirty-tree-refusal", () => checkDirtyTreeRefusal({ cloneRoot }));
   } finally {
     await remove();
@@ -533,6 +603,9 @@ export const KIT_GATE_CHECKS = Object.freeze({
   }),
   "destination-refusal": Object.freeze({
     clause: () => "distributable build refused in that clone for a destination inside it whose parent did not exist, with no directory created",
+  }),
+  "existing-output-refusal": Object.freeze({
+    clause: () => "distributable build refused in that clone for a kit destination or archive that already existed, leaving both unchanged",
   }),
   "dirty-tree-refusal": Object.freeze({
     clause: () => "distributable build refused in that clone once it held an uncommitted change",

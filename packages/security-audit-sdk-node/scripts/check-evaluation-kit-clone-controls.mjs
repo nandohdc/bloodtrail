@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile, readlink, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { checkDestinationRefusal, checkDirtyTreeRefusal, checkDistributableKitMatch } from "./check-evaluation-kit.mjs";
+import { checkDestinationRefusal, checkDirtyTreeRefusal, checkDistributableKitMatch, checkExistingOutputRefusal } from "./check-evaluation-kit.mjs";
 import { sha256Hex } from "./evaluation-kit-checksums.mjs";
 import { KIT_PACKAGES, createKitTreeClone, runCloneBuilder } from "./evaluation-kit-source-copy.mjs";
 import { runChecked } from "./verification-helpers.mjs";
@@ -44,6 +44,39 @@ export const CLONE_PLANT_CONTROLS = Object.freeze([
         replacement:
           "  await mkdir(kitDir, { recursive: true });\n" +
           "  await assertOutsideRepository(\n    nearestExistingDestinationPath,",
+      }),
+    afterCommit: noCloneChange,
+  },
+  {
+    label: "builder that writes into an existing kit destination",
+    identity: "existing-output-refusal",
+    expectConditions: ["existing-output-refusal: an existing destination produced a distributable kit"],
+    plant: (root, measurements) =>
+      replaceMeasuredCloneFile(root, measurements, BUILD_EVALUATION_KIT_PATH, {
+        anchor:
+          "  await assertPathDoesNotExist(\n" +
+          "    kitDir,\n" +
+          "    `destination ${kitDir} already exists; choose a path that does not exist yet`,\n" +
+          "  );\n",
+        replacement: "",
+      }),
+    afterCommit: noCloneChange,
+  },
+  {
+    label: "builder that overwrites an existing archive",
+    identity: "existing-output-refusal",
+    expectConditions: ["existing-output-refusal: an existing archive produced a distributable kit"],
+    plant: (root, measurements) =>
+      replaceMeasuredCloneFile(root, measurements, BUILD_EVALUATION_KIT_PATH, {
+        anchor:
+          "  if (distributable && createArchive) {\n" +
+          "    const archivePath = kitArchivePath(kitDir, commit);\n" +
+          "    await assertPathDoesNotExist(\n" +
+          "      archivePath,\n" +
+          "      `archive ${archivePath} already exists; move it, or choose a destination in another directory`,\n" +
+          "    );\n" +
+          "  }\n",
+        replacement: "",
       }),
     afterCommit: noCloneChange,
   },
@@ -203,6 +236,9 @@ async function writeMeasuredCloneSymlink(root, measurements, path, target) {
 function runClonePlantedCheck(entry, cloneRoot, kitDir, identity) {
   if (entry.identity === "destination-refusal") {
     return checkDestinationRefusal({ cloneRoot });
+  }
+  if (entry.identity === "existing-output-refusal") {
+    return checkExistingOutputRefusal({ cloneRoot });
   }
   if (entry.identity === "dirty-tree-refusal") {
     return checkDirtyTreeRefusal({ cloneRoot });

@@ -105,6 +105,7 @@ const EXPECTED_BUILD_CHECK_IDENTITIES = Object.freeze([
   "reproducible-identity",
   "distributable-kit-match",
   "destination-refusal",
+  "existing-output-refusal",
   "dirty-tree-refusal",
   "npm-installation",
   "document-references",
@@ -152,6 +153,7 @@ const VERIFICATION_SUMMARY_PREFIX = "evaluation kit verification passed: ";
 const LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE = "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, the 422 to an event that passed the ingress's structural check but failed SDK validation, acknowledged the corrected event with the SDK-invalid event's identity, a byte-identical duplicate and a redelivered event, and kept serving after each; it required the Bearer scheme in any letter case, answered 404 to a POST on another path and 405 with Allow: POST to another method, and counted a client abort as neither a 500 nor a rejection; after answering 401, 404 and 413 to a body past its bound it closed the connection, accepting no more than the socket buffers hold";
 const DISTRIBUTABLE_KIT_UMASK_CLAUSE = "distributable kit built under umask 077 from a disposable clean clone of the tree under test, into a destination whose parent directories did not exist, with the same artifacts and checksum list as the verification kit apart from its identity file";
 const DESTINATION_REFUSAL_CLAUSE = "distributable build refused in that clone for a destination inside it whose parent did not exist, with no directory created";
+const EXISTING_OUTPUT_REFUSAL_CLAUSE = "distributable build refused in that clone for a kit destination or archive that already existed, leaving both unchanged";
 const SYNTHETIC_VALUES_CLAUSE = "every host, email address, IP address and environment name in the kit's documents and examples, links included, is synthetic, with no reviewed exception";
 const FAILURE_PATHS_CLAUSE = "HTTP audit sink failure paths verified for every status in the wire-protocol failure table, a refused connection, a deadline before and during the response body, a body reset, short body and malformed chunked encoding as transport failures, and the flush and shutdown lifecycle";
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
@@ -1100,7 +1102,7 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 74, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 76, "the control table must declare every expected control");
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label, identity }) => controlFor(label).identity), CLONE_PLANT_CONTROLS.map(({ identity }) => identity));
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label }) => CONTROL_RUNNERS_BY_LABEL.has(label)), CLONE_PLANT_CONTROLS.map(() => true));
   assert.throws(
@@ -1219,6 +1221,7 @@ async function checkSummaryCompositionProof(kitDir) {
   const fullClauses = buildMode.verificationChecks.map(clauseForCheck);
   assert.ok(buildMode.summary.includes(DISTRIBUTABLE_KIT_UMASK_CLAUSE), `the build-mode summary must name the clone's fixed umask and missing destination parents: ${buildMode.summary}`);
   assert.ok(buildMode.summary.includes(DESTINATION_REFUSAL_CLAUSE), `the build-mode summary must name the clone-internal destination refusal: ${buildMode.summary}`);
+  assert.ok(buildMode.summary.includes(EXISTING_OUTPUT_REFUSAL_CLAUSE), `the build-mode summary must name the existing-output refusal: ${buildMode.summary}`);
   assert.ok(buildMode.summary.includes(LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE), `the build-mode summary must include the complete loopback clause: ${buildMode.summary}`);
   assert.ok(kitDirMode.summary.includes(LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE), `the --kit-dir summary must include the complete loopback clause: ${kitDirMode.summary}`);
   assert.equal(

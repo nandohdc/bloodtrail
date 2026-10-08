@@ -296,9 +296,39 @@ export async function sealKitIdentity(kitDir, { commit, distributable, artifacts
   return identity;
 }
 
+function kitArchivePath(kitDir, commit) {
+  return resolve(dirname(kitDir), `bloodtrail-evaluation-kit-${commit.slice(0, 8)}.tar.gz`);
+}
+
+async function assertPathDoesNotExist(path, failureMessage) {
+  try {
+    await lstat(path);
+  } catch (error) {
+    if (error.code === "ENOENT") return;
+    throw error;
+  }
+  throw new Error(failureMessage);
+}
+
+// Refuses a kit destination that already exists, and for a distributable build an existing archive beside
+// it, so a build never seals, overwrites or cleans up output it did not create.
+async function assertKitOutputIsNew({ kitDir, commit, distributable, createArchive }) {
+  await assertPathDoesNotExist(
+    kitDir,
+    `destination ${kitDir} already exists; choose a path that does not exist yet`,
+  );
+  if (distributable && createArchive) {
+    const archivePath = kitArchivePath(kitDir, commit);
+    await assertPathDoesNotExist(
+      archivePath,
+      `archive ${archivePath} already exists; move it, or choose a destination in another directory`,
+    );
+  }
+}
+
 async function createKitArchive(kitDir, commit, makeArchive) {
   if (!makeArchive) return { archivePath: null, archiveDigest: null };
-  const archivePath = resolve(dirname(kitDir), `bloodtrail-evaluation-kit-${commit.slice(0, 8)}.tar.gz`);
+  const archivePath = kitArchivePath(kitDir, commit);
   runChecked("tar", ["-czf", archivePath, "-C", dirname(kitDir), basename(kitDir)]);
   return { archivePath, archiveDigest: sha256Hex(await readFile(archivePath)) };
 }
@@ -343,8 +373,9 @@ export async function buildEvaluationKit({
       ? `destination ${kitDir} is inside the repository ${repositoryRoot}; choose a destination outside it`
       : undefined,
   );
+  await assertKitOutputIsNew({ kitDir, commit, distributable, createArchive });
   const createdDirectory = await mkdir(kitDir, { recursive: true });
-  const cleanupTarget = parentTemp ?? createdDirectory ?? kitDir;
+  const cleanupTarget = parentTemp ?? createdDirectory;
 
   const removeKit = () => rm(cleanupTarget, { recursive: true, force: true });
   const buildRoot = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-sources-"));
