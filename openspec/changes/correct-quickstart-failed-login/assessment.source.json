@@ -1,0 +1,149 @@
+{
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "An evaluator who copies the failed-login example into their own login handler must emit the event the contract describes: an anonymous actor, with a tenantless or resolved tenant.",
+    "A failed login identifies no one, so the example must not assert an identity the caller never proved, and a username the client submitted is only a claim.",
+    "The example must name no targeted account, because the event records failed authentication without account enumeration.",
+    "The kit gate already runs and type-checks every quickstart block, so the correction adds no check, control or reviewed exception."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "full_trigger_absence_proof": "No full assessment trigger applies. This one evaluator document changes prose and one code block only: no package source, public API, integration, constructor, lifecycle or state, concurrency, persistence, security-sensitive behavior, governance-core path, or canonical capability requirement text changes. It changes no authority brand or validation rule.",
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/docs/quickstart.md",
+    "openspec/changes/correct-quickstart-failed-login/.openspec.yaml",
+    "openspec/changes/correct-quickstart-failed-login/assessment.json",
+    "openspec/changes/correct-quickstart-failed-login/assessment.source.json",
+    "openspec/changes/correct-quickstart-failed-login/design.md",
+    "openspec/changes/correct-quickstart-failed-login/proposal.md",
+    "openspec/changes/correct-quickstart-failed-login/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-anonymous-tenantless-failed-login",
+      "kind": "direct_implementation",
+      "summary": "Use anonymousActor() and authoritativeTenant({ scope: \"tenantless\" }) in the existing failed-login call, then state that a submitted username is only a claim and that a server-resolved tenant may replace the tenantless scope.",
+      "forces_addressed": [
+        "An evaluator who copies the failed-login example into their own login handler must emit the event the contract describes: an anonymous actor, with a tenantless or resolved tenant.",
+        "A failed login identifies no one, so the example must not assert an identity the caller never proved, and a username the client submitted is only a claim.",
+        "The example must name no targeted account, because the event records failed authentication without account enumeration.",
+        "The kit gate already runs and type-checks every quickstart block, so the correction adds no check, control or reviewed exception."
+      ]
+    },
+    {
+      "id": "approach-claimed-identity-from-username",
+      "kind": "alternative",
+      "summary": "Build a claimed authenticated-human actor from the username submitted with the failed login and pair it with a tenantless tenant.",
+      "forces_addressed": [
+        "A failed login identifies no one, so the example must not assert an identity the caller never proved, and a username the client submitted is only a claim.",
+        "The example must name no targeted account, because the event records failed authentication without account enumeration."
+      ]
+    },
+    {
+      "id": "approach-omit-tenant-from-failed-login",
+      "kind": "alternative",
+      "summary": "Use anonymousActor() but leave tenant context absent from the failed-login call and rely on no tenant being necessary before authentication succeeds.",
+      "forces_addressed": [
+        "An evaluator who copies the failed-login example into their own login handler must emit the event the contract describes: an anonymous actor, with a tenantless or resolved tenant."
+      ]
+    },
+    {
+      "id": "approach-add-failed-login-kit-gate-check",
+      "kind": "alternative",
+      "summary": "Add a dedicated kit-gate check for the failed-login call instead of relying on the existing document-block execution and type checking.",
+      "forces_addressed": [
+        "The kit gate already runs and type-checks every quickstart block, so the correction adds no check, control or reviewed exception."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-anonymous-tenantless-failed-login",
+  "rejected_alternative_ids": [
+    "approach-claimed-identity-from-username",
+    "approach-omit-tenant-from-failed-login",
+    "approach-add-failed-login-kit-gate-check"
+  ],
+  "rejection_reasons": {
+    "approach-claimed-identity-from-username": {
+      "forces": [
+        "A failed login identifies no one, so the example must not assert an identity the caller never proved, and a username the client submitted is only a claim.",
+        "The example must name no targeted account, because the event records failed authentication without account enumeration."
+      ],
+      "reason": "A claimed actor carrying the submitted username names the targeted account even though the client has proved no identity. It is also rejected at runtime with AUTHORITY_ESCALATION because a client claim cannot identify an actor."
+    },
+    "approach-omit-tenant-from-failed-login": {
+      "forces": [
+        "An evaluator who copies the failed-login example into their own login handler must emit the event the contract describes: an anonymous actor, with a tenantless or resolved tenant."
+      ],
+      "reason": "Leaving the tenant out compiles but is rejected at runtime with MISSING_TENANT_CONTEXT, so a copied call emits no event at all, although the contract's tenant rule allows a tenantless or resolved tenant for this event."
+    },
+    "approach-add-failed-login-kit-gate-check": {
+      "forces": [
+        "The kit gate already runs and type-checks every quickstart block, so the correction adds no check, control or reviewed exception."
+      ],
+      "reason": "Adding a check fails the bounded-correction force and is ruled out by #765. The existing kit gate already runs every quickstart block and type-checks it across the supported TypeScript versions."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-quickstart-failed-login-matches-contract",
+    "implementation-kit-gate-checks-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-quickstart-failed-login-matches-contract": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "the quickstart call uses anonymousActor() and authoritativeTenant({ scope: tenantless }) without an account identifier",
+        "the recorded unpacked-kit print-sink walk emits the anonymous client_claim actor and tenantless tenant"
+      ]
+    },
+    "implementation-kit-gate-checks-unchanged": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "Node validation runs the existing evaluation-kit checks and document controls without a new gate or reviewed exception",
+        "the governance chain confirms no gate or control path changed"
+      ]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "5f3e0d9a4d204eecb3eb0eabdef542c0adf0b3dc"
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No audit event, contract, validation, or integrity behavior changes; one quickstart call is documented to use existing contract-defined values.",
+    "authentication_or_authorization": "No authentication or authorization mechanism changes; the documentation stops inventing an authenticated principal for an existing failed-login event.",
+    "authority_provenance": "No constructor, brand, or provenance rule changes; the document selects existing anonymous and tenantless constructor values.",
+    "concurrency": "No concurrent execution, scheduling, shared state, or synchronization changes occur in this prose and document-block correction.",
+    "confidentiality": "No secret, confidential-data, or disclosure handling changes; the correction removes an example account identity rather than adding data.",
+    "cryptography": "No cryptographic algorithm, digest, key, signing, or verification behavior changes in this documentation-only correction.",
+    "error_disclosure": "No error type or disclosure behavior changes; the proposal only records existing runtime outcomes for rejected alternatives.",
+    "external_security_integration": "No external security product, collector deployment, SIEM, exporter, or third-party integration is added or changed.",
+    "fail_posture": "No failure handling changes; the existing SDK validation and existing kit gate retain their current fail-closed behavior.",
+    "lifecycle": "No SDK, sink, context, operation, or resource lifecycle transition changes; the quickstart retains its existing lifecycle example.",
+    "mutation_ownership": "No runtime object ownership or mutation rule changes; only one documentation call's existing constructor inputs change.",
+    "privacy_transformation": "No privacy transformation, redaction, prohibited-data scan, or data-classification behavior changes; the example avoids naming an account.",
+    "resource_retention": "No storage, retention, queue, buffer, file lifetime, or resource-management behavior changes in the document correction.",
+    "retry_or_redelivery": "No retry, re-execution, redelivery, ordering, or delivery-class behavior changes; the existing kit gate remains unchanged.",
+    "trust_boundary": "No trust boundary moves or crosses; the text clarifies the existing distinction between client claims and server authority."
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "3.3"
+  ]
+}
