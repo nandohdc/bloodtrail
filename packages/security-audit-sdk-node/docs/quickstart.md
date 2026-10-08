@@ -214,7 +214,7 @@ await sdk.shutdown();
 
 ## Authentication Failure and Per-Request Context Scope
 
-When authentication fails, emit `authenticationFailed` before a session or context is created. For authenticated requests, open a per-request context scope with `sdk.runWithContext`.
+When authentication fails, emit `authenticationFailed` before a session or context is created. A username the client submitted is a claim and cannot identify the actor, so a failed login uses `anonymousActor()`; it uses the `tenantless` scope unless the server has already resolved the tenant from the login route, in which case pass that resolved tenant. For authenticated requests, open a per-request context scope with `sdk.runWithContext`.
 
 **What the scope supplies at runtime.** The SDK builds each event's context from three sources, each overriding the one before: the configuration's `authoritativeContext`, the active scope, and the call's own input. Inside the callback, including after `await`, the scope's `actor`, `tenant` and other context fields fill in whatever a call leaves out. The SDK generates the correlation identifier and the operation identifier when none of the three supplies them.
 
@@ -226,6 +226,7 @@ import {
   nodeContextProvider,
 } from "@bloodtrail/security-audit-sdk-node";
 import {
+  anonymousActor,
   authenticatedHumanActor,
   authoritativeTenant,
   authoritativeResource,
@@ -249,16 +250,8 @@ const sdk = createNodeSecurityAuditSdk({
 
 // 1. Handling authentication failure
 const authFailedResult = await sdk.authenticationFailed({
-  actor: authenticatedHumanActor({
-    id: "actor-failed-login",
-    displayName: "Unknown User",
-  }),
-  tenant: authoritativeTenant({
-    scope: "tenant",
-    actor_tenant_id: "tenant-quickstart-1",
-    effective_tenant_id: "tenant-quickstart-1",
-    resource_tenant_id: "tenant-quickstart-1",
-  }),
+  actor: anonymousActor(),
+  tenant: authoritativeTenant({ scope: "tenantless" }),
   authentication: authenticationEvidence({
     method: "password_mfa",
     assurance_level: "aal1",
