@@ -10,26 +10,26 @@
 
 ## 2. Builder and gate
 
-- [ ] 2.1 Change the builder to guard the nearest existing destination path
+- [x] 2.1 Change the builder to guard the nearest existing destination path
   before recursive creation, retain the default temporary-parent diagnostic,
   give `--dest` the destination-specific refusal, and clean up only paths the
   build created.
-- [ ] 2.2 Build the distributable clone kit below missing parents and add the
+- [x] 2.2 Build the distributable clone kit below missing parents and add the
   `destination-refusal` clone check between distributable matching and
   dirty-tree refusal, including its stable verification-summary clause.
-- [ ] 2.3 Add the measured `destination-refusal` planted-defect control and
+- [x] 2.3 Add the measured `destination-refusal` planted-defect control and
   update the controls' expected identities, count, and distributable-clone
   clause.
 
 ## 3. Verify
 
-- [ ] 3.1 Run `npm run validate --prefix packages/security-audit-sdk-node` on
+- [x] 3.1 Run `npm run validate --prefix packages/security-audit-sdk-node` on
   Node 26 and `npm test --prefix packages/security-audit-sdk-node` on Node
   24.2.0.
-- [ ] 3.2 Run the governance chain: generated-artifact and changed-path checks,
+- [x] 3.2 Run the governance chain: generated-artifact and changed-path checks,
   OpenSpec validation, assessment drift, final design-pattern governance, dual
   checks, contract reuse, normative precedence, `make`, and `git diff --check`.
-- [ ] 3.3 Record the missing-parent, existing-parent, clone destination-refusal,
+- [x] 3.3 Record the missing-parent, existing-parent, clone destination-refusal,
   repository-root refusal, and failed-build-cleanup probes with their commands
   and complete output.
 
