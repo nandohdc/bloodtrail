@@ -2,6 +2,8 @@
 
 Get from the evaluation kit to your first accepted audit event delivered over HTTP in 15 minutes or less.
 
+Follow **Your First Accepted Event** below, in order.
+
 ## Runtime & Prerequisites
 
 - **Supported Node versions:** Node 24 and Node 26 (`>=24 <25 || >=26 <27`).
@@ -31,6 +33,30 @@ The kit pins `@bloodtrail/security-audit-sdk-core` to its own tarball, so exactl
 > **Unsupported installers and configurations:**
 > - **Yarn is unsupported:** Yarn's hoisting algorithms do not honor the required single-copy Core resolution constraints and will lead to authority resolution failures.
 > - **Standalone Node binding install is unsupported:** `@bloodtrail/security-audit-sdk-node` lists `@bloodtrail/security-audit-sdk-core` as a regular dependency, not a peer dependency. The kit provides that core as its own tarball and pins it, so installing the Node binding on its own has no core to resolve. Always install the complete kit through its generated `package.json`.
+
+## Your First Accepted Event
+
+Run every command on this page from the kit directory, the directory that holds the kit's `package.json`. Each TypeScript block on this page is a complete program. To run one, save it as a `.ts` file in the kit directory, so that its imports resolve to the installed packages, and run it with `node <file>.ts`. Node strips the types itself, so there is no build step.
+
+To reach your first accepted event, follow these steps in order:
+
+1. **Install** the kit, as described above.
+2. **Start the example receiver** in a terminal of its own, and leave it running:
+   ```bash
+   node examples/evaluation-receiver.ts 3000
+   ```
+   It prints `receiver:ready` and its origin once it listens on `127.0.0.1` port 3000. It accepts the synthetic token `fixture-token-a`, which the authentication-success block sends.
+3. **Run the authentication-success block.** Save the code block under **Emitting Authentication Success** below as `first-accepted-event.ts`, then run it from a second terminal:
+   ```bash
+   node first-accepted-event.ts
+   ```
+4. **See the event accepted.** The program prints `quickstart:accepted`. The receiver's terminal prints `receiver:accepted`, the event identifier, and the event exactly as it arrived.
+
+If the program prints `Audit emit failed:` and an error code instead, the receiver is not running on port 3000. Start it, then run the program again.
+
+### An Offline Check
+
+`examples/first-event.ts` is an offline check that needs no receiver. Run `node examples/first-event.ts`: it emits one event into an in-memory sink, checks it, and prints `first-event:pass`. Nothing travels over HTTP and no receiver accepts anything, so it is not your first accepted event. Use it to confirm that the installed packages load and emit before you start the receiver.
 
 ## Package Responsibilities
 
@@ -176,6 +202,7 @@ const result = await sdk.authenticationSucceeded({
 // named SDK methods return AuditResult and never throw.
 if (result.ok) {
   assert.equal(result.value.status, "accepted");
+  console.log(`quickstart:${result.value.status}`);
 } else {
   console.error("Audit emit failed:", result.error.code, result.error.path);
 }
@@ -483,7 +510,7 @@ await sdk.shutdown();
 
 To see audit events arriving and passing validation over HTTP:
 
-1. Start the receiver in one terminal:
+1. Start the receiver in one terminal, unless it is still running from your first accepted event:
    ```bash
    node examples/evaluation-receiver.ts 3000
    ```
