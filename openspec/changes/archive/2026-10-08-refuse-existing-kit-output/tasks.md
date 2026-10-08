@@ -38,5 +38,5 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After the implementation merges, archive
+- [x] 4.1 After the implementation merges, archive
   `refuse-existing-kit-output` in a separate pull request.
