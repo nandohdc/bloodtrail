@@ -6,11 +6,16 @@ export const DISPOSABLE_GIT_IDENTITY = Object.freeze({
   email: "verification@invalid.example",
 });
 
+// A disposable repository must never start git's background maintenance,
+// because a detached repack can still be rewriting its .git while a test
+// clones from it or removes it (#772, as #734 did for the kit gate's clone).
 const boundedConfig = Object.freeze([
   "-c", `user.name=${DISPOSABLE_GIT_IDENTITY.name}`,
   "-c", `user.email=${DISPOSABLE_GIT_IDENTITY.email}`,
   "-c", "commit.gpgsign=false",
   "-c", `core.hooksPath=${devNull}`,
+  "-c", "maintenance.auto=false",
+  "-c", "gc.auto=0",
 ]);
 
 export function disposableGitEnvironment(environment = process.env) {
