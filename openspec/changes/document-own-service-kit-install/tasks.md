@@ -26,7 +26,7 @@
 
 ## 4. Canonical fold
 
-- [ ] 4.1 Fold both complete modified requirements into the canonical Node binding specification after the
+- [x] 4.1 Fold both complete modified requirements into the canonical Node binding specification after the
   implementation and evaluator walk.
 
 ## 5. Archive
