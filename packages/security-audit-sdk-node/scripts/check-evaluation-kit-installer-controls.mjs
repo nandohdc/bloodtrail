@@ -13,6 +13,7 @@ import { sha256Hex } from "./evaluation-kit-checksums.mjs";
 
 export const INSTALLER_CONTROL_DEFINITIONS = Object.freeze([
   { label: "pnpm-only settings in the kit's npm settings file", identity: "npm-installation" },
+  { label: "kit npm manifest without its core override", identity: "npm-dependency-tree" },
   { label: "pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)", identity: "pnpm-installations" },
   { label: "ignored pnpm setting reported (pnpm 11 and 12 legs)", identity: "pnpm-installations" },
   { label: "installer docs missing the supported pnpm majors", identity: "installer-documentation" },
@@ -23,6 +24,7 @@ export const INSTALLER_CONTROL_DEFINITIONS = Object.freeze([
 
 const [
   NPM_SETTINGS_CONTROL,
+  KIT_NPM_TREE_CONTROL,
   PNPM_FIELD_CONTROL,
   IGNORED_PNPM_SETTING_CONTROL,
   INSTALLER_DOCS_CONTROL,
@@ -72,6 +74,33 @@ async function checkNpmSettingsControl(kitDir, _disabledChecks, helpers) {
       await helpers.assertPnpmLegFails(kitCopy, release, ["node-linker"]);
     }
     assert.equal(measurements.length, 1, "npm settings control must record one absent-to-present measured plant");
+  });
+  return helpers.completeControl(control, measurements);
+}
+
+function assertKitNpmTreeFailure(control, message) {
+  assert.ok(
+    message.includes("npm install left an invalid dependency tree") &&
+      message.includes('invalid: "file:../security-audit-sdk-core"'),
+    `${control.label} must report npm's invalid core dependency: ${message}`,
+  );
+}
+
+// Deleting the manifest's overrides removes npm's core pin while the binding's file: dependency still
+// links the top-level core, so the whole gate fails only at npm-dependency-tree; the disabled-check
+// sweep then proves the gate passes without that one check.
+async function checkKitNpmTreeControl(kitDir, _disabledChecks, helpers) {
+  const control = helpers.controlFor(KIT_NPM_TREE_CONTROL.label);
+  const measurements = [];
+  await helpers.withKitCopy(kitDir, "bloodtrail-ctrl-kit-npm-tree-", async (kitCopy) => {
+    await helpers.rewriteMeasuredKitFile(
+      { kitCopy, measurements },
+      "package.json",
+      (text) => helpers.rewriteManifest(text, (pkg) => delete pkg.overrides),
+    );
+    const failure = await helpers.captureGateFailure(control, kitCopy, { _disabledChecks });
+    assertKitNpmTreeFailure(control, failure.cause.message);
+    assert.equal(measurements.length, 1, "kit npm tree control must record one measured plant");
   });
   return helpers.completeControl(control, measurements);
 }
@@ -248,6 +277,7 @@ async function checkOwnServiceGuideControl(plant, kitDir, _disabledChecks, helpe
 export function createInstallerControlRunners(helpers) {
   return Object.freeze([
     [NPM_SETTINGS_CONTROL.label, ({ kitDir, _disabledChecks }) => checkNpmSettingsControl(kitDir, _disabledChecks, helpers)],
+    [KIT_NPM_TREE_CONTROL.label, ({ kitDir, _disabledChecks }) => checkKitNpmTreeControl(kitDir, _disabledChecks, helpers)],
     [PNPM_FIELD_CONTROL.label, ({ kitDir, _disabledChecks }) => checkPnpmFieldOnlyOverrideControl(kitDir, _disabledChecks, helpers)],
     [IGNORED_PNPM_SETTING_CONTROL.label, ({ kitDir, _disabledChecks }) => checkIgnoredPnpmSettingControl(kitDir, _disabledChecks, helpers)],
     [INSTALLER_DOCS_CONTROL.label, ({ kitDir, _disabledChecks }) => checkInstallerDocsControl(kitDir, _disabledChecks, helpers)],

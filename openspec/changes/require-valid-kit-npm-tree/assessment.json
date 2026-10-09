@@ -1,0 +1,182 @@
+{
+  "schema_version": "1.1",
+  "change_id": "require-valid-kit-npm-tree",
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "The kit gate must fail when the kit's npm installation resolves the core through anything but the kit's own pin.",
+    "Each kit-gate check must be shown to fail on a planted defect, by a proof that an unrelated check's failure cannot satisfy.",
+    "The kit and own-service npm installations must be judged by one npm ls assertion, so they cannot drift apart.",
+    "The kit's contents and the packed packages must not change."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ],
+    "full_trigger_absence_proof": "No full assessment trigger applies. public_api does not apply because no export, interface, or consumer API changes. integration does not apply because no external system or package integration changes. lifecycle_or_state does not apply because no lifecycle or state transition changes. concurrency does not apply because the scripts add no parallel work or coordination. persistence does not apply because no durable state changes. security_sensitive_behavior does not apply because this is an unshipped verification check, control, and helper. governance_core_path does not apply because no governance-core path changes. canonical_capability_requirement does not apply because requirement text, kit contents, packed packages, and identity format stay unchanged. This is one bounded correction, introduces no abstraction, and adds no module, class, or interface."
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-installers.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-installer-controls.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-controls.mjs",
+    "openspec/changes/require-valid-kit-npm-tree/.openspec.yaml",
+    "openspec/changes/require-valid-kit-npm-tree/assessment.json",
+    "openspec/changes/require-valid-kit-npm-tree/assessment.source.json",
+    "openspec/changes/require-valid-kit-npm-tree/design.md",
+    "openspec/changes/require-valid-kit-npm-tree/proposal.md",
+    "openspec/changes/require-valid-kit-npm-tree/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-dedicated-npm-tree-check",
+      "kind": "direct_implementation",
+      "summary": "Extract the existing npm tree assertion into one helper, run it as a dedicated kit check after installation, and prove it with a missing-override control whose disabled-check sweep permits the whole gate.",
+      "forces_addressed": [
+        "The kit gate must fail when the kit's npm installation resolves the core through anything but the kit's own pin.",
+        "Each kit-gate check must be shown to fail on a planted defect, by a proof that an unrelated check's failure cannot satisfy.",
+        "The kit and own-service npm installations must be judged by one npm ls assertion, so they cannot drift apart.",
+        "The kit's contents and the packed packages must not change."
+      ]
+    },
+    {
+      "id": "approach-extend-npm-installation",
+      "kind": "alternative",
+      "summary": "Add npm ls dependency-tree validation to the existing npm-installation check instead of giving it a separate stable identity.",
+      "forces_addressed": [
+        "The kit gate must fail when the kit's npm installation resolves the core through anything but the kit's own pin.",
+        "Each kit-gate check must be shown to fail on a planted defect, by a proof that an unrelated check's failure cannot satisfy."
+      ]
+    },
+    {
+      "id": "approach-duplicate-npm-ls-assertion",
+      "kind": "alternative",
+      "summary": "Add a second kit-specific npm ls assertion while retaining the existing own-service assertion as an independent implementation.",
+      "forces_addressed": [
+        "The kit gate must fail when the kit's npm installation resolves the core through anything but the kit's own pin.",
+        "The kit and own-service npm installations must be judged by one npm ls assertion, so they cannot drift apart."
+      ]
+    },
+    {
+      "id": "approach-change-packed-node-dependency",
+      "kind": "alternative",
+      "summary": "Change how the packed Node binding declares its core dependency so npm does not link to the kit's top-level core without an override.",
+      "forces_addressed": [
+        "The kit gate must fail when the kit's npm installation resolves the core through anything but the kit's own pin.",
+        "The kit's contents and the packed packages must not change."
+      ]
+    },
+    {
+      "id": "approach-runtime-one-copy-probe",
+      "kind": "alternative",
+      "summary": "Continue relying on the existing runtime one-copy probe to infer that the npm core pin was applied correctly.",
+      "forces_addressed": [
+        "The kit gate must fail when the kit's npm installation resolves the core through anything but the kit's own pin."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-dedicated-npm-tree-check",
+  "rejected_alternative_ids": [
+    "approach-extend-npm-installation",
+    "approach-duplicate-npm-ls-assertion",
+    "approach-change-packed-node-dependency",
+    "approach-runtime-one-copy-probe"
+  ],
+  "rejection_reasons": {
+    "approach-extend-npm-installation": {
+      "forces": [
+        "Each kit-gate check must be shown to fail on a planted defect, by a proof that an unrelated check's failure cannot satisfy."
+      ],
+      "reason": "Disabling npm-installation leaves no installation directory, so later checks fail for unrelated reasons and the missing-override control cannot prove that npm ls alone catches its plant."
+    },
+    "approach-duplicate-npm-ls-assertion": {
+      "forces": [
+        "The kit and own-service npm installations must be judged by one npm ls assertion, so they cannot drift apart."
+      ],
+      "reason": "Two implementations can diverge in npm arguments, status handling, or failure text, leaving the kit and own-service installation judgments inconsistent despite the same intended rule."
+    },
+    "approach-change-packed-node-dependency": {
+      "forces": [
+        "The kit's contents and the packed packages must not change."
+      ],
+      "reason": "Changing the packed dependency violates the existing requirement that building the kit not change the packed contents of the three packages and expands #769 beyond detection."
+    },
+    "approach-runtime-one-copy-probe": {
+      "forces": [
+        "The kit gate must fail when the kit's npm installation resolves the core through anything but the kit's own pin."
+      ],
+      "reason": "Without overrides npm links the binding file dependency to the top-level core, so one core copy loads and the runtime probe passes while npm ls reports the tree invalid."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-kit-npm-tree-checked",
+    "implementation-npm-tree-control-fails-closed",
+    "implementation-own-service-npm-check-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-kit-npm-tree-checked": {
+      "task_ids": [
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Task 2.2 adds npm-dependency-tree immediately after npm-installation in both gate modes.",
+        "Node validation in task 3.1 exercises the kit gate and reports its check clause."
+      ]
+    },
+    "implementation-npm-tree-control-fails-closed": {
+      "task_ids": [
+        "2.3",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "Task 2.3 adds one measured missing-override plant that fails at npm-dependency-tree.",
+        "The task 3.3 sweep records the control failing when its named check is disabled because the whole gate then passes."
+      ]
+    },
+    "implementation-own-service-npm-check-unchanged": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Task 2.1 routes the existing own-service npm assertion through the shared helper under the same label.",
+        "Node validation in task 3.1 retains the own-service installer controls and their byte-identical failure assertion."
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No audit event, contract, checksum, kit identity, or integrity assertion changes; the work only adds a local verification check for npm's dependency report.",
+    "authentication_or_authorization": "No authentication, authorization, principal, permission, or access-control behavior changes; the scripts install disposable local evaluation artifacts only.",
+    "authority_provenance": "No authority source, approval record, signature, provenance field, or release authorization changes; the gate records only local verification results.",
+    "concurrency": "The correction adds one awaited npm command to existing sequential gate execution and introduces no scheduler, lock, shared state, or concurrent coordination.",
+    "confidentiality": "No secret, credential, personal data, or confidential payload handling changes; npm diagnostics describe only disposable local package dependencies.",
+    "cryptography": "No cryptographic algorithm, digest computation, key handling, signing, or verification behavior changes; existing kit digests and identity format remain unchanged.",
+    "error_disclosure": "The helper preserves the established bounded npm failure surface and adds no external diagnostic channel, credential output, or new disclosure of kit content.",
+    "external_security_integration": "No external security product, network service, exporter, collector deployment, or third-party security integration is introduced or changed.",
+    "fail_posture": "The change strengthens an existing fail-closed verification gate by rejecting npm's invalid dependency tree while preserving the existing package and kit behavior.",
+    "lifecycle": "No SDK, sink, operation, package, or release lifecycle transition changes; the added check runs only during disposable evaluation-kit verification.",
+    "mutation_ownership": "The planted control rewrites only a copied disposable kit manifest through the existing measured and resealed control path; it does not mutate source artifacts.",
+    "privacy_transformation": "No privacy transformation, data classification, redaction, prohibited-data scan, or personal-data processing behavior changes.",
+    "resource_retention": "No storage or retention policy changes; temporary installation directories and copied kits retain the existing cleanup and disposable lifetime.",
+    "retry_or_redelivery": "No retry, delivery, redelivery, queueing, or attempt behavior changes; npm ls is one additional deterministic gate assertion after installation.",
+    "trust_boundary": "Repository, local temporary-directory, and evaluator trust boundaries remain unchanged; no new principal, external system, or trust crossing is introduced."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "c4d26c9b126271d725304415aecd8b7faebcc3d4"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "2.3",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4"
+  ]
+}
