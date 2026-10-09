@@ -107,6 +107,11 @@ A person whom an owner-approved amendment names, and who uses the evaluation kit
 non-production services they own.
 _Avoid_: user, customer, tester
 
+**Own service**:
+An evaluator's existing service, outside the kit directory, to which they add both SDK packages from the kit's
+tarballs and the kit's core pin.
+_Avoid_: consumer, consumer manifest, host application
+
 **Evaluation facilitator**:
 The person who distributes the evaluation kit, publishes its kit digest and archive digest, and holds the
 facilitator answer key. They do not evaluate.

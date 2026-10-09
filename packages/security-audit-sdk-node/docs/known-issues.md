@@ -31,7 +31,7 @@ This document enumerates known issues, operational limitations, and pending arch
 ## 4. Installing the Node Binding on Its Own Breaks Silently
 
 - **Description:** `@bloodtrail/security-audit-sdk-node` depends directly on `@bloodtrail/security-audit-sdk-core`. In the evaluation alpha, packages are distributed via local tarballs rather than published npm registry artifacts. If an evaluator attempts to install `@bloodtrail/security-audit-sdk-node` in isolation without configuring package overrides or local tarball paths for `@bloodtrail/security-audit-sdk-core`, the package manager will fail to resolve the core dependency or fail silently with resolution conflicts.
-- **Status:** Installing the Node binding on its own is unsupported. Install the complete evaluation kit as `docs/quickstart.md` describes. The kit's core pin is in the generated `package.json` `overrides` for npm, and in the generated `pnpm-workspace.yaml` for pnpm.
+- **Status:** Installing the Node binding on its own is unsupported. Install the complete evaluation kit as `docs/quickstart.md` describes, or add both packages and the core pin to your own service as `docs/integration-and-testing.md` describes. The kit's core pin is in the generated `package.json` `overrides` for npm, and in the generated `pnpm-workspace.yaml` for pnpm.
 
 ---
 

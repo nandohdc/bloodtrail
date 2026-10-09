@@ -28,6 +28,7 @@ import {
   assertKitDocsNameInstallers,
   runCoreCopyProbe,
   runInstaller,
+  verifyOwnServiceInstalls,
   verifyPnpmInstalls,
 } from "./evaluation-kit-installers.mjs";
 import {
@@ -583,14 +584,14 @@ export const KIT_GATE_CHECKS = Object.freeze({
     clause: ({ commands }) => `unpacked-kit integrity commands verified: ${codeSpans(commands)}`,
   }),
   "installer-documentation": Object.freeze({
-    clause: () => "the quickstart and known-issues pages name the supported pnpm majors",
+    clause: () => "the quickstart, known-issues, and integration-and-testing pages name the supported pnpm majors",
   }),
   "planned-feature-documentation": Object.freeze({
     clause: () =>
       `every planned-feature row marked planned and named in glossary terms, and every kit document sentence naming a planned feature carries a planned marker, except under ${REVIEWED_PAIRS.length} reviewed sections`,
   }),
   "document-fence-languages": Object.freeze({
-    clause: () => "every kit document fence names an allowlisted language, matched in any letter case with any info string: bash, http, json, sh, ts, typescript",
+    clause: () => "every kit document fence names an allowlisted language, matched in any letter case with any info string: bash, http, json, sh, ts, typescript, yaml",
   }),
   "synthetic-values": Object.freeze({
     clause: () => "every host, email address, IP address and environment name in the kit's documents and examples, links included, is synthetic, with no reviewed exception",
@@ -644,6 +645,10 @@ export const KIT_GATE_CHECKS = Object.freeze({
   }),
   "pnpm-installations": Object.freeze({
     clause: () => `kit installed outside any workspace with pnpm ${PNPM_RELEASES.join(", ")}, with no setting the kit ships reported as unknown, ignored or no longer read, a passing first-event example, and one core copy per installation`,
+  }),
+  "own-service-installations": Object.freeze({
+    clause: () =>
+      `own service installed outside the kit directory and any workspace from the snippets in docs/integration-and-testing.md, verbatim, with npm and pnpm ${PNPM_RELEASES.join(", ")}, its documented dependencies listing both SDK packages, no setting the documented install adds reported as unknown, ignored or no longer read, npm ls reporting no invalid dependency, and the Node binding and both core entry points loading one core copy per installation`,
   }),
 });
 
@@ -848,6 +853,9 @@ export async function checkEvaluationKit({
 
     // 9. Install kit with each pinned pnpm release outside workspace root, run one-event script and duplicate-copy probe
     await runCheck(completedChecks, disabledChecks, "pnpm-installations", () => verifyPnpmInstalls(kitDir));
+
+    // 10. Install a standalone evaluator service from the guide's own-service snippets.
+    await runCheck(completedChecks, disabledChecks, "own-service-installations", () => verifyOwnServiceInstalls(kitDir));
 
     return {
       success: true,

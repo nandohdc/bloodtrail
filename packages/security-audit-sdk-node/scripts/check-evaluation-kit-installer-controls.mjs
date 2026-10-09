@@ -5,6 +5,8 @@ import {
   PNPM_RELEASES,
   PNPM_SETTINGS_FILE,
   supportedPnpmPhrase,
+  verifyOwnServiceInstall,
+  verifyOwnServiceInstalls,
   verifyPnpmInstall,
 } from "./evaluation-kit-installers.mjs";
 import { sha256Hex } from "./evaluation-kit-checksums.mjs";
@@ -14,9 +16,20 @@ export const INSTALLER_CONTROL_DEFINITIONS = Object.freeze([
   { label: "pnpm override only in the manifest's pnpm field (pnpm 11 and 12 legs)", identity: "pnpm-installations" },
   { label: "ignored pnpm setting reported (pnpm 11 and 12 legs)", identity: "pnpm-installations" },
   { label: "installer docs missing the supported pnpm majors", identity: "installer-documentation" },
+  { label: "own service guide without the npm core pin", identity: "own-service-installations" },
+  { label: "own service guide without the pnpm core pin", identity: "own-service-installations" },
+  { label: "own service guide without the core dependency", identity: "own-service-installations" },
 ]);
 
-const [NPM_SETTINGS_CONTROL, PNPM_FIELD_CONTROL, IGNORED_PNPM_SETTING_CONTROL, INSTALLER_DOCS_CONTROL] = INSTALLER_CONTROL_DEFINITIONS;
+const [
+  NPM_SETTINGS_CONTROL,
+  PNPM_FIELD_CONTROL,
+  IGNORED_PNPM_SETTING_CONTROL,
+  INSTALLER_DOCS_CONTROL,
+  OWN_SERVICE_NPM_PIN_CONTROL,
+  OWN_SERVICE_PNPM_PIN_CONTROL,
+  OWN_SERVICE_CORE_DEPENDENCY_CONTROL,
+] = INSTALLER_CONTROL_DEFINITIONS;
 const [PNPM_READING_MANIFEST_FIELD, ...PNPM_IGNORING_MANIFEST_FIELD] = PNPM_RELEASES;
 const PNPM_SETTINGS_WITHOUT_OVERRIDE = "packages: []\noverrides: {}\n";
 const NPM_SETTINGS_PLANT = "node-linker=hoisted\nshamefully-hoist=true\n";
@@ -139,11 +152,108 @@ async function checkInstallerDocsControl(kitDir, _disabledChecks, helpers) {
   return helpers.completeControl(control, measurements);
 }
 
+const OWN_SERVICE_DOCUMENT = "docs/integration-and-testing.md";
+const OWN_SERVICE_CORE_TARBALL = "file:../evaluation-kit/bloodtrail-security-audit-sdk-core-0.4.0.tgz";
+const OWN_SERVICE_NPM_OVERRIDE_ANCHOR = `,
+  "overrides": {
+    "@bloodtrail/security-audit-sdk-core": "${OWN_SERVICE_CORE_TARBALL}"
+  }`;
+const OWN_SERVICE_PNPM_OVERRIDE_ANCHOR = `overrides:
+  "@bloodtrail/security-audit-sdk-core": "${OWN_SERVICE_CORE_TARBALL}"`;
+const OWN_SERVICE_CORE_DEPENDENCY_ANCHOR =
+  `    "@bloodtrail/security-audit-sdk-core": "${OWN_SERVICE_CORE_TARBALL}",\n`;
+
+function replaceUnique(text, anchor, replacement, label) {
+  assert.equal(text.split(anchor).length - 1, 1, `${label} anchor must occur exactly once`);
+  return text.replace(anchor, replacement);
+}
+
+function assertNpmPinFailure(control, message) {
+  assert.ok(
+    message.includes("own service npm install left an invalid dependency tree") &&
+      message.includes("file:../security-audit-sdk-core"),
+    `${control.label} must report npm's invalid core dependency: ${message}`,
+  );
+}
+
+// The check stops at the first pnpm release, so each later release is shown to fail on its own.
+async function assertPnpmPinFailure(control, message, kitCopy, helpers) {
+  const [firstRelease, ...laterReleases] = PNPM_RELEASES;
+  assert.ok(message.includes(`own service pnpm ${firstRelease}`), `${control.label} must fail at pnpm ${firstRelease}: ${message}`);
+  for (const release of laterReleases) {
+    const releaseFailure = await helpers.captureFailure(() => verifyOwnServiceInstall(kitCopy, release));
+    assert.ok(releaseFailure, `${control.label} must fail at pnpm ${release}`);
+    assert.ok(
+      releaseFailure.message.includes(`own service pnpm ${release}`),
+      `${control.label} must name pnpm ${release}: ${releaseFailure.message}`,
+    );
+  }
+}
+
+function assertCoreDependencyFailure(control, message) {
+  assert.ok(
+    message.includes("the documented own-service install must list both") &&
+      message.includes("@bloodtrail/security-audit-sdk-core") &&
+      message.includes("@bloodtrail/security-audit-sdk-node"),
+    `${control.label} must report the documented dependency requirement: ${message}`,
+  );
+}
+
+const OWN_SERVICE_GUIDE_PLANTS = Object.freeze([
+  {
+    definition: OWN_SERVICE_NPM_PIN_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-own-service-npm-pin-",
+    anchor: OWN_SERVICE_NPM_OVERRIDE_ANCHOR,
+    replacement: "",
+    assertFailure: assertNpmPinFailure,
+  },
+  {
+    definition: OWN_SERVICE_PNPM_PIN_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-own-service-pnpm-pin-",
+    anchor: OWN_SERVICE_PNPM_OVERRIDE_ANCHOR,
+    replacement: "overrides: {}",
+    assertFailure: assertPnpmPinFailure,
+  },
+  {
+    definition: OWN_SERVICE_CORE_DEPENDENCY_CONTROL,
+    tempPrefix: "bloodtrail-ctrl-own-service-core-dependency-",
+    anchor: OWN_SERVICE_CORE_DEPENDENCY_ANCHOR,
+    replacement: "",
+    assertFailure: assertCoreDependencyFailure,
+  },
+]);
+
+// Each own-service control plants one defect in a copied guide's documented install, then runs only the
+// own-service check against that copy.
+async function checkOwnServiceGuideControl(plant, kitDir, _disabledChecks, helpers) {
+  const control = helpers.controlFor(plant.definition.label);
+  const measurements = [];
+  await helpers.withKitCopy(kitDir, plant.tempPrefix, async (kitCopy) => {
+    await helpers.rewriteMeasuredKitFile(
+      { kitCopy, measurements },
+      OWN_SERVICE_DOCUMENT,
+      (text) => replaceUnique(text, plant.anchor, plant.replacement, control.label),
+    );
+    const failure = await helpers.captureDirectCheckFailure(
+      control,
+      () => verifyOwnServiceInstalls(kitCopy),
+      _disabledChecks,
+    );
+    await plant.assertFailure(control, failure.cause.message, kitCopy, helpers);
+    assert.equal(measurements.length, 1, `${control.label} must record one measured plant`);
+  });
+  return helpers.completeControl(control, measurements);
+}
+
 export function createInstallerControlRunners(helpers) {
   return Object.freeze([
     [NPM_SETTINGS_CONTROL.label, ({ kitDir, _disabledChecks }) => checkNpmSettingsControl(kitDir, _disabledChecks, helpers)],
     [PNPM_FIELD_CONTROL.label, ({ kitDir, _disabledChecks }) => checkPnpmFieldOnlyOverrideControl(kitDir, _disabledChecks, helpers)],
     [IGNORED_PNPM_SETTING_CONTROL.label, ({ kitDir, _disabledChecks }) => checkIgnoredPnpmSettingControl(kitDir, _disabledChecks, helpers)],
     [INSTALLER_DOCS_CONTROL.label, ({ kitDir, _disabledChecks }) => checkInstallerDocsControl(kitDir, _disabledChecks, helpers)],
+    ...OWN_SERVICE_GUIDE_PLANTS.map((plant) => [
+      plant.definition.label,
+      ({ kitDir, _disabledChecks }) => checkOwnServiceGuideControl(plant, kitDir, _disabledChecks, helpers),
+    ]),
   ]);
 }

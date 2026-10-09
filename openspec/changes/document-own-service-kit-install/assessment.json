@@ -1,0 +1,208 @@
+{
+  "schema_version": "1.1",
+  "change_id": "document-own-service-kit-install",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "An evaluator doing M2 must be able to add the kit to their own service with any supported installer, without guessing.",
+    "The supported installers are those the kit gate proves, so a documented install the gate does not run is an unproven claim.",
+    "Every SDK package must resolve to the kit's one core copy, and the Node binding is never installed on its own.",
+    "Each kit-gate check must be shown to fail on a planted defect, at each installer it proves.",
+    "The guide's snippets are the one source the gate installs from, so the guide cannot drift from what installs."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "integration",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "CONTEXT-MAP.md",
+    "openspec/changes/document-own-service-kit-install/.openspec.yaml",
+    "openspec/changes/document-own-service-kit-install/assessment.json",
+    "openspec/changes/document-own-service-kit-install/assessment.source.json",
+    "openspec/changes/document-own-service-kit-install/design.md",
+    "openspec/changes/document-own-service-kit-install/proposal.md",
+    "openspec/changes/document-own-service-kit-install/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/document-own-service-kit-install/tasks.md",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/CONTEXT.md",
+    "packages/security-audit-sdk-node/docs/integration-and-testing.md",
+    "packages/security-audit-sdk-node/docs/known-issues.md",
+    "packages/security-audit-sdk-node/docs/quickstart.md",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-controls.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-installer-controls.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-doc-blocks.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-doc-references.mjs",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-installers.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-gate-installs-documented-own-service",
+      "kind": "direct_implementation",
+      "summary": "Read the integration guide snippets from the copied kit and install them verbatim into a sibling standalone own service with npm and every pinned pnpm release, then verify the dependency tree and one loaded core copy.",
+      "forces_addressed": [
+        "An evaluator doing M2 must be able to add the kit to their own service with any supported installer, without guessing.",
+        "The supported installers are those the kit gate proves, so a documented install the gate does not run is an unproven claim.",
+        "Every SDK package must resolve to the kit's one core copy, and the Node binding is never installed on its own.",
+        "Each kit-gate check must be shown to fail on a planted defect, at each installer it proves.",
+        "The guide's snippets are the one source the gate installs from, so the guide cannot drift from what installs."
+      ]
+    },
+    {
+      "id": "approach-generated-manifest-plus-guide-name-check",
+      "kind": "alternative",
+      "summary": "Build the own service from the kit's generated manifest and check only that guide prose names the installation steps.",
+      "forces_addressed": [
+        "The supported installers are those the kit gate proves, so a documented install the gate does not run is an unproven claim.",
+        "The guide's snippets are the one source the gate installs from, so the guide cannot drift from what installs."
+      ]
+    },
+    {
+      "id": "approach-documentation-without-gate-proof",
+      "kind": "alternative",
+      "summary": "Document npm and pnpm own-service installation without making the kit gate install those snippets.",
+      "forces_addressed": [
+        "An evaluator doing M2 must be able to add the kit to their own service with any supported installer, without guessing.",
+        "The supported installers are those the kit gate proves, so a documented install the gate does not run is an unproven claim.",
+        "Each kit-gate check must be shown to fail on a planted defect, at each installer it proves."
+      ]
+    },
+    {
+      "id": "approach-npm-runtime-probe-only",
+      "kind": "alternative",
+      "summary": "Use only the runtime one-core-copy probe to prove the npm own-service installation.",
+      "forces_addressed": [
+        "Every SDK package must resolve to the kit's one core copy, and the Node binding is never installed on its own."
+      ]
+    },
+    {
+      "id": "approach-workspace-own-service",
+      "kind": "alternative",
+      "summary": "Document an evaluator service inside an npm or pnpm workspace as the own-service layout.",
+      "forces_addressed": [
+        "An evaluator doing M2 must be able to add the kit to their own service with any supported installer, without guessing."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-gate-installs-documented-own-service",
+  "rejected_alternative_ids": [
+    "approach-generated-manifest-plus-guide-name-check",
+    "approach-documentation-without-gate-proof",
+    "approach-npm-runtime-probe-only",
+    "approach-workspace-own-service"
+  ],
+  "rejection_reasons": {
+    "approach-generated-manifest-plus-guide-name-check": {
+      "forces": [
+        "The supported installers are those the kit gate proves, so a documented install the gate does not run is an unproven claim.",
+        "The guide's snippets are the one source the gate installs from, so the guide cannot drift from what installs."
+      ],
+      "reason": "The generated manifest can keep installing successfully while the guide's JSON and YAML snippets drift, so it does not prove the documented installer claim or retain one source for the gate input."
+    },
+    "approach-documentation-without-gate-proof": {
+      "forces": [
+        "An evaluator doing M2 must be able to add the kit to their own service with any supported installer, without guessing.",
+        "The supported installers are those the kit gate proves, so a documented install the gate does not run is an unproven claim.",
+        "Each kit-gate check must be shown to fail on a planted defect, at each installer it proves."
+      ],
+      "reason": "Documentation alone gives the evaluator an unsupported claim: it supplies neither per-installer evidence nor planted-defect evidence that the documented pins and dependencies fail closed."
+    },
+    "approach-npm-runtime-probe-only": {
+      "forces": [
+        "Every SDK package must resolve to the kit's one core copy, and the Node binding is never installed on its own."
+      ],
+      "reason": "npm can link the binding's relative core dependency to the service-level core, letting the runtime probe pass without the npm pin even though npm ls reports an invalid dependency tree."
+    },
+    "approach-workspace-own-service": {
+      "forces": [
+        "An evaluator doing M2 must be able to add the kit to their own service with any supported installer, without guessing."
+      ],
+      "reason": "Neither the guide nor the proposed gate proves a workspace layout, so it would ask evaluators to infer workspace behavior instead of receiving the bounded standalone M2 path."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-own-service-install-documented",
+    "implementation-own-service-install-proven-per-installer",
+    "implementation-kit-installs-unchanged",
+    "implementation-folds-two-complete-requirements"
+  ],
+  "invariant_evidence": {
+    "implementation-own-service-install-documented": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "The guide contains the exact standalone own-service JSON, YAML, npm, and pnpm snippets, the quickstart and known issues point to them, and the recorded evaluator walk uses them."
+      ]
+    },
+    "implementation-own-service-install-proven-per-installer": {
+      "task_ids": [
+        "2.3",
+        "2.4",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "The gate installs the guide snippets verbatim with npm and each pinned pnpm release, validates npm ls and all three entry points, and three measured controls prove missing pins or the core dependency fail."
+      ]
+    },
+    "implementation-kit-installs-unchanged": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "Node validation and the governance chain show the kit own npm and pnpm legs, their core-copy probe, and their verification clauses remain unchanged while the own-service check is added."
+      ]
+    },
+    "implementation-folds-two-complete-requirements": {
+      "task_ids": [
+        "4.1"
+      ],
+      "evidence_ids": [
+        "The fold replaces only the two complete canonical requirement blocks with their delta blocks, retaining every existing scenario and adding only the own-service obligations and scenarios."
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "The change adds verification-only package installation evidence and does not alter audit-event creation, validation, transport, or recorded audit data.",
+    "authentication_or_authorization": "No credential handling, authentication mechanism, authorization decision, or access-control policy changes; the guide uses only local package-manager commands.",
+    "authority_provenance": "The installer pins identify local evaluation-kit tarballs but create, accept, and propagate no authority-bearing value or provenance claim.",
+    "concurrency": "Fresh temporary own-service directories isolate sequential gate legs; no shared mutable runtime state or concurrent application behavior is introduced.",
+    "confidentiality": "The guide names synthetic local paths and package artifacts only; it accepts, stores, logs, or exposes no evaluator payload, secret, or credential.",
+    "cryptography": "No cryptographic primitive, key, signature, digest, checksum, or verification policy is added or modified by the documentation and gate check.",
+    "error_disclosure": "Failure diagnostics identify installer and dependency conditions for disposable test services without adding application responses or disclosing user-controlled data.",
+    "external_security_integration": "npm and pnpm run only in the non-production verification workflow; the candidate adds no runtime integration with an external security system.",
+    "fail_posture": "The gate fails for missing npm or pnpm pins and a missing core dependency, but it changes no production security decision or fail-open application path.",
+    "lifecycle": "Temporary installation directories are created and removed for verification only; package, event, and service lifecycle states remain unchanged.",
+    "mutation_ownership": "Exact owned paths constrain this candidate to evaluator documents, unshipped gate controls, glossary terms, and two specification requirements.",
+    "privacy_transformation": "No field transformation, data minimization rule, privacy classification, or processing of audit-event values is changed.",
+    "resource_retention": "The gate uses disposable locations outside the repository and retains no evaluator service data, package installation state, or audit data.",
+    "retry_or_redelivery": "The candidate neither changes audited-operation re-execution nor delivery retry or redelivery behavior; it only verifies package installation.",
+    "trust_boundary": "The standalone own-service boundary is documented and tested without granting package, service, deployment, release, or cross-boundary authority."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "fb70f37204980a3723461f25ac7cf45e8d6d2518"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "2.5",
+    "3.1",
+    "3.2",
+    "3.3",
+    "4.1"
+  ]
+}

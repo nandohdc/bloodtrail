@@ -748,6 +748,11 @@ for these runtime gates; no CI workflow file is part of this requirement. The ki
   workspace root, and fail when an installer reports that a setting the kit ships is unknown, ignored, or no
   longer read;
 - prove that exactly one core copy resolves in each installation;
+- install an own service, outside the kit directory and outside any workspace root, from the integration
+  guide's documented snippets verbatim, with npm and with each pinned pnpm release; fail when the documented
+  dependencies omit either SDK package, when an installer reports a setting the documented install adds as
+  unknown, ignored, or no longer read, or when npm reports an invalid dependency; and prove in each
+  installation that the Node binding's entry point and both core entry points load with exactly one core copy;
 - type-check the example sources, every TypeScript block in the kit documents, and every fix in the
   facilitator answer key, under strict consumer settings, with TypeScript 5.9.2 and with pinned 6.0.x and
   7.0.x releases;
@@ -798,6 +803,16 @@ be described only as measured compatibility, never as support.
 #### Scenario: An override the installer ignores fails the gate
 - **WHEN** the kit carries its pnpm override only in the consumer manifest's `pnpm` field
 - **THEN** the kit gate fails on the pnpm 11 and pnpm 12 installations
+
+#### Scenario: An own service installs the kit as documented
+- **WHEN** the kit gate installs an own service outside the kit directory from the integration guide's
+  documented snippets, with npm and with the pinned release of each of pnpm 10, 11 and 12
+- **THEN** every installation succeeds, npm reports no invalid dependency, and the Node binding and both core
+  entry points load with exactly one core copy in each
+
+#### Scenario: An own service without the core pin fails the gate
+- **WHEN** the integration guide's documented install omits the core pin for npm, or for pnpm
+- **THEN** the kit gate fails at that installer
 
 #### Scenario: The demonstrated events arrive valid and byte-identical
 - **WHEN** the driver makes the example service emit authentication success, authentication failure,
@@ -933,6 +948,8 @@ audit sink. A successful named emit's value SHALL be documented as only
 
 - the supported installers, naming npm and exactly the pnpm majors the gate proves, and that yarn, and
   installing the Node binding on its own, are unsupported;
+- how to add the kit to an own service outside the kit directory, with npm and with each supported pnpm major:
+  both SDK packages from the kit's tarballs and the core pin, in snippets the kit gate installs from verbatim;
 - the declared consumer TypeScript range, and the measured TypeScript compatibility outside it;
 - that the prohibited-data value scan is heuristic;
 - that the collector ingress checks structure only, so its acceptance is not validity;
