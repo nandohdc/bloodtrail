@@ -31,4 +31,4 @@
 
 ## 5. Archive
 
-- [ ] 5.1 Archive the change after the fold merges in a separate pull request.
+- [x] 5.1 Archive the change after the fold merges in a separate pull request.
