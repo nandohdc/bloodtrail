@@ -118,6 +118,7 @@ const EXPECTED_BUILD_CHECK_IDENTITIES = Object.freeze([
   "seeded-invalid-calls",
   "http-audit-sink-failure-paths",
   "pnpm-installations",
+  "own-service-installations",
 ]);
 const EXPECTED_KIT_DIR_CHECK_IDENTITIES = Object.freeze([
   "kit-identity",
@@ -138,6 +139,7 @@ const EXPECTED_KIT_DIR_CHECK_IDENTITIES = Object.freeze([
   "seeded-invalid-calls",
   "http-audit-sink-failure-paths",
   "pnpm-installations",
+  "own-service-installations",
 ]);
 const REVISED_INSTALLER_CLAUSES = Object.freeze([
   {
@@ -147,6 +149,10 @@ const REVISED_INSTALLER_CLAUSES = Object.freeze([
   {
     identity: "pnpm-installations",
     clause: "kit installed outside any workspace with pnpm 10.17.0, 11.28.2, 12.8.1, with no setting the kit ships reported as unknown, ignored or no longer read, a passing first-event example, and one core copy per installation",
+  },
+  {
+    identity: "own-service-installations",
+    clause: "own service installed outside the kit directory and any workspace from the snippets in docs/integration-and-testing.md, verbatim, with npm and pnpm 10.17.0, 11.28.2, 12.8.1, its documented dependencies listing both SDK packages, no setting the documented install adds reported as unknown, ignored or no longer read, npm ls reporting no invalid dependency, and the Node binding and both core entry points loading one core copy per installation",
   },
 ]);
 const VERIFICATION_SUMMARY_PREFIX = "evaluation kit verification passed: ";
@@ -946,6 +952,7 @@ const CONTROL_RUNNERS = Object.freeze([
   ...createInstallerControlRunners({
     applyMeasuredPlant,
     assertPnpmLegFails,
+    captureDirectCheckFailure,
     captureFailure,
     captureGateFailure,
     completeControl,
@@ -1102,7 +1109,7 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 76, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 79, "the control table must declare every expected control");
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label, identity }) => controlFor(label).identity), CLONE_PLANT_CONTROLS.map(({ identity }) => identity));
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label }) => CONTROL_RUNNERS_BY_LABEL.has(label)), CLONE_PLANT_CONTROLS.map(() => true));
   assert.throws(

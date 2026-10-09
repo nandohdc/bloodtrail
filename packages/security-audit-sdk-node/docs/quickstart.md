@@ -29,10 +29,12 @@ pnpm install
 
 The kit pins `@bloodtrail/security-audit-sdk-core` to its own tarball, so exactly one core copy is resolved across all dependencies. npm reads the pin from the `overrides` field of the generated `package.json`. pnpm reads it from the kit's generated `pnpm-workspace.yaml`, because pnpm 11 and later no longer read the `pnpm` field in `package.json`.
 
+For M2, which integrates the SDK into your own service, add the kit to that service as **Adding the Kit to Your Own Service** in `docs/integration-and-testing.md` describes.
+
 > [!WARNING]
 > **Unsupported installers and configurations:**
 > - **Yarn is unsupported:** Yarn's hoisting algorithms do not honor the required single-copy Core resolution constraints and will lead to authority resolution failures.
-> - **Standalone Node binding install is unsupported:** `@bloodtrail/security-audit-sdk-node` lists `@bloodtrail/security-audit-sdk-core` as a regular dependency, not a peer dependency. The kit provides that core as its own tarball and pins it, so installing the Node binding on its own has no core to resolve. Always install the complete kit through its generated `package.json`.
+> - **Standalone Node binding install is unsupported:** `@bloodtrail/security-audit-sdk-node` lists `@bloodtrail/security-audit-sdk-core` as a regular dependency, not a peer dependency. The kit provides that core as its own tarball and pins it, so installing the Node binding on its own has no core to resolve. Install the complete kit through its generated `package.json`, or add both packages and the core pin to your own service as `docs/integration-and-testing.md` describes.
 
 ## Your First Accepted Event
 

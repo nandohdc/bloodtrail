@@ -1,9 +1,59 @@
 # Integration and Testing
 
-This page shows how to map the example service onto your own service: wiring the SDK into an Express or
-Fastify handler, testing with the core's test sinks, and making events deterministic in tests.
+This page shows how to add the kit to your own service and map the example service onto it: wiring the SDK into an
+Express or Fastify handler, testing with the core's test sinks, and making events deterministic in tests.
 
 Every value on this page is synthetic, and no snippet sets a production environment.
+
+## Adding the Kit to Your Own Service
+
+M2 integrates the SDK into your own service, outside the kit directory. Your service needs both SDK packages from
+the kit's tarballs and the kit's core pin, so that every dependency resolves to the kit's single core copy.
+Installing the Node binding on its own is unsupported, so always add both packages and the pin together.
+
+These steps cover a standalone service, one that is not part of an npm or pnpm workspace. A service inside a
+workspace is not covered, so use a standalone test service for M2. The supported installers are npm, as bundled
+with Node 24 and Node 26, and pnpm 10, 11 and 12.
+
+The snippets below assume that the kit directory sits next to your service's directory, as `../evaluation-kit`.
+If it is elsewhere, replace `../evaluation-kit` in every path with the path from your service's directory to the
+kit directory. Keep the kit directory in place while your service uses its tarballs.
+
+**Add both packages and the npm pin** to your service's `package.json`, merging them into any entries it already
+has:
+
+```json
+{
+  "dependencies": {
+    "@bloodtrail/security-audit-sdk-core": "file:../evaluation-kit/bloodtrail-security-audit-sdk-core-0.4.0.tgz",
+    "@bloodtrail/security-audit-sdk-node": "file:../evaluation-kit/bloodtrail-security-audit-sdk-node-0.4.0.tgz"
+  },
+  "overrides": {
+    "@bloodtrail/security-audit-sdk-core": "file:../evaluation-kit/bloodtrail-security-audit-sdk-core-0.4.0.tgz"
+  }
+}
+```
+
+**With pnpm, also add the pnpm pin.** pnpm does not read npm's `overrides` field, and pnpm 11 and later no longer
+read the `pnpm` field in `package.json`, so the pin goes in your service's `pnpm-workspace.yaml`. Create the file
+if your service has none, or merge the entry into its `overrides`:
+
+```yaml
+overrides:
+  "@bloodtrail/security-audit-sdk-core": "file:../evaluation-kit/bloodtrail-security-audit-sdk-core-0.4.0.tgz"
+```
+
+**Install** from your service's directory:
+
+```bash
+npm install
+```
+
+or:
+
+```bash
+pnpm install
+```
 
 ## Wiring a Framework Handler by Hand
 

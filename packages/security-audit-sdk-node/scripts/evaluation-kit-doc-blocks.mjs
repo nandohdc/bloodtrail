@@ -164,7 +164,7 @@ export async function extractDocBlocksFromDir(docsDir, outputDir) {
   return writtenFiles;
 }
 
-export const ALLOWED_FENCE_LANGUAGES = Object.freeze(["bash", "http", "json", "sh", "ts", "typescript"]);
+export const ALLOWED_FENCE_LANGUAGES = Object.freeze(["bash", "http", "json", "sh", "ts", "typescript", "yaml"]);
 
 // How a failure shows a fence that names no language, so an anonymous fence is distinguishable from prose.
 const EMPTY_LANGUAGE_DISPLAY = "(none)";

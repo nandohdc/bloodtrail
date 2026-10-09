@@ -92,6 +92,8 @@ export const REVIEWED_EXCEPTIONS = Object.freeze([
   ["known-issues.md", "overrides"],
   ["quickstart.md", "overrides"],
   ["evaluation-guide.md", "shasum"],
+  ["integration-and-testing.md", "overrides"],
+  ["integration-and-testing.md", "pnpm"],
   ["integration-and-testing.md", "testing"],
 ]);
 
