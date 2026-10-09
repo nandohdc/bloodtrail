@@ -32,5 +32,5 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After the implementation merges, archive
+- [x] 4.1 After the implementation merges, archive
   `require-valid-kit-npm-tree` in a separate pull request.
