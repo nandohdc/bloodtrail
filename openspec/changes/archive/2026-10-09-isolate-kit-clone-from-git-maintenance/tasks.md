@@ -28,5 +28,5 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After the implementation merges, archive
+- [x] 4.1 After the implementation merges, archive
   `isolate-kit-clone-from-git-maintenance` in a separate pull request.
