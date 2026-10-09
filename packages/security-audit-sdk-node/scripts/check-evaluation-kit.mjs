@@ -28,6 +28,7 @@ import {
   assertKitDocsNameInstallers,
   runCoreCopyProbe,
   runInstaller,
+  verifyNpmDependencyTree,
   verifyOwnServiceInstalls,
   verifyPnpmInstalls,
 } from "./evaluation-kit-installers.mjs";
@@ -614,6 +615,9 @@ export const KIT_GATE_CHECKS = Object.freeze({
   "npm-installation": Object.freeze({
     clause: () => "kit installed outside any workspace with npm, and no setting the kit ships reported as unknown, ignored or no longer read",
   }),
+  "npm-dependency-tree": Object.freeze({
+    clause: () => "npm ls reported no invalid dependency after the npm installation",
+  }),
   "document-references": Object.freeze({
     clause: () =>
       `every callee and identifier-shaped inline code span in the kit documents resolved against installed package type declarations, except ${REVIEWED_EXCEPTIONS.length} reviewed exceptions`,
@@ -793,7 +797,13 @@ export async function checkEvaluationKit({
       return undefined;
     });
 
-    // 3a. Every callee and identifier-shaped reference in the kit's documents names an API the installed
+    // 3a. npm ls must judge the installed tree valid: without the pin, npm still links one top-level
+    // core copy through the binding's file: dependency, so only npm ls reports it invalid.
+    await runCheck(completedChecks, disabledChecks, "npm-dependency-tree", () =>
+      verifyNpmDependencyTree("npm", tempInstall),
+    );
+
+    // 3b. Every callee and identifier-shaped reference in the kit's documents names an API the installed
     // packages declare, except the reviewed exceptions
     await runCheck(completedChecks, disabledChecks, "document-references", () => assertKitDocReferences(tempInstall));
 

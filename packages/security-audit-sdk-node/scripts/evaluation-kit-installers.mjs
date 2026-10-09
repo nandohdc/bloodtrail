@@ -276,6 +276,13 @@ function runReporting(command, args, cwd) {
   return { status: result.status, output: `${result.stdout}${result.stderr}` };
 }
 
+// Under npm, the binding's file: core dependency links to the top-level core, so one copy loads even
+// without the kit's pin, and only npm ls reports the dependency tree invalid.
+export function verifyNpmDependencyTree(label, installDir) {
+  const listed = runReporting("npm", ["ls", "--all"], installDir);
+  assert(listed.status === 0, `${label} install left an invalid dependency tree:\n${listed.output}`);
+}
+
 export async function verifyPnpmInstall(kitDir, release) {
   const label = `pnpm ${release}`;
   const installDir = await mkdtemp(resolve(tmpdir(), `bloodtrail-eval-pnpm-${pnpmMajor(release)}-`));
@@ -321,8 +328,7 @@ export async function verifyOwnServiceInstall(kitDir, installer) {
 
     if (isNpm) {
       runInstaller(label, "npm", ["install", "--omit=dev", "--no-audit", "--no-fund", "--ignore-scripts", "--offline"], serviceDir);
-      const listed = runReporting("npm", ["ls", "--all"], serviceDir);
-      assert(listed.status === 0, `own service npm install left an invalid dependency tree:\n${listed.output}`);
+      verifyNpmDependencyTree("own service npm", serviceDir);
     } else {
       runInstaller(label, "npx", ["--yes", `pnpm@${installer}`, "install", "--prod", "--ignore-scripts"], serviceDir);
     }

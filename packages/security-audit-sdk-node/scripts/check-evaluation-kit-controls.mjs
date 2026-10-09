@@ -108,6 +108,7 @@ const EXPECTED_BUILD_CHECK_IDENTITIES = Object.freeze([
   "existing-output-refusal",
   "dirty-tree-refusal",
   "npm-installation",
+  "npm-dependency-tree",
   "document-references",
   "npm-single-core-copy",
   "kit-source-typecheck",
@@ -129,6 +130,7 @@ const EXPECTED_KIT_DIR_CHECK_IDENTITIES = Object.freeze([
   "document-fence-languages",
   "synthetic-values",
   "npm-installation",
+  "npm-dependency-tree",
   "document-references",
   "npm-single-core-copy",
   "kit-source-typecheck",
@@ -145,6 +147,10 @@ const REVISED_INSTALLER_CLAUSES = Object.freeze([
   {
     identity: "npm-installation",
     clause: "kit installed outside any workspace with npm, and no setting the kit ships reported as unknown, ignored or no longer read",
+  },
+  {
+    identity: "npm-dependency-tree",
+    clause: "npm ls reported no invalid dependency after the npm installation",
   },
   {
     identity: "pnpm-installations",
@@ -1109,7 +1115,7 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 79, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 80, "the control table must declare every expected control");
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label, identity }) => controlFor(label).identity), CLONE_PLANT_CONTROLS.map(({ identity }) => identity));
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label }) => CONTROL_RUNNERS_BY_LABEL.has(label)), CLONE_PLANT_CONTROLS.map(() => true));
   assert.throws(
