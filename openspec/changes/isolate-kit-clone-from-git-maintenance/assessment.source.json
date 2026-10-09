@@ -1,0 +1,162 @@
+{
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "The kit gate must fail only for reasons about the kit or the gate, never because of a Git housekeeping race.",
+    "No Git command run in a disposable clone may start a background writer inside it.",
+    "An ambient Git configuration must not be able to re-enable that writer.",
+    "A failed clone removal must stay loud, never be retried away."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "full_trigger_absence_proof": "No full assessment trigger applies. This is one bounded correction to an unshipped verification script, introduces no abstraction, module, class, interface, or public API, and does not match public_api. It adds only Git configuration to a temporary clone and direct flags to one commit inside it, so it changes no integration, lifecycle_or_state, concurrency, persistence, or security_sensitive_behavior. It touches no governance_core_path. Kit contents, identity, and digests are unchanged, and no requirement text or canonical capability requirement changes.",
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-source-copy.mjs",
+    "openspec/changes/isolate-kit-clone-from-git-maintenance/.openspec.yaml",
+    "openspec/changes/isolate-kit-clone-from-git-maintenance/assessment.json",
+    "openspec/changes/isolate-kit-clone-from-git-maintenance/assessment.source.json",
+    "openspec/changes/isolate-kit-clone-from-git-maintenance/design.md",
+    "openspec/changes/isolate-kit-clone-from-git-maintenance/proposal.md",
+    "openspec/changes/isolate-kit-clone-from-git-maintenance/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-clone-config-and-commit-flags",
+      "kind": "direct_implementation",
+      "summary": "Write maintenance and gc settings into each disposable clone at clone time, then pass the same settings as flags to its commit so later clone commands and an ambient override cannot start maintenance.",
+      "forces_addressed": [
+        "The kit gate must fail only for reasons about the kit or the gate, never because of a Git housekeeping race.",
+        "No Git command run in a disposable clone may start a background writer inside it.",
+        "An ambient Git configuration must not be able to re-enable that writer.",
+        "A failed clone removal must stay loud, never be retried away."
+      ]
+    },
+    {
+      "id": "approach-retry-clone-removal",
+      "kind": "alternative",
+      "summary": "Retry recursive deletion of a disposable clone when a detached Git maintenance writer leaves its directory temporarily nonempty.",
+      "forces_addressed": [
+        "The kit gate must fail only for reasons about the kit or the gate, never because of a Git housekeeping race.",
+        "A failed clone removal must stay loud, never be retried away."
+      ]
+    },
+    {
+      "id": "approach-clone-time-only-settings",
+      "kind": "alternative",
+      "summary": "Set maintenance and gc keys only through git clone configuration and rely on the clone-local values for the later commit.",
+      "forces_addressed": [
+        "No Git command run in a disposable clone may start a background writer inside it.",
+        "An ambient Git configuration must not be able to re-enable that writer."
+      ]
+    },
+    {
+      "id": "approach-commit-only-flags",
+      "kind": "alternative",
+      "summary": "Pass maintenance and gc configuration flags only to the current clone commit without recording clone-local configuration.",
+      "forces_addressed": [
+        "No Git command run in a disposable clone may start a background writer inside it.",
+        "An ambient Git configuration must not be able to re-enable that writer."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-clone-config-and-commit-flags",
+  "rejected_alternative_ids": [
+    "approach-retry-clone-removal",
+    "approach-clone-time-only-settings",
+    "approach-commit-only-flags"
+  ],
+  "rejection_reasons": {
+    "approach-retry-clone-removal": {
+      "forces": [
+        "The kit gate must fail only for reasons about the kit or the gate, never because of a Git housekeeping race.",
+        "A failed clone removal must stay loud, never be retried away."
+      ],
+      "reason": "A retry makes the race less likely to surface but does not stop the writer, and it hides a regression or a new background writer instead of preserving a loud removal failure."
+    },
+    "approach-clone-time-only-settings": {
+      "forces": [
+        "No Git command run in a disposable clone may start a background writer inside it.",
+        "An ambient Git configuration must not be able to re-enable that writer."
+      ],
+      "reason": "Ambient GIT_CONFIG_COUNT, GIT_CONFIG_KEY_n, and GIT_CONFIG_VALUE_n values override clone-local configuration for the commit, so they can re-enable maintenance and leave a detached writer."
+    },
+    "approach-commit-only-flags": {
+      "forces": [
+        "No Git command run in a disposable clone may start a background writer inside it.",
+        "An ambient Git configuration must not be able to re-enable that writer."
+      ],
+      "reason": "Commit-only flags protect the current commit but leave every later Git command in the clone, including a future builder command, free to read enabled or ambient maintenance configuration."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-kit-clone-starts-no-git-maintenance",
+    "implementation-kit-clone-removal-unchanged",
+    "implementation-kit-gate-checks-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-kit-clone-starts-no-git-maintenance": {
+      "task_ids": [
+        "2.1",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "Task 2.1 records clone-local maintenance and gc settings plus command-line commit overrides.",
+        "Trace2 probes in task 3.3 record no maintenance or gc child for fixed clones, including an ambient override."
+      ]
+    },
+    "implementation-kit-clone-removal-unchanged": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Task 2.1 changes only clone and commit configuration, leaving the existing one-shot remover intact.",
+        "Node validation in task 3.1 exercises the kit gate and clone controls with the unchanged removal path."
+      ]
+    },
+    "implementation-kit-gate-checks-unchanged": {
+      "task_ids": [
+        "3.1",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "Node 26 validation and Node 24.2.0 tests in task 3.1 retain the existing kit-gate and control suite.",
+        "Trace2 probes in task 3.3 use the existing disposable clone flow and record its local configuration and children."
+      ]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "a4c78ff7ee93d76982e6ae212dc9963ad0a081f5"
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No audit event, contract, kit identity calculation, checksum list, or integrity assertion changes; the correction only configures a disposable clone.",
+    "authentication_or_authorization": "No authentication or authorization mechanism changes; the temporary clone workflow makes no principal, permission, or access-control decision.",
+    "authority_provenance": "No authority source, signature, provenance field, owner decision, or release authorization changes; clone-local Git settings are transient.",
+    "concurrency": "The correction prevents an uncontrolled detached Git writer in a temporary clone but adds no scheduler, lock, shared state, or concurrent coordination behavior.",
+    "confidentiality": "No secret, credential, or confidential payload handling changes; configuration values and diagnostics concern only disposable local Git state.",
+    "cryptography": "No cryptographic algorithm, digest calculation, key handling, signing, or verification behavior changes; kit digests remain unchanged.",
+    "error_disclosure": "No diagnostic surface changes; an existing clone-removal failure remains loud without exposing kit contents, credentials, or additional data.",
+    "external_security_integration": "No external security product, network service, exporter, collector deployment, or third-party security integration is introduced or changed.",
+    "fail_posture": "The gate prevents the known background writer before it starts and retains the existing loud failure for any other clone-removal problem.",
+    "lifecycle": "No SDK, sink, operation, package, or release lifecycle transition changes; the configuration exists only for one disposable clone lifetime.",
+    "mutation_ownership": "The change writes Git configuration only inside a fresh temporary clone while the live repository remains read-only and removal remains explicit.",
+    "privacy_transformation": "No privacy transformation, data classification, redaction, prohibited-data scan, or personal-data processing behavior changes.",
+    "resource_retention": "No storage or retention policy changes; the affected Git configuration is contained in a temporary clone that the existing remover deletes.",
+    "retry_or_redelivery": "No retry, delivery, redelivery, queueing, or attempt behavior changes; removal retries are expressly rejected by this correction.",
+    "trust_boundary": "The existing repository and local temporary-directory boundaries remain unchanged; no principal, external system, or trust crossing is added."
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "3.1",
+    "3.2",
+    "3.3"
+  ]
+}
