@@ -196,7 +196,9 @@ async function overlayLiveTrackedSources(cloneRoot) {
 
 // Commits whatever changed in the clone, if anything, under a fixed kit-gate identity with no hooks or
 // signing, and returns the clone's HEAD commit. Environment identity overrides are cleared first, so an
-// ambient GIT_AUTHOR_* or GIT_COMMITTER_* setting cannot leak into the tree under test.
+// ambient GIT_AUTHOR_* or GIT_COMMITTER_* setting cannot leak into the tree under test. The commit turns
+// background maintenance off on its own command line, so an ambient GIT_CONFIG_* setting cannot start a
+// detached repack that is still writing into the clone's .git when the clone is removed (#734).
 function commitCloneChanges(cloneRoot) {
   const status = runChecked("git", ["status", "--porcelain"], { cwd: cloneRoot, capture: true }).trim();
   if (status) {
@@ -214,6 +216,10 @@ function commitCloneChanges(cloneRoot) {
         "user.email=kit-gate@example.invalid",
         "-c",
         "commit.gpgsign=false",
+        "-c",
+        "maintenance.auto=false",
+        "-c",
+        "gc.auto=0",
         "commit",
         "--quiet",
         "--no-verify",
@@ -230,16 +236,30 @@ function commitCloneChanges(cloneRoot) {
  * Clones the repository into a fresh temporary directory outside the repository, overlays the live working
  * tree's tracked files under KIT_SOURCE_PATHS, runs the optional `plant(cloneRoot)` hook (a controls-only
  * JavaScript seam), and commits the result under a fixed kit-gate identity. `afterCommit(cloneRoot)` may
- * set clone-local Git state that must stay outside that commit. The live repository is only read. Returns
- * the clone root, its HEAD commit, and a remover.
+ * set clone-local Git state that must stay outside that commit. The live repository is only read. The clone
+ * is created with Git's background maintenance turned off, because a detached repack can still be writing
+ * into its .git when the clone is removed (#734). Returns the clone root, its HEAD commit, and a remover.
  */
 export async function createKitTreeClone({ plant = null, afterCommit = null } = {}) {
   const cloneRoot = await mkdtemp(resolve(tmpdir(), "bloodtrail-kit-tree-clone-"));
   try {
     await assertOutsideRepository(cloneRoot);
-    runChecked("git", ["clone", "--quiet", "--no-hardlinks", "--", repositoryRoot, cloneRoot], {
-      capture: true,
-    });
+    runChecked(
+      "git",
+      [
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "--config",
+        "maintenance.auto=false",
+        "--config",
+        "gc.auto=0",
+        "--",
+        repositoryRoot,
+        cloneRoot,
+      ],
+      { capture: true },
+    );
     await overlayLiveTrackedSources(cloneRoot);
     if (plant) {
       await plant(cloneRoot);
