@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.1",
+  "change_id": "isolate-governance-fixtures-from-git-maintenance",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The governance suites must fail only for reasons about the gates under test, never because of a Git housekeeping race.",
+    "No Git command run through either helper in a test fixture repository may start a background writer inside it.",
+    "An inherited Git configuration must not be able to re-enable that writer.",
+    "Files that an active change's signed record binds must stay untouched."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "software-design-pattern-governance",
+      "contract-reuse-assessment"
+    ]
+  },
+  "owned_paths": [
+    "openspec/tests/design-pattern-governance/support/disposable-repo.mjs",
+    "openspec/tests/contract-reuse/support/disposable-repo.mjs",
+    "openspec/changes/isolate-governance-fixtures-from-git-maintenance/.openspec.yaml",
+    "openspec/changes/isolate-governance-fixtures-from-git-maintenance/proposal.md",
+    "openspec/changes/isolate-governance-fixtures-from-git-maintenance/design.md",
+    "openspec/changes/isolate-governance-fixtures-from-git-maintenance/tasks.md",
+    "openspec/changes/isolate-governance-fixtures-from-git-maintenance/assessment.source.json",
+    "openspec/changes/isolate-governance-fixtures-from-git-maintenance/assessment.json"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-helper-fixture-git-config",
+      "kind": "direct_implementation",
+      "summary": "Rename each helper's GIT_IDENTITY to GIT_FIXTURE_CONFIG and append maintenance.auto=false and gc.auto=0 command-line settings to every git() invocation, preserving all methods and environment handling.",
+      "forces_addressed": [
+        "The governance suites must fail only for reasons about the gates under test, never because of a Git housekeeping race.",
+        "No Git command run through either helper in a test fixture repository may start a background writer inside it.",
+        "An inherited Git configuration must not be able to re-enable that writer.",
+        "Files that an active change's signed record binds must stay untouched."
+      ]
+    },
+    {
+      "id": "approach-ci-environment-config",
+      "kind": "alternative",
+      "summary": "Supply maintenance.auto=false and gc.auto=0 through GIT_CONFIG_* in the governance CI step by editing .github/workflows/ci.yml rather than either helper.",
+      "forces_addressed": [
+        "The governance suites must fail only for reasons about the gates under test, never because of a Git housekeeping race.",
+        "No Git command run through either helper in a test fixture repository may start a background writer inside it.",
+        "An inherited Git configuration must not be able to re-enable that writer."
+      ]
+    },
+    {
+      "id": "approach-shared-fixture-git-module",
+      "kind": "alternative",
+      "summary": "Introduce one shared fixture-Git module used by both governance helpers to centralize identity and maintenance configuration.",
+      "forces_addressed": [
+        "The governance suites must fail only for reasons about the gates under test, never because of a Git housekeeping race.",
+        "No Git command run through either helper in a test fixture repository may start a background writer inside it.",
+        "An inherited Git configuration must not be able to re-enable that writer."
+      ]
+    },
+    {
+      "id": "approach-isolate-all-ambient-git-config",
+      "kind": "alternative",
+      "summary": "Copy sdk-core's environment isolation into both helpers, stripping ambient GIT_CONFIG_* and redirecting global and system configuration in addition to disabling maintenance.",
+      "forces_addressed": [
+        "The governance suites must fail only for reasons about the gates under test, never because of a Git housekeeping race.",
+        "No Git command run through either helper in a test fixture repository may start a background writer inside it.",
+        "An inherited Git configuration must not be able to re-enable that writer."
+      ]
+    },
+    {
+      "id": "approach-edit-signed-direct-git-tests",
+      "kind": "alternative",
+      "summary": "Also disable maintenance in mutation-assurance.test.mjs and normative-precedence-repository.test.mjs, whose exact contents the active define-normative-precedence-lifecycle signed record binds.",
+      "forces_addressed": [
+        "The governance suites must fail only for reasons about the gates under test, never because of a Git housekeeping race.",
+        "No Git command run through either helper in a test fixture repository may start a background writer inside it.",
+        "Files that an active change's signed record binds must stay untouched."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-helper-fixture-git-config",
+  "rejected_alternative_ids": [
+    "approach-ci-environment-config",
+    "approach-shared-fixture-git-module",
+    "approach-isolate-all-ambient-git-config",
+    "approach-edit-signed-direct-git-tests"
+  ],
+  "rejection_reasons": {
+    "approach-ci-environment-config": {
+      "forces": [
+        "The governance suites must fail only for reasons about the gates under test, never because of a Git housekeeping race.",
+        "No Git command run through either helper in a test fixture repository may start a background writer inside it.",
+        "An inherited Git configuration must not be able to re-enable that writer."
+      ],
+      "reason": "CI-only environment settings leave local helper executions exposed to the housekeeping race and inherited overrides, and edit ci.yml, another governance_core path, without protecting every helper invocation."
+    },
+    "approach-shared-fixture-git-module": {
+      "forces": [
+        "The governance suites must fail only for reasons about the gates under test, never because of a Git housekeeping race."
+      ],
+      "reason": "A new governance_core module and helper rewiring expand the fixture failure surface beyond removing housekeeping races; a two-line defect in two parallel configuration lists needs no new abstraction or behavior dependency."
+    },
+    "approach-isolate-all-ambient-git-config": {
+      "forces": [
+        "The governance suites must fail only for reasons about the gates under test, never because of a Git housekeeping race."
+      ],
+      "reason": "Stripping every ambient and global setting changes how every governance test behaves for reasons beyond the housekeeping defect, adding unrelated fixture failure causes when command-line -c already wins over inherited settings."
+    },
+    "approach-edit-signed-direct-git-tests": {
+      "forces": [
+        "Files that an active change's signed record binds must stay untouched."
+      ],
+      "reason": "Editing the direct-Git tests changes exact contents bound by define-normative-precedence-lifecycle while it is active; #780 deliberately defers them until that change is archived, and neither helper is bound by its record."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-governance-fixtures-start-no-git-maintenance",
+    "implementation-governance-fixture-behaviour-unchanged",
+    "implementation-signed-change-files-untouched"
+  ],
+  "invariant_evidence": {
+    "implementation-governance-fixtures-start-no-git-maintenance": {
+      "task_ids": [
+        "2.1",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "Task 2.1's full helper diffs show maintenance.auto=false and gc.auto=0 on the shared git() flag lists, including commit and merge paths.",
+        "Task 3.3 records per-file Trace2 tables for all 19 files: fixed and inherited-override starts only in the two #780 direct-Git tests, while reverted restores helper-file starts; every maintenanceWithWork value is recorded."
+      ]
+    },
+    "implementation-governance-fixture-behaviour-unchanged": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Task 2.1's helper diffs contain only the constant rename, appended flag pairs and explanatory comment; methods, constructors, exports, environment and test assertions stay unchanged.",
+        "Task 3.1's CI-style suite logs retain the base's 73 contract-reuse and 370 design-pattern-governance tests and passes, with zero failures."
+      ]
+    },
+    "implementation-signed-change-files-untouched": {
+      "task_ids": [
+        "3.2",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "Task 3.2's base-to-final scope diff and merge-stage normative-precedence check confirm mutation-assurance.test.mjs, normative-precedence-repository.test.mjs and verify-normative-precedence-mutations.mjs remain byte-identical.",
+        "Task 3.3's detached worktrees use unchanged direct-Git tests as the residual maintenance sources without editing any signed-change-bound file or adding a control."
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No audit event, contract, checksum or governance assertion changes; preventing fixture housekeeping races keeps required checks focused on the gates they test.",
+    "authentication_or_authorization": "No authentication, authorization, principal or permission decision changes; the two settings govern only Git housekeeping in synthetic fixture repositories.",
+    "authority_provenance": "No authority source, provenance claim, owner decision or signed evidence changes; files bound by the active normative-precedence signed record remain untouched.",
+    "concurrency": "The correction prevents a detached Git maintenance writer in temporary fixtures but introduces no scheduler, lock, shared state or concurrent coordination mechanism.",
+    "confidentiality": "No secrets, credentials or confidential payloads are processed; command-line configuration concerns only local disposable fixture Git state.",
+    "cryptography": "No cryptographic algorithm, key, signing or verification behavior changes; existing identity and commit.gpgsign=false entries remain byte-identical.",
+    "error_disclosure": "No error reporting or diagnostic surface changes; existing Git invocation and recursive removal errors remain observable without new data disclosure.",
+    "external_security_integration": "No external security product, service, network request, exporter or deployment is introduced; the correction is confined to local test fixtures.",
+    "fail_posture": "The known housekeeping writer is prevented before it starts; existing gate assertions and loud one-shot removal failures are neither weakened nor retried away.",
+    "lifecycle": "No runtime, release or governance lifecycle transition changes; only Git commands during an existing disposable fixture lifetime gain maintenance settings.",
+    "mutation_ownership": "No persistent Git configuration is written; exact helper ownership bounds the flag changes and signed-change-bound files, individual tests and live repository mutation behavior stay unchanged.",
+    "privacy_transformation": "No personal data, telemetry, redaction, classification or privacy transformation changes; these fixtures use synthetic repository inputs only.",
+    "resource_retention": "No retention policy or cleanup ownership changes; existing disposal still removes the temporary repository once, without a detached housekeeping writer racing it.",
+    "retry_or_redelivery": "No retry, delivery, redelivery, queue or attempt logic changes; the existing helper methods and removal behavior remain unchanged.",
+    "trust_boundary": "The existing local fixture and live repository boundaries remain unchanged; no principal, trust crossing or new external system is added."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "c145e4a011a172c04f8d390835b7e3b0935756ed"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "3.1",
+    "3.2",
+    "3.3"
+  ]
+}
