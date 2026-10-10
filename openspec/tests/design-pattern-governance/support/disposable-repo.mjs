@@ -40,10 +40,15 @@ const FIXTURE_ASSESSMENT = "openspec/tests/design-pattern-governance/support/fix
 
 export const ASSESSMENT = "openspec/changes/establish-design-pattern-governance/assessment.json";
 
-const GIT_IDENTITY = Object.freeze([
+// A fixture repository must never start Git's background maintenance because a detached repack
+// could still be rewriting its .git while a test clones from it or removes it
+// (#775, as #772 fixed for the sdk-core verification suite).
+const GIT_FIXTURE_CONFIG = Object.freeze([
   "-c", "user.name=Governance Fixture",
   "-c", "user.email=fixture@example.invalid",
   "-c", "commit.gpgsign=false",
+  "-c", "maintenance.auto=false",
+  "-c", "gc.auto=0",
 ]);
 
 export class DisposableRepository {
@@ -85,7 +90,7 @@ export class DisposableRepository {
   }
 
   git(args) {
-    return execFileSync("git", [...GIT_IDENTITY, ...args], {
+    return execFileSync("git", [...GIT_FIXTURE_CONFIG, ...args], {
       cwd: this.root,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
