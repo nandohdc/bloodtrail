@@ -15,7 +15,7 @@
 
 ## 2. Test Isolation Implementation
 
-- [ ] 2.1 Add the frozen `GIT_FIXTURE_CONFIG` with exactly
+- [x] 2.1 Add the frozen `GIT_FIXTURE_CONFIG` with exactly
   `-c maintenance.auto=false -c gc.auto=0` and the one-sentence #780/#775/#772
   detached-repack warning in each of the three files. Prepend it in both
   normative-precedence-repository wrappers, in mutation-assurance's `run()` only
@@ -26,12 +26,12 @@
 
 ## 3. Verification and Lifecycle Completion
 
-- [ ] 3.1 Run `node --test openspec/tests/contract-reuse/*.test.mjs` and
+- [x] 3.1 Run `node --test openspec/tests/contract-reuse/*.test.mjs` and
   `node --test openspec/tests/design-pattern-governance/*.test.mjs` separately
   as CI does on the final commit, without Git configuration environment
   overrides. Require each suite's `ℹ tests` and `ℹ pass` to equal its measured
   base counts, and `ℹ fail` to be zero; preserve the full commands and outputs.
-- [ ] 3.2 Run the complete final governance chain against
+- [x] 3.2 Run the complete final governance chain against
   `5368abed9a4a971ce049cb3f90df335c0caa0dc7`: change and all-change OpenSpec
   validation, strict-all validation with identical baseline warnings and no
   `[ERROR]`, generated assessment drift, final design-pattern governance,
@@ -40,7 +40,7 @@
   and exact nine-path scope/LF checks. Record each command's own exit code and
   summary, and require a nonempty inspected range. Leave
   `cs delta --error-on-warnings` to the reviewer; do not run it here.
-- [ ] 3.3 Record the supplied external per-file Trace2 census and analysis
+- [x] 3.3 Record the supplied external per-file Trace2 census and analysis
   verbatim on clean detached final and proposal-commit worktrees. Run all 19
   openspec test files plus the mutation script for fixed, reverted and fixed
   with inherited `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=maintenance.auto
@@ -52,7 +52,7 @@
   `ANCHOR_PREFLIGHT=PASS`, `EXPECTED_MUTANTS=33`, `APPLIED_MUTANTS=33`,
   `KILLED_MUTANTS=33`, `NOT_APPLIED=0`, `SURVIVED=0`, `NULL_CONTROLS=CLEAN` and
   `RESTORATION=BYTE_IDENTICAL`. Keep the external census directory for task 3.4.
-- [ ] 3.4 Record the supplied five-stage normative-precedence comparison
+- [x] 3.4 Record the supplied five-stage normative-precedence comparison
   between the final commit and an unsigned empty control on the exact base,
   only in external detached worktrees. Require identical sorted diagnostic and
   observation code/path lists and matching exit codes at candidate, merge,

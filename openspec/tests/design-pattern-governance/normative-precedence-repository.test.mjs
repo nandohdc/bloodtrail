@@ -21,6 +21,11 @@ import {
 import { recomputePinEvidence } from "../../scripts/normative-precedence/pin-sets.mjs";
 import { isGovernanceCore } from "../../scripts/design-pattern-governance/perimeter.mjs";
 
+// A fixture repository must never start Git's background maintenance, because a
+// detached repack could still be rewriting its .git while the test uses or
+// removes it (#780, as #775 and #772 did for the other fixture helpers).
+const GIT_FIXTURE_CONFIG = Object.freeze(["-c", "maintenance.auto=false", "-c", "gc.auto=0"]);
+
 const here = dirname(fileURLToPath(import.meta.url));
 const liveRoot = resolve(here, "../../..");
 const basePolicy = JSON.parse(readFileSync(resolve(liveRoot, "openspec/governance/normative-source-precedence.json"), "utf8"));
@@ -50,12 +55,12 @@ function codes(entries) {
 }
 
 function git(root, args) {
-  const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
+  const result = spawnSync("git", [...GIT_FIXTURE_CONFIG, ...args], { cwd: root, encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
 }
 
 function gitText(root, args) {
-  const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
+  const result = spawnSync("git", [...GIT_FIXTURE_CONFIG, ...args], { cwd: root, encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   return result.stdout.trim();
 }
