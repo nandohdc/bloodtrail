@@ -49,6 +49,6 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After implementation merges, archive
+- [x] 4.1 After implementation merges, archive
   `isolate-governance-fixtures-from-git-maintenance` in a separate pull request
   and verify the archive result. Leave this task unchecked throughout this run.
