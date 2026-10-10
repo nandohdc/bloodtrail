@@ -49,6 +49,11 @@ import {
   sha256Bytes,
 } from "../../scripts/normative-precedence/mutation-assurance.mjs";
 
+// A fixture repository must never start Git's background maintenance, because a
+// detached repack could still be rewriting its .git while the test uses or
+// removes it (#780, as #775 and #772 did for the other fixture helpers).
+const GIT_FIXTURE_CONFIG = Object.freeze(["-c", "maintenance.auto=false", "-c", "gc.auto=0"]);
+
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../../..");
 const changeDir = resolve(root, "openspec/changes/define-normative-precedence-lifecycle");
@@ -65,7 +70,7 @@ function auth(operation, status = "CURRENT", id = `${operation.toLowerCase()}-au
 }
 
 function run(rootDir, args) {
-  const result = spawnSync(args[0], args.slice(1), { cwd: rootDir, encoding: "utf8" });
+  const result = spawnSync(args[0], args[0] === "git" ? [...GIT_FIXTURE_CONFIG, ...args.slice(1)] : args.slice(1), { cwd: rootDir, encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   return result.stdout.trim();
 }
