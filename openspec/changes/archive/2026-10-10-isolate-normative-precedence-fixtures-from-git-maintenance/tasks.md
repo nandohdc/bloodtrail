@@ -65,7 +65,7 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After implementation merges, archive
+- [x] 4.1 After implementation merges, archive
   `isolate-normative-precedence-fixtures-from-git-maintenance` in a later,
   separate pull request and verify the archive result. It stays unchecked until
   then.
