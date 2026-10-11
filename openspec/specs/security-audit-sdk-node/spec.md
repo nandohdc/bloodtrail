@@ -590,10 +590,10 @@ Caller-supplied headers SHALL be sent only to the configured origin. They SHALL 
 
 HTTP response classification SHALL be defined once, and both the delivery handoff and the HTTP audit sink SHALL use it:
 
-- A 2xx response SHALL be `acknowledged` only when it carries exactly one acknowledgment whose `event_id` equals the event's `event.id` and whose `outcome` is `accepted`. Any other 2xx acknowledgment SHALL be `malformed_acknowledgment`.
+- A response outcome SHALL be `acknowledged` only when its fully read body carries exactly one acknowledgment whose `event_id` equals the event's `event.id` and whose `outcome` is `accepted`. Any other 2xx response outcome SHALL be `malformed_acknowledgment`.
 - 5xx, 408, 425 and 429 SHALL be `http_retryable`. Every other 4xx SHALL be `http_permanent`.
 - 1xx, 3xx and invalid statuses SHALL be `unexpected_response`.
-- A deadline SHALL be `timeout`, and a connection failure SHALL be `transport_failure`.
+- A timeout outcome SHALL be `timeout`, and a transport-failure outcome SHALL be `transport_failure`.
 
 Extracting the classification SHALL leave every observable handoff outcome and code unchanged.
 
