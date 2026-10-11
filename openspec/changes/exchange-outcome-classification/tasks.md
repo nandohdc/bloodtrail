@@ -15,3 +15,8 @@
 - [x] 3.1 Verify strict OpenSpec validation passes with `npx --yes @fission-ai/openspec@latest validate exchange-outcome-classification --strict` and generated-assessment `--check`; record outputs and exit codes externally.
 - [x] 3.2 Verify existing tests pass unchanged with `npm test --prefix packages/security-audit-sdk-node` and Node typecheck; record fetch-exchange and HTTP handoff proof and byte-identical source/test checks externally.
 - [x] 3.3 Verify full governance dual check passes against base `dd645980c98e6cd1140b94eee4c78abdbee6d17d`; record separate trusted/candidate verdicts, explicit-base final governance, both prescribed active-change CRA checks, merge-stage normative precedence, runtime gates, whitespace checks and exact eight-path/two-commit ancestry evidence externally.
+
+## 4. Canonical fold and archive
+
+- [x] 4.1 Fold `security-audit-sdk-node` delta into canonical spec `openspec/specs/security-audit-sdk-node/spec.md` in its own PR (#753).
+- [ ] 4.2 Archive `exchange-outcome-classification` change into `openspec/changes/archive/` in its own PR (#755).
