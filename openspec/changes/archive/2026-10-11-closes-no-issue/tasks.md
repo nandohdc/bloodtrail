@@ -25,4 +25,4 @@ Proposal and implementation are separate commits for #744 under #747. Only plann
 ## 4. Canonical fold and archive
 
 - [x] Fold `release-versioning-tag-model` delta into canonical spec `openspec/specs/release-versioning-tag-model/spec.md` in its own PR (#751).
-- [ ] Archive `closes-no-issue` change into `openspec/changes/archive/` in its own PR (#754).
+- [x] Archive `closes-no-issue` change into `openspec/changes/archive/` in its own PR (#754).
