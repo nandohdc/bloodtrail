@@ -19,4 +19,4 @@
 ## 4. Canonical fold and archive
 
 - [x] 4.1 Fold `security-audit-sdk-node` delta into canonical spec `openspec/specs/security-audit-sdk-node/spec.md` in its own PR (#753).
-- [ ] 4.2 Archive `exchange-outcome-classification` change into `openspec/changes/archive/` in its own PR (#755).
+- [x] 4.2 Archive `exchange-outcome-classification` change into `openspec/changes/archive/` in its own PR (#755).
