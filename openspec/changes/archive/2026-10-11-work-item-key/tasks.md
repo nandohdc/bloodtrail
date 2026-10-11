@@ -16,4 +16,4 @@
 
 ## 4. Archive
 
-- [ ] 4.1 Archive: after implementation lands, archive `work-item-key` in separate PR #752 and verify the archived result. This remains unchecked throughout the proposal-and-implementation run.
+- [x] 4.1 Archive: after implementation lands, archive `work-item-key` in separate PR #752 and verify the archived result. This remains unchecked throughout the proposal-and-implementation run.
