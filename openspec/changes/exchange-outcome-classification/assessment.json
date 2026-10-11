@@ -1,0 +1,164 @@
+{
+  "schema_version": "1.1",
+  "change_id": "exchange-outcome-classification",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A second binding must not confuse an incomplete-body read with a fully read malformed acknowledgment and suppress a retry.",
+    "Only the exchange may map native conditions to response, timeout, or transport-failure outcomes.",
+    "The HTTP audit sink and delivery handoff must share one classification without divergent local rules.",
+    "Observable status, acknowledgment, timeout, transport-failure, and sink-result behavior must remain unchanged.",
+    "The delta must replace mixed-level clauses while preserving scenarios, and leave canonical folding to #753."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/exchange-outcome-classification/.openspec.yaml",
+    "openspec/changes/exchange-outcome-classification/proposal.md",
+    "openspec/changes/exchange-outcome-classification/design.md",
+    "openspec/changes/exchange-outcome-classification/tasks.md",
+    "openspec/changes/exchange-outcome-classification/assessment.source.json",
+    "openspec/changes/exchange-outcome-classification/assessment.json",
+    "openspec/changes/exchange-outcome-classification/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/CONTEXT.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-outcome-restatement",
+      "kind": "direct_implementation",
+      "summary": "Replace the shared requirement's mixed-level clauses with exchange-outcome rules and add domain glossary entries, preserving adapter ownership and all runtime behavior.",
+      "forces_addressed": [
+        "A second binding must not confuse an incomplete-body read with a fully read malformed acknowledgment and suppress a retry.",
+        "Only the exchange may map native conditions to response, timeout, or transport-failure outcomes.",
+        "The HTTP audit sink and delivery handoff must share one classification without divergent local rules.",
+        "Observable status, acknowledgment, timeout, transport-failure, and sink-result behavior must remain unchanged.",
+        "The delta must replace mixed-level clauses while preserving scenarios, and leave canonical folding to #753."
+      ]
+    },
+    {
+      "id": "approach-native-references",
+      "kind": "alternative",
+      "summary": "Retain connection failure and deadline references in the classifier requirement and expand them with native body-read failure examples.",
+      "forces_addressed": [
+        "A second binding must not confuse an incomplete-body read with a fully read malformed acknowledgment and suppress a retry.",
+        "Observable status, acknowledgment, timeout, transport-failure, and sink-result behavior must remain unchanged."
+      ]
+    },
+    {
+      "id": "approach-adapter-classification",
+      "kind": "alternative",
+      "summary": "Move acknowledgment and status classification into the adapter alongside native-condition mapping, returning classification codes to its consumers.",
+      "forces_addressed": [
+        "A second binding must not confuse an incomplete-body read with a fully read malformed acknowledgment and suppress a retry.",
+        "Only the exchange may map native conditions to response, timeout, or transport-failure outcomes."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-outcome-restatement",
+  "rejected_alternative_ids": [
+    "approach-native-references",
+    "approach-adapter-classification"
+  ],
+  "rejection_reasons": {
+    "approach-native-references": {
+      "forces": [
+        "Only the exchange may map native conditions to response, timeout, or transport-failure outcomes.",
+        "The HTTP audit sink and delivery handoff must share one classification without divergent local rules."
+      ],
+      "reason": "Native examples leak transport conditions into the shared classifier and duplicate the adapter requirement's mapping ownership; another binding would still have to reconcile two native-condition lists instead of classifying the same closed outcome set."
+    },
+    "approach-adapter-classification": {
+      "forces": [
+        "The HTTP audit sink and delivery handoff must share one classification without divergent local rules.",
+        "Observable status, acknowledgment, timeout, transport-failure, and sink-result behavior must remain unchanged."
+      ],
+      "reason": "Moving classification to the adapter breaks the independent single mapping used by the sink and handoff, including caller-owned exchanges, and changes adapter obligations and behavior instead of restating the already implemented boundary."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-outcome-boundary",
+    "implementation-unchanged-shared-classification",
+    "implementation-domain-glossary",
+    "implementation-bounded-proposal-first-scope"
+  ],
+  "invariant_evidence": {
+    "implementation-outcome-boundary": {
+      "task_ids": [
+        "2.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "Task 2.1 external exact-block/list assertions require four exchange-outcome bullets and no native-condition rule.",
+        "Task 3.2 unchanged fetch-exchange tests prove a stalled body is timeout and reset, short declared-length and malformed-chunked reads are transport_failure; HTTP handoff tests prove retryable classification."
+      ]
+    },
+    "implementation-unchanged-shared-classification": {
+      "task_ids": [
+        "2.1",
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "Task 2.1 exact delta assertions preserve status clauses, sink mapping, unchanged-outcomes paragraph and all four scenario headings/bodies once each; task 3.1 strict OpenSpec validation checks the MODIFIED requirement.",
+        "Task 3.2 existing Node suite passes without source or test edits, including HTTP handoff acknowledgment, retryable, permanent and protocol-error cases."
+      ]
+    },
+    "implementation-domain-glossary": {
+      "task_ids": [
+        "2.2"
+      ],
+      "evidence_ids": [
+        "Task 2.2 external exact-definition assertions require one Exchange, Exchange outcome and Response classification entry with its Avoid line under Sinks and Handoffs, and unchanged preexisting entries."
+      ]
+    },
+    "implementation-bounded-proposal-first-scope": {
+      "task_ids": [
+        "1.1",
+        "1.2",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "Tasks 1.1 and 1.2 external proposal assertions verify six proposal files, exact applicability, eight owned paths, authored fifteen-dimension justifications and frozen proposal baseline; assessment-generation tests, generated --check and scoped assessment-phase governance exit 0.",
+        "Task 3.3 explicit-base final governance and separate trusted/candidate dual-check outputs establish proposal ancestry; exact two-commit/eight-path assertions prove runtime sources, tests and canonical capability remain byte-identical to base, with no fold or archive."
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "Exactly-one accepted acknowledgment for the same event remains the implemented acceptance rule. Explicit fully read response wording prevents another binding from confusing partial reads with malformed acknowledgments; event bytes, identity, integrity checks and current acceptance behavior are unchanged.",
+    "authentication_or_authorization": "No authentication, credentials, origin restrictions, SDK authorization or deployment permission changes; the glossary and outcome-level clauses grant no access and leave the fetch adapter's governed authorization boundary untouched.",
+    "authority_provenance": "Event identity and accepted acknowledgment matching retain their existing authoritative meaning; no contract authority, signed record or owner decision changes. This authored assessment and gates are technical evidence only, not human approval or activation.",
+    "concurrency": "No runtime code, in-flight tracking, promise coordination, scheduling or shared state changes. The classifier boundary is restated, not a new synchronization mechanism or ordering guarantee.",
+    "confidentiality": "Only specification and domain glossary text are added. No payload, header, credential or body is collected, stored, logged or transmitted differently, and the sink's existing secret-free outcomes remain untouched.",
+    "cryptography": "No cryptographic algorithms, hashes, signatures, key material or integrity-chain mechanisms change. A frozen upstream baseline identifies proposal ordering only; no new security claim or cryptographic assurance is inferred from it.",
+    "error_disclosure": "Classification codes and sink result mapping remain identical, with no new body, header, event data or native error exposed. Domain definitions describe outcomes without changing diagnostics, callbacks or exception handling.",
+    "external_security_integration": "No collector, SIEM, exporter or external security service is added. The existing HTTP exchange and adapter remain unchanged, with no new integration or publication/deployment authorization from this specification clarification.",
+    "fail_posture": "A failed body read still becomes timeout or transport_failure at the exchange, never acceptance. Malformed fully read 2xx outcomes remain protocol errors and sink failures; this clarification introduces no fallback, fail-open path or changed rejection behavior.",
+    "lifecycle": "No exchange deadline, SDK shutdown, sink closure or event lifecycle transition changes. Proposal precedes implementation; the active delta is not folded or archived here and technical verification grants no activation.",
+    "mutation_ownership": "The change owns exactly six proposal artifacts, one active delta and the Node CONTEXT glossary. Runtime sources, existing tests, adapter requirement and canonical specification are not written; #753 owns folding. Document assertions and evidence remain outside the repository.",
+    "privacy_transformation": "No personal data, telemetry, event fields or transformation hooks are introduced or processed. Existing tests use synthetic fixtures and remain byte-identical; glossary concepts add no privacy collection or redaction behavior.",
+    "resource_retention": "Body bounds, socket cleanup, deadline coverage and in-flight resource ownership stay with existing runtime code and the unchanged adapter requirement. No retention policy or persistent store is added; verification evidence is external.",
+    "retry_or_redelivery": "Body-read failures already classify retryable through timeout or transport_failure, while malformed acknowledgments do not. The text removes ambiguity for a second binding without changing retry eligibility, budget, delay, attempt identity or byte-identical redelivery in the current implementation.",
+    "trust_boundary": "The delta describes the existing exchange-to-classifier boundary without changing peer trust, origin confinement, header forwarding or accepted inputs; no new principal, network endpoint or trust crossing is introduced."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "dd645980c98e6cd1140b94eee4c78abdbee6d17d"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "3.3"
+  ]
+}
