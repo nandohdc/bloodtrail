@@ -1,0 +1,190 @@
+{
+  "schema_version": "1.1",
+  "change_id": "work-item-key",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Run-local work-item IDs must be rejected as change descriptions before they become feature changelog entries.",
+    "One shared predicate must govern both PR titles and every fetched commit subject without installation-dependent enforcement.",
+    "Existing conventional syntax and valid SHA-256, UTF-8 and release descriptions must retain their current acceptance.",
+    "Failures must identify the offending subject and explain that a work-item ID is not a change description.",
+    "The correction must leave Release Please configuration, manifest, release workflow and tagged release notes unchanged."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/work-item-key/.openspec.yaml",
+    "openspec/changes/work-item-key/proposal.md",
+    "openspec/changes/work-item-key/design.md",
+    "openspec/changes/work-item-key/tasks.md",
+    "openspec/changes/work-item-key/assessment.source.json",
+    "openspec/changes/work-item-key/assessment.json",
+    ".github/scripts/check-conventional-commits.mjs",
+    ".github/scripts/check-conventional-commits.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-shared-subject-predicate",
+      "kind": "direct_implementation",
+      "summary": "Extend the existing conventional-commits CLI with one description-prefix rejection shared by title and commit validation, retaining syntax and contextual failures and adding CLI regression and mutant coverage.",
+      "forces_addressed": [
+        "Run-local work-item IDs must be rejected as change descriptions before they become feature changelog entries.",
+        "One shared predicate must govern both PR titles and every fetched commit subject without installation-dependent enforcement.",
+        "Existing conventional syntax and valid SHA-256, UTF-8 and release descriptions must retain their current acceptance.",
+        "Failures must identify the offending subject and explain that a work-item ID is not a change description.",
+        "The correction must leave Release Please configuration, manifest, release workflow and tagged release notes unchanged."
+      ]
+    },
+    {
+      "id": "approach-release-plugin",
+      "kind": "alternative",
+      "summary": "Filter work-item-prefixed subjects in a Release Please plugin while leaving the contributor subject check unchanged.",
+      "forces_addressed": [
+        "Run-local work-item IDs must be rejected as change descriptions before they become feature changelog entries."
+      ]
+    },
+    {
+      "id": "approach-commit-msg-hook",
+      "kind": "alternative",
+      "summary": "Install a local commit-msg hook to reject leading work-item labels when contributors create commits.",
+      "forces_addressed": [
+        "Run-local work-item IDs must be rejected as change descriptions before they become feature changelog entries.",
+        "Failures must identify the offending subject and explain that a work-item ID is not a change description."
+      ]
+    },
+    {
+      "id": "approach-pr-only-check",
+      "kind": "alternative",
+      "summary": "Add a separate PR-title-only work-item check alongside the existing conventional syntax check for fetched commits.",
+      "forces_addressed": [
+        "Failures must identify the offending subject and explain that a work-item ID is not a change description.",
+        "The correction must leave Release Please configuration, manifest, release workflow and tagged release notes unchanged."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-shared-subject-predicate",
+  "rejected_alternative_ids": [
+    "approach-release-plugin",
+    "approach-commit-msg-hook",
+    "approach-pr-only-check"
+  ],
+  "rejection_reasons": {
+    "approach-release-plugin": {
+      "forces": [
+        "One shared predicate must govern both PR titles and every fetched commit subject without installation-dependent enforcement.",
+        "Failures must identify the offending subject and explain that a work-item ID is not a change description.",
+        "The correction must leave Release Please configuration, manifest, release workflow and tagged release notes unchanged."
+      ],
+      "reason": "Filtering release output changes an explicitly excluded release surface, leaves invalid contributor subjects accepted, and cannot provide the same title-and-commit rejection with subject-local explanation at the existing gate."
+    },
+    "approach-commit-msg-hook": {
+      "forces": [
+        "Run-local work-item IDs must be rejected as change descriptions before they become feature changelog entries.",
+        "One shared predicate must govern both PR titles and every fetched commit subject without installation-dependent enforcement."
+      ],
+      "reason": "A hook depends on local installation and can be bypassed by API-created commits or contributors without it; it also does not validate PR titles, so it cannot establish the required uniform CI backstop."
+    },
+    "approach-pr-only-check": {
+      "forces": [
+        "Run-local work-item IDs must be rejected as change descriptions before they become feature changelog entries.",
+        "One shared predicate must govern both PR titles and every fetched commit subject without installation-dependent enforcement."
+      ],
+      "reason": "A separate title-only check leaves fetched commit subjects carrying recurring work-item labels accepted for Release Please, while splitting the acceptance logic across surfaces instead of providing one shared rule."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-shared-rejection",
+    "implementation-valid-descriptions",
+    "implementation-subject-diagnostics",
+    "implementation-mutant-sensitivity",
+    "implementation-bounded-release-scope"
+  ],
+  "invariant_evidence": {
+    "implementation-shared-rejection": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Task 2.1 diff shows both title and fetched-commit call sites use one shared subject check.",
+        "Task 2.2 CLI negative cases reject all three specified leading work-item descriptions with exit 1."
+      ]
+    },
+    "implementation-valid-descriptions": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Task 2.2 CLI positive cases accept scoped x, SHA-256, UTF-8 and release v0.22.0 descriptions with exit 0; existing conventional-format negative cases still reject."
+      ]
+    },
+    "implementation-subject-diagnostics": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "Task 2.2 stderr assertions require each full rejected subject and the work-item explanation; task 2.1 diff preserves PR-title and commit-SHA context."
+      ]
+    },
+    "implementation-mutant-sensitivity": {
+      "task_ids": [
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Task 2.2 planted-defect control asserts a unique changed mutation target and all three work-item cases pass under an external disabled-predicate mutant, with cleanup in finally."
+      ]
+    },
+    "implementation-bounded-release-scope": {
+      "task_ids": [
+        "1.1",
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "Task 1.1 proposal validation and generated assessment drift confirm the exact eight-path ownership and specs-skipped plan.",
+        "Task 3.2 baseline-range diff and exact two-commit inventory show no Release Please, tagged notes, archive or brief edits; task 3.1 records trusted and candidate governance results separately."
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No audit event, canonical contract or log integrity mechanism changes; the gate corrects release-description quality rather than security audit data semantics.",
+    "authentication_or_authorization": "GitHub token handling and permissions remain unchanged; rejecting a descriptive label does not grant or revoke application access or change authentication.",
+    "authority_provenance": "No owner decision, signed record, pin or authoritative audit context changes; assessment and passing gates are technical evidence only, never inferred approval.",
+    "concurrency": "The correction adds a local synchronous predicate and child-process CLI assertions, not shared runtime state, locks, scheduling or concurrent coordination.",
+    "confidentiality": "The check consumes only the same titles and commit subjects as before; no credentials or confidential payloads are newly collected, stored or transmitted.",
+    "cryptography": "No keys, algorithms, signatures, hashes or cryptographic verification changes; SHA-256 in a positive fixture is ordinary descriptive text, not a cryptographic operation.",
+    "error_disclosure": "Failures include the already checked subject and a fixed explanatory phrase, not tokens, request headers or new caller data; existing context remains visible.",
+    "external_security_integration": "No external security service or integration is added; existing GitHub commit fetching is preserved and CLI title tests run without network access.",
+    "fail_posture": "The descriptive gate becomes stricter with explicit exit 1 for leading labels; existing conventional-format rejections remain, with no application security fail-open or fallback change.",
+    "lifecycle": "No SDK, release or governance lifecycle transition changes; proposal and implementation retain their existing separate-commit ordering and archive remains a separate PR.",
+    "mutation_ownership": "Implementation is limited to the existing subject check, its CLI tests and task ticks; the mutant is owned by an external disposable directory and never rewrites live source.",
+    "privacy_transformation": "Fixtures use synthetic subject strings and add no personal data, telemetry, redaction rule or privacy transformation; production input handling remains unchanged.",
+    "resource_retention": "Only the planted control adds a disposable external mutant file, removed in finally; no production retention policy, persistent store or cleanup ownership changes.",
+    "retry_or_redelivery": "GitHub pagination remains intact, with no added retries or redelivery behavior; the subject predicate makes one deterministic decision per input.",
+    "trust_boundary": "The new check reads the same contributor subjects already consumed by the CLI; it introduces no principal, network endpoint or trust crossing and leaves GitHub fetching unchanged."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "f2827060538da5f05b18da7095086af9c98638e7"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2"
+  ]
+}
