@@ -19,8 +19,18 @@ const ALLOWED_TYPES = [
 // The description must start and end with a non-space, which rejects both an empty
 // description and a trailing space that would otherwise survive review.
 const SUBJECT = new RegExp(
-  String.raw`^(?:${ALLOWED_TYPES.join("|")})(?:\([^()\n]+\))?!?: \S(?:.*\S)?$`,
+  String.raw`^(?:${ALLOWED_TYPES.join("|")})(?:\([^()\n]+\))?!?: (\S(?:.*\S)?)$`,
 );
+const WORK_ITEM_DESCRIPTION = /^[A-Z][A-Z0-9]*-\d+(?: - |:)/;
+
+function subjectFailure(subject) {
+  const match = SUBJECT.exec(subject);
+  if (!match) return subject;
+  if (WORK_ITEM_DESCRIPTION.test(match[1])) {
+    return `${subject} (a work-item ID is not a change description)`;
+  }
+  return null;
+}
 
 function parseArguments(argv) {
   const options = { title: undefined, repository: undefined, pullRequest: undefined };
@@ -68,7 +78,8 @@ const options = parseArguments(process.argv.slice(2));
 const failures = [];
 
 if (options.title !== undefined) {
-  if (!SUBJECT.test(options.title)) failures.push(`PR title: ${options.title}`);
+  const failure = subjectFailure(options.title);
+  if (failure !== null) failures.push(`PR title: ${failure}`);
 }
 
 if (options.repository && options.pullRequest) {
@@ -79,7 +90,8 @@ if (options.repository && options.pullRequest) {
   );
   if (commits.length === 0) failures.push("no commits were returned for this pull request");
   for (const { sha, subject } of commits) {
-    if (!SUBJECT.test(subject)) failures.push(`commit ${sha}: ${subject}`);
+    const failure = subjectFailure(subject);
+    if (failure !== null) failures.push(`commit ${sha}: ${failure}`);
   }
   process.stdout.write(`checked PR title and ${commits.length} commit subject(s)\n`);
 }
