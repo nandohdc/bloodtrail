@@ -1,0 +1,173 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Release Please converts deliberate Refs footers into closing directives that GitHub executes when a release PR merges into the default branch, changing authoritative tracker state.",
+    "Issue links and all other suffix bytes must survive neutralization, while distinct non-merge identical subjects and intermediate commits remain preserved.",
+    "Checks must inspect raw selected input independently of cleaning and name any remaining closing directive, including keyword-only changes with zero duplicate removals.",
+    "The allowed implementation boundary is the cleaner and its existing tests, not Release Please configuration, manifest or workflow, and introduces no dependency or credential changes.",
+    "The canonical suffix-preservation clause must be replaced by a capability delta under a full governance-core assessment before implementation."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "governance_core_path"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "release-versioning-tag-model"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/closes-no-issue/.openspec.yaml",
+    "openspec/changes/closes-no-issue/proposal.md",
+    "openspec/changes/closes-no-issue/specs/release-versioning-tag-model/spec.md",
+    "openspec/changes/closes-no-issue/design.md",
+    "openspec/changes/closes-no-issue/tasks.md",
+    "openspec/changes/closes-no-issue/assessment.source.json",
+    "openspec/changes/closes-no-issue/assessment.json",
+    ".github/scripts/clean-release-changelog.mjs",
+    ".github/scripts/clean-release-changelog.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-neutralization",
+      "kind": "direct_implementation",
+      "summary": "Neutralize closes to refs in existing cleaner output, recognise both suffix forms, persist actual content changes, and independently reject closing directives in raw check-mode inputs.",
+      "forces_addressed": [
+        "Release Please converts deliberate Refs footers into closing directives that GitHub executes when a release PR merges into the default branch, changing authoritative tracker state.",
+        "Issue links and all other suffix bytes must survive neutralization, while distinct non-merge identical subjects and intermediate commits remain preserved.",
+        "Checks must inspect raw selected input independently of cleaning and name any remaining closing directive, including keyword-only changes with zero duplicate removals.",
+        "The allowed implementation boundary is the cleaner and its existing tests, not Release Please configuration, manifest or workflow, and introduces no dependency or credential changes.",
+        "The canonical suffix-preservation clause must be replaced by a capability delta under a full governance-core assessment before implementation."
+      ]
+    },
+    {
+      "id": "approach-custom-release-plugin",
+      "kind": "alternative",
+      "summary": "Prevent closing directives at generation time through a custom Release Please plugin or changes to its configuration and workflow.",
+      "forces_addressed": [
+        "Release Please converts deliberate Refs footers into closing directives that GitHub executes when a release PR merges into the default branch, changing authoritative tracker state.",
+        "The allowed implementation boundary is the cleaner and its existing tests, not Release Please configuration, manifest or workflow, and introduces no dependency or credential changes."
+      ]
+    },
+    {
+      "id": "approach-drop-issue-suffixes",
+      "kind": "alternative",
+      "summary": "Remove all issue-reference suffixes from retained release entries and descriptions instead of changing their closing semantics.",
+      "forces_addressed": [
+        "Release Please converts deliberate Refs footers into closing directives that GitHub executes when a release PR merges into the default branch, changing authoritative tracker state.",
+        "Issue links and all other suffix bytes must survive neutralization, while distinct non-merge identical subjects and intermediate commits remain preserved."
+      ]
+    },
+    {
+      "id": "approach-reopen-after-merge",
+      "kind": "alternative",
+      "summary": "Allow GitHub to execute release closing directives and attempt to reopen inadvertently closed issues after the release merge.",
+      "forces_addressed": [
+        "Release Please converts deliberate Refs footers into closing directives that GitHub executes when a release PR merges into the default branch, changing authoritative tracker state.",
+        "Checks must inspect raw selected input independently of cleaning and name any remaining closing directive, including keyword-only changes with zero duplicate removals."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-neutralization",
+  "rejected_alternative_ids": [
+    "approach-custom-release-plugin",
+    "approach-drop-issue-suffixes",
+    "approach-reopen-after-merge"
+  ],
+  "rejection_reasons": {
+    "approach-custom-release-plugin": {
+      "forces": [
+        "The allowed implementation boundary is the cleaner and its existing tests, not Release Please configuration, manifest or workflow, and introduces no dependency or credential changes."
+      ],
+      "reason": "A custom plugin increases dependency surface and would mutate the excluded Release Please configuration or release workflow while a release PR is open. The existing post-processing module can correct the output without widening that boundary."
+    },
+    "approach-drop-issue-suffixes": {
+      "forces": [
+        "Issue links and all other suffix bytes must survive neutralization, while distinct non-merge identical subjects and intermediate commits remain preserved."
+      ],
+      "reason": "Dropping suffixes destroys useful issue traceability and violates the link-preservation force. Replacing only the closing keyword retains provenance without triggering tracker mutation."
+    },
+    "approach-reopen-after-merge": {
+      "forces": [
+        "Release Please converts deliberate Refs footers into closing directives that GitHub executes when a release PR merges into the default branch, changing authoritative tracker state.",
+        "Checks must inspect raw selected input independently of cleaning and name any remaining closing directive, including keyword-only changes with zero duplicate removals."
+      ],
+      "reason": "Reopening is unreliable, creates tracker churn and notifications, and leaves release notes misstating history. It allows the forbidden closure before repair and cannot substitute for raw-input fail-closed prevention in the required check."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-closing-keywords-neutralized",
+    "implementation-reference-grammar-preserves-history",
+    "implementation-raw-checks-fail-closed",
+    "implementation-content-changes-persisted",
+    "implementation-neutralizer-control-detects-defect",
+    "implementation-governed-scope-and-ordering"
+  ],
+  "invariant_evidence": {
+    "implementation-closing-keywords-neutralized": {
+      "task_ids": ["2.1", "2.4"],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs: section, targeted changelog and snippet output converts closes to refs with exact issue links intact and remains idempotent",
+        "clean-release-changelog.test.mjs: mocked PR description cleanup emits non-closing references including keyword-only bodies"
+      ]
+    },
+    "implementation-reference-grammar-preserves-history": {
+      "task_ids": ["2.2", "2.4"],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs: refs-suffix merge-twin de-duplication and existing distinct non-merge identical-subject, intermediate-commit and non-commit-entry preservation cases"
+      ]
+    },
+    "implementation-raw-checks-fail-closed": {
+      "task_ids": ["2.3", "2.4"],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs: exported checks and real --check / --release-base --event-description subprocesses reject original closing lines, name input, pass refs and leave fixtures unchanged",
+        "clean-release-changelog.test.mjs: description text outside commit bullets is checked; unchanged-version ranges still skip"
+      ]
+    },
+    "implementation-content-changes-persisted": {
+      "task_ids": ["2.1", "2.4"],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs: CLI writes keyword-only output and REST PATCH verifies changed body with zero dropped entries; refs no-op causes no write or PATCH",
+        "clean-release-changelog.test.mjs: existing REST credential, HTTP and verification failure coverage remains passing"
+      ]
+    },
+    "implementation-neutralizer-control-detects-defect": {
+      "task_ids": ["2.4"],
+      "evidence_ids": [
+        "clean-release-changelog.test.mjs: disposable identity-neutralizer mutation matches once, emits closes and fails its check-mode command naming the directive and entry without changing live source"
+      ]
+    },
+    "implementation-governed-scope-and-ordering": {
+      "task_ids": ["1.1", "3.1"],
+      "evidence_ids": [
+        "strict OpenSpec delta validation preserves eight existing scenario names and three new no-issue-closure scenarios",
+        "generated assessment drift check and assessment/final design-pattern governance against af36bc0078170b29dfde385ac07a7a43095fb76b prove proposal-before-implementation and exact nine-path ownership",
+        "all-script tests, SDK core typecheck, ESM syntax checks, governance dual-check, make runtime-gates and range whitespace/path inspection provide integrated evidence"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "This is release-note and tracker integrity, not runtime audit-event integrity. Preserve commit and issue links while removing the false claim of closure; the frozen audit contract and SDK event pipeline are unchanged.",
+    "authentication_or_authorization": "Reuse existing GitHub REST token handling and permissions. No authentication mechanism, permission scope, secret, production authorization or SDK authority gate is added or modified.",
+    "authority_provenance": "Keep original commit hashes and issue URLs as release provenance. GitHub Issues remains the authoritative execution tracker; a reference-only release must not stand in for an issue completion decision.",
+    "concurrency": "No shared-state or concurrency primitive changes. Existing release automation may regenerate text, but deterministic cleanup and the existing edited-description check are reused without adding races or workflow orchestration.",
+    "confidentiality": "The rewrite operates on public release markdown and git metadata, not confidential events. No token, header or response logging is added; existing REST credential handling remains unchanged.",
+    "cryptography": "No cryptographic algorithm, key, signature, hash protocol or verification claim changes. Commit identifiers are retained as provenance links, not introduced as a new security mechanism.",
+    "error_disclosure": "New check diagnostics name public offending release entries or lines so an owner can repair them. They require no environment, token or request-header disclosure and introduce no runtime audit error channel.",
+    "external_security_integration": "The cleaner continues to use only the existing GitHub REST description endpoint with built-in fetch. No SIEM, production transport, third-party action or external security service is introduced.",
+    "fail_posture": "Raw selected inputs are checked independently of cleaned output; a closing directive fails and names its line. Existing malformed-entry, unresolved-commit and REST failures stay fatal; checks never rewrite dirty input.",
+    "lifecycle": "The change concerns release-PR notes before merge, not SDK or audit-operation lifecycle. Unchanged version ranges continue to skip; v0.22.0 history and later separate fold/archive tickets are not mutated here.",
+    "mutation_ownership": "Source edits are bounded to cleaner and tests under the active packet. During normal cleanup only selected release text and its PR description change; no direct tracker writes, version moves or config/workflow edits are added.",
+    "privacy_transformation": "This is a closing-keyword transformation of public release markdown, not personal-data processing, redaction or telemetry collection. Issue URLs and other suffix bytes stay intact without new data collection.",
+    "resource_retention": "No persistence layer, queue, retention policy or background process is introduced. Planted-control tests use external disposable fixtures removed in finally blocks rather than retaining mutated live source.",
+    "retry_or_redelivery": "Repeated cleaning of refs is idempotent and an unchanged body is not PATCHed. Existing REST failure behavior remains fatal; no retry, delivery primitive, outbox or audit-event redelivery behavior is changed.",
+    "trust_boundary": "Markdown remains data consumed by the existing cleaner and check, never shell instructions. Preventing GitHub's closing interpretation does not move a runtime security boundary or add a new credential-bearing integration."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "af36bc0078170b29dfde385ac07a7a43095fb76b"
+  }
+}

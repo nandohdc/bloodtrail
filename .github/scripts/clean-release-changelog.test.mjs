@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, realpathSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   checkChangelog,
   checkReleaseRange,
@@ -356,7 +358,7 @@ ${branchEntry}
   const { cleanedText, droppedEntries } = cleanSection(sectionText, mockResolver);
   assert.equal(droppedEntries.length, 1);
   assert.equal(droppedEntries[0].shortSha, "935d62e");
-  assert.ok(cleanedText.includes(branchEntry), "Retains branch entry with suffix intact");
+  assert.ok(cleanedText.includes(branchEntry.replace(", closes ", ", refs ")), "Retains branch entry with link intact and non-closing reference");
   assert.ok(!cleanedText.includes("935d62e"), "Drops merge commit entry");
 });
 
@@ -640,4 +642,251 @@ ${makeEntry("core", "feature", "b111111")}
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
+});
+
+const issueLink = "[#649](https://github.com/nandohdc/bloodtrail/issues/649)";
+const closingEntry = `${makeEntry("openspec", "propose evaluation kit", "b111111")}, closes ${issueLink}`;
+const referenceEntry = closingEntry.replace(", closes ", ", refs ");
+const cleanerPath = fileURLToPath(new URL("./clean-release-changelog.mjs", import.meta.url));
+
+test("cleanSection neutralizes keyword-only suffixes preserving links and other bytes", () => {
+  const input = `${closingEntry}, [#700](https://github.com/issues/700)  \n`;
+  const expected = input.replace(", closes ", ", refs ");
+  const result = cleanSection(input, createMockResolver());
+  assert.equal(result.cleanedText, expected);
+  assert.equal(result.droppedEntries.length, 0);
+  assert.equal(cleanSection(expected, createMockResolver()).cleanedText, expected);
+});
+
+test("refs suffixes retain multiple-reference grammar and deduplicate against merge twins", () => {
+  const branch = `${referenceEntry}, [#700](https://github.com/issues/700) [#701](https://github.com/issues/701)`;
+  const merge = makeEntry("openspec", "propose evaluation kit", "a111111");
+  const result = cleanSection(`${merge}\n${branch}\n`, createMockResolver());
+  assert.equal(result.cleanedText, `${branch}\n`);
+  assert.equal(result.droppedEntries.length, 1);
+  const second = cleanSection(result.cleanedText, createMockResolver());
+  assert.equal(second.cleanedText, result.cleanedText);
+  assert.equal(second.droppedEntries.length, 0);
+});
+
+test("cleanChangelog neutralizes only selected sections and snippets idempotently", () => {
+  const latest = `## [2.0.0]\n\n${closingEntry}\n`;
+  const historical = `## [1.0.0]\n\n${closingEntry}\n`;
+  const preamble = `# Changelog\n\nHistorical closes ${issueLink}\n\n`;
+  const content = preamble + latest + historical;
+  const resolver = createMockResolver();
+  for (const options of [{}, { targetSection: "2.0.0" }]) {
+    const result = cleanChangelog(content, { ...options, resolveCommit: resolver });
+    assert.equal(result.cleanedContent, preamble + latest.replace(", closes ", ", refs ") + historical);
+    assert.equal(result.droppedEntries.length, 0);
+    assert.equal(cleanChangelog(result.cleanedContent, { ...options, resolveCommit: resolver }).cleanedContent, result.cleanedContent);
+    assert.equal(checkChangelog(result.cleanedContent, { ...options, resolveCommit: resolver }).clean, true);
+  }
+  assert.equal(cleanChangelog(content, { targetSection: "1.0.0", resolveCommit: resolver }).cleanedContent,
+    preamble + latest + historical.replace(", closes ", ", refs "));
+  assert.equal(cleanChangelog(content, { all: true, resolveCommit: resolver }).cleanedContent,
+    preamble + (latest + historical).replaceAll(", closes ", ", refs "));
+  const snippet = `### Features\n\n${closingEntry}\n`;
+  const result = cleanChangelog(snippet, { resolveCommit: resolver });
+  assert.equal(result.cleanedContent, snippet.replace(", closes ", ", refs "));
+  assert.equal(cleanChangelog(result.cleanedContent, { resolveCommit: resolver }).cleanedContent, result.cleanedContent);
+});
+
+test("checkChangelog reports closing keywords from original selected lines despite cleaned output", () => {
+  const input = `## [2.0.0]\n\n${closingEntry}\n`;
+  const result = checkChangelog(input, { resolveCommit: createMockResolver() });
+  assert.equal(result.clean, false);
+  assert.equal(result.droppedEntries.length, 0);
+  assert.deepEqual(result.closingKeywords, [closingEntry]);
+  assert.equal(result.cleanedContent, input.replace(", closes ", ", refs "));
+  assert.equal(checkChangelog(result.cleanedContent, { resolveCommit: createMockResolver() }).clean, true);
+  const historical = `## [1.0.0]\n\nHistorical closes ${issueLink}\n`;
+  assert.equal(checkChangelog(result.cleanedContent + historical, { resolveCommit: createMockResolver() }).clean, true);
+  assert.equal(checkChangelog(result.cleanedContent + historical, { all: true, resolveCommit: createMockResolver() }).clean, false);
+});
+
+test("PR keyword-only cleanup PATCHes and verifies; a refs description causes no PATCH", async () => {
+  const dirty = `closes ${issueLink}\n\n${closingEntry}\nNarrative, closes ${issueLink}\n`;
+  const expected = `refs ${issueLink}\n\n${referenceEntry}\nNarrative, refs ${issueLink}\n`;
+  const env = { GH_TOKEN: "fixture-token", GITHUB_REPOSITORY: "owner/repo" };
+  for (const initialBody of [dirty, expected]) {
+    const methods = [];
+    await cleanPullRequestBody(672, createMockResolver(), {
+      env,
+      fetch: async (url, opts) => {
+        assert.equal(url, "https://api.github.com/repos/owner/repo/pulls/672");
+        assert.equal(opts.headers.Authorization, "Bearer fixture-token");
+        methods.push(opts.method);
+        if (opts.method === "GET") return { ok: true, json: async () => ({ body: initialBody }) };
+        assert.equal(opts.method, "PATCH");
+        assert.equal(JSON.parse(opts.body).body, expected);
+        // GitHub's CRLF normalization remains accepted by response verification.
+        return { ok: true, json: async () => ({ body: expected.replaceAll("\n", "\r\n") }) };
+      }
+    });
+    assert.deepEqual(methods, initialBody === dirty ? ["GET", "PATCH"] : ["GET"]);
+  }
+});
+
+test("keyword-only PR cleanup retains fatal REST network, PATCH status and verification errors", async () => {
+  const env = { GH_TOKEN: "fixture-token", GITHUB_REPOSITORY: "owner/repo" };
+  const getBody = { ok: true, json: async () => ({ body: closingEntry }) };
+  for (const method of ["GET", "PATCH"]) {
+    await assert.rejects(cleanPullRequestBody(672, createMockResolver(), {
+      env,
+      fetch: async (url, opts) => {
+        if (opts.method === method) throw new Error("offline fixture");
+        return getBody;
+      }
+    }), new RegExp(`${method} .*network failure: offline fixture`));
+  }
+  await assert.rejects(cleanPullRequestBody(672, createMockResolver(), {
+    env,
+    fetch: async (url, opts) => opts.method === "GET" ? getBody : { ok: false, status: 403 }
+  }), /PATCH .*failed with status 403/);
+  await assert.rejects(cleanPullRequestBody(672, createMockResolver(), {
+    env,
+    fetch: async () => getBody
+  }), /Verification mismatch/);
+});
+
+async function withReleaseFixture(run) {
+  // Node resolves module paths through macOS's /var -> /private/var symlink.
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "bloodtrail-closing-keywords-")));
+  try {
+    const git = (args) => execFileSync("git", args, { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+    git(["init", "--initial-branch=main"]);
+    git(["config", "user.name", "Release test"]);
+    git(["config", "user.email", "release-test@example.invalid"]);
+    writeFileSync(join(dir, "version.txt"), "1.0.0\n");
+    git(["add", "version.txt"]);
+    git(["commit", "-m", "chore: fixture baseline"]);
+    const base = git(["rev-parse", "HEAD"]);
+    writeFileSync(join(dir, "version.txt"), "2.0.0\n");
+    const entry = `* **openspec:** fixture proposal ([${base.slice(0, 7)}](https://github.com/commit/${base})), closes ${issueLink}`;
+    const reference = entry.replace(", closes ", ", refs ");
+    const historical = `\n## [1.0.0]\n\nHistorical closes ${issueLink}\n`;
+    const section = (line) => `## [2.0.0]\n\n${line}\n${historical}`;
+    const changelog = join(dir, "CHANGELOG.md");
+    const event = join(dir, "event.json");
+    const setInputs = (line, body = reference) => {
+      writeFileSync(changelog, section(line));
+      writeFileSync(event, JSON.stringify({ pull_request: { body } }));
+    };
+    const cli = (args, script = cleanerPath) => spawnSync(process.execPath, [script, ...args], {
+      cwd: dir,
+      encoding: "utf8",
+      env: { ...process.env, GH_TOKEN: "", GITHUB_TOKEN: "", GITHUB_EVENT_PATH: event }
+    });
+    setInputs(entry);
+    await run({ dir, base, entry, reference, section, changelog, event, setInputs, cli });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function assertReadOnlyCheck(fixture, args, offendingLine = null, script = cleanerPath) {
+  const before = [fixture.changelog, fixture.event].map((path) => readFileSync(path, "utf8"));
+  const result = fixture.cli(args, script);
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, offendingLine ? 1 : 0, result.stderr + result.stdout);
+  if (offendingLine) {
+    assert.ok(result.stderr.includes(offendingLine), result.stderr);
+    assert.match(result.stderr, /[Cc]losing keyword/);
+    assert.match(result.stderr, /closes\s+\[#649\]/);
+  }
+  assert.deepEqual([fixture.changelog, fixture.event].map((path) => readFileSync(path, "utf8")), before);
+  return result;
+}
+
+test("CLI cleaning writes keyword-only changelog changes and refs input is a no-write no-op", async () => {
+  await withReleaseFixture(async (fixture) => {
+    const result = fixture.cli([]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(fixture.changelog, "utf8"), fixture.section(fixture.reference));
+    utimesSync(fixture.changelog, new Date("2000-01-01"), new Date("2000-01-01"));
+    const before = statSync(fixture.changelog).mtimeMs;
+    const second = fixture.cli([]);
+    assert.equal(second.status, 0, second.stderr);
+    assert.match(second.stdout, /already clean/);
+    assert.equal(statSync(fixture.changelog).mtimeMs, before, "No write for refs input");
+    assert.equal(readFileSync(fixture.changelog, "utf8"), fixture.section(fixture.reference));
+  });
+});
+
+test("plain CLI --check rejects original closing entries, names them, and never writes or calls REST", async () => {
+  await withReleaseFixture(async (fixture) => {
+    assertReadOnlyCheck(fixture, ["--check", "--pr", "672"], fixture.entry);
+    fixture.setInputs(fixture.reference);
+    assertReadOnlyCheck(fixture, ["--check", "--pr", "672"]);
+    assertReadOnlyCheck(fixture, ["--check", "--all"], `Historical closes ${issueLink}`);
+  });
+});
+
+test("release range exports and CLI reject section and description directives independently", async () => {
+  await withReleaseFixture(async (fixture) => {
+    const options = { releaseBase: fixture.base, eventDescription: true };
+    const context = { rootDir: fixture.dir, env: { GITHUB_EVENT_PATH: fixture.event } };
+    const args = ["--check", "--release-base", fixture.base, "--event-description"];
+    assert.throws(() => checkReleaseRange(options, context), (err) =>
+      err.message.includes("changelog section [2.0.0]") && err.message.includes(fixture.entry));
+    assertReadOnlyCheck(fixture, args, fixture.entry);
+    for (const body of [fixture.entry, `closes ${issueLink} — outside commit bullets`]) {
+      fixture.setInputs(fixture.reference, body);
+      assert.throws(() => checkReleaseRange(options, context), (err) =>
+        err.message.includes("pull request description") && err.message.includes(body));
+      assertReadOnlyCheck(fixture, args, body);
+    }
+    fixture.setInputs(fixture.reference, `refs ${issueLink}\n${fixture.reference}`);
+    assert.equal(checkReleaseRange(options, context).skipped, false);
+    assertReadOnlyCheck(fixture, args);
+    fixture.setInputs(fixture.entry, fixture.entry);
+    writeFileSync(join(fixture.dir, "version.txt"), "1.0.0\n");
+    assert.equal(checkReleaseRange(options, context).skipped, true);
+    assertReadOnlyCheck(fixture, args);
+  });
+});
+
+test("description closing keywords spanning whitespace are neutralized and rejected before cleanup", () => {
+  const input = `closes\n${issueLink}\n`;
+  const cleaned = cleanChangelog(input, { resolveCommit: createMockResolver() }).cleanedContent;
+  assert.equal(cleaned, `refs\n${issueLink}\n`);
+  const result = checkChangelog(input, { resolveCommit: createMockResolver() });
+  assert.equal(result.clean, false);
+  assert.deepEqual(result.closingKeywords, [`closes\n${issueLink}`]);
+});
+
+test("planted identity-neutralizer emits closes but independent CLI checks reject section and description", async () => {
+  await withReleaseFixture(async (fixture) => {
+    const original = readFileSync(cleanerPath, "utf8");
+    const implementation = 'function neutralizeClosingKeywords(text) {\n  return text.replaceAll(/\\bcloses(\\s+\\[#\\d+\\])/g, "refs$1");\n}';
+    assert.equal(original.split(implementation).length - 1, 1, "Mutate exactly one neutralizer implementation");
+    const mutant = join(fixture.dir, "identity-cleaner.mjs");
+    writeFileSync(mutant, original.replace(implementation, "function neutralizeClosingKeywords(text) {\n  return text;\n}"));
+    const result = fixture.cli([], mutant);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(fixture.changelog, "utf8"), fixture.section(fixture.entry), "Mutant cleaning leaves the directive in emitted content");
+    assertReadOnlyCheck(fixture, ["--check"], fixture.entry, mutant);
+    const args = ["--check", "--release-base", fixture.base, "--event-description"];
+    assertReadOnlyCheck(fixture, args, fixture.entry, mutant);
+
+    // Drive the mutant's actual PR cleanup too: no transform means GET only, leaving a dirty body.
+    const { cleanPullRequestBody: mutantCleanup } = await import(pathToFileURL(mutant).href);
+    const dirtyBody = `closes ${issueLink} — mutant description\n${fixture.entry}`;
+    let emittedBody = dirtyBody;
+    const methods = [];
+    await mutantCleanup(672, createGitResolver({ cwd: fixture.dir }), {
+      env: { GH_TOKEN: "fixture-token", GITHUB_REPOSITORY: "owner/repo" },
+      fetch: async (url, opts) => {
+        methods.push(opts.method);
+        if (opts.method === "PATCH") emittedBody = JSON.parse(opts.body).body;
+        return { ok: true, json: async () => ({ body: emittedBody }) };
+      }
+    });
+    assert.deepEqual(methods, ["GET"]);
+    assert.equal(emittedBody, dirtyBody);
+    fixture.setInputs(fixture.reference, emittedBody);
+    assertReadOnlyCheck(fixture, args, `closes ${issueLink} — mutant description`, mutant);
+    assert.equal(readFileSync(cleanerPath, "utf8"), original, "Live source is never mutated");
+  });
 });

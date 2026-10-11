@@ -9,6 +9,9 @@
  * Resolves Issue #642: Recognise issue-reference suffixes, fail closed on unrecognised
  * entries or unresolvable commits, update PR descriptions via REST fetch, and enforce
  * de-duplication in required checks.
+ *
+ * Resolves Issue #744: Replace release closing directives with non-closing references
+ * and reject any remaining directive in check mode, independently of cleanup.
  */
 
 import { execFileSync } from "node:child_process";
@@ -16,7 +19,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, normalize, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const ENTRY_REGEX = /^(\s*\*\s+)(.*?)\s*\(\[([a-f0-9]+)\]\(([^)]+)\)\)((?:(?:\s*,\s*|\s+)closes\s+\[[^\]]+\]\([^)]+\)(?:(?:,\s*|\s+)\[[^\]]+\]\([^)]+\))*)?)\s*$/;
+export const ENTRY_REGEX = /^(\s*\*\s+)(.*?)\s*\(\[([a-f0-9]+)\]\(([^)]+)\)\)((?:(?:\s*,\s*|\s+)(?:closes|refs)\s+\[[^\]]+\]\([^)]+\)(?:(?:,\s*|\s+)\[[^\]]+\]\([^)]+\))*)?)\s*$/;
 export const COMMIT_LINK_REGEX = /\(\[[a-f0-9]+\]\([^)]+\)\)/;
 
 function validateRelativePath(filePath) {
@@ -211,23 +214,41 @@ export function identifyDuplicateEntries(entries, resolveCommit) {
   return combined;
 }
 
+// A release merges into the default branch, where GitHub executes closing directives.
+// Preserve issue links, but never let a release make an issue completion decision.
+function neutralizeClosingKeywords(text) {
+  return text.replaceAll(/\bcloses(\s+\[#\d+\])/g, "refs$1");
+}
+
+function findClosingKeywordLines(text) {
+  const lines = Array.from(text.matchAll(/\bcloses\s+\[#\d+\]/g), (match) => {
+    const start = text.lastIndexOf("\n", match.index - 1) + 1;
+    const end = text.indexOf("\n", match.index + match[0].length);
+    return text.slice(start, end === -1 ? text.length : end).trim();
+  });
+  return [...new Set(lines)];
+}
+
+function verifyNoClosingKeywords(text, location) {
+  const lines = findClosingKeywordLines(text);
+  if (lines.length > 0) {
+    throw new Error(`Closing keyword in ${location}: ${lines.join("; ")}`);
+  }
+}
+
 /**
- * Cleans duplicate entries from a release section string.
+ * Cleans duplicate entries and closing keywords from a release section string.
  */
 export function cleanSection(sectionText, resolveCommit) {
   const lines = sectionText.split("\n");
   const entries = parseSectionEntries(lines);
   const toDrop = identifyDuplicateEntries(entries, resolveCommit);
 
-  if (toDrop.size === 0) {
-    return { cleanedText: sectionText, droppedEntries: [] };
-  }
-
   const dropIndices = new Set(Array.from(toDrop, (e) => e.lineIndex));
   const keptLines = lines.filter((_, idx) => !dropIndices.has(idx));
 
   return {
-    cleanedText: keptLines.join("\n"),
+    cleanedText: neutralizeClosingKeywords(keptLines.join("\n")),
     droppedEntries: Array.from(toDrop)
   };
 }
@@ -288,6 +309,7 @@ export function cleanChangelog(content, options = {}) {
 
   const sections = splitChangelogSections(content);
   const allDropped = [];
+  const closingKeywords = [];
   let firstCleaned = false;
 
   const isSnippet = sections.length === 1 && !sections[0].version;
@@ -303,7 +325,9 @@ export function cleanChangelog(content, options = {}) {
     }
 
     firstCleaned = true;
-    const { cleanedText, droppedEntries } = cleanSection(sec.lines.join("\n"), resolveCommit);
+    const sectionText = sec.lines.join("\n");
+    closingKeywords.push(...findClosingKeywordLines(sectionText));
+    const { cleanedText, droppedEntries } = cleanSection(sectionText, resolveCommit);
     for (const d of droppedEntries) {
       allDropped.push({ ...d, version: sec.version || "snippet" });
     }
@@ -312,18 +336,20 @@ export function cleanChangelog(content, options = {}) {
 
   return {
     cleanedContent: cleanedSections.join("\n"),
-    droppedEntries: allDropped
+    droppedEntries: allDropped,
+    closingKeywords
   };
 }
 
 /**
- * Checks if changelog content has duplicate entries without modifying it.
+ * Checks original selected content for duplicate entries and closing keywords without modifying it.
  */
 export function checkChangelog(content, options = {}) {
-  const { cleanedContent, droppedEntries } = cleanChangelog(content, options);
+  const { cleanedContent, droppedEntries, closingKeywords } = cleanChangelog(content, options);
   return {
-    clean: droppedEntries.length === 0,
+    clean: droppedEntries.length === 0 && closingKeywords.length === 0,
     droppedEntries,
+    closingKeywords,
     cleanedContent
   };
 }
@@ -418,13 +444,13 @@ export async function cleanPullRequestBody(prNumber, resolveCommit, options = {}
   const body = await fetchPullRequestBody(pullUrl, token, fetchFn);
 
   const { cleanedText, droppedEntries } = cleanSection(body, resolveCommit);
-  if (droppedEntries.length === 0 || cleanedText === body) {
-    console.log(`PR #${prNumber} description is already clean: no duplicate entries found.`);
+  if (cleanedText === body) {
+    console.log(`PR #${prNumber} description is already clean: no duplicates or closing keywords found.`);
     return;
   }
 
   await updatePullRequestBody({ url: pullUrl, token, fetchFn }, prNumber, cleanedText);
-  console.log(`Cleaned ${droppedEntries.length} duplicate entry(ies) in PR #${prNumber} description.`);
+  console.log(`Cleaned PR #${prNumber} description: removed ${droppedEntries.length} duplicate entry(ies) and neutralized closing keywords.`);
 }
 
 function readBaseVersion(execGit, releaseBase) {
@@ -450,7 +476,9 @@ function verifyChangelogSectionClean(filePath, rootDir, version, resolveCommit) 
     throw new Error(`Release section [${version}] is missing from ${filePath}`);
   }
 
-  const { droppedEntries } = cleanSection(targetSection.lines.join("\n"), resolveCommit);
+  const sectionText = targetSection.lines.join("\n");
+  verifyNoClosingKeywords(sectionText, `changelog section [${version}]`);
+  const { droppedEntries } = cleanSection(sectionText, resolveCommit);
   if (droppedEntries.length > 0) {
     throw new Error(`Found ${droppedEntries.length} duplicate entry(ies) in changelog section [${version}]`);
   }
@@ -479,6 +507,7 @@ function readEventPullRequestBody(eventPath) {
 
 function verifyEventDescriptionClean(eventPath, resolveCommit) {
   const body = readEventPullRequestBody(eventPath);
+  verifyNoClosingKeywords(body, "pull request description");
   const { droppedEntries } = cleanSection(body, resolveCommit);
   if (droppedEntries.length > 0) {
     throw new Error(`Found ${droppedEntries.length} duplicate entry(ies) in pull request description`);
@@ -516,7 +545,7 @@ export function checkReleaseRange(options = {}, context = {}) {
     verifyEventDescriptionClean(env.GITHUB_EVENT_PATH, resolveCommit);
   }
 
-  console.log(`Changelog check passed: section [${currentVersion}] and pull request description contain no duplicate entries.`);
+  console.log(`Changelog check passed: section [${currentVersion}] and pull request description contain no duplicate entries or closing keywords.`);
   return { skipped: false, version: currentVersion };
 }
 
@@ -564,7 +593,10 @@ export function parseArgs(args) {
   return options;
 }
 
-function processCheckResults(droppedEntries) {
+function processCheckResults(droppedEntries, closingKeywords) {
+  for (const line of closingKeywords) {
+    console.error(`Changelog check failed: closing keyword in entry/line: ${line}`);
+  }
   if (droppedEntries.length > 0) {
     console.error(`Changelog check failed: found ${droppedEntries.length} duplicate merge commit entry(ies):`);
     for (const d of droppedEntries) {
@@ -572,19 +604,20 @@ function processCheckResults(droppedEntries) {
     }
     return 1;
   }
-  console.log("Changelog check passed: no duplicate release entries found.");
+  if (closingKeywords.length > 0) return 1;
+  console.log("Changelog check passed: no duplicate release entries or closing keywords found.");
   return 0;
 }
 
-function processCleanResults(fullPath, filePath, cleanedContent, droppedEntries) {
-  if (droppedEntries.length > 0) {
+function processCleanResults({ fullPath, filePath, content, cleanedContent, droppedEntries }) {
+  if (cleanedContent !== content) {
     writeFileSync(fullPath, cleanedContent, "utf8");
-    console.log(`Cleaned ${droppedEntries.length} duplicate merge commit entry(ies) in ${filePath}:`);
+    console.log(`Cleaned ${filePath}: removed ${droppedEntries.length} duplicate merge commit entry(ies) and neutralized closing keywords.`);
     for (const d of droppedEntries) {
       console.log(`  - [${d.version || "candidate"}] dropped merge commit ${d.shortSha}: ${d.subject}`);
     }
   } else {
-    console.log("Changelog is already clean: no duplicate entries found.");
+    console.log("Changelog is already clean: no duplicates or closing keywords found.");
   }
   return 0;
 }
@@ -599,7 +632,7 @@ export async function main(args = process.argv.slice(2)) {
     console.log(`Usage: clean-release-changelog.mjs [options]
 Options:
   -f, --file <path>          Path to changelog file (default: CHANGELOG.md)
-  -c, --check                Fail with non-zero exit if uncleaned duplicates exist
+  -c, --check                Fail with non-zero exit if duplicates or closing keywords exist
   -s, --section <version>    Target a specific release version (e.g. 0.18.0)
   -p, --pr <number>          Clean release notes in pull request body via REST API
   -a, --all                  Process all release sections
@@ -639,24 +672,32 @@ Options:
 
   let cleanedContent;
   let droppedEntries;
+  let closingKeywords;
   try {
-    const res = cleanChangelog(content, {
+    const res = checkChangelog(content, {
       resolveCommit,
       targetSection: options.targetSection,
       all: options.all
     });
     cleanedContent = res.cleanedContent;
     droppedEntries = res.droppedEntries;
+    closingKeywords = res.closingKeywords;
   } catch (err) {
     console.error(`Error: ${err.message}`);
     return 1;
   }
 
   if (options.checkOnly) {
-    return processCheckResults(droppedEntries);
+    return processCheckResults(droppedEntries, closingKeywords);
   }
 
-  const exitCode = processCleanResults(fullPath, options.filePath, cleanedContent, droppedEntries);
+  const exitCode = processCleanResults({
+    fullPath,
+    filePath: options.filePath,
+    content,
+    cleanedContent,
+    droppedEntries
+  });
   if (options.prNumber) {
     try {
       await cleanPullRequestBody(options.prNumber, resolveCommit);
