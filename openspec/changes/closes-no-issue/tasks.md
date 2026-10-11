@@ -21,3 +21,8 @@ Proposal and implementation are separate commits for #744 under #747. Only plann
 
 - Live regeneration and `closedByPullRequestsReferences` removal are owner/mainline integration observations, not exercised or claimed by the local no-push run.
 - Fold #751 and archive #754 are later, separate tickets and PRs; do not edit canonical specs or archive this change here.
+
+## 4. Canonical fold and archive
+
+- [x] Fold `release-versioning-tag-model` delta into canonical spec `openspec/specs/release-versioning-tag-model/spec.md` in its own PR (#751).
+- [ ] Archive `closes-no-issue` change into `openspec/changes/archive/` in its own PR (#754).
