@@ -51,6 +51,18 @@ A primitive that turns one occurrence into an HTTP request description and leave
 caller owns. The SDK never calls it, and it sends nothing itself.
 _Avoid_: HTTP audit sink, sender, transport
 
+**Exchange**:
+The code that sends a delivery handoff's request description to a peer and reports what happened as one exchange outcome.
+_Avoid_: transport, request, call, delivery
+
+**Exchange outcome**:
+What an exchange reports for one attempt. It is exactly one of a response (a status plus the acknowledgments read from the body), a timeout, or a transport failure. Only the exchange decides which condition becomes which outcome.
+_Avoid_: result, error, response
+
+**Response classification**:
+The single mapping from an exchange outcome to a classification code, shared by the HTTP audit sink and the delivery handoff. It never sees a native transport condition.
+_Avoid_: status mapping, error mapping
+
 ## Evaluation
 
 **Evaluation kit**:
