@@ -182,8 +182,7 @@ Do not tag manually. The next `release-please` run creates the tag and GitHub Re
 - [ ] `git fetch --tags && git tag --list vX.Y.Z` finds the tag.
 - [ ] `git show vX.Y.Z:version.txt` contains the same version.
 - [ ] `git show vX.Y.Z:CHANGELOG.md` has that version as the top released entry.
-- [ ] `git show vX.Y.Z:packages/security-audit-sdk-core/package.json` still reports `0.1.0` and
-      `"private": true`.
+- [ ] Every workspace manifest version is unchanged from the previous tag (`git diff vPREV vX.Y.Z -- '*package.json'` shows no `"version"` or `"private"` change), each equals its compatibility pin where one exists, and every workspace stays `"private": true`.
 
 ### Recovery
 
