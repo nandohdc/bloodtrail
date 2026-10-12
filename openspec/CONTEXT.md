@@ -67,6 +67,11 @@ The dedicated, content-addressed direct-child record that records an already aut
 decision for an exact merged candidate. Its existence cannot authorize itself.
 _Avoid_: activating authority, release tag
 
+**Repository release**:
+The `vX.Y.Z` tag and matching repository series value that mark one reviewed state of the
+repository; it publishes no package, activates no contract and authorizes nothing.
+_Avoid_: contract release, package publication, kit, activation
+
 **Trusted governance checker**:
 An activated checker in the protected governance baseline. It enforces governance rules but cannot
 define contract semantics.
