@@ -5,6 +5,7 @@ Issue: https://github.com/nandohdc/bloodtrail/issues/796
 Only check tasks after their evidence is executed. Preserve the original assessment and its
 planning-only commit before all governed implementation commits. No protected-path edits,
 canonical spec folding, archival, release, or signing are included.
+Group 9 records the later canonical fold and separate archive lifecycle.
 
 ## 1. Prospective assessment (US-001)
 
@@ -65,6 +66,43 @@ historical evidence and recorded owner decisions.
 
 - [x] 8.1 Refactor the shared cross-process harness to readonly domain-typed parameters; adapt all callers and retain structural and diagnostic controls, including a primitive-parameter regression mutation.
 - [x] 8.2 Execute focused typecheck/build, compiled cross-process suites, assessment controls and CLI-1.0.53 review/delta; record verbatim before/after evidence before the final committed-head test chain.
+
+## 9. Merge, fold and archive (#796)
+
+Decision source: owner request, 2026-10-13, in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E: "Using Pi, Tamandua & GPT-6.1-sol high, do the fold and archive PRs."
+
+- [x] 9.1 Merge: PR #810 merged into `main` as `02ce833c4e02f83441d086ed47aed1306d4217cc`.
+- [x] 9.2 Fold this change's delta into `openspec/specs/security-audit-sdk-core/spec.md` while active (ADR 0001); observed fold verification is recorded below.
+- [ ] 9.3 Archive the change by relocation in a separate PR after this fold merges.
+
+### Observed fold verification — 2026-10-13, run #124
+
+The supplied TEST_CMD executed before this evidence update with an empty index, exit 0.
+Its exact `tamandua-test` command used the documented `TAMANDUA_TSTX=0` passthrough
+for uncommitted fold edits: all tests ran, without caching or ledger attribution.
+These results verify the active #796 fold, not the subsequent #797 fold or a future
+committed head. Historical evidence and groups 1–8 remain unchanged.
+
+Each ordered command exited 0:
+
+- `npm run check:generated --prefix packages/security-audit-sdk-core`: no drift.
+- `npm run test:matrix --prefix packages/security-audit-sdk-core`: 338/338 runtime tests; typecheck, build, type tests, 15 documentation scenarios, compatibility, exports, scope and dependencies passed.
+- `npm run test:coherence --prefix packages/security-audit-sdk-core`: passed; 14 sequential ADRs and founding requirements preserved. Its archived-remediation result is not archival of this change.
+- `npm run test:changed-paths --prefix packages/security-audit-sdk-core`: passed.
+- `npm run validate --prefix contracts/security-audit`: validation passed, 17/17 tests.
+- `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`: 308/308 tests, no failures, skips or cancellations.
+- `openspec validate fix-core-default-identifiers-uniqueness --strict`: change valid.
+- `openspec validate fix-core-transaction-bound-commit-state --strict`: change valid.
+- `openspec validate security-audit-sdk-core --type spec`: valid, zero errors; JSON inspection retains exactly the baseline 41 very-long-requirement warnings, no new warning.
+- `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`: enforcement active; inspected 1 committed change and 2 paths, including the uncommitted fold.
+- `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: whitespace/final-newline checks passed and index empty.
+- `make test`: all workspace gates passed; Core 338, Node 162, browser 71, collector 92, contract 17, envelope 18 and research 11 tests passed. Deliberate evaluation-kit failing plants ended in the passing negative-control summary. Full governance-gate chains were not run.
+
+External in-memory fold checks passed: all four folded blocks equal the delta bytes,
+headings are unique, all 19 founding and other original requirements except the replaced
+provider block are unchanged, retained provider scenarios remain, no operation headers
+enter the canonical spec, and reapplying the fold makes no change. No additional approval,
+fold merge, archive completion, release or signing is claimed.
 
 ## Verification Commands
 
