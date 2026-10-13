@@ -29,6 +29,7 @@
     "openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs",
     "packages/security-audit-sdk-core/src/providers.ts",
     "packages/security-audit-sdk-core/scripts/platform-coupling-policy.mjs",
+    "packages/security-audit-sdk-core/scripts/check-scope.mjs",
     "packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs",
     "packages/security-audit-sdk-core/tests/cross-process-identifiers.test.ts",
     "packages/security-audit-sdk-core/API.md",
