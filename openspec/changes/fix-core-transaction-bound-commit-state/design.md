@@ -25,6 +25,12 @@ Decision source: owner decision, 2026-10-13, via grilling in Claude Code session
 - Q9 selects catalog-driven coverage with exactly 35 non-success cases and paired controls. Reject hand-listed event membership, vacuous loops and committed mutation replicas; independent old-code sensitivity verification belongs to the orchestrator.
 - Q2/Q3/Q4 exclude #812 handle-pair contradictions, #795 Node durability and #801 Stage P. No inference or validation change for those paths is proposed.
 
+## Review follow-up (#797)
+
+Decision source: owner decision, 2026-10-13, via code-review follow-up in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
+
+R1 repairs the #796 assessment regression by deriving the final ADR and next extra number from the existing sequential inventory. R3 clarifies operation-evidence test names and domain-typed non-success rows without changing assertions. R4 aligns the glossary list, ADR sections, neutral verification wording and portable gate citations. R2 corrects evidence timing and labels. Append the prescribed five commits to the existing fix, preserving runtime, original decisions and proposal baseline; no further review finding or approval is selected.
+
 ## Implementation
 
 Keep operation/direct-state handling byte-identical. Preserve `commits.includes("not_applicable")`, then return the fixed failure for every outcome. Update only the resolver comment and fallback in `src/events.ts`. Preserve F10/F11 mutation anchors. Generated types, dependencies and exports are unchanged.
@@ -33,9 +39,9 @@ Keep operation/direct-state handling byte-identical. Preserve `commits.includes(
 
 | Invariant | Tasks | Evidence (prospective until executed) |
 | --- | --- | --- |
-| implementation-evidence-required | 2.1, 3.1, 5.1 | transaction-bound-commit-state.test.ts: exact bounded refusal and zero sink calls for 35 catalog cases and success |
-| implementation-sanctioned-controls | 3.2, 5.1 | transaction-bound-commit-state.test.ts: every paired handle transition accepted with matching commit state; all not_applicable fixtures accepted |
-| implementation-preserved-scope | 1.2, 4.1, 4.2, 5.1, 5.2 | planning gates; documentation/coherence; generated, type, export, scope, final governance and Git boundary gates |
+| implementation-evidence-required | 2.1, 3.1, 5.1, 6.2, 6.4 | transaction-bound-commit-state.test.ts: exact bounded refusal and zero sink calls for 35 catalog cases and success |
+| implementation-sanctioned-controls | 3.2, 5.1, 6.2, 6.4 | transaction-bound-commit-state.test.ts: every paired handle transition accepted with matching commit state; all not_applicable fixtures accepted |
+| implementation-preserved-scope | 1.2, 4.1, 4.2, 5.1, 5.2, 6.1, 6.2, 6.3, 6.4 | planning gates; documentation/coherence; generated, type, export, scope, final governance and Git boundary gates |
 
 ## Security implications
 

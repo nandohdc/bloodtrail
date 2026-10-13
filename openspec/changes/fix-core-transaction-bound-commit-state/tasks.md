@@ -28,12 +28,30 @@ Check tasks only after execution. Preserve planning-before-implementation orderi
 - [x] 5.1 Execute the complete supplied TEST_CMD including CodeScene delta; record exact commands and observed results in tasks and invariant evidence.
 - [x] 5.2 Run strict OpenSpec, git diff --check and inspect the exact ordered subjects/path boundary before the fourth evidence commit; record evidence without invented mutation or approval claims. Recheck actual four-commit history externally after that commit.
 
-## 6. Merge and archive
+## 6. Review follow-up (#797)
 
-- [ ] 6.1 Merge through the separately authorized repository process (not performed in this run).
-- [ ] 6.2 Fold and archive after separately authorized merge (not performed in this run).
+Decision source: owner decision, 2026-10-13, via code-review follow-up in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
+
+Append exactly five commits to the existing four-commit fix; preserve the proposal baseline and runtime. The owner selected R1–R4 only, not additional implementation or approval.
+
+- [ ] 6.1 R1: derive the final and extra ADR numbers in the single #796 assessment regression; run the complete assessment test file.
+- [ ] 6.2 R3: name helpers by operation evidence, type non-success rows and configure denied authorization in the transition table; preserve all 74 test assertions and run focused compilation/tests.
+- [ ] 6.3 R4: unify the unchanged glossary bullets, align ADR-014 headings/boundary and neutral independent-verification wording; use gate names and repository-relative evidence citations.
+- [ ] 6.4 R2 plus verification: correct pre-commit task 5.2 and observed-evidence labeling; run the full supplied TEST_CMD, build/typecheck and pre-evidence closure gates before ticking; report post-commit checks externally only.
+
+## 7. Merge and archive
+
+- [ ] 7.1 Merge through the separately authorized repository process (not performed in this run).
+- [ ] 7.2 Fold and archive after separately authorized merge (not performed in this run).
 
 ## Executed evidence
+
+### Review follow-up planning — 2026-10-13, Node v26.11.1
+
+- Started from clean `e7b9ddbde2c0887ca7770685fae8b60175eae30f` on `fix/797-transaction-bound-review-follow-up-123`. The provisioned branch has no upstream; no pull, baseline move or history rewrite was performed.
+- `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change fix-core-transaction-bound-commit-state`: exit 0, `design-pattern governance passed in assessment phase: enforcement active`.
+- `openspec validate fix-core-transaction-bound-commit-state --strict`: exit 0, `Change 'fix-core-transaction-bound-commit-state' is valid`.
+- Both planning gates executed before the planning-only follow-up commit. Tasks 6.1–6.4 remain unchecked pending execution; prior evidence below belongs to the original fix.
 
 ### Planning — 2026-10-13, Node v26.11.1
 

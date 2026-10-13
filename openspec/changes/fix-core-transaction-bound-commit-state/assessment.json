@@ -28,7 +28,8 @@
     "packages/security-audit-sdk-core/CONTEXT.md",
     "packages/security-audit-sdk-core/adr/014-transaction-bound-commit-state-requires-operation-evidence.md",
     "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
-    "packages/security-audit-sdk-node/docs/error-catalog.md"
+    "packages/security-audit-sdk-node/docs/error-catalog.md",
+    "openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs"
   ],
   "candidate_approaches": [
     {
@@ -96,7 +97,7 @@
   "implementation_invariant_ids": ["implementation-evidence-required", "implementation-sanctioned-controls", "implementation-preserved-scope"],
   "invariant_evidence": {
     "implementation-evidence-required": {
-      "task_ids": ["2.1", "3.1", "5.1"],
+      "task_ids": ["2.1", "3.1", "5.1", "6.2", "6.4"],
       "evidence_ids": [
         "tests/transaction-bound-commit-state.test.ts: 35 catalog-derived non-success cases plus handle-less success return exact PREMATURE_SUCCESS / validation / /operation/state with zero sink events; partition and delivery-class non-vacuity assertions pass",
         "From Core: ./node_modules/.bin/tsc -p tsconfig.test.json && node --test dist-tests/transaction-bound-commit-state.test.js — exit 0; ℹ tests 74; ℹ pass 74; ℹ fail 0",
@@ -104,7 +105,7 @@
       ]
     },
     "implementation-sanctioned-controls": {
-      "task_ids": ["3.2", "5.1"],
+      "task_ids": ["3.2", "5.1", "6.2", "6.4"],
       "evidence_ids": [
         "tests/transaction-bound-commit-state.test.ts: all 35 same-input method-bound handles transition successfully and emit exactly once with matching outcome/commit state; all nine not_applicable fixtures emit exactly once as not_applicable",
         "From Core: ./node_modules/.bin/tsc -p tsconfig.test.json && node --test dist-tests/transaction-bound-commit-state.test.js — exit 0; ℹ tests 74; ℹ pass 74; ℹ fail 0",
@@ -112,7 +113,7 @@
       ]
     },
     "implementation-preserved-scope": {
-      "task_ids": ["1.2", "4.1", "4.2", "5.1", "5.2"],
+      "task_ids": ["1.2", "4.1", "4.2", "5.1", "5.2", "6.1", "6.2", "6.3", "6.4"],
       "evidence_ids": [
         "node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change fix-core-transaction-bound-commit-state — exit 0; design-pattern governance passed in assessment phase: enforcement active; executed before planning-only commit",
         "openspec validate fix-core-transaction-bound-commit-state --strict — exit 0; Change 'fix-core-transaction-bound-commit-state' is valid; before planning and after runtime/docs",
@@ -148,5 +149,5 @@
     "trust_boundary": "Commit state continues to cross the operation boundary only through SDK-issued evidence; outcome alone is not authoritative transaction proof."
   },
   "ordering": {"proposal_baseline_commit": "02ce833c4e02f83441d086ed47aed1306d4217cc"},
-  "verification_task_ids": ["1.2", "3.1", "3.2", "4.2", "5.1", "5.2"]
+  "verification_task_ids": ["1.2", "3.1", "3.2", "4.2", "5.1", "5.2", "6.1", "6.2", "6.3", "6.4"]
 }
