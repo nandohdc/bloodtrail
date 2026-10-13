@@ -174,6 +174,23 @@ tasks.md now records the committed seeded control's failure at collision detecti
 restoration and passing focused reruns. Current invariant evidence includes this sensitivity
 execution; the original run-117/run-118 disposable-copy results remain historical.
 
+### Review follow-up (group 7)
+
+The recorded owner decisions remain unchanged. Resolve only these review findings:
+
+1. Catch throwing host capability reads inside `hasCryptographicUuidSupport`, returning false
+   so both default forms fail with the existing configuration error rather than a raw host Error.
+2. Cover each missing custom identifier method with its `/identifiers/<method>` path.
+3. State observable generation and coupling diagnostics in the delta spec, not test procedure;
+   explicitly prohibit time-derived and process-ID-derived identifier sources.
+4. Retitle ADR-SDK-013's H1 for cryptographic collision resistance; retain its filename and prefix.
+5. Use repository-relative, path-neutral Verification Commands; preserve historical run evidence.
+6. Export existing UUID/SDK URL constants and share concurrent sampling in the existing harness,
+   retaining child validation, distinct PIDs, total counts and both collision-finder assertions.
+7. Reword commit metadata last: add missing `Refs #796` before trailers and change only exact
+   `(sdk)` subject scopes to `(sdk-core)`; prove each original/rewritten tree identical and record
+   the complete mapping and executed final evidence. No implementation is claimed by this plan.
+
 ### Risks and re-evaluation triggers
 
 Hosts lacking Web Crypto UUID support must inject a provider; this intentional fail-closed change

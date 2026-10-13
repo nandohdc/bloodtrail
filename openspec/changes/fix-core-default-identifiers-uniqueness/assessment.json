@@ -111,15 +111,17 @@
       ]
     },
     "implementation-default-fail-closed": {
-      "task_ids": ["2.1", "2.2"],
+      "task_ids": ["2.1", "2.2", "7.2"],
       "evidence_ids": [
-        "tests/cross-process-identifiers.test.ts: absent crypto, missing randomUUID and non-function randomUUID matrix for implicit and explicit defaults rejects with SDK_INVALID_CONFIGURATION, configuration, /identifiers and zero sink calls"
+        "tests/cross-process-identifiers.test.ts: absent crypto, missing randomUUID and non-function randomUUID matrix for implicit and explicit defaults rejects with SDK_INVALID_CONFIGURATION, configuration, /identifiers and zero sink calls",
+        "tests/cross-process-identifiers.test.ts: planned throwing crypto and randomUUID accessor matrix for implicit and explicit defaults rejects with SecurityAuditSdkError, SDK_INVALID_CONFIGURATION, configuration, /identifiers and zero sink calls"
       ]
     },
     "implementation-custom-provider-independence": {
-      "task_ids": ["2.1", "2.2"],
+      "task_ids": ["2.1", "2.2", "7.2"],
       "evidence_ids": [
-        "tests/cross-process-identifiers.test.ts: import and deterministic custom initialization without host crypto, exact object identity, zero construction method calls and receiver-preserving identifier use"
+        "tests/cross-process-identifiers.test.ts: import and deterministic custom initialization without host crypto, exact object identity, zero construction method calls and receiver-preserving identifier use",
+        "tests/cross-process-identifiers.test.ts: planned missing custom method eventId, operationId, correlationId, causationId, requestId, messageId and transactionId cases reject with SDK_INVALID_CONFIGURATION at /identifiers/<method> without provider or sink calls"
       ]
     },
     "implementation-provider-local-coupling": {
@@ -142,5 +144,5 @@
   "ordering": {
     "proposal_baseline_commit": "5d931ad695fb10db3fe51e6b151352447e21d822"
   },
-  "verification_task_ids": ["1.1", "1.2", "1.3", "2.2", "2.3", "3.1", "3.2", "4.1", "4.2", "4.3", "6.1", "6.2", "6.3", "6.4"]
+  "verification_task_ids": ["1.1", "1.2", "1.3", "2.2", "2.3", "3.1", "3.2", "4.1", "4.2", "4.3", "6.1", "6.2", "6.3", "6.4", "7.1", "7.2", "7.3", "7.4"]
 }

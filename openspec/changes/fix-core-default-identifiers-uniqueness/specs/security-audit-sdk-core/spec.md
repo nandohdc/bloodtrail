@@ -9,7 +9,8 @@ Owning issue: https://github.com/nandohdc/bloodtrail/issues/796
 All seven methods of Core's frozen `systemAuditIdentifiers` provider SHALL lazily invoke host
 `crypto.randomUUID()` with its correct receiver and return unpredictable, collision-resistant,
 lowercase RFC 4122 UUID v4 identifiers. Core SHALL NOT use a static seeded PRNG, Math.random,
-counters, or insecure fallback, nor intentionally repeat a default sequence across fresh processes.
+counters, time-derived sources, process-ID-derived sources, or insecure fallback, nor intentionally
+repeat a default sequence across fresh processes.
 
 #### Scenario: All seven system methods generate cryptographic identifiers
 - **WHEN** each of eventId, operationId, correlationId, causationId, requestId, messageId and transactionId is called with host cryptographic UUID support available
@@ -17,7 +18,7 @@ counters, or insecure fallback, nor intentionally repeat a default sequence acro
 
 #### Scenario: Concurrent fresh processes do not repeat a default sequence
 - **WHEN** at least four fresh Node processes concurrently initialize Core without custom identifiers and each generates at least 128 event IDs and 128 operation IDs
-- **THEN** all processes exit successfully, exact sample counts and UUID v4 format are verified, and no duplicate occurs within or across the combined event and operation ID set
+- **THEN** all processes successfully generate identifiers, every identifier is a lowercase UUID v4, and no identifier repeats within or across fresh processes in the combined event and operation ID set
 
 #### Scenario: Collision resistance is not absolute lifetime-global uniqueness
 - **WHEN** consumers interpret the default identifier guarantee
@@ -106,5 +107,5 @@ wrapper global.
 - **THEN** it accepts only the declared provider role and reports the exercised host crypto in that role's inventory
 
 #### Scenario: Crypto outside the provider boundary remains forbidden
-- **WHEN** a disposable mutation references host crypto in another authored or generated artifact, or imports node:crypto in Core
-- **THEN** scope verification fails with undeclared-global or undeclared-specifier respectively, while the unmutated provider-local control passes
+- **WHEN** any Core artifact other than the provider module references host crypto, or Core imports node:crypto
+- **THEN** platform-coupling verification fails, and the diagnostic names the artifact and the crypto identifier or node:crypto specifier respectively

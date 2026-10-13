@@ -51,6 +51,16 @@ follow-up preserves the runtime design and declares ownership before new impleme
 - [x] 6.3 Document host requirements and injection migration in MIGRATION.md, add identifier glossary terms in CONTEXT.md, add ADR provenance/rejected alternatives and confirm API guarantees; run documentation negative controls and required gates.
 - [x] 6.4 Execute the vacuous-helper mutation and exact restoration/reruns, all verification gates and final protected-path/history inspection; record only executed evidence and close follow-up invariant mappings.
 
+## 7. Review follow-up (#796)
+
+Declare remediation before implementation; complete these tasks in order and preserve all
+historical evidence and recorded owner decisions.
+
+- [x] 7.1 Commit the planning-only review follow-up, behavioral spec corrections, task/evidence relations and path-neutral command templates; run planning controls, assessment governance, strict OpenSpec validation and all supplied gates before staging.
+- [ ] 7.2 Catch throwing crypto and randomUUID capability accessors inside hasCryptographicUuidSupport only; add isolated implicit/explicit fail-closed cases and all seven missing-custom-method /identifiers/<method> controls; preserve the coupling inventory and run required gates.
+- [ ] 7.3 Share concurrent child sampling and export existing UUID/SDK URL constants; preserve every positive/negative assertion and collision finder, retitle ADR 013 for collision resistance without renaming it, confirm path-neutral evidence commands, and run sensitivity/restoration and required gates.
+- [ ] 7.4 Reword every origin/main..HEAD commit message last for Refs #796 and exact sdk-core scope without changing trees/order/other text; record the complete old/new/tree mapping, metadata checks and final executed gate evidence.
+
 ## Verification Commands
 
 - Planning regression: `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`
@@ -58,12 +68,12 @@ follow-up preserves the runtime design and declares ownership before new impleme
 - OpenSpec: `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`
 - Typecheck: `npm run typecheck --prefix packages/security-audit-sdk-core`
 - Build: `npm run build --prefix packages/security-audit-sdk-core`
-- Root product loop (exact workflow command): `tamandua-test --repo '/Users/fernando.costa/.tamandua/worktrees/bloodtrail-5311402e/117-0d4a705f' --run '0d4a705f-c56f-4bd8-8923-a5feee1e74ad' --step 'implement' -- 'make test'`
+- Root product loop (from repository root): `make test`
 - Runtime: `npm test --prefix packages/security-audit-sdk-core`
-- Coupling mutations: from Core workspace, `node --test tests/verification/platform-coupling-mutations.test.mjs`
+- Coupling mutations: `node --test packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs`
 - Scope/exports/dependencies/coherence: the corresponding Core `npm run test:scope`, `test:exports`, `test:dependencies`, `test:coherence` scripts, using `--prefix packages/security-audit-sdk-core`
 - Full Core chain: `npm run validate --prefix packages/security-audit-sdk-core`
-- Final governance: `node openspec/scripts/check-design-pattern-governance.mjs --phase final`
+- Final governance: `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`
 - Git: `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` and `git diff --check`, with empty index before staging
 
 ## Executed Evidence
@@ -573,3 +583,47 @@ exit 0, not cached. Individual executed outcomes:
   No runtime/dependency/export change, #811 work, archive/folding, push or PR operation.
   No remote CI/CodeScene or full governance-chain result is claimed. Post-commit gates will be
   recorded in the external progress/report only after execution, not predicted here.
+
+### Review follow-up — US-001 planning, 2026-10-13, run 120
+
+This is new local verification for run `65df166b-49f8-4772-902a-db655a6b2113`, Node
+v26.11.1. Groups 1–6 and all historical evidence remain intact. Only 7.1 is newly complete;
+accessor/missing-method implementation, shared sampling/ADR title and metadata reword remain
+prospective (7.2–7.4). No future runtime test or sampler is required by this planning regression.
+
+- Added 31 assessment regression controls (304 total): group-7 ordering/completion, every new
+  verification task, both planned invariant evidence relations, behavioral spec wording,
+  path-neutral command templates and the seven review design resolutions. Existing negative
+  controls and branch-free five-helper planning orchestration remain intact.
+- Initial focused assessment: exit 1, 302/304 passed. Two new command-template mutations
+  targeted an earlier historical `make test` occurrence; scoped the mutations to Verification
+  Commands without weakening the assertions. The complete supplied chain then passed 304/304.
+- Exact supplied `tamandua-test` TEST_CMD: exit 0, executed, not cached, before staging with
+  an empty index. Used the documented `TAMANDUA_TSTX=0` passthrough for uncommitted tracked
+  planning edits; this disables caching/ledger attribution, not test commands. Individual outcomes:
+  - `npm run check:generated --prefix packages/security-audit-sdk-core`: exit 0, no drift.
+  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: exit 0, 245/245 runtime
+    tests; type/example/compatibility/export/scope/dependency gates passed, unchanged 61 value
+    and 92 type-only exports, zero runtime dependencies and provider-local coupling inventory.
+  - `npm run test:coherence --prefix packages/security-audit-sdk-core`: exit 0, ADRs 001..013.
+  - `npm run validate --prefix contracts/security-audit`: exit 0, validation and 17/17 tests.
+  - `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`:
+    exit 0, 304/304 tests, none skipped/cancelled.
+  - `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`:
+    exit 0, enforcement active; 15 inherited commits and 19 paths inspected before this commit.
+  - `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: exit 0, empty index,
+    whitespace and final-newline checks passed.
+  - `make test`: exit 0, all declared workspaces; Core 245, Node 162, browser 71, collector 92,
+    contract 17, envelope 18 and research 11 tests. Deliberate kit negative controls passed.
+- `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change fix-core-default-identifiers-uniqueness`:
+  exit 0, enforcement active.
+- `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`:
+  exit 0, change valid.
+- `npm run typecheck --prefix packages/security-audit-sdk-core` and
+  `npm run build --prefix packages/security-audit-sdk-core`: exit 0, generated source unchanged.
+- `git diff --check`: exit 0. Empty-index diff inspection found only the five owning-change
+  planning files modified; all SDK/runtime trees remain identical to inherited HEAD
+  `85991e5297f8674d7b2895a4078a1dc2a681471e`. Owned paths, proposal baseline and recorded
+  owner decisions remain unchanged. Fetch succeeded; this fresh branch has no upstream, so
+  no unrelated pull/rebase was performed. No #811 work, metadata rewrite, push, PR, approval,
+  full governance-chain or remote CI/CodeScene result is claimed.

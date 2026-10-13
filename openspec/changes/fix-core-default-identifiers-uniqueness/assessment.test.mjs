@@ -17,6 +17,11 @@ const committedControl = "tests/cross-process-identifiers-negative-control.test.
 const processRequirement = "Default identifier remediation preserves frozen and governance boundaries";
 const processScenario = "Remediation verification retains all protected boundaries";
 const followUpTasks = ["6.1", "6.2", "6.3", "6.4"];
+const reviewTasks = ["7.1", "7.2", "7.3", "7.4"];
+const reviewEvidence = {
+  "implementation-default-fail-closed": "tests/cross-process-identifiers.test.ts: planned throwing crypto and randomUUID accessor matrix for implicit and explicit defaults rejects with SecurityAuditSdkError, SDK_INVALID_CONFIGURATION, configuration, /identifiers and zero sink calls",
+  "implementation-custom-provider-independence": "tests/cross-process-identifiers.test.ts: planned missing custom method eventId, operationId, correlationId, causationId, requestId, messageId and transactionId cases reject with SDK_INVALID_CONFIGURATION at /identifiers/<method> without provider or sink calls",
+};
 const requiredSdkPaths = [
   "src/providers.ts",
   "scripts/platform-coupling-policy.mjs",
@@ -87,13 +92,13 @@ function assertOwnedPaths(value) {
 
 const requiredInvariantTasks = {
   "implementation-host-uuid-generation": ["2.1", "2.2", "3.1", "3.2", "6.1", "6.2", "6.4"],
-  "implementation-default-fail-closed": ["2.1", "2.2"],
-  "implementation-custom-provider-independence": ["2.1", "2.2"],
+  "implementation-default-fail-closed": ["2.1", "2.2", "7.2"],
+  "implementation-custom-provider-independence": ["2.1", "2.2", "7.2"],
   "implementation-provider-local-coupling": ["2.3"],
   "implementation-preserved-boundaries": ["4.1", "4.2", "4.3", "6.1", "6.3", "6.4"],
 };
 const requiredVerificationTasks = [
-  "1.1", "1.2", "1.3", "2.2", "2.3", "3.1", "3.2", "4.1", "4.2", "4.3", ...followUpTasks,
+  "1.1", "1.2", "1.3", "2.2", "2.3", "3.1", "3.2", "4.1", "4.2", "4.3", ...followUpTasks, ...reviewTasks,
 ];
 
 function assertFollowUpRelations(value, taskText) {
@@ -106,6 +111,19 @@ function assertFollowUpRelations(value, taskText) {
   assert.equal(hostEvidence.some((text) => text.includes("disposable-copy")), false);
   assertTaskGroupOrder(taskText);
   assertFollowUpTaskOrder(taskText);
+  for (const [id, evidence] of Object.entries(reviewEvidence)) {
+    assert.ok(value.invariant_evidence[id].evidence_ids.includes(evidence), id);
+  }
+  assertReviewTaskTemplates(taskText);
+}
+
+function assertReviewTaskTemplates(taskText) {
+  const section = taskText.split("## 7. Review follow-up (#796)\n")[1].split("## Verification Commands")[0];
+  assert.deepEqual([...section.matchAll(/^- \[[ x]\] (7\.\d+) /gm)].map((match) => match[1]), reviewTasks);
+  const commands = taskText.split("## Verification Commands\n")[1].split("## Executed Evidence")[0];
+  assert.ok(commands.includes("`make test`"));
+  assert.ok(commands.includes("--phase final --base origin/main"));
+  assert.doesNotMatch(commands, /tamandua-test|--repo|--run|\/Users\/|117-0d4a705f|0d4a705f-c56f-4bd8-8923-a5feee1e74ad/);
 }
 
 const closureHeading = "### Owner-decision follow-up — US-004 closure";
@@ -199,7 +217,7 @@ test("closure rejects unmapped executed sensitivity evidence", () => {
 
 function assertFollowUpTaskOrder(taskText) {
   let pending = false;
-  for (const taskId of followUpTasks) {
+  for (const taskId of [...followUpTasks, ...reviewTasks]) {
     const match = taskText.match(new RegExp(`^- \\[([ x])\\] ${taskId.replace(".", "\\.")} `, "m"));
     assert.ok(match, taskId);
     const complete = match[1] === "x";
@@ -210,7 +228,7 @@ function assertFollowUpTaskOrder(taskText) {
 
 function assertTaskGroupOrder(taskText) {
   let previous = -1;
-  for (const group of [1, 2, 3, 4, 5, 6]) {
+  for (const group of [1, 2, 3, 4, 5, 6, 7]) {
     const position = taskText.indexOf(`## ${group}. `);
     assert.ok(position > previous, `missing or unordered group ${group}`);
     previous = position;
@@ -341,11 +359,20 @@ const preservedBehaviorTexts = [
 function assertBehavioralScope(specText) {
   assert.equal(specText.includes(processRequirement), false);
   assert.equal(specText.includes(processScenario), false);
-  for (const text of preservedBehaviorTexts) assert.ok(specText.includes(text), text);
+  for (const text of [...preservedBehaviorTexts, ...reviewBehaviorTexts]) assert.ok(specText.includes(text), text);
+  assert.doesNotMatch(specText, /exact sample counts and UUID v4 format are verified|\*\*WHEN\*\* a disposable mutation/);
 }
 
+const reviewBehaviorTexts = [
+  "time-derived sources, process-ID-derived sources",
+  "all processes successfully generate identifiers, every identifier is a lowercase UUID v4",
+  "no identifier repeats within or across fresh processes in the combined event and operation ID set",
+  "any Core artifact other than the provider module references host crypto, or Core imports node:crypto",
+  "platform-coupling verification fails, and the diagnostic names the artifact and the crypto identifier or node:crypto specifier respectively",
+];
+
 const requiredSpecTexts = [
-  ...preservedBehaviorTexts,
+  ...preservedBehaviorTexts, ...reviewBehaviorTexts,
   "eventId", "operationId", "correlationId", "causationId", "requestId", "messageId", "transactionId",
   ...["Implicit", "Explicit system"].flatMap((mode) =>
     ["absent crypto", "missing randomUUID", "non-function randomUUID"].map((absence) =>
@@ -401,14 +428,21 @@ function assertProposalScope(text) {
   for (const phrase of proposalScopeTexts) assert.ok(text.includes(phrase), phrase);
 }
 
+const reviewDesignTexts = [
+  "### Review follow-up (group 7)", "Catch throwing host capability reads",
+  "each missing custom identifier method", "observable generation and coupling diagnostics",
+  "Retitle ADR-SDK-013's H1", "path-neutral Verification Commands",
+  "share concurrent sampling", "Reword commit metadata last",
+];
+
 function assertFollowUpDesign(text) {
   assertOwnerDecisions(text);
-  for (const phrase of designControlTexts) assert.ok(text.includes(phrase), phrase);
+  for (const phrase of [...designControlTexts, ...reviewDesignTexts]) assert.ok(text.includes(phrase), phrase);
 }
 
 const ownerDocumentControls = [
   ["proposal", proposal, assertProposalScope, [ownerSource, ...ownerDecisionRows, ...proposalScopeTexts]],
-  ["design", design, assertFollowUpDesign, [ownerSource, ...ownerDecisionRows, ...designControlTexts]],
+  ["design", design, assertFollowUpDesign, [ownerSource, ...ownerDecisionRows, ...designControlTexts, ...reviewDesignTexts]],
 ];
 for (const [name, text, validate, phrases] of ownerDocumentControls) {
   test(`${name} preserves owner provenance, decisions and follow-up scope`, () => validate(text));
@@ -458,7 +492,7 @@ for (const text of [processRequirement, processScenario]) {
     assert.throws(() => assertPlanningContract(assessment, tasks, `${spec}\n### Requirement: ${text}\n`));
   });
 }
-for (const taskId of followUpTasks) {
+for (const taskId of [...followUpTasks, ...reviewTasks]) {
   test(`follow-up tasks reject missing task text ${taskId}`, () => {
     assert.throws(() => assertPlanningContract(assessment, tasks.replace(`] ${taskId} `, "] omitted "), spec));
   });
@@ -467,6 +501,37 @@ test("follow-up completion rejects skipping an unfinished predecessor", () => {
   const skipped = tasks.replace(/\[[ x]\] 6\.2 /, "[ ] 6.2 ").replace(/\[[ x]\] 6\.3 /, "[x] 6.3 ");
   assert.throws(() => assertPlanningContract(assessment, skipped, spec));
 });
+
+for (const [id, phrase] of Object.entries(reviewEvidence)) {
+  test(`review planning rejects missing planned evidence for ${id}`, () => {
+    const mutated = structuredClone(assessment);
+    mutated.invariant_evidence[id].evidence_ids = mutated.invariant_evidence[id].evidence_ids.filter((text) => text !== phrase);
+    assert.throws(() => assertPlanningContract(mutated, tasks, spec));
+  });
+}
+test("review planning rejects skipped tasks and missing or duplicated group 7", () => {
+  assert.throws(() => assertPlanningContract(assessment, tasks.replace(/\[[ x]\] 7\.2 /, "[ ] 7.2 ")
+    .replace(/\[[ x]\] 7\.3 /, "[x] 7.3 "), spec));
+  assert.throws(() => assertPlanningContract(assessment, tasks.replace("## 7. Review follow-up (#796)", "## omitted"), spec));
+  assert.throws(() => assertPlanningContract(assessment, tasks.replace("## Verification Commands", "- [ ] 7.4 duplicate\n\n## Verification Commands"), spec));
+});
+for (const replacement of ["omitted", "tamandua-test --repo '/Users/example/117-0d4a705f' --run 'old' -- 'make test'"]) {
+  test(`review commands reject non-neutral root loop: ${replacement}`, () => {
+    const start = tasks.indexOf("## Verification Commands");
+    const mutated = tasks.slice(0, start) + tasks.slice(start).replace("`make test`", `\`${replacement}\``);
+    assert.throws(() => assertReviewTaskTemplates(mutated));
+  });
+}
+test("review commands reject a missing final-governance base", () => {
+  const start = tasks.indexOf("## Verification Commands");
+  const mutated = tasks.slice(0, start) + tasks.slice(start).replace("--phase final --base origin/main", "--phase final");
+  assert.throws(() => assertReviewTaskTemplates(mutated));
+});
+for (const phrase of ["exact sample counts and UUID v4 format are verified", "**WHEN** a disposable mutation"]) {
+  test(`review behavioral spec rejects test procedure: ${phrase}`, () => {
+    assert.throws(() => assertScenarios(`${spec}\n${phrase}\n`));
+  });
+}
 
 test("task groups reject missing, out-of-order or reopened historical groups", () => {
   assert.throws(() => assertTaskGroupOrder(tasks.replace("## 6. Owner-decision gap closure (#796 follow-up)", "## omitted")));
