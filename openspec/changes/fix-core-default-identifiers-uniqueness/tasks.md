@@ -59,7 +59,7 @@ historical evidence and recorded owner decisions.
 - [x] 7.1 Commit the planning-only review follow-up, behavioral spec corrections, task/evidence relations and path-neutral command templates; run planning controls, assessment governance, strict OpenSpec validation and all supplied gates before staging.
 - [x] 7.2 Catch throwing crypto and randomUUID capability accessors inside hasCryptographicUuidSupport only; add isolated implicit/explicit fail-closed cases and all seven missing-custom-method /identifiers/<method> controls; preserve the coupling inventory and run required gates.
 - [x] 7.3 Share concurrent child sampling and export existing UUID/SDK URL constants; preserve every positive/negative assertion and collision finder, retitle ADR 013 for collision resistance without renaming it, confirm path-neutral evidence commands, and run sensitivity/restoration and required gates.
-- [ ] 7.4 Reword every origin/main..HEAD commit message last for Refs #796 and exact sdk-core scope without changing trees/order/other text; record the complete old/new/tree mapping, metadata checks and final executed gate evidence.
+- [x] 7.4 Reword every origin/main..HEAD commit message last for Refs #796 and exact sdk-core scope without changing trees/order/other text; record the complete old/new/tree mapping, metadata checks and final executed gate evidence.
 
 ## Verification Commands
 
@@ -761,3 +761,112 @@ is historical and unchanged. Local verification is not approval or a CodeScene r
   assessment controls and this tasks.md change. No runtime/protected/generated/manifests/
   canonical spec edits, history rewrite, #811 work, push or PR. Full governance chains,
   remote CI, approval and CodeScene results are not claimed.
+
+### Review follow-up — US-004 metadata and tree-identity evidence, 2026-10-13, run 120
+
+Run `65df166b-49f8-4772-902a-db655a6b2113`, Node v26.11.1. Tasks 7.1–7.4 now
+reflect executed remediation. Groups 1–6, all prior evidence, the full assessment and
+proposal baseline `5d931ad695fb10db3fe51e6b151352447e21d822` remain unchanged.
+No owner decision was reopened. This is local evidence, not approval or authorization.
+
+#### Restricted message-only rewrite and metadata controls
+
+- Started with a clean worktree and empty index on `feature/796-review-follow-up-120`.
+  The branch has no upstream; no unrelated pull/rebase/fetch moved the pinned base.
+- A securely created external directory held the dynamically enumerated ordered range,
+  every original raw commit object/message, parents, trees and all refs before rewriting.
+  An external Python driver used `git hash-object -t commit -w --stdin` to replay those
+  objects, then a compare-and-swap `git update-ref` changed only this branch. No tracked
+  rewrite script, backup branch, extra commit, squash, drop, reorder or base move was added.
+- Exactly 11 missing bodies received a separate `Refs #796` line before their existing
+  trailers; exactly five subject scopes changed from `(sdk)` to `(sdk-core)`. All other
+  message bytes, Co-Authored-By trailers, author and committer headers were preserved.
+  Parent headers changed only to the corresponding rewritten parent. The linear topology
+  and planning-before-implementation order were verified for all 18 ordered pairs.
+- For EVERY row below, separately executed `git rev-parse <original>^{tree}` and
+  `git rev-parse <rewritten>^{tree}` and required both results to equal the listed tree.
+  The original raw object snapshot and permitted transformed message/header bytes were
+  also compared against each actual rewritten object. All 18 comparisons passed.
+  Original tip and rewritten tip both have tree `24e4029548b444f428db9fea66d25b0b4a486704`.
+  All unrelated refs and `origin/main` remained exactly at their snapshot values.
+- External message-transform unit tests: 7/7 passed (missing reference placement, existing
+  reference identity, exact scope only, breaking scope, multiple preserved trailers,
+  no-trailer message and idempotence). An initial no-trailer control caught the subject
+  being mistaken for a trailer; the external driver was corrected before any rewrite.
+- Executed unmodified `node .github/scripts/check-conventional-commits.mjs --title '<subject>'`
+  for each of the 18 rewritten subjects: all exit 0. Independent checks reject any
+  leading work-item description, any exact `sdk` scope and any missing `Refs #796` body
+  line. Raw comparisons also verify every original Co-Authored-By trailer is unchanged.
+- `node --test .github/scripts/check-conventional-commits.test.mjs`: exit 0, 25/25 tests,
+  including the existing prefixed-description and disabled-predicate negative controls.
+  No `.github/` file was modified and no GitHub API/PR operation was used.
+
+#### Complete ordered original-to-rewritten mapping
+
+These hashes are historical rewrite bookkeeping, not version/provenance/readiness pins.
+The sole new final evidence commit, `docs(openspec): close review follow-up evidence (#796)`,
+is intentionally OUTSIDE this mapping: its parent is rewritten tip
+`eca1b3d1c49831f7cbc65dd0a6a63224137bc850`, and it adds only this tasks.md evidence.
+It carries `Refs #796` and the Tamandua co-author footer; its new evidence tree is not
+claimed identical to the original tip. Final committed-HEAD reruns and its parent/path
+checks are recorded externally after execution, rather than predicted in this commit.
+
+| Original SHA | Rewritten SHA | Identical tree SHA |
+| --- | --- | --- |
+| `ab66ec375c66db058cb26595c303a586e8070a63` | `47d54f500b039830908191ed3aff5311698303a8` | `1c243fe47fa567b6852cf0b013408c39dd7a7671` |
+| `e4112326549a604c9860fa4de43361dd3f4c2a94` | `ce0a557308672cb2ccc0e20551d510a02d2e7be6` | `6ac82acf6ebd3fb3c16225c46f6d76758cc8fd75` |
+| `98b694d31b344b626a9c76a3aba4942248fe8bdc` | `07be0074471c611fc55705a50fe5acb21a32598b` | `f6db57bafdddc198e3cfa927ce3f48c66ad8a3a3` |
+| `810ec55f9f3e8c3eecffc07b590abffad54c5d7e` | `2a4714f2ad1b754c854b4fe6d3f4ecb02ccb7e9b` | `237b80dc99c71222e2780c71792bfee7f82298a9` |
+| `b55c05cd5acdc9527a7912384fca20de274d6000` | `4f12bfb50e728f8207acba5faede99f1ae02e552` | `9d0770bfa3fe1eec77b31af7e3badf1d932fbb08` |
+| `f5debbbd459b2fb929b1884798bddfc04e3f4ba9` | `f1b99e77819e7c6445f511411f634611598f3163` | `cf0b0a8b4dfacc0dec17308571b6b0166430f593` |
+| `6584c372e74261ed5ee76fa7c9d1ff367976bc6d` | `9dca1c01a5ab8ae9880f4a4d2dc0b56aae46a8d1` | `d00257a11d29d58988c41a7829c7d1bc711a17ec` |
+| `a3eca584b2ea6330a9d5969d5525e2a1e366855f` | `95a0a1a97aa3bcd77b8329890e78542f030b1c33` | `10922087cf13be5da015d2a14bfb75915aca2cc6` |
+| `e04ddc1966a5c55256559700c068a3adef33e3d3` | `232685b525c9ca57306024ecac1dbce4e8859a6c` | `abc16c5a54f55f376875166c95859d98e7855b33` |
+| `892a81ffc65eb43790e7d9d272e0df0352a87381` | `99db505fd97705843331ac90fffed922880a76eb` | `5c01fc6af6f95022fbddf528e99f5737e1430b20` |
+| `e51902bda608dc33a64a4afd81890be8a00708db` | `49f60e0469f1e5ba7da77632e63190246fbe343b` | `13c53feda5c41d7cbf9d9b981dd7a74068ee973b` |
+| `441a4c7d856ffa496f235dd06f7b6818e6800597` | `bace993dff992d0431bcbd22571b6268b199399a` | `bfd4316db97b8e49b2cdf28749552252b4a7cea0` |
+| `f2ae469c171a50ee763cd6df4b28dc9470e65f2a` | `9e89a32972c0748bbec974915877997245274c35` | `7823b6b6b9e2c66448b97de339449307d25a0ea1` |
+| `1c58964ef0e1b45e8f1df31a00588d515ab30575` | `695637870c82d371e8a4918951a3167f60efbc4d` | `a1aa4d546dffec5a533b580a0ba35fbf29c9b870` |
+| `85991e5297f8674d7b2895a4078a1dc2a681471e` | `e52e6e14d55e793d3c86cda937edf067abc21920` | `4bca816a7155f19a97ef4a9a0ac0438ba9191535` |
+| `008030fc845f193bf8f1adfab76ca97811169439` | `32ec6811ca5d3692b9ae15b1eac9efb9a57f0d67` | `a1486b7884bccde86ce33ae6b6c99b8ea70b3c7f` |
+| `e8adb5452bd617f3b4d555611b472b756bdcf9ee` | `6df9bea16ee4478c42d2d40f9f257ded6c579587` | `4f6ed0e77e3b24fba3ae6d702e3c3113197b5e0a` |
+| `62d2276a1641f537e92384b3f9a9eb12d0b3661a` | `eca1b3d1c49831f7cbc65dd0a6a63224137bc850` | `24e4029548b444f428db9fea66d25b0b4a486704` |
+
+#### Executed post-rewrite gates and boundary inspection (before evidence commit)
+
+- Exact supplied TEST_CMD:
+  `tamandua-test --repo '/Users/fernando.costa/.tamandua/worktrees/bloodtrail-5311402e/120-65df166b' --run '65df166b-49f8-4772-902a-db655a6b2113' --step 'implement' -- 'npm run check:generated --prefix packages/security-audit-sdk-core && npm run test:matrix --prefix packages/security-audit-sdk-core && npm run test:coherence --prefix packages/security-audit-sdk-core && npm run validate --prefix contracts/security-audit && node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs && node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main && node packages/security-audit-sdk-core/scripts/check-git-state.mjs && make test'`.
+  The initial invocation returned a green tree-keyed cache result from US-003; that replay
+  is NOT claimed as post-rewrite execution. Repeated the identical wrapper with documented
+  `TAMANDUA_TSTX=0` passthrough to execute history-sensitive gates against rewritten commits,
+  disabling cache/ledger attribution, not commands. This new execution exited 0; all eight
+  commands actually ran with an empty index:
+  - `npm run check:generated --prefix packages/security-audit-sdk-core`: exit 0, no drift.
+  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: exit 0, 263/263 runtime
+    tests; type/example/compatibility/export/scope/dependency checks pass; 61 value/92 type
+    exports and zero runtime dependencies unchanged. Provider-local inventory unchanged.
+  - `npm run test:coherence --prefix packages/security-audit-sdk-core`: exit 0, ADRs 001..013.
+  - `npm run validate --prefix contracts/security-audit`: exit 0, validation and 17/17 tests.
+  - `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`:
+    exit 0, 307/307, including retained negative controls.
+  - `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`:
+    exit 0, enforcement active; 18 rewritten commits and 19 paths inspected.
+  - `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: exit 0, empty index,
+    whitespace/final-newline checks pass (also independently repeated afterward).
+  - `make test`: exit 0, all declared workspaces; Core 263, Node 162, browser 71, collector 92,
+    contract 17, envelope 18 and research 11. Deliberate kit plants pass negative controls.
+- `npm run typecheck --prefix packages/security-audit-sdk-core` and
+  `npm run build --prefix packages/security-audit-sdk-core`: exit 0, generated source unchanged.
+- `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`
+  and `git diff --check`: exit 0.
+- External boundary inspection: exit 0. Original story HEAD versus rewritten HEAD has an
+  empty tree diff; protected paths are identical. Run-120 changes against inherited HEAD
+  `85991e5297f8674d7b2895a4078a1dc2a681471e` remain within the owning change, three existing
+  top-level tests/harness, ADR 013 and providers.ts. Exact-byte source comparison permits
+  only the try/catch inside `hasCryptographicUuidSupport`; every other runtime byte matches
+  inherited HEAD. No protected/generated/manifests/canonical specs/governance_core edits.
+- The final evidence commit changes only this tasks.md. All committed-final-HEAD TEST_CMD,
+  metadata, parent/path, protected-path, strict-validation and clean-index checks will be
+  executed and recorded in the external progress/report, with no later generic commit.
+  No #811 work, push, PR, GitHub comment, merge, archival/folding, approval, remote CI,
+  CodeScene analysis or full `make governance-gates`/Core `validate` result is claimed.
