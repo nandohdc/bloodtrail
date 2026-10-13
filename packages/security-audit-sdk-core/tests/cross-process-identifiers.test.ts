@@ -1,7 +1,11 @@
 import { strict as assert } from "node:assert";
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { systemAuditIdentifiers, type AuditIdentifierProvider } from "../dist/index.js";
+import {
+  buildIdentifierSamplingScript, findRepeatedIdentifiers, parseAndValidateChildResult,
+  runConcurrentChild, type ChildIdentifiers, type ChildOutput,
+} from "./cross-process-harness.js";
 
 const identifierMethods: readonly (keyof AuditIdentifierProvider)[] = [
   "eventId", "operationId", "correlationId", "causationId", "requestId", "messageId", "transactionId",
@@ -39,145 +43,6 @@ const unavailableHosts = [
   { name: "missing randomUUID", setup: "Object.defineProperty(globalThis, 'crypto', { configurable: true, value: {} });" },
   { name: "non-callable randomUUID", setup: "Object.defineProperty(globalThis, 'crypto', { configurable: true, value: { randomUUID: 42 } });" },
 ];
-
-interface ChildOutput {
-  readonly code: number | null;
-  readonly signal: NodeJS.Signals | null;
-  readonly stdout: string;
-  readonly stderr: string;
-}
-
-function runConcurrentChild(script: string, deadlineMs = 10_000): Promise<ChildOutput> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ["--input-type=module", "--eval", script], {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-    let failure: Error | undefined;
-    const terminate = (error: Error): void => {
-      failure ??= error;
-      child.kill("SIGKILL");
-    };
-    const onStdout = (chunk: string): void => {
-      if (stdout.length + chunk.length > 64 * 1024) {
-        terminate(new Error("child stdout exceeded 64 KiB"));
-      }
-      stdout = (stdout + chunk).slice(0, 64 * 1024);
-    };
-    const onStderr = (chunk: string): void => { stderr = (stderr + chunk).slice(0, 4096); };
-    const onError = (error: Error): void => { terminate(error); };
-    const onClose = (code: number | null, signal: NodeJS.Signals | null): void => {
-      clearTimeout(deadline);
-      child.stdout.removeListener("data", onStdout);
-      child.stderr.removeListener("data", onStderr);
-      child.removeListener("error", onError);
-      child.removeListener("close", onClose);
-      if (failure !== undefined) {
-        reject(new Error(`${failure.message}; stderr=${stderr}`));
-      } else {
-        resolve({ code, signal, stdout, stderr });
-      }
-    };
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", onStdout);
-    child.stderr.on("data", onStderr);
-    child.once("error", onError);
-    child.once("close", onClose);
-    const deadline = setTimeout(() => {
-      terminate(new Error(`child exceeded ${deadlineMs} ms and was killed`));
-      // Settle only on close: the killed child and its pipes must be reaped first.
-    }, deadlineMs);
-  });
-}
-
-function buildIdentifierSamplingScript(sampleCount: number): string {
-  return `
-import { strict as assert } from "node:assert";
-import {
-  createSecurityAuditSdk, authenticatedHumanActor, authoritativeTenant,
-  authenticatedPrincipal, authenticationEvidence, credentialReference,
-  sessionEvidence, observedSource,
-} from ${JSON.stringify(sdkUrl)};
-const eventIds = [];
-const operationIds = [];
-// Deliberately omit identifiers: both named events and operations use Core defaults.
-const sdk = createSecurityAuditSdk({
-  contractVersion: "2.1.0",
-  producer: { name: "cross-process-identifiers", version: "1.0.0" },
-  service: { name: "cross-process-identifiers" },
-  environment: { name: "test" },
-  sink: { async emit(event) { eventIds.push(event.event.id); return { status: "accepted" }; } },
-});
-const input = {
-  actor: authenticatedHumanActor({ id: "actor", tenantId: "tenant", source: "server-authentication-authority" }),
-  tenant: authoritativeTenant({ scope: "tenant", actor_tenant_id: "tenant", effective_tenant_id: "tenant", resource_tenant_id: "tenant" }),
-  authenticated_principal: authenticatedPrincipal({ type: "human_user", id: "principal", issuer: "https://idp.example.test" }),
-  authentication: authenticationEvidence({ method: "password_mfa", assurance_level: "aal2", mfa_state: "satisfied", credential_type: "session", authenticated_at: "2026-08-04T00:00:00.000Z", identity_provider: "https://idp.example.test", delegated: false, impersonated: false }),
-  credential: credentialReference({ type: "session", reference: "credential", key_id: "key" }),
-  session: sessionEvidence({ id: "session", created_at: "2026-08-03T23:00:00.000Z", age_seconds: 3600, assurance_level: "aal2" }),
-  source: observedSource({ observed: { address: "192.0.2.11", port: 443 } }),
-};
-try {
-  for (let index = 0; index < ${sampleCount}; index += 1) {
-    const operation = sdk.beginOperation({ transactional: false });
-    assert.equal(operation.ok, true, JSON.stringify(operation));
-    operationIds.push(operation.value.operationId);
-    const delivery = await sdk.authenticationSucceeded({ ...input, operation: operation.value });
-    assert.deepEqual(delivery, { ok: true, value: { status: "accepted" } });
-  }
-} finally {
-  const shutdown = await sdk.shutdown();
-  assert.equal(shutdown.ok, true, JSON.stringify(shutdown));
-}
-console.log(JSON.stringify({ pid: process.pid, eventIds, operationIds }));
-`;
-}
-
-interface ChildIdentifiers {
-  readonly pid: number;
-  readonly identifiers: string[];
-}
-
-function parseChildRecord(stdout: string, context: string): Record<string, unknown> {
-  const lines = stdout.trim().split("\n");
-  assert.equal(lines.length, 1, `${context}: expected exactly one JSON record`);
-  let record: unknown;
-  assert.doesNotThrow(() => { record = JSON.parse(lines[0]!); }, `${context}: invalid JSON record`);
-  assert.ok(record !== null && typeof record === "object", `${context}: expected a JSON object`);
-  const fields = record as Record<string, unknown>;
-  assert.deepEqual(Object.keys(fields).sort(), ["eventIds", "operationIds", "pid"], `${context}: unexpected record keys`);
-  return fields;
-}
-
-function validateIdentifierSamples(values: unknown, expectedSamples: number, context: string): string[] {
-  assert.ok(Array.isArray(values), `${context} must be an array`);
-  assert.equal(values.length, expectedSamples, `${context} count`);
-  return values.map((identifier: unknown, sample: number) => {
-    assert.ok(typeof identifier === "string", `${context}[${sample}] must be a string`);
-    assert.match(identifier, uuidV4, `${context}[${sample}] must be lowercase RFC 4122 UUID v4`);
-    return identifier;
-  });
-}
-
-function parseAndValidateChildResult(
-  child: PromiseSettledResult<ChildOutput>, index: number, expectedSamples: number,
-): ChildIdentifiers {
-  const context = `child ${index}`;
-  if (child.status === "rejected") assert.fail(`${context}: ${String(child.reason)}`);
-  const output = child.value;
-  assert.equal(output.signal, null, `${context}: signal=${output.signal}; stderr=${output.stderr}`);
-  assert.equal(output.code, 0, `${context}: exit=${output.code}; stderr=${output.stderr}`);
-  const fields = parseChildRecord(output.stdout, context);
-  assert.ok(typeof fields.pid === "number", `${context}: pid must be a number`);
-  const pid = fields.pid;
-  assert.ok(Number.isInteger(pid) && pid > 0, `${context}: pid must be a positive integer`);
-  assert.notEqual(pid, process.pid, `${context}: expected a fresh child pid`);
-  const identifiers = ["eventIds", "operationIds"].flatMap((key) =>
-    validateIdentifierSamples(fields[key], expectedSamples, `${context}: ${key}`));
-  return { pid, identifiers };
-}
 
 function validChildRecord(): { pid: number; eventIds: string[]; operationIds: string[] } {
   return {
@@ -260,7 +125,56 @@ test("default SDK event and operation identifiers are unique across concurrent f
   const identifiers = results.flatMap(({ identifiers }) => identifiers);
   assert.equal(pids.size, processCount, "expected distinct fresh child processes");
   assert.equal(identifiers.length, processCount * sampleCount * 2);
-  assert.equal(new Set(identifiers).size, identifiers.length, "default event/operation identifiers collided within or across processes");
+  assert.deepEqual(findRepeatedIdentifiers(results), []);
+});
+
+const collisionCases: readonly { name: string; samples: readonly (readonly string[])[]; expected: string[] }[] = [
+  { name: "empty union", samples: [], expected: [] },
+  { name: "empty children", samples: [[], []], expected: [] },
+  { name: "disjoint samples", samples: [["a", "b"], ["c", "d"]], expected: [] },
+  { name: "within one child", samples: [["a", "b", "a"]], expected: ["a"] },
+  { name: "across children", samples: [["a", "b"], ["c", "a"]], expected: ["a"] },
+  { name: "more than twice", samples: [["a", "a"], ["a", "a", "b", "b"]], expected: ["a", "b"] },
+  { name: "second-encounter ordering", samples: [["a", "b", "c"], ["c", "b", "a", "b"]], expected: ["c", "b", "a"] },
+];
+
+for (const { name, samples, expected } of collisionCases) {
+  test(`collision finder detects the complete union: ${name}`, () => {
+    const results: readonly ChildIdentifiers[] = Object.freeze(samples.map((identifiers, pid) =>
+      Object.freeze({ pid, identifiers: Object.freeze([...identifiers]) })));
+    assert.deepEqual(findRepeatedIdentifiers(results), expected);
+    assert.deepEqual(results.map((result) => result.identifiers), samples, "must not mutate inputs");
+  });
+}
+
+test("collision finder detects an event/operation collision in validated child records", () => {
+  const record = validChildRecord();
+  record.operationIds[1] = record.eventIds[0]!;
+  const result = parseAndValidateChildResult(fulfilledChild(JSON.stringify(record)), 7, 2);
+  assert.deepEqual(findRepeatedIdentifiers([result]), [record.eventIds[0]]);
+});
+
+test("sampling script without provider source leaves identifiers absent from SDK config", () => {
+  const script = buildIdentifierSamplingScript(128);
+  assert.doesNotMatch(script, /^\s*identifiers\s*[:,]/m);
+  assert.match(script, /Deliberately omit identifiers/);
+  assert.match(script, /index < 128/);
+});
+
+test("sampling script with provider source inlines only a custom identifiers provider", () => {
+  const source = "const identifiers = Object.freeze({ eventId() { return 'fixture'; } });";
+  const script = buildIdentifierSamplingScript(2, source);
+  assert.ok(script.includes(source));
+  assert.match(script, /createSecurityAuditSdk\(\{\s*identifiers,/);
+  assert.doesNotMatch(script, /systemAuditIdentifiers|Deliberately omit identifiers/);
+  assert.match(script, /index < 2/);
+});
+
+test("concurrent child stdout bound kills and reaps an overflowing execution", async () => {
+  await assert.rejects(
+    runConcurrentChild('process.stdout.write("x".repeat(128 * 1024)); setInterval(() => {}, 1000);'),
+    /child stdout exceeded 64 KiB; stderr=/,
+  );
 });
 
 test("concurrent child guard kills and reaps overdue executions", async () => {

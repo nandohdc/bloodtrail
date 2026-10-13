@@ -470,16 +470,82 @@ test("planning orchestration stays branch-free with all five private delegations
   }
 });
 
-test("cross-process orchestration stays below 35 body lines without branches or an inline program", () => {
-  const source = parseSource(new URL("tests/cross-process-identifiers.test.ts", packageRoot));
+const positiveTestName = "default SDK event and operation identifiers are unique across concurrent fresh processes";
+const negativeTestName = "old seeded identifier provider repeats event and operation sequences across concurrent fresh processes";
+const sharedHarnessFunctions = [
+  "runConcurrentChild", "buildIdentifierSamplingScript", "parseChildRecord",
+  "validateIdentifierSamples", "parseAndValidateChildResult", "findRepeatedIdentifiers",
+];
+const orchestrationFunctions = [
+  "runConcurrentChild", "buildIdentifierSamplingScript", "parseAndValidateChildResult", "findRepeatedIdentifiers",
+];
+
+function parseTestText(text) {
+  return ts.createSourceFile("control.ts", text, ts.ScriptTarget.Latest, true);
+}
+
+function assertSharedHarnessImport(source) {
+  const imports = source.statements.filter(ts.isImportDeclaration);
+  const shared = imports.find((node) => node.moduleSpecifier.text === "./cross-process-harness.js");
+  assert.ok(shared, "shared harness import required");
+  const names = shared.importClause.namedBindings.elements.map((node) => node.name.text);
+  for (const name of orchestrationFunctions) assert.ok(names.includes(name), name);
+  const declarations = source.statements.filter(ts.isFunctionDeclaration).map((node) => node.name.text);
+  for (const name of sharedHarnessFunctions) assert.ok(!declarations.includes(name), `duplicate ${name}`);
+}
+
+function assertCrossProcessOrchestration(source, name) {
+  assertSharedHarnessImport(source);
   const call = descendants(source).find((node) => ts.isCallExpression(node)
-    && node.arguments[0]?.text === "default SDK event and operation identifiers are unique across concurrent fresh processes");
+    && node.arguments[0]?.text === name);
+  assert.ok(call, name);
   const body = call.arguments[1].body;
   const lines = body.getText(source).slice(1, -1).split("\n").length - 2;
   assert.ok(lines < 35, `${lines} physical interior lines`);
   assertStraightLine(body);
   assert.equal(descendants(body).some(ts.isTemplateExpression), false);
-  assert.ok(source.statements.some((node) => node.name?.text === "parseAndValidateChildResult"));
+  const calls = descendants(body).filter(ts.isCallExpression).map((node) => node.expression.getText(source));
+  for (const helper of [...orchestrationFunctions, "Promise.allSettled"]) assert.ok(calls.includes(helper), helper);
+}
+
+function assertExportedHarnessFunctions(source) {
+  for (const name of sharedHarnessFunctions) {
+    const declaration = source.statements.find((node) => node.name?.text === name);
+    assert.ok(declaration, name);
+    assert.ok(declaration.modifiers.some((node) => node.kind === ts.SyntaxKind.ExportKeyword), name);
+    const lines = declaration.getText(source).split("\n").length;
+    assert.ok(lines <= 70, `${name}: ${lines} physical lines`);
+  }
+}
+
+const crossProcessStructures = [
+  ["tests/cross-process-identifiers.test.ts", positiveTestName],
+  ["tests/cross-process-identifiers-negative-control.test.ts", negativeTestName],
+];
+
+for (const [path, name] of crossProcessStructures) {
+  test(`${path} orchestration stays below 35 body lines without branches or an inline program`, () => {
+    assertCrossProcessOrchestration(parseSource(new URL(path, packageRoot)), name);
+  });
+  test(`${path} structural controls reject absent shared imports, collision calls and branchful orchestration`, () => {
+    const text = readFileSync(new URL(path, packageRoot), "utf8");
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("./cross-process-harness.js", "./different.js")), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("findRepeatedIdentifiers(results)", "[]")), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("const sampleCount = 128;", "if (true) work();")), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("const sampleCount = 128;", "const program = `inline ${value}`;")), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("const sampleCount = 128;", "\n".repeat(35))), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(`${text}\nfunction parseAndValidateChildResult() {}`), name));
+  });
+}
+
+test("shared harness exports all moved helpers within 70 physical lines and rejects missing/private declarations", () => {
+  const text = readFileSync(new URL("tests/cross-process-harness.ts", packageRoot), "utf8");
+  assertExportedHarnessFunctions(parseTestText(text));
+  for (const name of sharedHarnessFunctions) {
+    assert.throws(() => assertExportedHarnessFunctions(parseTestText(text.replace(`export function ${name}`, `function ${name}`))));
+    assert.throws(() => assertExportedHarnessFunctions(parseTestText(text.replace(`export function ${name}`, `export function omitted${name}`))));
+  }
+  assert.throws(() => assertExportedHarnessFunctions(parseTestText(text.replace("const seen =", `${"\n".repeat(70)}const seen =`))));
 });
 
 test("provider capability remains private and resolveProviders delegates its host check", () => {

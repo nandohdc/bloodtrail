@@ -47,7 +47,7 @@ Complete these tasks in order; groups 1–5 and their historical evidence remain
 follow-up preserves the runtime design and declares ownership before new implementation edits.
 
 - [x] 6.1 Commit a planning-only amendment recording owner decisions/provenance, the four new owned paths, task/evidence mappings and process-only requirement relocation; extend positive and fail-closed planning controls and run this story's exact verification commands before staging.
-- [ ] 6.2 Extract the shared top-level cross-process harness and pure collision finder; commit the old-seeded custom-provider negative control with frozen event.id format and identical fresh-process sequences; retain positive assertions and structural controls and run all required gates.
+- [x] 6.2 Extract the shared top-level cross-process harness and pure collision finder; commit the old-seeded custom-provider negative control with frozen event.id format and identical fresh-process sequences; retain positive assertions and structural controls and run all required gates.
 - [ ] 6.3 Document host requirements and injection migration in MIGRATION.md, add identifier glossary terms in CONTEXT.md, add ADR provenance/rejected alternatives and confirm API guarantees; run documentation negative controls and required gates.
 - [ ] 6.4 Execute the vacuous-helper mutation and exact restoration/reruns, all verification gates and final protected-path/history inspection; record only executed evidence and close follow-up invariant mappings.
 
@@ -330,3 +330,74 @@ required to exist for these planning tests.
   path edits. All original assessment paths/relations and baseline
   `5d931ad695fb10db3fe51e6b151352447e21d822` are retained. Fetch succeeded; the worktree
   branch has no upstream, so no pull/rebase or inherited-history rewrite was performed.
+
+### Owner-decision follow-up — US-002 shared harness/control, 2026-10-13, run 119
+
+Run `5b30972f-9782-45a2-9972-16a4426f7151`, Node v26.11.1. Only 6.1 and 6.2 are
+complete. Documentation (6.3) and executed vacuous-helper sensitivity/final closure (6.4)
+remain pending. All inherited evidence above remains historical.
+
+- Moved all five child helpers, supporting types, UUID pattern and SDK URL into top-level
+  `tests/cross-process-harness.ts`; retained deadlines, bounded streams, SIGKILL, close-based
+  reaping and timer/listener cleanup. The unchanged test compiler emitted
+  `dist-tests/cross-process-harness.js` through imports; no manifest/compiler/source edit.
+- Positive and negative tests share `findRepeatedIdentifiers(results)`: each distinct repeated
+  value is returned in second-encounter order over the complete event/operation union.
+  Added seven table cases (empty union/children, disjoint, within-child, cross-child, multiple
+  repeats, ordering), a validated event/operation collision case and input-immutability checks.
+  Provider-source omission/presence tests distinguish absent defaults from custom injection;
+  an additional stdout-overflow test verifies bounded-output termination/reaping.
+- Committed-control test name:
+  `old seeded identifier provider repeats event and operation sequences across concurrent fresh processes`
+  in `tests/cross-process-identifiers-negative-control.test.ts`. Both concurrent suites start
+  all four children before awaiting `Promise.allSettled`, validate normal exits and every sample,
+  require distinct PIDs and exactly 1024 samples (128 event + 128 operation IDs per child).
+  The control checks complete identical sequences and reads the generated frozen contract's
+  `properties.event.properties.id.pattern` for every replica event ID before asserting collisions.
+  The positive still asserts an empty repeated-ID result. No seeded production mutation was used.
+- Read-only `git show 5d931ad695fb10db3fe51e6b151352447e21d822:packages/security-audit-sdk-core/src/providers.ts`
+  comparison: fixture byte-matches the old fixed-seed/Mulberry32/nibble-formatting generator
+  after removing TypeScript annotations/export and renaming only the provider binding. All
+  seven methods share its module-level stream; fixture is confined to the new test file.
+- Updated AST guards retain branch-free, no-inline-program, under-35-body-line orchestration
+  for both files, require their shared imports/calls and exported harness declarations, reject
+  local helper duplicates and over-70-line functions. Missing imports/collision calls/exports,
+  renamed declarations, branches, inline templates and oversized bodies all fail closed.
+  Local AST inspection found the moved/new harness functions at 9–47 physical lines and
+  1–3 decision-count complexity, with no nested conditional blocks; the new negative helpers
+  have 6/9 lines and complexity 2/1. This is inspection, not a remote CodeScene result.
+- Initial focused runtime command: exit 1, 78/79 tests passed. The omission regex matched a
+  comment rather than a configuration property; anchored it to property lines, then recompiled
+  and reran the same positive/negative suites: exit 0, 79/79. Owning assessment: exit 0,
+  168/168, including retained and new fail-closed structural controls.
+- Exact supplied command executed with an empty index (not cached):
+  `tamandua-test --repo '/Users/fernando.costa/.tamandua/worktrees/bloodtrail-5311402e/119-5b30972f' --run '5b30972f-9782-45a2-9972-16a4426f7151' --step 'implement' -- 'npm run check:generated --prefix packages/security-audit-sdk-core && npm run test:matrix --prefix packages/security-audit-sdk-core && npm run test:coherence --prefix packages/security-audit-sdk-core && npm run validate --prefix contracts/security-audit && node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs && node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main && node packages/security-audit-sdk-core/scripts/check-git-state.mjs && make test'`:
+  exit 0, using documented `TAMANDUA_TSTX=0` passthrough before staging (no caching/ledger
+  attribution for uncommitted tracked changes). Individual executed outcomes:
+  - `npm run check:generated --prefix packages/security-audit-sdk-core`: exit 0, no drift.
+  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: exit 0, 245/245 runtime
+    tests including the top-level negative-control suite; type tests, 15 documentation scenarios,
+    compatibility, frozen 61 value/92 type exports, scope and zero-runtime-dependency checks pass.
+  - `npm run test:coherence --prefix packages/security-audit-sdk-core`: exit 0, 13 ADRs retained.
+  - `npm run validate --prefix contracts/security-audit`: exit 0, validation and 17/17 tests.
+  - `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`:
+    exit 0, 168/168 tests, no skipped/cancelled tests.
+  - `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`:
+    exit 0, enforcement active; 12 commits and 17 paths inspected before this story commit.
+  - `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: exit 0, empty index,
+    whitespace/final-newline checks pass.
+  - `make test`: exit 0 across all declared workspaces; Core 245, Node 162, browser 71,
+    collector 92, contract 17, envelope 18, research 11 tests. Deliberate kit mutations ended
+    in the passing negative-control summary. No full governance chain or remote CI claim.
+- `npm run typecheck --prefix packages/security-audit-sdk-core`: exit 0 (also repeated).
+- `npm run build --prefix packages/security-audit-sdk-core`: exit 0.
+- From Core, `npx tsc -p tsconfig.test.json`, followed by
+  `node --test packages/security-audit-sdk-core/dist-tests/cross-process-identifiers.test.js packages/security-audit-sdk-core/dist-tests/cross-process-identifiers-negative-control.test.js`
+  from the repository root: exit 0, 79/79 after the regex correction.
+- `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`:
+  exit 0, change valid. `git diff --check`: exit 0.
+- Diff inspection: only the two top-level test files, shared harness, owning assessment tests
+  and this evidence file change. Production source/runtime, contracts, generated files,
+  manifests, canonical specs, consumer docs and governance_core remain untouched. Fetch
+  succeeded; branch still has no upstream, so inherited history was not pulled/rebased.
+  Committed-history governance recheck will be recorded externally after committing.
