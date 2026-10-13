@@ -198,9 +198,9 @@ function defaultOutcome(definition: EventDefinition, operation: GeneratedOperati
 
 /**
  * Terminal commit states (committed/not_committed/partially_committed/compensated) may only
- * originate from a real operation snapshot. A caller cannot manufacture "committed" by passing
- * `event.commit_state` directly without ever transitioning an operation handle — that would make
- * premature success trivial and discard transition evidence.
+ * originate from SDK-issued operation evidence, whatever the outcome. Without an operation
+ * state or direct commit state, only not_applicable events can resolve a commit state; every
+ * transaction-bound outcome is refused rather than inferring a terminal state from its outcome.
  */
 function resolveCommitState(
   definition: EventDefinition,
@@ -221,8 +221,7 @@ function resolveCommitState(
   }
   if (directCommit) return { ok: true, value: directCommit };
   if (commits.includes("not_applicable")) return { ok: true, value: "not_applicable" };
-  if (outcome === "success" && commits.includes("committed")) return failure("PREMATURE_SUCCESS", "validation", "/operation/state");
-  return { ok: true, value: (commits[0] as SecurityAuditEvent["event"]["commit_state"]) ?? "unknown" };
+  return failure("PREMATURE_SUCCESS", "validation", "/operation/state");
 }
 
 function buildCorrelation(
