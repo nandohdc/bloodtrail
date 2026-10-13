@@ -63,8 +63,8 @@ historical evidence and recorded owner decisions.
 
 ## 8. CodeScene App gate follow-up (#796)
 
-- [ ] 8.1 Refactor the shared cross-process harness to readonly domain-typed parameters; adapt all callers and retain structural and diagnostic controls, including a primitive-parameter regression mutation.
-- [ ] 8.2 Execute focused typecheck/build, compiled cross-process suites, assessment controls and CLI-1.0.53 review/delta; record verbatim before/after evidence before the final committed-head test chain.
+- [x] 8.1 Refactor the shared cross-process harness to readonly domain-typed parameters; adapt all callers and retain structural and diagnostic controls, including a primitive-parameter regression mutation.
+- [x] 8.2 Execute focused typecheck/build, compiled cross-process suites, assessment controls and CLI-1.0.53 review/delta; record verbatim before/after evidence before the final committed-head test chain.
 
 ## Verification Commands
 
@@ -875,3 +875,99 @@ checks are recorded externally after execution, rather than predicted in this co
   executed and recorded in the external progress/report, with no later generic commit.
   No #811 work, push, PR, GitHub comment, merge, archival/folding, approval, remote CI,
   CodeScene analysis or full `make governance-gates`/Core `validate` result is claimed.
+
+### CodeScene App gate follow-up — US-001, 2026-10-13, run 121
+
+This section records newly executed local CLI-1.0.53 and focused verification, not a remote
+App/CI result. Historical evidence above remains intact. Group 8 was committed unchecked
+before implementation; 8.1 and 8.2 are checked only after the refactor and verification below.
+The full assessment, all prior relations and proposal baseline
+`5d931ad695fb10db3fe51e6b151352447e21d822` remain unchanged except for adding verification
+task IDs 8.1/8.2. No new owned paths were required.
+
+#### Verbatim before/after CodeScene evidence
+
+Executed before refactoring at inherited `673571f`, and again after refactoring, from the
+worktree root (stdout and stderr captured in securely created external temporary logs):
+
+```bash
+bash /private/tmp/claude-501/-Users-fernando-costa-Git-bloodtrail/1cc06ce2-3b01-443f-b2f3-a249a0f65c8f/scratchpad/scripts/cs53-check.sh review "$PWD" packages/security-audit-sdk-core/tests/cross-process-harness.ts packages/security-audit-sdk-core/tests/cross-process-identifiers.test.ts packages/security-audit-sdk-core/tests/cross-process-identifiers-negative-control.test.ts
+```
+
+BEFORE output, verbatim (wrapper exit 0; findings are reported in output):
+
+```text
+file score 9.68
+  - Primitive Obsession | In this module, 75 % of all functions have primitive types as arguments.
+file score 10.0
+file score 10.0
+```
+
+AFTER output, verbatim (wrapper exit 0):
+
+```text
+file score 10.0
+file score 10.0
+file score 10.0
+```
+
+The scores follow the command's file order: harness, positive suite, negative-control suite.
+All three after-review results have no findings. Local before score is 9.68; the historical
+App 9.69 is not substituted for that measured result. Only the specified wrapper was used;
+no system CodeScene, gate suppression, configuration change or secret inspection occurred.
+
+Executed preliminary delta after refactoring, from the worktree root:
+
+```bash
+bash /private/tmp/claude-501/-Users-fernando-costa-Git-bloodtrail/1cc06ce2-3b01-443f-b2f3-a249a0f65c8f/scratchpad/scripts/cs53-check.sh delta "$PWD"
+```
+
+AFTER delta output, verbatim (wrapper exit 0):
+
+```text
+no findings
+cs delta exit=0
+```
+
+#### Focused controls and unchanged boundaries
+
+- `npm run typecheck --prefix packages/security-audit-sdk-core`: exit 0.
+- `npm run build --prefix packages/security-audit-sdk-core`: exit 0; generated tracked
+  artifacts unchanged.
+- `(cd packages/security-audit-sdk-core && ./node_modules/.bin/tsc -p tsconfig.test.json)`:
+  exit 0, compiled the domain-typed callers without diagnostics.
+- `node --test packages/security-audit-sdk-core/dist-tests/cross-process-identifiers.test.js packages/security-audit-sdk-core/dist-tests/cross-process-identifiers-negative-control.test.js`:
+  exit 0, 98/98 tests, no skipped/cancelled tests. Includes the new typed record/sample
+  expectation control and all existing child diagnostic, sampling, sibling settlement,
+  stdout/stderr bound, deadline, collision-finder and host/provider boundary assertions.
+- `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`:
+  exit 0, 308/308 tests. Domain controls require all seven exported parameter signatures and
+  readonly exported domain fields; mutations to string/number/boolean and nullable/optional
+  primitive unions fail closed. Adapted orchestration/sampler pins retain every import/export,
+  straight-line body, size, launch-all/settle-all, child validation, distinct PID and full-union
+  count control; new count mutations reject fewer processes or samples.
+- Initial focused execution passed typecheck/build/compilation and 98 runtime tests, but
+  assessment finished 307/308: Node rejected an ambiguous second-argument assertion message.
+  Corrected the new negative control to use the explicit third message argument (no weakened
+  assertion); repeated the entire focused command sequence above, all exit 0.
+- AST inspection of named declarations and const-assigned arrow handlers: 12 counted functions,
+  only onStdout/onStderr/onClose have primitive parameters, 3/12 = 25% (before 9/12 = 75%).
+  Exported helper lengths are 45, 47, 11, 10, 18, 12 and 10 physical lines respectively in
+  declaration order, all <=70. Both main tests remain straight-line and below 35 interior lines.
+  The successful exact review also reports no complexity, function-size or bumpy-road finding.
+- Diff inspection preserves default 10_000 ms and explicit 250 ms deadlines, 64 KiB stdout,
+  4096-character stderr, SIGKILL, close-based reaping and timer/listener removal. All children
+  launch before allSettled and validate afterward. Four fresh children still produce 128 event
+  plus 128 operation samples each (1024 total), with distinct PIDs and exact counts. Positive
+  collisions remain `assert.deepEqual(findRepeatedIdentifiers(results), [])`; negative collisions
+  remain non-empty with identical full replica sequences and frozen event.id pattern assertions.
+- `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` and `git diff --check`:
+  exit 0 with empty index before both planning and refactor staging. Explicit staged lists
+  contained only the owning planning files, then three existing test/harness files and owning
+  assessment controls. No runtime, protected, generated, manifest, governance_core or new paths
+  changed against `673571f`; inherited history is preserved, with appended commits only.
+- Owner decisions remain unchanged: owner decision, 2026-10-13, via grilling in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E.
+  No decision reopened or new approval/authorization claimed. No #811 work or remote GitHub action.
+- The final complete TEST_CMD has NOT run at this evidence-writing point. It will run once after
+  this third commit, against final committed HEAD and empty index; results and final parent/path
+  checks will be recorded externally in progress/completion, without a fourth commit or amendment.
