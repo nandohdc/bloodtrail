@@ -1,9 +1,21 @@
 // Planning and documentation regression controls for issue #796; no SDK behavior is implemented here.
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import test from "node:test";
 
+function findPackageRoot() {
+  let directory = new URL("./", import.meta.url);
+  while (true) {
+    const candidate = new URL("packages/security-audit-sdk-core/", directory);
+    if (existsSync(new URL("package.json", candidate))) return candidate;
+    const parent = new URL("../", directory);
+    if (parent.href === directory.href) throw new Error("Cannot find the SDK package from the assessment test directory");
+    directory = parent;
+  }
+}
+
+const packageRoot = findPackageRoot();
 const changeId = "fix-core-default-identifiers-uniqueness";
 const changeRoot = `openspec/changes/${changeId}/`;
 const baseline = "5d931ad695fb10db3fe51e6b151352447e21d822";
@@ -540,7 +552,6 @@ test("task groups reject missing, out-of-order or reopened historical groups", (
 });
 
 test("ADR coherence accepts the sequential ADR set and rejects missing, duplicate or extra entries", () => {
-  const packageRoot = new URL("../../../packages/security-audit-sdk-core/", import.meta.url);
   const gate = readFileSync(new URL("scripts/check-coherence.mjs", packageRoot), "utf8");
   const rules = gate.split("\n").filter((line) => /^rule\("adr-(count|sequence)"/.test(line));
   assert.equal(rules.length, 2);
@@ -580,7 +591,6 @@ function assertIdentifierDocumentation(api, adr) {
 }
 
 test("API and accepted ADR describe cryptographic defaults without an absolute uniqueness guarantee", () => {
-  const packageRoot = new URL("../../../packages/security-audit-sdk-core/", import.meta.url);
   const api = readFileSync(new URL("API.md", packageRoot), "utf8");
   const adr = readFileSync(new URL("adr/013-default-identifier-cryptographic-uniqueness.md", packageRoot), "utf8");
   assertIdentifierDocumentation(api, adr);
@@ -590,7 +600,6 @@ test("API and accepted ADR describe cryptographic defaults without an absolute u
   assert.throws(() => assertIdentifierDocumentation(api, adr.replace("Status: Accepted for SDK-core implementation", "Status: Proposed")));
 });
 
-const packageRoot = new URL("../../../packages/security-audit-sdk-core/", import.meta.url);
 const migration = readFileSync(new URL("MIGRATION.md", packageRoot), "utf8");
 const glossary = readFileSync(new URL("CONTEXT.md", packageRoot), "utf8");
 const identifierAdr = readFileSync(new URL("adr/013-default-identifier-cryptographic-uniqueness.md", packageRoot), "utf8");
