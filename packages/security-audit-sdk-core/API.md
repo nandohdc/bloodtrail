@@ -44,7 +44,7 @@ Optional configuration:
 - `authoritativeContext`: immutable base context used by every call.
 - `transformations`: initialization-only field-scoped synchronous hooks.
 - `clock`: one fixed `AuditClock`; defaults to the system clock.
-- `identifiers`: one fixed `AuditIdentifierProvider`; defaults to collision-resistant UUID generation.
+- `identifiers`: one fixed `AuditIdentifierProvider`; defaults to `systemAuditIdentifiers`, which uses host `crypto.randomUUID()` for unpredictable, collision-resistant lowercase RFC 4122 UUID v4 generation. Omitting `identifiers` or explicitly passing `systemAuditIdentifiers` requires callable host `crypto.randomUUID` at initialization; otherwise construction throws `SecurityAuditSdkError` with code `SDK_INVALID_CONFIGURATION`, category `configuration`, and path `/identifiers` before readiness or sink emission. A custom injected provider requires no host crypto capability.
 - `shutdownTimeoutMs`: bounded `0..60000` wait; default `5000`.
 - `retention`: optional collision-history capacities. `recentGeneratedEventIds` and `recentIssuedOperationIds` each default to `4096`; each must be a finite positive safe integer no greater than the hard maximum `100000`.
 
@@ -62,7 +62,9 @@ Configuration immutability therefore protects SDK-owned configuration without tr
 
 `AuditClock.now()` must return a valid `Date`. `AuditIdentifierProvider` supplies `eventId`, `operationId`, `correlationId`, `causationId`, `requestId`, `messageId`, and `transactionId`. Event IDs must be lowercase RFC 4122 UUIDs accepted by contract validation. Other generated identifiers must be non-empty, bounded printable values. Reuse of an event ID among the most recent `retention.recentGeneratedEventIds` values, or an operation ID among the most recent `retention.recentIssuedOperationIds` values, fails safely. Both histories are insertion-order FIFO: checks do not refresh age, and a distinct insertion at capacity evicts the oldest value. After eviction, reuse is outside this SDK instance's collision knowledge and may proceed if every other check passes; the windows do not claim lifetime-global uniqueness.
 
-Inject deterministic providers only at initialization and normally only in tests. An injected provider changes repeatability, not causality or uniqueness requirements. Stateful class providers are supported; their methods retain the original receiver, and the caller remains responsible for coordinating their mutable state across concurrent SDK calls.
+All seven `systemAuditIdentifiers` methods (`eventId`, `operationId`, `correlationId`, `causationId`, `requestId`, `messageId`, and `transactionId`) lazily invoke host `crypto.randomUUID()` with its host receiver for each requested value. Construction checks availability but generates no identifiers; module import does not require crypto. The default requires the host Web Crypto UUID capability (including a secure context on browser hosts that restrict it); there is no `Math.random`, seeded PRNG, or Node-only crypto import fallback. Unpredictability and collision resistance rely on the host cryptographic implementation. UUID v4 uniqueness is probabilistic, not an absolute lifetime-global uniqueness guarantee across processes or restarts; the per-instance FIFO histories described above remain separate bounded reuse detection.
+
+Inject deterministic providers only at initialization and normally only in tests. A custom provider is retained by identity without probing host crypto or invoking its methods during construction, so it works on hosts without `crypto.randomUUID`. An injected provider changes repeatability, not causality or uniqueness requirements. Stateful class providers are supported; their methods retain the original receiver, and the caller remains responsible for coordinating their mutable state across concurrent SDK calls.
 
 ## Authority-specific context construction
 

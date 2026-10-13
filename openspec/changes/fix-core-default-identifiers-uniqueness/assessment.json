@@ -1,0 +1,148 @@
+{
+  "schema_version": "1.1",
+  "change_id": "fix-core-default-identifiers-uniqueness",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Default identifiers must resist collisions and prediction across independent process starts; per-instance bounded reuse detection cannot prevent cross-process duplicates.",
+    "Hosts without cryptographic UUID generation must fail before readiness when using system defaults, rather than silently weakening audit integrity.",
+    "Core must remain portable with zero Node built-in imports, zero third-party runtime dependencies, and unchanged public exports; custom providers must need no host crypto.",
+    "Caller-owned providers must retain identity and receiver behavior without construction-time invocation or mutation.",
+    "Static coupling declarations must permit host crypto only in src/providers.ts and continue rejecting other globals and host module imports."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior",
+      "concurrency",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [
+    "openspec/changes/fix-core-default-identifiers-uniqueness/.openspec.yaml",
+    "openspec/changes/fix-core-default-identifiers-uniqueness/proposal.md",
+    "openspec/changes/fix-core-default-identifiers-uniqueness/design.md",
+    "openspec/changes/fix-core-default-identifiers-uniqueness/specs/security-audit-sdk-core/spec.md",
+    "openspec/changes/fix-core-default-identifiers-uniqueness/tasks.md",
+    "openspec/changes/fix-core-default-identifiers-uniqueness/assessment.json",
+    "openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs",
+    "packages/security-audit-sdk-core/src/providers.ts",
+    "packages/security-audit-sdk-core/scripts/platform-coupling-policy.mjs",
+    "packages/security-audit-sdk-core/scripts/check-scope.mjs",
+    "packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs",
+    "packages/security-audit-sdk-core/tests/cross-process-identifiers.test.ts",
+    "packages/security-audit-sdk-core/API.md",
+    "packages/security-audit-sdk-core/adr/013-default-identifier-cryptographic-uniqueness.md",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-core/MIGRATION.md",
+    "packages/security-audit-sdk-core/CONTEXT.md",
+    "packages/security-audit-sdk-core/tests/cross-process-identifiers-negative-control.test.ts",
+    "packages/security-audit-sdk-core/tests/cross-process-harness.ts"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-direct-host-uuid",
+      "kind": "direct_implementation",
+      "summary": "Fix issue #796 (https://github.com/nandohdc/bloodtrail/issues/796) by lazily invoking host crypto.randomUUID in the existing default provider, validating its availability only for implicit or explicit system defaults, and preserving custom injection and narrow coupling boundaries.",
+      "forces_addressed": [
+        "Default identifiers must resist collisions and prediction across independent process starts; per-instance bounded reuse detection cannot prevent cross-process duplicates.",
+        "Hosts without cryptographic UUID generation must fail before readiness when using system defaults, rather than silently weakening audit integrity.",
+        "Core must remain portable with zero Node built-in imports, zero third-party runtime dependencies, and unchanged public exports; custom providers must need no host crypto.",
+        "Caller-owned providers must retain identity and receiver behavior without construction-time invocation or mutation.",
+        "Static coupling declarations must permit host crypto only in src/providers.ts and continue rejecting other globals and host module imports."
+      ]
+    },
+    {
+      "id": "approach-node-crypto-import",
+      "kind": "alternative",
+      "summary": "Import randomUUID from node:crypto directly in Core to obtain cryptographic identifiers independently of host Web Crypto availability.",
+      "forces_addressed": [
+        "Default identifiers must resist collisions and prediction across independent process starts; per-instance bounded reuse detection cannot prevent cross-process duplicates.",
+        "Core must remain portable with zero Node built-in imports, zero third-party runtime dependencies, and unchanged public exports; custom providers must need no host crypto.",
+        "Static coupling declarations must permit host crypto only in src/providers.ts and continue rejecting other globals and host module imports."
+      ]
+    },
+    {
+      "id": "approach-mandatory-custom-injection",
+      "kind": "alternative",
+      "summary": "Remove the default generator and require every application to supply a trusted identifier provider, eliminating Core's cryptographic host requirement.",
+      "forces_addressed": [
+        "Default identifiers must resist collisions and prediction across independent process starts; per-instance bounded reuse detection cannot prevent cross-process duplicates.",
+        "Hosts without cryptographic UUID generation must fail before readiness when using system defaults, rather than silently weakening audit integrity.",
+        "Core must remain portable with zero Node built-in imports, zero third-party runtime dependencies, and unchanged public exports; custom providers must need no host crypto."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-direct-host-uuid",
+  "rejected_alternative_ids": ["approach-node-crypto-import", "approach-mandatory-custom-injection"],
+  "rejection_reasons": {
+    "approach-node-crypto-import": {
+      "forces": [
+        "Core must remain portable with zero Node built-in imports, zero third-party runtime dependencies, and unchanged public exports; custom providers must need no host crypto.",
+        "Static coupling declarations must permit host crypto only in src/providers.ts and continue rejecting other globals and host module imports."
+      ],
+      "reason": "Node crypto solves entropy but violates the zero host built-in import and non-Node portability constraints. A portable host capability with custom injection preserves the existing Core SPI without importing a Node-only module."
+    },
+    "approach-mandatory-custom-injection": {
+      "forces": [
+        "Default identifiers must resist collisions and prediction across independent process starts; per-instance bounded reuse detection cannot prevent cross-process duplicates.",
+        "Hosts without cryptographic UUID generation must fail before readiness when using system defaults, rather than silently weakening audit integrity."
+      ],
+      "reason": "Mandatory injection transfers the ordinary default-safety obligation to every application and removes working default initialization even on hosts with cryptographic UUID support. Validating host randomness on the default path fixes the unsafe sequence without requiring all consumers to design a provider."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-host-uuid-generation",
+    "implementation-default-fail-closed",
+    "implementation-custom-provider-independence",
+    "implementation-provider-local-coupling",
+    "implementation-preserved-boundaries"
+  ],
+  "invariant_evidence": {
+    "implementation-host-uuid-generation": {
+      "task_ids": ["2.1", "2.2", "3.1", "3.2", "6.1", "6.2", "6.4"],
+      "evidence_ids": [
+        "tests/cross-process-identifiers.test.ts: seven-method UUID-v4 and host receiver delegation controls",
+        "tests/cross-process-identifiers.test.ts: concurrent fresh-process combined event/operation zero-collision sample",
+        "tests/cross-process-identifiers-negative-control.test.ts: old seeded identifier provider repeats event and operation sequences across concurrent fresh processes",
+        "tasks.md: Owner-decision follow-up — US-004 closure; shared findRepeatedIdentifiers vacuous-helper mutation fails at collision detection, exact-byte restoration and focused reruns pass"
+      ]
+    },
+    "implementation-default-fail-closed": {
+      "task_ids": ["2.1", "2.2", "7.2"],
+      "evidence_ids": [
+        "tests/cross-process-identifiers.test.ts: absent crypto, missing randomUUID and non-function randomUUID matrix for implicit and explicit defaults rejects with SDK_INVALID_CONFIGURATION, configuration, /identifiers and zero sink calls",
+        "tests/cross-process-identifiers.test.ts: planned throwing crypto and randomUUID accessor matrix for implicit and explicit defaults rejects with SecurityAuditSdkError, SDK_INVALID_CONFIGURATION, configuration, /identifiers and zero sink calls"
+      ]
+    },
+    "implementation-custom-provider-independence": {
+      "task_ids": ["2.1", "2.2", "7.2"],
+      "evidence_ids": [
+        "tests/cross-process-identifiers.test.ts: import and deterministic custom initialization without host crypto, exact object identity, zero construction method calls and receiver-preserving identifier use",
+        "tests/cross-process-identifiers.test.ts: planned missing custom method eventId, operationId, correlationId, causationId, requestId, messageId and transactionId cases reject with SDK_INVALID_CONFIGURATION at /identifiers/<method> without provider or sink calls"
+      ]
+    },
+    "implementation-provider-local-coupling": {
+      "task_ids": ["2.3"],
+      "evidence_ids": [
+        "tests/verification/platform-coupling-mutations.test.mjs: provider-local crypto passes and BASELINE_INVENTORY equals scope output",
+        "tests/verification/platform-coupling-mutations.test.mjs: crypto outside providers fails undeclared-global and node:crypto fails undeclared-specifier"
+      ]
+    },
+    "implementation-preserved-boundaries": {
+      "task_ids": ["4.1", "4.2", "4.3", "6.1", "6.3", "6.4"],
+      "evidence_ids": [
+        "test:coherence verifies 13 consecutive ADRs; API.md documents v4 collision resistance, host requirement and custom exemption",
+        "full Core validate and make test retain frozen exports, zero runtime dependencies and complete package contents",
+        "final design-pattern-governance and strict OpenSpec validation pass; empty-index Git checks and baseline diff preserve governance_core, contracts and generated source"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "5d931ad695fb10db3fe51e6b151352447e21d822"
+  },
+  "verification_task_ids": ["1.1", "1.2", "1.3", "2.2", "2.3", "3.1", "3.2", "4.1", "4.2", "4.3", "6.1", "6.2", "6.3", "6.4", "7.1", "7.2", "7.3", "7.4", "8.1", "8.2"]
+}

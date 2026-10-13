@@ -11,3 +11,6 @@
 - **Scope vs. lexical scope:** "scope" in the gate name refers to the authorization boundary and production-integration isolation; the classifier also analyzes scope in the lexical sense. "Allowed" and "forbidden" remain bound to the production-integration surface, whereas coupling admission states are "declared" and "undeclared".
 - **Exact-one package support:** the many-to-one compatibility relation in which each SDK package version supports exactly one canonical Security Audit Event Contract version, while several SDK package versions may support the same contract version.
 - **Exact-version instance binding:** the construction invariant that a producer SDK instance can be created only for the contract version supported by its package version.
+- **Default identifier provider:** `systemAuditIdentifiers`, used when `identifiers` is omitted.
+- **Host cryptographic capability:** host Web Crypto `crypto.randomUUID`, a Declared coupling admitted only to `src/providers.ts` by the platform-coupling policy, never a `node:` import.
+- **Collision resistance:** probabilistic resistance from 122 CSPRNG bits per UUID v4 across producers, processes, restarts and identifier kinds. It is not absolute uniqueness, not authentication, and not a fraud signal.
