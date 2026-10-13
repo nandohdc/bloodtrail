@@ -2,6 +2,8 @@
 
 ## Glossary
 
+- **Transaction-bound event:** a cataloged event whose commit values include `committed`. Its commit state comes only from operation evidence, whatever its outcome. Not to be confused with the `transaction_critical` delivery class: some transaction-bound events are policy-critical.
+- **Operation evidence:** an operation handle issued by `beginOperation()` on the same SDK instance and advanced only through its sanctioned transitions. Snapshots, copies, plain objects and handles from another instance are not operation evidence.
 - **Self-contained packed artifact:** a packed artifact that references no module outside itself. ADR-SDK-011 owns this term and the generated-validator control already proves the property.
 - **Complete packed artifact:** a packed artifact from which no module loaded by its declared entry points is absent. Package verification adds and proves this property.
 - **Closure:** not a synonym for either property above. In this project it means lifecycle closure, as bound by `openspec/specs/security-audit-sdk-core/spec.md`. The filename `packed-consumer-closure.test.mjs` is legacy naming retained for continuity.

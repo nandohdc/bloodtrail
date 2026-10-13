@@ -615,17 +615,19 @@ value came from a second installed copy of the core, the code is `DUPLICATE_AUTH
 
 ### `PREMATURE_SUCCESS`
 
-**Meaning.** A transaction-bound event reports success before its operation committed. The
-transaction-bound events are those whose `commit` values in `EVENT_CATALOG` include `committed`.
+**Meaning.** A transaction-bound named event lacks the operation evidence its commit state needs,
+whatever its outcome, or reports success before its operation committed. The transaction-bound
+events are those whose `commit` values in `EVENT_CATALOG` include `committed`.
 
 **Common causes.**
 
 - **No `operation` handle was passed.** This is the most common cause, and the code's name hides it:
-  the success is not early, the handle is missing. Of the transaction-bound events, only
+  the outcome need not be success; the handle is missing. Of the transaction-bound events, only
   `sensitiveResourceCreated`, `sensitiveResourceModified` and `sensitiveResourceDeleted` require
   `operation` in their TypeScript input. The others, such as `roleAssigned`, `mfaEnrolled` and
-  `securityConfigurationChanged`, compile without it. Their default outcome is `success`, so the call
-  fails here. The path is `/operation/state`.
+  `securityConfigurationChanged`, compile without it. Without a handle and without a direct commit
+  state the call fails here whatever the outcome, not only for default `success`. The path is
+  `/operation/state`.
 - A handle passed before its `markCommitted()` call. The path is `/operation/state`.
 - `event.commit_state` set to a terminal state such as `committed`. Only a handle's transition can
   establish one. The path is `/event/commit_state`.
@@ -635,8 +637,10 @@ transaction-bound events are those whose `commit` values in `EVENT_CATALOG` incl
 **Fix.**
 
 1. Call `sdk.beginOperation()` before the business operation.
-2. Call the handle's `markCommitted()` once the operation commits, or `markNotCommitted()` if it
-   fails. After `markNotCommitted()`, the SDK reports a `failure` outcome.
+2. Call the handle's `markCommitted()` once the operation commits, `markNotCommitted()` if it fails
+   or is refused, `markCancelled()` for cancellation, or `markPartiallyCommitted()` for partial
+   commitment. After `markNotCommitted()`, the SDK defaults to `failure`; supply explicit outcome
+   `denied` and authorization decision `deny` to record a refusal.
 3. Pass the handle as `operation`.
 
 **Fields.** `category` is `validation`. `path` is `/operation/state` or `/event/commit_state`. The

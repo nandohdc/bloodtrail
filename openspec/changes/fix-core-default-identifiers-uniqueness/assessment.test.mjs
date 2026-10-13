@@ -539,15 +539,15 @@ test("task groups reject missing, out-of-order or reopened historical groups", (
   assert.throws(() => assertTaskGroupOrder(tasks.replace("[x] 5.1", "[ ] 5.1")));
 });
 
-test("ADR coherence accepts exactly 001 through 013 and rejects missing, duplicate or extra entries", () => {
+test("ADR coherence accepts the sequential ADR set and rejects missing, duplicate or extra entries", () => {
   const packageRoot = new URL("../../../packages/security-audit-sdk-core/", import.meta.url);
   const gate = readFileSync(new URL("scripts/check-coherence.mjs", packageRoot), "utf8");
   const rules = gate.split("\n").filter((line) => /^rule\("adr-(count|sequence)"/.test(line));
   assert.equal(rules.length, 2);
-  for (const rule of rules) assert.ok(rule.includes("ADR-SDK-013"), "diagnostic must name the final ADR");
+  const files = readdirSync(new URL("adr/", packageRoot)).filter((name) => /^\d{3}-.+\.md$/.test(name)).sort();
+  for (const rule of rules) assert.ok(rule.includes(`ADR-SDK-${files.at(-1).slice(0, 3)}`), "diagnostic must name the final ADR");
   // Execute the actual two gate rules in isolation, without copying or mutating the repository.
   const evaluate = new Function("adrFiles", "rule", "same", rules.join("\n"));
-  const files = readdirSync(new URL("adr/", packageRoot)).filter((name) => /^\d{3}-.+\.md$/.test(name)).sort();
   function failures(entries) {
     const failed = [];
     evaluate(entries, (id, _file, condition) => { if (!condition) failed.push(id); },
@@ -557,7 +557,7 @@ test("ADR coherence accepts exactly 001 through 013 and rejects missing, duplica
   assert.deepEqual(failures(files), []);
   assert.deepEqual(failures(files.slice(0, -1)), ["adr-count", "adr-sequence"]);
   assert.deepEqual(failures([...files.slice(0, -1), "012-duplicate.md"]), ["adr-sequence"]);
-  assert.deepEqual(failures([...files, "014-extra.md"]), ["adr-count", "adr-sequence"]);
+  assert.deepEqual(failures([...files, `${String(files.length + 1).padStart(3, "0")}-extra.md`]), ["adr-count", "adr-sequence"]);
 });
 
 function assertIdentifierDocumentation(api, adr) {
