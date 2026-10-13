@@ -166,6 +166,26 @@ When `identifiers` is omitted or `systemAuditIdentifiers` is explicitly passed, 
 
 For a host without this capability, inject an `AuditIdentifierProvider` at initialization. Custom providers remain host-independent: construction neither probes host crypto nor invokes their methods. Callers remain responsible for their provider's identifier quality and mutable-state coordination. There is no insecure fallback, no mandatory injection on capable hosts, and no public export, provider interface, error-code or canonical contract change.
 
+## Transaction-bound commit-state correction
+
+Previously, transaction-bound named events (catalog commit values include `committed`) with outcome `failure`, `denied`, `partial` or `cancelled`, no operation handle and no direct commit state were accepted and recorded as `committed`. They are now refused with `PREMATURE_SUCCESS`, category `validation`, path `/operation/state`, without invoking the sink, just as handle-less success already was. Outcome alone never establishes a terminal commit state. Events whose catalog commit values include `not_applicable` remain unchanged.
+
+Retain a same-instance handle from `beginOperation()` and transition it before passing it to the named method. For a failed or refused operation use `markNotCommitted()`; use `markCancelled()` for cancellation or `markPartiallyCommitted()` for partial commitment. For example, given valid branded actor, tenant, subject, authentication, resource and authorization evidence with decision `deny`:
+
+```ts
+const operation = audit.beginOperation({ boundEvent: "mfaRemoved" });
+if (!operation.ok) throw new Error(operation.error.code);
+const notCommitted = operation.value.markNotCommitted();
+if (!notCommitted.ok) throw new Error(notCommitted.error.code);
+await audit.mfaRemoved({
+  actor, tenant, subject, authentication, resource, authorization,
+  event: { outcome: "denied" },
+  operation: operation.value,
+});
+```
+
+This is a non-breaking `fix(sdk-core)` runtime correction: generated types, generator, public surface, error registry and contract `2.1.0` are unchanged. Previously accepted invented commit state contradicted operation-evidence semantics; do not rely on it. Complete-event `emit()`/`redeliver()`, Node durability and contradictory outcome/commit pairs through handles are not changed. This correction does not authorize release or production use.
+
 ## Contract-version upgrades
 
 A contract semantic change requires the `security-audit-event-contract` governance lifecycle before SDK work. An additive contract-minor version remains contract-minor on that independent version axis. After a new contract version is approved, SDK adaptation must use a separate reviewed change that preserves `EXACT_ONE`:
