@@ -48,7 +48,7 @@ follow-up preserves the runtime design and declares ownership before new impleme
 
 - [x] 6.1 Commit a planning-only amendment recording owner decisions/provenance, the four new owned paths, task/evidence mappings and process-only requirement relocation; extend positive and fail-closed planning controls and run this story's exact verification commands before staging.
 - [x] 6.2 Extract the shared top-level cross-process harness and pure collision finder; commit the old-seeded custom-provider negative control with frozen event.id format and identical fresh-process sequences; retain positive assertions and structural controls and run all required gates.
-- [ ] 6.3 Document host requirements and injection migration in MIGRATION.md, add identifier glossary terms in CONTEXT.md, add ADR provenance/rejected alternatives and confirm API guarantees; run documentation negative controls and required gates.
+- [x] 6.3 Document host requirements and injection migration in MIGRATION.md, add identifier glossary terms in CONTEXT.md, add ADR provenance/rejected alternatives and confirm API guarantees; run documentation negative controls and required gates.
 - [ ] 6.4 Execute the vacuous-helper mutation and exact restoration/reruns, all verification gates and final protected-path/history inspection; record only executed evidence and close follow-up invariant mappings.
 
 ## Verification Commands
@@ -401,3 +401,62 @@ remain pending. All inherited evidence above remains historical.
   manifests, canonical specs, consumer docs and governance_core remain untouched. Fetch
   succeeded; branch still has no upstream, so inherited history was not pulled/rebased.
   Committed-history governance recheck will be recorded externally after committing.
+
+### Owner-decision follow-up — US-003 consumer documentation, 2026-10-13, run 119
+
+Run `5b30972f-9782-45a2-9972-16a4426f7151`, Node v26.11.1. Tasks 6.1–6.3 are
+complete in order; 6.4 remains pending. All run-117/run-118 and earlier story evidence
+above remains historical; no vacuous-helper mutation was executed for this story.
+
+- Added a bounded default-identifier migration entry: non-breaking `fix(sdk-core)`, prior
+  repeated per-process sequence, secure default retained, callable host Web Crypto for
+  implicit/explicit system defaults, construction error code/category/path, no identifier
+  invocation during checks, Node 24/26 capability and host-independent custom injection.
+  The 122 CSPRNG-bit guarantee is probabilistic, not absolute. New wording contains no
+  contract version; unrelated historical migration entries are unchanged.
+- Appended exactly three glossary bullets in the existing style: Default identifier provider,
+  Host cryptographic capability and Collision resistance. The providers-only Declared
+  coupling is never a `node:` import; collision resistance is neither authentication nor
+  a fraud signal, nor absolute uniqueness across producers/processes/restarts/kinds.
+- ADR-SDK-013 retains its number/status, runtime descriptions and no-fallback guarantees.
+  Added the verbatim owner source and four rejected alternatives/reasons; current verification
+  now names the committed seeded-provider test, shared harness/finder and prospective
+  vacuous-helper/restoration strategy instead of relying on disposable-only prose.
+- Read API.md configuration and Clock and identifier providers sections: all four required
+  guarantees already present (probabilistic, host requirement, fail-closed construction
+  for both default forms and custom-provider exemption). API.md remains byte-identical.
+- Added 71 owning documentation regression tests: bounded migration phrases/version guard,
+  exactly named/styled/scoped glossary entries, ADR provenance/alternative reasons/control
+  strategy, table-driven missing-phrase mutations, duplicate/misformatted/cross-entry glossary
+  controls and rejection of disposable-only current verification. Existing API/ADR guarantees,
+  actual exactly-13 ADR coherence rules and shared-harness AST protections are retained.
+- Focused `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`:
+  exit 0, 239/239 tests, no skipped/cancelled tests.
+- Exact supplied command executed before staging with an empty index (not cached):
+  `tamandua-test --repo '/Users/fernando.costa/.tamandua/worktrees/bloodtrail-5311402e/119-5b30972f' --run '5b30972f-9782-45a2-9972-16a4426f7151' --step 'implement' -- 'npm run check:generated --prefix packages/security-audit-sdk-core && npm run test:matrix --prefix packages/security-audit-sdk-core && npm run test:coherence --prefix packages/security-audit-sdk-core && npm run validate --prefix contracts/security-audit && node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs && node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main && node packages/security-audit-sdk-core/scripts/check-git-state.mjs && make test'`:
+  exit 0, using documented `TAMANDUA_TSTX=0` passthrough (no caching/ledger attribution
+  for uncommitted tracked changes). Individual executed outcomes:
+  - `npm run check:generated --prefix packages/security-audit-sdk-core`: exit 0, no drift.
+  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: exit 0, 245/245 runtime
+    tests; type tests, 15 documentation scenarios, compatibility, frozen 61 value/92 type
+    exports, scope and zero-runtime-dependency controls pass.
+  - `npm run test:coherence --prefix packages/security-audit-sdk-core`: exit 0, 13 ADRs.
+  - `npm run validate --prefix contracts/security-audit`: exit 0, validation and 17/17 tests.
+  - `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`:
+    exit 0, 239/239 tests, including missing-statement negative controls.
+  - `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`:
+    exit 0, enforcement active; 13 commits and 19 paths inspected before this story commit.
+  - `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: exit 0, empty index,
+    whitespace/final-newline checks pass.
+  - `make test`: exit 0, all declared workspaces; Core 245, Node 162, browser 71, collector 92,
+    contract 17, envelope 18, research 11 tests. Evaluation-kit negative controls pass.
+- `npm run typecheck --prefix packages/security-audit-sdk-core`: exit 0.
+- `npm run build --prefix packages/security-audit-sdk-core`: exit 0.
+- `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`:
+  exit 0, change valid. `git diff --check`: exit 0.
+- Fetch succeeded; branch has no upstream, so no unrelated pull/rebase was performed.
+  Only MIGRATION.md, CONTEXT.md, ADR 013 and owning documentation tests/evidence changed.
+  Runtime source, runtime tests, contracts, generated files, manifests, canonical specs,
+  coherence policy and governance_core are unchanged. No remote CI, CodeScene or full
+  governance-chain result is claimed. Post-commit governance will be recorded externally
+  after actual execution, not anticipated here.

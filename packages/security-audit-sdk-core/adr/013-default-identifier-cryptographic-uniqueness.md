@@ -4,6 +4,7 @@
 - Date: 2026-10-13
 - Issue: https://github.com/nandohdc/bloodtrail/issues/796
 - Owning change: `openspec/changes/fix-core-default-identifiers-uniqueness/`
+- Decision source: owner decision, 2026-10-13, via grilling in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
 
 ## Context
 
@@ -22,14 +23,16 @@ The host global exception is confined to `src/providers.ts` in the platform-coup
 ## Alternatives
 
 - Retaining the static PRNG or replacing it with `Math.random` was rejected: neither provides cryptographic unpredictability or defensible cross-process collision resistance. Insecure fallbacks are forbidden; missing host capability must fail closed.
-- Importing `node:crypto` was rejected: it would couple portable Core to a Node-only runtime rather than the host Web Crypto boundary.
-- Requiring custom injection for every consumer was rejected: it transfers the default-safety obligation to each application even when safe host UUID generation is available.
+- Importing `node:crypto` was rejected: it would couple portable Core to a Node-only runtime rather than the host Web Crypto boundary, violating the portable-core host import policy.
+- Requiring custom injection for every consumer (mandatory injection) was rejected: it transfers the default-safety obligation to each application even when safe host UUID generation is available, an unnecessary consumer burden despite the secure default.
+- Using `crypto.getRandomValues` with hand formatting was rejected: it adds an unnecessary custom UUID implementation when `crypto.randomUUID` exists.
+- Failing lazily at the first ID was rejected: it is too late versus construction fail-closed, allowing an unusable default to reach readiness.
 
 ## Consequences and verification
 
-UUID v4 collision resistance is probabilistic, not an absolute lifetime-global uniqueness guarantee. The existing insertion-order FIFO event/operation histories continue detecting reuse only within their configured per-instance windows; they are not cross-process coordination or durable deduplication.
+UUID v4 collision resistance is probabilistic, with 122 CSPRNG bits per UUID v4, not an absolute lifetime-global uniqueness guarantee. The existing insertion-order FIFO event/operation histories continue detecting reuse only within their configured per-instance windows; they are not cross-process coordination or durable deduplication.
 
-`tests/cross-process-identifiers.test.ts` verifies all seven UUID methods, host receiver/lazy invocation, fail-closed implicit and explicit defaults, custom-provider independence, and zero collisions over concurrent fresh-process samples. A disposable old-seed negative control reaches and fails the collision assertion. Platform-coupling mutations prove that crypto elsewhere and Node crypto imports remain forbidden. Coherence requires exactly ADR-SDK-001 through ADR-SDK-013, and API documentation explains the host requirement and bounded guarantees.
+`tests/cross-process-identifiers.test.ts` verifies all seven UUID methods, host receiver/lazy invocation, fail-closed implicit and explicit defaults, custom-provider independence, and zero collisions over concurrent fresh-process samples. The committed `tests/cross-process-identifiers-negative-control.test.ts` test, `old seeded identifier provider repeats event and operation sequences across concurrent fresh processes`, injects a test-only old-seed replica as a custom provider. It uses the same `tests/cross-process-harness.ts` child harness and `findRepeatedIdentifiers(results)` collision finder as the positive test, validates the frozen event.id pattern and identical fresh-process sequences, and requires detected collisions. The sensitivity strategy temporarily makes that shared finder return `[]`: the negative control must fail at its non-empty collision assertion, then exact source bytes must be restored and both suites rerun; never commit the mutation. Historical disposable-copy results alone do not prove this committed control's sensitivity. Platform-coupling mutations prove that crypto elsewhere and Node crypto imports remain forbidden. Coherence requires exactly ADR-SDK-001 through ADR-SDK-013, and API documentation explains the host requirement and bounded guarantees.
 
 ## Boundary
 

@@ -158,6 +158,14 @@ Candidate `0.4.0` replaces its exact contract baseline with `2.1.0`; callers mus
 
 This is a source-level breaking API tightening. A value whose scope TypeScript cannot narrow, such as a whole canonical `tenant` object read from an event, no longer type-checks, even when its identifiers are present. Destructure it, branch on `scope`, check that both identifiers are present, and pass a new object literal built from the narrowed values. The runtime check is unchanged: it still throws the same code at the same path for a missing or empty identifier, whatever the caller's types say. The emitted JavaScript, the branded result, error codes, and every exported name are unchanged. If applied to a published stable package, this would require a major version. Candidate `0.4.0` remains private and unpublished, so its version is unchanged, and this correction does not authorize release or production use.
 
+## Default identifier correctness fix
+
+This is a non-breaking `fix(sdk-core)`: the secure default remains available, and an explicit provider is not mandatory. The previous default emitted the same sequence in every process. `systemAuditIdentifiers` now uses host Web Crypto `crypto.randomUUID()` instead of a fixed-seed generator. Each UUID v4 carries 122 CSPRNG bits, providing probabilistic collision resistance across producers, processes, restarts and identifier kinds, not absolute uniqueness.
+
+When `identifiers` is omitted or `systemAuditIdentifiers` is explicitly passed, the host must provide a callable `crypto.randomUUID` at construction and retain it for subsequent generation. Otherwise construction throws `SecurityAuditSdkError` with code `SDK_INVALID_CONFIGURATION`, category `configuration`, and path `/identifiers` before readiness or sink emission. Construction checks availability without invoking any identifier method. Both supported Node majors, 24 and 26, supply this capability; browser hosts may require a secure context.
+
+For a host without this capability, inject an `AuditIdentifierProvider` at initialization. Custom providers remain host-independent: construction neither probes host crypto nor invokes their methods. Callers remain responsible for their provider's identifier quality and mutable-state coordination. There is no insecure fallback, no mandatory injection on capable hosts, and no public export, provider interface, error-code or canonical contract change.
+
 ## Contract-version upgrades
 
 A contract semantic change requires the `security-audit-event-contract` governance lifecycle before SDK work. An additive contract-minor version remains contract-minor on that independent version axis. After a new contract version is approved, SDK adaptation must use a separate reviewed change that preserves `EXACT_ONE`:

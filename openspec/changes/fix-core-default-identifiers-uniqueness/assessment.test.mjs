@@ -437,6 +437,108 @@ test("API and accepted ADR describe cryptographic defaults without an absolute u
 });
 
 const packageRoot = new URL("../../../packages/security-audit-sdk-core/", import.meta.url);
+const migration = readFileSync(new URL("MIGRATION.md", packageRoot), "utf8");
+const glossary = readFileSync(new URL("CONTEXT.md", packageRoot), "utf8");
+const identifierAdr = readFileSync(new URL("adr/013-default-identifier-cryptographic-uniqueness.md", packageRoot), "utf8");
+const migrationPhrases = [
+  "non-breaking `fix(sdk-core)`", "the secure default remains available",
+  "an explicit provider is not mandatory", "same sequence in every process",
+  "host Web Crypto `crypto.randomUUID()`", "122 CSPRNG bits", "probabilistic collision resistance",
+  "across producers, processes, restarts and identifier kinds", "not absolute uniqueness",
+  "`identifiers` is omitted or `systemAuditIdentifiers` is explicitly passed",
+  "callable `crypto.randomUUID` at construction", "retain it for subsequent generation",
+  "construction throws `SecurityAuditSdkError`", "code `SDK_INVALID_CONFIGURATION`",
+  "category `configuration`", "path `/identifiers`", "before readiness or sink emission",
+  "without invoking any identifier method", "Both supported Node majors, 24 and 26, supply this capability",
+  "inject an `AuditIdentifierProvider` at initialization", "Custom providers remain host-independent",
+  "construction neither probes host crypto nor invokes their methods", "no insecure fallback",
+];
+const glossaryEntries = [
+  ["Default identifier provider", ["`systemAuditIdentifiers`", "used when `identifiers` is omitted"]],
+  ["Host cryptographic capability", ["host Web Crypto `crypto.randomUUID`", "a Declared coupling",
+    "admitted only to `src/providers.ts`", "by the platform-coupling policy", "never a `node:` import"]],
+  ["Collision resistance", ["probabilistic", "122 CSPRNG bits per UUID v4",
+    "across producers, processes, restarts and identifier kinds", "not absolute uniqueness",
+    "not authentication", "not a fraud signal"]],
+];
+const adrFollowUpPhrases = [
+  ownerSource, "Status: Accepted for SDK-core implementation", "122 CSPRNG bits per UUID v4",
+  "Importing `node:crypto` was rejected", "violating the portable-core host import policy",
+  "mandatory injection", "unnecessary consumer burden despite the secure default",
+  "`crypto.getRandomValues` with hand formatting was rejected",
+  "unnecessary custom UUID implementation when `crypto.randomUUID` exists",
+  "Failing lazily at the first ID was rejected", "too late versus construction fail-closed",
+  "`tests/cross-process-identifiers-negative-control.test.ts`",
+  "old seeded identifier provider repeats event and operation sequences across concurrent fresh processes",
+  "test-only old-seed replica as a custom provider", "`tests/cross-process-harness.ts`",
+  "`findRepeatedIdentifiers(results)`", "frozen event.id pattern", "identical fresh-process sequences",
+  "requires detected collisions", "shared finder return `[]`", "must fail at its non-empty collision assertion",
+  "exact source bytes must be restored and both suites rerun", "never commit the mutation",
+  "Historical disposable-copy results alone do not prove this committed control's sensitivity",
+];
+
+function assertRequiredPhrases(text, phrases) {
+  for (const phrase of phrases) assert.ok(text.includes(phrase), phrase);
+}
+
+function assertIdentifierMigration(text) {
+  const entry = text.split("## Default identifier correctness fix\n")[1];
+  assert.ok(entry, "bounded default-identifier migration entry required");
+  const section = entry.split("\n## ")[0];
+  assertRequiredPhrases(section, migrationPhrases);
+  const versions = section.match(/\b\d+\.\d+\.\d+\b/g) ?? [];
+  for (const version of versions) assert.equal(version, "2.1.0", "no obsolete contract version in new entry");
+}
+
+function assertIdentifierGlossary(text) {
+  const lines = text.split("\n");
+  for (const [term, phrases] of glossaryEntries) {
+    const prefix = `- **${term}:** `;
+    const entries = lines.filter((line) => line.startsWith(prefix));
+    assert.equal(entries.length, 1, `exactly one glossary bullet for ${term}`);
+    assertRequiredPhrases(entries[0], phrases);
+  }
+}
+
+function assertIdentifierAdrFollowUp(text) {
+  assert.match(text, /^# ADR-SDK-013:/);
+  assertRequiredPhrases(text, adrFollowUpPhrases);
+  assert.doesNotMatch(text, /A disposable old-seed negative control reaches and fails/);
+}
+
+const glossaryPhrases = glossaryEntries.flatMap(([term, phrases]) => [`- **${term}:** `, ...phrases]);
+const consumerDocumentControls = [
+  ["migration", migration, assertIdentifierMigration, ["## Default identifier correctness fix\n", ...migrationPhrases]],
+  ["glossary", glossary, assertIdentifierGlossary, glossaryPhrases],
+  ["ADR follow-up", identifierAdr, assertIdentifierAdrFollowUp, ["# ADR-SDK-013:", ...adrFollowUpPhrases]],
+];
+for (const [name, text, validate, phrases] of consumerDocumentControls) {
+  test(`${name} preserves host capability, probabilistic guarantee and owner-decision migration`, () => validate(text));
+  for (const phrase of new Set(phrases)) {
+    test(`${name} rejects omitted ${phrase}`, () => {
+      assert.throws(() => validate(text.replaceAll(phrase, "omitted")));
+    });
+  }
+}
+
+test("migration rejects obsolete contract versions and guarantees moved outside its bounded entry", () => {
+  assert.throws(() => assertIdentifierMigration(migration.replace("## Default identifier correctness fix\n",
+    "## Default identifier correctness fix\n\nContract `1.0.0`.\n")));
+  assert.throws(() => assertIdentifierMigration(migration.replace("no insecure fallback", "omitted")
+    + "\nno insecure fallback\n"));
+});
+
+test("glossary rejects duplicate entries, other bullet styles and cross-entry phrase substitution", () => {
+  assert.throws(() => assertIdentifierGlossary(`${glossary}\n- **Default identifier provider:** duplicate\n`));
+  assert.throws(() => assertIdentifierGlossary(glossary.replace("- **Host cryptographic capability:**", "* **Host cryptographic capability:**")));
+  assert.throws(() => assertIdentifierGlossary(glossary.replace("never a `node:` import", "omitted")
+    + "\nnever a `node:` import\n"));
+});
+
+test("ADR follow-up rejects disposable-only current verification", () => {
+  assert.throws(() => assertIdentifierAdrFollowUp(`${identifierAdr}\nA disposable old-seed negative control reaches and fails the collision assertion.\n`));
+});
+
 const ts = createRequire(new URL("package.json", packageRoot))("typescript");
 const branchKinds = new Set([
   ts.SyntaxKind.IfStatement, ts.SyntaxKind.SwitchStatement, ts.SyntaxKind.CaseClause,
