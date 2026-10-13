@@ -16,9 +16,9 @@ This decision refines ADR-SDK-007; ADR-SDK-007 remains unchanged. Every transact
 
 Preserve the existing direct-state and operation-state checks, including pending-success refusal. Preserve handle-less `not_applicable` resolution. Failed/refused operations use `markNotCommitted()`, cancelled operations use `markCancelled()`, partial commitments use `markPartiallyCommitted()`. Recording denial retains explicit outcome `denied` and authorization decision `deny`.
 
-This is runtime refusal only, a non-breaking `fix(sdk-core)` with migration guidance. Generated types, generator, public surface and frozen error registry remain unchanged. The catalog-derived test matrix includes non-vacuity assertions and all 35 paired handle controls; old-code sensitivity verification is performed independently by the orchestrator, not a committed mutation replica.
+This is runtime refusal only, a non-breaking `fix(sdk-core)` with migration guidance. Generated types, generator, public surface and frozen error registry remain unchanged.
 
-## Alternatives rejected
+## Alternatives
 
 - Infer `not_committed` for failure, denied and cancelled: these outcomes cannot prove no transaction committed.
 - Infer for denied only: authorization refusal is not transaction disposition evidence.
@@ -26,8 +26,14 @@ This is runtime refusal only, a non-breaking `fix(sdk-core)` with migration guid
 - Use `SDK_MISSING_AUTHORITATIVE_CONTEXT`: the Node error catalog documents it as reserved and never returned, not the operation-state failure.
 - Require `operation` in generated types: changes the public surface rather than making the bounded runtime correction.
 
-## Consequences
+## Consequences and verification
+
+The catalog-derived test matrix includes non-vacuity assertions and all 35 paired handle controls; old-code sensitivity is subject to independent verification, not a committed mutation replica.
 
 Callers relying on invented commit states must retain and transition a handle. All 35 catalog-allowed non-success calls without evidence are refused without sink calls; their paired sanctioned-handle inputs remain accepted with matching state. Every not_applicable fixture remains accepted. API, migration and glossary document the rule; coherence adds ADR-SDK-014 to the consecutive inventory.
 
-Contradictory outcome/commit pairs through handles (#812), Node `committed_and_durable` (#795) and Stage P probe P-D (#801) remain out of scope. Complete-event `emit()`/`redeliver()`, contracts and collector are unchanged. Passing tests and AI review are not approval, production authorization, release, merge, folding or archival.
+Passing tests and AI review are not approval, production authorization, release, merge, folding or archival.
+
+## Boundary
+
+Generated types and the public surface, the Node binding (including `committed_and_durable`, #795), contradictory outcome/commit pairs through handles (#812), complete-event `emit()`/`redeliver()`, the contract and the collector are unchanged. Stage P probe P-D (#801) remains out of scope.
