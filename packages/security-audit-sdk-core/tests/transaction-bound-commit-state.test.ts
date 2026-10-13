@@ -40,11 +40,12 @@ import {
 type CatalogEntry = (typeof EVENT_CATALOG)[number];
 type Outcome = SecurityAuditEvent["event"]["outcome"];
 type NonSuccessOutcome = "failure" | "denied" | "cancelled" | "partial";
-interface EventCase {
+interface EventCase<TOutcome extends Outcome = Outcome> {
   readonly definition: CatalogEntry;
   readonly method: EventMethodName;
   readonly fixture: SecurityAuditEvent;
-  readonly outcome: Outcome;
+  readonly outcome: TOutcome;
+  readonly authorizationDecision?: NonNullable<SecurityAuditEvent["authorization"]>["decision"];
 }
 
 const fixtures: readonly SecurityAuditEvent[] = JSON.parse(await readFile(
@@ -72,15 +73,17 @@ const contextConstructors = {
 const transitions: Record<NonSuccessOutcome, {
   readonly advance: (handle: AuditOperationHandle) => ReturnType<AuditOperationHandle["markNotCommitted"]>;
   readonly commitState: SecurityAuditEvent["event"]["commit_state"];
+  readonly authorizationDecision?: NonNullable<SecurityAuditEvent["authorization"]>["decision"];
 }> = {
   failure: { advance: (handle) => handle.markNotCommitted(), commitState: "not_committed" },
-  denied: { advance: (handle) => handle.markNotCommitted(), commitState: "not_committed" },
+  denied: { advance: (handle) => handle.markNotCommitted(), commitState: "not_committed", authorizationDecision: "deny" },
   cancelled: { advance: (handle) => handle.markCancelled(), commitState: "not_committed" },
   partial: { advance: (handle) => handle.markPartiallyCommitted(), commitState: "partially_committed" },
 };
 const transactionBound = EVENT_CATALOG.filter((entry) => entry.commit.some((value) => value === "committed"));
-const nonSuccessCases = transactionBound.flatMap((definition) =>
-  definition.outcomes.filter((outcome) => outcome !== "success").map((outcome) => eventCase(definition, outcome)),
+const nonSuccessCases: readonly EventCase<NonSuccessOutcome>[] = transactionBound.flatMap((definition) =>
+  definition.outcomes.filter((outcome): outcome is NonSuccessOutcome => outcome !== "success")
+    .map((outcome) => eventCase(definition, outcome, transitions[outcome])),
 );
 
 function fixtureActor(actor: NonNullable<SecurityAuditEvent["actor"]>) {
@@ -94,16 +97,20 @@ function fixtureTenant(tenant: SecurityAuditEvent["tenant"]) {
   return authoritativeTenant(authority as Parameters<typeof authoritativeTenant>[0]);
 }
 
-function eventCase(definition: CatalogEntry, outcome: Outcome): EventCase {
+function eventCase<TOutcome extends Outcome>(
+  definition: CatalogEntry,
+  outcome: TOutcome,
+  configuration: Pick<EventCase, "authorizationDecision"> = {},
+): EventCase<TOutcome> {
   const fixture = fixtures.find((candidate) => candidate.event.name === definition.name);
   const method = EVENT_METHODS.find((candidate) => candidate.name === definition.name);
   assert.ok(fixture, `missing fixture for ${definition.name}`);
   assert.ok(method, `missing method for ${definition.name}`);
-  return { definition, fixture, method: method.method, outcome };
+  return { definition, fixture, method: method.method, outcome, authorizationDecision: configuration.authorizationDecision };
 }
 
 /** Brand only fixture context, leaving commit state and operation absent. */
-function evidenceFreeInput(row: EventCase): Record<string, unknown> {
+function inputWithoutOperationEvidence(row: EventCase): Record<string, unknown> {
   const { fixture, outcome } = row;
   const input: Record<string, unknown> = {
     event: { lifecycle_phase: fixture.event.lifecycle_phase, outcome,
@@ -118,17 +125,17 @@ function evidenceFreeInput(row: EventCase): Record<string, unknown> {
   }
   const claim = fixture.tenant.claimed_tenant_id;
   if (claim !== undefined) input.claimedTenant = claimedTenant(claim);
-  if (outcome === "denied") {
+  if (row.authorizationDecision !== undefined) {
     assert.ok(fixture.authorization);
-    input.authorization = authorizationEvidence({ ...fixture.authorization, decision: "deny" });
+    input.authorization = authorizationEvidence({ ...fixture.authorization, decision: row.authorizationDecision });
   }
   return input;
 }
 
-async function assertEvidenceRefused(row: EventCase): Promise<void> {
+async function assertRefusedWithoutOperationEvidence(row: EventCase): Promise<void> {
   const { sdk, sink } = createConformanceSdk();
   const call = sdk[row.method] as (input: unknown) => Promise<AuditResult<AuditDeliveryResult>>;
-  const result = await call.call(sdk, evidenceFreeInput(row));
+  const result = await call.call(sdk, inputWithoutOperationEvidence(row));
   assert.deepEqual(result, {
     ok: false,
     error: { code: "PREMATURE_SUCCESS", category: "validation", path: "/operation/state" },
@@ -136,18 +143,17 @@ async function assertEvidenceRefused(row: EventCase): Promise<void> {
   assert.equal(sink.events.length, 0);
 }
 
-function transitionedHandle(row: EventCase, context: ConformanceHarnessContext): AuditOperationHandle {
-  assert.ok(row.outcome in transitions, `unsupported non-success outcome ${row.outcome}`);
+function transitionedHandle(row: EventCase<NonSuccessOutcome>, context: ConformanceHarnessContext): AuditOperationHandle {
   const operation = context.sdk.beginOperation({ boundEvent: row.method });
   assert.ok(operation.ok);
-  const transition = transitions[row.outcome as NonSuccessOutcome].advance(operation.value);
+  const transition = transitions[row.outcome].advance(operation.value);
   assert.ok(transition.ok);
   return operation.value;
 }
 
-async function assertPairedControl(row: EventCase): Promise<void> {
+async function assertPairedControl(row: EventCase<NonSuccessOutcome>): Promise<void> {
   const context = createConformanceSdk();
-  const input = evidenceFreeInput(row);
+  const input = inputWithoutOperationEvidence(row);
   const operation = transitionedHandle(row, context);
   const captured = await assertValidConformanceRow({
     name: `${row.method}: ${row.outcome} with operation evidence`,
@@ -156,7 +162,7 @@ async function assertPairedControl(row: EventCase): Promise<void> {
   }, { sdkContext: context });
   assert.equal(context.sink.events.length, 1);
   assert.equal(captured.event.outcome, row.outcome);
-  assert.equal(captured.event.commit_state, transitions[row.outcome as NonSuccessOutcome].commitState);
+  assert.equal(captured.event.commit_state, transitions[row.outcome].commitState);
 }
 
 test("catalog commit values partition transaction-bound and not-applicable events", () => {
@@ -174,14 +180,14 @@ test("transaction-bound non-success matrix is non-vacuous across delivery classe
 });
 
 for (const row of nonSuccessCases) {
-  test(`${row.method}: handle-less ${row.outcome} requires operation evidence`, () => assertEvidenceRefused(row));
+  test(`${row.method}: handle-less ${row.outcome} requires operation evidence`, () => assertRefusedWithoutOperationEvidence(row));
   test(`${row.method}: ${row.outcome} accepts sanctioned operation evidence`, () => assertPairedControl(row));
 }
 
 test("handle-less transaction-bound success still requires operation evidence", async () => {
   const definition = transactionBound.find((entry) => entry.outcomes.some((outcome) => outcome === "success"));
   assert.ok(definition);
-  await assertEvidenceRefused(eventCase(definition, "success"));
+  await assertRefusedWithoutOperationEvidence(eventCase(definition, "success"));
 });
 
 test("every not-applicable fixture is accepted unchanged without operation evidence", async () => {
@@ -191,7 +197,7 @@ test("every not-applicable fixture is accepted unchanged without operation evide
     const row = eventCase(definition, fixture.event.outcome);
     const context = createConformanceSdk();
     const captured = await assertValidConformanceRow({
-      name: `${row.method}: not-applicable fixture`, method: row.method, input: evidenceFreeInput(row),
+      name: `${row.method}: not-applicable fixture`, method: row.method, input: inputWithoutOperationEvidence(row),
     }, { sdkContext: context });
     assert.equal(context.sink.events.length, 1);
     assert.equal(captured.event.commit_state, "not_applicable");
