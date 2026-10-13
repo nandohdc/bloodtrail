@@ -29,6 +29,18 @@ canonical spec folding, archival, release, or signing are included.
 - [x] 4.2 Run full Core validate, the supplied root product loop, final design-pattern-governance and strict OpenSpec validation; record exact executed results and close invariant/evidence mappings without fabricating review or authorization.
 - [x] 4.3 Run empty-index check-git-state and git diff --check before staging. Inspect diff against proposal baseline for protected paths, generated source and frozen exports; confirm package.json runtime dependencies remain empty. Preserve the separate assessment-before-implementation history.
 
+## 5. Prospective code-health follow-up (#796)
+
+These follow-up tasks are recorded before refactoring; prior executed evidence below remains
+historical evidence, not verification of this remediation run. The full security-sensitive
+assessment and proposal baseline `5d931ad695fb10db3fe51e6b151352447e21d822` remain unchanged.
+
+- [x] 5.1 Extract candidate, alternative-rejection, ownership, invariant/task and scenario assertions into five module-level helpers; retain every planning control and add table-driven negative mutations for each group. Run the planning regression, assessment governance, strict OpenSpec validation and Core typecheck/build.
+- [ ] 5.2 Extract the private cryptographic UUID capability predicate and add null-host default-construction controls; preserve fail-closed/custom-provider behavior and the exact provider-local coupling inventory. Run runtime, coupling, scope, exports, dependencies and typecheck controls.
+- [ ] 5.3 Extract child-result validation and the child program from the concurrent uniqueness test; preserve bounded concurrent sampling, reaping and the complete collision union. Add synthetic validation controls, run three focused repetitions and prove the collision negative control in a disposable external copy.
+- [ ] 5.4 Reword inherited work-item-prefixed commit subjects without changing trees or ordering; validate every actual subject and the intended PR title with the unmodified Conventional Commits checker, and run its regression suite.
+- [ ] 5.5 Run `npm run test:matrix --prefix packages/security-audit-sdk-core`, `npm run check:generated --prefix packages/security-audit-sdk-core`, `npm run test:coherence --prefix packages/security-audit-sdk-core`, `npm run validate --prefix packages/security-audit-sdk-core`, the current run's exact `tamandua-test` wrapper for `make test`, `node openspec/scripts/check-design-pattern-governance.mjs --phase final`, strict OpenSpec validation, empty-index `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` and `git diff --check`; record exact results and measured source-structure targets without claiming an unexecuted CodeScene result.
+
 ## Verification Commands
 
 - Planning regression: `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`
@@ -80,6 +92,32 @@ and coupling controls.
 - `node openspec/scripts/check-design-pattern-governance.mjs --phase final`: exit 0, enforcement active; inspected 5 commits and 15 owned paths from the preserved proposal baseline.
 - `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`: exit 0, change valid.
 - `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` and `git diff --check`: exit 0, run with an empty index before staging the documentation implementation, and again after product verification before this evidence update. Baseline diff inspection: no governance_core, contracts/, generated source, src/index.ts or package.json edits; package.json dependencies remain empty. Original assessment unchanged from its latest prospective ownership declaration; planning-only commits still precede all runtime implementation.
+
+### Code-health follow-up — planning assertions, 2026-10-13, run 118
+
+- Follow-up tasks 5.1–5.5 were recorded unchecked before refactoring. Only 5.1 is complete;
+  provider extraction, child validation, inherited subject normalization and final verification
+  remain prospective. Prior evidence above is preserved, not re-attributed to this run.
+- `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`:
+  exit 0, 55/55 tests. Five extracted groups retain the original assertions; table-driven controls
+  reject unknown forces, invalid alternatives/rejection evidence, every missing required SDK
+  path, out-of-scope ownership, missing invariant/task/evidence relations, all seven missing
+  identifier methods and all eight missing required scenarios.
+- `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change fix-core-default-identifiers-uniqueness`:
+  exit 0, enforcement active.
+- `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`:
+  exit 0, change valid.
+- `npm run typecheck --prefix packages/security-audit-sdk-core` and
+  `npm run build --prefix packages/security-audit-sdk-core`: exit 0; no tracked generated changes.
+- TypeScript AST inspection of `assertPlanningContract` confirms five straight-line calls to
+  module-level helpers, zero branch/loop/ternary/logical-condition nodes, cyclomatic complexity
+  1 and zero nested conditional bumps. This is source-structure verification, not a CodeScene run.
+- `node .github/scripts/check-conventional-commits.mjs --title 'refactor(openspec): simplify identifier planning assertions (#796)'`:
+  exit 0. Inherited invalid subjects remain for task 5.4; this does not claim all-history compliance.
+- Empty-index `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` and
+  `git diff --check`: exit 0 before staging. Diff contains only `assessment.test.mjs` and
+  `tasks.md`; the full assessment, original proposal baseline, canonical specs, protected paths,
+  generated source, exports and dependency manifests are unchanged.
 
 ### Completed invariant/evidence mapping
 

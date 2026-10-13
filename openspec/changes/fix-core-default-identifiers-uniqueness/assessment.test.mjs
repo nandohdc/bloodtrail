@@ -40,12 +40,23 @@ function assertPlanningContract(value, taskText, specText) {
   assert.equal(value.applicability.material_capability_modification, true);
   assert.ok(value.applicability.triggers_matched.includes("security_sensitive_behavior"));
   assert.ok(value.applicability.triggers_matched.includes("canonical_capability_requirement"));
+  assertCandidateApproaches(value);
+  assertAlternativeRejections(value);
+  assertOwnedPaths(value);
+  assertInvariants(value, taskText);
+  assertScenarios(specText);
+}
+
+function assertCandidateApproaches(value) {
   assert.ok(value.candidate_approaches.some((candidate) => candidate.kind === "direct_implementation"));
   assert.ok(value.candidate_approaches.some((candidate) => candidate.kind === "alternative"));
-  assert.ok(value.rejected_alternative_ids.length > 0);
   for (const candidate of value.candidate_approaches) {
     for (const force of candidate.forces_addressed) assert.ok(value.forces.includes(force));
   }
+}
+
+function assertAlternativeRejections(value) {
+  assert.ok(value.rejected_alternative_ids.length > 0);
   for (const id of value.rejected_alternative_ids) {
     assert.notEqual(id, value.selected_approach_id);
     assert.ok(value.candidate_approaches.some((candidate) => candidate.id === id));
@@ -53,10 +64,16 @@ function assertPlanningContract(value, taskText, specText) {
     assert.ok(rejection.reason.length >= 40);
     for (const force of rejection.forces) assert.ok(value.forces.includes(force));
   }
+}
+
+function assertOwnedPaths(value) {
   for (const path of requiredSdkPaths) assert.ok(value.owned_paths.includes(path), path);
   for (const path of value.owned_paths) {
     assert.ok(path.startsWith(changeRoot) || requiredSdkPaths.includes(path), path);
   }
+}
+
+function assertInvariants(value, taskText) {
   assert.deepEqual(value.implementation_invariant_ids, invariantIds);
   for (const id of invariantIds) {
     const evidence = value.invariant_evidence[id];
@@ -69,6 +86,9 @@ function assertPlanningContract(value, taskText, specText) {
   for (const task of value.verification_task_ids) {
     assert.match(taskText, new RegExp(`^- \\[.\\] ${task.replace(".", "\\.")} `, "m"));
   }
+}
+
+function assertScenarios(specText) {
   for (const method of ["eventId", "operationId", "correlationId", "causationId", "requestId", "messageId", "transactionId"]) {
     assert.ok(specText.includes(method), method);
   }
@@ -99,6 +119,76 @@ test("planning controls reject weakened classification, missing ownership and mi
     assert.throws(() => assertPlanningContract(mutated, tasks, spec));
   }
 });
+
+const planningMutations = [
+  ["candidate approaches", assertCandidateApproaches, [
+    ["missing direct implementation", (value) => { value.candidate_approaches = value.candidate_approaches.filter((candidate) => candidate.kind !== "direct_implementation"); }],
+    ["missing alternative", (value) => { value.candidate_approaches = value.candidate_approaches.filter((candidate) => candidate.kind !== "alternative"); }],
+    ["unknown candidate force", (value) => { value.candidate_approaches[0].forces_addressed.push("unknown force"); }],
+  ]],
+  ["alternative rejections", assertAlternativeRejections, [
+    ["no rejected alternatives", (value) => { value.rejected_alternative_ids = []; }],
+    ["selected approach rejected", (value) => { value.rejected_alternative_ids.push(value.selected_approach_id); }],
+    ["unknown rejected candidate", (value) => { value.rejected_alternative_ids.push("unknown candidate"); }],
+    ["missing rejection evidence", (value) => { delete value.rejection_reasons[value.rejected_alternative_ids[0]]; }],
+    ["short rejection reason", (value) => { value.rejection_reasons[value.rejected_alternative_ids[0]].reason = "too short"; }],
+    ["unknown rejection force", (value) => { value.rejection_reasons[value.rejected_alternative_ids[0]].forces.push("unknown force"); }],
+  ]],
+  ["owned paths", assertOwnedPaths, [
+    ...requiredSdkPaths.map((path) => [`missing ${path}`, (value) => { value.owned_paths = value.owned_paths.filter((owned) => owned !== path); }]),
+    ["out-of-scope SDK path", (value) => { value.owned_paths.push("packages/security-audit-sdk-core/src/index.ts"); }],
+    ["another change's path", (value) => { value.owned_paths.push("openspec/changes/unowned/tasks.md"); }],
+  ]],
+  ["invariants", (value) => assertInvariants(value, tasks), [
+    ["missing invariant ID", (value) => { value.implementation_invariant_ids.pop(); }],
+    ["missing invariant evidence", (value) => { delete value.invariant_evidence[invariantIds[0]]; }],
+    ["absent task relation", (value) => { value.invariant_evidence[invariantIds[0]].task_ids = []; }],
+    ["absent evidence relation", (value) => { value.invariant_evidence[invariantIds[0]].evidence_ids = []; }],
+    ["unknown invariant task", (value) => { value.invariant_evidence[invariantIds[0]].task_ids.push("9.9"); }],
+    ["unknown verification task", (value) => { value.verification_task_ids.push("9.9"); }],
+  ]],
+];
+
+for (const [group, validate, mutations] of planningMutations) {
+  test(`${group} accepts the owning assessment`, () => validate(assessment));
+  for (const [name, mutate] of mutations) {
+    test(`${group} rejects ${name}`, () => {
+      const mutated = structuredClone(assessment);
+      mutate(mutated);
+      assert.throws(() => validate(mutated));
+      assert.throws(() => assertPlanningContract(mutated, tasks, spec));
+    });
+  }
+}
+
+for (const id of invariantIds) {
+  test(`invariants reject an absent task/evidence relation for ${id}`, () => {
+    const mutated = structuredClone(assessment);
+    mutated.invariant_evidence[id].evidence_ids = [];
+    assert.throws(() => assertInvariants(mutated, tasks));
+    const taskId = assessment.invariant_evidence[id].task_ids[0];
+    const missingTask = tasks.replace(`] ${taskId} `, "] omitted ");
+    assert.throws(() => assertInvariants(assessment, missingTask));
+  });
+}
+
+const requiredSpecTexts = [
+  "eventId", "operationId", "correlationId", "causationId", "requestId", "messageId", "transactionId",
+  ...["Implicit", "Explicit system"].flatMap((mode) =>
+    ["absent crypto", "missing randomUUID", "non-function randomUUID"].map((absence) =>
+      `#### Scenario: ${mode} default rejects ${absence}`)),
+  "#### Scenario: Concurrent fresh processes do not repeat a default sequence",
+  "#### Scenario: Deterministic custom provider works without crypto",
+];
+
+test("scenarios accept the owning specification", () => assertScenarios(spec));
+for (const text of requiredSpecTexts) {
+  test(`scenarios reject missing ${text}`, () => {
+    const missingText = spec.replaceAll(text, "omitted");
+    assert.throws(() => assertScenarios(missingText));
+    assert.throws(() => assertPlanningContract(assessment, tasks, missingText));
+  });
+}
 
 test("ADR coherence accepts exactly 001 through 013 and rejects missing, duplicate or extra entries", () => {
   const packageRoot = new URL("../../../packages/security-audit-sdk-core/", import.meta.url);
