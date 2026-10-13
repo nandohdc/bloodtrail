@@ -1,6 +1,6 @@
-// Planning-only regression controls for issue #796; no SDK behavior is implemented here.
+// Planning and documentation regression controls for issue #796; no SDK behavior is implemented here.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 
 const changeId = "fix-core-default-identifiers-uniqueness";
@@ -98,6 +98,57 @@ test("planning controls reject weakened classification, missing ownership and mi
     mutate(mutated);
     assert.throws(() => assertPlanningContract(mutated, tasks, spec));
   }
+});
+
+test("ADR coherence accepts exactly 001 through 013 and rejects missing, duplicate or extra entries", () => {
+  const packageRoot = new URL("../../../packages/security-audit-sdk-core/", import.meta.url);
+  const gate = readFileSync(new URL("scripts/check-coherence.mjs", packageRoot), "utf8");
+  const rules = gate.split("\n").filter((line) => /^rule\("adr-(count|sequence)"/.test(line));
+  assert.equal(rules.length, 2);
+  for (const rule of rules) assert.ok(rule.includes("ADR-SDK-013"), "diagnostic must name the final ADR");
+  // Execute the actual two gate rules in isolation, without copying or mutating the repository.
+  const evaluate = new Function("adrFiles", "rule", "same", rules.join("\n"));
+  const files = readdirSync(new URL("adr/", packageRoot)).filter((name) => /^\d{3}-.+\.md$/.test(name)).sort();
+  function failures(entries) {
+    const failed = [];
+    evaluate(entries, (id, _file, condition) => { if (!condition) failed.push(id); },
+      (left, right) => JSON.stringify(left) === JSON.stringify(right));
+    return failed;
+  }
+  assert.deepEqual(failures(files), []);
+  assert.deepEqual(failures(files.slice(0, -1)), ["adr-count", "adr-sequence"]);
+  assert.deepEqual(failures([...files.slice(0, -1), "012-duplicate.md"]), ["adr-sequence"]);
+  assert.deepEqual(failures([...files, "014-extra.md"]), ["adr-count", "adr-sequence"]);
+});
+
+function assertIdentifierDocumentation(api, adr) {
+  assert.match(adr, /^# ADR-SDK-013:/);
+  assert.ok(adr.includes("Status: Accepted for SDK-core implementation"));
+  for (const text of [api, adr]) {
+    for (const method of ["eventId", "operationId", "correlationId", "causationId", "requestId", "messageId", "transactionId"]) {
+      assert.ok(text.includes(`\`${method}\``), method);
+    }
+    for (const phrase of ["crypto.randomUUID", "lowercase RFC 4122 UUID v4", "collision", "probabilistic", "lifetime-global", "SDK_INVALID_CONFIGURATION", "configuration", "/identifiers", "custom", "receiver"]) {
+      assert.ok(text.toLowerCase().includes(phrase.toLowerCase()), phrase);
+    }
+  }
+  assert.ok(api.includes("explicitly passing `systemAuditIdentifiers`"));
+  assert.ok(api.includes("custom injected provider requires no host crypto capability"));
+  assert.ok(api.includes("Construction checks availability but generates no identifiers"));
+  assert.ok(api.includes("bounded reuse detection"));
+  assert.ok(adr.includes("runtime dependencies remain zero"));
+  assert.ok(adr.includes("Insecure fallbacks are forbidden"));
+}
+
+test("API and accepted ADR describe cryptographic defaults without an absolute uniqueness guarantee", () => {
+  const packageRoot = new URL("../../../packages/security-audit-sdk-core/", import.meta.url);
+  const api = readFileSync(new URL("API.md", packageRoot), "utf8");
+  const adr = readFileSync(new URL("adr/013-default-identifier-cryptographic-uniqueness.md", packageRoot), "utf8");
+  assertIdentifierDocumentation(api, adr);
+  for (const phrase of ["/identifiers", "probabilistic", "explicitly passing `systemAuditIdentifiers`", "custom injected provider requires no host crypto capability"]) {
+    assert.throws(() => assertIdentifierDocumentation(api.replaceAll(phrase, "omitted"), adr));
+  }
+  assert.throws(() => assertIdentifierDocumentation(api, adr.replace("Status: Accepted for SDK-core implementation", "Status: Proposed")));
 });
 
 test("planning controls reject an absent verification task or default-failure scenario", () => {
