@@ -1,0 +1,131 @@
+{
+  "schema_version": "1.1",
+  "change_id": "fix-core-transaction-bound-commit-state",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Audit commit state must represent operation evidence rather than an outcome-derived guess.",
+    "Refusal must remain bounded and reuse the frozen diagnostic and public surface.",
+    "Preserve legitimate sanctioned transitions and non-transactional not_applicable behavior.",
+    "Bound the correction to the resolver, regression and documentation without changing adjacent behaviors."
+  ],
+  "applicability": {
+    "triggers_matched": ["lifecycle_or_state", "security_sensitive_behavior", "canonical_capability_requirement"],
+    "material_capability_modification": true,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [
+    "openspec/changes/fix-core-transaction-bound-commit-state/.openspec.yaml",
+    "openspec/changes/fix-core-transaction-bound-commit-state/proposal.md",
+    "openspec/changes/fix-core-transaction-bound-commit-state/design.md",
+    "openspec/changes/fix-core-transaction-bound-commit-state/specs/security-audit-sdk-core/spec.md",
+    "openspec/changes/fix-core-transaction-bound-commit-state/tasks.md",
+    "openspec/changes/fix-core-transaction-bound-commit-state/assessment.json",
+    "packages/security-audit-sdk-core/src/events.ts",
+    "packages/security-audit-sdk-core/tests/transaction-bound-commit-state.test.ts",
+    "packages/security-audit-sdk-core/API.md",
+    "packages/security-audit-sdk-core/MIGRATION.md",
+    "packages/security-audit-sdk-core/CONTEXT.md",
+    "packages/security-audit-sdk-core/adr/014-transaction-bound-commit-state-requires-operation-evidence.md",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-node/docs/error-catalog.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-refuse-without-evidence",
+      "kind": "direct_implementation",
+      "summary": "Refuse every handle-less transaction-bound outcome in the existing resolver with the existing bounded diagnostic.",
+      "forces_addressed": ["Audit commit state must represent operation evidence rather than an outcome-derived guess.", "Refusal must remain bounded and reuse the frozen diagnostic and public surface.", "Preserve legitimate sanctioned transitions and non-transactional not_applicable behavior.", "Bound the correction to the resolver, regression and documentation without changing adjacent behaviors."]
+    },
+    {
+      "id": "approach-infer-non-success",
+      "kind": "alternative",
+      "summary": "Infer not_committed for failure, denied and cancelled outcomes without operation evidence.",
+      "forces_addressed": ["Audit commit state must represent operation evidence rather than an outcome-derived guess."]
+    },
+    {
+      "id": "approach-infer-denied-only",
+      "kind": "alternative",
+      "summary": "Infer not_committed only for authorization denial without a handle.",
+      "forces_addressed": ["Audit commit state must represent operation evidence rather than an outcome-derived guess."]
+    },
+    {
+      "id": "approach-new-error-code",
+      "kind": "alternative",
+      "summary": "Introduce a new diagnostic dedicated to missing transaction evidence.",
+      "forces_addressed": ["Refusal must remain bounded and reuse the frozen diagnostic and public surface."]
+    },
+    {
+      "id": "approach-reserved-authority-code",
+      "kind": "alternative",
+      "summary": "Return SDK_MISSING_AUTHORITATIVE_CONTEXT for absent operation evidence.",
+      "forces_addressed": ["Refusal must remain bounded and reuse the frozen diagnostic and public surface."]
+    },
+    {
+      "id": "approach-generated-required-operation",
+      "kind": "alternative",
+      "summary": "Require operation in generated named-event types rather than correcting runtime refusal alone.",
+      "forces_addressed": ["Bound the correction to the resolver, regression and documentation without changing adjacent behaviors."]
+    }
+  ],
+  "selected_approach_id": "approach-refuse-without-evidence",
+  "rejected_alternative_ids": ["approach-infer-non-success", "approach-infer-denied-only", "approach-new-error-code", "approach-reserved-authority-code", "approach-generated-required-operation"],
+  "rejection_reasons": {
+    "approach-infer-non-success": {
+      "forces": ["Audit commit state must represent operation evidence rather than an outcome-derived guess."],
+      "reason": "Failure, denial and cancellation describe outcomes, not proof of transaction disposition; replacing invented committed with invented not_committed retains the integrity defect."
+    },
+    "approach-infer-denied-only": {
+      "forces": ["Audit commit state must represent operation evidence rather than an outcome-derived guess."],
+      "reason": "Authorization denial alone cannot prove the transaction never committed. All transaction-bound outcomes require the same operation-evidence rule."
+    },
+    "approach-new-error-code": {
+      "forces": ["Refusal must remain bounded and reuse the frozen diagnostic and public surface."],
+      "reason": "A new code changes the frozen contract unnecessarily; existing PREMATURE_SUCCESS already expresses absent operation-state evidence at the same path."
+    },
+    "approach-reserved-authority-code": {
+      "forces": ["Refusal must remain bounded and reuse the frozen diagnostic and public surface."],
+      "reason": "SDK_MISSING_AUTHORITATIVE_CONTEXT is documented as reserved and never returned by the Node catalog; using it would change diagnostic semantics instead of preserving the existing operation-state failure."
+    },
+    "approach-generated-required-operation": {
+      "forces": ["Bound the correction to the resolver, regression and documentation without changing adjacent behaviors."],
+      "reason": "Required generated operation fields change types and public surface, beyond the selected non-breaking runtime correction and its exact resolver seam."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": ["implementation-evidence-required", "implementation-sanctioned-controls", "implementation-preserved-scope"],
+  "invariant_evidence": {
+    "implementation-evidence-required": {
+      "task_ids": ["2.1", "3.1", "5.1"],
+      "evidence_ids": ["planned: tests/transaction-bound-commit-state.test.ts exact 35-case refusal, success diagnostic and zero sink calls"]
+    },
+    "implementation-sanctioned-controls": {
+      "task_ids": ["3.2", "5.1"],
+      "evidence_ids": ["planned: tests/transaction-bound-commit-state.test.ts all paired transitions and all not_applicable fixtures"]
+    },
+    "implementation-preserved-scope": {
+      "task_ids": ["1.2", "4.1", "4.2", "5.1", "5.2"],
+      "evidence_ids": ["planned: planning gates, documentation/coherence, generated/type/export/scope/final governance and Git boundaries"]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Refuses invented committed state for non-success events; commit disposition must come from actual sanctioned operation evidence.",
+    "authentication_or_authorization": "Authorization evaluation is unchanged. Denial remains an explicit outcome and does not alone establish a transaction commit state.",
+    "authority_provenance": "Preserves same-instance SDK-issued operation authority and existing branded context; no caller object or snapshot is upgraded to evidence.",
+    "concurrency": "No concurrency or reservation behavior changes; refusal occurs before sink use and existing operation transitions remain intact.",
+    "confidentiality": "No additional input fields, sinks or disclosure channels are introduced. The refusal contains only fixed diagnostic values.",
+    "cryptography": "No cryptographic primitive, identifier generation or host capability changes. The correction uses existing operation evidence.",
+    "error_disclosure": "Uses only PREMATURE_SUCCESS, validation and /operation/state; no caller data or exception payload is exposed.",
+    "external_security_integration": "No external security integration changes. Node changes only its diagnostic documentation, not runtime durability or authority.",
+    "fail_posture": "Strengthens fail-closed behavior by refusing every transaction-bound outcome when operation evidence and direct state are absent.",
+    "lifecycle": "Preserves all sanctioned handle transitions and pending-success checks; removes only the unsupported handle-less terminal-state fallback.",
+    "mutation_ownership": "Caller input and handles retain existing ownership. No mutation or copy can create evidence through the changed fallback.",
+    "privacy_transformation": "No privacy or sanitization policy changes; existing event construction and sink privacy guards remain byte-identical.",
+    "resource_retention": "No retention capacities, histories or allocation policy changes. The refusal does not add stored context or new resources.",
+    "retry_or_redelivery": "Complete-event emit and redeliver behavior remains out of scope; existing identity and retry semantics are unchanged.",
+    "trust_boundary": "Commit state continues to cross the operation boundary only through SDK-issued evidence; outcome alone is not authoritative transaction proof."
+  },
+  "ordering": {"proposal_baseline_commit": "02ce833c4e02f83441d086ed47aed1306d4217cc"},
+  "verification_task_ids": ["1.2", "3.1", "3.2", "4.2", "5.1", "5.2"]
+}
