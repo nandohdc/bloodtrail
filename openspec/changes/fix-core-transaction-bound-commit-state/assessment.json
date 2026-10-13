@@ -97,15 +97,36 @@
   "invariant_evidence": {
     "implementation-evidence-required": {
       "task_ids": ["2.1", "3.1", "5.1"],
-      "evidence_ids": ["planned: tests/transaction-bound-commit-state.test.ts exact 35-case refusal, success diagnostic and zero sink calls"]
+      "evidence_ids": [
+        "tests/transaction-bound-commit-state.test.ts: 35 catalog-derived non-success cases plus handle-less success return exact PREMATURE_SUCCESS / validation / /operation/state with zero sink events; partition and delivery-class non-vacuity assertions pass",
+        "From Core: ./node_modules/.bin/tsc -p tsconfig.test.json && node --test dist-tests/transaction-bound-commit-state.test.js — exit 0; ℹ tests 74; ℹ pass 74; ℹ fail 0",
+        "npm run test:matrix --prefix packages/security-audit-sdk-core — exit 0; ℹ tests 338; ℹ pass 338; ℹ fail 0; exact supplied tamandua-test command and observed results recorded in tasks.md"
+      ]
     },
     "implementation-sanctioned-controls": {
       "task_ids": ["3.2", "5.1"],
-      "evidence_ids": ["planned: tests/transaction-bound-commit-state.test.ts all paired transitions and all not_applicable fixtures"]
+      "evidence_ids": [
+        "tests/transaction-bound-commit-state.test.ts: all 35 same-input method-bound handles transition successfully and emit exactly once with matching outcome/commit state; all nine not_applicable fixtures emit exactly once as not_applicable",
+        "From Core: ./node_modules/.bin/tsc -p tsconfig.test.json && node --test dist-tests/transaction-bound-commit-state.test.js — exit 0; ℹ tests 74; ℹ pass 74; ℹ fail 0",
+        "make test — exit 0; Core 338, Node 162, browser 71, collector 92, contract 17, envelope 18, research 11 tests passed; Product test loop passed across every declared workspace (~45s local, 2026-09-10)."
+      ]
     },
     "implementation-preserved-scope": {
       "task_ids": ["1.2", "4.1", "4.2", "5.1", "5.2"],
-      "evidence_ids": ["planned: planning gates, documentation/coherence, generated/type/export/scope/final governance and Git boundaries"]
+      "evidence_ids": [
+        "node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change fix-core-transaction-bound-commit-state — exit 0; design-pattern governance passed in assessment phase: enforcement active; executed before planning-only commit",
+        "openspec validate fix-core-transaction-bound-commit-state --strict — exit 0; Change 'fix-core-transaction-bound-commit-state' is valid; before planning and after runtime/docs",
+        "npm run build --prefix packages/security-audit-sdk-core and npm run typecheck --prefix packages/security-audit-sdk-core — both exit 0; generated tracked source unchanged",
+        "npm run check:generated --prefix packages/security-audit-sdk-core — exit 0; generated SDK contract artifacts are current",
+        "npm run test:matrix --prefix packages/security-audit-sdk-core — exit 0; package exports verified: 61 value exports, 92 type-only exports, frozen surface matches exactly",
+        "npm run test:coherence --prefix packages/security-audit-sdk-core — exit 0; cross-artifact coherence passed in archived mode for remediate-security-audit-sdk-adversarial-review: contract 2.1.0, 24 catalog events/24 named APIs, 0 runtime dependencies, 91/91 current-change tasks complete; ADR rules require 001..014",
+        "npm run validate --prefix contracts/security-audit — exit 0; ℹ tests 17; ℹ pass 17; ℹ fail 0",
+        "npm run validate --prefix packages/security-audit-sdk-node — exit 0; ℹ tests 162; ℹ pass 162; ℹ fail 0; frozen exports and evaluation-kit controls passed",
+        "node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main — exit 0; design-pattern governance passed in final phase: enforcement active; inspected 3 commit(s) and 14 path(s) from origin/main",
+        "node packages/security-audit-sdk-core/scripts/check-git-state.mjs — exit 0; Git whitespace/final-newline checks passed and index is empty; git diff --check — exit 0",
+        "bash /private/tmp/claude-501/-Users-fernando-costa-Git-bloodtrail/1cc06ce2-3b01-443f-b2f3-a249a0f65c8f/scratchpad/scripts/cs53-check.sh delta \"$PWD\" — exit 0; no findings; cs delta exit=0",
+        "tasks.md: exact supplied tamandua-test wrapper executed on clean runtime/test/docs tree, exit 0, not cached; all nine conjuncts passed; exact 14-path union and pre-evidence subjects/Refs/co-author footers inspected; final committed-head rechecks recorded externally"
+      ]
     }
   },
   "security_sensitive": true,
