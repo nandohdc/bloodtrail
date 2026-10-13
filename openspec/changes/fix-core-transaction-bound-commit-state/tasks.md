@@ -41,8 +41,42 @@ Append exactly five commits to the existing four-commit fix; preserve the propos
 
 ## 7. Merge and archive
 
-- [ ] 7.1 Merge through the separately authorized repository process (not performed in this run).
-- [ ] 7.2 Fold and archive after separately authorized merge (not performed in this run).
+Decision source: owner request, 2026-10-13, in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E: "Using Pi, Tamandua & GPT-6.1-sol high, do the fold and archive PRs."
+
+- [x] 7.1 Merge: PR #813 merged into `main` as `d4dbd8342f88f0a0beed3266d7601a0b25b46aa8`.
+- [x] 7.2 Fold this change's delta into `openspec/specs/security-audit-sdk-core/spec.md` while active (ADR 0001); observed fold verification is recorded below.
+- [ ] 7.3 Archive the change by relocation in a separate PR after this fold merges.
+
+### Observed fold verification — 2026-10-13, run #124
+
+The supplied TEST_CMD executed against both active folds before this evidence update,
+exit 0 with an empty index. Its exact `tamandua-test` command used the documented
+`TAMANDUA_TSTX=0` passthrough for uncommitted fold edits: all tests ran, without
+caching or ledger attribution. These are pre-evidence observations, not results for
+this future commit. The earlier implementation/review evidence remains historical.
+
+Each ordered command exited 0:
+
+- `npm run check:generated --prefix packages/security-audit-sdk-core`: no drift.
+- `npm run test:matrix --prefix packages/security-audit-sdk-core`: 338/338 runtime tests; typecheck, build, type tests, 15 documentation scenarios, compatibility, exports, scope and dependencies passed.
+- `npm run test:coherence --prefix packages/security-audit-sdk-core`: passed; 14 sequential ADRs and founding requirements preserved. Its archived-remediation result is not archival of this change.
+- `npm run test:changed-paths --prefix packages/security-audit-sdk-core`: passed.
+- `npm run validate --prefix contracts/security-audit`: validation passed, 17/17 tests.
+- `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`: 308/308 tests, no failures, skips or cancellations.
+- `openspec validate fix-core-default-identifiers-uniqueness --strict`: change valid.
+- `openspec validate fix-core-transaction-bound-commit-state --strict`: change valid.
+- `openspec validate security-audit-sdk-core --type spec`: valid, zero errors; JSON inspection retains exactly the baseline 41 very-long-requirement warnings, no new warning.
+- `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`: enforcement active; inspected 2 commits and 3 paths, including the uncommitted fold.
+- `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: whitespace/final-newline checks passed and index empty.
+- `make test`: all workspace gates passed; Core 338, Node 162, browser 71, collector 92, contract 17, envelope 18 and research 11 tests passed. Deliberate evaluation-kit failing plants ended in the passing negative-control summary. Full governance-gate chains were not run.
+
+External in-memory fold checks passed: all five folded blocks equal their delta bytes,
+headings are unique, all 19 founding and other original requirements except the replaced
+#796 provider block are unchanged, the four transaction-bound scenarios remain,
+no operation headers enter the canonical spec, and reapplying both folds makes no change.
+This #797 canonical edit adds only; no existing canonical text is deleted.
+Final committed-head checks will be reported externally after execution. No additional
+approval, fold merge, archive completion, release or signing is claimed.
 
 ## Executed evidence
 
