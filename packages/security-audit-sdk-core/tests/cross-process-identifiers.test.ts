@@ -92,10 +92,8 @@ function runConcurrentChild(script: string, deadlineMs = 10_000): Promise<ChildO
   });
 }
 
-test("default SDK event and operation identifiers are unique across concurrent fresh processes", async () => {
-  const sampleCount = 128;
-  const processCount = 4;
-  const script = `
+function buildIdentifierSamplingScript(sampleCount: number): string {
+  return `
 import { strict as assert } from "node:assert";
 import {
   createSecurityAuditSdk, authenticatedHumanActor, authoritativeTenant,
@@ -135,36 +133,131 @@ try {
 }
 console.log(JSON.stringify({ pid: process.pid, eventIds, operationIds }));
 `;
+}
+
+interface ChildIdentifiers {
+  readonly pid: number;
+  readonly identifiers: string[];
+}
+
+function parseChildRecord(stdout: string, context: string): Record<string, unknown> {
+  const lines = stdout.trim().split("\n");
+  assert.equal(lines.length, 1, `${context}: expected exactly one JSON record`);
+  let record: unknown;
+  assert.doesNotThrow(() => { record = JSON.parse(lines[0]!); }, `${context}: invalid JSON record`);
+  assert.ok(record !== null && typeof record === "object", `${context}: expected a JSON object`);
+  const fields = record as Record<string, unknown>;
+  assert.deepEqual(Object.keys(fields).sort(), ["eventIds", "operationIds", "pid"], `${context}: unexpected record keys`);
+  return fields;
+}
+
+function validateIdentifierSamples(values: unknown, expectedSamples: number, context: string): string[] {
+  assert.ok(Array.isArray(values), `${context} must be an array`);
+  assert.equal(values.length, expectedSamples, `${context} count`);
+  return values.map((identifier: unknown, sample: number) => {
+    assert.ok(typeof identifier === "string", `${context}[${sample}] must be a string`);
+    assert.match(identifier, uuidV4, `${context}[${sample}] must be lowercase RFC 4122 UUID v4`);
+    return identifier;
+  });
+}
+
+function parseAndValidateChildResult(
+  child: PromiseSettledResult<ChildOutput>, index: number, expectedSamples: number,
+): ChildIdentifiers {
+  const context = `child ${index}`;
+  if (child.status === "rejected") assert.fail(`${context}: ${String(child.reason)}`);
+  const output = child.value;
+  assert.equal(output.signal, null, `${context}: signal=${output.signal}; stderr=${output.stderr}`);
+  assert.equal(output.code, 0, `${context}: exit=${output.code}; stderr=${output.stderr}`);
+  const fields = parseChildRecord(output.stdout, context);
+  assert.ok(typeof fields.pid === "number", `${context}: pid must be a number`);
+  const pid = fields.pid;
+  assert.ok(Number.isInteger(pid) && pid > 0, `${context}: pid must be a positive integer`);
+  assert.notEqual(pid, process.pid, `${context}: expected a fresh child pid`);
+  const identifiers = ["eventIds", "operationIds"].flatMap((key) =>
+    validateIdentifierSamples(fields[key], expectedSamples, `${context}: ${key}`));
+  return { pid, identifiers };
+}
+
+function validChildRecord(): { pid: number; eventIds: string[]; operationIds: string[] } {
+  return {
+    pid: process.pid + 1,
+    eventIds: ["00000000-0000-4000-8000-000000000001", "00000000-0000-4000-9000-000000000002"],
+    operationIds: ["00000000-0000-4000-a000-000000000003", "00000000-0000-4000-b000-000000000004"],
+  };
+}
+
+function fulfilledChild(stdout: string, overrides: Partial<ChildOutput> = {}): PromiseFulfilledResult<ChildOutput> {
+  return { status: "fulfilled", value: { code: 0, signal: null, stdout, stderr: "synthetic stderr", ...overrides } };
+}
+
+const validChildStdout = JSON.stringify(validChildRecord());
+const invalidChildOutputs: readonly { name: string; child: PromiseSettledResult<ChildOutput>; diagnostic: RegExp }[] = [
+  { name: "rejected promise", child: { status: "rejected", reason: new Error("spawn failed") }, diagnostic: /child 7: Error: spawn failed/ },
+  { name: "nonzero exit", child: fulfilledChild(validChildStdout, { code: 7 }), diagnostic: /child 7: exit=7; stderr=synthetic stderr/ },
+  { name: "null exit", child: fulfilledChild(validChildStdout, { code: null }), diagnostic: /child 7: exit=null/ },
+  { name: "signal", child: fulfilledChild(validChildStdout, { signal: "SIGKILL" }), diagnostic: /child 7: signal=SIGKILL; stderr=synthetic stderr/ },
+  { name: "invalid JSON", child: fulfilledChild("not JSON"), diagnostic: /child 7: invalid JSON record/ },
+  { name: "empty stdout", child: fulfilledChild(""), diagnostic: /child 7: invalid JSON record/ },
+  { name: "multiple JSON records", child: fulfilledChild(`${validChildStdout}\n${validChildStdout}`), diagnostic: /child 7: expected exactly one JSON record/ },
+  { name: "concatenated JSON records", child: fulfilledChild(validChildStdout + validChildStdout), diagnostic: /child 7: invalid JSON record/ },
+];
+
+for (const { name, child, diagnostic } of invalidChildOutputs) {
+  test(`child-result validation rejects ${name}`, () => {
+    assert.throws(() => parseAndValidateChildResult(child, 7, 2), diagnostic);
+  });
+}
+
+const invalidChildRecords: readonly { name: string; record: unknown; diagnostic: RegExp }[] = [
+  ...[null, 42, "record", true].map((record) => ({ name: `non-object ${JSON.stringify(record)}`, record, diagnostic: /child 7: expected a JSON object/ })),
+  ...[[], {}, { ...validChildRecord(), extra: true }, { ...validChildRecord(), pid: undefined }].map((record, index) =>
+    ({ name: `wrong keys ${index}`, record, diagnostic: /child 7: unexpected record keys/ })),
+  ...["42", null].map((pid) => ({ name: `non-number pid ${JSON.stringify(pid)}`, record: { ...validChildRecord(), pid }, diagnostic: /child 7: pid must be a number/ })),
+  ...[0, -1, 1.5].map((pid) => ({ name: `invalid pid ${pid}`, record: { ...validChildRecord(), pid }, diagnostic: /child 7: pid must be a positive integer/ })),
+  { name: "parent pid", record: { ...validChildRecord(), pid: process.pid }, diagnostic: /child 7: expected a fresh child pid/ },
+];
+
+for (const { name, record, diagnostic } of invalidChildRecords) {
+  test(`child-result validation rejects ${name}`, () => {
+    assert.throws(() => parseAndValidateChildResult(fulfilledChild(JSON.stringify(record)), 7, 2), diagnostic);
+  });
+}
+
+const invalidSampleArrays: readonly { name: string; values: unknown; diagnostic: string }[] = [
+  ...[null, {}, "not an array"].map((values) => ({ name: `non-array ${JSON.stringify(values)}`, values, diagnostic: "must be an array" })),
+  ...[[], [validChildRecord().eventIds[0]], [...validChildRecord().eventIds, validChildRecord().eventIds[0]]].map((values) =>
+    ({ name: `sample count ${values.length}`, values, diagnostic: "count" })),
+  ...[42, null, {}].map((value) => ({ name: `non-string ${JSON.stringify(value)}`, values: [validChildRecord().eventIds[0], value], diagnostic: "\\[1\\] must be a string" })),
+  ...["", "not-a-uuid", "00000000-0000-4000-A000-000000000003", "00000000-0000-1000-8000-000000000001", "00000000-0000-4000-7000-000000000001"].map((value) =>
+    ({ name: `malformed UUID ${JSON.stringify(value)}`, values: [value, validChildRecord().eventIds[1]], diagnostic: "\\[0\\] must be lowercase RFC 4122 UUID v4" })),
+];
+
+for (const key of ["eventIds", "operationIds"]) {
+  for (const { name, values, diagnostic } of invalidSampleArrays) {
+    test(`child-result validation rejects ${key} ${name}`, () => {
+      const record = { ...validChildRecord(), [key]: values };
+      const expectedDiagnostic = new RegExp(`child 7: ${key}.*${diagnostic}`);
+      assert.throws(() => parseAndValidateChildResult(fulfilledChild(JSON.stringify(record)), 7, 2), expectedDiagnostic);
+    });
+  }
+}
+
+test("child-result validation returns the child pid and every event/operation sample", () => {
+  const record = validChildRecord();
+  const result = parseAndValidateChildResult(fulfilledChild(` ${JSON.stringify(record)}\n`), 7, 2);
+  assert.deepEqual(result, { pid: record.pid, identifiers: [...record.eventIds, ...record.operationIds] });
+});
+
+test("default SDK event and operation identifiers are unique across concurrent fresh processes", async () => {
+  const sampleCount = 128;
+  const processCount = 4;
+  const script = buildIdentifierSamplingScript(sampleCount);
   // Start every child before awaiting any; allSettled also reaps siblings on failure.
   const children = await Promise.allSettled(Array.from({ length: processCount }, () => runConcurrentChild(script)));
-  const identifiers: string[] = [];
-  const pids = new Set<number>();
-  for (const [index, child] of children.entries()) {
-    assert.equal(child.status, "fulfilled", `child ${index}: ${child.status === "rejected" ? String(child.reason) : ""}`);
-    if (child.status !== "fulfilled") continue;
-    const output = child.value;
-    assert.equal(output.signal, null, `child ${index}: signal=${output.signal}; stderr=${output.stderr}`);
-    assert.equal(output.code, 0, `child ${index}: stderr=${output.stderr}`);
-    const lines = output.stdout.trim().split("\n");
-    assert.equal(lines.length, 1, `child ${index}: expected exactly one JSON record`);
-    const record: unknown = JSON.parse(lines[0]!);
-    assert.ok(record !== null && typeof record === "object");
-    const fields = record as Record<string, unknown>;
-    assert.deepEqual(Object.keys(fields).sort(), ["eventIds", "operationIds", "pid"]);
-    assert.ok(typeof fields.pid === "number" && Number.isInteger(fields.pid) && fields.pid > 0);
-    assert.notEqual(fields.pid, process.pid);
-    pids.add(fields.pid);
-    for (const key of ["eventIds", "operationIds"]) {
-      const values = fields[key];
-      assert.ok(Array.isArray(values), `child ${index}: ${key} must be an array`);
-      assert.equal(values.length, sampleCount, `child ${index}: ${key} count`);
-      for (const identifier of values) {
-        assert.equal(typeof identifier, "string");
-        assert.match(identifier, uuidV4, `child ${index}: ${key} must be lowercase RFC 4122 UUID v4`);
-        identifiers.push(identifier);
-      }
-    }
-  }
+  const results = children.map((child, index) => parseAndValidateChildResult(child, index, sampleCount));
+  const pids = new Set(results.map(({ pid }) => pid));
+  const identifiers = results.flatMap(({ identifiers }) => identifiers);
   assert.equal(pids.size, processCount, "expected distinct fresh child processes");
   assert.equal(identifiers.length, processCount * sampleCount * 2);
   assert.equal(new Set(identifiers).size, identifiers.length, "default event/operation identifiers collided within or across processes");
