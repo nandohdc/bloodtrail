@@ -37,9 +37,9 @@ assessment and proposal baseline `5d931ad695fb10db3fe51e6b151352447e21d822` rema
 
 - [x] 5.1 Extract candidate, alternative-rejection, ownership, invariant/task and scenario assertions into five module-level helpers; retain every planning control and add table-driven negative mutations for each group. Run the planning regression, assessment governance, strict OpenSpec validation and Core typecheck/build.
 - [x] 5.2 Extract the private cryptographic UUID capability predicate and add null-host default-construction controls; preserve fail-closed/custom-provider behavior and the exact provider-local coupling inventory. Run runtime, coupling, scope, exports, dependencies and typecheck controls.
-- [ ] 5.3 Extract child-result validation and the child program from the concurrent uniqueness test; preserve bounded concurrent sampling, reaping and the complete collision union. Add synthetic validation controls, run three focused repetitions and prove the collision negative control in a disposable external copy.
-- [ ] 5.4 Reword inherited work-item-prefixed commit subjects without changing trees or ordering; validate every actual subject and the intended PR title with the unmodified Conventional Commits checker, and run its regression suite.
-- [ ] 5.5 Run `npm run test:matrix --prefix packages/security-audit-sdk-core`, `npm run check:generated --prefix packages/security-audit-sdk-core`, `npm run test:coherence --prefix packages/security-audit-sdk-core`, `npm run validate --prefix packages/security-audit-sdk-core`, the current run's exact `tamandua-test` wrapper for `make test`, `node openspec/scripts/check-design-pattern-governance.mjs --phase final`, strict OpenSpec validation, empty-index `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` and `git diff --check`; record exact results and measured source-structure targets without claiming an unexecuted CodeScene result.
+- [x] 5.3 Extract child-result validation and the child program from the concurrent uniqueness test; preserve bounded concurrent sampling, reaping and the complete collision union. Add synthetic validation controls, run three focused repetitions and prove the collision negative control in a disposable external copy.
+- [x] 5.4 Reword inherited work-item-prefixed commit subjects without changing trees or ordering; validate every actual subject and the intended PR title with the unmodified Conventional Commits checker, and run its regression suite.
+- [x] 5.5 Run `npm run test:matrix --prefix packages/security-audit-sdk-core`, `npm run check:generated --prefix packages/security-audit-sdk-core`, `npm run test:coherence --prefix packages/security-audit-sdk-core`, `npm run validate --prefix packages/security-audit-sdk-core`, the current run's exact `tamandua-test` wrapper for `make test`, `node openspec/scripts/check-design-pattern-governance.mjs --phase final`, strict OpenSpec validation, empty-index `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` and `git diff --check`; record exact results and measured source-structure targets without claiming an unexecuted CodeScene result.
 
 ## Verification Commands
 
@@ -156,3 +156,112 @@ and coupling controls.
 All task checks above reflect executed evidence. No review approval, signing, package publication,
 production authorization, canonical spec synchronization or archive completion is claimed by this
 bounded implementation change.
+
+### Code-health follow-up — final remediation evidence, 2026-10-13, run 118
+
+This section closes tasks 5.3–5.5 for run `7512e119-4611-4e7d-bc11-23ef865c004a`,
+Node v26.11.1. Historical run-117 evidence above remains historical; its wrapper was not
+reused. The following results are local verification, not a CodeScene analyzer result.
+
+#### Child-validation evidence carried from this remediation run's completed story
+
+- Run-118 US-003 extracted typed private `parseAndValidateChildResult`, subordinate record/sample
+  validators and `buildIdentifierSamplingScript` in the existing cross-process test file.
+  Four children still start before awaiting `Promise.allSettled`; sibling reaping precedes
+  validation, with 128 event and 128 operation samples each and a 1024-identifier collision union.
+  `runConcurrentChild` remained byte-identical (deadlines, bounded streams, kill/reap and cleanup).
+- Its executed `npm test --prefix packages/security-audit-sdk-core`: exit 0, 233/233 runtime tests.
+  Its three consecutive `node --test packages/security-audit-sdk-core/dist-tests/cross-process-identifiers.test.js`
+  runs: exit 0, 67/67 each. The 51 new synthetic controls include a complete valid return and
+  50 malformed-result rejections. These are prior story executions, not new repetitions here.
+- Its disposable external compiled-package duplicate-sequence control ran
+  `node --test --test-name-pattern='default SDK event and operation identifiers are unique' dist-tests/cross-process-identifiers.test.js`:
+  expected exit 1, precisely at the combined collision assertion (256 versus 1024) after successful
+  child validation. The external copy was removed; production provider/generated SHA-256 hashes
+  were unchanged. This closes 5.3; the final chains below independently reran runtime controls.
+
+#### Subject-only history normalization
+
+- Executed non-interactive `git rebase -i --rebase-merges 5d931ad695fb10db3fe51e6b151352447e21d822`
+  on `refactor/796-codescene-health-118` only, with external sequence/message editors marking
+  exactly the four inherited invalid subjects for rewording. No squash, drop, reorder, merge of
+  main, origin-checkout rewrite or push occurred. Fetch succeeded; this branch has no upstream,
+  so pulling unrelated main changes was not appropriate for the protected assessment sequence.
+- Compared the nine ordered `git log --reverse --format='%H %T %s'` records before/after:
+  all nine tree IDs match position-for-position, count and linear topology are preserved.
+  The first planning-only commit still adds only owning-change artifacts; the second still
+  declares additional ownership before the runtime implementation. Commit bodies retain their
+  Tamandua co-author footer. The four subject mappings observed here (not version/readiness pins;
+  story commits will be squashed at landing) are:
+  - `ac15b92` → `ab66ec3`: `chore(openspec): assess default identifier remediation (#796)`
+  - `e75f9e9` → `98b694d`: `fix(sdk): generate fail-closed cryptographic default identifiers (#796)`
+  - `9981428` → `810ec55`: `test(sdk): verify default identifier uniqueness across processes (#796)`
+  - `a266593` → `b55c05c`: `docs(sdk): document cryptographic identifier guarantees (#796)`
+- For every actual subject in baseline..HEAD, executed the unmodified
+  `node .github/scripts/check-conventional-commits.mjs --title '<actual subject>'`: exit 0 for
+  each. Also validated intended PR title
+  `refactor(sdk): remediate identifier code health findings (#796)` and this story's test/evidence
+  subjects using the same command: exit 0. No leading work-item description prefixes remain.
+  No PR was created or rewritten history pushed; a future PR must pass authoritative remote
+  `--github-pr` validation. The checker and its existing regression suite are unmodified.
+- `node --test .github/scripts/check-conventional-commits.test.mjs`: exit 0, 25/25, including
+  prefixed-description rejection, fetched all-commit validation and the disabled-predicate plant.
+
+#### Executed final controls and measured source structure
+
+- Added four persistent AST regression tests beside the owning planning controls: branch-free
+  five-helper planning delegation, cross-process body line/branch/program boundary, private
+  capability delegation, and synthetic branch/loop/ternary/logical-condition rejection controls.
+  `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`:
+  exit 0, 59/59 (also rerun after the test commit and product loop).
+- TypeScript AST measurement: `assertPlanningContract` has zero branch/loop/ternary/logical-condition
+  nodes, cyclomatic complexity 1 (at most 5), and zero nested conditional bumps. The main
+  cross-process test has 11 physical interior body lines including its comment/blank lines
+  (below 35), zero branch/loop nodes, zero nested conditional bumps and no inline child program.
+  `resolveProviders` uses `if (!hasCryptographicUuidSupport())` inside the existing default-only
+  guard and has no direct crypto identifier; the predicate is module-private. No analyzer approval
+  or CodeScene-green status is inferred from these source-structure measurements.
+- `node --test packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs`:
+  exit 0, 23/23, retaining provider-local positives and other-artifact/Node-import negatives.
+- `npm run typecheck --prefix packages/security-audit-sdk-core`: exit 0.
+- `npm run build --prefix packages/security-audit-sdk-core`: exit 0; tracked generated source unchanged.
+- `npm run test:matrix --prefix packages/security-audit-sdk-core`: exit 0, 233/233 runtime tests,
+  type tests, 15 documentation scenarios, compatibility, frozen exports, scope and dependencies passed.
+- `npm run check:generated --prefix packages/security-audit-sdk-core`: exit 0, generated artifacts current.
+- `npm run test:coherence --prefix packages/security-audit-sdk-core`: exit 0; ADR count/sequence
+  remains 001..013, contract 2.1.0 and 24 named APIs unchanged. The printed archived-remediation
+  91/91 task state is not archival/canonical folding of this active change.
+- `npm run validate --prefix packages/security-audit-sdk-core`: exit 0, complete Core governance
+  chain finished uninterrupted after normalization. Runtime 233/233; verification 301/301 across
+  five suites, zero failed/skipped/cancelled. Mutation-suite duration was 317467.655166 ms in this
+  execution (measurement, not threshold). All generation/type/example/compatibility/immutability/
+  publication/package/changed-path/history/attestation/coherence and empty-index Git gates passed.
+  Packed completeness: 84 intentional files and two imported entry points.
+- Both matrix and full validation report unchanged
+  `identifierProviders: 1 artifacts, 8 references, host couplings: [crypto (1 site)]`.
+  The coupling policy and `BASELINE_INVENTORY` were not loosened by the follow-up; frozen exports
+  remain 61 values/92 types and Core runtime dependencies remain zero.
+- Exact supplied current-run product-loop command:
+  `tamandua-test --repo '/Users/fernando.costa/.tamandua/worktrees/bloodtrail-5311402e/118-7512e119' --run '7512e119-4611-4e7d-bc11-23ef865c004a' --step 'implement' -- 'make test'`:
+  exit 0, executed (not cached) with a clean committed test tree. All declared workspace gates
+  passed: Core 233, Node 162, browser 71, collector 92, contract 17, envelope 18 and research 11
+  runtime tests. Deliberate kit plants ended in the passing negative-control summary. This root
+  product loop is distinct from full Core validation; root `make governance-gates` was not run.
+- `node openspec/scripts/check-design-pattern-governance.mjs --phase final`: exit 0 after history
+  normalization, and again after the test commit/product loop (10 commits, 15 owned paths).
+- `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`:
+  exit 0, change valid after normalization.
+- `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` and `git diff --check`:
+  exit 0 with empty index after normalization, before staging the test commit, after that commit,
+  and after the product loop. Final evidence commit checks are also recorded in the external
+  progress/report rather than anticipating their results here.
+- Baseline diff inspection: no governance_core, frozen contracts, canonical `openspec/specs/`,
+  generated-source, `src/index.ts`, exports or dependency-manifest edits. Follow-up changes stay
+  in the three remediated source/test files and this owning `tasks.md`. `assessment.json` is
+  byte-identical to the starting assessment (SHA-256
+  `8b29c45472352dcbd147d1af552b99dbd56be47d27bba3032755d613327d95b4`); its proposal baseline
+  remains `5d931ad695fb10db3fe51e6b151352447e21d822`.
+
+All follow-up task checks now reflect executed run-118 evidence. No CodeScene analyzer result,
+review approval, production authorization, archival, canonical folding, signing, release or
+publication is claimed.
