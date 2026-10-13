@@ -61,6 +61,11 @@ historical evidence and recorded owner decisions.
 - [x] 7.3 Share concurrent child sampling and export existing UUID/SDK URL constants; preserve every positive/negative assertion and collision finder, retitle ADR 013 for collision resistance without renaming it, confirm path-neutral evidence commands, and run sensitivity/restoration and required gates.
 - [x] 7.4 Reword every origin/main..HEAD commit message last for Refs #796 and exact sdk-core scope without changing trees/order/other text; record the complete old/new/tree mapping, metadata checks and final executed gate evidence.
 
+## 8. CodeScene App gate follow-up (#796)
+
+- [ ] 8.1 Refactor the shared cross-process harness to readonly domain-typed parameters; adapt all callers and retain structural and diagnostic controls, including a primitive-parameter regression mutation.
+- [ ] 8.2 Execute focused typecheck/build, compiled cross-process suites, assessment controls and CLI-1.0.53 review/delta; record verbatim before/after evidence before the final committed-head test chain.
+
 ## Verification Commands
 
 - Planning regression: `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`
