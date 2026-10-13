@@ -30,7 +30,7 @@ Decision source: owner decision, 2026-10-13, via grilling in Claude Code session
 | Q6 | Runtime refusal only. No change to generated types, the generator or the public surface. Classified as `fix(sdk-core)`, non-breaking, with a MIGRATION.md entry. |
 | Q7 | A new ADR-SDK-014, "A commit state requires operation evidence for every outcome". It refines ADR-SDK-007; ADR-SDK-007 itself is not edited. |
 | Q8 | Add the two prescribed glossary terms: Transaction-bound event and Operation evidence. |
-| Q9 | A catalog-driven matrix test with a non-vacuity assertion. No committed mutation test: the orchestrator proves the test fails on the old code during verification. |
+| Q9 | A catalog-driven matrix test with a non-vacuity assertion. No committed mutation test: independent verification proves the test fails on the old code. |
 | Q2, Q3, Q4 | Out of scope: contradictory pairs through a handle (#812); the Node transaction-critical binding's `committed_and_durable` status (#795, G5); Stage P probe P-D (#801). |
 
 ## Scope and Non-goals

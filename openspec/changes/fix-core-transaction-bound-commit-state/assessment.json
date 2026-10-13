@@ -101,7 +101,8 @@
       "evidence_ids": [
         "tests/transaction-bound-commit-state.test.ts: 35 catalog-derived non-success cases plus handle-less success return exact PREMATURE_SUCCESS / validation / /operation/state with zero sink events; partition and delivery-class non-vacuity assertions pass",
         "From Core: ./node_modules/.bin/tsc -p tsconfig.test.json && node --test dist-tests/transaction-bound-commit-state.test.js — exit 0; ℹ tests 74; ℹ pass 74; ℹ fail 0",
-        "npm run test:matrix --prefix packages/security-audit-sdk-core — exit 0; ℹ tests 338; ℹ pass 338; ℹ fail 0; exact supplied tamandua-test command and observed results recorded in tasks.md"
+        "npm run test:matrix --prefix packages/security-audit-sdk-core — exit 0; ℹ tests 338; ℹ pass 338; ℹ fail 0; historical supplied tamandua-test gate sequence and observed results recorded in tasks.md",
+        "Run #123 review follow-up 6.2/6.4: operation-evidence helper names and NonSuccessOutcome rows preserve all assertions; from Core ./node_modules/.bin/tsc -p tsconfig.test.json && node --test dist-tests/transaction-bound-commit-state.test.js — exit 0; ℹ tests 74; ℹ pass 74; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; full supplied TEST_CMD passed on the exact clean four-commit tree before planning evidence recording (exact invocation returned TAMANDUA-TEST CACHED)"
       ]
     },
     "implementation-sanctioned-controls": {
@@ -109,7 +110,8 @@
       "evidence_ids": [
         "tests/transaction-bound-commit-state.test.ts: all 35 same-input method-bound handles transition successfully and emit exactly once with matching outcome/commit state; all nine not_applicable fixtures emit exactly once as not_applicable",
         "From Core: ./node_modules/.bin/tsc -p tsconfig.test.json && node --test dist-tests/transaction-bound-commit-state.test.js — exit 0; ℹ tests 74; ℹ pass 74; ℹ fail 0",
-        "make test — exit 0; Core 338, Node 162, browser 71, collector 92, contract 17, envelope 18, research 11 tests passed; Product test loop passed across every declared workspace (~45s local, 2026-09-10)."
+        "make test — exit 0; Core 338, Node 162, browser 71, collector 92, contract 17, envelope 18, research 11 tests passed; Product test loop passed across every declared workspace (~45s local, 2026-09-10).",
+        "Run #123 review follow-up 6.2/6.4: all 35 paired controls retain sanctioned transitions and exact commit states, with denied authorization configured in the per-outcome table; all nine not_applicable fixtures and success refusal retained; focused tests exit 0; ℹ tests 74; ℹ pass 74; ℹ fail 0; make test exit 0; Product test loop passed across every declared workspace (~45s local, 2026-09-10)."
       ]
     },
     "implementation-preserved-scope": {
@@ -125,8 +127,13 @@
         "npm run validate --prefix packages/security-audit-sdk-node — exit 0; ℹ tests 162; ℹ pass 162; ℹ fail 0; frozen exports and evaluation-kit controls passed",
         "node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main — exit 0; design-pattern governance passed in final phase: enforcement active; inspected 3 commit(s) and 14 path(s) from origin/main",
         "node packages/security-audit-sdk-core/scripts/check-git-state.mjs — exit 0; Git whitespace/final-newline checks passed and index is empty; git diff --check — exit 0",
-        "bash /private/tmp/claude-501/-Users-fernando-costa-Git-bloodtrail/1cc06ce2-3b01-443f-b2f3-a249a0f65c8f/scratchpad/scripts/cs53-check.sh delta \"$PWD\" — exit 0; no findings; cs delta exit=0",
-        "tasks.md: exact supplied tamandua-test wrapper executed on clean runtime/test/docs tree, exit 0, not cached; all nine conjuncts passed; exact 14-path union and pre-evidence subjects/Refs/co-author footers inspected; final committed-head rechecks recorded externally"
+        "CodeScene CLI 1.0.53 delta, the same gate CI's `codescene delta` job runs — exit 0; no findings; cs delta exit=0",
+        "tasks.md: historical supplied tamandua-test wrapper executed in original run #122 on clean runtime/test/docs tree, exit 0, not cached; all nine conjuncts passed; exact 14-path union and pre-evidence subjects/Refs/co-author footers inspected; post-commit rechecks belong only in external completion reports",
+        "Run #123 review follow-up 6.1: node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs — exit 0; ℹ tests 308; ℹ pass 308; ℹ fail 0; only the specified sequential ADR regression changed",
+        "Run #123 review follow-up 6.3: unchanged glossary/header bytes, standard ADR headings/boundary and portable gate citations inspected; npm run test:coherence --prefix packages/security-audit-sdk-core — exit 0; cross-artifact coherence passed in archived mode for remediate-security-audit-sdk-adversarial-review: contract 2.1.0, 24 catalog events/24 named APIs, 0 runtime dependencies, 91/91 current-change tasks complete",
+        "Run #123 review follow-up 6.4: full eleven-gate supplied TEST_CMD passed on clean four-commit tree before evidence edits; exact shim invocation returned exit 0, TAMANDUA-TEST CACHED: tree be3963a2866e passed; tasks.md records the actual execution/cache timing and evidence-only restoration, not a post-commit check",
+        "Run #123 pre-fifth-commit planning evidence closure: openspec validate fix-core-transaction-bound-commit-state --strict — exit 0; Change 'fix-core-transaction-bound-commit-state' is valid; node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main — exit 0; design-pattern governance passed in final phase: enforcement active; inspected 8 commit(s) and 15 path(s) from origin/main; node packages/security-audit-sdk-core/scripts/check-git-state.mjs — exit 0; Git whitespace/final-newline checks passed and index is empty; git diff --check — exit 0",
+        "Run #123: npm run build --prefix packages/security-audit-sdk-core and npm run typecheck --prefix packages/security-audit-sdk-core — both exit 0; CodeScene CLI 1.0.53 file review of packages/security-audit-sdk-core/tests/transaction-bound-commit-state.test.ts — exit 0; file score 10.0; CodeScene CLI 1.0.53 delta, the same gate CI's `codescene delta` job runs — exit 0; no findings; cs delta exit=0"
       ]
     }
   },

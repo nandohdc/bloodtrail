@@ -22,7 +22,7 @@ Decision source: owner decision, 2026-10-13, via grilling in Claude Code session
 - Q6 selects runtime refusal only, a non-breaking `fix(sdk-core)` with migration guidance. Reject requiring `operation` in generated types: it changes the frozen public surface and is broader than this runtime correction.
 - Q7 selects ADR-SDK-014 refining ADR-SDK-007. Editing the founding ADR would erase historical rationale rather than record its refinement.
 - Q8 selects the prescribed Transaction-bound event and Operation evidence glossary entries. Do not conflate transaction-bound events with the transaction_critical delivery class.
-- Q9 selects catalog-driven coverage with exactly 35 non-success cases and paired controls. Reject hand-listed event membership, vacuous loops and committed mutation replicas; independent old-code sensitivity verification belongs to the orchestrator.
+- Q9 selects catalog-driven coverage with exactly 35 non-success cases and paired controls. Reject hand-listed event membership, vacuous loops and committed mutation replicas; old-code sensitivity is subject to independent verification.
 - Q2/Q3/Q4 exclude #812 handle-pair contradictions, #795 Node durability and #801 Stage P. No inference or validation change for those paths is proposed.
 
 ## Review follow-up (#797)
@@ -37,7 +37,7 @@ Keep operation/direct-state handling byte-identical. Preserve `commits.includes(
 
 ## Implementation-specific invariants
 
-| Invariant | Tasks | Evidence (prospective until executed) |
+| Invariant | Tasks | Observed evidence |
 | --- | --- | --- |
 | implementation-evidence-required | 2.1, 3.1, 5.1, 6.2, 6.4 | transaction-bound-commit-state.test.ts: exact bounded refusal and zero sink calls for 35 catalog cases and success |
 | implementation-sanctioned-controls | 3.2, 5.1, 6.2, 6.4 | transaction-bound-commit-state.test.ts: every paired handle transition accepted with matching commit state; all not_applicable fixtures accepted |
@@ -53,4 +53,4 @@ Load the positive all-events fixture and brand context using Core constructors w
 
 Assert every catalog entry includes exactly one of committed and not_applicable. For all catalog-allowed non-success outcomes on committed entries, assert the exact bounded failure and zero emissions; assert 35 cases spanning transaction_critical and policy_critical. Pair every input with a fresh same-instance, method-bound handle: failure/denied markNotCommitted, cancelled markCancelled, partial markPartiallyCommitted; assert successful transition, acceptance, exactly one event and matching state. Cover handle-less success and every not_applicable positive fixture unchanged. Use conformance harness context and valid-row checks where appropriate. Keep functions small and domain-typed, with module-scope transition tables.
 
-Run assessment governance and strict OpenSpec before the planning-only commit. After runtime and documentation commits run build/typecheck, the entire supplied tamandua-test command (generated drift, Core matrix/coherence, contract and Node validation, final governance, empty-index Git, make test, CodeScene CLI-1.0.53 wrapper delta), strict OpenSpec and git diff --check. Record only observed output in tasks and invariant evidence. Merge/archive stay unchecked; no mutation, analyzer, remote CI or approval result is invented.
+Run assessment governance and strict OpenSpec before the planning-only commit. After runtime and documentation commits run build/typecheck, the entire supplied tamandua-test command (generated drift, Core matrix/coherence, contract and Node validation, final governance, empty-index Git, make test, CodeScene CLI 1.0.53 delta), strict OpenSpec and git diff --check. Record only observed output in tasks and invariant evidence. Merge/archive stay unchecked; no mutation, analyzer, remote CI or approval result is invented.
