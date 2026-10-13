@@ -19,9 +19,27 @@ import { packageRoot } from "../../scripts/verification-helpers.mjs";
 
 const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-platform-coupling-"));
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
-const BASELINE_INVENTORY = "platform coupling inventory: authored: 16 artifacts, 123 references, host couplings: [none]; duplicateCopyProbe: 1 artifacts, 3 references, host couplings: [globalThis (1 site)]; generated: 3 artifacts, 7 references, host couplings: [module (1 site)]";
+const BASELINE_INVENTORY = "platform coupling inventory: authored: 15 artifacts, 115 references, host couplings: [none]; identifierProviders: 1 artifacts, 8 references, host couplings: [crypto (1 site)]; duplicateCopyProbe: 1 artifacts, 3 references, host couplings: [globalThis (1 site)]; generated: 3 artifacts, 7 references, host couplings: [module (1 site)]";
 
 const POSITIVE_MUTATIONS = [
+  ...["src/probe.ts", "src/providers.ts-probe.ts", "src/generated/crypto-probe.ts", "src/duplicate-copy-probe.ts"].map((file, index) => ({
+    name: `identifier-crypto-outside-provider-${index}`,
+    file,
+    generate: (marker, original) => `${original}\n// ${marker}\nexport const cryptoProbe = () => crypto.randomUUID();\n`,
+    expected: { code: "undeclared-global", artifact: file, detail: "crypto" },
+  })),
+  {
+    name: "identifier-node-crypto-in-provider",
+    file: "src/providers.ts",
+    generate: (marker, original) => `// ${marker}\nimport { randomUUID } from "node:crypto";\n${original}\nexport const cryptoProbe = () => randomUUID();\n`,
+    expected: { code: "undeclared-specifier", artifact: "src/providers.ts", detail: "node:crypto" },
+  },
+  ...["globalThis", "process", "Buffer"].map((name) => ({
+    name: `identifier-other-host-in-provider-${name}`,
+    file: "src/providers.ts",
+    generate: (marker, original) => `${original}\n// ${marker}\nexport const hostProbe = ${name};\n`,
+    expected: { code: "undeclared-global", artifact: "src/providers.ts", detail: name },
+  })),
   {
     name: "m-71-a-authored-global",
     file: "src/probe.ts",
@@ -194,6 +212,15 @@ test("unmutated package copy passes the scope gate and reports declared coupling
   assert.equal(status, 0, `unmutated control failed:\n${output}`);
   assert.match(output, /scope passed:/);
   assert.equal(inventoryLine(output), BASELINE_INVENTORY, `null control inventory changed:\n${output}`);
+});
+
+test("provider-local host crypto is declared without broadening other roles", () => {
+  const { output, status } = runCase("identifier-provider-crypto-control", ({ copiedPackage }) => {
+    const target = resolve(copiedPackage, "src/providers.ts");
+    writeFileSync(target, `${readExisting(target)}\nexport const cryptoProbe = () => crypto.randomUUID();\n`, "utf8");
+  });
+  assert.equal(status, 0, `provider-local crypto control failed:\n${output}`);
+  assert.equal(inventoryLine(output), BASELINE_INVENTORY);
 });
 
 for (const scenario of RETIRED_SOURCE_SCAN_MUTATIONS) {

@@ -12,6 +12,7 @@ const spec = readFileSync(new URL("./specs/security-audit-sdk-core/spec.md", imp
 const requiredSdkPaths = [
   "src/providers.ts",
   "scripts/platform-coupling-policy.mjs",
+  "scripts/check-scope.mjs",
   "tests/verification/platform-coupling-mutations.test.mjs",
   "tests/cross-process-identifiers.test.ts",
   "API.md",
@@ -89,6 +90,7 @@ test("planning controls reject weakened classification, missing ownership and mi
     (value) => { value.assessment_level = "abbreviated"; },
     (value) => { value.security_sensitive = false; },
     (value) => { value.owned_paths = value.owned_paths.filter((path) => !path.endsWith("src/providers.ts")); },
+    (value) => { value.owned_paths = value.owned_paths.filter((path) => !path.endsWith("scripts/check-scope.mjs")); },
     (value) => { value.ordering.proposal_baseline_commit = "0".repeat(40); },
     (value) => { delete value.invariant_evidence["implementation-custom-provider-independence"]; },
   ]) {

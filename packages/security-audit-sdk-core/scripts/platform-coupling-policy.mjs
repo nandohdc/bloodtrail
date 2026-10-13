@@ -106,6 +106,19 @@ export const PLATFORM_COUPLING_POLICY = Object.freeze({
       specifiers: Object.freeze([]),
       uninspectedCouplings: Object.freeze([]),
     }),
+    identifierProviders: Object.freeze({
+      name: "identifierProviders",
+      prefix: "src/providers.ts",
+      hostGlobals: Object.freeze({
+        crypto: Object.freeze({
+          name: "crypto",
+          reason: "Host Web Crypto randomUUID supplies collision-resistant default identifiers (issue #796). Availability is checked only for implicit or explicit system defaults; custom providers remain host-independent.",
+          boundary: "default identifier generation and fail-closed provider resolution",
+        }),
+      }),
+      specifiers: Object.freeze([]),
+      uninspectedCouplings: Object.freeze([]),
+    }),
     generated: Object.freeze({
       name: "generated",
       prefix: "src/generated/",
@@ -489,6 +502,7 @@ export async function inspectPlatformCoupling({ packageRoot, sourceRoot, tree })
     references: 0,
     inventory: {
       authored: { artifacts: 0, references: 0, hostGlobals: new Map() },
+      identifierProviders: { artifacts: 0, references: 0, hostGlobals: new Map() },
       duplicateCopyProbe: { artifacts: 0, references: 0, hostGlobals: new Map() },
       generated: { artifacts: 0, references: 0, hostGlobals: new Map() },
     },
@@ -661,6 +675,9 @@ function isLabelReference(parent, node) {
 }
 
 function roleForArtifact(artifactPath) {
+  if (artifactPath === PLATFORM_COUPLING_POLICY.roles.identifierProviders.prefix) {
+    return PLATFORM_COUPLING_POLICY.roles.identifierProviders;
+  }
   if (artifactPath.startsWith(PLATFORM_COUPLING_POLICY.roles.generated.prefix)) {
     return PLATFORM_COUPLING_POLICY.roles.generated;
   }
