@@ -36,7 +36,7 @@ historical evidence, not verification of this remediation run. The full security
 assessment and proposal baseline `5d931ad695fb10db3fe51e6b151352447e21d822` remain unchanged.
 
 - [x] 5.1 Extract candidate, alternative-rejection, ownership, invariant/task and scenario assertions into five module-level helpers; retain every planning control and add table-driven negative mutations for each group. Run the planning regression, assessment governance, strict OpenSpec validation and Core typecheck/build.
-- [ ] 5.2 Extract the private cryptographic UUID capability predicate and add null-host default-construction controls; preserve fail-closed/custom-provider behavior and the exact provider-local coupling inventory. Run runtime, coupling, scope, exports, dependencies and typecheck controls.
+- [x] 5.2 Extract the private cryptographic UUID capability predicate and add null-host default-construction controls; preserve fail-closed/custom-provider behavior and the exact provider-local coupling inventory. Run runtime, coupling, scope, exports, dependencies and typecheck controls.
 - [ ] 5.3 Extract child-result validation and the child program from the concurrent uniqueness test; preserve bounded concurrent sampling, reaping and the complete collision union. Add synthetic validation controls, run three focused repetitions and prove the collision negative control in a disposable external copy.
 - [ ] 5.4 Reword inherited work-item-prefixed commit subjects without changing trees or ordering; validate every actual subject and the intended PR title with the unmodified Conventional Commits checker, and run its regression suite.
 - [ ] 5.5 Run `npm run test:matrix --prefix packages/security-audit-sdk-core`, `npm run check:generated --prefix packages/security-audit-sdk-core`, `npm run test:coherence --prefix packages/security-audit-sdk-core`, `npm run validate --prefix packages/security-audit-sdk-core`, the current run's exact `tamandua-test` wrapper for `make test`, `node openspec/scripts/check-design-pattern-governance.mjs --phase final`, strict OpenSpec validation, empty-index `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` and `git diff --check`; record exact results and measured source-structure targets without claiming an unexecuted CodeScene result.
@@ -118,6 +118,32 @@ and coupling controls.
   `git diff --check`: exit 0 before staging. Diff contains only `assessment.test.mjs` and
   `tasks.md`; the full assessment, original proposal baseline, canonical specs, protected paths,
   generated source, exports and dependency manifests are unchanged.
+
+### Code-health follow-up — UUID capability predicate, 2026-10-13, run 118
+
+- `src/providers.ts` now defines private `hasCryptographicUuidSupport(): boolean`:
+  absent/null crypto returns false before checking whether `randomUUID` is callable.
+  `resolveProviders` calls it only for implicit defaults or exact `systemAuditIdentifiers`
+  identity. Lazy generation, host receiver, custom identity and error diagnostics are unchanged.
+- Added null-crypto cases to the existing public-construction matrix in
+  `tests/cross-process-identifiers.test.ts`, covering implicit and explicit defaults with
+  `SDK_INVALID_CONFIGURATION`, category `configuration`, path `/identifiers` and zero sink calls.
+- `npm run typecheck --prefix packages/security-audit-sdk-core` and
+  `npm run build --prefix packages/security-audit-sdk-core`: exit 0; generated source unchanged.
+- `npm test --prefix packages/security-audit-sdk-core`: exit 0, 182/182 runtime tests,
+  including the two null-host cases and existing absent/missing/non-callable, custom unreadable
+  host/identity/receiver, seven-method and lazy-construction controls.
+- `npm run test:scope --prefix packages/security-audit-sdk-core`: exit 0;
+  `identifierProviders: 1 artifacts, 8 references, host couplings: [crypto (1 site)]`.
+  The unchanged `BASELINE_INVENTORY` expectation still matches; neither scope policy nor
+  authored/global host exceptions were widened.
+- `node --test packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs`:
+  exit 0, 23/23 tests, including provider-local positive and other-artifact/Node-import negatives.
+- `npm run test:exports --prefix packages/security-audit-sdk-core` and
+  `npm run test:dependencies --prefix packages/security-audit-sdk-core`: exit 0;
+  unchanged frozen 61 value/92 type exports and zero runtime dependencies.
+- Task 5.2 is complete; child-result extraction and all-history subject normalization remain
+  for tasks 5.3–5.4. Final full-chain evidence remains task 5.5. This is not a CodeScene result.
 
 ### Completed invariant/evidence mapping
 

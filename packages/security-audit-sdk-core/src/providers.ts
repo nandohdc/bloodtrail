@@ -116,6 +116,11 @@ export const defaultTimerProvider: AuditTimerProvider = Object.freeze({
 
 export const systemAuditClock: AuditClock = Object.freeze({ now: () => new Date() });
 
+function hasCryptographicUuidSupport(): boolean {
+  if (typeof crypto === "undefined" || crypto === null) return false;
+  return typeof crypto.randomUUID === "function";
+}
+
 function generateUuidV4(): string {
   // Resolve lazily and retain the host receiver. Import and custom-provider
   // construction must not depend on host cryptographic capabilities.
@@ -221,7 +226,7 @@ export function resolveProviders(input: ProviderConfigurationInput): ResolvedPro
   const clock = validateClock(input.clock);
   validateOptionalProviders(input);
   if (input.identifiers === undefined || input.identifiers === systemAuditIdentifiers) {
-    if (typeof crypto === "undefined" || crypto === null || typeof crypto.randomUUID !== "function") {
+    if (!hasCryptographicUuidSupport()) {
       throw new SecurityAuditSdkError("SDK_INVALID_CONFIGURATION", "configuration", "/identifiers");
     }
   }

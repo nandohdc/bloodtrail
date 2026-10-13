@@ -35,6 +35,7 @@ const configuration = {
 
 const unavailableHosts = [
   { name: "absent crypto", setup: "delete globalThis.crypto;" },
+  { name: "null crypto", setup: "Object.defineProperty(globalThis, 'crypto', { configurable: true, value: null });" },
   { name: "missing randomUUID", setup: "Object.defineProperty(globalThis, 'crypto', { configurable: true, value: {} });" },
   { name: "non-callable randomUUID", setup: "Object.defineProperty(globalThis, 'crypto', { configurable: true, value: { randomUUID: 42 } });" },
 ];
