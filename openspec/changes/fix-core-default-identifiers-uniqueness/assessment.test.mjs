@@ -1,6 +1,7 @@
 // Planning and documentation regression controls for issue #796; no SDK behavior is implemented here.
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
+import { createRequire } from "node:module";
 import test from "node:test";
 
 const changeId = "fix-core-default-identifiers-uniqueness";
@@ -239,6 +240,70 @@ test("API and accepted ADR describe cryptographic defaults without an absolute u
     assert.throws(() => assertIdentifierDocumentation(api.replaceAll(phrase, "omitted"), adr));
   }
   assert.throws(() => assertIdentifierDocumentation(api, adr.replace("Status: Accepted for SDK-core implementation", "Status: Proposed")));
+});
+
+const packageRoot = new URL("../../../packages/security-audit-sdk-core/", import.meta.url);
+const ts = createRequire(new URL("package.json", packageRoot))("typescript");
+const branchKinds = new Set([
+  ts.SyntaxKind.IfStatement, ts.SyntaxKind.SwitchStatement, ts.SyntaxKind.CaseClause,
+  ts.SyntaxKind.ForStatement, ts.SyntaxKind.ForOfStatement, ts.SyntaxKind.ForInStatement,
+  ts.SyntaxKind.WhileStatement, ts.SyntaxKind.DoStatement, ts.SyntaxKind.ConditionalExpression,
+  ts.SyntaxKind.CatchClause, ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken,
+  ts.SyntaxKind.QuestionQuestionToken,
+]);
+
+function descendants(node) {
+  const nodes = [node];
+  ts.forEachChild(node, (child) => { nodes.push(...descendants(child)); });
+  return nodes;
+}
+
+function parseSource(url) {
+  return ts.createSourceFile(url.pathname, readFileSync(url, "utf8"), ts.ScriptTarget.Latest, true);
+}
+
+function assertStraightLine(body) {
+  assert.deepEqual(descendants(body).filter((node) => branchKinds.has(node.kind)), []);
+}
+
+test("planning orchestration stays branch-free with all five private delegations", () => {
+  const source = parseSource(new URL("./assessment.test.mjs", import.meta.url));
+  const planning = source.statements.find((node) => node.name?.text === "assertPlanningContract");
+  assertStraightLine(planning.body);
+  const calls = descendants(planning.body).filter(ts.isCallExpression).map((node) => node.expression.getText(source));
+  for (const name of ["assertCandidateApproaches", "assertAlternativeRejections", "assertOwnedPaths", "assertInvariants", "assertScenarios"]) {
+    assert.ok(calls.includes(name), name);
+  }
+});
+
+test("cross-process orchestration stays below 35 body lines without branches or an inline program", () => {
+  const source = parseSource(new URL("tests/cross-process-identifiers.test.ts", packageRoot));
+  const call = descendants(source).find((node) => ts.isCallExpression(node)
+    && node.arguments[0]?.text === "default SDK event and operation identifiers are unique across concurrent fresh processes");
+  const body = call.arguments[1].body;
+  const lines = body.getText(source).slice(1, -1).split("\n").length - 2;
+  assert.ok(lines < 35, `${lines} physical interior lines`);
+  assertStraightLine(body);
+  assert.equal(descendants(body).some(ts.isTemplateExpression), false);
+  assert.ok(source.statements.some((node) => node.name?.text === "parseAndValidateChildResult"));
+});
+
+test("provider capability remains private and resolveProviders delegates its host check", () => {
+  const source = parseSource(new URL("src/providers.ts", packageRoot));
+  const predicate = source.statements.find((node) => node.name?.text === "hasCryptographicUuidSupport");
+  assert.ok(predicate);
+  assert.equal(predicate.modifiers?.some((node) => node.kind === ts.SyntaxKind.ExportKeyword) ?? false, false);
+  const resolver = source.statements.find((node) => node.name?.text === "resolveProviders");
+  assert.ok(descendants(resolver).some((node) => ts.isIfStatement(node)
+    && node.expression.getText(source) === "!hasCryptographicUuidSupport()"));
+  assert.equal(descendants(resolver).some((node) => ts.isIdentifier(node) && node.text === "crypto"), false);
+});
+
+test("straight-line structural control rejects branches, loops and logical conditions", () => {
+  for (const text of ["if (x) work();", "for (;;) work();", "x ? work() : stop();", "x && work();", "x || work();"]) {
+    const source = ts.createSourceFile("control.ts", text, ts.ScriptTarget.Latest, true);
+    assert.throws(() => assertStraightLine(source));
+  }
 });
 
 test("planning controls reject an absent verification task or default-failure scenario", () => {
