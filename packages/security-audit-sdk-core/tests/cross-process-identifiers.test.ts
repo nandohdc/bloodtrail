@@ -1,17 +1,18 @@
 import { strict as assert } from "node:assert";
 import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { systemAuditIdentifiers, type AuditIdentifierProvider } from "../dist/index.js";
 import {
   buildIdentifierSamplingScript, findRepeatedIdentifiers, parseAndValidateChildResult,
-  runConcurrentChild, type ChildIdentifiers, type ChildOutput,
+  runConcurrentChild, sampleConcurrentChildren, sdkUrl, uuidV4, type ChildIdentifiers, type ChildOutput,
 } from "./cross-process-harness.js";
 
 const identifierMethods: readonly (keyof AuditIdentifierProvider)[] = [
   "eventId", "operationId", "correlationId", "causationId", "requestId", "messageId", "transactionId",
 ];
-const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-const sdkUrl = new URL("../dist/index.js", import.meta.url).href;
 const configUrl = new URL("../dist/config.js", import.meta.url).href;
 
 function runIsolated(script: string): void {
@@ -120,14 +121,59 @@ test("default SDK event and operation identifiers are unique across concurrent f
   const sampleCount = 128;
   const processCount = 4;
   const script = buildIdentifierSamplingScript(sampleCount);
-  // Start every child before awaiting any; allSettled also reaps siblings on failure.
-  const children = await Promise.allSettled(Array.from({ length: processCount }, () => runConcurrentChild(script)));
-  const results = children.map((child, index) => parseAndValidateChildResult(child, index, sampleCount));
-  const pids = new Set(results.map(({ pid }) => pid));
-  const identifiers = results.flatMap(({ identifiers }) => identifiers);
-  assert.equal(pids.size, processCount, "expected distinct fresh child processes");
-  assert.equal(identifiers.length, processCount * sampleCount * 2);
+  const results = await sampleConcurrentChildren(script, processCount, sampleCount);
   assert.deepEqual(findRepeatedIdentifiers(results), []);
+});
+
+test("shared concurrent sampler returns every validated sample from distinct fresh children", async () => {
+  const record = validChildRecord();
+  const script = `console.log(JSON.stringify({ ...${JSON.stringify(record)}, pid: process.pid }));`;
+  const results = await sampleConcurrentChildren(script, 3, 2);
+  assert.equal(results.length, 3);
+  assert.equal(new Set(results.map(({ pid }) => pid)).size, 3);
+  results.forEach(({ pid, identifiers }) => {
+    assert.notEqual(pid, process.pid);
+    assert.deepEqual(identifiers, [...record.eventIds, ...record.operationIds]);
+  });
+});
+
+const invalidConcurrentScripts = [
+  { name: "duplicate PIDs", script: `console.log(${JSON.stringify(validChildStdout)});`, diagnostic: /expected distinct fresh child processes/ },
+  { name: "abnormal exits", script: "process.exitCode = 7;", diagnostic: /child 0: exit=7/ },
+  { name: "invalid JSON", script: "console.log('not JSON');", diagnostic: /child 0: invalid JSON record/ },
+  { name: "wrong sample count", script: `console.log(JSON.stringify({ ...${validChildStdout}, pid: process.pid, eventIds: [] }));`, diagnostic: /child 0: eventIds count/ },
+  { name: "invalid UUID", script: `console.log(JSON.stringify({ ...${validChildStdout}, pid: process.pid, eventIds: ['bad', 'bad'] }));`, diagnostic: /child 0: eventIds\[0\] must be lowercase RFC 4122 UUID v4/ },
+];
+
+for (const { name, script, diagnostic } of invalidConcurrentScripts) {
+  test(`shared concurrent sampler rejects ${name}`, async () => {
+    await assert.rejects(sampleConcurrentChildren(script, 2, 2), diagnostic);
+  });
+}
+
+test("shared concurrent sampler settles siblings before reporting a rejected child", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "identifier-sampler-"));
+  const marker = join(directory, "settled");
+  const script = `
+import { mkdirSync, writeFileSync } from "node:fs";
+let first = false;
+try { mkdirSync(${JSON.stringify(join(directory, "first"))}); first = true; } catch {}
+if (first) {
+  process.stdout.write("x".repeat(128 * 1024));
+  setInterval(() => {}, 1000);
+} else {
+  setTimeout(() => {
+    writeFileSync(${JSON.stringify(marker)}, "settled");
+    console.log(JSON.stringify({ ...${validChildStdout}, pid: process.pid }));
+  }, 250);
+}
+`;
+  try {
+    await assert.rejects(sampleConcurrentChildren(script, 2, 2), /child \d: Error: child stdout exceeded 64 KiB/);
+    assert.equal(existsSync(marker), true, "sibling completed before shared sampler rejected");
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 const collisionCases: readonly { name: string; samples: readonly (readonly string[])[]; expected: string[] }[] = [

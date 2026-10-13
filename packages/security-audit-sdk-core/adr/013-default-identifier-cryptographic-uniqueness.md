@@ -1,4 +1,4 @@
-# ADR-SDK-013: Cryptographic uniqueness for default identifiers
+# ADR-SDK-013: Cryptographic collision resistance for default identifiers
 
 - Status: Accepted for SDK-core implementation
 - Date: 2026-10-13

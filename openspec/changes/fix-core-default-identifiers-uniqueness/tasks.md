@@ -58,7 +58,7 @@ historical evidence and recorded owner decisions.
 
 - [x] 7.1 Commit the planning-only review follow-up, behavioral spec corrections, task/evidence relations and path-neutral command templates; run planning controls, assessment governance, strict OpenSpec validation and all supplied gates before staging.
 - [x] 7.2 Catch throwing crypto and randomUUID capability accessors inside hasCryptographicUuidSupport only; add isolated implicit/explicit fail-closed cases and all seven missing-custom-method /identifiers/<method> controls; preserve the coupling inventory and run required gates.
-- [ ] 7.3 Share concurrent child sampling and export existing UUID/SDK URL constants; preserve every positive/negative assertion and collision finder, retitle ADR 013 for collision resistance without renaming it, confirm path-neutral evidence commands, and run sensitivity/restoration and required gates.
+- [x] 7.3 Share concurrent child sampling and export existing UUID/SDK URL constants; preserve every positive/negative assertion and collision finder, retitle ADR 013 for collision resistance without renaming it, confirm path-neutral evidence commands, and run sensitivity/restoration and required gates.
 - [ ] 7.4 Reword every origin/main..HEAD commit message last for Refs #796 and exact sdk-core scope without changing trees/order/other text; record the complete old/new/tree mapping, metadata checks and final executed gate evidence.
 
 ## Verification Commands
@@ -686,3 +686,78 @@ proposal baseline and owner decisions are preserved.
   change. No protected paths, generated source, manifests, runtime coupling policy,
   assessment controls, other runtime source or inherited history were modified. No #811
   work, push, PR, approval, full governance-chain or remote CI/CodeScene result is claimed.
+
+### Review follow-up — US-003 shared sampling and terminology, 2026-10-13, run 120
+
+Run `65df166b-49f8-4772-902a-db655a6b2113`, Node v26.11.1. Tasks 7.1–7.3 are
+complete; metadata reword/final evidence (7.4) remains unchecked. Prior evidence above
+is historical and unchanged. Local verification is not approval or a CodeScene result.
+
+- Exported the existing `uuidV4` and `sdkUrl` from the harness and removed their duplicate
+  positive-test declarations. Both stable cross-process tests now delegate the complete
+  launch/settle/parse/PID/count boundary to exported typed `sampleConcurrentChildren`.
+  Four children still start before awaiting `Promise.allSettled`; all siblings settle before
+  validation, with 128 event and 128 operation IDs each (1024 total). Both tests retain
+  their own `findRepeatedIdentifiers` call; empty/non-empty/full-repeated-set, identical
+  old-seed sequence and frozen event.id pattern assertions are unchanged. Child deadlines,
+  bounds, cleanup, JSON/UUID/count validation and the collision finder remain byte-identical.
+- Added seven runtime controls through the same sampler (no second launch path): complete
+  valid output, duplicate PID, abnormal exit, malformed JSON, sample-count and UUID rejection,
+  and a rejected overflowing child whose delayed sibling must finish before rejection.
+  Updated AST guards require sampler delegation and each shared launch/settle/parse/PID/count
+  statement, typed return, exported constants and no duplicate constants. Missing shared
+  imports/calls/exports, branches, inline orchestration, oversized functions and weakened
+  sampler guarantees remain rejected. The exact ADR H1 has a positive/negative title control;
+  all existing ADR/provenance/coherence controls remain intact.
+- Retitled only ADR 013's H1 to
+  `# ADR-SDK-013: Cryptographic collision resistance for default identifiers`. Filename,
+  accepted status, owner provenance and every other ADR byte remain unchanged. Read and
+  checked Verification Commands: repository-relative/path-neutral templates remain intact;
+  no historical run-specific executed evidence was rewritten.
+- `npm run typecheck --prefix packages/security-audit-sdk-core` and
+  `npm run build --prefix packages/security-audit-sdk-core`: exit 0.
+- From Core, `./node_modules/.bin/tsc -p tsconfig.test.json`: exit 0. Repository-root
+  `node --test packages/security-audit-sdk-core/dist-tests/cross-process-identifiers.test.js packages/security-audit-sdk-core/dist-tests/cross-process-identifiers-negative-control.test.js`:
+  exit 0, 97/97, before mutation and again after restoration (including synthetic/lifecycle
+  controls and both stable concurrent tests).
+- External Python driver saved exact harness bytes and changed only `findRepeatedIdentifiers`
+  to `return [];`. Mutation compilation: exit 0. Expected-failure command:
+  `node --test packages/security-audit-sdk-core/dist-tests/cross-process-identifiers-negative-control.test.js`:
+  exit 1, 1 failed/0 passed, specifically `AssertionError [ERR_ASSERTION]: old seeded provider
+  must expose collisions through the shared collision finder`, actual false/expected true,
+  at the non-empty collision assertion after child/sequence/frozen-pattern validation.
+  Exact source bytes restored in `finally`; SHA-256 before and after:
+  `94f3f13b234fa15d383b26c4e5713d627cbcf0bfd8859ccc19e22e10d4cfb6a2`.
+  Restored compilation: exit 0, then both focused files pass 97/97. No mutation is committed.
+- External TypeScript AST measurement counts 1 plus if/loop/conditional/case/catch and
+  logical `&&`/`||`/`??` decisions within each function, measuring nested callbacks separately;
+  physical lines use each function's AST source span. Nested control nodes within a function
+  are the bumpy-road proxy. Every affected measured function/callback has complexity 1–2,
+  at most 24 lines, and zero nested control bumps (not an executed CodeScene analysis).
+  `sampleConcurrentChildren`: 12 lines/complexity 1. Positive/negative test callbacks:
+  7/11 lines, complexity 1 and no branches (5/9 physical interior lines, each below 35).
+  Assessment helpers `assertCrossProcessOrchestration`, `assertExportedHarnessFunctions`,
+  `assertSharedSampler`, `assertSharedConstants`: 18/9/7/8 lines and complexity 2/2/1/2.
+- Exact supplied `tamandua-test` TEST_CMD: exit 0, executed before staging with empty index,
+  not cached. Documented `TAMANDUA_TSTX=0` passthrough disables cache/ledger attribution
+  for tracked uncommitted changes, not commands. All eight commands passed:
+  - `npm run check:generated --prefix packages/security-audit-sdk-core`: no drift.
+  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: 263/263 runtime tests;
+    type/example/compatibility/export/scope/dependency gates pass, unchanged 61 value/92
+    type-only exports and zero runtime dependencies.
+  - `npm run test:coherence --prefix packages/security-audit-sdk-core`: ADRs 001..013 retained.
+  - `npm run validate --prefix contracts/security-audit`: validation and 17/17 tests pass.
+  - `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`:
+    307/307 pass, including retained/new negative controls.
+  - `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`:
+    enforcement active, 17 commits/19 paths inspected before this story commit.
+  - `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: empty-index,
+    whitespace and final-newline checks pass.
+  - `make test`: all declared workspaces pass; Core 263, Node 162, browser 71, collector 92,
+    contract 17, envelope 18 and research 11. Deliberate kit plants pass negative controls.
+- `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`
+  and `git diff --check`: exit 0. Fetch succeeded; this branch has no upstream, so no
+  unrelated pull/rebase was performed. Only the three harness/test files, ADR 013, owning
+  assessment controls and this tasks.md change. No runtime/protected/generated/manifests/
+  canonical spec edits, history rewrite, #811 work, push or PR. Full governance chains,
+  remote CI, approval and CodeScene results are not claimed.

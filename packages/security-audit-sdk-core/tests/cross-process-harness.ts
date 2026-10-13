@@ -1,8 +1,8 @@
 import { strict as assert } from "node:assert";
 import { spawn } from "node:child_process";
 
-const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-const sdkUrl = new URL("../dist/index.js", import.meta.url).href;
+export const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+export const sdkUrl = new URL("../dist/index.js", import.meta.url).href;
 
 export interface ChildOutput {
   readonly code: number | null;
@@ -148,6 +148,19 @@ export function parseAndValidateChildResult(
   const identifiers = ["eventIds", "operationIds"].flatMap((key) =>
     validateIdentifierSamples(fields[key], expectedSamples, `${context}: ${key}`));
   return { pid, identifiers };
+}
+
+export async function sampleConcurrentChildren(
+  script: string, processCount: number, sampleCount: number,
+): Promise<ChildIdentifiers[]> {
+  // Start every child before awaiting any; allSettled also reaps siblings on failure.
+  const children = await Promise.allSettled(Array.from({ length: processCount }, () => runConcurrentChild(script)));
+  const results = children.map((child, index) => parseAndValidateChildResult(child, index, sampleCount));
+  const pids = new Set(results.map(({ pid }) => pid));
+  const identifiers = results.flatMap(({ identifiers }) => identifiers);
+  assert.equal(pids.size, processCount, "expected distinct fresh child processes");
+  assert.equal(identifiers.length, processCount * sampleCount * 2);
+  return results;
 }
 
 // Returns each repeated value once, in order of its second encounter in the full union.

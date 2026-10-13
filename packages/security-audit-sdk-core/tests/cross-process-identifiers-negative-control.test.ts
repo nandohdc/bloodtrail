@@ -2,8 +2,7 @@ import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
-  buildIdentifierSamplingScript, findRepeatedIdentifiers, parseAndValidateChildResult,
-  runConcurrentChild, type ChildIdentifiers,
+  buildIdentifierSamplingScript, findRepeatedIdentifiers, sampleConcurrentChildren, type ChildIdentifiers,
 } from "./cross-process-harness.js";
 
 // Test-only replica from upstream 5d931ad695fb10db3fe51e6b151352447e21d822,
@@ -61,13 +60,7 @@ test("old seeded identifier provider repeats event and operation sequences acros
   const sampleCount = 128;
   const processCount = 4;
   const script = buildIdentifierSamplingScript(sampleCount, oldSeededProviderSource);
-  // Use the positive harness: launch all children, settle/reap all, then validate.
-  const children = await Promise.allSettled(Array.from({ length: processCount }, () => runConcurrentChild(script)));
-  const results = children.map((child, index) => parseAndValidateChildResult(child, index, sampleCount));
-  const pids = new Set(results.map(({ pid }) => pid));
-  const identifiers = results.flatMap(({ identifiers }) => identifiers);
-  assert.equal(pids.size, processCount, "expected distinct fresh child processes");
-  assert.equal(identifiers.length, processCount * sampleCount * 2);
+  const results = await sampleConcurrentChildren(script, processCount, sampleCount);
   const expected = results[0]!.identifiers;
   results.forEach((result) => assertReplicaSequence(result, expected, sampleCount));
   const repeated = findRepeatedIdentifiers(results);

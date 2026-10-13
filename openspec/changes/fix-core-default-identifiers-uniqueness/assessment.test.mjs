@@ -730,10 +730,10 @@ const positiveTestName = "default SDK event and operation identifiers are unique
 const negativeTestName = "old seeded identifier provider repeats event and operation sequences across concurrent fresh processes";
 const sharedHarnessFunctions = [
   "runConcurrentChild", "buildIdentifierSamplingScript", "parseChildRecord",
-  "validateIdentifierSamples", "parseAndValidateChildResult", "findRepeatedIdentifiers",
+  "validateIdentifierSamples", "parseAndValidateChildResult", "sampleConcurrentChildren", "findRepeatedIdentifiers",
 ];
 const orchestrationFunctions = [
-  "runConcurrentChild", "buildIdentifierSamplingScript", "parseAndValidateChildResult", "findRepeatedIdentifiers",
+  "buildIdentifierSamplingScript", "sampleConcurrentChildren", "findRepeatedIdentifiers",
 ];
 
 function parseTestText(text) {
@@ -761,7 +761,12 @@ function assertCrossProcessOrchestration(source, name) {
   assertStraightLine(body);
   assert.equal(descendants(body).some(ts.isTemplateExpression), false);
   const calls = descendants(body).filter(ts.isCallExpression).map((node) => node.expression.getText(source));
-  for (const helper of [...orchestrationFunctions, "Promise.allSettled"]) assert.ok(calls.includes(helper), helper);
+  for (const helper of orchestrationFunctions) assert.ok(calls.includes(helper), helper);
+  assert.ok(body.getText(source).includes("await sampleConcurrentChildren(script, processCount, sampleCount)"));
+  assert.ok(body.getText(source).includes("const sampleCount = 128;"));
+  assert.ok(body.getText(source).includes("const processCount = 4;"));
+  assert.equal(calls.includes("runConcurrentChild"), false);
+  assert.equal(calls.includes("parseAndValidateChildResult"), false);
 }
 
 function assertExportedHarnessFunctions(source) {
@@ -771,6 +776,33 @@ function assertExportedHarnessFunctions(source) {
     assert.ok(declaration.modifiers.some((node) => node.kind === ts.SyntaxKind.ExportKeyword), name);
     const lines = declaration.getText(source).split("\n").length;
     assert.ok(lines <= 70, `${name}: ${lines} physical lines`);
+  }
+}
+
+const samplerGuarantees = [
+  "const children = await Promise.allSettled(Array.from({ length: processCount }, () => runConcurrentChild(script)));",
+  "const results = children.map((child, index) => parseAndValidateChildResult(child, index, sampleCount));",
+  "const pids = new Set(results.map(({ pid }) => pid));",
+  "const identifiers = results.flatMap(({ identifiers }) => identifiers);",
+  'assert.equal(pids.size, processCount, "expected distinct fresh child processes");',
+  "assert.equal(identifiers.length, processCount * sampleCount * 2);",
+  "return results;",
+];
+
+function assertSharedSampler(source) {
+  const sampler = source.statements.find((node) => node.name?.text === "sampleConcurrentChildren");
+  assert.ok(sampler, "shared sampler required");
+  assert.equal(sampler.type.getText(source), "Promise<ChildIdentifiers[]>");
+  assertStraightLine(sampler.body);
+  assert.deepEqual(sampler.body.statements.map((node) => node.getText(source)), samplerGuarantees);
+}
+
+function assertSharedConstants(source) {
+  for (const name of ["uuidV4", "sdkUrl"]) {
+    const statements = source.statements.filter(ts.isVariableStatement);
+    const definitions = statements.filter((node) => node.declarationList.declarations.some((entry) => entry.name.text === name));
+    assert.equal(definitions.length, 1, name);
+    assert.ok(definitions[0].modifiers?.some((node) => node.kind === ts.SyntaxKind.ExportKeyword), name);
   }
 }
 
@@ -787,6 +819,8 @@ for (const [path, name] of crossProcessStructures) {
     const text = readFileSync(new URL(path, packageRoot), "utf8");
     assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("./cross-process-harness.js", "./different.js")), name));
     assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("findRepeatedIdentifiers(results)", "[]")), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("sampleConcurrentChildren,", "")), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("await sampleConcurrentChildren(script, processCount, sampleCount)", "[]")), name));
     assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("const sampleCount = 128;", "if (true) work();")), name));
     assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("const sampleCount = 128;", "const program = `inline ${value}`;")), name));
     assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("const sampleCount = 128;", "\n".repeat(35))), name));
@@ -798,10 +832,45 @@ test("shared harness exports all moved helpers within 70 physical lines and reje
   const text = readFileSync(new URL("tests/cross-process-harness.ts", packageRoot), "utf8");
   assertExportedHarnessFunctions(parseTestText(text));
   for (const name of sharedHarnessFunctions) {
-    assert.throws(() => assertExportedHarnessFunctions(parseTestText(text.replace(`export function ${name}`, `function ${name}`))));
-    assert.throws(() => assertExportedHarnessFunctions(parseTestText(text.replace(`export function ${name}`, `export function omitted${name}`))));
+    const declaration = new RegExp(`export (async )?function ${name}`);
+    assert.throws(() => assertExportedHarnessFunctions(parseTestText(text.replace(declaration, (_, asyncKeyword = "") => `${asyncKeyword}function ${name}`))));
+    assert.throws(() => assertExportedHarnessFunctions(parseTestText(text.replace(declaration, (_, asyncKeyword = "") => `export ${asyncKeyword}function omitted${name}`))));
   }
   assert.throws(() => assertExportedHarnessFunctions(parseTestText(text.replace("const seen =", `${"\n".repeat(70)}const seen =`))));
+});
+
+test("shared sampler retains launch-all, settle-all, validation, distinct PID and complete count guarantees", () => {
+  const text = readFileSync(new URL("tests/cross-process-harness.ts", packageRoot), "utf8");
+  assertSharedSampler(parseTestText(text));
+  for (const guarantee of samplerGuarantees) {
+    assert.throws(() => assertSharedSampler(parseTestText(text.replace(guarantee, "void 0;"))), guarantee);
+  }
+  assert.throws(() => assertSharedSampler(parseTestText(text.replace("Promise.allSettled", "Promise.all"))));
+  assert.throws(() => assertSharedSampler(parseTestText(text.replace("Promise<ChildIdentifiers[]>", "Promise<unknown[]>"))));
+});
+
+test("UUID pattern and SDK URL have one exported harness definition imported by the positive test", () => {
+  const text = readFileSync(new URL("tests/cross-process-harness.ts", packageRoot), "utf8");
+  assertSharedConstants(parseTestText(text));
+  for (const name of ["uuidV4", "sdkUrl"]) {
+    assert.throws(() => assertSharedConstants(parseTestText(text.replace(`export const ${name}`, `const ${name}`))));
+    assert.throws(() => assertSharedConstants(parseTestText(text.replace(`export const ${name}`, `export const omitted${name}`))));
+    assert.throws(() => assertSharedConstants(parseTestText(`${text}\nexport const ${name} = 0;`)));
+  }
+  const positive = parseSource(new URL("tests/cross-process-identifiers.test.ts", packageRoot));
+  const shared = positive.statements.find((node) => ts.isImportDeclaration(node) && node.moduleSpecifier.text === "./cross-process-harness.js");
+  const imports = shared.importClause.namedBindings.elements.map((node) => node.name.text);
+  assert.ok(imports.includes("uuidV4"));
+  assert.ok(imports.includes("sdkUrl"));
+  const locals = positive.statements.filter(ts.isVariableStatement).flatMap((node) => node.declarationList.declarations.map((entry) => entry.name.text));
+  assert.equal(locals.includes("uuidV4"), false);
+  assert.equal(locals.includes("sdkUrl"), false);
+});
+
+test("ADR 013 title states cryptographic collision resistance", () => {
+  const assertTitle = (text) => assert.equal(text.split("\n")[0], "# ADR-SDK-013: Cryptographic collision resistance for default identifiers");
+  assertTitle(identifierAdr);
+  assert.throws(() => assertTitle(identifierAdr.replace("collision resistance", "uniqueness")));
 });
 
 test("provider capability remains private and resolveProviders delegates its host check", () => {
