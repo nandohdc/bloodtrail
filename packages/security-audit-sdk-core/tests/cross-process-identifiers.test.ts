@@ -42,6 +42,8 @@ const unavailableHosts = [
   { name: "null crypto", setup: "Object.defineProperty(globalThis, 'crypto', { configurable: true, value: null });" },
   { name: "missing randomUUID", setup: "Object.defineProperty(globalThis, 'crypto', { configurable: true, value: {} });" },
   { name: "non-callable randomUUID", setup: "Object.defineProperty(globalThis, 'crypto', { configurable: true, value: { randomUUID: 42 } });" },
+  { name: "throwing crypto accessor", setup: "Object.defineProperty(globalThis, 'crypto', { configurable: true, get() { throw new Error('unreadable crypto'); } });" },
+  { name: "throwing randomUUID accessor", setup: "Object.defineProperty(globalThis, 'crypto', { configurable: true, value: { get randomUUID() { throw new Error('unreadable randomUUID'); } } });" },
 ];
 
 function validChildRecord(): { pid: number; eventIds: string[]; operationIds: string[] } {
@@ -249,6 +251,32 @@ assert.equal(sinkCalls, 0);
 `);
     });
   }
+}
+
+for (const missingMethod of identifierMethods) {
+  test(`custom provider missing ${missingMethod} rejects construction before identifier or sink use`, () => {
+    runIsolated(`${childConfiguration}
+const { createSecurityAuditSdk, SecurityAuditSdkError } = await import(${JSON.stringify(sdkUrl)});
+const methods = ${JSON.stringify(identifierMethods)};
+const missingMethod = ${JSON.stringify(missingMethod)};
+let identifierCalls = 0;
+const identifiers = Object.fromEntries(methods.filter((method) => method !== missingMethod).map((method) => [method, () => {
+  identifierCalls += 1;
+  return '00000000-0000-4000-8000-000000000001';
+}]));
+assert.equal(Object.keys(identifiers).length, methods.length - 1);
+assert.equal(Object.hasOwn(identifiers, missingMethod), false);
+assert.throws(() => createSecurityAuditSdk({ ...configuration, identifiers }), (error) => {
+  assert.ok(error instanceof SecurityAuditSdkError);
+  assert.equal(error.code, 'SDK_INVALID_CONFIGURATION');
+  assert.equal(error.category, 'configuration');
+  assert.equal(error.path, '/identifiers/' + missingMethod);
+  return true;
+});
+assert.equal(identifierCalls, 0);
+assert.equal(sinkCalls, 0);
+`);
+  });
 }
 
 for (const setup of [

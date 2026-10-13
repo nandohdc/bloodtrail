@@ -117,8 +117,12 @@ export const defaultTimerProvider: AuditTimerProvider = Object.freeze({
 export const systemAuditClock: AuditClock = Object.freeze({ now: () => new Date() });
 
 function hasCryptographicUuidSupport(): boolean {
-  if (typeof crypto === "undefined" || crypto === null) return false;
-  return typeof crypto.randomUUID === "function";
+  try {
+    if (typeof crypto === "undefined" || crypto === null) return false;
+    return typeof crypto.randomUUID === "function";
+  } catch {
+    return false;
+  }
 }
 
 function generateUuidV4(): string {

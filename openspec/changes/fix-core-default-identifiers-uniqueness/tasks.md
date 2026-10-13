@@ -57,7 +57,7 @@ Declare remediation before implementation; complete these tasks in order and pre
 historical evidence and recorded owner decisions.
 
 - [x] 7.1 Commit the planning-only review follow-up, behavioral spec corrections, task/evidence relations and path-neutral command templates; run planning controls, assessment governance, strict OpenSpec validation and all supplied gates before staging.
-- [ ] 7.2 Catch throwing crypto and randomUUID capability accessors inside hasCryptographicUuidSupport only; add isolated implicit/explicit fail-closed cases and all seven missing-custom-method /identifiers/<method> controls; preserve the coupling inventory and run required gates.
+- [x] 7.2 Catch throwing crypto and randomUUID capability accessors inside hasCryptographicUuidSupport only; add isolated implicit/explicit fail-closed cases and all seven missing-custom-method /identifiers/<method> controls; preserve the coupling inventory and run required gates.
 - [ ] 7.3 Share concurrent child sampling and export existing UUID/SDK URL constants; preserve every positive/negative assertion and collision finder, retitle ADR 013 for collision resistance without renaming it, confirm path-neutral evidence commands, and run sensitivity/restoration and required gates.
 - [ ] 7.4 Reword every origin/main..HEAD commit message last for Refs #796 and exact sdk-core scope without changing trees/order/other text; record the complete old/new/tree mapping, metadata checks and final executed gate evidence.
 
@@ -627,3 +627,62 @@ prospective (7.2–7.4). No future runtime test or sampler is required by this p
   owner decisions remain unchanged. Fetch succeeded; this fresh branch has no upstream, so
   no unrelated pull/rebase was performed. No #811 work, metadata rewrite, push, PR, approval,
   full governance-chain or remote CI/CodeScene result is claimed.
+
+### Review follow-up — US-002 fail-closed accessors and missing methods, 2026-10-13, run 120
+
+New local evidence for run `65df166b-49f8-4772-902a-db655a6b2113`, Node v26.11.1.
+Tasks 7.1–7.2 are complete; 7.3–7.4 remain unchecked. Historical evidence, assessment,
+proposal baseline and owner decisions are preserved.
+
+- Added two throwing-host rows to the existing isolated-child unavailable-host matrix,
+  exercised with implicit and explicit system defaults (four cases). All assert
+  `SecurityAuditSdkError`, `SDK_INVALID_CONFIGURATION`, `configuration`, `/identifiers`
+  and zero sink calls. Import succeeds before construction in each child.
+- Added seven isolated table-driven custom-provider cases using the existing module-scope
+  method table. Each omits exactly one own method, supplies the other six as callable
+  functions, checks its exact `/identifiers/<method>` error and observes zero identifier
+  invocations and zero sink calls.
+- Before the runtime edit, build/test compilation passed and the focused 11 new cases
+  produced seven passes and four intended failures: the throwing-accessor cases reported
+  `/configuration` instead of `/identifiers`. This records the observed pre-fix behavior,
+  not an assumed raw-error outcome.
+- Wrapped only the existing capability reads inside private `hasCryptographicUuidSupport`
+  in `try/catch`, returning false on access failure. Read-only source comparison verified
+  every runtime byte outside this predicate unchanged, unchanged crypto reference count,
+  and no `randomUUID` invocation in capability validation. Generation remains lazy.
+- `npm run typecheck --prefix packages/security-audit-sdk-core` and
+  `npm run build --prefix packages/security-audit-sdk-core`: exit 0.
+- From Core, `./node_modules/.bin/tsc -p tsconfig.test.json`: exit 0. Then from repository
+  root, `node --test packages/security-audit-sdk-core/dist-tests/cross-process-identifiers.test.js packages/security-audit-sdk-core/dist-tests/cross-process-identifiers-negative-control.test.js`:
+  exit 0, 90/90. Includes new cases, all prior host/custom/lazy tests and both sampling controls.
+- `npm run test:scope --prefix packages/security-audit-sdk-core`: exit 0. Automated exact
+  string comparison matches the unchanged `BASELINE_INVENTORY`: authored 15 artifacts/115
+  references; identifierProviders 1 artifact/8 references/crypto (1 site); duplicateCopyProbe
+  1 artifact/3 references/globalThis (1 site); generated 3 artifacts/7 references/module (1 site).
+- `node --test packages/security-audit-sdk-core/tests/verification/platform-coupling-mutations.test.mjs`:
+  exit 0, 23/23. Provider-local crypto remains accepted; other-artifact crypto and
+  `node:crypto` imports remain rejected with artifact/detail diagnostics. No policy edits.
+- Exact supplied `tamandua-test` TEST_CMD: exit 0, executed before staging with an empty
+  index, not cached. Documented `TAMANDUA_TSTX=0` passthrough permits tracked uncommitted
+  edits; it disables caching/ledger attribution, not commands. All eight commands passed:
+  - `npm run check:generated --prefix packages/security-audit-sdk-core`: no drift.
+  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: 256/256 runtime tests;
+    type/example/compatibility/export/scope/dependency gates pass; 61 value/92 type-only
+    exports and zero runtime dependencies unchanged.
+  - `npm run test:coherence --prefix packages/security-audit-sdk-core`: ADRs 001..013 retained.
+  - `npm run validate --prefix contracts/security-audit`: validation and 17/17 tests pass.
+  - `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`:
+    304/304 pass, including negative controls.
+  - `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`:
+    enforcement active, 16 commits/19 paths inspected before this story commit.
+  - `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: empty-index,
+    whitespace and final-newline checks pass.
+  - `make test`: all declared workspaces pass; Core 256, Node 162, browser 71, collector 92,
+    contract 17, envelope 18, research 11. Deliberate kit plants pass their negative controls.
+- `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`
+  and `git diff --check`: exit 0.
+- Fetch succeeded; this fresh branch has no upstream, so no unrelated pull/rebase was
+  performed. Only providers.ts, the top-level positive cross-process test and this tasks.md
+  change. No protected paths, generated source, manifests, runtime coupling policy,
+  assessment controls, other runtime source or inherited history were modified. No #811
+  work, push, PR, approval, full governance-chain or remote CI/CodeScene result is claimed.
