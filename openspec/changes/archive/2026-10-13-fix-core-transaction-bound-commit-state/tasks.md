@@ -45,7 +45,7 @@ Decision source: owner request, 2026-10-13, in Claude Code session https://claud
 
 - [x] 7.1 Merge: PR #813 merged into `main` as `d4dbd8342f88f0a0beed3266d7601a0b25b46aa8`.
 - [x] 7.2 Fold this change's delta into `openspec/specs/security-audit-sdk-core/spec.md` while active (ADR 0001); observed fold verification is recorded below.
-- [ ] 7.3 Archive the change by relocation in a separate PR after this fold merges.
+- [x] 7.3 Archive the change by relocation in a separate PR after this fold merges. Evidence: relocated to `openspec/changes/archive/2026-10-13-fix-core-transaction-bound-commit-state/` in this commit, after fold PR #814 merged.
 
 ### Observed fold verification — 2026-10-13, run #124
 

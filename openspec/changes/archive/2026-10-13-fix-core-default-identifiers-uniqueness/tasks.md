@@ -73,7 +73,7 @@ Decision source: owner request, 2026-10-13, in Claude Code session https://claud
 
 - [x] 9.1 Merge: PR #810 merged into `main` as `02ce833c4e02f83441d086ed47aed1306d4217cc`.
 - [x] 9.2 Fold this change's delta into `openspec/specs/security-audit-sdk-core/spec.md` while active (ADR 0001); observed fold verification is recorded below.
-- [ ] 9.3 Archive the change by relocation in a separate PR after this fold merges.
+- [x] 9.3 Archive the change by relocation in a separate PR after this fold merges. Evidence: relocated to `openspec/changes/archive/2026-10-13-fix-core-default-identifiers-uniqueness/` in this commit, after fold PR #814 merged.
 
 ### Observed fold verification — 2026-10-13, run #124
 
