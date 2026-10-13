@@ -108,6 +108,95 @@ function assertFollowUpRelations(value, taskText) {
   assertFollowUpTaskOrder(taskText);
 }
 
+const closureHeading = "### Owner-decision follow-up — US-004 closure";
+const closureEvidenceId = "tasks.md: Owner-decision follow-up — US-004 closure; shared findRepeatedIdentifiers vacuous-helper mutation fails at collision detection, exact-byte restoration and focused reruns pass";
+const closureControlTexts = [
+  "Run `5b30972f-9782-45a2-9972-16a4426f7151`",
+  "old seeded identifier provider repeats event and operation sequences across concurrent fresh processes",
+  "`findRepeatedIdentifiers`", "`tests/cross-process-harness.ts`", "`return [];`", "`finally`",
+  "Mutation compilation:", "Expected-failure command:", "exit 1, 1 test failed, 0 passed",
+  "AssertionError [ERR_ASSERTION]: old seeded provider must expose collisions through the shared collision finder",
+  "Successful child exit/format/PID/count/sequence validations precede that assertion",
+  "frozen-contract event.id matches", "Exact-byte equality PASS", "Restored compilation:",
+  "Restored focused rerun of both files", "No uncommitted mutation or staged build artifacts remain",
+];
+
+function assertClosureEvidence(taskText, value) {
+  const section = taskText.split(closureHeading)[1];
+  assert.ok(section, "missing current-run closure section");
+  for (const phrase of closureControlTexts) assert.ok(section.includes(phrase), phrase);
+  const before = section.match(/Restoration SHA-256 before: `([a-f0-9]{64})`/);
+  const after = section.match(/Restoration SHA-256 after: `([a-f0-9]{64})`/);
+  assert.ok(before, "missing pre-mutation hash");
+  assert.ok(after, "missing restoration hash");
+  assert.equal(after[1], before[1], "restoration hashes differ");
+  assert.ok(value.invariant_evidence["implementation-host-uuid-generation"].evidence_ids.includes(closureEvidenceId));
+}
+
+test("closure records committed seeded-control mutation sensitivity and exact restoration", () => {
+  assertClosureEvidence(tasks, assessment);
+});
+for (const phrase of [closureHeading, ...closureControlTexts]) {
+  test(`closure rejects missing current-run evidence ${phrase}`, () => {
+    assert.throws(() => assertClosureEvidence(tasks.replaceAll(phrase, "omitted"), assessment));
+  });
+}
+test("closure rejects historical evidence substituted for current seeded control", () => {
+  const section = tasks.slice(tasks.indexOf(closureHeading)).replaceAll(closureControlTexts[1], "disposable-copy old-seed control");
+  assert.throws(() => assertClosureEvidence(section, assessment));
+});
+test("closure rejects absent or mismatched restoration hashes", () => {
+  const section = tasks.slice(tasks.indexOf(closureHeading));
+  for (const label of ["before", "after"]) {
+    assert.throws(() => assertClosureEvidence(section.replace(`Restoration SHA-256 ${label}:`, "omitted:"), assessment));
+  }
+  const mismatched = section.replace(/(Restoration SHA-256 after: `)[a-f0-9]{64}/, `$1${"0".repeat(64)}`);
+  assert.throws(() => assertClosureEvidence(mismatched, assessment));
+});
+const closureGateCommands = [
+  "npm run check:generated --prefix packages/security-audit-sdk-core",
+  "npm run test:matrix --prefix packages/security-audit-sdk-core",
+  "npm run test:coherence --prefix packages/security-audit-sdk-core",
+  "npm run validate --prefix contracts/security-audit",
+  "node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs",
+  "node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main",
+  "node packages/security-audit-sdk-core/scripts/check-git-state.mjs", "make test",
+  "npm run typecheck --prefix packages/security-audit-sdk-core",
+  "npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict",
+  "git diff --check",
+];
+
+function assertCompletedClosure(taskText, value) {
+  assertClosureEvidence(taskText, value);
+  assertFollowUpTaskOrder(taskText);
+  assert.match(taskText, /^- \[x\] 6\.4 /m);
+  const gates = taskText.split(closureHeading)[1].split("#### Final gate outcomes (pre-commit)")[1];
+  assert.ok(gates, "missing final gate outcomes");
+  for (const command of closureGateCommands) assert.ok(gates.includes(`\`${command}\`: exit 0`), command);
+}
+
+test("completed closure records all required current-run gates without reopening predecessors", () => {
+  assertCompletedClosure(tasks, assessment);
+});
+for (const command of closureGateCommands) {
+  test(`completed closure rejects missing final gate ${command}`, () => {
+    const prefix = tasks.slice(0, tasks.indexOf(closureHeading));
+    const current = tasks.slice(tasks.indexOf(closureHeading)).replaceAll(command, "omitted");
+    assert.throws(() => assertCompletedClosure(prefix + current, assessment));
+  });
+}
+test("completed closure rejects absent gate section and unchecked final task", () => {
+  assert.throws(() => assertCompletedClosure(tasks.replace("#### Final gate outcomes (pre-commit)", "omitted"), assessment));
+  assert.throws(() => assertCompletedClosure(tasks.replace("[x] 6.4", "[ ] 6.4"), assessment));
+});
+
+test("closure rejects unmapped executed sensitivity evidence", () => {
+  const mutated = structuredClone(assessment);
+  const evidence = mutated.invariant_evidence["implementation-host-uuid-generation"];
+  evidence.evidence_ids = evidence.evidence_ids.filter((text) => text !== closureEvidenceId);
+  assert.throws(() => assertClosureEvidence(tasks, mutated));
+});
+
 function assertFollowUpTaskOrder(taskText) {
   let pending = false;
   for (const taskId of followUpTasks) {

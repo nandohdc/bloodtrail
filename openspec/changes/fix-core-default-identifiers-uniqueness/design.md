@@ -167,8 +167,12 @@ executes all supplied gates and temporarily makes only the shared collision find
 The negative control must FAIL specifically at its non-empty collision assertion, not at compile
 or child validation. Restore exact source bytes in cleanup, recompile and rerun both suites; never
 commit the mutation. Record actual mutation/restoration and gate outcomes in Executed Evidence.
-Tasks 6.2–6.4 and committed sensitivity evidence are prospective in this planning amendment;
-historical disposable evidence is not a substitute.
+Tasks 6.2–6.4 and committed sensitivity evidence were prospective in the planning amendment;
+historical disposable evidence is not a substitute. The executed run-119 US-004 closure section in
+tasks.md now records the committed seeded control's failure at collision detection when only
+`findRepeatedIdentifiers(results)` returns `[]`, successful test compilation, exact-byte/hash
+restoration and passing focused reruns. Current invariant evidence includes this sensitivity
+execution; the original run-117/run-118 disposable-copy results remain historical.
 
 ### Risks and re-evaluation triggers
 

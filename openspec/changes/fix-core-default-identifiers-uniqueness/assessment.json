@@ -106,7 +106,8 @@
       "evidence_ids": [
         "tests/cross-process-identifiers.test.ts: seven-method UUID-v4 and host receiver delegation controls",
         "tests/cross-process-identifiers.test.ts: concurrent fresh-process combined event/operation zero-collision sample",
-        "tests/cross-process-identifiers-negative-control.test.ts: old seeded identifier provider repeats event and operation sequences across concurrent fresh processes"
+        "tests/cross-process-identifiers-negative-control.test.ts: old seeded identifier provider repeats event and operation sequences across concurrent fresh processes",
+        "tasks.md: Owner-decision follow-up — US-004 closure; shared findRepeatedIdentifiers vacuous-helper mutation fails at collision detection, exact-byte restoration and focused reruns pass"
       ]
     },
     "implementation-default-fail-closed": {

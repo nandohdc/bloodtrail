@@ -49,7 +49,7 @@ follow-up preserves the runtime design and declares ownership before new impleme
 - [x] 6.1 Commit a planning-only amendment recording owner decisions/provenance, the four new owned paths, task/evidence mappings and process-only requirement relocation; extend positive and fail-closed planning controls and run this story's exact verification commands before staging.
 - [x] 6.2 Extract the shared top-level cross-process harness and pure collision finder; commit the old-seeded custom-provider negative control with frozen event.id format and identical fresh-process sequences; retain positive assertions and structural controls and run all required gates.
 - [x] 6.3 Document host requirements and injection migration in MIGRATION.md, add identifier glossary terms in CONTEXT.md, add ADR provenance/rejected alternatives and confirm API guarantees; run documentation negative controls and required gates.
-- [ ] 6.4 Execute the vacuous-helper mutation and exact restoration/reruns, all verification gates and final protected-path/history inspection; record only executed evidence and close follow-up invariant mappings.
+- [x] 6.4 Execute the vacuous-helper mutation and exact restoration/reruns, all verification gates and final protected-path/history inspection; record only executed evidence and close follow-up invariant mappings.
 
 ## Verification Commands
 
@@ -155,7 +155,10 @@ and coupling controls.
 - Task 5.2 is complete; child-result extraction and all-history subject normalization remain
   for tasks 5.3–5.4. Final full-chain evidence remains task 5.5. This is not a CodeScene result.
 
-### Completed invariant/evidence mapping
+### Historical completed invariant/evidence mapping (run 117)
+
+The current follow-up host-generation and boundary mappings are recorded in the run-119
+US-004 closure section below. This original mapping is retained as historical evidence only.
 
 - `implementation-host-uuid-generation` (2.1, 2.2, 3.1, 3.2): all seven method/receiver/v4 controls and concurrent-process union regression pass in the 180-test runtime suite. Four fresh concurrent children sample 128 event and 128 operation IDs each, 1024 total, with zero collisions; old-seed disposable negative control fails precisely on collisions.
 - `implementation-default-fail-closed` (2.1, 2.2): six implicit/explicit public-construction cases reject absent crypto, missing randomUUID and non-function randomUUID with SDK_INVALID_CONFIGURATION/configuration/identifiers diagnostics and no sink calls; construction generates no IDs.
@@ -460,3 +463,113 @@ above remains historical; no vacuous-helper mutation was executed for this story
   coherence policy and governance_core are unchanged. No remote CI, CodeScene or full
   governance-chain result is claimed. Post-commit governance will be recorded externally
   after actual execution, not anticipated here.
+
+### Owner-decision follow-up — US-004 closure, 2026-10-13, run 119
+
+Run `5b30972f-9782-45a2-9972-16a4426f7151`, Node v26.11.1. This section records
+executed follow-up controls, not run-117/run-118 evidence or remote CI/CodeScene results.
+Raw logs and the mutation driver are outside the worktree in
+`/var/folders/bw/szhz9z3x7qs5bmqc7s185zcr0000gn/T/tamandua-119-evidence.v9qS8P`.
+
+#### Executed seeded-control sensitivity and restoration
+
+- `npm run build --prefix packages/security-audit-sdk-core`: exit 0.
+- From `packages/security-audit-sdk-core`, `./node_modules/.bin/tsc -p tsconfig.test.json`:
+  exit 0 (baseline test compilation).
+- `node --test packages/security-audit-sdk-core/dist-tests/cross-process-identifiers.test.js packages/security-audit-sdk-core/dist-tests/cross-process-identifiers-negative-control.test.js`:
+  baseline exit 0, 79/79 tests. Stable runtime tests include
+  "default SDK event and operation identifiers are unique across concurrent fresh processes"
+  and "old seeded identifier provider repeats event and operation sequences across concurrent fresh processes".
+- The external Python driver saved exact source bytes, replaced ONLY the body of
+  `findRepeatedIdentifiers` in `tests/cross-process-harness.ts` with `return [];`, and restored
+  original bytes in `finally`. No production or negative-control test source was mutated.
+- Mutation compilation: `./node_modules/.bin/tsc -p tsconfig.test.json` from Core, exit 0,
+  with unmasked diagnostics (none). Expected-failure command:
+  `node --test packages/security-audit-sdk-core/dist-tests/cross-process-identifiers-negative-control.test.js`:
+  exit 1, 1 test failed, 0 passed. `AssertionError [ERR_ASSERTION]: old seeded provider must expose collisions through the shared collision finder`,
+  actual false, expected true, at compiled test line 64 (`assert.ok(repeated.length > 0)`).
+  Successful child exit/format/PID/count/sequence validations precede that assertion:
+  four distinct fresh children, 128 event and 128 operation IDs per child (1024 total),
+  identical complete sequences and frozen-contract event.id matches. This was not a
+  compilation, child-setup or unrelated-format failure.
+- Restoration SHA-256 before: `c71be99e5d16f6427966b3671658e1e52ba0d631b3659bc7b6906fa346769148`;
+  Restoration SHA-256 after: `c71be99e5d16f6427966b3671658e1e52ba0d631b3659bc7b6906fa346769148`.
+  Exact-byte equality PASS. Mutation hash was
+  `045413eaaccd5c503d94739e05da9c9362008ff12f522c7051b597f430cc46c6`.
+- Restored compilation: `./node_modules/.bin/tsc -p tsconfig.test.json` from Core, exit 0.
+  Restored focused rerun of both files with the baseline command: exit 0, 79/79 tests.
+  `git diff --exit-code -- packages/security-audit-sdk-core/tests/cross-process-harness.ts`:
+  exit 0. No uncommitted mutation or staged build artifacts remain.
+- The first external driver invocation also reached the intended runtime failure and restored
+  successfully, but its log parser incorrectly expected the source expression in Node's
+  diagnostic. Correcting only that external parser to check the diagnostic's compiled line
+  and actual compiled assertion allowed the repeated driver invocation to exit 0. Both
+  mutation compilations exited 0, both failures hit the collision assertion, and both
+  restorations/reruns passed. The parser failure is not treated as gate evidence.
+
+#### Final gate outcomes (pre-commit)
+
+The exact supplied wrapper executed the restored implementation with an empty index and
+`TAMANDUA_TSTX=0` (documented uncached passthrough for uncommitted tracked changes, no
+ledger attribution). Command:
+`tamandua-test --repo '/Users/fernando.costa/.tamandua/worktrees/bloodtrail-5311402e/119-5b30972f' --run '5b30972f-9782-45a2-9972-16a4426f7151' --step 'implement' -- 'npm run check:generated --prefix packages/security-audit-sdk-core && npm run test:matrix --prefix packages/security-audit-sdk-core && npm run test:coherence --prefix packages/security-audit-sdk-core && npm run validate --prefix contracts/security-audit && node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs && node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main && node packages/security-audit-sdk-core/scripts/check-git-state.mjs && make test'`:
+exit 0, not cached. Individual executed outcomes:
+
+- `npm run check:generated --prefix packages/security-audit-sdk-core`: exit 0, no drift.
+- `npm run test:matrix --prefix packages/security-audit-sdk-core`: exit 0, 245/245 runtime
+  tests including the committed control; type tests, 15 documentation scenarios, frozen
+  61 value/92 type exports, compatibility, provider-local scope and zero runtime dependencies pass.
+- `npm run test:coherence --prefix packages/security-audit-sdk-core`: exit 0, exactly 13 ADRs.
+- `npm run validate --prefix contracts/security-audit`: exit 0, validation and 17/17 tests.
+- `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`: exit 0,
+  260/260 tests on the first execution, including current-run seeded-control, mutation diagnostic,
+  restoration hash and unmapped-evidence negative controls. Final gate-presence controls were
+  then added: the second complete exact-wrapper execution exited 0 with 273/273 assessment
+  tests (34 new closure controls versus the inherited 239), no skipped/cancelled tests. All
+  eight commands passed again with the same runtime counts, export/dependency diagnostics,
+  empty index and pre-commit governance result. Typecheck, strict OpenSpec and read-only
+  boundary/history inspection were also rerun afterward, each exit 0. This covers the finished
+  closure regression code; the final evidence text was updated only after these executions.
+- `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`: exit 0,
+  enforcement active; 14 commits and 19 paths inspected before the closure commit.
+- `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: exit 0, empty index.
+- `make test`: exit 0, all declared workspaces; Core 245, Node 162, browser 71, collector 92,
+  contract 17, envelope 18, research 11 tests. Evaluation-kit deliberate failing plants ended
+  in the passing negative-control summary; their printed diagnostics are not suite failures.
+- `npm run typecheck --prefix packages/security-audit-sdk-core`: exit 0.
+- `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`: exit 0,
+  change valid.
+- `git diff --check`: exit 0.
+- Additional `npm run test:contract-immutability --prefix packages/security-audit-sdk-core`
+  and `npm run test:changed-paths --prefix packages/security-audit-sdk-core`: exit 0.
+
+#### Current invariant completion and boundary inspection
+
+- `implementation-host-uuid-generation` (2.1, 2.2, 3.1, 3.2, 6.1, 6.2, 6.4): positive
+  seven-method/receiver/v4/construction controls and zero-collision concurrent sample pass.
+  Committed `tests/cross-process-identifiers-negative-control.test.ts`:
+  "old seeded identifier provider repeats event and operation sequences across concurrent fresh processes"
+  uses the same `tests/cross-process-harness.ts` and `findRepeatedIdentifiers` over the full
+  union. Executed vacuous-helper mutation FAIL and exact restoration/reruns PASS above establish
+  committed sensitivity; retained disposable-copy results from runs 117/118 are historical only.
+- `implementation-preserved-boundaries` (4.1, 4.2, 4.3, 6.1, 6.3, 6.4): host/injection docs,
+  glossary and ADR provenance are complete. Frozen exports, zero dependencies, contract/generated
+  validation, prospective ownership, final governance, strict OpenSpec and empty-index checks pass.
+  Existing fail-closed, custom-provider-independence and provider-local-coupling mappings remain intact.
+- Read-only external history/path inspection: exit 0. Starting baseline
+  `e51902bda608dc33a64a4afd81890be8a00708db` remains an ancestor; its complete inherited history
+  is retained. Baseline-to-working-tree diff contains only owned paths. Whole Core src tree,
+  contracts, Node/collector trees, all package.json files, canonical specs, .github and
+  governance_core paths are byte-identical. Exactly 13 ADR files remain. Shared harness source
+  has no residual diff from the story's starting bytes; build outputs are ignored, never staged.
+- First run-119 commit is planning-only and includes all four newly owned paths in assessment
+  before their later implementation commits. Proposal baseline stays
+  `5d931ad695fb10db3fe51e6b151352447e21d822`. Existing three new subjects and the intended
+  closure subject passed the read-only `.github/scripts/check-conventional-commits.mjs --title`
+  checker; each existing new body contains `Refs #796` and the Tamandua co-author footer.
+- Explicit changed-file inspection: empty index, no CR bytes or trailing whitespace, final
+  newline in every changed file. Only owning-change evidence/test artifacts are modified for
+  this story. Tasks 6.1–6.4 now reflect execution in order, groups 1–5 remain completed.
+  No runtime/dependency/export change, #811 work, archive/folding, push or PR operation.
+  No remote CI/CodeScene or full governance-chain result is claimed. Post-commit gates will be
+  recorded in the external progress/report only after execution, not predicted here.
