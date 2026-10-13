@@ -762,9 +762,9 @@ function assertCrossProcessOrchestration(source, name) {
   assert.equal(descendants(body).some(ts.isTemplateExpression), false);
   const calls = descendants(body).filter(ts.isCallExpression).map((node) => node.expression.getText(source));
   for (const helper of orchestrationFunctions) assert.ok(calls.includes(helper), helper);
-  assert.ok(body.getText(source).includes("await sampleConcurrentChildren(script, processCount, sampleCount)"));
-  assert.ok(body.getText(source).includes("const sampleCount = 128;"));
-  assert.ok(body.getText(source).includes("const processCount = 4;"));
+  assert.ok(body.getText(source).includes("await sampleConcurrentChildren(program, plan)"));
+  assert.ok(body.getText(source).includes("const plan: SamplingPlan = { processCount: 4, sampleCount: 128 };"));
+  assert.ok(body.getText(source).includes("const program: ChildProgram = { source: buildIdentifierSamplingScript(plan"));
   assert.equal(calls.includes("runConcurrentChild"), false);
   assert.equal(calls.includes("parseAndValidateChildResult"), false);
 }
@@ -779,13 +779,46 @@ function assertExportedHarnessFunctions(source) {
   }
 }
 
+const harnessParameterTypes = [
+  ["runConcurrentChild", ["ChildProgram"]],
+  ["buildIdentifierSamplingScript", ["SamplingPlan", "IdentifierProviderSource"]],
+  ["parseChildRecord", ["ChildOutput", "RecordExpectation"]],
+  ["validateIdentifierSamples", ["unknown", "SampleExpectation"]],
+  ["parseAndValidateChildResult", ["PromiseSettledResult<ChildOutput>", "ChildExpectation"]],
+  ["sampleConcurrentChildren", ["ChildProgram", "SamplingPlan"]],
+  ["findRepeatedIdentifiers", ["readonly ChildIdentifiers[]"]],
+];
+const harnessDomainFields = [
+  ["ChildProgram", ["readonly source: string;", "readonly deadlineMs?: number;"]],
+  ["SamplingPlan", ["readonly processCount: number;", "readonly sampleCount: number;"]],
+  ["IdentifierProviderSource", ["readonly source: string;"]],
+  ["ChildExpectation", ["readonly index: number;", "readonly expectedSamples: number;"]],
+  ["RecordExpectation", ["readonly context: string;"]],
+  ["SampleExpectation", ["readonly expectedSamples: number;"]],
+];
+
+function assertHarnessDomainParameters(source) {
+  for (const [name, types] of harnessParameterTypes) {
+    const declaration = source.statements.find((node) => ts.isFunctionDeclaration(node) && node.name.text === name);
+    assert.ok(declaration, name);
+    assert.deepEqual(declaration.parameters.map((node) => node.type?.getText(source)), types, name);
+  }
+  for (const [name, fields] of harnessDomainFields) {
+    const declaration = source.statements.find((node) => ts.isInterfaceDeclaration(node) && node.name.text === name);
+    assert.ok(declaration?.modifiers?.some((node) => node.kind === ts.SyntaxKind.ExportKeyword), name);
+    assert.deepEqual(declaration.members.map((node) => node.getText(source)), fields, name);
+  }
+  const sample = source.statements.find((node) => node.name?.text === "SampleExpectation");
+  assert.equal(sample.heritageClauses[0].getText(source), "extends RecordExpectation");
+}
+
 const samplerGuarantees = [
-  "const children = await Promise.allSettled(Array.from({ length: processCount }, () => runConcurrentChild(script)));",
-  "const results = children.map((child, index) => parseAndValidateChildResult(child, index, sampleCount));",
+  "const children = await Promise.allSettled(Array.from({ length: plan.processCount }, () => runConcurrentChild(program)));",
+  "const results = children.map((child, index) => parseAndValidateChildResult(child, { index, expectedSamples: plan.sampleCount }));",
   "const pids = new Set(results.map(({ pid }) => pid));",
   "const identifiers = results.flatMap(({ identifiers }) => identifiers);",
-  'assert.equal(pids.size, processCount, "expected distinct fresh child processes");',
-  "assert.equal(identifiers.length, processCount * sampleCount * 2);",
+  'assert.equal(pids.size, plan.processCount, "expected distinct fresh child processes");',
+  "assert.equal(identifiers.length, plan.processCount * plan.sampleCount * 2);",
   "return results;",
 ];
 
@@ -820,10 +853,13 @@ for (const [path, name] of crossProcessStructures) {
     assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("./cross-process-harness.js", "./different.js")), name));
     assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("findRepeatedIdentifiers(results)", "[]")), name));
     assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("sampleConcurrentChildren,", "")), name));
-    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("await sampleConcurrentChildren(script, processCount, sampleCount)", "[]")), name));
-    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("const sampleCount = 128;", "if (true) work();")), name));
-    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("const sampleCount = 128;", "const program = `inline ${value}`;")), name));
-    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("const sampleCount = 128;", "\n".repeat(35))), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace("await sampleConcurrentChildren(program, plan)", "[]")), name));
+    const plan = "const plan: SamplingPlan = { processCount: 4, sampleCount: 128 };";
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace(plan, "if (true) work();")), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace(plan, "const program = `inline ${value}`;")), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace(plan, "\n".repeat(35))), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace(plan, plan.replace("128", "64"))), name));
+    assert.throws(() => assertCrossProcessOrchestration(parseTestText(text.replace(plan, plan.replace("4", "3"))), name));
     assert.throws(() => assertCrossProcessOrchestration(parseTestText(`${text}\nfunction parseAndValidateChildResult() {}`), name));
   });
 }
@@ -837,6 +873,24 @@ test("shared harness exports all moved helpers within 70 physical lines and reje
     assert.throws(() => assertExportedHarnessFunctions(parseTestText(text.replace(declaration, (_, asyncKeyword = "") => `export ${asyncKeyword}function omitted${name}`))));
   }
   assert.throws(() => assertExportedHarnessFunctions(parseTestText(text.replace("const seen =", `${"\n".repeat(70)}const seen =`))));
+});
+
+test("shared harness uses exported readonly domain parameters and rejects primitive regressions", () => {
+  const text = readFileSync(new URL("tests/cross-process-harness.ts", packageRoot), "utf8");
+  assertHarnessDomainParameters(parseTestText(text));
+  for (const [name] of harnessParameterTypes) {
+    const source = parseTestText(text);
+    const declaration = source.statements.find((node) => ts.isFunctionDeclaration(node) && node.name.text === name);
+    const parameterType = declaration.parameters[0].type;
+    for (const primitive of ["string", "number", "boolean", "number | null", "string | undefined"]) {
+      const mutation = text.slice(0, parameterType.getStart(source)) + primitive + text.slice(parameterType.end);
+      assert.throws(() => assertHarnessDomainParameters(parseTestText(mutation)), undefined, `${name}: ${primitive}`);
+    }
+  }
+  for (const [name, fields] of harnessDomainFields) {
+    assert.throws(() => assertHarnessDomainParameters(parseTestText(text.replace(`export interface ${name}`, `interface ${name}`))), undefined, name);
+    assert.throws(() => assertHarnessDomainParameters(parseTestText(text.replace(fields[0], fields[0].replace("readonly ", "")))), undefined, name);
+  }
 });
 
 test("shared sampler retains launch-all, settle-all, validation, distinct PID and complete count guarantees", () => {

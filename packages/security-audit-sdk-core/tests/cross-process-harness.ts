@@ -11,9 +11,37 @@ export interface ChildOutput {
   readonly stderr: string;
 }
 
-export function runConcurrentChild(script: string, deadlineMs = 10_000): Promise<ChildOutput> {
+export interface ChildProgram {
+  readonly source: string;
+  readonly deadlineMs?: number;
+}
+
+export interface SamplingPlan {
+  readonly processCount: number;
+  readonly sampleCount: number;
+}
+
+export interface IdentifierProviderSource {
+  readonly source: string;
+}
+
+export interface ChildExpectation {
+  readonly index: number;
+  readonly expectedSamples: number;
+}
+
+export interface RecordExpectation {
+  readonly context: string;
+}
+
+export interface SampleExpectation extends RecordExpectation {
+  readonly expectedSamples: number;
+}
+
+export function runConcurrentChild(program: ChildProgram): Promise<ChildOutput> {
+  const { source, deadlineMs = 10_000 } = program;
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ["--input-type=module", "--eval", script], {
+    const child = spawn(process.execPath, ["--input-type=module", "--eval", source], {
       stdio: ["ignore", "pipe", "pipe"],
     });
     let stdout = "";
@@ -56,11 +84,11 @@ export function runConcurrentChild(script: string, deadlineMs = 10_000): Promise
   });
 }
 
-// providerSource, when supplied, declares a module-level custom `identifiers` object.
+// The provider source, when supplied, declares a module-level custom `identifiers` object.
 // With no source, the config has no identifiers property and exercises Core defaults.
-export function buildIdentifierSamplingScript(sampleCount: number, providerSource?: string): string {
-  const providerSetup = providerSource ?? "";
-  const providerConfiguration = providerSource === undefined
+export function buildIdentifierSamplingScript(plan: SamplingPlan, provider?: IdentifierProviderSource): string {
+  const providerSetup = provider?.source ?? "";
+  const providerConfiguration = provider === undefined
     ? "// Deliberately omit identifiers: both named events and operations use Core defaults."
     : "identifiers,";
   return `
@@ -91,7 +119,7 @@ const input = {
   source: observedSource({ observed: { address: "192.0.2.11", port: 443 } }),
 };
 try {
-  for (let index = 0; index < ${sampleCount}; index += 1) {
+  for (let index = 0; index < ${plan.sampleCount}; index += 1) {
     const operation = sdk.beginOperation({ transactional: false });
     assert.equal(operation.ok, true, JSON.stringify(operation));
     operationIds.push(operation.value.operationId);
@@ -111,8 +139,9 @@ export interface ChildIdentifiers {
   readonly identifiers: readonly string[];
 }
 
-export function parseChildRecord(stdout: string, context: string): Record<string, unknown> {
-  const lines = stdout.trim().split("\n");
+export function parseChildRecord(output: ChildOutput, expectation: RecordExpectation): Record<string, unknown> {
+  const { context } = expectation;
+  const lines = output.stdout.trim().split("\n");
   assert.equal(lines.length, 1, `${context}: expected exactly one JSON record`);
   let record: unknown;
   assert.doesNotThrow(() => { record = JSON.parse(lines[0]!); }, `${context}: invalid JSON record`);
@@ -122,10 +151,11 @@ export function parseChildRecord(stdout: string, context: string): Record<string
   return fields;
 }
 
-export function validateIdentifierSamples(values: unknown, expectedSamples: number, context: string): string[] {
+export function validateIdentifierSamples(values: unknown, expectation: SampleExpectation): string[] {
+  const { expectedSamples, context } = expectation;
   assert.ok(Array.isArray(values), `${context} must be an array`);
   assert.equal(values.length, expectedSamples, `${context} count`);
-  return values.map((identifier: unknown, sample: number) => {
+  return values.map((identifier, sample) => {
     assert.ok(typeof identifier === "string", `${context}[${sample}] must be a string`);
     assert.match(identifier, uuidV4, `${context}[${sample}] must be lowercase RFC 4122 UUID v4`);
     return identifier;
@@ -133,33 +163,34 @@ export function validateIdentifierSamples(values: unknown, expectedSamples: numb
 }
 
 export function parseAndValidateChildResult(
-  child: PromiseSettledResult<ChildOutput>, index: number, expectedSamples: number,
+  child: PromiseSettledResult<ChildOutput>, expectation: ChildExpectation,
 ): ChildIdentifiers {
+  const { index, expectedSamples } = expectation;
   const context = `child ${index}`;
   if (child.status === "rejected") assert.fail(`${context}: ${String(child.reason)}`);
   const output = child.value;
   assert.equal(output.signal, null, `${context}: signal=${output.signal}; stderr=${output.stderr}`);
   assert.equal(output.code, 0, `${context}: exit=${output.code}; stderr=${output.stderr}`);
-  const fields = parseChildRecord(output.stdout, context);
+  const fields = parseChildRecord(output, { context });
   assert.ok(typeof fields.pid === "number", `${context}: pid must be a number`);
   const pid = fields.pid;
   assert.ok(Number.isInteger(pid) && pid > 0, `${context}: pid must be a positive integer`);
   assert.notEqual(pid, process.pid, `${context}: expected a fresh child pid`);
   const identifiers = ["eventIds", "operationIds"].flatMap((key) =>
-    validateIdentifierSamples(fields[key], expectedSamples, `${context}: ${key}`));
+    validateIdentifierSamples(fields[key], { expectedSamples, context: `${context}: ${key}` }));
   return { pid, identifiers };
 }
 
 export async function sampleConcurrentChildren(
-  script: string, processCount: number, sampleCount: number,
+  program: ChildProgram, plan: SamplingPlan,
 ): Promise<ChildIdentifiers[]> {
   // Start every child before awaiting any; allSettled also reaps siblings on failure.
-  const children = await Promise.allSettled(Array.from({ length: processCount }, () => runConcurrentChild(script)));
-  const results = children.map((child, index) => parseAndValidateChildResult(child, index, sampleCount));
+  const children = await Promise.allSettled(Array.from({ length: plan.processCount }, () => runConcurrentChild(program)));
+  const results = children.map((child, index) => parseAndValidateChildResult(child, { index, expectedSamples: plan.sampleCount }));
   const pids = new Set(results.map(({ pid }) => pid));
   const identifiers = results.flatMap(({ identifiers }) => identifiers);
-  assert.equal(pids.size, processCount, "expected distinct fresh child processes");
-  assert.equal(identifiers.length, processCount * sampleCount * 2);
+  assert.equal(pids.size, plan.processCount, "expected distinct fresh child processes");
+  assert.equal(identifiers.length, plan.processCount * plan.sampleCount * 2);
   return results;
 }
 

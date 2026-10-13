@@ -2,7 +2,8 @@ import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
-  buildIdentifierSamplingScript, findRepeatedIdentifiers, sampleConcurrentChildren, type ChildIdentifiers,
+  buildIdentifierSamplingScript, findRepeatedIdentifiers, sampleConcurrentChildren,
+  type ChildIdentifiers, type ChildProgram, type SamplingPlan,
 } from "./cross-process-harness.js";
 
 // Test-only replica from upstream 5d931ad695fb10db3fe51e6b151352447e21d822,
@@ -57,12 +58,11 @@ function assertReplicaSequence(result: ChildIdentifiers, expected: readonly stri
 }
 
 test("old seeded identifier provider repeats event and operation sequences across concurrent fresh processes", async () => {
-  const sampleCount = 128;
-  const processCount = 4;
-  const script = buildIdentifierSamplingScript(sampleCount, oldSeededProviderSource);
-  const results = await sampleConcurrentChildren(script, processCount, sampleCount);
+  const plan: SamplingPlan = { processCount: 4, sampleCount: 128 };
+  const program: ChildProgram = { source: buildIdentifierSamplingScript(plan, { source: oldSeededProviderSource }) };
+  const results = await sampleConcurrentChildren(program, plan);
   const expected = results[0]!.identifiers;
-  results.forEach((result) => assertReplicaSequence(result, expected, sampleCount));
+  results.forEach((result) => assertReplicaSequence(result, expected, plan.sampleCount));
   const repeated = findRepeatedIdentifiers(results);
   assert.ok(repeated.length > 0, "old seeded provider must expose collisions through the shared collision finder");
   assert.deepEqual(new Set(repeated), new Set(expected), "every sampled value repeats across fresh processes");

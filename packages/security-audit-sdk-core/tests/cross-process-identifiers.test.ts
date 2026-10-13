@@ -7,7 +7,8 @@ import { test } from "node:test";
 import { systemAuditIdentifiers, type AuditIdentifierProvider } from "../dist/index.js";
 import {
   buildIdentifierSamplingScript, findRepeatedIdentifiers, parseAndValidateChildResult,
-  runConcurrentChild, sampleConcurrentChildren, sdkUrl, uuidV4, type ChildIdentifiers, type ChildOutput,
+  parseChildRecord, runConcurrentChild, sampleConcurrentChildren, sdkUrl, uuidV4, validateIdentifierSamples,
+  type ChildIdentifiers, type ChildOutput, type ChildProgram, type SampleExpectation, type SamplingPlan,
 } from "./cross-process-harness.js";
 
 const identifierMethods: readonly (keyof AuditIdentifierProvider)[] = [
@@ -73,7 +74,7 @@ const invalidChildOutputs: readonly { name: string; child: PromiseSettledResult<
 
 for (const { name, child, diagnostic } of invalidChildOutputs) {
   test(`child-result validation rejects ${name}`, () => {
-    assert.throws(() => parseAndValidateChildResult(child, 7, 2), diagnostic);
+    assert.throws(() => parseAndValidateChildResult(child, { index: 7, expectedSamples: 2 }), diagnostic);
   });
 }
 
@@ -88,7 +89,7 @@ const invalidChildRecords: readonly { name: string; record: unknown; diagnostic:
 
 for (const { name, record, diagnostic } of invalidChildRecords) {
   test(`child-result validation rejects ${name}`, () => {
-    assert.throws(() => parseAndValidateChildResult(fulfilledChild(JSON.stringify(record)), 7, 2), diagnostic);
+    assert.throws(() => parseAndValidateChildResult(fulfilledChild(JSON.stringify(record)), { index: 7, expectedSamples: 2 }), diagnostic);
   });
 }
 
@@ -106,29 +107,37 @@ for (const key of ["eventIds", "operationIds"]) {
     test(`child-result validation rejects ${key} ${name}`, () => {
       const record = { ...validChildRecord(), [key]: values };
       const expectedDiagnostic = new RegExp(`child 7: ${key}.*${diagnostic}`);
-      assert.throws(() => parseAndValidateChildResult(fulfilledChild(JSON.stringify(record)), 7, 2), expectedDiagnostic);
+      assert.throws(() => parseAndValidateChildResult(fulfilledChild(JSON.stringify(record)), { index: 7, expectedSamples: 2 }), expectedDiagnostic);
     });
   }
 }
 
 test("child-result validation returns the child pid and every event/operation sample", () => {
   const record = validChildRecord();
-  const result = parseAndValidateChildResult(fulfilledChild(` ${JSON.stringify(record)}\n`), 7, 2);
+  const result = parseAndValidateChildResult(fulfilledChild(` ${JSON.stringify(record)}\n`), { index: 7, expectedSamples: 2 });
   assert.deepEqual(result, { pid: record.pid, identifiers: [...record.eventIds, ...record.operationIds] });
 });
 
+test("domain expectations preserve record fields, sample counts and context diagnostics", () => {
+  const output: ChildOutput = { code: 0, signal: null, stdout: validChildStdout, stderr: "" };
+  const expectation: SampleExpectation = { context: "typed samples", expectedSamples: 2 };
+  assert.deepEqual(parseChildRecord(output, expectation), validChildRecord());
+  assert.deepEqual(validateIdentifierSamples(validChildRecord().eventIds, expectation), validChildRecord().eventIds);
+  assert.throws(() => validateIdentifierSamples([], expectation), /typed samples count/);
+  assert.throws(() => parseChildRecord({ ...output, stdout: "bad" }, expectation), /typed samples: invalid JSON record/);
+});
+
 test("default SDK event and operation identifiers are unique across concurrent fresh processes", async () => {
-  const sampleCount = 128;
-  const processCount = 4;
-  const script = buildIdentifierSamplingScript(sampleCount);
-  const results = await sampleConcurrentChildren(script, processCount, sampleCount);
+  const plan: SamplingPlan = { processCount: 4, sampleCount: 128 };
+  const program: ChildProgram = { source: buildIdentifierSamplingScript(plan) };
+  const results = await sampleConcurrentChildren(program, plan);
   assert.deepEqual(findRepeatedIdentifiers(results), []);
 });
 
 test("shared concurrent sampler returns every validated sample from distinct fresh children", async () => {
   const record = validChildRecord();
   const script = `console.log(JSON.stringify({ ...${JSON.stringify(record)}, pid: process.pid }));`;
-  const results = await sampleConcurrentChildren(script, 3, 2);
+  const results = await sampleConcurrentChildren({ source: script }, { processCount: 3, sampleCount: 2 });
   assert.equal(results.length, 3);
   assert.equal(new Set(results.map(({ pid }) => pid)).size, 3);
   results.forEach(({ pid, identifiers }) => {
@@ -147,7 +156,7 @@ const invalidConcurrentScripts = [
 
 for (const { name, script, diagnostic } of invalidConcurrentScripts) {
   test(`shared concurrent sampler rejects ${name}`, async () => {
-    await assert.rejects(sampleConcurrentChildren(script, 2, 2), diagnostic);
+    await assert.rejects(sampleConcurrentChildren({ source: script }, { processCount: 2, sampleCount: 2 }), diagnostic);
   });
 }
 
@@ -169,7 +178,7 @@ if (first) {
 }
 `;
   try {
-    await assert.rejects(sampleConcurrentChildren(script, 2, 2), /child \d: Error: child stdout exceeded 64 KiB/);
+    await assert.rejects(sampleConcurrentChildren({ source: script }, { processCount: 2, sampleCount: 2 }), /child \d: Error: child stdout exceeded 64 KiB/);
     assert.equal(existsSync(marker), true, "sibling completed before shared sampler rejected");
   } finally {
     rmSync(directory, { recursive: true, force: true });
@@ -198,12 +207,12 @@ for (const { name, samples, expected } of collisionCases) {
 test("collision finder detects an event/operation collision in validated child records", () => {
   const record = validChildRecord();
   record.operationIds[1] = record.eventIds[0]!;
-  const result = parseAndValidateChildResult(fulfilledChild(JSON.stringify(record)), 7, 2);
+  const result = parseAndValidateChildResult(fulfilledChild(JSON.stringify(record)), { index: 7, expectedSamples: 2 });
   assert.deepEqual(findRepeatedIdentifiers([result]), [record.eventIds[0]]);
 });
 
 test("sampling script without provider source leaves identifiers absent from SDK config", () => {
-  const script = buildIdentifierSamplingScript(128);
+  const script = buildIdentifierSamplingScript({ processCount: 4, sampleCount: 128 });
   assert.doesNotMatch(script, /^\s*identifiers\s*[:,]/m);
   assert.match(script, /Deliberately omit identifiers/);
   assert.match(script, /index < 128/);
@@ -211,7 +220,7 @@ test("sampling script without provider source leaves identifiers absent from SDK
 
 test("sampling script with provider source inlines only a custom identifiers provider", () => {
   const source = "const identifiers = Object.freeze({ eventId() { return 'fixture'; } });";
-  const script = buildIdentifierSamplingScript(2, source);
+  const script = buildIdentifierSamplingScript({ processCount: 1, sampleCount: 2 }, { source });
   assert.ok(script.includes(source));
   assert.match(script, /createSecurityAuditSdk\(\{\s*identifiers,/);
   assert.doesNotMatch(script, /systemAuditIdentifiers|Deliberately omit identifiers/);
@@ -220,20 +229,20 @@ test("sampling script with provider source inlines only a custom identifiers pro
 
 test("concurrent child stdout bound kills and reaps an overflowing execution", async () => {
   await assert.rejects(
-    runConcurrentChild('process.stdout.write("x".repeat(128 * 1024)); setInterval(() => {}, 1000);'),
+    runConcurrentChild({ source: 'process.stdout.write("x".repeat(128 * 1024)); setInterval(() => {}, 1000);' }),
     /child stdout exceeded 64 KiB; stderr=/,
   );
 });
 
 test("concurrent child guard kills and reaps overdue executions", async () => {
   await assert.rejects(
-    runConcurrentChild("setInterval(() => {}, 1000);", 250),
+    runConcurrentChild({ source: "setInterval(() => {}, 1000);", deadlineMs: 250 }),
     /child exceeded 250 ms and was killed; stderr=/,
   );
 });
 
 test("concurrent child captures abnormal exits with bounded stderr", async () => {
-  const output = await runConcurrentChild('process.stderr.write("x".repeat(8192), () => { process.exitCode = 7; });');
+  const output = await runConcurrentChild({ source: 'process.stderr.write("x".repeat(8192), () => { process.exitCode = 7; });' });
   assert.equal(output.code, 7);
   assert.equal(output.signal, null);
   assert.equal(output.stdout, "");
