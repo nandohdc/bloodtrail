@@ -34,7 +34,11 @@
     "packages/security-audit-sdk-core/tests/cross-process-identifiers.test.ts",
     "packages/security-audit-sdk-core/API.md",
     "packages/security-audit-sdk-core/adr/013-default-identifier-cryptographic-uniqueness.md",
-    "packages/security-audit-sdk-core/scripts/check-coherence.mjs"
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-core/MIGRATION.md",
+    "packages/security-audit-sdk-core/CONTEXT.md",
+    "packages/security-audit-sdk-core/tests/cross-process-identifiers-negative-control.test.ts",
+    "packages/security-audit-sdk-core/tests/cross-process-harness.ts"
   ],
   "candidate_approaches": [
     {
@@ -98,11 +102,11 @@
   ],
   "invariant_evidence": {
     "implementation-host-uuid-generation": {
-      "task_ids": ["2.1", "2.2", "3.1", "3.2"],
+      "task_ids": ["2.1", "2.2", "3.1", "3.2", "6.1", "6.2", "6.4"],
       "evidence_ids": [
         "tests/cross-process-identifiers.test.ts: seven-method UUID-v4 and host receiver delegation controls",
         "tests/cross-process-identifiers.test.ts: concurrent fresh-process combined event/operation zero-collision sample",
-        "disposable-copy old-seed negative control fails the cross-process uniqueness assertion"
+        "tests/cross-process-identifiers-negative-control.test.ts: old seeded identifier provider repeats event and operation sequences across concurrent fresh processes"
       ]
     },
     "implementation-default-fail-closed": {
@@ -125,7 +129,7 @@
       ]
     },
     "implementation-preserved-boundaries": {
-      "task_ids": ["4.1", "4.2", "4.3"],
+      "task_ids": ["4.1", "4.2", "4.3", "6.1", "6.3", "6.4"],
       "evidence_ids": [
         "test:coherence verifies 13 consecutive ADRs; API.md documents v4 collision resistance, host requirement and custom exemption",
         "full Core validate and make test retain frozen exports, zero runtime dependencies and complete package contents",
@@ -137,5 +141,5 @@
   "ordering": {
     "proposal_baseline_commit": "5d931ad695fb10db3fe51e6b151352447e21d822"
   },
-  "verification_task_ids": ["1.1", "1.2", "1.3", "2.2", "2.3", "3.1", "3.2", "4.1", "4.2", "4.3"]
+  "verification_task_ids": ["1.1", "1.2", "1.3", "2.2", "2.3", "3.1", "3.2", "4.1", "4.2", "4.3", "6.1", "6.2", "6.3", "6.4"]
 }

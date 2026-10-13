@@ -67,18 +67,6 @@ constraints. Core SHALL NOT freeze, mutate, clone, decorate, or replace caller-o
 - **WHEN** Core is imported and createSecurityAuditSdk receives a valid deterministic custom provider with host crypto absent
 - **THEN** initialization succeeds without host crypto reads or identifier method calls, resolveProviders preserves the exact custom object, and subsequent identifier use yields the expected valid IDs with the provider receiver
 
-### Requirement: Default identifier remediation preserves frozen and governance boundaries
-
-This bounded fix SHALL preserve governance_core paths, contracts/security-audit/, generated source,
-provider interfaces, frozen public exports, Node binding and collector behavior, and zero third-party
-runtime dependencies. API.md and ADR-SDK-013 SHALL document host requirements, construction failure,
-custom-provider exemption and probabilistic collision resistance. The coherence gate SHALL require
-exactly 13 sequential ADRs numbered 001 through 013.
-
-#### Scenario: Remediation verification retains all protected boundaries
-- **WHEN** the completed remediation runs Core validation and final governance checks
-- **THEN** public exports and dependencies remain unchanged, protected paths have no modifications against the proposal baseline, and ADR/API coherence expects 13 sequential ADRs
-
 ## MODIFIED Requirements
 
 ### Requirement: Platform capabilities are mediated by provider SPIs

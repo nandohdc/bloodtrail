@@ -41,6 +41,16 @@ assessment and proposal baseline `5d931ad695fb10db3fe51e6b151352447e21d822` rema
 - [x] 5.4 Reword inherited work-item-prefixed commit subjects without changing trees or ordering; validate every actual subject and the intended PR title with the unmodified Conventional Commits checker, and run its regression suite.
 - [x] 5.5 Run `npm run test:matrix --prefix packages/security-audit-sdk-core`, `npm run check:generated --prefix packages/security-audit-sdk-core`, `npm run test:coherence --prefix packages/security-audit-sdk-core`, `npm run validate --prefix packages/security-audit-sdk-core`, the current run's exact `tamandua-test` wrapper for `make test`, `node openspec/scripts/check-design-pattern-governance.mjs --phase final`, strict OpenSpec validation, empty-index `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` and `git diff --check`; record exact results and measured source-structure targets without claiming an unexecuted CodeScene result.
 
+## 6. Owner-decision gap closure (#796 follow-up)
+
+Complete these tasks in order; groups 1–5 and their historical evidence remain intact. This
+follow-up preserves the runtime design and declares ownership before new implementation edits.
+
+- [x] 6.1 Commit a planning-only amendment recording owner decisions/provenance, the four new owned paths, task/evidence mappings and process-only requirement relocation; extend positive and fail-closed planning controls and run this story's exact verification commands before staging.
+- [ ] 6.2 Extract the shared top-level cross-process harness and pure collision finder; commit the old-seeded custom-provider negative control with frozen event.id format and identical fresh-process sequences; retain positive assertions and structural controls and run all required gates.
+- [ ] 6.3 Document host requirements and injection migration in MIGRATION.md, add identifier glossary terms in CONTEXT.md, add ADR provenance/rejected alternatives and confirm API guarantees; run documentation negative controls and required gates.
+- [ ] 6.4 Execute the vacuous-helper mutation and exact restoration/reruns, all verification gates and final protected-path/history inspection; record only executed evidence and close follow-up invariant mappings.
+
 ## Verification Commands
 
 - Planning regression: `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`
@@ -265,3 +275,58 @@ reused. The following results are local verification, not a CodeScene analyzer r
 All follow-up task checks now reflect executed run-118 evidence. No CodeScene analyzer result,
 review approval, production authorization, archival, canonical folding, signing, release or
 publication is claimed.
+
+### Owner-decision follow-up — US-001 planning, 2026-10-13, run 119
+
+Run `5b30972f-9782-45a2-9972-16a4426f7151`, Node v26.11.1. This section records only
+new local planning verification. Groups 1–5 and their run-117/run-118 evidence above remain
+historical. Only 6.1 is complete; shared harness/control, consumer documentation and runtime
+vacuous-helper sensitivity remain prospective (6.2–6.4). No future implementation file was
+required to exist for these planning tests.
+
+- Extended the owning planning regression with 105 new tests (164 total), guarding the four
+  new owned paths, retained/new invariant and verification task relations, stable committed
+  negative-control evidence name, exact baseline, behavioral scenario preservation, rejected
+  process requirement/scenario reintroduction, ordered task groups/completion and owner
+  provenance/decisions in proposal/design. Existing five-helper straight-line orchestration,
+  cross-process AST and private provider capability controls remain intact.
+- Initial focused regression: exit 1, 158/159 passed; the proposal's wrapped process-requirement
+  title did not match its exact-text positive control. Kept the control and corrected the title
+  wrapping, then reran: exit 0, 159/159. After adding ordered follow-up completion and missing
+  task-text controls, focused regression and the final supplied chain both passed 164/164.
+- Exact supplied command (executed twice, not cached):
+  `tamandua-test --repo '/Users/fernando.costa/.tamandua/worktrees/bloodtrail-5311402e/119-5b30972f' --run '5b30972f-9782-45a2-9972-16a4426f7151' --step 'implement' -- 'npm run check:generated --prefix packages/security-audit-sdk-core && npm run test:matrix --prefix packages/security-audit-sdk-core && npm run test:coherence --prefix packages/security-audit-sdk-core && npm run validate --prefix contracts/security-audit && node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs && node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main && node packages/security-audit-sdk-core/scripts/check-git-state.mjs && make test'`:
+  exit 0 on both executions. Used the wrapper's documented `TAMANDUA_TSTX=0` passthrough
+  environment setting because tracked planning edits were uncommitted and verification was
+  required before staging; this disables caching/ledger attribution, not any test command.
+  The index was empty throughout. Individual commands in the final chain:
+  - `npm run check:generated --prefix packages/security-audit-sdk-core`: exit 0, no drift.
+  - `npm run test:matrix --prefix packages/security-audit-sdk-core`: exit 0, 233/233 runtime
+    tests, type tests, 15 documentation scenarios, compatibility, exports, scope and dependency
+    checks passed; 61 value/92 type exports and zero runtime dependencies unchanged.
+  - `npm run test:coherence --prefix packages/security-audit-sdk-core`: exit 0; ADR inventory
+    remains 001..013, contract 2.1.0 and 24 named APIs unchanged. Its archived-remediation
+    task count is not folding or archival of this active change.
+  - `npm run validate --prefix contracts/security-audit`: exit 0, 17/17 tests and validation.
+  - `node --test openspec/changes/fix-core-default-identifiers-uniqueness/assessment.test.mjs`:
+    exit 0, 164/164 tests, including fail-closed mutations; no skipped/cancelled tests.
+  - `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`:
+    exit 0, enforcement active; inspected 11 inherited commits and 15 paths before this
+    planning commit. Committed-history recheck will be recorded externally after committing,
+    not anticipated as evidence here.
+  - `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: exit 0, whitespace,
+    final-newline and empty-index checks passed.
+  - `make test`: exit 0, every declared workspace passed; Core 233, Node 162, browser 71,
+    collector 92, contract 17, envelope 18 and research 11 tests. Deliberate kit plants ended
+    in the passing negative-control summary. No full `make governance-gates` or full Core
+    `validate` execution, remote CI result or CodeScene result is claimed for this story.
+- `npm run typecheck --prefix packages/security-audit-sdk-core`: exit 0.
+- `npm run build --prefix packages/security-audit-sdk-core`: exit 0; tracked generated source
+  remained unchanged.
+- `npx --yes @fission-ai/openspec@latest validate fix-core-default-identifiers-uniqueness --strict`:
+  exit 0, change valid.
+- `git diff --check`: exit 0. Diff/index inspection before staging confirms only this owning
+  OpenSpec change is modified, with no new SDK/runtime/test-harness/consumer-documentation
+  path edits. All original assessment paths/relations and baseline
+  `5d931ad695fb10db3fe51e6b151352447e21d822` are retained. Fetch succeeded; the worktree
+  branch has no upstream, so no pull/rebase or inherited-history rewrite was performed.
