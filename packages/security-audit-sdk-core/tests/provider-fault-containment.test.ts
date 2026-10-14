@@ -304,83 +304,56 @@ for (const handle of numericTimerHandles) {
   });
 }
 
-test("cleanup failure preserves sink failure", async () => {
-  const sink = sinkProbe();
-  const shutdown = mock.fn(async () => { throw new Error(sentinel); });
-  const clearTimeout = mock.fn(() => { throw new Error(sentinel); });
-  const sdk = sdkFor(sink, { sink: { ...sink.sink, shutdown }, timers: { setTimeout: () => ({}), clearTimeout } });
-  assertFailure(await invokeResult(() => sdk.shutdown()), { code: "SDK_SINK_FAILURE", category: "sink" });
-  assert.equal(shutdown.mock.callCount(), 1);
-  assert.equal(clearTimeout.mock.callCount(), 1);
-  assert.equal(sink.calls.flush, 1);
-  assert.equal(sdk.state, "shut_down");
-  assertFailure(await sdk.shutdown(), { code: "SDK_SHUT_DOWN", category: "lifecycle" });
+interface PrecedenceCase {
+  readonly site: "clearTimeout" | "unref";
+  readonly earlier: "sink failure" | "stalled-emission timeout";
+  readonly expected: SafeAuditError;
+}
+const precedenceCases: readonly PrecedenceCase[] = [
+  { site: "clearTimeout", earlier: "sink failure", expected: { code: "SDK_SINK_FAILURE", category: "sink" } },
+  { site: "clearTimeout", earlier: "stalled-emission timeout", expected: { code: "SDK_SHUTDOWN_TIMEOUT", category: "lifecycle" } },
+  { site: "unref", earlier: "sink failure", expected: { code: "SDK_SINK_FAILURE", category: "sink" } },
+  { site: "unref", earlier: "stalled-emission timeout", expected: { code: "SDK_SHUTDOWN_TIMEOUT", category: "lifecycle" } },
+];
+test("earlier-failure precedence table has exactly four explicit rows", () => {
+  assert.equal(precedenceCases.length, 4);
+  assert.equal(new Set(precedenceCases.map((row) => `${row.site}/${row.earlier}`)).size, 4);
 });
-
-test("cleanup failure preserves stalled-emission timeout", async () => {
-  const sink = sinkProbe();
-  let expire = () => {};
-  let release = () => {};
-  const clearTimeout = mock.fn(() => { throw new Error(sentinel); });
-  const emit = mock.fn(() => new Promise<{ status: "accepted" }>((resolve) => { release = () => resolve({ status: "accepted" }); }));
-  const sdk = sdkFor(sink, {
-    sink: { ...sink.sink, emit },
-    timers: { setTimeout(callback) { expire = callback; return {}; }, clearTimeout },
+for (const row of precedenceCases) {
+  test(`${row.site} failure preserves ${row.earlier}`, async () => {
+    const sink = sinkProbe();
+    let expire = () => {};
+    let release = () => {};
+    const stalled = row.earlier === "stalled-emission timeout";
+    const shutdown = mock.fn(async () => { throw new Error(sentinel); });
+    const unref = mock.fn(() => { throw new Error(sentinel); });
+    const clearTimeout = mock.fn(() => { if (row.site === "clearTimeout") throw new Error(sentinel); });
+    const emit = mock.fn(() => new Promise<{ status: "accepted" }>((resolve) => { release = () => resolve({ status: "accepted" }); }));
+    const sdk = sdkFor(sink, {
+      sink: { ...sink.sink, emit, shutdown },
+      timers: {
+        setTimeout(callback) { expire = callback; return row.site === "unref" ? { unref } : {}; },
+        clearTimeout,
+      },
+    });
+    const emission = stalled ? sdk.emit(fixture) : undefined;
+    assertFailure(await invokeResult(() => {
+      const pending = sdk.shutdown();
+      if (stalled) expire();
+      return pending;
+    }), row.expected);
+    assert.equal(sdk.state, "shut_down");
+    assert.equal(shutdown.mock.callCount(), stalled ? 0 : 1);
+    assert.equal(emit.mock.callCount(), stalled ? 1 : 0);
+    assert.equal(unref.mock.callCount(), row.site === "unref" ? 1 : 0);
+    assert.equal(clearTimeout.mock.callCount(), 1);
+    assert.equal(sink.calls.flush, stalled ? 0 : 1);
+    assert.equal(sink.calls.shutdown, 0);
+    assertFailure(await sdk.shutdown(), { code: "SDK_SHUT_DOWN", category: "lifecycle" });
+    release();
+    await emission;
   });
-  const emission = sdk.emit(fixture);
-  const shutdown = sdk.shutdown();
-  expire();
-  assertFailure(await invokeResult(() => shutdown), { code: "SDK_SHUTDOWN_TIMEOUT", category: "lifecycle" });
-  assert.equal(sdk.state, "shut_down");
-  assert.equal(emit.mock.callCount(), 1);
-  assert.equal(clearTimeout.mock.callCount(), 1);
-  assert.equal(sink.calls.flush, 0);
-  assert.equal(sink.calls.shutdown, 0);
-  assertFailure(await sdk.shutdown(), { code: "SDK_SHUT_DOWN", category: "lifecycle" });
-  release();
-  await emission;
-});
-
-test("unref failure preserves sink failure", async () => {
-  const sink = sinkProbe();
-  const shutdown = mock.fn(async () => { throw new Error(sentinel); });
-  const unref = mock.fn(() => { throw new Error(sentinel); });
-  const clearTimeout = mock.fn();
-  const sdk = sdkFor(sink, { sink: { ...sink.sink, shutdown }, timers: { setTimeout: () => ({ unref }), clearTimeout } });
-  assertFailure(await invokeResult(() => sdk.shutdown()), { code: "SDK_SINK_FAILURE", category: "sink" });
-  assert.equal(unref.mock.callCount(), 1);
-  assert.equal(shutdown.mock.callCount(), 1);
-  assert.equal(clearTimeout.mock.callCount(), 1);
-  assert.equal(sink.calls.flush, 1);
-  assert.equal(sdk.state, "shut_down");
-  assertFailure(await sdk.shutdown(), { code: "SDK_SHUT_DOWN", category: "lifecycle" });
-});
-
-test("unref failure preserves stalled-emission timeout", async () => {
-  const sink = sinkProbe();
-  let expire = () => {};
-  let release = () => {};
-  const unref = mock.fn(() => { throw new Error(sentinel); });
-  const clearTimeout = mock.fn();
-  const emit = mock.fn(() => new Promise<{ status: "accepted" }>((resolve) => { release = () => resolve({ status: "accepted" }); }));
-  const sdk = sdkFor(sink, {
-    sink: { ...sink.sink, emit },
-    timers: { setTimeout(callback) { expire = callback; return { unref }; }, clearTimeout },
-  });
-  const emission = sdk.emit(fixture);
-  const shutdown = sdk.shutdown();
-  expire();
-  assertFailure(await invokeResult(() => shutdown), { code: "SDK_SHUTDOWN_TIMEOUT", category: "lifecycle" });
-  assert.equal(sdk.state, "shut_down");
-  assert.equal(unref.mock.callCount(), 1);
-  assert.equal(emit.mock.callCount(), 1);
-  assert.equal(clearTimeout.mock.callCount(), 1);
-  assert.equal(sink.calls.flush, 0);
-  assert.equal(sink.calls.shutdown, 0);
-  assertFailure(await sdk.shutdown(), { code: "SDK_SHUT_DOWN", category: "lifecycle" });
-  release();
-  await emission;
-});
+}
 
 const suppliedIdentifiers = { operationId: "supplied-operation", transactionId: "supplied-transaction", correlationId: "supplied-correlation" };
 function throwingIdentifiers(): { readonly identifiers: AuditIdentifierProvider; readonly spy: ReturnType<typeof mock.fn<() => string>> } {
@@ -420,16 +393,36 @@ for (const row of timestampCases) {
   });
 }
 
-test("named correlation fallbacks bypass unused provider methods", async () => {
-  const sink = sinkProbe();
-  const identifiers = createDeterministicProviders();
-  const unused = mock.fn((): string => { throw new Error(sentinel); });
-  const sdk = sdkFor(sink, { identifiers: { ...identifiers, operationId: unused, correlationId: unused } });
-  const input = { ...namedInput(), correlation: fixture.correlation };
-  assert.equal((await sdk.authenticationFailed(input)).ok, true);
-  assert.equal(unused.mock.callCount(), 0);
-  assert.equal(sink.calls.emit, 1);
+interface CorrelationCase {
+  readonly label: string;
+  readonly source: "supplied correlation" | "operation handle";
+}
+const correlationCases: readonly CorrelationCase[] = [
+  { label: "named correlation fallbacks bypass unused provider methods", source: "supplied correlation" },
+  { label: "operation handle correlation bypasses identifier fallback", source: "operation handle" },
+];
+function correlationInput(sdk: SecurityAuditSdk, row: CorrelationCase): NamedInput {
+  if (row.source === "supplied correlation") return { ...namedInput(), correlation: fixture.correlation };
+  const operation = sdk.beginOperation({ ...suppliedIdentifiers, transactional: false });
+  assert.ok(operation.ok);
+  return { ...namedInput(), operation: operation.value };
+}
+test("named correlation fallback table has exactly two explicit rows", () => {
+  assert.equal(correlationCases.length, 2);
+  assert.equal(new Set(correlationCases.map((row) => row.source)).size, 2);
 });
+for (const row of correlationCases) {
+  test(row.label, async () => {
+    const sink = sinkProbe();
+    const identifiers = createDeterministicProviders();
+    const unused = mock.fn((): string => { throw new Error(sentinel); });
+    const sdk = sdkFor(sink, { identifiers: { ...identifiers, operationId: unused, correlationId: unused } });
+    const input = correlationInput(sdk, row);
+    assert.equal((await sdk.authenticationFailed(input)).ok, true);
+    assert.equal(unused.mock.callCount(), 0);
+    assert.equal(sink.calls.emit, 1);
+  });
+}
 
 test("redelivery never allocates identifiers or reads clock", async () => {
   const sink = sinkProbe();
@@ -471,18 +464,6 @@ test("lifecycle and operation authority refuse before context provider", async (
 
 test("invalid construction still throws SecurityAuditSdkError", () => {
   assert.throws(() => sdkFor(sinkProbe(), { clock: {} as never }), SecurityAuditSdkError);
-});
-
-test("operation handle correlation bypasses identifier fallback", async () => {
-  const sink = sinkProbe();
-  const identifiers = createDeterministicProviders();
-  const unused = mock.fn((): string => { throw new Error(sentinel); });
-  const sdk = sdkFor(sink, { identifiers: { ...identifiers, operationId: unused, correlationId: unused } });
-  const operation = sdk.beginOperation({ ...suppliedIdentifiers, transactional: false });
-  assert.ok(operation.ok);
-  assert.equal((await sdk.authenticationFailed({ ...namedInput(), operation: operation.value })).ok, true);
-  assert.equal(unused.mock.callCount(), 0);
-  assert.equal(sink.calls.emit, 1);
 });
 
 test("timer arming failure does not wait for an in-flight emission", async () => {
