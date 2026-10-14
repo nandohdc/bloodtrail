@@ -1,7 +1,7 @@
-import { DERIVED_FIELD_PROVENANCE } from "../generated/contract.generated.js";
+import { CONTRACT_ERROR_CODES, SDK_ERROR_CODES, DERIVED_FIELD_PROVENANCE } from "../generated/contract.generated.js";
 import validateSchema from "../generated/schema-validator.generated.cjs";
 import type { SecurityAuditEvent } from "../generated/contract.generated.js";
-import type { AuditResult } from "../errors.js";
+import type { AuditErrorCategory, AuditResult } from "../errors.js";
 import { failure } from "../errors.js";
 import type { AuditSchemaRuntime } from "../providers.js";
 
@@ -32,9 +32,34 @@ export function getSchemaRuntime(): AuditSchemaRuntime {
 
 export function validateSchemaStructure(value: unknown, schemaRuntime?: AuditSchemaRuntime): AuditResult<SecurityAuditEvent> {
   const runtime = schemaRuntime ?? activeSchemaRuntime;
-  const result = runtime.validate(value);
-  if (!result.ok) return result;
-  return { ok: true, value: value as SecurityAuditEvent };
+  try {
+    const result: unknown = runtime.validate(value);
+    if (!isRuntimeRecord(result)) return invalidSchemaRuntime();
+    if (result.ok === true) return { ok: true, value: value as SecurityAuditEvent };
+    if (result.ok !== false) return invalidSchemaRuntime();
+    return sanitizeRuntimeFailure(result.error);
+  } catch {
+    return invalidSchemaRuntime();
+  }
+}
+
+const runtimeErrorCodes = new Set<string>([...SDK_ERROR_CODES, ...CONTRACT_ERROR_CODES]);
+const runtimeErrorCategories = new Set<string>(["configuration", "validation", "authority", "privacy", "lifecycle", "sink"]);
+
+function isRuntimeRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function invalidSchemaRuntime(): AuditResult<never> {
+  return failure("SDK_INVALID_CONFIGURATION", "configuration", "/schemaRuntime");
+}
+
+function sanitizeRuntimeFailure(error: unknown): AuditResult<never> {
+  if (!isRuntimeRecord(error)) return invalidSchemaRuntime();
+  const { code, category, path } = error;
+  if (typeof code !== "string" || !runtimeErrorCodes.has(code)) return invalidSchemaRuntime();
+  if (typeof category !== "string" || !runtimeErrorCategories.has(category)) return invalidSchemaRuntime();
+  return failure(code, category as AuditErrorCategory, typeof path === "string" ? path : undefined);
 }
 
 interface StandaloneValidationError {

@@ -1,6 +1,6 @@
 import type { NormalizedSdkConfiguration, SecurityAuditSdkConfiguration } from "./config.js";
 import { normalizeConfiguration } from "./config.js";
-import type { AuditContextFrameInput } from "./context.js";
+import type { AuditContextFrame, AuditContextFrameInput } from "./context.js";
 import { runWithAuditContext } from "./context.js";
 import { buildNamedAuditEvent } from "./events.js";
 import { failure, normalizeCanonicalInput } from "./errors.js";
@@ -13,7 +13,7 @@ import type { AuditDeliveryResult } from "./sink.js";
 import { validateSecurityAuditEvent } from "./validation/index.js";
 import type { DeliveryIntent } from "./internal.js";
 import { BoundedFifoSet } from "./bounded-fifo.js";
-import type { AuditTimerProvider } from "./providers.js";
+import type { AuditTimerHandle, AuditTimerProvider, ContextProvider } from "./providers.js";
 
 export type SecurityAuditSdkState = "ready" | "shutting_down" | "shut_down";
 
@@ -91,7 +91,9 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
     if (normalizedInput.boundEvent !== undefined && !EVENT_METHODS.some((entry) => entry.method === normalizedInput.boundEvent)) {
       return failure("UNKNOWN_CATALOG_VALUE", "validation", "/operation/bound_event");
     }
-    const operation = this.#operationAuthority.issue(normalizedInput);
+    const issued = this.#operationAuthority.issue(normalizedInput);
+    if (!issued.ok) return issued;
+    const operation = issued.value;
     const valid = validateGeneratedIdentifier(operation.operationId, "/operation/operation_id")
       ?? validateGeneratedIdentifier(operation.transactionId, "/operation/transaction_id")
       ?? validateGeneratedIdentifier(operation.correlationId, "/operation/correlation_id");
@@ -213,7 +215,9 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
     const suppliedOperation = supplied.value;
     const operation = this.#operationAuthority.resolve(suppliedOperation);
     if (!operation.ok) return operation;
-    const activeContext = this.#config.contextProvider.get();
+    const context = readActiveContext(this.#config.contextProvider);
+    if (!context.ok) return context;
+    const activeContext = context.value;
     const duplicateAttempt = this.#rejectDuplicateAttempt(method, operation.value, input, activeContext, suppliedOperation);
     if (duplicateAttempt) return duplicateAttempt;
     let built;
@@ -343,24 +347,31 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
   async #performShutdown(): Promise<AuditResult<void>> {
     if (this.#state === "shut_down") return failure("SDK_SHUT_DOWN", "lifecycle");
     this.#state = "shutting_down";
-    const timeout = createShutdownTimeout(this.#config.shutdownTimeoutMs, this.#config.timers);
+    const armed = createShutdownTimeout(this.#config.shutdownTimeoutMs, this.#config.timers);
+    if (!armed.ok) {
+      this.#state = "shut_down";
+      return armed;
+    }
     try {
-      const settled = Promise.allSettled([...this.#inFlight]).then(() => true);
-      if (!(await Promise.race([settled, timeout.promise]))) {
-        this.#state = "shut_down";
-        return failure("SDK_SHUTDOWN_TIMEOUT", "lifecycle");
-      }
-      try {
-        await this.#config.sink.flush?.();
-        await this.#config.sink.shutdown?.();
-        this.#state = "shut_down";
-        return { ok: true, value: undefined };
-      } catch {
-        this.#state = "shut_down";
-        return failure("SDK_SINK_FAILURE", "sink");
-      }
+      const result = await this.#shutdownWork(armed.value);
+      const cleanup = armed.value.cancel();
+      return result.ok ? cleanup : result;
     } finally {
-      timeout.cancel();
+      this.#state = "shut_down";
+    }
+  }
+
+  async #shutdownWork(timeout: ShutdownTimeout): Promise<AuditResult<void>> {
+    const settled = Promise.allSettled([...this.#inFlight]).then(() => true);
+    if (!(await Promise.race([settled, timeout.promise]))) {
+      return failure("SDK_SHUTDOWN_TIMEOUT", "lifecycle");
+    }
+    try {
+      await this.#config.sink.flush?.();
+      await this.#config.sink.shutdown?.();
+      return { ok: true, value: undefined };
+    } catch {
+      return failure("SDK_SINK_FAILURE", "sink");
     }
   }
 }
@@ -379,27 +390,50 @@ function assertDeliveryIntent(intent: DeliveryIntent): void {
 
 type ShutdownTimeout = {
   readonly promise: Promise<false>;
-  cancel(): void;
+  cancel(): AuditResult<void>;
 };
 
-function createShutdownTimeout(timeoutMs: number, timers: AuditTimerProvider): ShutdownTimeout {
+function createShutdownTimeout(timeoutMs: number, timers: AuditTimerProvider): AuditResult<ShutdownTimeout> {
   let cancelled = false;
   let resolveTimeout: (value: false) => void = () => {};
   const promise = new Promise<false>((resolve) => {
     resolveTimeout = resolve;
   });
-  const timer = timers.setTimeout(() => resolveTimeout(false), timeoutMs);
-  if (typeof timer.unref === "function") {
-    timer.unref();
-  }
+  let timer: AuditTimerHandle;
+  try {
+    timer = timers.setTimeout(() => resolveTimeout(false), timeoutMs);
+    if (timer === undefined || timer === null) return invalidTimers();
+  } catch { return invalidTimers(); }
+  const detached = unrefShutdownTimer(timer);
   return {
-    promise,
-    cancel() {
-      if (cancelled) return;
-      cancelled = true;
-      timers.clearTimeout(timer);
+    ok: true,
+    value: {
+      promise,
+      cancel() {
+        if (cancelled) return detached;
+        cancelled = true;
+        try { timers.clearTimeout(timer); }
+        catch { return invalidTimers(); }
+        return detached;
+      },
     },
   };
+}
+
+function unrefShutdownTimer(timer: AuditTimerHandle): AuditResult<void> {
+  try {
+    if (typeof timer.unref === "function") timer.unref();
+    return { ok: true, value: undefined };
+  } catch { return invalidTimers(); }
+}
+
+function invalidTimers(): AuditResult<never> {
+  return failure("SDK_INVALID_CONFIGURATION", "configuration", "/timers");
+}
+
+function readActiveContext(provider: ContextProvider): AuditResult<AuditContextFrame | undefined> {
+  try { return { ok: true, value: provider.get() }; }
+  catch { return failure("SDK_INVALID_CONFIGURATION", "configuration", "/contextProvider"); }
 }
 
 export function createSecurityAuditSdk(configuration: SecurityAuditSdkConfiguration): SecurityAuditSdk {
