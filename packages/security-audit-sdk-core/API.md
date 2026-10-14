@@ -375,3 +375,20 @@ done
 ```
 
 This runtime procedure does not replace lifecycle-appropriate strict OpenSpec, changed-path ownership, package-audit, mutation, or Git-index checks in `npm run verify`. The lifecycle repair changes repository verification only; it does not change the SDK runtime API or Security Audit Event Contract `1.0.0` compatibility.
+
+## Outcome and commit-state agreement correction
+
+Decision source: owner decision, 2026-10-13, via plan-mode questions, grilling and triage in local Claude Code session 2db6f6fa-b531-4e63-8651-4ea851fd76be
+
+A contradictory outcome is an outcome that the event's commit state disproves. Both rules apply through shared semantic validation to every named method, `emit()`, `redeliver()` and free `validateSecurityAuditEvent()`, before any sink handoff:
+
+| Rule | Refused pair | Exact code / category / path |
+|---|---|---|
+| Contract success | `completed` + `success` unless `committed` or `not_applicable`; `compensating` + `success` unless `compensated` | `PREMATURE_SUCCESS` / `validation` / `/event/commit_state` |
+| SDK-only denial | `denied` + `committed`, `partially_committed` or `compensated` | `SDK_SEMANTIC_VALIDATION_FAILED` / `validation` / `/event/outcome` |
+
+The success rule runs with commit checks first, before authorization: `deny` + `success` + `not_committed` returns `PREMATURE_SUCCESS`. The denial rule runs last, after derived-field provenance, so authorization conflicts and provenance defects retain their earlier contract diagnostics. The approved `authorization-outcome-conflation` fixture keeps `AUTHORIZATION_OUTCOME_CONFLICT`.
+
+These rules do not judge `failure`, `partial`, `cancelled`, catalog-permitted non-committing denial, or success outside `completed`/`compensating`. Catalog restrictions still apply. Derived defaults remain accepted; no-handle and pending-handle success retain `PREMATURE_SUCCESS` / `validation` / `/operation/state`. Explicit outcomes must agree with the handle's commit state; an outcome never changes it.
+
+Old events have no exemption on `redeliver()`. This non-breaking `fix(sdk-core)` changes no public types, exports, error codes or frozen contract `2.1.0`. See `ADR-SDK-016` in `adr/016-outcome-and-commit-state-agree.md` and the correction in `MIGRATION.md`. It proves neither producer truth nor durability and changes no collector admission policy.

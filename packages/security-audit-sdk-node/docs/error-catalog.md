@@ -241,14 +241,18 @@ the event envelope for you, so prefer them to `emit`.
 ### `SDK_SEMANTIC_VALIDATION_FAILED`
 
 **Meaning.** The event is well formed, but a classification value is not one that its catalog entry
-allows.
+allows, or its denied outcome contradicts a commit state asserting committed work.
 
 **Common causes.** An `event.outcome`, `event.lifecycle_phase` or `event.commit_state` that the event
 does not allow, such as `outcome: "success"` for `authorizationDenied`. TypeScript rejects most of
 these, so they arise from JavaScript, through a cast, or in an event passed to `emit`.
+Another cause is `denied` with a commit state asserting the work committed: `committed`,
+`partially_committed` or `compensated`. This additional denial rule is SDK-only.
 
 **Fix.** Use one of the event's allowed values, which the core's `EVENT_CATALOG` lists as `outcomes`,
-`phase` and `commit`, or leave the value out and let the SDK choose the default.
+`phase` and `commit`, or leave the value out and let the SDK choose the default. For a genuinely denied
+operation, use `markNotCommitted()` and explicit `denied` plus authorization decision `deny`;
+do not relabel committed work as a refusal.
 
 **Fields.** `category` is `validation`. `path` is `/event/outcome`, `/event/lifecycle_phase` or
 `/event/commit_state`.
@@ -636,7 +640,8 @@ value came from a second installed copy of the core, the code is `DUPLICATE_AUTH
 ### `PREMATURE_SUCCESS`
 
 **Meaning.** A transaction-bound named event lacks the operation evidence its commit state needs,
-whatever its outcome, or reports success before its operation committed. The transaction-bound
+whatever its outcome, or reports success whose operation evidence did not commit, or did not
+compensate in the compensating phase. The transaction-bound
 events are those whose `commit` values in `EVENT_CATALOG` include `committed`.
 
 **Common causes.**
@@ -653,6 +658,9 @@ events are those whose `commit` values in `EVENT_CATALOG` include `committed`.
   establish one. The path is `/event/commit_state`.
 - An event passed to `emit` with outcome `success` and commit state `pending`, or without a commit
   state that its event allows. The path is `/event/commit_state`.
+- A named call or complete event reports `success` whose operation evidence did not commit, or did
+  not compensate in the compensating phase. `completed` + `success` requires `committed` or
+  `not_applicable`; `compensating` + `success` requires `compensated`. The path is `/event/commit_state`.
 
 **Fix.**
 
@@ -661,10 +669,21 @@ events are those whose `commit` values in `EVENT_CATALOG` include `committed`.
    or is refused, `markCancelled()` for cancellation, or `markPartiallyCommitted()` for partial
    commitment. After `markNotCommitted()`, the SDK defaults to `failure`; supply explicit outcome
    `denied` and authorization decision `deny` to record a refusal.
-3. Pass the handle as `operation`.
+3. Pass the handle as `operation`. Report `failure`, not `success`, when work did not commit.
+   Complete-event producers must supply contract-valid success pairs as well as SDK-valid denial pairs.
 
 **Fields.** `category` is `validation`. `path` is `/operation/state` or `/event/commit_state`. The
 sink was not called.
+
+Both outcome-agreement rules apply to named methods, `emit`, `redeliver` and `validateSecurityAuditEvent`.
+Old events have no redelivery exemption. Success runs with commit checks before authorization;
+`deny` + `success` + `not_committed` therefore returns `PREMATURE_SUCCESS`. The SDK-only denial rule
+runs last after derived-field provenance, preserving earlier authorization/provenance diagnostics.
+`failure`, `partial`, `cancelled`, catalog-permitted non-committing denial, other success phases and
+handle-derived defaults remain unchanged. No public surface, error-code set or contract `2.1.0`
+change is made. Contract adoption of denial is tracked separately in issue #817.
+
+Decision source: owner decision, 2026-10-13, via plan-mode questions, grilling and triage in local Claude Code session 2db6f6fa-b531-4e63-8651-4ea851fd76be
 
 ### `AUTHORIZATION_OUTCOME_CONFLICT`
 

@@ -198,6 +198,23 @@ To migrate, consumers that matched `SDK_INVALID_INPUT` for provider faults must 
 
 This is a non-breaking `fix(sdk-core)` correction to exception containment and attribution. Public types, exports, provider interfaces, error-code sets and frozen contract `2.1.0` are unchanged. It does not authorize release or production use.
 
+## Outcome and commit-state agreement correction
+
+Decision source: owner decision, 2026-10-13, via plan-mode questions, grilling and triage in local Claude Code session 2db6f6fa-b531-4e63-8651-4ea851fd76be
+
+Previously accepted contradictory pairs are now refused on named methods, `emit()`, `redeliver()` and free `validateSecurityAuditEvent()`, with no sink call:
+
+- The contract's success rule requires `committed` or `not_applicable` for `completed` + `success`, and `compensated` for `compensating` + `success`. Violations return `PREMATURE_SUCCESS` / `validation` / `/event/commit_state`.
+- The SDK-only denial rule refuses `denied` with `committed`, `partially_committed` or `compensated`, returning `SDK_SEMANTIC_VALIDATION_FAILED` / `validation` / `/event/outcome`.
+
+Report `failure`, not `success`, when a handle did not commit. For a denied operation, transition the same-instance handle through `markNotCommitted()` and supply explicit `denied` plus authorization decision `deny`. Use `markCompensated()` only after `markCommitted()` when compensation actually occurred; successful compensation uses the `compensating` phase. Never relabel evidence merely to satisfy validation.
+
+Complete-event producers must emit outcome/commit pairs the contract accepts and also obey the SDK-only denial rule. Stored or in-flight events get no grandfathering: `redeliver()` refuses an old contradictory event exactly as a new one. Correct the producer's evidence; redelivery is not a bypass.
+
+The success check precedes authorization, so `deny` + `success` + `not_committed` now returns `PREMATURE_SUCCESS` rather than `AUTHORIZATION_OUTCOME_CONFLICT`. Denial is checked last after derived-field provenance, preserving earlier contract diagnostics. `failure`, `partial`, `cancelled`, catalog-permitted non-committing denial, other success phases and handle-derived defaults are unchanged. Existing no-handle and pending-handle refusals remain at `/operation/state`.
+
+This is a non-breaking `fix(sdk-core)`, `severity:medium`, with no release/version change. Public types, exports, error codes, frozen contract `2.1.0` and collector admission remain unchanged. `ADR-SDK-016` refines unchanged `ADR-SDK-007`/`ADR-SDK-014`; contract adoption of denial is tracked separately in #817. No producer-truth, durability, release or production authorization is implied.
+
 ## Contract-version upgrades
 
 A contract semantic change requires the `security-audit-event-contract` governance lifecycle before SDK work. An additive contract-minor version remains contract-minor on that independent version axis. After a new contract version is approved, SDK adaptation must use a separate reviewed change that preserves `EXACT_ONE`:

@@ -2,6 +2,8 @@
 
 ## Glossary
 
+- **Contradictory outcome:** an outcome that the event's commit state disproves.
+
 - **Injected provider:** a host capability fixed at construction. These are identifiers (`AuditIdentifierProvider`), clock (`AuditClock`), context provider (`ContextProvider`), schema runtime (`AuditSchemaRuntime`) and timers (`AuditTimerProvider` with `AuditTimerHandle`). The sink and the transformation hooks keep their own existing failure contracts.
 - **Provider fault:** an injected provider that throws or returns an unusable value. It is attributed to the provider, never to the caller's input, and the provider's own error never crosses the public boundary.
 - **Transaction-bound event:** a cataloged event whose commit values include `committed`. Its commit state comes only from operation evidence, whatever its outcome. Not to be confused with the `transaction_critical` delivery class: some transaction-bound events are policy-critical.
