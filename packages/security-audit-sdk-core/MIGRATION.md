@@ -186,6 +186,18 @@ await audit.mfaRemoved({
 
 This is a non-breaking `fix(sdk-core)` runtime correction: generated types, generator, public surface, error registry and contract `2.1.0` are unchanged. Previously accepted invented commit state contradicted operation-evidence semantics; do not rely on it. Complete-event `emit()`/`redeliver()`, Node durability and contradictory outcome/commit pairs through handles are not changed. This correction does not authorize release or production use.
 
+## Provider-fault containment correction
+
+Before this correction, an injected provider could cause a synchronous exception or rejection carrying its raw error, a named method could misreport it as `SDK_INVALID_INPUT` at `/`, and timer faults could wedge shutdown in `shutting_down`.
+
+After the correction, identifier faults return `SDK_INVALID_IDENTIFIER` / `validation` at the applicable `/operation/*`, `/event/id` or `/correlation/*` path. Clock faults return `SDK_INVALID_CLOCK` / `configuration` at `/clock`. Context, schema-runtime and timer faults return `SDK_INVALID_CONFIGURATION` / `configuration` at `/contextProvider`, `/schemaRuntime` and `/timers`. Schema failures are rebuilt as a bounded SDK error carrying only its code, category and a bounded path only for codes in `CONTRACT_ERROR_CODES` or equal to `SDK_SCHEMA_VALIDATION_FAILED` or `SDK_MISSING_EVENT_FIELD`, AND category `validation` or `privacy`, with bounded string-only paths and no extra fields. Other codes or categories return `SDK_INVALID_CONFIGURATION` / `configuration` at `/schemaRuntime`; the provider's own error never crosses the boundary or reaches the sink.
+
+Shutdown always reaches `shut_down`. If the timer cannot be armed, it fails closed immediately without draining or calling sink flush/shutdown. A throwing `unref` continues the bounded work. An `unref` or `clearTimeout` fault reports `/timers` only when work otherwise succeeded; an earlier sink failure or shutdown timeout wins. Later shutdown returns `SDK_SHUT_DOWN`.
+
+To migrate, consumers that matched `SDK_INVALID_INPUT` for provider faults must now match the provider's code and path above. Caller-input faults still return `SDK_INVALID_INPUT`; construction-time validation still throws `SecurityAuditSdkError`. Healthy provider use, runtime selection and redelivery identity behavior remain unchanged.
+
+This is a non-breaking `fix(sdk-core)` correction to exception containment and attribution. Public types, exports, provider interfaces, error-code sets and frozen contract `2.1.0` are unchanged. It does not authorize release or production use.
+
 ## Contract-version upgrades
 
 A contract semantic change requires the `security-audit-event-contract` governance lifecycle before SDK work. An additive contract-minor version remains contract-minor on that independent version axis. After a new contract version is approved, SDK adaptation must use a separate reviewed change that preserves `EXACT_ONE`:

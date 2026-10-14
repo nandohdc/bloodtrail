@@ -234,8 +234,8 @@ function buildCorrelation(
   if (retry && retry.retry_attempt > 0 && !retry.original_event_id) {
     return failure("BAD_CAUSALITY", "validation", "/correlation/original_event_id");
   }
-  const operationId = operation?.operation_id ?? frame.correlation?.operation_id ?? config.identifiers.operationId();
-  const correlationId = (operation as AuditOperationSnapshot | undefined)?.correlation_id ?? frame.correlation?.correlation_id ?? config.identifiers.correlationId();
+  const identifiers = resolveCorrelationIdentifiers(config, frame, operation);
+  if (!identifiers.ok) return identifiers;
   const requestId = frame.correlation?.request_id ?? frame.request?.id;
   const messageId = frame.correlation?.message_id ?? frame.request?.message_id;
   return {
@@ -243,9 +243,9 @@ function buildCorrelation(
     value: omitUndefined({
       trace_id: frame.correlation?.trace_id,
       span_id: frame.correlation?.span_id,
-      correlation_id: correlationId,
+      correlation_id: identifiers.value.correlationId,
       causation_id: retry?.causation_id ?? frame.correlation?.causation_id,
-      operation_id: operationId,
+      operation_id: identifiers.value.operationId,
       transaction_id: operation?.transaction_id ?? frame.correlation?.transaction_id,
       request_id: requestId,
       message_id: messageId,
@@ -253,6 +253,35 @@ function buildCorrelation(
       original_event_id: retry?.original_event_id ?? frame.correlation?.original_event_id,
     }) as SecurityAuditEvent["correlation"],
   };
+}
+
+function resolveCorrelationIdentifiers(
+  config: NormalizedSdkConfiguration,
+  frame: AuditContextFrame,
+  operation: GeneratedOperationContext | undefined,
+): AuditResult<{ readonly operationId: string; readonly correlationId: string }> {
+  const suppliedOperation = operation?.operation_id ?? frame.correlation?.operation_id;
+  const operationId = correlationIdentifier(config, "operationId", suppliedOperation);
+  if (!operationId.ok) return operationId;
+  const suppliedCorrelation = (operation as AuditOperationSnapshot | undefined)?.correlation_id ?? frame.correlation?.correlation_id;
+  const correlationId = correlationIdentifier(config, "correlationId", suppliedCorrelation);
+  if (!correlationId.ok) return correlationId;
+  return { ok: true, value: { operationId: operationId.value, correlationId: correlationId.value } };
+}
+
+const correlationIdentifierPaths = {
+  operationId: "/correlation/operation_id",
+  correlationId: "/correlation/correlation_id",
+} as const;
+
+function correlationIdentifier(
+  config: NormalizedSdkConfiguration,
+  method: keyof typeof correlationIdentifierPaths,
+  supplied: string | undefined,
+): AuditResult<string> {
+  if (supplied !== undefined && supplied !== null) return { ok: true, value: supplied };
+  try { return { ok: true, value: config.identifiers[method]() }; }
+  catch { return failure("SDK_INVALID_IDENTIFIER", "validation", correlationIdentifierPaths[method]); }
 }
 
 function applyTransformations(
@@ -387,11 +416,13 @@ function operationTypeForAction(action: string): SecurityAuditEvent["resource"][
 }
 
 function nowIso(config: NormalizedSdkConfiguration): AuditResult<string> {
-  const value = config.clock.now();
-  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
-    return failure("SDK_INVALID_CLOCK", "configuration", "/clock");
-  }
-  return { ok: true, value: value.toISOString() };
+  try {
+    const value = config.clock.now();
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return { ok: true, value: value.toISOString() };
+    }
+  } catch { /* Provider errors never cross the result boundary. */ }
+  return failure("SDK_INVALID_CLOCK", "configuration", "/clock");
 }
 
 function resolveEventDefinition(method: EventMethodName): AuditResult<EventDefinition> {
@@ -441,17 +472,32 @@ function resolveEnvelopeDefaults(
   };
 }
 
+// Keep allocation isolated from caller timestamp reads and the F11 anchor intact.
+function allocateEventId(
+  config: NormalizedSdkConfiguration,
+  normalizedInput: AnyNamedInput,
+): AuditResult<string> {
+  try { return readEventId(config, normalizedInput); }
+  catch { return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id"); }
+}
+
 // config and normalizedInput both stay in scope here: M-F11-C mutates the
 // eventId statement to reuse a retry identifier and must still compile.
+function readEventId(config: NormalizedSdkConfiguration, normalizedInput: AnyNamedInput): AuditResult<string> {
+  const eventId = config.identifiers.eventId();
+  if (!eventIdPattern.test(eventId)) return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id");
+  return { ok: true, value: eventId };
+}
+
 function resolveEventIdentity(
   config: NormalizedSdkConfiguration,
   normalizedInput: AnyNamedInput,
 ): AuditResult<{ readonly eventId: string; readonly timestamp: string; readonly observedAt: string }> {
-  const eventId = config.identifiers.eventId();
-  if (!eventIdPattern.test(eventId)) return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id");
+  const eventId = allocateEventId(config, normalizedInput);
+  if (!eventId.ok) return eventId;
   const timestamps = resolveTimestamps(config, normalizedInput);
   if (!timestamps.ok) return timestamps;
-  return { ok: true, value: { eventId, timestamp: timestamps.value.timestamp, observedAt: timestamps.value.observedAt } };
+  return { ok: true, value: { eventId: eventId.value, timestamp: timestamps.value.timestamp, observedAt: timestamps.value.observedAt } };
 }
 
 function finalizeNamedEvent(

@@ -48,7 +48,7 @@ export interface AuditOperationHandle {
 type AuditOperationCompletionState = "reserved" | "completed";
 
 export interface AuditOperationAuthority {
-  issue(input?: AuditOperationInput): AuditOperationHandle;
+  issue(input?: AuditOperationInput): AuditResult<AuditOperationHandle>;
   resolve(input: unknown): AuditResult<AuditOperationSnapshot | undefined>;
   completionState(input: unknown, eventName: EventName): AuditResult<AuditOperationCompletionState | undefined>;
   reserveCompletion(input: unknown, eventName: EventName): AuditResult<boolean>;
@@ -129,11 +129,17 @@ export function createAuditOperationAuthority(identifiers: AuditIdentifierProvid
   };
 
   return {
-    issue(input: AuditOperationInput = {}): AuditOperationHandle {
+    issue(input: AuditOperationInput = {}): AuditResult<AuditOperationHandle> {
+      const operationId = issueIdentifier(identifiers, "operationId", input.operationId);
+      if (!operationId.ok) return operationId;
+      const transactionId = issueIdentifier(identifiers, "transactionId", input.transactionId);
+      if (!transactionId.ok) return transactionId;
+      const correlationId = issueIdentifier(identifiers, "correlationId", input.correlationId);
+      if (!correlationId.ok) return correlationId;
       const evidence: AuditOperationEvidence = {
-        operationId: input.operationId ?? identifiers.operationId(),
-        transactionId: input.transactionId ?? identifiers.transactionId(),
-        correlationId: input.correlationId ?? identifiers.correlationId(),
+        operationId: operationId.value,
+        transactionId: transactionId.value,
+        correlationId: correlationId.value,
         boundEvent: input.boundEvent,
         transactional: input.transactional ?? true,
         state: "started",
@@ -141,7 +147,7 @@ export function createAuditOperationAuthority(identifiers: AuditIdentifierProvid
       };
       const handle = Object.freeze(new AuditOperationHandleImpl());
       evidenceByHandle.set(handle, evidence);
-      return handle;
+      return { ok: true, value: handle };
     },
 
     resolve(input: unknown): AuditResult<AuditOperationSnapshot | undefined> {
@@ -185,6 +191,22 @@ export function createAuditOperationAuthority(identifiers: AuditIdentifierProvid
       return { ok: true, value: undefined };
     },
   };
+}
+
+const issuedIdentifierPaths = {
+  operationId: "/operation/operation_id",
+  transactionId: "/operation/transaction_id",
+  correlationId: "/operation/correlation_id",
+} as const;
+
+function issueIdentifier(
+  identifiers: AuditIdentifierProvider,
+  method: keyof typeof issuedIdentifierPaths,
+  supplied: string | undefined,
+): AuditResult<string> {
+  if (supplied !== undefined && supplied !== null) return { ok: true, value: supplied };
+  try { return { ok: true, value: identifiers[method]() }; }
+  catch { return failure("SDK_INVALID_IDENTIFIER", "validation", issuedIdentifierPaths[method]); }
 }
 
 export function commitStateForOperationState(state: AuditOperationState, transactional = true): AuditOperationSnapshot["commit_state"] {
