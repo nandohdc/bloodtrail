@@ -3,29 +3,46 @@
 Decision source: owner decision, 2026-10-13, via grilling and triage in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
 
 ## 1. Planning
+
 - [x] 1.1 Author six planning artifacts, Q1–Q12, ADDED-only requirement and full security assessment with exact ownership.
 - [x] 1.2 Run assessment governance and strict validation before the planning-only commit.
 
 ## 2. Runtime
+
 - [x] 2.1 Contain identifiers, clock, context and schema faults with exact provider attribution and sanitizer.
 - [x] 2.2 Contain arming/unref/cancellation faults with terminal shutdown and earlier-failure precedence.
 - [x] 2.3 Count every exact mutation anchor once externally and run unchanged F08/F10/F11 suites before runtime commit.
 
 ## 3. Tests
+
 - [x] 3.1 Add explicit site matrix with spies, exact count and no throw/rejection/leak/emission assertions.
 - [x] 3.2 Add shutdown, sanitizer and legacy/healthy controls; run build, typecheck and focused tests.
 
 ## 4. Documentation
+
 - [x] 4.1 Add API, migration, glossary, ADR-SDK-015 and Node diagnostic explanations; update only two ADR coherence rules.
 
 ## 5. Verification and evidence
+
 - [x] 5.1 Execute the exact supplied TEST_CMD, including CodeScene delta; record observed commands/results in tasks and invariant evidence.
 - [x] 5.2 Run strict validation, whitespace, exact ownership/subjects and index checks before evidence commit; report committed-head results externally.
 
-## 6. Merge, fold and archive
-- [ ] 6.1 Merge after independent review and required checks.
-- [ ] 6.2 Fold the added requirement in a separate governed change.
-- [ ] 6.3 Archive only after fold lands.
+## 6. Review follow-up (#811)
+
+- [ ] 6.1 G1: restore four exact F07 anchors and prove unchanged mutant kills; required-gate repair, not an owner decision.
+- [ ] 6.2 R-Q9: restrict schema diagnostics to contract/verdict codes and validation/privacy categories with typed guards.
+- [ ] 6.3 R-T: extend the fault matrix to 33 rows, sanitizer table to eight rows and add throwing-unref precedence controls.
+- [ ] 6.4 R-C: clarify unref outcome, terminal assignments, context helper and F11 rationale without new exports.
+- [ ] 6.5 R-D: align documentation, delta requirement and planning provenance; remove machine-local gate paths.
+- [ ] 6.6 Execute anchor audit, complete mutation verification, builds/typecheck, focused tests and all eight supplied gates; record observed evidence only.
+
+Follow-up decision source: owner decision, 2026-10-14, via code-review follow-up in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
+
+## 7. Merge, fold and archive
+
+- [ ] 7.1 Merge after independent review and required checks.
+- [ ] 7.2 Fold the added requirement in a separate governed change.
+- [ ] 7.3 Archive only after fold lands.
 
 ## Observed evidence — 2026-10-14, Node v26.11.1
 
@@ -45,15 +62,13 @@ Both executed before the planning-only commit, exit 0:
 - External exact-occurrence script counted all 13 distinct F08/F11 oldText anchors plus the F10 runtime guard (14 total after deduplication), including complete named-redelivery/SDK redeliver blocks, with count 1 each: `all exact anchors occur once`. Executed before runtime commit and rechecked before evidence. No verification test or mutant was committed.
 - `bash -c 'cd packages/security-audit-sdk-core && node --test tests/verification/f08-mutations.test.mjs tests/verification/f10-mutations.test.mjs tests/verification/f11-mutations.test.mjs'`: exit 0 before runtime commit; `ℹ tests 21`, `ℹ pass 21`, `ℹ fail 0`; compile-valid mutants rejected by their existing guards.
 - The external source comparison confirms the default cjsSchemaRuntime body is byte-identical to baseline; the new default invalid-event control asserts the baseline `{ ok: false, error: { code: "SDK_MISSING_EVENT_FIELD", category: "validation", path: "/event" } }`.
-- `bash /private/tmp/claude-501/-Users-fernando-costa-Git-bloodtrail/1cc06ce2-3b01-443f-b2f3-a249a0f65c8f/scratchpad/scripts/cs53-check.sh review "$PWD" packages/security-audit-sdk-core/tests/provider-fault-containment.test.ts`: exit 0; `file score 10.0` on the final test file.
+- CodeScene CLI 1.0.53 review of `packages/security-audit-sdk-core/tests/provider-fault-containment.test.ts`: exit 0; `file score 10.0` on the final test file.
 
 ### Full supplied TEST_CMD (5.1)
 
 Executed verbatim on the clean four-commit tree before evidence edits, exit 0; not cached. The wrapper ran every conjunct; the final output was `no findings` and `cs delta exit=0`.
 
-```bash
-tamandua-test --repo '/Users/fernando.costa/.tamandua/worktrees/bloodtrail-5311402e/127-e1a44e4d' --run 'e1a44e4d-9b0c-4b90-8271-7c0a63698f7b' --step 'fe747594-9b83-4431-bf01-dd0973ffb245' -- 'npm run check:generated --prefix packages/security-audit-sdk-core && npm run test:matrix --prefix packages/security-audit-sdk-core && npm run test:coherence --prefix packages/security-audit-sdk-core && npm run test:changed-paths --prefix packages/security-audit-sdk-core && npm run validate --prefix contracts/security-audit && npm run validate --prefix packages/security-audit-sdk-node && bash -c '\''cd packages/security-audit-sdk-core && node --test tests/verification/f08-mutations.test.mjs tests/verification/f10-mutations.test.mjs tests/verification/f11-mutations.test.mjs'\'' && node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main && node packages/security-audit-sdk-core/scripts/check-git-state.mjs && make test && bash /private/tmp/claude-501/-Users-fernando-costa-Git-bloodtrail/1cc06ce2-3b01-443f-b2f3-a249a0f65c8f/scratchpad/scripts/cs53-check.sh delta "$PWD"'
-```
+Historical supplied test wrapper executed the repository-relative commands listed below, followed by CodeScene CLI 1.0.53 delta, the same gate CI's `codescene delta` job runs. This historical chain did not include `make governance-gates`.
 
 Each command below exited 0 in that run:
 
@@ -67,7 +82,7 @@ Each command below exited 0 in that run:
 - `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`: `design-pattern governance passed in final phase: enforcement active; inspected 4 commit(s) and 17 path(s) from origin/main`.
 - `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: `Git whitespace/final-newline checks passed and index is empty`.
 - `make test`: Core 390, Node 162, browser 71, collector 92, contract 17, envelope 18 and research 11 tests passed. `Product test loop passed across every declared workspace (~45s local, 2026-09-10).` Its notice explicitly says full governance-gate chains were NOT run; no complete Core validate or make governance-gates claim is made.
-- `bash /private/tmp/claude-501/-Users-fernando-costa-Git-bloodtrail/1cc06ce2-3b01-443f-b2f3-a249a0f65c8f/scratchpad/scripts/cs53-check.sh delta "$PWD"`: `no findings`, `cs delta exit=0` (CLI 1.0.53).
+- CodeScene CLI 1.0.53 delta, the same gate CI's `codescene delta` job runs: `no findings`, `cs delta exit=0`.
 
 ### Pre-evidence closure (5.2)
 

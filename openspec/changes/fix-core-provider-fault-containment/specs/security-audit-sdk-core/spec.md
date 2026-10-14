@@ -2,7 +2,19 @@
 
 ### Requirement: Injected-provider faults are contained and attributed to the provider
 
-Every result-returning SDK boundary MUST contain injected-provider faults with existing provider-specific diagnostics, never the provider's own error or SDK_INVALID_INPUT. A provider fault MUST NOT reach the sink. Shutdown MUST end in shut_down with bounded work and failure precedence. Schema-runtime failures MUST be sanitized as specified below.
+Every result-returning SDK boundary SHALL contain injected-provider faults, never disclose the provider's own error or attribute the fault to `SDK_INVALID_INPUT`. A provider fault SHALL NOT reach the sink.
+
+##### Provider-specific result rules
+
+- `beginOperation` identifier throws SHALL return `SDK_INVALID_IDENTIFIER` / `validation` at `/operation/operation_id`, `/operation/transaction_id` or `/operation/correlation_id` respectively; first fault wins and supplied IDs bypass providers.
+- Named identifier throws SHALL return `SDK_INVALID_IDENTIFIER` / `validation` at `/event/id`, `/correlation/operation_id` or `/correlation/correlation_id` respectively.
+- A throwing clock or invalid `Date` SHALL return `SDK_INVALID_CLOCK` / `configuration` at `/clock`.
+- A throwing `ContextProvider.get` SHALL return `SDK_INVALID_CONFIGURATION` / `configuration` at `/contextProvider`, after lifecycle and operation authority checks.
+- Schema-runtime throws, non-results, missing errors and non-verdict diagnostics SHALL return `SDK_INVALID_CONFIGURATION` / `configuration` at `/schemaRuntime` without changing runtime selection.
+- A throwing or nullish `setTimeout` SHALL immediately return `SDK_INVALID_CONFIGURATION` / `configuration` at `/timers` and reach `shut_down` without drain or sink lifecycle calls. Other handles, including numbers, SHALL remain valid.
+- Throwing `unref` or `clearTimeout` SHALL report the same `/timers` diagnostic only when shutdown work succeeded; an earlier `SDK_SHUTDOWN_TIMEOUT` or `SDK_SINK_FAILURE` SHALL win. Bounded shutdown SHALL finish in `shut_down` with single-flight and at-most-once sink lifecycle calls; repeated shutdown SHALL return `SDK_SHUT_DOWN`.
+
+Schema failures SHALL be rebuilt through `failure(code, category, path)` ONLY when code belongs to `CONTRACT_ERROR_CODES` or is `SDK_SCHEMA_VALIDATION_FAILED` or `SDK_MISSING_EVENT_FIELD`, AND category is `validation` or `privacy`. Only string paths SHALL be passed, bounded to the existing limit, and every extra field SHALL be dropped. All other codes/categories SHALL return the `/schemaRuntime` diagnostic.
 
 #### Scenario: Provider containment operation allocation
 - **WHEN** operationId, transactionId or correlationId throws during beginOperation without that supplied ID
@@ -28,9 +40,13 @@ Every result-returning SDK boundary MUST contain injected-provider faults with e
 - **AND** runtime selection SHALL remain unchanged
 
 #### Scenario: Provider containment sanitized schema diagnostic
-- **WHEN** a runtime returns ok:false with error.code in generated SDK_ERROR_CODES or CONTRACT_ERROR_CODES and error.category in configuration, validation, authority, privacy, lifecycle or sink
+- **WHEN** a runtime returns ok:false with error.code in CONTRACT_ERROR_CODES or equal to SDK_SCHEMA_VALIDATION_FAILED or SDK_MISSING_EVENT_FIELD, AND error.category is validation or privacy
 - **THEN** the result SHALL be rebuilt with failure(code, category, path), passing path only when string, bounding it and dropping every extra field
 - **AND** default-runtime failures SHALL remain deep-equal to their previous results
+
+#### Scenario: Provider containment non-verdict SDK diagnostic
+- **WHEN** a runtime returns ok:false with SDK_INVALID_INPUT and category validation, or another non-verdict SDK code or non-verdict category
+- **THEN** the result SHALL be SDK_INVALID_CONFIGURATION / configuration at /schemaRuntime, with no provider-controlled extra fields
 
 #### Scenario: Provider containment timer arming refusal
 - **WHEN** shutdown setTimeout throws or returns undefined or null

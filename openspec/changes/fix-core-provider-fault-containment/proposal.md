@@ -34,6 +34,19 @@ Decision source: owner decision, 2026-10-13, via grilling and triage in Claude C
 - **Injected provider:** a host capability fixed at construction. These are identifiers (`AuditIdentifierProvider`), clock (`AuditClock`), context provider (`ContextProvider`), schema runtime (`AuditSchemaRuntime`) and timers (`AuditTimerProvider` with `AuditTimerHandle`). The sink and the transformation hooks keep their own existing failure contracts.
 - **Provider fault:** an injected provider that throws or returns an unusable value. It is attributed to the provider, never to the caller's input, and the provider's own error never crosses the public boundary.
 
+## Review follow-up
+
+Follow-up decision source: owner decision, 2026-10-14, via code-review follow-up in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
+
+| Decision | Disposition |
+|---|---|
+| R-Q9 | Rebuild only CONTRACT_ERROR_CODES, SDK_SCHEMA_VALIDATION_FAILED or SDK_MISSING_EVENT_FIELD with validation/privacy categories; all other diagnostics become SDK_INVALID_CONFIGURATION/configuration at /schemaRuntime. Keep bounded string-only paths and drop extras. |
+| R-T | Extend the explicit matrix to 33 rows and sanitizer table to eight rows; add throwing-unref timeout/sink precedence controls and preserve existing controls. |
+| R-C | Clarify unref outcome and terminal state assignments, add local context diagnostic helper and restore the F11 rationale; no new internal export. |
+| R-D | Polish documentation and glossary formatting, restate the result table as SHALL rules and cite gates by name without local paths. |
+
+G1 restores four F07 anchors and proves the unchanged mutants are killed; it repairs a required gate under the original anchor rule and is not an owner decision. Full `test:verification` and `make governance-gates` are required this time. Append five planning/runtime/tests/docs/evidence commits without rewriting the existing fix. No additional approval is claimed.
+
 ## Non-goals
 
 #816 and runtime selection by named methods; runWithContext(), currentAuditContext(), createAuditContextFrame(); malformed ContextProvider.get frames already represented as results; unused causationId/requestId/messageId methods and byte length provider; wrongly accepting invalid schema runtimes; Node's own providers; existing sink and transformation-hook containment; new codes, public types/exports, generated artifacts, generator or frozen contract changes. No push, PR, approval, merge, fold, archive, release or production authorization is part of implementation.

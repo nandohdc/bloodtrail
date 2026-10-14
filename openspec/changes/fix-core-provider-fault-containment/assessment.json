@@ -50,17 +50,17 @@
   "selected_pattern_ids": [],
   "implementation_invariant_ids": ["implementation-provider-attribution", "implementation-terminal-shutdown", "implementation-preserved-boundaries"],
   "invariant_evidence": {
-    "implementation-provider-attribution": {"task_ids": ["2.1", "3.1", "3.2", "5.1"], "evidence_ids": [
+    "implementation-provider-attribution": {"task_ids": ["2.1", "3.1", "3.2", "5.1", "6.2", "6.3", "6.4", "6.6"], "evidence_ids": [
       "From Core: ./node_modules/.bin/tsc -p tsconfig.test.json && node --test dist-tests/provider-fault-containment.test.js — exit 0; ℹ tests 52; ℹ pass 52; ℹ fail 0; explicit 25-row matrix proves invocation, exact provider diagnostic, no throw/rejection/leak and zero sink handoffs; 27 count/sanitizer/legacy/healthy controls.",
       "npm run test:matrix --prefix packages/security-audit-sdk-core — exit 0; ℹ tests 390; ℹ pass 390; ℹ fail 0; known-code valid-category failures bounded to 160-character string-only paths with extra fields dropped; default invalid-event diagnostic deep-equals baseline.",
       "tasks.md 5.1: full supplied tamandua-test command executed verbatim on the clean four-commit pre-evidence tree, exit 0, not cached; all eleven conjuncts passed; no independent old-code sensitivity or approval claimed."
     ]},
-    "implementation-terminal-shutdown": {"task_ids": ["2.2", "3.1", "3.2", "5.1"], "evidence_ids": [
+    "implementation-terminal-shutdown": {"task_ids": ["2.2", "3.1", "3.2", "5.1", "6.1", "6.3", "6.4", "6.6"], "evidence_ids": [
       "From Core: ./node_modules/.bin/tsc -p tsconfig.test.json && node --test dist-tests/provider-fault-containment.test.js — exit 0; ℹ tests 52; ℹ pass 52; ℹ fail 0; includes five shutdown matrix rows, terminal/repeated shutdown, no sink lifecycle on arming failure, at-most-once and numeric/non-callable-unref controls.",
       "tests/provider-fault-containment.test.ts: sink failure and stalled-emission timeout both retain precedence over throwing clearTimeout; timer arming failure does not wait for in-flight emission; single-flight shutdown preserved.",
       "make test — exit 0; Product test loop passed across every declared workspace (~45s local, 2026-09-10). Core 390, Node 162, browser 71, collector 92, contract 17, envelope 18 and research 11 tests passed; full governance-gate chains were NOT run."
     ]},
-    "implementation-preserved-boundaries": {"task_ids": ["1.2", "2.3", "4.1", "5.1", "5.2"], "evidence_ids": [
+    "implementation-preserved-boundaries": {"task_ids": ["1.2", "2.3", "4.1", "5.1", "5.2", "6.1", "6.2", "6.5", "6.6"], "evidence_ids": [
       "node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change fix-core-provider-fault-containment — exit 0; design-pattern governance passed in assessment phase: enforcement active; before planning-only commit.",
       "openspec validate fix-core-provider-fault-containment --strict — exit 0; Change 'fix-core-provider-fault-containment' is valid; before planning-only commit and after implementation/docs.",
       "External exact-occurrence audit before runtime commit: all exact anchors occur once; 14 unique anchors including entire redelivery blocks; no verification test or mutant committed.",
@@ -71,7 +71,7 @@
       "npm run validate --prefix contracts/security-audit — exit 0; ℹ tests 17; ℹ pass 17; ℹ fail 0. npm run validate --prefix packages/security-audit-sdk-node — exit 0; ℹ tests 162; ℹ pass 162; ℹ fail 0; frozen exports and evaluation-kit controls passed.",
       "node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main — exit 0; design-pattern governance passed in final phase: enforcement active; inspected 4 commit(s) and 17 path(s) from origin/main.",
       "node packages/security-audit-sdk-core/scripts/check-git-state.mjs — exit 0; Git whitespace/final-newline checks passed and index is empty. git diff --check — exit 0.",
-      "CodeScene CLI 1.0.53 via supplied cs53-check.sh review of tests/provider-fault-containment.test.ts — exit 0; file score 10.0; supplied cs53-check.sh delta in full TEST_CMD — exit 0; no findings; cs delta exit=0; exact commands in tasks.md.",
+      "Historical CodeScene CLI 1.0.53 review of tests/provider-fault-containment.test.ts — exit 0; file score 10.0; CodeScene CLI 1.0.53 delta, the same gate CI's `codescene delta` job runs — exit 0; no findings; cs delta exit=0; gate citations in tasks.md.",
       "External pre-evidence structural audit — exit 0; ownership/subjects/path-groups/Refs/co-author/whitespace/index passed: 4 commits, 17 exact paths; default runtime body unchanged. Fifth-commit checks are not claimed here; committed-head results belong in external reports."
     ]}
   },
@@ -83,7 +83,7 @@
     "concurrency": "Preserve shutdown single-flight, event reservations and at-most-once sink lifecycle calls; timer fault tracking does not introduce a second drain.",
     "confidentiality": "Provider error objects, messages and extra schema failure fields never cross the result boundary; only bounded diagnostics remain.",
     "cryptography": "No cryptographic algorithm or identifier policy changes. Existing provider-generated identifiers retain validation and retention checks.",
-    "error_disclosure": "Catch without inspecting thrown values; rebuild known-code valid-category schema failures with bounded string paths and no extra fields.",
+    "error_disclosure": "Catch without inspecting thrown values; rebuild only CONTRACT_ERROR_CODES, SDK_SCHEMA_VALIDATION_FAILED or SDK_MISSING_EVENT_FIELD with validation/privacy categories, bounded string paths and no extra fields. All other diagnostics become SDK_INVALID_CONFIGURATION/configuration at /schemaRuntime (R-Q9 follow-up).",
     "external_security_integration": "Node provider runtime and collector remain untouched; Node error catalog documents the core provider diagnostics only.",
     "fail_posture": "An unarmed timer fails closed immediately, without sink lifecycle calls or unbounded draining; non-results cannot bypass schema validation.",
     "lifecycle": "Every shutdown outcome reaches shut_down; unref and cleanup faults preserve earlier timeout or sink failures and later calls remain refused.",
@@ -94,5 +94,5 @@
     "trust_boundary": "Provider faults are attributed to fixed host capabilities, never caller input. Caller throwing getters keep SDK_INVALID_INPUT semantics."
   },
   "ordering": {"proposal_baseline_commit": "6ee6f57037466ac80fd0b9b181f6e881cde62520"},
-  "verification_task_ids": ["1.2", "2.3", "3.1", "3.2", "5.1", "5.2"]
+  "verification_task_ids": ["1.2", "2.3", "3.1", "3.2", "5.1", "5.2", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6"]
 }

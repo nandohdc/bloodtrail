@@ -22,6 +22,18 @@ validateSchemaStructure is the shared seam for configured and global runtimes, i
 - Q10: one module-scope site matrix, spies, exact count, no committed mutant. Independent sensitivity is not an author approval claim.
 - Q12: severity:medium; no change to release authority.
 
+## Review follow-up
+
+Follow-up decision source: owner decision, 2026-10-14, via code-review follow-up in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
+
+- R-Q9: supersede the broad Q9 code/category description below with verdict-only failures: `CONTRACT_ERROR_CODES`, `SDK_SCHEMA_VALIDATION_FAILED` or `SDK_MISSING_EVENT_FIELD`, AND `validation` or `privacy`. Rebuild through `failure(code, category, path)` with only a bounded string path and no extras; all other diagnostics return `SDK_INVALID_CONFIGURATION` / `configuration` / `/schemaRuntime`. Type-check allowed literals and guard categories; default-runtime implementation and selection stay unchanged.
+- R-T: 33 unique fault rows, eight sanitizer rows and two throwing-unref precedence controls; preserve every existing control and exact-count assertions.
+- R-C: explicit unref outcome naming, one terminal assignment per path, local context diagnostic helper and the verbatim F11 scope rationale; no shared identifier helper or new export.
+- R-D: align ADR/API/migration/catalog and glossary formatting, restate provider-result SHALL rules and cite gates without machine-local paths.
+- G1 is a required-gate repair under the original byte-identical-anchor rule, not an owner decision. Restore all four F07 anchors; `timeout.cancel()` is the entire `finally` body after terminal state, records its outcome and exposes it after cleanup. Count F07/F08/F10/F11 anchors and run the complete unchanged 301-test verification suite before the runtime commit. Nullish arming fails closed; earlier sink/timeout errors still win.
+
+Append exactly five commits in planning/runtime/tests/docs/evidence order. Run all eight supplied gates including `make governance-gates` and CodeScene CLI 1.0.53 delta, the same gate CI's `codescene delta` job runs, before evidence closure. Original observations remain historical and do not claim the previously omitted full governance chain.
+
 ## Required results
 
 | Site | code / category / path |
