@@ -19,6 +19,16 @@ const fieldTrustByPath: ReadonlyMap<string, string> = new Map(FIELD_POLICY.map((
 const extensionTrustByNamespace: ReadonlyMap<string, string> = new Map(
   EXTENSION_NAMESPACES.map((entry) => [entry.namespace, entry.trust]),
 );
+// Mirrors the contract's completed/compensating success rule in
+// contracts/security-audit/scripts/validate-contract.mjs; the frozen contract requires this copy.
+const successfulCommitStates: Readonly<Partial<Record<SecurityAuditEvent["event"]["lifecycle_phase"], readonly NonNullable<SecurityAuditEvent["event"]["commit_state"]>[]>>> = {
+  completed: ["committed", "not_applicable"],
+  compensating: ["compensated"],
+};
+// Commit evidence that contradicts denial under the SDK-only rule in ADR-SDK-016.
+const commitAssertingStates: ReadonlySet<SecurityAuditEvent["event"]["commit_state"]> = new Set([
+  "committed", "partially_committed", "compensated",
+]);
 const asyncCompletionSemantics = new Set(["account_registration_completed", "password_reset_completed"]);
 const resourceIdentityRequiredSemantics = new Set([
   "sensitive_resource_viewed",
@@ -75,6 +85,13 @@ export function validateBaseSemantics(event: SecurityAuditEvent): AuditResult<Se
   if (!semanticResult.ok) return semanticResult;
   const provenanceResult = validateDerivedFieldProvenance(event);
   if (!provenanceResult.ok) return provenanceResult;
+  return validateOutcomeConsistency(event);
+}
+
+function validateOutcomeConsistency(event: SecurityAuditEvent): AuditResult<SecurityAuditEvent> {
+  if (event.event.outcome === "denied" && commitAssertingStates.has(event.event.commit_state)) {
+    return failure("SDK_SEMANTIC_VALIDATION_FAILED", "validation", "/event/outcome");
+  }
   return { ok: true, value: event };
 }
 
@@ -216,6 +233,15 @@ function validateCommit(event: SecurityAuditEvent, definition: EventDefinition):
       return failure("PREMATURE_SUCCESS", "validation", "/event/commit_state");
     }
     return failure("SDK_SEMANTIC_VALIDATION_FAILED", "validation", "/event/commit_state");
+  }
+  return validateSuccessfulCommit(event.event);
+}
+
+function validateSuccessfulCommit(event: SecurityAuditEvent["event"]): AuditResult<void> {
+  if (event.outcome !== "success") return { ok: true, value: undefined };
+  const allowed = successfulCommitStates[event.lifecycle_phase];
+  if (allowed && !allowed.includes(event.commit_state!)) {
+    return failure("PREMATURE_SUCCESS", "validation", "/event/commit_state");
   }
   return { ok: true, value: undefined };
 }

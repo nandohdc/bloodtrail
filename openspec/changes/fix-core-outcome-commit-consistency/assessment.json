@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.1",
+  "change_id": "fix-core-outcome-commit-consistency",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Every validation path must refuse contradictory outcome and commit evidence before sink handoff.",
+    "Contract diagnostics retain precedence except the accepted success-before-authorization shift.",
+    "Preserve frozen contract, operation authority, defaults, public surface and unrelated outcomes."
+  ],
+  "applicability": {
+    "triggers_matched": ["lifecycle_or_state", "security_sensitive_behavior", "canonical_capability_requirement"],
+    "material_capability_modification": true,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [
+    "openspec/changes/fix-core-outcome-commit-consistency/.openspec.yaml",
+    "openspec/changes/fix-core-outcome-commit-consistency/proposal.md",
+    "openspec/changes/fix-core-outcome-commit-consistency/design.md",
+    "openspec/changes/fix-core-outcome-commit-consistency/assessment.json",
+    "openspec/changes/fix-core-outcome-commit-consistency/tasks.md",
+    "openspec/changes/fix-core-outcome-commit-consistency/specs/security-audit-sdk-core/spec.md",
+    "packages/security-audit-sdk-core/src/validation/semantic.ts",
+    "packages/security-audit-sdk-core/tests/outcome-commit-consistency.test.ts",
+    "packages/security-audit-sdk-core/API.md",
+    "packages/security-audit-sdk-core/MIGRATION.md",
+    "packages/security-audit-sdk-core/SECURITY.md",
+    "packages/security-audit-sdk-core/CONTEXT.md",
+    "packages/security-audit-sdk-core/adr/016-outcome-and-commit-state-agree.md",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-node/docs/error-catalog.md"
+  ],
+  "candidate_approaches": [
+    {"id": "approach-shared-semantics", "kind": "direct_implementation", "summary": "Two domain-typed checks at the existing shared semantic seam with module-scoped tables.", "forces_addressed": ["Every validation path must refuse contradictory outcome and commit evidence before sink handoff.", "Contract diagnostics retain precedence except the accepted success-before-authorization shift.", "Preserve frozen contract, operation authority, defaults, public surface and unrelated outcomes."]},
+    {"id": "approach-entry-wrappers", "kind": "alternative", "summary": "Check outcome and commit pairs independently in named and complete-event entry points.", "forces_addressed": ["Every validation path must refuse contradictory outcome and commit evidence before sink handoff."]},
+    {"id": "approach-contract-expansion", "kind": "alternative", "summary": "Expand the contract validator and collector to impose both rules everywhere.", "forces_addressed": ["Preserve frozen contract, operation authority, defaults, public surface and unrelated outcomes."]},
+    {"id": "approach-early-denial", "kind": "alternative", "summary": "Fail fast by checking denial alongside success in the first commit validator.", "forces_addressed": ["Contract diagnostics retain precedence except the accepted success-before-authorization shift."]}
+  ],
+  "selected_approach_id": "approach-shared-semantics",
+  "rejected_alternative_ids": ["approach-entry-wrappers", "approach-contract-expansion", "approach-early-denial"],
+  "rejection_reasons": {
+    "approach-entry-wrappers": {"forces": ["Every validation path must refuse contradictory outcome and commit evidence before sink handoff."], "reason": "Duplicated entry checks drift and require additional coupling to give the free validator identical behavior and diagnostic ordering."},
+    "approach-contract-expansion": {"forces": ["Preserve frozen contract, operation authority, defaults, public surface and unrelated outcomes."], "reason": "The contract is frozen; SDK-only denial policy belongs to separate contract follow-up #817, not this conformance correction or collector admission."},
+    "approach-early-denial": {"forces": ["Contract diagnostics retain precedence except the accepted success-before-authorization shift."], "reason": "Early SDK-only denial masks approved authorization and derived-field provenance diagnostics, violating the required contract-first precedence."}
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": ["implementation-success-first", "implementation-denial-last", "implementation-preserved-boundaries"],
+  "invariant_evidence": {
+    "implementation-success-first": {"task_ids": ["2.1", "2.2", "3.1", "3.2", "5.1", "5.3"], "evidence_ids": ["run #134, recorded before its evidence commit: tasks.md 2.2/3.1/3.2: build/typecheck and existing pre-runtime regressions exit 0 (409 passing); focused compilation/tests before test commit exit 0: ℹ tests 265; ℹ pass 265; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; ℹ todo 0. Catalog matrix: 15 events, 141 unique rows = 24 success refusals + 21 denial refusals + 96 accepted, exact safe results and sink counts; all complete-event mutations and deny/success/not_committed precedence pass. Runtime after new tests: 674 passing.", "Observed run #136, task 5.3: semantic.ts differs from the provisioned base only by three added pointer-comment lines; the supplied TEST_CMD ran uncached on content tree 9995bac34cbb887ad0e84e3e24452a0c4cc80434, all eight conjuncts exited 0. Both runtime executions passed 674/674 including the 15-event, 141-row matrix with exact 24/21/96 totals and complete-event/precedence controls.", "Observed run #135, task 5.1: make test/test:matrix and make governance-gates/test:runtime passed outcome-commit-consistency.test.ts catalog-derived matrix: 15 events, 141 unique rows, 24 PREMATURE_SUCCESS refusals, 21 denial refusals, 96 accepted; all complete success/not_committed mutations refused on all three paths, including old redelivery.", "Observed run #135, task 5.1: deny + success + not_committed returns PREMATURE_SUCCESS before authorization on all paths passed in both runtime executions."]},
+    "implementation-denial-last": {"task_ids": ["2.1", "3.1", "3.2", "5.1", "5.3"], "evidence_ids": ["run #134, recorded before its evidence commit: tasks.md 3.1/3.2: 21 exact denial refusals in the 141-row catalog matrix; every transaction-bound positive fixture mutated both ways across emit/redeliver/free validation (30 mutations, 90 path assertions), zero sink calls on refusal. Approved authorization-outcome-conflation retains AUTHORIZATION_OUTCOME_CONFLICT; otherwise valid denied/committed with missing derived_from retains DERIVED_FROM_MISSING. Focused 265/265 and runtime 674/674 pass; independent sensitivity belongs to the orchestrator, not an author approval claim.", "Observed run #136, task 5.3: the supplied TEST_CMD passed the existing complete-event denial and authorization/provenance precedence controls under both make test and make governance-gates; no test, gate, code token or diagnostic-order change.", "Observed run #135, task 5.1: outcome-commit-consistency.test.ts matrix passed 21 SDK_SEMANTIC_VALIDATION_FAILED denial refusals; all complete denied/committed mutations refused on all three paths with zero sink calls.", "Observed run #135, task 5.1: approved authorization-outcome-conflation keeps its exact contract diagnostic before denial and derived-field provenance beats SDK-only denial after otherwise valid authorization passed under make test and make governance-gates."]},
+    "implementation-preserved-boundaries": {"task_ids": ["1.1", "1.2", "2.2", "3.2", "4.1", "5.1", "5.2", "5.3"], "evidence_ids": ["run #134, recorded before its evidence commit: tasks.md 1.2: before proposal commit, assessment governance exit 0: design-pattern governance passed in assessment phase: enforcement active; strict OpenSpec exit 0: Change 'fix-core-outcome-commit-consistency' is valid. tasks.md 3.2/4.1: all approved fixtures, 51 terminal defaults including cancellation/failure fallback, handle and unaffected phase/state controls pass; test:kit and test:coherence exit 0 before docs commit; draft readonly/default and synthetic-link diagnostics corrected before their primary commits, without gate changes or rewriting made commits.", "Observed run #136, task 5.3: imported the verbatim historical proposal/runtime/focused-test/documentation observations to close tasks 1.1–4.1 without claiming run #134's blocked evidence commit; retained run #135 observations as historical rebased evidence. Node test:kit exited 0 before the Node documentation commit. All eight pinned-base supplied TEST_CMD gates exited 0 on the pre-evidence content tree; unchanged test:verification completed 301 tests, 5 suites, 301 pass, 0 fail/cancelled/skipped/todo. CodeScene CLI 1.0.53 delta, the gate CI's codescene delta job runs: no findings; cs delta exit=0. Evidence edits and their lightweight checks are recorded separately in tasks.md; no committed-head, remote CI or maintainer approval is asserted. Before recording these lightweight observations, generated/changed-path/strict/pinned-final-governance/Git-state/whitespace and exact history/path/comment-only/provenance/format audits each exited 0 with an empty index. Recording them requires another lightweight pass before staging; no future pass is claimed here.", "Observed run #135, task 5.1: outcome-commit-consistency.test.ts approved fixtures, terminal defaults including cancellation, absent/pending handle, unaffected phase/state and unjudged outcome controls passed; test:runtime printed 674 tests, 674 pass, 0 fail/cancelled/skipped/todo in both product and full governance loops.", "Observed run #135, task 5.1: all eight supplied gates exited 0 against pinned baseline 2660984bbf1a956b8246c4d2cd874f53c0c31a43; unchanged test:verification printed 301 tests, 5 suites, 301 pass, 0 fail/cancelled/skipped/todo; CodeScene delta printed no findings and cs delta exit=0.", "Observed run #135, task 5.2: original four commit subjects, Refs #812 bodies and exact 6/1/1/7 path groups audited; 15-path inventory equals owned_paths, all unowned baseline Git tree objects identical, empty index verified; evidence-edit generated/changed-path/strict/pinned-final-governance/Git-state/whitespace gates recorded separately in tasks.md before staging. No committed-head or remote CI result is asserted here."]}
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Contradictory outcomes are refused before sink delivery; no claim that producers tell the truth or commit state proves durability.",
+    "authentication_or_authorization": "Success precedes authorization as in the contract; SDK-only denial follows all contract diagnostics so approved authorization conflicts remain first.",
+    "authority_provenance": "Same-instance bound handles and branded fixture contexts remain authoritative; denial runs after derived-field provenance and cannot mask its diagnostic.",
+    "concurrency": "No concurrency or duplicate-success reservation change; fresh SDK instances isolate matrix rows and no additional mutable state is introduced.",
+    "confidentiality": "Reuse bounded safe errors without event values or caught data; no new diagnostic disclosure or secret access is required.",
+    "cryptography": "No algorithms, identifiers, signatures or key handling change; lookup tables classify existing domain states only.",
+    "error_disclosure": "Return existing fixed code/category/path triples only; no new error code or public type and no echoed caller values.",
+    "external_security_integration": "Node binding receives error-catalog guidance only; frozen contract and structural-only collector admission remain unchanged.",
+    "fail_posture": "All four shared semantic paths fail closed on contradictory pairs with zero sink calls, including historical-event redelivery.",
+    "lifecycle": "Only completed/compensating success and committing denial are judged; terminal transitions, omitted defaults and pending/no-handle behavior stay unchanged.",
+    "mutation_ownership": "One source file and one new top-level test file; preserve #811 source and verification anchors and run the unchanged complete mutation suite.",
+    "privacy_transformation": "Derived-field trust-floor checks retain precedence over denial; no transformation-hook or privacy-policy change.",
+    "resource_retention": "Module-scope immutable lookup policy adds no ledger, retention capacity or per-event stored state; ADR-SDK-007 remains unchanged.",
+    "retry_or_redelivery": "No exemption for old events on redelivery; identity, retry semantics and sink behavior remain unchanged apart from refusal.",
+    "trust_boundary": "Caller outcomes cannot contradict operation commit evidence; complete-event producers obey the same pair rules without claiming independent truth verification."
+  },
+  "ordering": {"proposal_baseline_commit": "2660984bbf1a956b8246c4d2cd874f53c0c31a43"},
+  "verification_task_ids": ["1.2", "2.2", "3.1", "3.2", "5.1", "5.2", "5.3"]
+}

@@ -27,6 +27,7 @@ This document defines SDK-core trust boundaries. It does not authorize productio
 | Treat `{ status: "accepted" }` as durable delivery | The result means only that the configured sink accepted the call; downstream loss or rejection can still occur | Define durability, retries, queues/outboxes, collector acceptance, storage, monitoring, and fail-open/fail-closed policy in separately governed future infrastructure |
 | Interpret transport authentication, signatures, attestations, or cryptographic integrity as proof that event claims are truthful | Integrity can show who sent bytes or whether bytes changed, but a compromised or incorrect producer can still emit false facts | Use integrity only for its stated transport/attestation scope; retain producer-truth limitations and validate application authority at the source |
 | Edit `src/generated/*`, copied validator output, catalog constants, or generated types by hand | Manual edits create silent divergence from the approved version `2.1.0` contract | Change no canonical semantics in this SDK. Run `npm run generate` from approved inputs and `npm run check:generated`; propose a separate governed contract version for genuine semantic changes |
+| Assert a contradictory outcome: `success` without phase-appropriate commit evidence, or `denied` after committed work | It can create false success or disguise executed work as pre-execution refusal | Named methods, `emit()`, `redeliver()` and `validateSecurityAuditEvent()` refuse contradictory pairs before sink handoff; preserve the actual evidence and use the correction guidance below |
 
 ## Authority-provider responsibility
 
@@ -106,3 +107,15 @@ Passing SDK verification does not establish:
 - permission to process real-user data.
 
 Framework adapters, application instrumentation, production transports/exporters, collectors, reliable delivery/outbox, storage/SIEM, analytics/detection, cryptographic chaining, and any real-user-data use each require separately reviewed changes and explicit authorization.
+
+## Contradictory outcome threat control
+
+Decision source: owner decision, 2026-10-13, via plan-mode questions, grilling and triage in local Claude Code session 2db6f6fa-b531-4e63-8651-4ea851fd76be
+
+The contract success rule refuses `completed` + `success` unless commit state is `committed`/`not_applicable`, and `compensating` + `success` unless it is `compensated`: exact `PREMATURE_SUCCESS` / `validation` / `/event/commit_state`. It runs with commit validation first, accepting the diagnostic shift for `deny` + `success` + `not_committed` before authorization.
+
+The SDK-only denial rule refuses `denied` with `committed`, `partially_committed` or `compensated`: exact `SDK_SEMANTIC_VALIDATION_FAILED` / `validation` / `/event/outcome`. It runs last after derived-field provenance and cannot mask earlier authorization or provenance diagnostics. Contract adoption is separately tracked in #817.
+
+All four validation paths named in the threat row use these same rules, with zero sink calls on refusal and no historical-event exemption on `redeliver()`. Do not claim `success` for uncommitted work; report `failure`. Move genuinely denied operations through `markNotCommitted()` and preserve `denied` plus authorization decision `deny`. Other catalog-valid `failure`, `partial`, `cancelled`, non-committing denial and unrestricted success phases remain unjudged. Existing handle defaults and missing/pending-handle refusals stay unchanged.
+
+This is consistency validation, not proof of producer truth, database commit durability, atomicity, collector enforcement or prior delivery. The collector remains structurally validating only. Public surface and frozen contract `2.1.0` remain unchanged; `ADR-SDK-016` records the bounded correction.
