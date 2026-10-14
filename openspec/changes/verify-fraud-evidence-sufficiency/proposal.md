@@ -16,7 +16,7 @@ These motivate Stage P hypotheses, not measured findings or an evidence-sufficie
 - Propose Stage P's packed-public-API probes, observation boundaries, provenance and immutable expectations, before any harness exists (#799).
 - Add usage-only `fraud-evidence-profile` requirements for contract 2.1.0, without redefining any field.
 - Propose bounded run-authorization terms requiring a separate exact-head owner comment for each run.
-- Plan subsequent tracer/probe tickets, ADR 0014 and the Stage P verdict, consumer integration profile and glossary, verification, then separate fold/archive PRs.
+- Plan subsequent tracer/probe tickets, system ADR 0014 (`docs/adr/`) and the Stage P verdict, consumer integration profile and glossary, verification, then separate fold/archive PRs.
 - Record a full, security-sensitive assessment generated from its authored source (G30).
 
 ## Capabilities

@@ -50,7 +50,7 @@ On a **first-factor** authentication failure, outcome reasons, failure reasons, 
 
 ### Requirement: Exact observed source address
 
-Producers SHALL send the exact observed source address under a recorded fraud-evidence purpose justification against the published observed-address privacy policy (G3). Trusted-hop extraction SHALL remain host-owned; forwarding headers SHALL NOT be trusted by default. Real-user use SHALL require a data-protection impact assessment (DPIA) in the consumer integration profile.
+Producers SHALL send exact observed addresses under the recorded fraud-evidence direct-reference exception to `source.observed.address`'s `transform_required` policy (G3): exactness is necessary for geolocation, network-owner and reputation enrichment in the external engine, never Bloodtrail. Trusted-hop extraction SHALL be host-owned; forwarding headers SHALL NOT be trusted by default. Real-user use SHALL require a data-protection impact assessment in the consumer integration profile.
 
 #### Scenario: Synthetic observed-address evidence
 - **WHEN** a host emits source evidence for the fraud-evidence purpose
@@ -58,14 +58,14 @@ Producers SHALL send the exact observed source address under a recorded fraud-ev
 
 #### Scenario: Real-user integration proposed
 - **WHEN** an integration seeks to use real-user exact observed addresses
-- **THEN** it requires a DPIA before that use, and this synthetic proposal supplies no such authorization
+- **THEN** it requires a DPIA before that use
 
 ### Requirement: Stable post-authentication join identifiers
 
-Internal opaque account identifiers SHALL be sent directly under a recorded fraud-evidence direct-reference exception, identical on every permitted post-authentication occurrence (G29). Session identifiers SHALL be host-computed keyed fingerprints of the server session handle under one key scope shared by the chain, never bearer values and never computed through a transformation hook.
+Internal opaque account identifiers SHALL be sent directly under a recorded fraud-evidence direct-reference exception, identical on every post-authentication occurrence (G29). Session identifiers SHALL be host-computed keyed fingerprints of the server session handle under one key scope shared by the chain, never bearer values and never computed through a transformation hook.
 
 #### Scenario: Account chain
-- **WHEN** permitted success, session creation, MFA removal, password-reset completion and session revocation occurrences refer to the same internal account
+- **WHEN** success, session creation, MFA removal, password-reset completion and session revocation occurrences refer to the same internal account
 - **THEN** each sends the identical opaque account identifier directly under its recorded exception, not a per-event keyed variant or presented login identifier
 
 #### Scenario: Session creation through revocation
@@ -74,11 +74,11 @@ Internal opaque account identifiers SHALL be sent directly under a recorded frau
 
 ### Requirement: Event identity survives processes and restarts
 
-Producers SHALL supply event identifiers unique across processes and restarts. Core and Node cryptographic UUID defaults, or a qualifying caller-supplied random source satisfying that obligation, are permitted. Every copy of one occurrence SHALL be byte-identical, and a delivery attempt SHALL NOT enter the occurrence.
+Producers SHALL supply event IDs unique across processes and restarts, satisfied by SDK core defaults since #796 was fixed, Node defaults or a qualifying caller-supplied random source. Consumers may rely on canonical byte-identical copies and absence of delivery-attempt metadata in occurrences (`openspec/specs/delivery-conformance-contract/spec.md`; system ADR 0013, `docs/adr/0013-delivery-attempts-never-enter-the-canonical-event.md`).
 
 #### Scenario: Fresh producer process
 - **WHEN** a producer starts or restarts using a qualifying core, Node or caller-supplied random identifier source
-- **THEN** new occurrences receive identifiers unique across those processes and restarts, rather than restarting a deterministic sequence. #796 was fixed on main at `02ce833`: current core defaults use Web Crypto `crypto.randomUUID`, and Node uses `node:crypto` `randomUUID`; the review row's temporary bar until #796 was fixed is lifted
+- **THEN** new occurrences receive identifiers unique across those processes and restarts, rather than restarting a deterministic sequence
 
 #### Scenario: Occurrence redelivery
 - **WHEN** the same occurrence is copied or redelivered

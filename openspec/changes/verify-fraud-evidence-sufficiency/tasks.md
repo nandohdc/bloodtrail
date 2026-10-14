@@ -20,7 +20,7 @@ This proposal completes no task below. G35 keeps all ten tickets separate. The p
 ## 4. P-E (#803)
 
 - [ ] 4.1 Implement construction-before-commit, truthful/untruthful ordering, not_committed commit-gate and k=3 fail-closed redelivery cases; count probes and gates, including a new binding instance.
-- [ ] 4.2 Under its own owner-approved run, measure host transaction-bound sink commit/rollback, db.isTransaction and memory-handle versus durable state; record the later G5 binding concern, no relay or package fix.
+- [ ] 4.2 Under its own owner-approved run, measure host transaction-bound sink commit/rollback, db.isTransaction and memory-handle versus durable state; record the later G5 binding concern.
 
 ## 5. P-map (#804)
 
@@ -29,24 +29,24 @@ This proposal completes no task below. G35 keeps all ten tickets separate. The p
 
 ## 6. ADR 0014 and Stage P verdict (#805)
 
-- [ ] 6.1 Record decisions and measured Stage P evidence in system ADR 0014, hook-key-ID absence, criteria 1–2 verdicts and fix owners (contract/package/host/engine); seek owner approval against named head, no contract version move.
-- [ ] 6.2 If the carrier gap is proven, document the requirement for a separate governed minor contract change after normative-precedence work, with withdrawn ideas labelled open design inputs; defer Stage 2 to its own change/authorization after owner review.
+- [ ] 6.1 Record decisions and measured Stage P evidence in system ADR 0014, hook-key-ID absence, criteria 1–2 verdicts and fix owners (contract/package/host/engine); seek owner approval against named head.
+- [ ] 6.2 If the carrier gap is proven, document the requirement for a separate governed minor contract change after normative-precedence work, with withdrawn ideas labelled open design inputs.
 
 ## 7. Consumer integration profile and fraud-evidence consumer glossary (#806)
 
 - [ ] 7.1 Document field meaning/trust, exclusions, keyed-value marking limits, host-composed guarantees, source/target gaps, engine-governed cross-tenant address joins and real-user DPIA.
-- [ ] 7.2 Add the consumer glossary context and context-map entry, distinguishing a fraud-evidence consumer from an own service and defining the six G32 terms; defer surface-key vocabulary to the later field change.
+- [ ] 7.2 Add the consumer glossary context and context-map entry, distinguishing a fraud-evidence consumer from an own service and defining the six G32 terms.
 
 ## 8. Verification
 
 - [ ] 8.1 Run strict OpenSpec validation, assessment generated-drift check, assessment/final design-pattern governance and contract-reuse approved-skip on the exact technical head; verify proposal scope, normative WHEN/THEN scenarios, no module-export-shaped lines and unchanged canonical contract/package paths.
 - [ ] 8.2 Run empty-index git-state/whitespace checks and make test/typechecks; verify full matrix coverage, immutable expectations/result separation, provenance, exact-head run approvals, shared bounds/stops and scratch deletion before declaring Stage P complete. Future harness must pass CodeScene delta with warnings treated as errors.
-- [ ] 8.3 Verify all ten required CI contexts on the exact PR head and obtain owner review/merge at S3; passing local gates is not CI green, signed review or run approval.
+- [ ] 8.3 Verify and record all ten required CI contexts on the exact PR head.
 
 ## 9. Fold (#807)
 
-- [ ] 9.1 In a separate later PR, fold the reviewed capability delta into canonical specs after implementation and verification; obtain owner review, do not fold during the proposal.
+- [ ] 9.1 In a separate later PR, fold the reviewed capability delta into canonical specs after implementation and verification.
 
 ## 10. Archive (#808)
 
-- [ ] 10.1 In a separate later PR, archive the completed change and validate the archive after fold and owner review; do not archive during the proposal.
+- [ ] 10.1 In a separate later PR, archive the completed change and validate the archive after fold and owner review.
