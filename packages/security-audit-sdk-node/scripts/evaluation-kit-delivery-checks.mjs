@@ -111,7 +111,9 @@ const HEALTH_FIELDS = Object.freeze(["acceptedCount", "duplicateCount", "rejecte
 
 // The health endpoint reports status and counts only, never an event body.
 async function receiverHealth(origin) {
-  const health = await (await fetch(`${origin}/health`)).json();
+  const response = await fetch(`${origin}/health`);
+  assert(response.status === 200, `receiver health: expected 200, got ${response.status}`);
+  const health = await response.json();
   assert(
     JSON.stringify(Object.keys(health).sort((a, b) => a.localeCompare(b))) === JSON.stringify(HEALTH_FIELDS),
     `the receiver's health endpoint must report ${HEALTH_FIELDS.join(", ")} only, got ${Object.keys(health).join(", ")}`,
@@ -593,6 +595,41 @@ async function verifyAbortIsNotARejection(origin, receiverReadOutput, assertStil
   await receiverHealth(origin);
 }
 
+// This receiver's ledger is exclusively for the capacity probe: no other probe may consume its identities.
+async function verifyDeduplicationCapacity(installDir, template) {
+  const receiver = startLoopbackServer({
+    script: resolve(installDir, "examples/evaluation-receiver.ts"), cwd: installDir, label: "receiver",
+  });
+  try {
+    const origin = await receiver.origin;
+    const admitted = withEventId(template, randomUUID());
+    const admittedBody = JSON.stringify(admitted);
+    for (let index = 0; index < 32; index += 1) {
+      const event = index === 0 ? admitted : withEventId(template, randomUUID());
+      const reply = await submit(origin, JSON.stringify(event));
+      assertRejected(reply, 200, `capacity admission ${index + 1}`);
+      assertAcknowledged(reply, event.event.id, `capacity admission ${index + 1}`);
+    }
+    for (let refused = 0; refused < 2; refused += 1) {
+      const reply = await submit(origin, JSON.stringify(withEventId(template, randomUUID())));
+      assertRejected(reply, 429, "deduplication capacity");
+      assert(reply.text === '{"error":"deduplication_capacity"}', `deduplication capacity: unexpected body ${reply.text}`);
+      assert(reply.headers.get("retry-after") === null, "deduplication capacity must not send Retry-After");
+    }
+    const health = await receiverHealth(origin);
+    assert(health.acceptedCount === 32 && health.rejectedCount === 2 && health.duplicateCount === 0,
+      `capacity health counts: ${JSON.stringify(health)}`);
+    const duplicate = await submit(origin, admittedBody);
+    assertRejected(duplicate, 200, "duplicate at capacity");
+    assertAcknowledged(duplicate, admitted.event.id, "duplicate at capacity");
+    const afterDuplicate = await receiverHealth(origin);
+    assert(afterDuplicate.acceptedCount === 32 && afterDuplicate.duplicateCount === 1 && afterDuplicate.rejectedCount === 2,
+      `duplicate at capacity must not admit again: ${JSON.stringify(afterDuplicate)}`);
+  } finally {
+    receiver.child.kill("SIGTERM");
+  }
+}
+
 /**
  * Runs the example service against the example receiver over loopback, in the installed kit. Every
  * demonstrated event must be accepted, and the bytes the receiver received must equal the bytes the SDK
@@ -641,6 +678,7 @@ export async function verifyHttpExchange(installDir) {
 
       await assertReceiverHealthCounts(receiverOrigin);
       await verifyCarefulIngress(installDir, receiverOrigin, events, receiver.readOutput);
+      await verifyDeduplicationCapacity(installDir, events.get("bloodtrail.audit.authentication.succeeded"));
     } finally {
       service.child.kill("SIGTERM");
     }

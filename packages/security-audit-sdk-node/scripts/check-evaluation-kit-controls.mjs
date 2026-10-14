@@ -162,7 +162,7 @@ const REVISED_INSTALLER_CLAUSES = Object.freeze([
   },
 ]);
 const VERIFICATION_SUMMARY_PREFIX = "evaluation kit verification passed: ";
-const LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE = "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, the 422 to an event that passed the ingress's structural check but failed SDK validation, acknowledged the corrected event with the SDK-invalid event's identity, a byte-identical duplicate and a redelivered event, and kept serving after each; it required the Bearer scheme in any letter case, answered 404 to a POST on another path and 405 with Allow: POST to another method, and counted a client abort as neither a 500 nor a rejection; after answering 401, 404 and 413 to a body past its bound it closed the connection, accepting no more than the socket buffers hold";
+const LOOPBACK_EXAMPLE_EXCHANGE_CLAUSE = "loopback examples verified: the bytes the receiver received equal the bytes the SDK handed to the HTTP audit sink, and the receiver answered 401, 413, 400, 422 and 409, the 422 to an event that passed the ingress's structural check but failed SDK validation, acknowledged the corrected event with the SDK-invalid event's identity, a byte-identical duplicate and a redelivered event, and kept serving after each; it required the Bearer scheme in any letter case, answered 404 to a POST on another path and 405 with Allow: POST to another method, and counted a client abort as neither a 500 nor a rejection; after answering 401, 404 and 413 to a body past its bound it closed the connection, accepting no more than the socket buffers hold; on a separate fresh receiver, 32 distinct identities were acknowledged with 200, identities 33 and 34 received 429 deduplication_capacity without Retry-After, health remained 200/healthy, and an admitted duplicate was acknowledged with 200 without another admission";
 const DISTRIBUTABLE_KIT_UMASK_CLAUSE = "distributable kit built under umask 077 from a disposable clean clone of the tree under test, into a destination whose parent directories did not exist, with the same artifacts and checksum list as the verification kit apart from its identity file";
 const DESTINATION_REFUSAL_CLAUSE = "distributable build refused in that clone for a destination inside it whose parent did not exist, with no directory created";
 const EXISTING_OUTPUT_REFUSAL_CLAUSE = "distributable build refused in that clone for a kit destination or archive that already existed, leaving both unchanged";
@@ -1115,7 +1115,7 @@ async function checkBuilderSymlinkProof() {
 }
 
 async function checkControlInfrastructureProof(kitDir) {
-  assert.equal(CONTROL_DEFINITIONS.length, 80, "the control table must declare every expected control");
+  assert.equal(CONTROL_DEFINITIONS.length, 81, "the control table must declare every expected control");
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label, identity }) => controlFor(label).identity), CLONE_PLANT_CONTROLS.map(({ identity }) => identity));
   assert.deepEqual(CLONE_PLANT_CONTROLS.map(({ label }) => CONTROL_RUNNERS_BY_LABEL.has(label)), CLONE_PLANT_CONTROLS.map(() => true));
   assert.throws(

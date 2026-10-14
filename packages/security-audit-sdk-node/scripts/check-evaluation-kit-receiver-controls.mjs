@@ -9,6 +9,7 @@ export const RECEIVER_CONTROL_DEFINITIONS = Object.freeze([
   { label: "receiver treating a POST to any path as a submission", identity: "loopback-example-exchange" },
   { label: "receiver answering another method without Allow: POST", identity: "loopback-example-exchange" },
   { label: "receiver counting a client abort as a rejection", identity: "loopback-example-exchange" },
+  { label: "receiver disguising deduplication capacity as 500", identity: "loopback-example-exchange" },
 ]);
 
 const [DUPLICATE_REJECTED_CONTROL, RETHROWING_RECEIVER_CONTROL, POST_ANSWER_READ_CONTROL, SKIPPED_SDK_VALIDATION_CONTROL] = RECEIVER_CONTROL_DEFINITIONS;
@@ -17,6 +18,7 @@ const [
   WRONG_PATH_SUBMISSION_CONTROL,
   MISSING_ALLOW_HEADER_CONTROL,
   ABORT_COUNTED_CONTROL,
+  CAPACITY_AS_SERVER_ERROR_CONTROL,
 ] = RECEIVER_CONTROL_DEFINITIONS.slice(4);
 const RECEIVER_SOURCE_PATH = "examples/evaluation-receiver.ts";
 const POST_ANSWER_READ_PLANTS = Object.freeze([
@@ -112,7 +114,7 @@ async function checkPostAnswerReadControl(kitDir, _disabledChecks, helpers) {
 // The planted kits below share one shape: a single string-anchored replacement in the kit copy's receiver
 // source, measured against the kit gate, and asserted to fail at the control's declared identity with its
 // named condition. The spec object holds the control, its plant, and its messages; the shared checker keeps
-// the five controls from repeating the same body.
+// the string-anchored controls from repeating the same body.
 //
 // The receiver before #708: it parsed the body and admitted it without SDK validation, so the gate's
 // structurally valid but SDK-invalid probe event was answered 2xx instead of 422. The planted kit still
@@ -194,12 +196,24 @@ const ABORT_COUNTED_PLANT = Object.freeze({
   expectCondition: "a client abort was counted as a rejection",
 });
 
+// The receiver before #798: bounded no-storage capacity fell through to 500/ingress_rejected.
+const CAPACITY_AS_SERVER_ERROR_PLANT = Object.freeze({
+  control: CAPACITY_AS_SERVER_ERROR_CONTROL,
+  tempPrefix: "bloodtrail-ctrl-receiver-capacity-",
+  anchor: '    return reject(state, 429, "deduplication_capacity");',
+  replacement: '    return reject(state, 500, "ingress_rejected");',
+  anchorLabel: "deduplication-capacity",
+  recordLabel: "deduplication-capacity",
+  expectCondition: "deduplication capacity: expected 429, got 500",
+});
+
 const STRING_ANCHORED_RECEIVER_PLANTS = Object.freeze([
   SKIPPED_SDK_VALIDATION_PLANT,
   BARE_TOKEN_CREDENTIAL_PLANT,
   WRONG_PATH_SUBMISSION_PLANT,
   MISSING_ALLOW_HEADER_PLANT,
   ABORT_COUNTED_PLANT,
+  CAPACITY_AS_SERVER_ERROR_PLANT,
 ]);
 
 async function checkStringAnchoredPlant(kitDir, _disabledChecks, helpers, spec) {
@@ -216,6 +230,7 @@ async function checkStringAnchoredPlant(kitDir, _disabledChecks, helpers, spec) 
     _disabledChecks,
   });
   assert.equal(measurements.length, 1, `${spec.recordLabel} receiver control must record one measured plant`);
+  console.log(`receiver control verified at ${control.identity}: ${spec.expectCondition} (one measured plant)`);
   return helpers.completeControl(control, measurements);
 }
 
