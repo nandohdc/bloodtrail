@@ -64,7 +64,6 @@ the wrong shape. It is also returned for a runtime context-provider, schema-runt
   or in `runWithContext`, the same mistake is `AUTHORITY_ESCALATION`.
 - An authority constructor got an empty required string, such as `authoritativeTenant` with a `tenant`
   scope and an empty `effective_tenant_id`.
-
 - `ContextProvider.get()` throws: returned by a named call at `/contextProvider`.
 - A configured or global schema runtime throws or returns a non-result, malformed failure or
   non-verdict diagnostic: returned by the validating call at `/schemaRuntime`. A failure is

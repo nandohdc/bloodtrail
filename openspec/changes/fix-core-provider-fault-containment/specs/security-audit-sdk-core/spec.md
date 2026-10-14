@@ -14,7 +14,7 @@ Every result-returning SDK boundary SHALL contain injected-provider faults, neve
 - A throwing or nullish `setTimeout` SHALL immediately return `SDK_INVALID_CONFIGURATION` / `configuration` at `/timers` and reach `shut_down` without drain or sink lifecycle calls. Other handles, including numbers, SHALL remain valid.
 - Throwing `unref` or `clearTimeout` SHALL report the same `/timers` diagnostic only when shutdown work succeeded; an earlier `SDK_SHUTDOWN_TIMEOUT` or `SDK_SINK_FAILURE` SHALL win. Bounded shutdown SHALL finish in `shut_down` with single-flight and at-most-once sink lifecycle calls; repeated shutdown SHALL return `SDK_SHUT_DOWN`.
 
-Schema failures SHALL be rebuilt through `failure(code, category, path)` ONLY when code belongs to `CONTRACT_ERROR_CODES` or is `SDK_SCHEMA_VALIDATION_FAILED` or `SDK_MISSING_EVENT_FIELD`, AND category is `validation` or `privacy`. Only string paths SHALL be passed, bounded to the existing limit, and every extra field SHALL be dropped. All other codes/categories SHALL return the `/schemaRuntime` diagnostic.
+Schema failures SHALL be rebuilt as a bounded SDK error carrying only its code, category and a bounded path ONLY when code belongs to `CONTRACT_ERROR_CODES` or is `SDK_SCHEMA_VALIDATION_FAILED` or `SDK_MISSING_EVENT_FIELD`, AND category is `validation` or `privacy`. Only string paths SHALL be passed, bounded to the existing limit, and every extra field SHALL be dropped. All other codes/categories SHALL return the `/schemaRuntime` diagnostic.
 
 #### Scenario: Provider containment operation allocation
 - **WHEN** operationId, transactionId or correlationId throws during beginOperation without that supplied ID
@@ -41,7 +41,7 @@ Schema failures SHALL be rebuilt through `failure(code, category, path)` ONLY wh
 
 #### Scenario: Provider containment sanitized schema diagnostic
 - **WHEN** a runtime returns ok:false with error.code in CONTRACT_ERROR_CODES or equal to SDK_SCHEMA_VALIDATION_FAILED or SDK_MISSING_EVENT_FIELD, AND error.category is validation or privacy
-- **THEN** the result SHALL be rebuilt with failure(code, category, path), passing path only when string, bounding it and dropping every extra field
+- **THEN** the result SHALL be rebuilt as a bounded SDK error carrying only its code, category and a bounded path, passing path only when string, bounding it and dropping every extra field
 - **AND** default-runtime failures SHALL remain deep-equal to their previous results
 
 #### Scenario: Provider containment non-verdict SDK diagnostic

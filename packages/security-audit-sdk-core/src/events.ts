@@ -481,7 +481,6 @@ function allocateEventId(
   catch { return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id"); }
 }
 
-// config and normalizedInput stay in scope for the M-F11-C mutation.
 // config and normalizedInput both stay in scope here: M-F11-C mutates the
 // eventId statement to reuse a retry identifier and must still compile.
 function readEventId(config: NormalizedSdkConfiguration, normalizedInput: AnyNamedInput): AuditResult<string> {
