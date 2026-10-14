@@ -640,9 +640,11 @@ value came from a second installed copy of the core, the code is `DUPLICATE_AUTH
 ### `PREMATURE_SUCCESS`
 
 **Meaning.** A transaction-bound named event lacks the operation evidence its commit state needs,
-whatever its outcome, or reports success whose operation evidence did not commit, or did not
-compensate in the compensating phase. The transaction-bound
-events are those whose `commit` values in `EVENT_CATALOG` include `committed`.
+whatever its outcome, or a named call or complete event reports success whose evidence did not commit
+or did not compensate in the compensating phase. Complete events are checked through `emit()`,
+`redeliver()` and `validateSecurityAuditEvent()`. Transaction-bound events are those whose `commit`
+values in `EVENT_CATALOG` include `committed`. Both outcome-agreement rules apply on all these paths;
+old events have no redelivery exemption. The rules follow the decision source: owner decision, 2026-10-13, via plan-mode questions, grilling and triage in local Claude Code session 2db6f6fa-b531-4e63-8651-4ea851fd76be
 
 **Common causes.**
 
@@ -661,6 +663,9 @@ events are those whose `commit` values in `EVENT_CATALOG` include `committed`.
 - A named call or complete event reports `success` whose operation evidence did not commit, or did
   not compensate in the compensating phase. `completed` + `success` requires `committed` or
   `not_applicable`; `compensating` + `success` requires `compensated`. The path is `/event/commit_state`.
+  Success runs with commit checks before authorization: `deny` + `success` + `not_committed` therefore
+  returns `PREMATURE_SUCCESS`. The SDK-only denial rule runs last after derived-field provenance,
+  preserving earlier authorization/provenance diagnostics.
 
 **Fix.**
 
@@ -671,19 +676,12 @@ events are those whose `commit` values in `EVENT_CATALOG` include `committed`.
    `denied` and authorization decision `deny` to record a refusal.
 3. Pass the handle as `operation`. Report `failure`, not `success`, when work did not commit.
    Complete-event producers must supply contract-valid success pairs as well as SDK-valid denial pairs.
+   `failure`, `partial`, `cancelled`, catalog-permitted non-committing denial, other success phases and
+   handle-derived defaults remain unchanged. No public surface, error-code set or contract `2.1.0`
+   change is made. Contract adoption of denial is tracked separately in issue #817.
 
 **Fields.** `category` is `validation`. `path` is `/operation/state` or `/event/commit_state`. The
 sink was not called.
-
-Both outcome-agreement rules apply to named methods, `emit`, `redeliver` and `validateSecurityAuditEvent`.
-Old events have no redelivery exemption. Success runs with commit checks before authorization;
-`deny` + `success` + `not_committed` therefore returns `PREMATURE_SUCCESS`. The SDK-only denial rule
-runs last after derived-field provenance, preserving earlier authorization/provenance diagnostics.
-`failure`, `partial`, `cancelled`, catalog-permitted non-committing denial, other success phases and
-handle-derived defaults remain unchanged. No public surface, error-code set or contract `2.1.0`
-change is made. Contract adoption of denial is tracked separately in issue #817.
-
-Decision source: owner decision, 2026-10-13, via plan-mode questions, grilling and triage in local Claude Code session 2db6f6fa-b531-4e63-8651-4ea851fd76be
 
 ### `AUTHORIZATION_OUTCOME_CONFLICT`
 
