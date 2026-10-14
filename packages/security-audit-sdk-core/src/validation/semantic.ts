@@ -19,10 +19,13 @@ const fieldTrustByPath: ReadonlyMap<string, string> = new Map(FIELD_POLICY.map((
 const extensionTrustByNamespace: ReadonlyMap<string, string> = new Map(
   EXTENSION_NAMESPACES.map((entry) => [entry.namespace, entry.trust]),
 );
+// Mirrors the contract's completed/compensating success rule in
+// contracts/security-audit/scripts/validate-contract.mjs; the frozen contract requires this copy.
 const successfulCommitStates: Readonly<Partial<Record<SecurityAuditEvent["event"]["lifecycle_phase"], readonly NonNullable<SecurityAuditEvent["event"]["commit_state"]>[]>>> = {
   completed: ["committed", "not_applicable"],
   compensating: ["compensated"],
 };
+// Commit evidence that contradicts denial under the SDK-only rule in ADR-SDK-016.
 const commitAssertingStates: ReadonlySet<SecurityAuditEvent["event"]["commit_state"]> = new Set([
   "committed", "partially_committed", "compensated",
 ]);
