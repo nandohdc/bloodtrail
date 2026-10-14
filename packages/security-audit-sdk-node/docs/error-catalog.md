@@ -67,8 +67,9 @@ the wrong shape. It is also returned for a runtime context-provider, schema-runt
 
 - `ContextProvider.get()` throws: returned by a named call at `/contextProvider`.
 - A configured or global schema runtime throws or returns a non-result, malformed failure or
-  non-verdict diagnostic: returned by the validating call at `/schemaRuntime`. A failure is rebuilt
-  through `failure(code, category, path)` only for codes in `CONTRACT_ERROR_CODES` or equal to
+  non-verdict diagnostic: returned by the validating call at `/schemaRuntime`. A failure is
+  rebuilt as a bounded SDK error carrying only its code, category and a bounded path, only for
+  codes in `CONTRACT_ERROR_CODES` or equal to
   `SDK_SCHEMA_VALIDATION_FAILED` or `SDK_MISSING_EVENT_FIELD`, AND category `validation` or `privacy`.
   Only a string path is retained and bounded; every extra field is dropped. Other codes or categories
   return `SDK_INVALID_CONFIGURATION` / `configuration` at `/schemaRuntime`. Default-runtime results
