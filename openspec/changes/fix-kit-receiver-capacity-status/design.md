@@ -27,17 +27,17 @@ The R1–R10 table in proposal.md contains delegated Claude recommendations subj
 
 Add a narrow diagnostic-code branch returning `reject(state, 429, "deduplication_capacity")`. Retain counters, duplicate acknowledgment, conflict, request/auth/body/route behavior and unknown fallback. No new public export.
 
-In the installed-kit exchange, use an existing demonstrated valid event as template, with fresh random event IDs. On the dedicated receiver assert 32 exact 200 acknowledgments, then distinct events 33 and 34 return the exact fixed JSON body and no Retry-After. Assert health HTTP 200/healthy, acceptedCount 32 and rejectedCount 2; resend the exact first admitted bytes and assert its single accepted acknowledgment and duplicateCount 1 without increasing admissions. Print an observation marker only after these assertions pass.
+In the installed-kit exchange, use an existing demonstrated valid event as template, with fresh random event IDs. On the dedicated receiver assert 32 exact 200 acknowledgments, then distinct events 33 and 34 return the exact fixed JSON body and no Retry-After. Assert health HTTP 200/healthy, acceptedCount 32 and rejectedCount 2; resend the exact first admitted bytes and assert its single accepted acknowledgment and duplicateCount 1 without increasing admissions. The gate success clause records the capacity proof only after these assertions pass; keep stdout summary-first for the symlink null control.
 
 Extend the existing module-scope string-anchored receiver plant definitions once. Replacing the new capacity return with `500` / `ingress_rejected` must fail specifically at `loopback-example-exchange` with `deduplication capacity: expected 429, got 500`. Keep source-change measurements, disposable-kit resealing and the disabled-check fail-closed harness. Extend the gate success clause and matching control assertion; preserve existing gate identities.
 
 ## Implementation-specific invariants
 
-| Invariant | Tasks | Evidence plan (not yet observed) |
+| Invariant | Tasks | Observed evidence (2026-10-14, before evidence commit) |
 | --- | --- | --- |
-| implementation-named-capacity | 2.1, 3.1, 5.1 | Dedicated installed-kit probe: 32 × 200, 33–34 × exact 429/body/no-header, health and duplicate counts |
-| implementation-sensitive-control | 3.2, 5.1 | Measured capacity-to-500 plant fails at loopback-example-exchange with the capacity-specific condition |
-| implementation-preserved-scope | 1.2, 4.1, 5.1, 5.2 | Strict OpenSpec, assessment/final governance, generated/export/scope/git/product and CodeScene gates; existing controls |
+| implementation-named-capacity | 2.1, 3.1, 5.1 | Node validate and make test exit 0; loopback-example-exchange clause reports 32 × 200, 33–34 × 429/no Retry-After, health 200/healthy and duplicate 200 without another admission; exact JSON and counts asserted by the probe (tasks.md) |
+| implementation-sensitive-control | 3.2, 5.1 | `receiver control verified at loopback-example-exchange: deduplication capacity: expected 429, got 500 (one measured plant)`; all 90 plants / 81 controls passed, including disabled-check fail-closed infrastructure |
+| implementation-preserved-scope | 1.2, 4.1, 5.1, 5.2 | All ten mandatory commands exit 0; strict OpenSpec, final governance, generated/export/scope/Git/product and CodeScene outputs recorded verbatim in tasks.md; 12 owned paths only |
 
 ## Security implications
 

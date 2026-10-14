@@ -88,15 +88,27 @@
   "invariant_evidence": {
     "implementation-named-capacity": {
       "task_ids": ["2.1", "3.1", "5.1"],
-      "evidence_ids": ["design.md: dedicated receiver observation plan; execution pending task 5.1"]
+      "evidence_ids": [
+        "npm run validate --prefix packages/security-audit-sdk-node and make test: exit 0; loopback-example-exchange reports 32 distinct identities acknowledged with 200, identities 33 and 34 received 429 deduplication_capacity without Retry-After, health remained 200/healthy, and an admitted duplicate acknowledged with 200 without another admission",
+        "evaluation-kit-delivery-checks.mjs: dedicated fresh installed receiver asserts exact fixed JSON, single matching accepted acknowledgments, absent retry-after, health counts (32,0,2) then (32,1,2), and finally cleanup; tasks.md records observed pre-evidence-commit verification"
+      ]
     },
     "implementation-sensitive-control": {
       "task_ids": ["3.2", "5.1"],
-      "evidence_ids": ["design.md: measured capacity-to-500 kit control plan; execution pending task 5.1"]
+      "evidence_ids": [
+        "test:kit-controls: receiver control verified at loopback-example-exchange: deduplication capacity: expected 429, got 500 (one measured plant)",
+        "test:kit-controls: evaluation kit negative controls passed: 90 measured plants across 81 of 81 controls; capacity control counted once, measured source mutation and tagged gate rejection validated; infrastructure/disabled-check fail-closed and summary/symlink proofs passed; Node validate and make test exit 0"
+      ]
     },
     "implementation-preserved-scope": {
       "task_ids": ["1.2", "4.1", "5.1", "5.2"],
-      "evidence_ids": ["tasks.md: named planning, validation, export, scope, generated, product, Git and CodeScene verification plan; execution pending"]
+      "evidence_ids": [
+        "Before planning commit: node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change fix-kit-receiver-capacity-status and openspec validate fix-kit-receiver-capacity-status --strict both exit 0; exact stdout recorded in tasks.md",
+        "Supplied exact tamandua-test wrapper executed, not cached, on clean four-commit runtime/test/docs tree: exit 0 for all ten conjuncts; tasks.md records each command and observed stdout, initial corrected gate failures, build exit 0 and strict consumer TypeScript 5.9.2/6.0.3/7.0.2 verification",
+        "Node validate: 162 tests passed; frozen 19 value/44 type-only exports; collector 92 and contract 17 passed; generated SDK contract artifacts are current; changed-path policy passed; make test passed across every declared workspace",
+        "Final governance: design-pattern governance passed in final phase: enforcement active; inspected 4 commit(s) and 12 path(s) from origin/main; Git whitespace/final-newline checks passed and index is empty",
+        "CodeScene CLI 1.0.53 supplied cs53-check.sh delta: exit 0; no findings; cs delta exit=0; git diff --check exit 0; only 12 declared owned paths changed"
+      ]
     }
   },
   "security_sensitive": false,
