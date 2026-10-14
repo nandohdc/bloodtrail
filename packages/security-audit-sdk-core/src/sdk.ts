@@ -352,13 +352,15 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
       this.#state = "shut_down";
       return armed;
     }
+    const timeout = armed.value;
+    let result: AuditResult<void>;
     try {
-      const result = await this.#shutdownWork(armed.value);
-      const cleanup = armed.value.cancel();
-      return result.ok ? cleanup : result;
-    } finally {
+      result = await this.#shutdownWork(timeout);
       this.#state = "shut_down";
+    } finally {
+      timeout.cancel();
     }
+    return result.ok ? timeout.cancellationResult : result;
   }
 
   async #shutdownWork(timeout: ShutdownTimeout): Promise<AuditResult<void>> {
@@ -390,31 +392,36 @@ function assertDeliveryIntent(intent: DeliveryIntent): void {
 
 type ShutdownTimeout = {
   readonly promise: Promise<false>;
-  cancel(): AuditResult<void>;
+  readonly cancellationResult: AuditResult<void>;
+  cancel(): void;
 };
 
 function createShutdownTimeout(timeoutMs: number, timers: AuditTimerProvider): AuditResult<ShutdownTimeout> {
+  try { return armShutdownTimeout(timeoutMs, timers); }
+  catch { return invalidTimers(); }
+}
+
+function armShutdownTimeout(timeoutMs: number, timers: AuditTimerProvider): AuditResult<ShutdownTimeout> {
   let cancelled = false;
   let resolveTimeout: (value: false) => void = () => {};
   const promise = new Promise<false>((resolve) => {
     resolveTimeout = resolve;
   });
-  let timer: AuditTimerHandle;
-  try {
-    timer = timers.setTimeout(() => resolveTimeout(false), timeoutMs);
-    if (timer === undefined || timer === null) return invalidTimers();
-  } catch { return invalidTimers(); }
-  const detached = unrefShutdownTimer(timer);
+  const timer = timers.setTimeout(() => resolveTimeout(false), timeoutMs);
+  if (timer === undefined || timer === null) return invalidTimers();
+  const unrefResult = unrefShutdownTimer(timer);
+  let cancellationResult = unrefResult;
   return {
     ok: true,
     value: {
       promise,
+      get cancellationResult() { return cancellationResult; },
       cancel() {
-        if (cancelled) return detached;
+        if (cancelled) return;
         cancelled = true;
-        try { timers.clearTimeout(timer); }
-        catch { return invalidTimers(); }
-        return detached;
+        try {
+          timers.clearTimeout(timer);
+        } catch { cancellationResult = invalidTimers(); }
       },
     },
   };
@@ -422,7 +429,9 @@ function createShutdownTimeout(timeoutMs: number, timers: AuditTimerProvider): A
 
 function unrefShutdownTimer(timer: AuditTimerHandle): AuditResult<void> {
   try {
-    if (typeof timer.unref === "function") timer.unref();
+    if (typeof timer.unref === "function") {
+      timer.unref();
+    }
     return { ok: true, value: undefined };
   } catch { return invalidTimers(); }
 }
@@ -431,9 +440,13 @@ function invalidTimers(): AuditResult<never> {
   return failure("SDK_INVALID_CONFIGURATION", "configuration", "/timers");
 }
 
+function invalidContextProvider(): AuditResult<never> {
+  return failure("SDK_INVALID_CONFIGURATION", "configuration", "/contextProvider");
+}
+
 function readActiveContext(provider: ContextProvider): AuditResult<AuditContextFrame | undefined> {
   try { return { ok: true, value: provider.get() }; }
-  catch { return failure("SDK_INVALID_CONFIGURATION", "configuration", "/contextProvider"); }
+  catch { return invalidContextProvider(); }
 }
 
 export function createSecurityAuditSdk(configuration: SecurityAuditSdkConfiguration): SecurityAuditSdk {

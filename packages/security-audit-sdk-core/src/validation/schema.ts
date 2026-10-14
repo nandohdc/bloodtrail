@@ -1,7 +1,7 @@
-import { CONTRACT_ERROR_CODES, SDK_ERROR_CODES, DERIVED_FIELD_PROVENANCE } from "../generated/contract.generated.js";
+import { CONTRACT_ERROR_CODES, DERIVED_FIELD_PROVENANCE } from "../generated/contract.generated.js";
 import validateSchema from "../generated/schema-validator.generated.cjs";
 import type { SecurityAuditEvent } from "../generated/contract.generated.js";
-import type { AuditErrorCategory, AuditResult } from "../errors.js";
+import type { AuditErrorCategory, AuditResult, SdkErrorCode } from "../errors.js";
 import { failure } from "../errors.js";
 import type { AuditSchemaRuntime } from "../providers.js";
 
@@ -43,8 +43,16 @@ export function validateSchemaStructure(value: unknown, schemaRuntime?: AuditSch
   }
 }
 
-const runtimeErrorCodes = new Set<string>([...SDK_ERROR_CODES, ...CONTRACT_ERROR_CODES]);
-const runtimeErrorCategories = new Set<string>(["configuration", "validation", "authority", "privacy", "lifecycle", "sink"]);
+const runtimeErrorCodes = new Set<string>([
+  ...CONTRACT_ERROR_CODES,
+  ...(["SDK_SCHEMA_VALIDATION_FAILED", "SDK_MISSING_EVENT_FIELD"] satisfies readonly SdkErrorCode[]),
+]);
+const verdictCategories = ["validation", "privacy"] as const satisfies readonly AuditErrorCategory[];
+const runtimeErrorCategories = new Set<string>(verdictCategories);
+
+function isVerdictCategory(value: unknown): value is typeof verdictCategories[number] {
+  return typeof value === "string" && runtimeErrorCategories.has(value);
+}
 
 function isRuntimeRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -58,8 +66,8 @@ function sanitizeRuntimeFailure(error: unknown): AuditResult<never> {
   if (!isRuntimeRecord(error)) return invalidSchemaRuntime();
   const { code, category, path } = error;
   if (typeof code !== "string" || !runtimeErrorCodes.has(code)) return invalidSchemaRuntime();
-  if (typeof category !== "string" || !runtimeErrorCategories.has(category)) return invalidSchemaRuntime();
-  return failure(code, category as AuditErrorCategory, typeof path === "string" ? path : undefined);
+  if (!isVerdictCategory(category)) return invalidSchemaRuntime();
+  return failure(code, category, typeof path === "string" ? path : undefined);
 }
 
 interface StandaloneValidationError {
