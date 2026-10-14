@@ -49,7 +49,7 @@ A failure never carries a value you passed in, a message from your sink, or a st
 ### `SDK_INVALID_CONFIGURATION`
 
 **Meaning.** A configuration value, or a value passed to an authority constructor, is missing or has
-the wrong shape.
+the wrong shape. It is also returned for a runtime context-provider, schema-runtime or timer fault.
 
 **Common causes.**
 
@@ -65,16 +65,26 @@ the wrong shape.
 - An authority constructor got an empty required string, such as `authoritativeTenant` with a `tenant`
   scope and an empty `effective_tenant_id`.
 
-**Fix.** Correct the field that `path` names.
+- `ContextProvider.get()` throws: returned by a named call at `/contextProvider`.
+- A configured or global schema runtime throws or returns a non-result or malformed failure:
+  returned by the validating call at `/schemaRuntime`.
+- A shutdown timer's `setTimeout` throws or returns `null`/`undefined`, or its `unref` or
+  `clearTimeout` throws: returned by shutdown at `/timers`. Arming failure immediately reaches
+  `shut_down` without waiting, flushing or calling sink shutdown. An `unref` fault continues
+  bounded shutdown work; unref/cleanup faults override only success, not an earlier sink failure
+  or shutdown timeout. Every outcome is terminal and a later shutdown returns `SDK_SHUT_DOWN`.
 
-**Fields.** It is thrown when the SDK or the constructor's value is created. `category` is
-`configuration`. `path` names the field, such as `/sink`, `/transformations/0/path` or
-`/tenant/effective_tenant_id`.
+**Fix.** Correct the field or provider that `path` names.
+
+**Fields.** It is thrown when the SDK or the constructor's value is created, but returned by calls
+for the runtime provider faults above. `category` is `configuration`. `path` names the field,
+such as `/sink`, `/transformations/0/path`, `/tenant/effective_tenant_id`, `/contextProvider`,
+`/schemaRuntime` or `/timers`.
 
 ### `SDK_INVALID_INPUT`
 
 **Meaning.** A value is not plain data that the SDK can copy. The SDK accepts strings, finite numbers,
-booleans, `null`, dense arrays and plain objects.
+booleans, `null`, dense arrays and plain objects. A provider fault never produces this code.
 
 **Common causes.**
 
@@ -332,7 +342,7 @@ does not call the sink's `flush` or `shutdown`.
 
 ### `SDK_INVALID_IDENTIFIER`
 
-**Meaning.** An identifier is malformed, or repeats one this SDK instance used recently.
+**Meaning.** An identifier is malformed, repeats one this SDK instance used recently, or its provider throws.
 
 **Common causes.**
 
@@ -343,6 +353,11 @@ does not call the sink's `flush` or `shutdown`.
 - A generated operation, transaction or correlation identifier that is empty, longer than 128
   characters, or not printable ASCII. The path names it under `/operation`.
 
+- A custom `identifiers` function throws: `/event/id` for named event allocation;
+  `/correlation/operation_id` or `/correlation/correlation_id` for named correlation fallbacks;
+  `/operation/operation_id`, `/operation/transaction_id` or `/operation/correlation_id` for
+  `beginOperation`. Supplied IDs bypass the provider and the first fault wins.
+
 **Fix.** Use the Node binding's default identifiers unless you need your own. A custom provider must
 return a fresh UUID for each event. Do not reuse an operation identifier.
 
@@ -350,10 +365,10 @@ return a fresh UUID for each event. Do not reuse an operation identifier.
 
 ### `SDK_INVALID_CLOCK`
 
-**Meaning.** The configured clock did not return a valid `Date`.
+**Meaning.** The configured clock throws or does not return a valid `Date`.
 
-**Common causes.** A custom `clock.now()` that returns a string, a number, or an invalid date such as
-`new Date("")`.
+**Common causes.** A custom `clock.now()` throws or does not return a valid `Date`, for example
+returning a string, a number, or an invalid date such as `new Date("")`.
 
 **Fix.** Return a valid `Date` from `now()`, or use the default clock.
 

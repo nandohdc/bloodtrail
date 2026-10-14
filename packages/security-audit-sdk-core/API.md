@@ -303,6 +303,24 @@ Caller value data uses a JSON-shaped canonical subset: finite numbers, strings, 
 
 `SDK_INVALID_INPUT` reports unsupported value types or unsafe access/clone/normalization at event, context, authority, operation, and generic validation boundaries. Configuration construction preserves its throwing compatibility and uses bounded `SDK_INVALID_CONFIGURATION`. `FIELD_SERIALIZATION_FAILED` reports values such as nested `BigInt` or cycles that cannot produce the canonical serialized representation. `FIELD_LIMIT_EXCEEDED` is reserved for a supported, successfully serialized value whose UTF-8 bytes, array length, depth, or configured field limit is objectively exceeded.
 
+### Provider faults
+
+At result-returning boundaries (`beginOperation`, every named method, `emit`, `redeliver`, `shutdown` and the free `validateSecurityAuditEvent`), a provider fault is never `SDK_INVALID_INPUT`. Caller-input faults retain that code. Provider errors are contained without returning their object, message or stack, and a provider fault never reaches the sink.
+
+| Provider fault | Code / category / path |
+|---|---|
+| `beginOperation` operationId, transactionId or correlationId throws | `SDK_INVALID_IDENTIFIER` / `validation` / `/operation/operation_id`, `/operation/transaction_id` or `/operation/correlation_id`; first fault wins, supplied IDs bypass calls |
+| Named eventId throws | `SDK_INVALID_IDENTIFIER` / `validation` / `/event/id` |
+| Named operationId or correlationId throws | `SDK_INVALID_IDENTIFIER` / `validation` / `/correlation/operation_id` or `/correlation/correlation_id` |
+| Clock throws or does not return a valid `Date` | `SDK_INVALID_CLOCK` / `configuration` / `/clock` |
+| ContextProvider.get throws | `SDK_INVALID_CONFIGURATION` / `configuration` / `/contextProvider` |
+| Configured/global schema runtime throws or returns a non-result | `SDK_INVALID_CONFIGURATION` / `configuration` / `/schemaRuntime` |
+| setTimeout throws/null/undefined, or unref/clearTimeout throws | `SDK_INVALID_CONFIGURATION` / `configuration` / `/timers`, with precedence below |
+
+An unarmed shutdown timer fails closed immediately to `shut_down`: no waiting, sink flush or sink shutdown. Any non-nullish handle, including a number, is valid; missing/non-callable `unref` degrades gracefully. A throwing `unref` leaves the armed deadline in place and shutdown work continues. An `unref` or `clearTimeout` fault reports `/timers` only if work succeeded; an earlier `SDK_SHUTDOWN_TIMEOUT` or `SDK_SINK_FAILURE` wins. Every outcome reaches `shut_down`, a later shutdown returns `SDK_SHUT_DOWN`, concurrent shutdown remains single-flight, and sink lifecycle methods remain at-most-once.
+
+A schema runtime success must explicitly have `ok: true`. A failure must have `ok: false`, a code in `SDK_ERROR_CODES` or `CONTRACT_ERROR_CODES`, and category `configuration`, `validation`, `authority`, `privacy`, `lifecycle` or `sink`. It is rebuilt through `failure(code, category, path)`, passing path only when a string so it is bounded, and dropping all other fields. Otherwise it is a `/schemaRuntime` provider fault. Default-runtime diagnostics and named runtime selection are unchanged. Invalid construction still throws `SecurityAuditSdkError`; redelivery still calls neither identifiers nor clock.
+
 Getter, Proxy, and clone failures never expose their original name, message, stack, cause, value, or runtime-specific `DOMException`/`DataCloneError` detail. Accessors are rejected without invocation. Input failure occurs before sink handoff and before terminal completion reservation; correcting the value and retrying is allowed by the existing operation policy. This boundary does not claim that arbitrary hostile JavaScript objects can be made safe.
 
 Contract codes are exported as `CONTRACT_ERROR_CODES`; SDK lifecycle/package codes are exported as `SDK_ERROR_CODES`. Additions, meaning changes, and removals follow [MIGRATION.md](./MIGRATION.md).
