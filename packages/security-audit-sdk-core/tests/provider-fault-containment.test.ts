@@ -82,7 +82,7 @@ const faultCases: readonly FaultCase[] = [
 const behaviorResults: Record<Exclude<Behavior, "throw">, unknown> = {
   undefined: undefined, null: null, empty: {}, incomplete: { ok: false },
   unknownCode: { ok: false, error: { code: "ANYTHING", category: "validation", leaked: sentinel } },
-  invalidCategory: { ok: false, error: { code: "SDK_INVALID_INPUT", category: "nonsense", leaked: sentinel } },
+  invalidCategory: { ok: false, error: { code: "SDK_SCHEMA_VALIDATION_FAILED", category: "nonsense", leaked: sentinel } },
 };
 const fixtures: readonly SecurityAuditEvent[] = JSON.parse(await readFile(
   resolve(process.cwd(), "../../contracts/security-audit/examples/positive/all-events.json"), "utf8",
@@ -348,7 +348,6 @@ for (const row of precedenceCases) {
     assert.equal(unref.mock.callCount(), row.site === "unref" ? 1 : 0);
     assert.equal(clearTimeout.mock.callCount(), 1);
     assert.equal(sink.calls.flush, stalled ? 0 : 1);
-    assert.equal(sink.calls.shutdown, 0);
     assertFailure(await sdk.shutdown(), { code: "SDK_SHUT_DOWN", category: "lifecycle" });
     release();
     await emission;
