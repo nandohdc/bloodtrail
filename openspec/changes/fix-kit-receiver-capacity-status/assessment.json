@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.1",
+  "change_id": "fix-kit-receiver-capacity-status",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Name bounded capacity backpressure without permanently discarding later-admissible evidence.",
+    "Distinguish capacity from conflict while preserving unknown diagnostic fallback and frozen surfaces.",
+    "Prove the real installed receiver boundary without exhausting other probes or changing the cap."
+  ],
+  "applicability": {
+    "triggers_matched": ["canonical_capability_requirement"],
+    "material_capability_modification": true,
+    "capabilities": ["security-audit-sdk-node"]
+  },
+  "owned_paths": [
+    "openspec/changes/fix-kit-receiver-capacity-status/.openspec.yaml",
+    "openspec/changes/fix-kit-receiver-capacity-status/proposal.md",
+    "openspec/changes/fix-kit-receiver-capacity-status/design.md",
+    "openspec/changes/fix-kit-receiver-capacity-status/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/fix-kit-receiver-capacity-status/tasks.md",
+    "openspec/changes/fix-kit-receiver-capacity-status/assessment.json",
+    "packages/security-audit-sdk-node/examples/evaluation-receiver.ts",
+    "packages/security-audit-sdk-node/scripts/evaluation-kit-delivery-checks.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-receiver-controls.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit.mjs",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-controls.mjs",
+    "packages/security-audit-sdk-node/docs/wire-protocol.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-code-429-isolated",
+      "kind": "direct_implementation",
+      "summary": "Delegated Claude recommendation, subject to owner override, not personal owner approval: match capacity by code with 429 and use an isolated receiver. Source: owner decision, 2026-10-14, via overnight planning in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E",
+      "forces_addressed": [
+        "Name bounded capacity backpressure without permanently discarding later-admissible evidence.",
+        "Distinguish capacity from conflict while preserving unknown diagnostic fallback and frozen surfaces.",
+        "Prove the real installed receiver boundary without exhausting other probes or changing the cap."
+      ]
+    },
+    {
+      "id": "approach-503",
+      "kind": "alternative",
+      "summary": "Answer 503 for capacity as general service unavailability.",
+      "forces_addressed": ["Name bounded capacity backpressure without permanently discarding later-admissible evidence."]
+    },
+    {
+      "id": "approach-permanent-4xx",
+      "kind": "alternative",
+      "summary": "Treat capacity as permanent rejection.",
+      "forces_addressed": ["Name bounded capacity backpressure without permanently discarding later-admissible evidence."]
+    },
+    {
+      "id": "approach-category",
+      "kind": "alternative",
+      "summary": "Map the deduplication category to 429.",
+      "forces_addressed": ["Distinguish capacity from conflict while preserving unknown diagnostic fallback and frozen surfaces."]
+    },
+    {
+      "id": "approach-shared-probe",
+      "kind": "alternative",
+      "summary": "Fill the careful-ingress receiver's existing ledger for the capacity probe.",
+      "forces_addressed": ["Prove the real installed receiver boundary without exhausting other probes or changing the cap."]
+    }
+  ],
+  "selected_approach_id": "approach-code-429-isolated",
+  "rejected_alternative_ids": ["approach-503", "approach-permanent-4xx", "approach-category", "approach-shared-probe"],
+  "rejection_reasons": {
+    "approach-503": {
+      "forces": ["Name bounded capacity backpressure without permanently discarding later-admissible evidence."],
+      "reason": "503 is retryable but names general service unavailability rather than bounded deduplication backpressure."
+    },
+    "approach-permanent-4xx": {
+      "forces": ["Name bounded capacity backpressure without permanently discarding later-admissible evidence."],
+      "reason": "A permanent 4xx maps to SDK_SINK_REJECTED/http_permanent and drops evidence that would be admissible after ledger expiry."
+    },
+    "approach-category": {
+      "forces": ["Distinguish capacity from conflict while preserving unknown diagnostic fallback and frozen surfaces."],
+      "reason": "Conflict shares the deduplication category; category matching cannot name capacity without mislabeling other refusals."
+    },
+    "approach-shared-probe": {
+      "forces": ["Prove the real installed receiver boundary without exhausting other probes or changing the cap."],
+      "reason": "Prior identities make the 33rd-event boundary order-dependent and exhausting the shared ledger could starve routing and abort probes."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": ["implementation-named-capacity", "implementation-sensitive-control", "implementation-preserved-scope"],
+  "invariant_evidence": {
+    "implementation-named-capacity": {
+      "task_ids": ["2.1", "3.1", "5.1"],
+      "evidence_ids": [
+        "npm run validate --prefix packages/security-audit-sdk-node and make test: exit 0; loopback-example-exchange reports 32 distinct identities acknowledged with 200, identities 33 and 34 received 429 deduplication_capacity without Retry-After, health remained 200/healthy, and an admitted duplicate acknowledged with 200 without another admission",
+        "evaluation-kit-delivery-checks.mjs: dedicated fresh installed receiver asserts exact fixed JSON, single matching accepted acknowledgments, absent retry-after, health counts (32,0,2) then (32,1,2), and finally cleanup; tasks.md records observed pre-evidence-commit verification"
+      ]
+    },
+    "implementation-sensitive-control": {
+      "task_ids": ["3.2", "5.1"],
+      "evidence_ids": [
+        "test:kit-controls: receiver control verified at loopback-example-exchange: deduplication capacity: expected 429, got 500 (one measured plant)",
+        "test:kit-controls: evaluation kit negative controls passed: 90 measured plants across 81 of 81 controls; capacity control counted once, measured source mutation and tagged gate rejection validated; infrastructure/disabled-check fail-closed and summary/symlink proofs passed; Node validate and make test exit 0"
+      ]
+    },
+    "implementation-preserved-scope": {
+      "task_ids": ["1.2", "4.1", "5.1", "5.2"],
+      "evidence_ids": [
+        "Before planning commit: node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change fix-kit-receiver-capacity-status and openspec validate fix-kit-receiver-capacity-status --strict both exit 0; exact stdout recorded in tasks.md",
+        "Supplied exact tamandua-test wrapper executed, not cached, on clean four-commit runtime/test/docs tree: exit 0 for all ten conjuncts; tasks.md records each command and observed stdout, initial corrected gate failures, build exit 0 and strict consumer TypeScript 5.9.2/6.0.3/7.0.2 verification",
+        "Node validate: 162 tests passed; frozen 19 value/44 type-only exports; collector 92 and contract 17 passed; generated SDK contract artifacts are current; changed-path policy passed; make test passed across every declared workspace",
+        "Final governance: design-pattern governance passed in final phase: enforcement active; inspected 4 commit(s) and 12 path(s) from origin/main; Git whitespace/final-newline checks passed and index is empty",
+        "CodeScene CLI 1.0.53 supplied cs53-check.sh delta: exit 0; no findings; cs delta exit=0; git diff --check exit 0; only 12 declared owned paths changed"
+      ]
+    }
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "Only the example's fixed refusal naming changes; no event is newly admitted, discarded, rewritten or acknowledged by the collector.",
+    "authentication_or_authorization": "Bearer parsing, synthetic fixture authentication and SDK validation are unchanged; capacity is still considered only after existing admission checks.",
+    "authority_provenance": "Sender identity and diagnostic authority remain collector-owned; the receiver matches the existing code without upgrading caller input to authority.",
+    "concurrency": "No reservation or concurrency changes; the existing synchronous ledger and request lifecycle remain intact.",
+    "confidentiality": "The response exposes only a fixed capacity reason, never event contents, credentials or supplied data.",
+    "cryptography": "No cryptographic primitive or identifier generation changes; positive probes use fresh random UUIDs through the existing helper.",
+    "error_disclosure": "The new body is exactly the bounded deduplication_capacity constant; no diagnostic paths or caller data cross the wire.",
+    "external_security_integration": "No external security service is added; verification uses disposable installed kits and loopback-only synthetic receivers.",
+    "fail_posture": "The capacity refusal remains fail-closed with no admission; unknown diagnostics retain the 500 ingress_rejected fallback.",
+    "lifecycle": "No receiver or SDK lifecycle policy changes; the isolated probe cleans its child in finally and retains existing health semantics.",
+    "mutation_ownership": "Collector ledger ownership and event copying remain unchanged; source mutation exists only in the existing disposable negative-control harness.",
+    "privacy_transformation": "SDK validation and sanitization are unchanged; probes clone synthetic valid fixtures with fresh identifiers.",
+    "resource_retention": "The no-storage cap remains 32 identities for 300 s as ratified by #478; no storage, cap, clock or retention edits occur.",
+    "retry_or_redelivery": "Shared 429 classification remains http_retryable/SDK_SINK_FAILURE; no automatic retry or Retry-After reading is added, and admitted duplicates still acknowledge.",
+    "trust_boundary": "Only the example's mapping of a trusted collector diagnostic to a fixed HTTP answer changes; request parsing and ingress trust boundaries remain intact."
+  },
+  "ordering": {"proposal_baseline_commit": "6ee6f57037466ac80fd0b9b181f6e881cde62520"},
+  "verification_task_ids": ["1.2", "3.1", "3.2", "4.1", "5.1", "5.2"]
+}

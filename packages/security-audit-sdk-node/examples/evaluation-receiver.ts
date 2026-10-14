@@ -129,6 +129,9 @@ function admit(state: ReceiverState, credentials: unknown, body: string): Reply 
   if (result.diagnostic.code === DIAGNOSTIC_CODES.DUPLICATE_CONFLICT) {
     return reject(state, 409, "conflict");
   }
+  if (result.diagnostic.code === DIAGNOSTIC_CODES.DEDUPLICATION_CAPACITY) {
+    return reject(state, 429, "deduplication_capacity");
+  }
   return reject(state, STATUS_BY_INGRESS_CATEGORY[result.diagnostic.category] ?? 500, "ingress_rejected");
 }
 
