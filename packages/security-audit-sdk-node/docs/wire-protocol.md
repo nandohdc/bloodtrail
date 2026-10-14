@@ -118,6 +118,7 @@ The following table maps each transport condition and peer response to its SDK r
 | **Request Timeout** | `408` | `SDK_SINK_FAILURE` | `http_retryable` | Retryable failure | No | Yes (`outcome.eventId`) | Receiver timed out waiting for request |
 | **Too Early** | `425` | `SDK_SINK_FAILURE` | `http_retryable` | Retryable failure | No | Yes (`outcome.eventId`) | Receiver refused request to prevent replay attacks |
 | **Rate Limited** | `429` | `SDK_SINK_FAILURE` | `http_retryable` | Retryable failure | No | Yes (`outcome.eventId`) | Receiver rate limit or load backpressure exceeded |
+| **Deduplication Capacity** | `429` | `SDK_SINK_FAILURE` | `http_retryable` | Retryable failure | No | Yes (`outcome.eventId`) | Example receiver's no-storage deduplication ledger is full; exactly `{"error":"deduplication_capacity"}` |
 | **Server Error** | `500`, `502`, `503`, `504` | `SDK_SINK_FAILURE` | `http_retryable` | Retryable failure | No | Yes (`outcome.eventId`) | Internal server error or gateway failure at receiver |
 | **Client Timeout** | None (peer slower than `timeoutMs` before or during response body) | `SDK_SINK_FAILURE` | `timeout` | Transport timeout | No | Yes (`outcome.eventId`) | HTTP exchange timed out before peer response settled or during response body read |
 | **Transport Failure** | None (connection refused, DNS failure, socket reset, or a non-deadline error while reading the response body, such as a reset, short body, or malformed chunked encoding) | `SDK_SINK_FAILURE` | `transport_failure` | Transport failure | No | Yes (`outcome.eventId`) | TCP connection refused or dropped by peer, or a non-deadline response-body read failed |
@@ -129,11 +130,20 @@ The following table maps each transport condition and peer response to its SDK r
 A receiver answers a duplicate as it answered the original, with one `accepted` acknowledgment, so a redelivery after a
 lost acknowledgment succeeds. The kit's example receiver does exactly that. It answers the other rejections with the
 status that names them: `401` for failed authentication, `413` for a body over its bound, `400` for a malformed body,
-`409` for a conflict, and `422` for an event that fails SDK validation or has an unsupported version. It authenticates
+`409` for a conflict, `429` with `{"error":"deduplication_capacity"}` for deduplication capacity, and `422` for an event
+that fails SDK validation or has an unsupported version. It authenticates
 only the Bearer scheme in any letter case, so any other `Authorization` value gets `401`; it answers a POST to any
 path other than the submission path with `404` and admits nothing; and it answers any other method with `405` and an
 `Allow: POST` header. Whatever the answer, it reads a body within its bound before answering and, past the bound,
 answers and closes the connection. A client that aborts mid-body is counted as neither a `500` nor a rejection.
+
+Without storage, the example receiver's collector retains at most 32 distinct identities for 300 s, as ratified in
+#478. A new identity while that ledger is full receives the named capacity refusal above, with no `Retry-After`
+header. The SDK classifies `429` as `http_retryable` and reports `SDK_SINK_FAILURE`; it does not read `Retry-After`.
+An explicit caller retry (automatic delivery retry remains planned) while the ledger remains full inside the 300 s
+window meets the same refusal. A byte-identical duplicate of an admitted event is still acknowledged at capacity,
+without another admission, and health remains responsive. Automatic delivery retry remains planned and is not added
+by this classification.
 
 ---
 
