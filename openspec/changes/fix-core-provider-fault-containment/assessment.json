@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.1",
+  "change_id": "fix-core-provider-fault-containment",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Every provider fault must be contained and attributed without raw error disclosure.",
+    "Shutdown must terminate with a deadline and preserve earlier failures.",
+    "Preserve frozen public surface, runtime selection and caller-input semantics."
+  ],
+  "applicability": {
+    "triggers_matched": ["lifecycle_or_state", "security_sensitive_behavior", "canonical_capability_requirement"],
+    "material_capability_modification": true,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [
+    "openspec/changes/fix-core-provider-fault-containment/.openspec.yaml",
+    "openspec/changes/fix-core-provider-fault-containment/proposal.md",
+    "openspec/changes/fix-core-provider-fault-containment/design.md",
+    "openspec/changes/fix-core-provider-fault-containment/specs/security-audit-sdk-core/spec.md",
+    "openspec/changes/fix-core-provider-fault-containment/tasks.md",
+    "openspec/changes/fix-core-provider-fault-containment/assessment.json",
+    "packages/security-audit-sdk-core/src/sdk.ts",
+    "packages/security-audit-sdk-core/src/events.ts",
+    "packages/security-audit-sdk-core/src/operations.ts",
+    "packages/security-audit-sdk-core/src/validation/schema.ts",
+    "packages/security-audit-sdk-core/tests/provider-fault-containment.test.ts",
+    "packages/security-audit-sdk-core/API.md",
+    "packages/security-audit-sdk-core/MIGRATION.md",
+    "packages/security-audit-sdk-core/CONTEXT.md",
+    "packages/security-audit-sdk-core/adr/015-injected-provider-failures-are-contained.md",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-node/docs/error-catalog.md"
+  ],
+  "candidate_approaches": [
+    {"id": "approach-local-containment", "kind": "direct_implementation", "summary": "Contain provider invocation at existing module seams and rebuild bounded provider-specific results.", "forces_addressed": ["Every provider fault must be contained and attributed without raw error disclosure.", "Shutdown must terminate with a deadline and preserve earlier failures.", "Preserve frozen public surface, runtime selection and caller-input semantics."]},
+    {"id": "approach-new-provider-code", "kind": "alternative", "summary": "Add SDK_PROVIDER_FAILURE for every provider failure.", "forces_addressed": ["Preserve frozen public surface, runtime selection and caller-input semantics."]},
+    {"id": "approach-uniform-configuration", "kind": "alternative", "summary": "Use SDK_INVALID_CONFIGURATION for every failure or retain SDK_INVALID_INPUT for named faults.", "forces_addressed": ["Every provider fault must be contained and attributed without raw error disclosure."]},
+    {"id": "approach-unbounded-drain", "kind": "alternative", "summary": "Drain without an armed timer or stay ready when timeout arming fails.", "forces_addressed": ["Shutdown must terminate with a deadline and preserve earlier failures."]},
+    {"id": "approach-pass-through", "kind": "alternative", "summary": "Pass runtime errors through and ignore timer cleanup faults; defer unusable returns and sanitization.", "forces_addressed": ["Every provider fault must be contained and attributed without raw error disclosure.", "Shutdown must terminate with a deadline and preserve earlier failures."]}
+  ],
+  "selected_approach_id": "approach-local-containment",
+  "rejected_alternative_ids": ["approach-new-provider-code", "approach-uniform-configuration", "approach-unbounded-drain", "approach-pass-through"],
+  "rejection_reasons": {
+    "approach-new-provider-code": {"forces": ["Preserve frozen public surface, runtime selection and caller-input semantics."], "reason": "A new code expands the surface unnecessarily; existing identifier, clock and configuration diagnostics already describe unusable providers."},
+    "approach-uniform-configuration": {"forces": ["Every provider fault must be contained and attributed without raw error disclosure."], "reason": "Uniform configuration loses established identifier and clock semantics; retaining caller-input classification falsely blames the consumer."},
+    "approach-unbounded-drain": {"forces": ["Shutdown must terminate with a deadline and preserve earlier failures."], "reason": "Unbounded drain has no termination guarantee; staying ready accepts work after shutdown request instead of failing closed to shut_down."},
+    "approach-pass-through": {"forces": ["Every provider fault must be contained and attributed without raw error disclosure.", "Shutdown must terminate with a deadline and preserve earlier failures."], "reason": "Pass-through leaks arbitrary fields and codes. Ignoring timer faults conceals failure, and deferring bad returns or sanitization leaves the same public boundary unprotected."}
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": ["implementation-provider-attribution", "implementation-terminal-shutdown", "implementation-preserved-boundaries"],
+  "invariant_evidence": {
+    "implementation-provider-attribution": {"task_ids": ["2.1", "3.1", "3.2", "5.1"], "evidence_ids": ["Planned: provider-fault-containment.test.ts explicit site matrix and sanitizer controls; executed results will be recorded after verification."]},
+    "implementation-terminal-shutdown": {"task_ids": ["2.2", "3.1", "3.2", "5.1"], "evidence_ids": ["Planned: timer matrix, sink/timeout precedence and terminal-state controls; no passing run claimed yet."]},
+    "implementation-preserved-boundaries": {"task_ids": ["1.2", "2.3", "4.1", "5.1", "5.2"], "evidence_ids": ["Planned: strict validation, mutation anchors/suites, full TEST_CMD, exact 17-path ownership and ordered commit checks."]}
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Faulty host capabilities cannot produce an event delivered to the sink; existing validation and operation evidence remain authoritative.",
+    "authentication_or_authorization": "No authentication or authorization evaluation changes. Provider exceptions become bounded results rather than misattributed caller failures.",
+    "authority_provenance": "Same-instance operation evidence and branded context remain unchanged; lifecycle and operation authority resolution still precede context provider invocation.",
+    "concurrency": "Preserve shutdown single-flight, event reservations and at-most-once sink lifecycle calls; timer fault tracking does not introduce a second drain.",
+    "confidentiality": "Provider error objects, messages and extra schema failure fields never cross the result boundary; only bounded diagnostics remain.",
+    "cryptography": "No cryptographic algorithm or identifier policy changes. Existing provider-generated identifiers retain validation and retention checks.",
+    "error_disclosure": "Catch without inspecting thrown values; rebuild known-code valid-category schema failures with bounded string paths and no extra fields.",
+    "external_security_integration": "Node provider runtime and collector remain untouched; Node error catalog documents the core provider diagnostics only.",
+    "fail_posture": "An unarmed timer fails closed immediately, without sink lifecycle calls or unbounded draining; non-results cannot bypass schema validation.",
+    "lifecycle": "Every shutdown outcome reaches shut_down; unref and cleanup faults preserve earlier timeout or sink failures and later calls remain refused.",
+    "mutation_ownership": "No caller mutation establishes operation evidence. Existing mutation anchors remain exact and their unchanged verification suites must pass.",
+    "privacy_transformation": "Transformation-hook and sink failure contracts remain intact; schema error sanitization drops provider-controlled extra fields.",
+    "resource_retention": "No new retention store or capacity change. Shutdown cancellation is contained and the existing deadline bounds in-flight waiting.",
+    "retry_or_redelivery": "Redelivery does not invoke identifiers or clock. Named runtime selection and retry identity anchors remain unchanged; #816 is excluded.",
+    "trust_boundary": "Provider faults are attributed to fixed host capabilities, never caller input. Caller throwing getters keep SDK_INVALID_INPUT semantics."
+  },
+  "ordering": {"proposal_baseline_commit": "6ee6f57037466ac80fd0b9b181f6e881cde62520"},
+  "verification_task_ids": ["1.2", "2.3", "3.1", "3.2", "5.1", "5.2"]
+}
