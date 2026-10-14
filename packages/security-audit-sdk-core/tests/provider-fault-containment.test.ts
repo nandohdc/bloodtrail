@@ -56,6 +56,8 @@ const faultCases: readonly FaultCase[] = [
   { entry: "named", site: "schema", behavior: "throw", expected: schemaError },
   { entry: "named", site: "schema", behavior: "undefined", expected: schemaError },
   { entry: "named", site: "globalSchema", behavior: "throw", expected: schemaError },
+  { entry: "named", site: "globalSchema", behavior: "undefined", expected: schemaError },
+  { entry: "named", site: "globalSchema", behavior: "incomplete", expected: schemaError },
   { entry: "emit", site: "schema", behavior: "throw", expected: schemaError },
   { entry: "emit", site: "schema", behavior: "undefined", expected: schemaError },
   { entry: "emit", site: "schema", behavior: "empty", expected: schemaError },
@@ -63,8 +65,14 @@ const faultCases: readonly FaultCase[] = [
   { entry: "emit", site: "schema", behavior: "unknownCode", expected: schemaError },
   { entry: "emit", site: "schema", behavior: "invalidCategory", expected: schemaError },
   { entry: "redeliver", site: "schema", behavior: "throw", expected: schemaError },
+  { entry: "redeliver", site: "schema", behavior: "undefined", expected: schemaError },
+  { entry: "redeliver", site: "schema", behavior: "incomplete", expected: schemaError },
   { entry: "validate", site: "schema", behavior: "throw", expected: schemaError },
+  { entry: "validate", site: "schema", behavior: "undefined", expected: schemaError },
+  { entry: "validate", site: "schema", behavior: "incomplete", expected: schemaError },
   { entry: "validate", site: "globalSchema", behavior: "throw", expected: schemaError },
+  { entry: "validate", site: "globalSchema", behavior: "undefined", expected: schemaError },
+  { entry: "validate", site: "globalSchema", behavior: "incomplete", expected: schemaError },
   { entry: "shutdown", site: "setTimeout", behavior: "throw", expected: timerError },
   { entry: "shutdown", site: "setTimeout", behavior: "undefined", expected: timerError },
   { entry: "shutdown", site: "setTimeout", behavior: "null", expected: timerError },
@@ -187,9 +195,9 @@ async function assertShutdownFault(harness: FaultHarness): Promise<void> {
   assert.equal(harness.calls.shutdown, lifecycleCalls);
 }
 
-test("provider-fault site matrix has exactly 25 explicit rows", () => {
-  assert.equal(faultCases.length, 25);
-  assert.equal(new Set(faultCases.map((row) => `${row.entry}/${row.site}/${row.behavior}`)).size, 25);
+test("provider-fault site matrix has exactly 33 explicit rows", () => {
+  assert.equal(faultCases.length, 33);
+  assert.equal(new Set(faultCases.map((row) => `${row.entry}/${row.site}/${row.behavior}`)).size, 33);
 });
 
 for (const row of faultCases) {
@@ -213,11 +221,22 @@ interface RuntimeFailureCase { readonly returned: unknown; readonly expected: Sa
 const sanitizedFailures: readonly RuntimeFailureCase[] = [
   { returned: { ok: false, error: { code: "FIELD_LIMIT_EXCEEDED", category: "validation", path: "/" + "x".repeat(800), leaked: sentinel } },
     expected: { code: "FIELD_LIMIT_EXCEEDED", category: "validation", path: "/" + "x".repeat(159) } },
-  { returned: { ok: false, error: { code: "SDK_INVALID_INPUT", category: "authority", path: 42, leaked: sentinel } },
-    expected: { code: "SDK_INVALID_INPUT", category: "authority" } },
+  { returned: { ok: false, error: { code: "PROHIBITED_DATA", category: "privacy", path: "/secret", leaked: sentinel } },
+    expected: { code: "PROHIBITED_DATA", category: "privacy", path: "/secret" } },
+  { returned: { ok: false, error: { code: "SDK_MISSING_EVENT_FIELD", category: "validation", path: "/event", leaked: sentinel } },
+    expected: { code: "SDK_MISSING_EVENT_FIELD", category: "validation", path: "/event" } },
+  { returned: { ok: false, error: { code: "SDK_SCHEMA_VALIDATION_FAILED", category: "validation", path: 42, leaked: sentinel } },
+    expected: { code: "SDK_SCHEMA_VALIDATION_FAILED", category: "validation" } },
+  { returned: { ok: false, error: { code: "SDK_SHUT_DOWN", category: "lifecycle", path: "/", leaked: sentinel } }, expected: schemaError },
+  { returned: { ok: false, error: { code: "SDK_INVALID_INPUT", category: "validation", path: "/", leaked: sentinel } }, expected: schemaError },
+  { returned: { ok: false, error: { code: "SDK_INVALID_CONFIGURATION", category: "configuration", path: "/", leaked: sentinel } }, expected: schemaError },
+  { returned: { ok: false, error: { code: "PROHIBITED_DATA", category: "authority", path: "/", leaked: sentinel } }, expected: schemaError },
 ];
-for (const row of sanitizedFailures) {
-  test(`schema failure sanitizes ${row.expected.code}/${row.expected.category}`, async () => {
+test("schema sanitizer table has exactly eight explicit rows", () => {
+  assert.equal(sanitizedFailures.length, 8);
+});
+for (const [index, row] of sanitizedFailures.entries()) {
+  test(`schema failure row ${index + 1} sanitizes ${row.expected.code}/${row.expected.category}`, async () => {
     const sink = sinkProbe();
     const validate = mock.fn(() => row.returned as AuditResult<void>);
     const sdk = sdkFor(sink, { schemaRuntime: { validate } });
@@ -313,6 +332,47 @@ test("cleanup failure preserves stalled-emission timeout", async () => {
   expire();
   assertFailure(await invokeResult(() => shutdown), { code: "SDK_SHUTDOWN_TIMEOUT", category: "lifecycle" });
   assert.equal(sdk.state, "shut_down");
+  assert.equal(emit.mock.callCount(), 1);
+  assert.equal(clearTimeout.mock.callCount(), 1);
+  assert.equal(sink.calls.flush, 0);
+  assert.equal(sink.calls.shutdown, 0);
+  assertFailure(await sdk.shutdown(), { code: "SDK_SHUT_DOWN", category: "lifecycle" });
+  release();
+  await emission;
+});
+
+test("unref failure preserves sink failure", async () => {
+  const sink = sinkProbe();
+  const shutdown = mock.fn(async () => { throw new Error(sentinel); });
+  const unref = mock.fn(() => { throw new Error(sentinel); });
+  const clearTimeout = mock.fn();
+  const sdk = sdkFor(sink, { sink: { ...sink.sink, shutdown }, timers: { setTimeout: () => ({ unref }), clearTimeout } });
+  assertFailure(await invokeResult(() => sdk.shutdown()), { code: "SDK_SINK_FAILURE", category: "sink" });
+  assert.equal(unref.mock.callCount(), 1);
+  assert.equal(shutdown.mock.callCount(), 1);
+  assert.equal(clearTimeout.mock.callCount(), 1);
+  assert.equal(sink.calls.flush, 1);
+  assert.equal(sdk.state, "shut_down");
+  assertFailure(await sdk.shutdown(), { code: "SDK_SHUT_DOWN", category: "lifecycle" });
+});
+
+test("unref failure preserves stalled-emission timeout", async () => {
+  const sink = sinkProbe();
+  let expire = () => {};
+  let release = () => {};
+  const unref = mock.fn(() => { throw new Error(sentinel); });
+  const clearTimeout = mock.fn();
+  const emit = mock.fn(() => new Promise<{ status: "accepted" }>((resolve) => { release = () => resolve({ status: "accepted" }); }));
+  const sdk = sdkFor(sink, {
+    sink: { ...sink.sink, emit },
+    timers: { setTimeout(callback) { expire = callback; return { unref }; }, clearTimeout },
+  });
+  const emission = sdk.emit(fixture);
+  const shutdown = sdk.shutdown();
+  expire();
+  assertFailure(await invokeResult(() => shutdown), { code: "SDK_SHUTDOWN_TIMEOUT", category: "lifecycle" });
+  assert.equal(sdk.state, "shut_down");
+  assert.equal(unref.mock.callCount(), 1);
   assert.equal(emit.mock.callCount(), 1);
   assert.equal(clearTimeout.mock.callCount(), 1);
   assert.equal(sink.calls.flush, 0);
