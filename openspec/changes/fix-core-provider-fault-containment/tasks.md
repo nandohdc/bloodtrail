@@ -29,12 +29,13 @@ Decision source: owner decision, 2026-10-13, via grilling and triage in Claude C
 
 ## 6. Review follow-up (#811)
 
-- [ ] 6.1 G1: restore four exact F07 anchors and prove unchanged mutant kills; required-gate repair, not an owner decision.
-- [ ] 6.2 R-Q9: restrict schema diagnostics to contract/verdict codes and validation/privacy categories with typed guards.
-- [ ] 6.3 R-T: extend the fault matrix to 33 rows, sanitizer table to eight rows and add throwing-unref precedence controls.
-- [ ] 6.4 R-C: clarify unref outcome, terminal assignments, context helper and F11 rationale without new exports.
-- [ ] 6.5 R-D: align documentation, delta requirement and planning provenance; remove machine-local gate paths.
-- [ ] 6.6 Execute anchor audit, complete mutation verification, builds/typecheck, focused tests and all eight supplied gates; record observed evidence only.
+- [x] 6.1 G1: restore four exact F07 anchors and prove unchanged mutant kills; required-gate repair, not an owner decision.
+- [x] 6.2 R-Q9: restrict schema diagnostics to contract/verdict codes and validation/privacy categories with typed guards.
+- [x] 6.3 R-T: extend the fault matrix to 33 rows, sanitizer table to eight rows and add throwing-unref precedence controls.
+- [x] 6.4 R-C: clarify unref outcome, terminal assignments, context helper and F11 rationale without new exports.
+- [x] 6.5 R-D: align documentation, delta requirement and planning provenance; remove machine-local gate paths.
+- [x] 6.6 Execute anchor audit, complete mutation verification, builds/typecheck, focused tests and all eight supplied gates; record observed evidence only.
+- [x] 6.7 Correct kit document-references wording and parameterize duplicated precedence/correlation tests; preserve every case and assertion, add exact-count guards and pass kit verification and CodeScene delta.
 
 Follow-up decision source: owner decision, 2026-10-14, via code-review follow-up in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
 
@@ -89,3 +90,39 @@ Each command below exited 0 in that run:
 Build/typecheck, strict validation, final governance, Git-state and `git diff --check` reran successfully after the full sequence. Strict validation printed `Change 'fix-core-provider-fault-containment' is valid`; final governance inspected four commits and 17 paths, and Git-state again reported an empty index.
 
 External structural audit, exit 0: `ownership/subjects/path-groups/Refs/co-author/whitespace/index passed: 4 commits, 17 exact paths; default runtime body unchanged`. This checked the four executed exact subjects and their exclusive path groups, standalone Refs #811 and co-author footers, exact assessment ownership equality with the complete diff, LF/final newlines/no trailing whitespace, empty index and unchanged default-runtime implementation. Only this tasks file and assessment.json are updated for the fifth evidence commit. Committed-head checks will be executed and reported externally, not retroactively recorded as pre-commit evidence.
+
+## Observed review follow-up closure — 2026-10-14, run #130, Node v26.11.1
+
+The preceding observations are historical run #127 evidence. This section is fresh executed evidence for the inherited run #128 follow-up and the two run #130 corrections. Decisions remain exactly as cited above; no decisions were reopened. No source, verification test, checker, suppression or generated artifact was changed in run #130. The baseline is the supplied upstream `dd7ffe70ce519a2bd0e3e7b098878e46052c9107`, with its nine commits above `6ee6f57037466ac80fd0b9b181f6e881cde62520` retained. The provisioned branch has no upstream; no pull or baseline move occurred.
+
+### Corrective work and focused evidence (6.1–6.5, 6.7)
+
+- Audited the inherited R-Q9 typed code/category guards, `unrefResult`, the arming/normal terminal assignments, `invalidContextProvider()` and exact F11 rationale. Reviewed the inherited R-D documentation/provenance changes. These are inherited repairs, not new runtime work. Current matrix/sanitizer controls, typecheck and complete mutation verification below validate them.
+- Grepped all Node kit docs and README for backticked call-shaped references, then checked the installed-package document-references gate. Only `packages/security-audit-sdk-node/docs/error-catalog.md` needed changing: the schema failure is "rebuilt as a bounded SDK error carrying only its code, category and a bounded path". Allowed verdict codes/categories, string-only bounded path, dropped extra fields, `/schemaRuntime` fallback, default results and runtime selection remain unchanged. No ownership additions were necessary.
+- `npm run test:kit --prefix packages/security-audit-sdk-node`: exit 0 before the kit-doc commit. Observed excerpts: `evaluation kit verification passed:`; `every callee and identifier-shaped inline code span in the kit documents resolved against installed package type declarations, except 33 reviewed exceptions`.
+- `npm run build --prefix packages/security-audit-sdk-core` and `npm run typecheck --prefix packages/security-audit-sdk-core`: both exit 0 before the test commit; `generated SDK contract artifacts written` and `tsc -p tsconfig.json --noEmit`. Tracked generated artifacts remained unchanged. The supplied build chain for Core, Node, browser and collector also exited 0.
+- From Core, `./node_modules/.bin/tsc -p tsconfig.test.json && node --test dist-tests/provider-fault-containment.test.js`: before parameterization, exit 0 with `ℹ tests 69`, `ℹ pass 69`, `ℹ fail 0`; after parameterization, exit 0 with `ℹ tests 71`, `ℹ pass 71`, `ℹ fail 0`, `ℹ cancelled 0`, `ℹ skipped 0`. All six former precedence/fallback cases still run individually. The only count increase is two new exact-count guard tests.
+- Exact row totals: fault matrix 33, unique 33; sanitizer 8; precedence 4, unique 4 (`clearTimeout`/`unref` × sink failure/stalled-emission timeout); named correlation fallback 2, unique 2 (supplied correlation/operation handle); timestamp 3, legacy 3, valid timer handle 3. Tables are module-scoped. Precedence retains exact errors, no throw/rejection/sentinel, terminal/repeated shutdown, spies, lifecycle counts and pending-emission release/await. Correlation retains supplied IDs, nontransactional handle construction, zero unused-provider calls and exactly one emission. All other controls are unchanged.
+- CodeScene CLI 1.0.53 delta, the same gate CI's `codescene delta` job runs: exit 0 before the test commit; `no findings`, `cs delta exit=0`.
+- External exact-anchor audit on the unchanged inherited source: every F07/F08/F10/F11 mutation anchor occurs once, including both uses of the shared redelivery anchor and F10 guard variants. Observed: `all exact anchors occur once: 25 mutation rows, 23 unique file/anchor pairs`. Each of the 25 row counts was 1; full mutant execution below proves unchanged kills.
+
+### Complete supplied TEST_CMD (6.6)
+
+Executed verbatim through the supplied test wrapper, not cached, from `2026-10-14T05:12:37Z` to `2026-10-14T05:33:41Z`, exit 0. It ran on the clean two-correction-commit **pre-evidence tree**, Git tree content hash `4e4f97c602e462284cab6f2930cdc07eb28fd1db`. This content hash identifies the tested tree without pinning a transient story commit. These full-chain results do not claim to validate the subsequent evidence edits or future evidence commit. All eight conjuncts executed and exited 0:
+
+1. `npm run check:generated --prefix packages/security-audit-sdk-core`: `generated SDK contract artifacts are current`.
+2. `npm run test:changed-paths --prefix packages/security-audit-sdk-core`: `changed-path policy passed in archived mode for remediate-security-audit-sdk-adversarial-review: 1508 visible records; {"unrelated-history-or-worktree":1294,"local-instruction-unrelated":1,"event-contract":85,"archived-remediation":8,"active-remediation":6,"sdk-capability":1,"sdk-package":115,"unrelated-deletion":1}; ignored files excluded by standard Git semantics`.
+3. `openspec validate fix-core-provider-fault-containment --strict`: `Change 'fix-core-provider-fault-containment' is valid`.
+4. `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base origin/main`: `design-pattern governance passed in final phase: enforcement active; inspected 11 commit(s) and 17 path(s) from origin/main`.
+5. `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: `Git whitespace/final-newline checks passed and index is empty`.
+6. `make test`: `Product test loop passed across every declared workspace (~45s local, 2026-09-10).` Core 409, Node 162, browser 71, collector 92, contract 17, envelope 18 and research 11 tests passed, each with zero failures. This product-loop banner is historical measurement wording, not this run's elapsed time.
+7. `make governance-gates`: `Full governance-gate chains passed across every declared workspace (~13-20min local, 2026-09-10).` Core `test:verification`: `ℹ tests 301`, `ℹ pass 301`, `ℹ fail 0`, `ℹ cancelled 0`, `ℹ skipped 0`, `ℹ todo 0`. Node `test:kit`: `evaluation kit verification passed:` with the installed-declaration excerpt above. Node `test:kit-controls`: `evaluation kit negative controls passed: 89 measured plants across 80 of 80 controls, and each failed closed at its declared identity:`. Both Node gates passed in the product loop and again in the full governance chain; intentional plant diagnostics were not ignored or bypassed. The full-chain banner is historical measurement wording, not this run's elapsed time.
+8. CodeScene CLI 1.0.53 delta, the same gate CI's `codescene delta` job runs: `no findings`, `cs delta exit=0`.
+
+### Evidence-edit closure checks
+
+After the evidence edits, the following rechecks completed by `2026-10-14T05:38:36Z`, each exit 0, with the index empty: `check:generated`, `test:changed-paths`, strict OpenSpec, final design-pattern governance, Git-state and `git diff --check`. Observed summaries remained `generated SDK contract artifacts are current`, `Change 'fix-core-provider-fault-containment' is valid`, `design-pattern governance passed in final phase: enforcement active; inspected 11 commit(s) and 17 path(s) from origin/main` and `Git whitespace/final-newline checks passed and index is empty`; changed-paths repeated the exact summary above.
+
+External structural audit, exit 0: `pre-evidence commit audit passed: nine inherited commits unchanged; two appended subjects/path groups/Refs/co-author verified; four permitted corrective paths; 17 owned paths; 6.7 mapped; merge/fold/archive unchecked; LF/whitespace/final-newlines/empty index passed`. This audits the two existing corrective commits and pending two-file evidence diff, not a future third commit. No source, generated, verification-test or governance-core paths changed in this run.
+
+Merge, fold and archive remain unchecked. No push, PR, GitHub comment, approval or remote-CI claim is made. Post-commit checks belong only in the external completion report.
