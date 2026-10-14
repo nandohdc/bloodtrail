@@ -1,0 +1,135 @@
+{
+  "schema_version": "1.1",
+  "change_id": "verify-fraud-evidence-sufficiency",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields.",
+    "Owner review must precede any harness; each later synthetic run needs exact-head approval, bounded shared volume and immutable expectations.",
+    "Evidence must be reproducible through the packed public API outside the repository, without package changes or invented measurements.",
+    "Host facts, joins and delivery guarantees need explicit trust and fix-owner boundaries rather than fraud or deployment claims."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "canonical_capability_requirement",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "fraud-evidence-profile"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/verify-fraud-evidence-sufficiency/.openspec.yaml",
+    "openspec/changes/verify-fraud-evidence-sufficiency/proposal.md",
+    "openspec/changes/verify-fraud-evidence-sufficiency/design.md",
+    "openspec/changes/verify-fraud-evidence-sufficiency/tasks.md",
+    "openspec/changes/verify-fraud-evidence-sufficiency/specs/fraud-evidence-profile/spec.md",
+    "openspec/changes/verify-fraud-evidence-sufficiency/assessment.source.json",
+    "openspec/changes/verify-fraud-evidence-sufficiency/assessment.json"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-proposal-public-boundary",
+      "kind": "direct_implementation",
+      "summary": "Author a proposal-only usage capability and Stage P public-boundary design with bounded per-run authorization, deferred probes and explicit trust/fix ownership; implement no harness here.",
+      "forces_addressed": [
+        "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields.",
+        "Owner review must precede any harness; each later synthetic run needs exact-head approval, bounded shared volume and immutable expectations.",
+        "Evidence must be reproducible through the packed public API outside the repository, without package changes or invented measurements.",
+        "Host facts, joins and delivery guarantees need explicit trust and fix-owner boundaries rather than fraud or deployment claims."
+      ]
+    },
+    {
+      "id": "approach-contract-first",
+      "kind": "alternative",
+      "summary": "Add a presented-identifier contract field before probing existing carriers, then evaluate the new field as the baseline.",
+      "forces_addressed": [
+        "Host facts, joins and delivery guarantees need explicit trust and fix-owner boundaries rather than fraud or deployment claims."
+      ]
+    },
+    {
+      "id": "approach-combined-harness-pr",
+      "kind": "alternative",
+      "summary": "Combine the proposal with an in-repository harness and package-level tests to gather results before owner review.",
+      "forces_addressed": [
+        "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-proposal-public-boundary",
+  "rejected_alternative_ids": [
+    "approach-contract-first",
+    "approach-combined-harness-pr"
+  ],
+  "rejection_reasons": {
+    "approach-contract-first": {
+      "forces": [
+        "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields.",
+        "Evidence must be reproducible through the packed public API outside the repository, without package changes or invented measurements."
+      ],
+      "reason": "Changing the canonical carrier first destroys the 2.1.0 comparison and assumes the gap that P-attr must prove or refute; G33 requires a separate later contract change and this proposal owns no contract path."
+    },
+    "approach-combined-harness-pr": {
+      "forces": [
+        "Owner review must precede any harness; each later synthetic run needs exact-head approval, bounded shared volume and immutable expectations.",
+        "Evidence must be reproducible through the packed public API outside the repository, without package changes or invented measurements."
+      ],
+      "reason": "A combined implementation bypasses G35's separate proposal/tracer review and package tests use the wrong seam. Results before exact-head run approval would not supply accountable evidence under the proposed authorization."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-public-boundaries-only",
+    "implementation-authorized-immutable-evidence",
+    "implementation-usage-only-trust",
+    "implementation-proposal-only-scope"
+  ],
+  "invariant_evidence": {
+    "implementation-public-boundaries-only": {
+      "task_ids": [
+        "1.1",
+        "8.2"
+      ],
+      "evidence_ids": [
+        "planned tracer provenance and observation inventory must demonstrate packed public API only and exactly three public boundaries; no execution evidence claimed"
+      ]
+    },
+    "implementation-authorized-immutable-evidence": {
+      "task_ids": [
+        "1.2",
+        "8.2"
+      ],
+      "evidence_ids": [
+        "future run records must bind approved head and kit digests, comment hash, immutable expectation hash, shared limits, stops and scratch deletion; not yet executed"
+      ]
+    },
+    "implementation-usage-only-trust": {
+      "task_ids": [
+        "3.2",
+        "6.1",
+        "8.1"
+      ],
+      "evidence_ids": [
+        "normative scenarios constrain usage without redefining fields; future carrier matrix and verdict must separate acceptance, provenance, resource rules and meaning with fix owners"
+      ]
+    },
+    "implementation-proposal-only-scope": {
+      "task_ids": [
+        "8.1"
+      ],
+      "evidence_ids": [
+        "seven-file proposal inventory and existing strict validation, generated-drift, contract-reuse approved-skip and final governance gates verify no harness or protected-path changes"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "6ee6f57037466ac80fd0b9b181f6e881cde62520"
+  },
+  "verification_task_ids": [
+    "8.1",
+    "8.2",
+    "8.3"
+  ]
+}
