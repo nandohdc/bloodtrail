@@ -30,14 +30,14 @@ Decision source: owner decision, 2026-10-13, via plan-mode questions, grilling a
 
 ## 6. Maintainer follow-up
 
-- [ ] 6.1 Obtain all ten required PR CI contexts and independent review; no local approval claim.
-- [ ] 6.2 Merge after review and required checks.
-- [ ] 6.3 Fold the added requirement in a separate governed change.
+- [x] 6.1 Obtain all ten required PR CI contexts and independent review; no local approval claim. Evidence: all ten required contexts passed on `f3ce8ffac10a8293167c60b4a2ef34ff578a462a` in PR #821, and the maintainer merged that PR. No review content or approval is asserted here; AI review is not approval.
+- [x] 6.2 Merge after review and required checks. Evidence: PR #821 was merged into `main` by the maintainer as merge commit `0936e745744c3a2d2b5204b98a7e2d9d7977b1a6`.
+- [x] 6.3 Fold the added requirement in a separate governed change. Evidence: folded into `openspec/specs/security-audit-sdk-core/spec.md` while the change is active, in this dedicated fold PR (ADR 0001).
 - [ ] 6.4 Archive only after fold lands.
 
 ## Evidence policy
 
-Record only executed results, verbatim, by gate name without machine-local log paths. Full-chain observations refer to the pre-evidence tree; subsequent lightweight observations are separate. The provisioned branch is pinned to the supplied merged `main` baseline; do not move it or rewrite existing commits. No push, PR, GitHub comment, merge, fold, archive or secret access.
+Record only executed results, verbatim, by gate name without machine-local log paths. Full-chain observations refer to the pre-evidence tree; subsequent lightweight observations are separate. The provisioned branch is pinned to the supplied merged `main` baseline; do not move it or rewrite existing commits. No push, PR, GitHub comment, merge, fold, archive or secret access. That policy bound the implementation runs; group 6 records the later merge and fold as they land, and the archive follows in a separate PR.
 
 ## Tasks `1.1`–`4.1` — run #134, recorded before its evidence commit
 
@@ -416,3 +416,32 @@ Historical observations verbatim; completed-task reconciliation; run #135 associ
 These are completed pre-commit draft checks. Recording them is a further evidence edit,
 so another complete lightweight pass is required before staging. That pass and any actual
 committed-head checks are reported externally, not retrospectively claimed in this commit.
+
+## Observed fold evidence — 2026-10-15, run #140, Node v26.11.1
+
+Decision source: owner request, 2026-10-14, in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E: "Fold and archive #811, #798 and #812, each as its own PR."
+
+This is the dedicated active-change fold candidate under ADR 0001, not an archive or a claim that this fold has merged. Initial HEAD was exactly `0815c81378a1c426349f54ed3e2f65eabcbd5ae3`, with a clean worktree and empty index on the supplied branch. No pull, rebase or baseline move occurred. Group 6 records only the supplied CI-context and maintainer-merge facts and this fold; no review content or approval is asserted. AI review is not approval. Earlier pending-state evidence remains historical, and 6.4 remains unchanged and unchecked. No remote operation, signing or release occurred.
+
+### Full supplied TEST_CMD — before fold evidence edits
+
+The supplied wrapper command executed unchanged from `2026-10-15T03:09:41Z` to `2026-10-15T03:25:02Z`, exit 0, against the uncommitted canonical append and prescribed group-6/policy edits, before this section existed, with the index empty. The documented `TAMANDUA_TSTX=0` environment setting selected full passthrough for the required tracked-dirty precommit tree; the observed notice was `tamandua-test: passthrough mode — TAMANDUA_TSTX=0 kill switch active`. All ten conjuncts ran, without cache replay or ledger attribution. Full output and status records remain external. These observations do not claim verification of this future commit.
+
+Every command ran in this order and exited 0; the complete conjunctive chain returned `TEST_CMD exit=0`:
+
+1. Generated artifacts — `npm run check:generated --prefix packages/security-audit-sdk-core`: `generated SDK contract artifacts are current`.
+2. Core matrix — `npm run test:matrix --prefix packages/security-audit-sdk-core`: `ℹ tests 674`, `ℹ pass 674`, `ℹ fail 0`, with zero cancelled/skipped/todo. Generation/drift, typecheck, build, type tests, examples, exports, compatibility, scope and dependencies passed. `15 compilable SDK documentation scenarios passed`; `package exports verified: 61 value exports, 92 type-only exports, frozen surface matches exactly`.
+3. Coherence — `npm run test:coherence --prefix packages/security-audit-sdk-core`: `cross-artifact coherence passed in archived mode for remediate-security-audit-sdk-adversarial-review: contract 2.1.0, 24 catalog events/24 named APIs, 0 runtime dependencies, 91/91 current-change tasks complete`. Archived mode names the historical remediation, not archival of this active change.
+4. Changed paths — `npm run test:changed-paths --prefix packages/security-audit-sdk-core`: `changed-path policy passed in archived mode for remediate-security-audit-sdk-adversarial-review: 1529 visible records; {"unrelated-history-or-worktree":1313,"local-instruction-unrelated":1,"event-contract":85,"archived-remediation":8,"active-remediation":6,"sdk-capability":1,"sdk-package":117,"unrelated-deletion":1}; ignored files excluded by standard Git semantics`.
+5. Contract — `npm run validate --prefix contracts/security-audit`: `Security audit contract validation passed.` Deterministic generated artifacts and all 17 tests passed, zero failures/cancelled/skipped/todo.
+6. Active change — `openspec validate fix-core-outcome-commit-consistency --strict`: `Change 'fix-core-outcome-commit-consistency' is valid`.
+7. Canonical spec — `openspec validate security-audit-sdk-core --type spec`: `Specification 'security-audit-sdk-core' is valid`; zero ERROR-level issues and exactly 41 WARNINGs, all `Requirement text is very long (>500 characters)`. Separate baseline and post-fold JSON inspections (`openspec validate security-audit-sdk-core --type spec --json`, each exit 0) and external assertions showed identical ordered issue identities (level, requirement path and full message): all 41 baseline warnings remain, with no new warning or error. Non-strict canonical validation is intentional; no requirement was rewritten to silence warnings.
+8. Final governance — `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base 0815c81378a1c426349f54ed3e2f65eabcbd5ae3`: `design-pattern governance passed in final phase: enforcement active; inspected 0 commit(s) and 0 path(s) from 0815c81378a1`. This precommit invocation inspects only committed ranges, not the uncommitted two-file fold; its empty range is intentional, not material verification of this diff. Actual committed-head counts belong in the external report.
+9. Git state — `node packages/security-audit-sdk-core/scripts/check-git-state.mjs`: `Git whitespace/final-newline checks passed and index is empty`.
+10. Product loop — `make test`: `Product test loop passed across every declared workspace (~45s local, 2026-09-10).` Core 674, Node 162, browser 71, collector 92, contract 17, envelope 18 and research 11 tests passed, zero failures/cancelled/skipped/todo. Node kit verification passed; `evaluation kit negative controls passed: 90 measured plants across 81 of 81 controls`, each failing closed at its declared identity. The intentional plant diagnostics are not ignored failures. The banner's timing is a historical measurement, not this execution's duration. Full governance-gate chains were NOT run; this is not a `make governance-gates` claim.
+
+The separately supplied `npm run build --prefix packages/security-audit-sdk-core` also exited 0 before the full TEST_CMD; tracked generated artifacts remained unchanged. Typecheck passed within both Core matrix executions.
+
+External structural assertion tests before this section, exit 0: the appended requirement block equals the active delta from its `### Requirement:` line through EOF byte for byte; the entire baseline canonical file is an unchanged byte prefix followed only by a blank separator and that block; the requirement heading and each of its eight scenario headings occur exactly once; no ADDED/MODIFIED/REMOVED/RENAMED operation header enters the canonical spec; a second in-memory fold makes no change; all 19 founding requirement blocks are byte-preserved. The canonical diff is +41/-0 and touches no other canonical spec. Exactly the two allowed paths differ, with every other tracked artifact unchanged, including assessment/proposal/design/delta bytes. The tasks prefix has only the three prescribed group-6 line edits and exact Evidence policy sentence; all historical evidence remains unchanged, and archive task 6.4 remains verbatim and unchecked. LF, final newlines, no trailing whitespace and the empty index passed; `git diff --check` exited 0. Assertion scripts and logs are external; no repository tests were added or modified.
+
+These are completed pre-evidence observations. After adding this section, lightweight generated/changed-path/strict/canonical/governance/Git-state/whitespace and structural checks must run again before staging. Their actual results and the subsequent committed-head checks will be reported externally, never retrospectively added to the commit they check.
