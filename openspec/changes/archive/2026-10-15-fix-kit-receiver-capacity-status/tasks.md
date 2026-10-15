@@ -90,7 +90,7 @@ The fifth commit is limited to this change's evidence. No post-commit check resu
 
 - [x] 6.1 Merge. PR #820 was merged into `main` by the maintainer as merge commit `958e7ebb4b162d1a1423140b510bf1037cb6e1df`.
 - [x] 6.2 Fold into canonical specs. Folded into `openspec/specs/security-audit-sdk-node/spec.md` while the change is active, in this dedicated fold PR (ADR 0001).
-- [ ] 6.3 Archive.
+- [x] 6.3 Archive. Evidence: relocated to `openspec/changes/archive/2026-10-15-fix-kit-receiver-capacity-status/` in this commit, after fold PR #823 merged as `006d1e99b662f467c78c1ecf3ae4d8a054ca95a0`.
 
 ## Observed fold evidence — 2026-10-15, run 139, Node v26.11.1
 
