@@ -233,7 +233,7 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
     }
     if (!built.ok) return built;
     if (built.value.deliveryIntent.kind === "named_redelivery") {
-      return this.#deliverValidatedEvent(built.value.event, built.value.deliveryIntent);
+      return this.#deliverNamedEvent(built.value.event, built.value.deliveryIntent);
     }
     if (this.#generatedEventIds.has(built.value.event.event.id)) {
       return failure("SDK_INVALID_IDENTIFIER", "validation", "/event/id");
@@ -284,7 +284,7 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
   ): Promise<AuditResult<AuditDeliveryResult>> {
     const settles = completionEvent !== undefined && suppliedOperation !== undefined;
     try {
-      const result = await this.#deliverValidatedEvent(event, intent);
+      const result = await this.#deliverNamedEvent(event, intent);
       if (result.ok && settles) {
         this.#operationAuthority.completeCompletion(suppliedOperation, completionEvent);
       }
@@ -294,6 +294,15 @@ class SecurityAuditSdkImpl implements SecurityAuditSdk {
         this.#operationAuthority.releaseCompletion(suppliedOperation, completionEvent);
       }
     }
+  }
+
+  // Named construction already ran the complete validation pipeline with this instance's runtime.
+  async #deliverNamedEvent(
+    event: Readonly<SecurityAuditEvent>,
+    intent: DeliveryIntent,
+  ): Promise<AuditResult<AuditDeliveryResult>> {
+    if (this.#state !== "ready") return failure(this.#state === "shut_down" ? "SDK_SHUT_DOWN" : "SDK_SHUTTING_DOWN", "lifecycle");
+    return this.#handoffValidatedEvent(event, intent);
   }
 
   async #deliverValidatedEvent(
