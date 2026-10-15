@@ -1,6 +1,6 @@
 # Tasks — issue #798
 
-Check only executed work; no personal owner approval, CI, merge, fold or archive is claimed.
+Check only executed work; no personal owner approval, CI, merge, fold or archive is claimed. Group 6 records the later merge and fold as they land; the archive follows in a separate PR.
 
 ## 1. Planning
 
@@ -88,6 +88,26 @@ The fifth commit is limited to this change's evidence. No post-commit check resu
 
 ## 6. Landing (outside this story)
 
-- [ ] 6.1 Merge.
-- [ ] 6.2 Fold into canonical specs.
+- [x] 6.1 Merge. PR #820 was merged into `main` by the maintainer as merge commit `958e7ebb4b162d1a1423140b510bf1037cb6e1df`.
+- [x] 6.2 Fold into canonical specs. Folded into `openspec/specs/security-audit-sdk-node/spec.md` while the change is active, in this dedicated fold PR (ADR 0001).
 - [ ] 6.3 Archive.
+
+## Observed fold evidence — 2026-10-15, run 139, Node v26.11.1
+
+The supplied exact `tamandua-test` TEST_CMD executed the complete nine-command `&&` sequence before this fold commit, with an empty index, and exited 0. The documented `TAMANDUA_TSTX=0` passthrough was enabled for the uncommitted fold edits: every gate ran, without caching or ledger attribution. Each conjunct therefore executed and exited 0. Logs and mechanical regression assertions stayed in securely created external temporary files; no committed test or transport file was added.
+
+| Gate / exact command | Exit | Observed result |
+| --- | --- | --- |
+| Generated artifacts: `npm run check:generated --prefix packages/security-audit-sdk-core` | 0 | `generated SDK contract artifacts are current` |
+| Coherence: `npm run test:coherence --prefix packages/security-audit-sdk-core` | 0 | `cross-artifact coherence passed in archived mode for remediate-security-audit-sdk-adversarial-review`: contract 2.1.0, 24 catalog events/24 named APIs, 0 runtime dependencies, 91/91 current-change tasks complete. That historical mode does not archive this active change. |
+| Changed paths: `npm run test:changed-paths --prefix packages/security-audit-sdk-core` | 0 | `changed-path policy passed in archived mode for remediate-security-audit-sdk-adversarial-review: 1529 visible records`; ignored files excluded by standard Git semantics. |
+| Contract: `npm run validate --prefix contracts/security-audit` | 0 | `Security audit contract validation passed.`; 17 tests passed, 0 failed. |
+| Active change: `openspec validate fix-kit-receiver-capacity-status --strict` | 0 | `Change 'fix-kit-receiver-capacity-status' is valid` |
+| Canonical spec: `openspec validate security-audit-sdk-node --type spec` | 0 | `Specification 'security-audit-sdk-node' is valid`; zero ERRORs and exactly 26 WARNINGs, all `Requirement text is very long (>500 characters)`, unchanged from the pinned-base baseline. No new warning. |
+| Final governance: `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base 0936e745744c3a2d2b5204b98a7e2d9d7977b1a6` | 0 | `design-pattern governance passed in final phase: enforcement active; inspected 0 commit(s) and 0 path(s) from 0936e745744c`. Expected and vacuous by design: this gate inspects committed ranges only, and HEAD still equals the pinned base. This is not material coverage of the uncommitted fold; the post-commit result belongs only in the external report. |
+| Git state: `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` | 0 | `Git whitespace/final-newline checks passed and index is empty` |
+| Product loop: `make test` | 0 | `Product test loop passed across every declared workspace (~45s local, 2026-09-10).` Core 674, Node 162, browser 71, collector 92, contract 17, envelope 18 and research 11 tests passed, with zero failures. Kit verification and 90 measured plants across 81 of 81 negative controls passed. Full governance-gate chains were not run. |
+
+The supplied build command also executed before this commit: `npm run build --prefix packages/security-audit-sdk-core && npm run build --prefix packages/security-audit-sdk-node && npm run build --prefix packages/client-evidence-browser && npm run build --prefix packages/security-audit-collector` — exit 0, all four conjuncts exit 0. The product loop's Core and Node typechecks passed; the installed-kit strict consumer matrix passed with TypeScript 5.9.2, 6.0.3 and 7.0.2.
+
+Pre-commit mechanical regression assertions exited 0: the pinned-base canonical bytes remain an unchanged prefix; the careful-ingress requirement is byte-identical; the appended requirement equals the delta block byte for byte; its heading and all four scenario headings occur exactly once; no operation header enters the canonical spec; a second append-if-absent fold produces identical bytes; the canonical diff has zero deletions; exactly the two allowed paths changed; all other active-change files remain byte-identical. The empty-index, CR-byte, trailing-whitespace and final-newline assertions and `git diff --check` also passed. No approval, remote CI, fold merge or archive completion is claimed. No post-commit result is recorded here.
