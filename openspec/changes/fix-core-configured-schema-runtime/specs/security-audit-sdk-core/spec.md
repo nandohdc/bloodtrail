@@ -71,7 +71,7 @@ Schema failures SHALL be rebuilt as a bounded SDK error carrying only its code, 
 - **AND** lifecycle and operation authority checks SHALL remain first
 
 #### Scenario: Provider containment schema non-result
-- **WHEN** the configured schema runtime during named execution, named redelivery, `emit` or `redeliver`, or the global runtime during free `validateSecurityAuditEvent` without an explicit runtime, throws or returns neither explicit ok:true nor a well-formed failure
+- **WHEN** the configured schema runtime during named execution, named redelivery, `emit` or `redeliver`, the global runtime during free `validateSecurityAuditEvent` without an explicit runtime, or the runtime passed explicitly to free `validateSecurityAuditEvent(value, runtime)`, throws or returns neither explicit ok:true nor a well-formed failure
 - **THEN** the result SHALL be SDK_INVALID_CONFIGURATION / configuration at /schemaRuntime without a synchronous throw or rejection
 
 #### Scenario: Provider containment sanitized schema diagnostic
