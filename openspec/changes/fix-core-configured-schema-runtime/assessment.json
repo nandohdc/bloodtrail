@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.1",
+  "change_id": "fix-core-configured-schema-runtime",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Each instance event consults only its configured runtime exactly once.",
+    "Preserve diagnostic order, lifecycle gating, provider containment and operation settlement.",
+    "Preserve frozen public and contract boundaries without new source paths."
+  ],
+  "applicability": {
+    "triggers_matched": ["security_sensitive_behavior", "canonical_capability_requirement"],
+    "material_capability_modification": true,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [
+    "openspec/changes/fix-core-configured-schema-runtime/.openspec.yaml",
+    "openspec/changes/fix-core-configured-schema-runtime/proposal.md",
+    "openspec/changes/fix-core-configured-schema-runtime/design.md",
+    "openspec/changes/fix-core-configured-schema-runtime/assessment.json",
+    "openspec/changes/fix-core-configured-schema-runtime/tasks.md",
+    "openspec/changes/fix-core-configured-schema-runtime/specs/security-audit-sdk-core/spec.md",
+    "packages/security-audit-sdk-core/src/events.ts",
+    "packages/security-audit-sdk-core/src/sdk.ts",
+    "packages/security-audit-sdk-core/tests/configured-schema-runtime.test.ts",
+    "packages/security-audit-sdk-core/tests/provider-fault-containment.test.ts",
+    "packages/security-audit-sdk-core/tests/verification/f11-mutations.test.mjs",
+    "packages/security-audit-sdk-core/API.md",
+    "packages/security-audit-sdk-core/MIGRATION.md",
+    "packages/security-audit-sdk-core/SECURITY.md",
+    "packages/security-audit-sdk-core/CONTEXT.md",
+    "packages/security-audit-sdk-core/adr/017-configured-schema-runtime-is-authoritative.md",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-node/docs/error-catalog.md"
+  ],
+  "candidate_approaches": [
+    {"id": "approach-existing-seams", "kind": "direct_implementation", "summary": "Pass configured runtime at named construction seams and deliver already-validated events through a private lifecycle-guarded seam.", "forces_addressed": ["Each instance event consults only its configured runtime exactly once.", "Preserve diagnostic order, lifecycle gating, provider containment and operation settlement.", "Preserve frozen public and contract boundaries without new source paths."]},
+    {"id": "approach-global-swap", "kind": "alternative", "summary": "Temporarily swap the global runtime around named construction and restore it afterwards.", "forces_addressed": ["Each instance event consults only its configured runtime exactly once."]},
+    {"id": "approach-double-configured", "kind": "alternative", "summary": "Use configured runtime for construction and again during delivery.", "forces_addressed": ["Each instance event consults only its configured runtime exactly once.", "Preserve diagnostic order, lifecycle gating, provider containment and operation settlement."]}
+  ],
+  "selected_approach_id": "approach-existing-seams",
+  "rejected_alternative_ids": ["approach-global-swap", "approach-double-configured"],
+  "rejection_reasons": {
+    "approach-global-swap": {"forces": ["Each instance event consults only its configured runtime exactly once."], "reason": "A process-global swap leaks instance authority across concurrent instances and free validators even when a finally block restores it."},
+    "approach-double-configured": {"forces": ["Each instance event consults only its configured runtime exactly once.", "Preserve diagnostic order, lifecycle gating, provider containment and operation settlement."], "reason": "Repeated runtime calls violate exactly-once selection and can change stateful-runtime results or trigger a second provider fault after reservation."}
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": ["implementation-configured-once", "implementation-preserved-boundaries"],
+  "invariant_evidence": {
+    "implementation-configured-once": {"task_ids": ["2.1", "3.1", "3.2", "5.1", "5.2"], "evidence_ids": ["Planned: configured-schema-runtime.test.ts six-entry counting matrix and refusing-global controls; execution pending."]},
+    "implementation-preserved-boundaries": {"task_ids": ["1.2", "2.2", "3.2", "3.3", "4.1", "5.1", "5.3"], "evidence_ids": ["Planned: preserved provider rows, complete runtime and verification suites, coherence, Node kit, exact ownership and committed-range governance; execution pending."]}
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Configured validation alone governs instance admission; a process-wide override cannot refuse or weaken named events.",
+    "authentication_or_authorization": "Existing semantic authorization checks retain their exact order and diagnostics; runtime selection introduces no authorization bypass.",
+    "authority_provenance": "The normalized instance configuration is runtime authority; operation handles and derived-field provenance retain their existing checks.",
+    "concurrency": "No global swaps or new mutable state; independent instances keep their own runtime while the free function retains the global default.",
+    "confidentiality": "No event values or provider errors enter new diagnostics; existing safe result sanitization remains unchanged.",
+    "cryptography": "No identifiers, algorithms, keys or signatures change; default cryptographic provider behavior stays intact.",
+    "error_disclosure": "Preserve bounded schema verdict reconstruction and exact existing code/category/path triples; no new error surface.",
+    "external_security_integration": "Node receives error-catalog clarification only; contract and collector behavior are unchanged.",
+    "fail_posture": "Configured runtime faults still fail closed before sink handoff; already-validated delivery is private and unavailable to callers.",
+    "lifecycle": "Preserve ready-state checks before validation and handoff, duplicate completion reservations and settlement/release behavior.",
+    "mutation_ownership": "Only existing named seams and private delivery change; re-anchor affected mutants without weakening and run the full verification suite.",
+    "privacy_transformation": "Named transformations precede the same validation pipeline; prohibited-data and post-transformation scans retain ordering.",
+    "resource_retention": "No cache, brand store, event ledger or additional retained state is needed to avoid revalidation.",
+    "retry_or_redelivery": "Named redelivery validates once with configured authority while retaining event identity, binding checks and identifier/clock bypass.",
+    "trust_boundary": "Instance configuration, not process-global override, governs instance admission; free validation keeps its explicit/default selection boundary."
+  },
+  "ordering": {"proposal_baseline_commit": "01999a4b5a85f95e0e5db1e4a9eeeec788dc831a"},
+  "verification_task_ids": ["1.2", "2.2", "3.1", "3.2", "3.3", "4.1", "5.1", "5.2", "5.3"]
+}
