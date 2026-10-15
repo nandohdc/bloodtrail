@@ -27,6 +27,7 @@ Decision source: owner decision, 2026-10-15, via grilling and triage in Claude C
 - [x] 5.1 Execute the supplied eight-command chain in order and exact test wrapper; record every exit status, full mutation totals and CodeScene delta.
 - [x] 5.2 Build examples and run the supplied repro; record observed call counts and exit status.
 - [x] 5.3 Audit exact subjects/path groups/ownership, untouched boundaries and format; run lightweight evidence-edit checks before staging. Report committed-head checks externally, not as self-verification.
+- [x] 5.4 Pin named execution and named redelivery lifecycle refusal under synchronous re-entrant shutdown, name explicit free-function runtime containment, consolidate duplicated regression setup, and rerun the supplied eight-gate chain before recording follow-up evidence.
 
 ## 6. Maintainer follow-up
 
@@ -171,6 +172,55 @@ The four primary commits have the exact prescribed proposal/runtime/tests/docs s
 After drafting both evidence files, `check:generated`, `test:changed-paths`, strict OpenSpec, pinned final design-pattern governance, `check-git-state` and `git diff --check` ran in that order and each exited `0`; the complete lightweight chain exited `0`. The first five repeated the verbatim observations above, including `4 commit(s) and 18 path(s)`; `git diff --check` printed nothing. These are actual precommit observations, not a claim that the evidence commit verified itself.
 
 Task `5.3` records the completed ownership/history/format audit and these precommit checks only. The evidence commit will touch only `tasks.md` and `assessment.json`; recording this paragraph is a further evidence edit, so the same lightweight chain must pass again before staging. Actual committed-head rechecks will be reported externally after committing. No future or remote result is asserted here.
+
+## Follow-up 5.4 observations — before follow-up evidence edits
+
+The earlier observations describe the original five-commit implementation and remain historical evidence. This follow-up changes no source, public API, verification mutant or other runtime test. It appends two public named-method regressions and extends only the containment scenario's `WHEN` to include free `validateSecurityAuditEvent(value, runtime)` with an explicitly passed runtime. The `ADDED` block and all ten `MODIFIED` scenario names remain unchanged.
+
+`build`, `typecheck`, test compilation and the focused configured-runtime tests exited `0`. The focused file passed `11` tests with `0` failures/cancelled/skipped/todo. Named execution starts shutdown synchronously from the first clock call; named redelivery starts it from the configured runtime's first validation call, which delegates to `cjsSchemaRuntime`. Both hooks are untouched during configuration, are observed during the named call, and retain the first shutdown promise for awaited cleanup. Both results deep-equal `SDK_SHUTTING_DOWN` / `lifecycle` failures, with zero sink events. No global override is used by these regressions. The six existing selection rows and refusing-global controls still pass.
+
+The first full follow-up chain passed gates 1–7 below, including `test:verification` (`301` tests, `5` suites, `301` pass, `0` fail/cancelled/skipped/todo), but CodeScene delta exited `1` with this diagnostic:
+
+```text
+Code Duplication introduced
+```
+
+An allowed corrective test-only commit consolidated the appended cases into a module-scope table and one shared test callback. No existing test content was changed. After that correction, the exact supplied `TEST_CMD` ran uncached; every command below ran in order and exited `0`, and the wrapper exited `0`. These observations precede the follow-up evidence edits, not the eventual evidence commit.
+
+| Order | Gate | Exit status |
+|---|---|---|
+| 1 | `check:generated` | `0` |
+| 2 | `test:changed-paths` | `0` |
+| 3 | `openspec validate fix-core-configured-schema-runtime --strict` | `0` |
+| 4 | `check-design-pattern-governance --phase final --base 01999a4b5a85f95e0e5db1e4a9eeeec788dc831a` | `0` |
+| 5 | `check-git-state` | `0` |
+| 6 | `make test` | `0` |
+| 7 | `make governance-gates` | `0` |
+| 8 | CodeScene CLI `1.0.53` delta | `0` |
+
+Strict OpenSpec validation also exited `0` before the spec-only commit. Final design-pattern governance inspected `8 commit(s) and 18 path(s)` from the pinned baseline. Both product and governance loops passed Core `685` tests; the two new lifecycle cases account for the increase from the historical `683`. No tests were skipped or weakened. CodeScene delta printed:
+
+```text
+no findings
+cs delta exit=0
+```
+
+Verbatim corrected-chain `test:verification` summary:
+
+```text
+ℹ tests 301
+ℹ suites 5
+ℹ pass 301
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 405159.009959
+```
+
+The original five commits remain ancestral and unchanged. The follow-up preserves the prescribed test/spec/evidence order with the allowed corrective test commit before evidence. Only the four authorized follow-up paths differ from its starting point; tests are append-only relative to that point, and no source or verification file was changed. Merge, fold, archive and remote CI remain pending.
+
+After drafting the follow-up evidence, `check:generated`, `test:changed-paths`, strict OpenSpec, pinned final design-pattern governance, `check-git-state` and `git diff --check` each exited `0` in that order, with an empty index. Final governance still inspected `8 commit(s) and 18 path(s)`. These are precommit checks only. Recording this observation is another evidence edit, so the same lightweight checks must pass again before staging. Any actual committed-head rechecks will be reported externally; no check after the evidence commit is recorded as completed here.
 
 ## Remote follow-up remains pending
 
