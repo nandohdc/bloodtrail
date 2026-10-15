@@ -2,6 +2,7 @@
 
 ## Glossary
 
+- **Configured schema runtime:** the `AuditSchemaRuntime` fixed when an SDK instance is constructed, defaulting to `cjsSchemaRuntime` when omitted; the only runtime that instance validates with, exactly once per event. The process-global runtime serves only free `validateSecurityAuditEvent(value)` without an explicit runtime. See `ADR-SDK-017`.
 - **Contradictory outcome:** an outcome that the event's commit state disproves.
 - **Injected provider:** a host capability fixed at construction. These are identifiers (`AuditIdentifierProvider`), clock (`AuditClock`), context provider (`ContextProvider`), schema runtime (`AuditSchemaRuntime`) and timers (`AuditTimerProvider` with `AuditTimerHandle`). The sink and the transformation hooks keep their own existing failure contracts.
 - **Provider fault:** an injected provider that throws or returns an unusable value. It is attributed to the provider, never to the caller's input, and the provider's own error never crosses the public boundary.
@@ -19,3 +20,5 @@
 - **Default identifier provider:** `systemAuditIdentifiers`, used when `identifiers` is omitted.
 - **Host cryptographic capability:** host Web Crypto `crypto.randomUUID`, a Declared coupling admitted only to `src/providers.ts` by the platform-coupling policy, never a `node:` import.
 - **Collision resistance:** probabilistic resistance from 122 CSPRNG bits per UUID v4 across producers, processes, restarts and identifier kinds. It is not absolute uniqueness, not authentication, and not a fraud signal.
+
+Decision source for `Configured schema runtime`: owner decision, 2026-10-15, via grilling and triage in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E

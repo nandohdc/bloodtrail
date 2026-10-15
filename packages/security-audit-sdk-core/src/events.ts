@@ -55,7 +55,7 @@ export function buildNamedAuditEvent<M extends EventMethodName>(
 
   const redelivery = input.redelivery?.event;
   if (redelivery) {
-    const validated = validateSecurityAuditEvent(redelivery);
+    const validated = validateSecurityAuditEvent(redelivery, config.schemaRuntime);
     if (!validated.ok) return validated;
     if (validated.value.event.name !== definition.name) return failure("UNKNOWN_CATALOG_VALUE", "validation", "/event/name");
     const binding = validateNamedRedeliveryBinding(validated.value, operation);
@@ -507,7 +507,7 @@ function finalizeNamedEvent(
 ): AuditResult<BuiltNamedAuditEvent> {
   const transformed = applyTransformations(config, candidate, definition);
   if (!transformed.ok) return transformed;
-  const validated = validateSecurityAuditEvent(transformed.value);
+  const validated = validateSecurityAuditEvent(transformed.value, config.schemaRuntime);
   if (!validated.ok) return validated;
   return {
     ok: true,

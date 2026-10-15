@@ -65,14 +65,21 @@ the wrong shape. It is also returned for a runtime context-provider, schema-runt
 - An authority constructor got an empty required string, such as `authoritativeTenant` with a `tenant`
   scope and an empty `effective_tenant_id`.
 - `ContextProvider.get()` throws: returned by a named call at `/contextProvider`.
-- A configured or global schema runtime throws or returns a non-result, malformed failure or
-  non-verdict diagnostic: returned by the validating call at `/schemaRuntime`. A failure is
+- The configured schema runtime throws or returns a non-result, malformed failure or non-verdict
+  diagnostic during named execution, named redelivery, `emit()` or `redeliver()`: returned at
+  `/schemaRuntime`. Each instance validates only with its configured runtime, exactly once; omitted
+  `schemaRuntime` defaults to `cjsSchemaRuntime`, independently of global overrides. The global runtime
+  is used only by free `validateSecurityAuditEvent(value)` without a runtime argument; free
+  `validateSecurityAuditEvent(value, runtime)` uses only the passed runtime. A failure is
   rebuilt as a bounded SDK error carrying only its code, category and a bounded path, only for
   codes in `CONTRACT_ERROR_CODES` or equal to
   `SDK_SCHEMA_VALIDATION_FAILED` or `SDK_MISSING_EVENT_FIELD`, AND category `validation` or `privacy`.
   Only a string path is retained and bounded; every extra field is dropped. Other codes or categories
-  return `SDK_INVALID_CONFIGURATION` / `configuration` at `/schemaRuntime`. Default-runtime results
-  and runtime selection remain unchanged.
+  return `SDK_INVALID_CONFIGURATION` / `configuration` at `/schemaRuntime`. Default-runtime results,
+  check order and bounded verdict sanitization remain unchanged. `setSchemaRuntime` and
+  `getSchemaRuntime` retain their signatures and exports; they affect/read only the free validator's
+  global default. This is the #816 correction recorded in Core's `ADR-SDK-017`, which contains the
+  verbatim owner decision source dated 2026-10-15.
 - A shutdown timer's `setTimeout` throws or returns `null`/`undefined`, or its `unref` or
   `clearTimeout` throws: returned by shutdown at `/timers`. Arming failure immediately reaches
   `shut_down` without waiting, flushing or calling sink shutdown. An `unref` fault continues

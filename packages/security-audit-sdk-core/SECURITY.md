@@ -27,7 +27,14 @@ This document defines SDK-core trust boundaries. It does not authorize productio
 | Treat `{ status: "accepted" }` as durable delivery | The result means only that the configured sink accepted the call; downstream loss or rejection can still occur | Define durability, retries, queues/outboxes, collector acceptance, storage, monitoring, and fail-open/fail-closed policy in separately governed future infrastructure |
 | Interpret transport authentication, signatures, attestations, or cryptographic integrity as proof that event claims are truthful | Integrity can show who sent bytes or whether bytes changed, but a compromised or incorrect producer can still emit false facts | Use integrity only for its stated transport/attestation scope; retain producer-truth limitations and validate application authority at the source |
 | Edit `src/generated/*`, copied validator output, catalog constants, or generated types by hand | Manual edits create silent divergence from the approved version `2.1.0` contract | Change no canonical semantics in this SDK. Run `npm run generate` from approved inputs and `npm run check:generated`; propose a separate governed contract version for genuine semantic changes |
+| Use a process-wide `setSchemaRuntime()` override to control instance validation | Unrelated code could refuse or weaken named validation independently of the instance's configured authority | Configure `schemaRuntime` on the instance; named execution, named redelivery, `emit()` and `redeliver()` validate exactly once with that runtime only. The global default affects only free `validateSecurityAuditEvent(value)`; explicit-runtime free validation uses its passed runtime |
 | Assert a contradictory outcome: `success` without phase-appropriate commit evidence, or `denied` after committed work | It can create false success or disguise executed work as pre-execution refusal | Named methods, `emit()`, `redeliver()` and `validateSecurityAuditEvent()` refuse contradictory pairs before sink handoff; preserve the actual evidence and use the correction guidance below |
+
+## Configured runtime authority threat control
+
+Decision source: owner decision, 2026-10-15, via grilling and triage in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
+
+An instance's configured `AuditSchemaRuntime` alone validates each event exactly once, including named redelivery, `emit()` and `redeliver()`. When omitted it defaults to `cjsSchemaRuntime`, not the process-global override. Free `validateSecurityAuditEvent(value)` uses the global default; its explicit-runtime form uses only the passed runtime. Configured-runtime faults retain `SDK_INVALID_CONFIGURATION` / `configuration` / `/schemaRuntime`, bounded verdict sanitization and zero sink calls. This isolates runtime selection, not malicious trusted collaborators or producer truth; exactly-once validation is not a delivery guarantee. See `ADR-SDK-017`.
 
 ## Authority-provider responsibility
 

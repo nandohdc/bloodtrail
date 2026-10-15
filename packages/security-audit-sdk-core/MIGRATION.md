@@ -215,6 +215,18 @@ The success check precedes authorization, so `deny` + `success` + `not_committed
 
 This is a non-breaking `fix(sdk-core)`, `severity:medium`, with no release/version change. Public types, exports, error codes, frozen contract `2.1.0` and collector admission remain unchanged. `ADR-SDK-016` refines unchanged `ADR-SDK-007`/`ADR-SDK-014`; contract adoption of denial is tracked separately in #817. No producer-truth, durability, release or production authorization is implied.
 
+## Configured schema runtime authority correction
+
+Decision source: owner decision, 2026-10-15, via grilling and triage in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
+
+Before #816, named execution and named redelivery validated first with the process-global runtime and then again with the configured runtime. A process-wide `setSchemaRuntime()` override could therefore refuse named events while `emit()` succeeded on the same instance.
+
+After this correction, every instance entry point validates exactly once with its configured `AuditSchemaRuntime`: named execution, named redelivery via `input.redelivery`, `emit()` and `redeliver()`. Omitted `schemaRuntime` still defaults to `cjsSchemaRuntime`, never the process-global override. Already-validated named events are not validated again at delivery.
+
+If an integration relied on `setSchemaRuntime()` to change instance behavior, configure `schemaRuntime` when constructing each SDK instead. Keep `setSchemaRuntime()` only for the free `validateSecurityAuditEvent(value)` default, restoring the previous runtime when temporarily overriding it. Free `validateSecurityAuditEvent(value, runtime)` uses only the passed runtime. `setSchemaRuntime` and `getSchemaRuntime` retain their signatures and exports in Core and the Node binding.
+
+Results otherwise retain their codes, categories, paths and check order. Configured-runtime faults still return `SDK_INVALID_CONFIGURATION` / `configuration` / `/schemaRuntime` without provider leakage or sink handoff; bounded verdict sanitization and #812's outcome rules remain unchanged. This non-breaking `fix(sdk-core)` changes no public type, signature, export, error code, frozen contract `2.1.0` or collector behavior. `ADR-SDK-017` refines unchanged `ADR-SDK-003` and `ADR-SDK-011`. Exactly-once validation does not promise delivery or durability, release or production authorization.
+
 ## Contract-version upgrades
 
 A contract semantic change requires the `security-audit-event-contract` governance lifecycle before SDK work. An additive contract-minor version remains contract-minor on that independent version axis. After a new contract version is approved, SDK adaptation must use a separate reviewed change that preserves `EXACT_ONE`:

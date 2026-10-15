@@ -314,16 +314,35 @@ At result-returning boundaries (`beginOperation`, every named method, `emit`, `r
 | Named operationId or correlationId throws | `SDK_INVALID_IDENTIFIER` / `validation` / `/correlation/operation_id` or `/correlation/correlation_id` |
 | Clock throws or does not return a valid `Date` | `SDK_INVALID_CLOCK` / `configuration` / `/clock` |
 | ContextProvider.get throws | `SDK_INVALID_CONFIGURATION` / `configuration` / `/contextProvider` |
-| Configured/global schema runtime throws or returns a non-result | `SDK_INVALID_CONFIGURATION` / `configuration` / `/schemaRuntime` |
+| Configured/global schema runtime throws or returns a non-result: configured for named execution, named redelivery, `emit()` and `redeliver()`; global only for free `validateSecurityAuditEvent(value)` without an explicit runtime | `SDK_INVALID_CONFIGURATION` / `configuration` / `/schemaRuntime` |
 | setTimeout throws/null/undefined, or unref/clearTimeout throws | `SDK_INVALID_CONFIGURATION` / `configuration` / `/timers`, with precedence below |
 
 An unarmed shutdown timer fails closed immediately to `shut_down`: no waiting, sink flush or sink shutdown. Any non-nullish handle, including a number, is valid; missing/non-callable `unref` degrades gracefully. A throwing `unref` leaves the armed deadline in place and shutdown work continues. An `unref` or `clearTimeout` fault reports `/timers` only if work succeeded; an earlier `SDK_SHUTDOWN_TIMEOUT` or `SDK_SINK_FAILURE` wins. Every outcome reaches `shut_down`, a later shutdown returns `SDK_SHUT_DOWN`, concurrent shutdown remains single-flight, and sink lifecycle methods remain at-most-once.
 
-A schema runtime success must explicitly have `ok: true`. A failure is rebuilt as a bounded SDK error carrying only its code, category and a bounded path only when it has `ok: false`, a code in `CONTRACT_ERROR_CODES` or equal to `SDK_SCHEMA_VALIDATION_FAILED` or `SDK_MISSING_EVENT_FIELD`, AND category `validation` or `privacy`. Only a string path is passed so it is bounded, and all other fields are dropped. Other codes or categories return `SDK_INVALID_CONFIGURATION` / `configuration` at `/schemaRuntime`. Default-runtime diagnostics and named runtime selection are unchanged. Invalid construction still throws `SecurityAuditSdkError`; redelivery still calls neither identifiers nor clock.
+A schema runtime success must explicitly have `ok: true`. A failure is rebuilt as a bounded SDK error carrying only its code, category and a bounded path only when it has `ok: false`, a code in `CONTRACT_ERROR_CODES` or equal to `SDK_SCHEMA_VALIDATION_FAILED` or `SDK_MISSING_EVENT_FIELD`, AND category `validation` or `privacy`. Only a string path is passed so it is bounded, and all other fields are dropped. Other codes or categories return `SDK_INVALID_CONFIGURATION` / `configuration` at `/schemaRuntime`. Default-runtime diagnostics are unchanged. Named execution and named redelivery use only the instance's configured runtime, as detailed below. Invalid construction still throws `SecurityAuditSdkError`; redelivery still calls neither identifiers nor clock.
 
 Getter, Proxy, and clone failures never expose their original name, message, stack, cause, value, or runtime-specific `DOMException`/`DataCloneError` detail. Accessors are rejected without invocation. Input failure occurs before sink handoff and before terminal completion reservation; correcting the value and retrying is allowed by the existing operation policy. This boundary does not claim that arbitrary hostile JavaScript objects can be made safe.
 
 Contract codes are exported as `CONTRACT_ERROR_CODES`; SDK lifecycle/package codes are exported as `SDK_ERROR_CODES`. Additions, meaning changes, and removals follow [MIGRATION.md](./MIGRATION.md).
+
+## Configured schema runtime authority
+
+Decision source: owner decision, 2026-10-15, via grilling and triage in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
+
+The configured schema runtime is the `AuditSchemaRuntime` fixed at SDK construction, defaulting to `cjsSchemaRuntime` when `schemaRuntime` is omitted. It alone validates instance events, exactly once per valid call:
+
+| Entry point | Global runtime calls | Configured runtime calls |
+|---|---|---|
+| Named method, named execution | `0` | `1` |
+| Named method, named redelivery via `input.redelivery` | `0` | `1` |
+| `emit(event)` | `0` | `1` |
+| `redeliver(event)` | `0` | `1` |
+| Free `validateSecurityAuditEvent(event)` | `1` | `0` |
+| Free `validateSecurityAuditEvent(event, runtime)` | `0` | `1` to the passed runtime |
+
+`setSchemaRuntime(runtime)` replaces only the free validator's process-global default and returns the previous runtime; `getSchemaRuntime()` reads that default. Neither changes instance authority, including instances omitting runtime configuration. A refusing global runtime can refuse free default validation but cannot change named or complete-event delivery on an instance. Explicit-runtime free validation uses only its passed runtime.
+
+Already-validated named events retain lifecycle gating at delivery without a second validation. Normalization, prohibited-data, schema, semantic and post-scan check order, provider-fault containment, bounded sanitized verdicts and outcome rules remain unchanged. `setSchemaRuntime` and `getSchemaRuntime` keep their signatures and exports in Core and the Node binding. See `ADR-SDK-017` in `adr/017-configured-schema-runtime-is-authoritative.md` and `MIGRATION.md`; exactly-once validation is not exactly-once delivery.
 
 ## Testing utilities and compilable examples
 

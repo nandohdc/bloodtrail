@@ -23,7 +23,7 @@ interface FaultCase {
   readonly entry: Entry;
   readonly site: Site;
   readonly behavior: Behavior;
-  readonly expected: SafeAuditError;
+  readonly expected: SafeAuditError | "accepted";
 }
 interface SinkProbe {
   readonly sink: AuditEventSink;
@@ -55,9 +55,9 @@ const faultCases: readonly FaultCase[] = [
   { entry: "named", site: "context", behavior: "throw", expected: configurationError("/contextProvider") },
   { entry: "named", site: "schema", behavior: "throw", expected: schemaError },
   { entry: "named", site: "schema", behavior: "undefined", expected: schemaError },
-  { entry: "named", site: "globalSchema", behavior: "throw", expected: schemaError },
-  { entry: "named", site: "globalSchema", behavior: "undefined", expected: schemaError },
-  { entry: "named", site: "globalSchema", behavior: "incomplete", expected: schemaError },
+  { entry: "named", site: "globalSchema", behavior: "throw", expected: "accepted" },
+  { entry: "named", site: "globalSchema", behavior: "undefined", expected: "accepted" },
+  { entry: "named", site: "globalSchema", behavior: "incomplete", expected: "accepted" },
   { entry: "emit", site: "schema", behavior: "throw", expected: schemaError },
   { entry: "emit", site: "schema", behavior: "undefined", expected: schemaError },
   { entry: "emit", site: "schema", behavior: "empty", expected: schemaError },
@@ -209,9 +209,15 @@ for (const row of faultCases) {
     try {
       if (row.site === "globalSchema") setSchemaRuntime(faultyRuntime(probe));
       const result = await invokeResult(() => entryCalls[row.entry](harness));
-      assertFailure(result, row.expected);
-      assert.ok(probe.calls > 0, "faulty provider actually invoked");
-      assert.equal(sink.calls.emit, 0);
+      if (row.expected === "accepted") {
+        assert.deepEqual(result, { ok: true, value: { status: "accepted" } });
+        assert.equal(probe.calls, 0, "faulty global provider never invoked");
+        assert.equal(sink.calls.emit, 1);
+      } else {
+        assertFailure(result, row.expected);
+        assert.ok(probe.calls > 0, "faulty provider actually invoked");
+        assert.equal(sink.calls.emit, 0);
+      }
       if (row.entry === "shutdown") await assertShutdownFault(harness);
     } finally { setSchemaRuntime(previous); }
   });
@@ -435,14 +441,16 @@ test("redelivery never allocates identifiers or reads clock", async () => {
   assert.equal(now.mock.callCount(), 0);
 });
 
-test("named redelivery contains global runtime and restores it", async () => {
+test("named redelivery ignores faulty global runtime and restores it", async () => {
   const sink = sinkProbe();
   const validate = mock.fn((): AuditResult<void> => { throw new Error(sentinel); });
   const previous = setSchemaRuntime({ validate });
   try {
-    assertFailure(await invokeResult(() => sdkFor(sink).authenticationFailed({ redelivery: { event: fixture } } as NamedInput)), schemaError);
-    assert.equal(validate.mock.callCount(), 1);
-    assert.equal(sink.calls.emit, 0);
+    assert.deepEqual(await invokeResult(() => sdkFor(sink).authenticationFailed({ redelivery: { event: fixture } } as NamedInput)), {
+      ok: true, value: { status: "accepted" },
+    });
+    assert.equal(validate.mock.callCount(), 0);
+    assert.equal(sink.calls.emit, 1);
   } finally { setSchemaRuntime(previous); }
 });
 
