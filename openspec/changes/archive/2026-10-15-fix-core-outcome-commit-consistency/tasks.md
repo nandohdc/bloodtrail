@@ -33,7 +33,7 @@ Decision source: owner decision, 2026-10-13, via plan-mode questions, grilling a
 - [x] 6.1 Obtain all ten required PR CI contexts and independent review; no local approval claim. Evidence: all ten required contexts passed on `f3ce8ffac10a8293167c60b4a2ef34ff578a462a` in PR #821, and the maintainer merged that PR. No review content or approval is asserted here; AI review is not approval.
 - [x] 6.2 Merge after review and required checks. Evidence: PR #821 was merged into `main` by the maintainer as merge commit `0936e745744c3a2d2b5204b98a7e2d9d7977b1a6`.
 - [x] 6.3 Fold the added requirement in a separate governed change. Evidence: folded into `openspec/specs/security-audit-sdk-core/spec.md` while the change is active, in this dedicated fold PR (ADR 0001).
-- [ ] 6.4 Archive only after fold lands.
+- [x] 6.4 Archive only after fold lands. Evidence: relocated to `openspec/changes/archive/2026-10-15-fix-core-outcome-commit-consistency/` in this commit, after fold PR #824 merged as `27cabe6eec2597baa4551739901d4a67e468aa02`.
 
 ## Evidence policy
 
