@@ -1510,9 +1510,8 @@ Schema failures SHALL be rebuilt as a bounded SDK error carrying only its code, 
 - **AND** lifecycle and operation authority checks SHALL remain first
 
 #### Scenario: Provider containment schema non-result
-- **WHEN** a configured or global schema runtime throws or returns neither explicit ok:true nor a well-formed failure during named execution, named redelivery, emit, redeliver or free validateSecurityAuditEvent
+- **WHEN** the configured schema runtime during named execution, named redelivery, `emit` or `redeliver`, the global runtime during free `validateSecurityAuditEvent` without an explicit runtime, or the runtime passed explicitly to free `validateSecurityAuditEvent(value, runtime)`, throws or returns neither explicit ok:true nor a well-formed failure
 - **THEN** the result SHALL be SDK_INVALID_CONFIGURATION / configuration at /schemaRuntime without a synchronous throw or rejection
-- **AND** runtime selection SHALL remain unchanged
 
 #### Scenario: Provider containment sanitized schema diagnostic
 - **WHEN** a runtime returns ok:false with error.code in CONTRACT_ERROR_CODES or equal to SDK_SCHEMA_VALIDATION_FAILED or SDK_MISSING_EVENT_FIELD, AND error.category is validation or privacy
@@ -1579,3 +1578,37 @@ The SDK SHALL refuse contradictory outcomes on every shared semantic validation 
 #### Scenario: Historical events receive no redelivery exemption
 - **WHEN** a complete event emitted before the correction is redelivered with a contradictory pair
 - **THEN** `redeliver()` refuses it under the same rule without sink handoff or historical-event grandfathering
+
+### Requirement: An SDK instance validates only with its configured schema runtime
+
+An SDK instance SHALL validate each event exactly once using only its configured `AuditSchemaRuntime`, defaulting to `cjsSchemaRuntime` when omitted. `setSchemaRuntime` SHALL affect only the free `validateSecurityAuditEvent(value)` default; explicit-runtime free validation SHALL use only its passed runtime. Public types, exports, signatures, error codes, check order, provider containment and outcome rules SHALL remain unchanged.
+
+#### Scenario: Configured runtime named execution
+- **WHEN** a valid named method executes on an SDK instance
+- **THEN** the global runtime SHALL receive zero calls and the configured runtime exactly one call before sink handoff
+
+#### Scenario: Configured runtime named redelivery
+- **WHEN** a valid named method receives `input.redelivery`
+- **THEN** the global runtime SHALL receive zero calls and the configured runtime exactly one call, preserving redelivery identity and binding checks
+
+#### Scenario: Configured runtime complete emit
+- **WHEN** `emit(event)` receives a valid event
+- **THEN** the global runtime SHALL receive zero calls and the configured runtime exactly one call
+
+#### Scenario: Configured runtime complete redelivery
+- **WHEN** `redeliver(event)` receives a valid event
+- **THEN** the global runtime SHALL receive zero calls and the configured runtime exactly one call
+
+#### Scenario: Free validation global default
+- **WHEN** free `validateSecurityAuditEvent(event)` receives a valid event without an explicit runtime
+- **THEN** the global runtime SHALL receive exactly one call and the instance configured runtime zero calls
+
+#### Scenario: Free validation explicit runtime
+- **WHEN** free `validateSecurityAuditEvent(event, runtime)` receives a valid event
+- **THEN** the global runtime SHALL receive zero calls and the passed runtime exactly one call
+
+#### Scenario: Refusing global runtime cannot override instance authority
+- **WHEN** the global runtime refuses events and a named method and `emit` execute on the same correctly configured instance
+- **THEN** both SHALL succeed and reach the sink with zero global runtime calls
+- **AND** free default validation SHALL be refused, while explicit-runtime validation SHALL remain unaffected
+- **AND** an instance omitting runtime configuration SHALL remain isolated using `cjsSchemaRuntime`

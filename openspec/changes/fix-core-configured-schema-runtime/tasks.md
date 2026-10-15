@@ -31,10 +31,12 @@ Decision source: owner decision, 2026-10-15, via grilling and triage in Claude C
 
 ## 6. Maintainer follow-up
 
-- [ ] 6.1 Obtain all ten required remote PR CI contexts; local results are not remote CI.
-- [ ] 6.2 Obtain independent maintainer approval.
-- [ ] 6.3 Merge after required checks and approval.
-- [ ] 6.4 Fold the delta in a separate governed change.
+Decision source: orchestrator follow-through, 2026-10-15, in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E: applies the owner's fold-then-archive practice for merged changes (owner request, 2026-10-14: "Fold and archive #811, #798 and #812, each as its own PR.") to #816 after the owner merged PR #828; not a separate owner instruction, and the owner may withdraw it.
+
+- [x] 6.1 Obtain all ten required remote PR CI contexts; local results are not remote CI. Evidence: all ten required contexts passed on `ea599379621a3502a4246204a765e37efade0507` in PR #828: `ci / lint`, `ci / test`, `ci / audit`, `sonar`, `sdk`, `contract`, `conventional-commits`, `codescene delta`, `design-pattern-governance` and `coverage`.
+- [x] 6.2 Obtain independent maintainer approval. Evidence: the maintainer merged PR #828; no separate approval artifact exists because the repository requires no reviews. AI review is not approval, and no review content is asserted.
+- [x] 6.3 Merge after required checks and approval. Evidence: the maintainer merged PR #828 into `main` as merge commit `d9896d6645f8e10280f7dab9941734c12ab335e6` on 2026-10-15T20:50:11Z.
+- [x] 6.4 Fold the delta in a separate governed change. Evidence: folded into `openspec/specs/security-audit-sdk-core/spec.md` while `fix-core-configured-schema-runtime` remains active, in this dedicated fold PR under ADR 0001; this does not claim that the fold PR has merged.
 - [ ] 6.5 Archive only after fold lands.
 
 ## Proposal observations — before the proposal-only commit
@@ -228,4 +230,29 @@ No remote operation was performed. All ten required contexts remain unchecked/pe
 
 ## Evidence policy
 
-Record executed observations verbatim by gate name, without machine-local paths or helper names. Distinguish pre-evidence full-chain results from evidence-edit checks and externally reported committed-head rechecks. No push, PR, remote comment, merge, fold, archive or secret access. Baseline remains `01999a4b5a85f95e0e5db1e4a9eeeec788dc831a`; never rewrite made commits.
+Record executed observations verbatim by gate name, without machine-local paths or helper names. Distinguish pre-evidence full-chain results from evidence-edit checks and externally reported committed-head rechecks. No push, PR, remote comment, merge, fold, archive or secret access. Baseline remains `01999a4b5a85f95e0e5db1e4a9eeeec788dc831a`; never rewrite made commits. That policy bound the implementation runs; group 6 records the later merge and fold as they land, and the archive follows in a separate PR.
+
+## Observed fold evidence — 2026-10-15, run #146, Node v26.11.1
+
+The supplied TEST_CMD executed before this evidence edit and before the containing commit, with an empty index against pinned base `d9896d6645f8e10280f7dab9941734c12ab335e6`. The initial wrapper invocation refused the uncommitted tracked edits with `FAILURE_CLASS: tree_dirty`, exit `88`, before any gate ran. The same exact command then ran with the documented `TAMANDUA_TSTX=0` passthrough, without caching or ledger attribution, and exited `0`. All ten commands below executed in the supplied order and each exited `0`.
+
+| Order | Gate command | Exit status | Observed result |
+|---|---|---|---|
+| 1 | `npm run check:generated --prefix packages/security-audit-sdk-core` | `0` | `generated SDK contract artifacts are current` |
+| 2 | `npm run test:matrix --prefix packages/security-audit-sdk-core` | `0` | Typecheck, build, runtime tests (`685` tests, `685` pass, `0` fail/cancelled/skipped/todo), type tests, examples, exports, compatibility, scope and dependencies passed; `15 compilable SDK documentation scenarios passed`. |
+| 3 | `npm run test:coherence --prefix packages/security-audit-sdk-core` | `0` | `cross-artifact coherence passed in archived mode for remediate-security-audit-sdk-adversarial-review: contract 2.1.0, 24 catalog events/24 named APIs, 0 runtime dependencies, 91/91 current-change tasks complete` |
+| 4 | `npm run test:changed-paths --prefix packages/security-audit-sdk-core` | `0` | `changed-path policy passed in archived mode for remediate-security-audit-sdk-adversarial-review: 1537 visible records`; ignored files excluded by standard Git semantics. |
+| 5 | `npm run validate --prefix contracts/security-audit` | `0` | `Security audit contract validation passed.`; `17` tests, `17` pass, `0` fail/cancelled/skipped/todo. |
+| 6 | `openspec validate fix-core-configured-schema-runtime --strict` | `0` | `Change 'fix-core-configured-schema-runtime' is valid` |
+| 7 | `openspec validate security-audit-sdk-core --type spec` | `0` | `Specification 'security-audit-sdk-core' is valid`; zero ERROR issues, exactly `41` WARNINGs, all `Requirement text is very long (>500 characters)`, unchanged from the baseline. |
+| 8 | `node openspec/scripts/check-design-pattern-governance.mjs --phase final --base d9896d6645f8e10280f7dab9941734c12ab335e6` | `0` | `design-pattern governance passed in final phase: enforcement active; inspected 0 commit(s) and 0 path(s) from d9896d6645f8` |
+| 9 | `node packages/security-audit-sdk-core/scripts/check-git-state.mjs` | `0` | `Git whitespace/final-newline checks passed and index is empty` |
+| 10 | `make test` | `0` | `Product test loop passed across every declared workspace (~45s local, 2026-09-10).` |
+
+The final-phase result above is vacuous by design: it inspected only the empty committed range before this fold commit, not the working-tree fold. The material committed-head result must be reported externally after execution, never backfilled into this commit. The coherence and changed-path gates' archived mode refers to the historical remediation, not archival of this active change.
+
+`make test` passed Core `685`, Node `162`, browser `71`, collector `92`, contract `17`, envelope `18` and research `11` tests, each with zero failures/cancelled/skipped/todo. The evaluation kit reported `90 measured plants across 81 of 81 controls`, each failing closed at its declared identity. Expected planted diagnostics were followed by the passing negative-control summary. The banner's timing is a historical measurement, not this execution's duration. Full governance-gate chains were not run.
+
+Before the ordered chain, `npm run build --prefix packages/security-audit-sdk-core` exited `0`, and eight external focused fold regression tests passed. They prove byte equality of both complete delta blocks, unique requirement headings and all `7` ADDED / `10` MODIFIED scenario headings, in-place replacement and append order, second-application byte identity, no operation headers, preservation of every untouched canonical byte and all `19` founding requirement blocks, and deletion positions confined to the superseded provider block. Exactly two canonical lines are deleted, both in `Provider containment schema non-result`; no other provider scenario changes. Only the two allowed paths differ, the delta is unchanged, and the change remains active. No repository test files were added or modified.
+
+Additional pre-evidence `openspec validate security-audit-sdk-core --type spec --json` exited `0`; executable comparison with the baseline JSON confirmed identical `41` very-long-requirement WARNINGs and zero ERROR issues, with no new warning. `git diff --check` also exited `0` before the chain. Recording this section is an evidence edit: whitespace/Git checks must run again with an empty index before staging. No later check or committed-head result is asserted here. No remote mutation, fold merge, archive, signing, release or secret access was performed by this run.
