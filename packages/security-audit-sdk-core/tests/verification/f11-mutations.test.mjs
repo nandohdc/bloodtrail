@@ -44,13 +44,13 @@ const mutations = [
   {
     name: "M-F11-F consume terminal-completion path during redelivery",
     file: "src/sdk.ts",
-    oldText: "    if (built.value.deliveryIntent.kind === \"named_redelivery\") {\n      return this.#deliverValidatedEvent(built.value.event, built.value.deliveryIntent);\n    }",
-    newText: "    if (built.value.deliveryIntent.kind === \"named_redelivery\" && false) {\n      return this.#deliverValidatedEvent(built.value.event, built.value.deliveryIntent);\n    }",
+    oldText: "    if (built.value.deliveryIntent.kind === \"named_redelivery\") {\n      return this.#deliverNamedEvent(built.value.event, built.value.deliveryIntent);\n    }",
+    newText: "    if (built.value.deliveryIntent.kind === \"named_redelivery\" && false) {\n      return this.#deliverNamedEvent(built.value.event, built.value.deliveryIntent);\n    }",
   },
   {
     name: "M-F11-G restore unchecked early return",
     file: "src/events.ts",
-    oldText: "    const validated = validateSecurityAuditEvent(redelivery);\n    if (!validated.ok) return validated;\n    if (validated.value.event.name !== definition.name) return failure(\"UNKNOWN_CATALOG_VALUE\", \"validation\", \"/event/name\");\n    const binding = validateNamedRedeliveryBinding(validated.value, operation);\n    if (!binding.ok) return binding;\n    return {\n      ok: true,\n      value: {\n        event: validated.value as Readonly<EventForName<EventName>>,\n        deliveryIntent: { kind: \"named_redelivery\" },\n      },\n    };",
+    oldText: "    const validated = validateSecurityAuditEvent(redelivery, config.schemaRuntime);\n    if (!validated.ok) return validated;\n    if (validated.value.event.name !== definition.name) return failure(\"UNKNOWN_CATALOG_VALUE\", \"validation\", \"/event/name\");\n    const binding = validateNamedRedeliveryBinding(validated.value, operation);\n    if (!binding.ok) return binding;\n    return {\n      ok: true,\n      value: {\n        event: validated.value as Readonly<EventForName<EventName>>,\n        deliveryIntent: { kind: \"named_redelivery\" },\n      },\n    };",
     newText: "    const validated: AuditResult<SecurityAuditEvent> = { ok: true, value: redelivery };\n    return {\n      ok: true,\n      value: {\n        event: validated.value as Readonly<EventForName<EventName>>,\n        deliveryIntent: { kind: \"named_redelivery\" },\n      },\n    };",
   },
 ];
