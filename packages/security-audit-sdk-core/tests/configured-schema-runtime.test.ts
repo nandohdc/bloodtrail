@@ -137,56 +137,46 @@ test("omitted runtime configuration defaults to cjs independently of the global 
   } finally { setSchemaRuntime(previous); }
 });
 
-function createReentrantHarness(providers: Pick<Parameters<typeof createSecurityAuditSdk>[0], "clock" | "schemaRuntime">) {
-  const delivered: Readonly<SecurityAuditEvent>[] = [];
-  const sdk = createSecurityAuditSdk({
-    contractVersion: "2.1.0", producer: fixture.producer, service: fixture.service,
-    environment: fixture.environment,
-    sink: { async emit(event) { delivered.push(event); return { status: "accepted" }; } },
-    identifiers: createDeterministicProviders(), clock: createDeterministicClock(),
-    contextProvider: new StackContextProvider(), ...providers,
+const reentrantCases = [
+  {
+    name: "named execution from the clock",
+    input: namedInput,
+    providers: (onCall: () => void) => ({
+      clock: { now() { onCall(); return new Date("2026-01-01T00:00:00.000Z"); } },
+    }),
+  },
+  {
+    name: "named redelivery from the configured runtime",
+    input: () => ({ redelivery: { event: fixture } } as NamedInput),
+    providers: (onCall: () => void) => ({
+      schemaRuntime: { validate(value: unknown) { onCall(); return cjsSchemaRuntime.validate(value); } },
+    }),
+  },
+];
+
+for (const row of reentrantCases) {
+  test(`${row.name}: refuses delivery after re-entrant shutdown`, async () => {
+    let shutdown: ReturnType<SecurityAuditSdk["shutdown"]> | undefined;
+    const onCall = mock.fn(() => { shutdown ??= sdk.shutdown(); });
+    const delivered: Readonly<SecurityAuditEvent>[] = [];
+    const sdk = createSecurityAuditSdk({
+      contractVersion: "2.1.0", producer: fixture.producer, service: fixture.service,
+      environment: fixture.environment,
+      identifiers: createDeterministicProviders(), clock: createDeterministicClock(),
+      contextProvider: new StackContextProvider(), ...row.providers(onCall),
+      sink: { async emit(event) { delivered.push(event); return { status: "accepted" }; } },
+    });
+    assert.equal(onCall.mock.callCount(), 0);
+    try {
+      const result = await sdk.authenticationFailed(row.input());
+      assert.ok(onCall.mock.callCount() >= 1);
+      assert.ok(shutdown);
+      assert.deepEqual(result, {
+        ok: false, error: { code: "SDK_SHUTTING_DOWN", category: "lifecycle" },
+      });
+      assert.equal(delivered.length, 0);
+    } finally {
+      await shutdown;
+    }
   });
-  return { sdk, delivered };
 }
-
-test("named execution refuses delivery after re-entrant shutdown from the clock", async () => {
-  let shutdown: ReturnType<SecurityAuditSdk["shutdown"]> | undefined;
-  const now = mock.fn(() => {
-    shutdown ??= sdk.shutdown();
-    return new Date("2026-01-01T00:00:00.000Z");
-  });
-  const { sdk, delivered } = createReentrantHarness({ clock: { now } });
-  assert.equal(now.mock.callCount(), 0);
-  try {
-    const result = await sdk.authenticationFailed(namedInput());
-    assert.ok(now.mock.callCount() >= 1);
-    assert.ok(shutdown);
-    assert.deepEqual(result, {
-      ok: false, error: { code: "SDK_SHUTTING_DOWN", category: "lifecycle" },
-    });
-    assert.equal(delivered.length, 0);
-  } finally {
-    await shutdown;
-  }
-});
-
-test("named redelivery refuses delivery after re-entrant shutdown from the configured runtime", async () => {
-  let shutdown: ReturnType<SecurityAuditSdk["shutdown"]> | undefined;
-  const validate = mock.fn((value: unknown) => {
-    shutdown ??= sdk.shutdown();
-    return cjsSchemaRuntime.validate(value);
-  });
-  const { sdk, delivered } = createReentrantHarness({ schemaRuntime: { validate } });
-  assert.equal(validate.mock.callCount(), 0);
-  try {
-    const result = await sdk.authenticationFailed({ redelivery: { event: fixture } } as NamedInput);
-    assert.equal(validate.mock.callCount(), 1);
-    assert.ok(shutdown);
-    assert.deepEqual(result, {
-      ok: false, error: { code: "SDK_SHUTTING_DOWN", category: "lifecycle" },
-    });
-    assert.equal(delivered.length, 0);
-  } finally {
-    await shutdown;
-  }
-});
