@@ -44,7 +44,7 @@ Follow-up decision source: owner decision, 2026-10-14, via code-review follow-up
 
 - [x] 7.1 Merge after independent review and required checks. Evidence: PR #818 was merged into `main` by the maintainer as merge commit `2660984bbf1a956b8246c4d2cd874f53c0c31a43`.
 - [x] 7.2 Fold the added requirement in a separate governed change. Evidence: folded into `openspec/specs/security-audit-sdk-core/spec.md` while the change is active, in this dedicated fold PR (ADR 0001).
-- [ ] 7.3 Archive only after fold lands.
+- [x] 7.3 Archive only after fold lands. Evidence: relocated to `openspec/changes/archive/2026-10-15-fix-core-provider-fault-containment/` in this commit, after fold PR #822 merged as `0815c81378a1c426349f54ed3e2f65eabcbd5ae3`.
 
 ## Observed evidence — 2026-10-14, Node v26.11.1
 
