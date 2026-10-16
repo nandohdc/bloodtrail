@@ -39,7 +39,7 @@ The proposal and tracer bullet are separate PRs (G35). The orchestrator delivers
 
 These are **proposed terms**, not an execution grant. Verbatim owner decisions and statuses are retained in `design.md`; the historical pilot supplies structure only, not delegated authorization.
 
-- **Environment (G15):** a Claude cloud session container, with Node 26 installed outside the repository. The evaluation kit is built by the governed kit builder from the exact approved head commit and consumed outside the repository. Network access is loopback only.
+- **Environment (G38, superseding G15):** the owner's workstation (macOS, Apple Silicon), driven by Tamandua with pi. Node 26 is installed outside the repository. The evaluation kit is built by the governed kit builder in distributable mode from the exact approved head commit and consumed outside the repository. Probe processes use no network beyond loopback: they run under Node's permission model without network access. The kit build's `npm ci` may use the npm registry or the local cache. Each run's provenance records the model lane that drove it.
 - **Data class:** synthetic opaque identifiers, never email-like, and addresses only in `192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24` and `2001:db8::/32`. No real-user data is used or derived. Explicitly labelled synthetic prohibited-data markers are allowed in P-D only.
 - **Volume (G20, G34):** at most 10 runs of at most 5,000 occurrences each; the limits are shared across the Stage P probe tickets, not renewed per ticket.
 - **Window (G34):** 7 days from the owner's **FIRST run-approval comment** (the tracer-bullet ticket). A lapsed window is amended through the change, never stretched.
