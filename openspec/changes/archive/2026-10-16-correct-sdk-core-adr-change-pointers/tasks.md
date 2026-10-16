@@ -13,4 +13,4 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After the implementation merges, archive `correct-sdk-core-adr-change-pointers` in a separate pull request.
+- [x] 4.1 After the implementation merges, archive `correct-sdk-core-adr-change-pointers` in a separate pull request. Evidence: relocated to `openspec/changes/archive/2026-10-16-correct-sdk-core-adr-change-pointers/` in this commit, after PR #834 merged as `37a2b198d469f67cb9c3a0041cfc6f837f27a807`.
