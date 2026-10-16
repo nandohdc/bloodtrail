@@ -3,7 +3,7 @@
 - Status: Accepted for SDK-core implementation
 - Date: 2026-10-13
 - Issue: https://github.com/nandohdc/bloodtrail/issues/796
-- Owning change: `openspec/changes/fix-core-default-identifiers-uniqueness/`
+- Owning change: `openspec/changes/archive/2026-10-13-fix-core-default-identifiers-uniqueness/`
 - Decision source: owner decision, 2026-10-13, via grilling in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
 
 ## Context

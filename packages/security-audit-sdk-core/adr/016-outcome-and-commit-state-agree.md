@@ -3,7 +3,7 @@
 - Status: Accepted for SDK-core implementation
 - Date: 2026-10-14
 - Issue: https://github.com/nandohdc/bloodtrail/issues/812
-- Owning change: `openspec/changes/fix-core-outcome-commit-consistency/`
+- Owning change: `openspec/changes/archive/2026-10-15-fix-core-outcome-commit-consistency/`
 - Decision source: owner decision, 2026-10-13, via plan-mode questions, grilling and triage in local Claude Code session 2db6f6fa-b531-4e63-8651-4ea851fd76be
 
 ## Context
