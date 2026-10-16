@@ -37,7 +37,7 @@ Decision source: orchestrator follow-through, 2026-10-15, in Claude Code session
 - [x] 6.2 Obtain independent maintainer approval. Evidence: the maintainer merged PR #828; no separate approval artifact exists because the repository requires no reviews. AI review is not approval, and no review content is asserted.
 - [x] 6.3 Merge after required checks and approval. Evidence: the maintainer merged PR #828 into `main` as merge commit `d9896d6645f8e10280f7dab9941734c12ab335e6` on 2026-10-15T20:50:11Z.
 - [x] 6.4 Fold the delta in a separate governed change. Evidence: folded into `openspec/specs/security-audit-sdk-core/spec.md` while `fix-core-configured-schema-runtime` remains active, in this dedicated fold PR under ADR 0001; this does not claim that the fold PR has merged.
-- [ ] 6.5 Archive only after fold lands.
+- [x] 6.5 Archive only after fold lands. Evidence: relocated to `openspec/changes/archive/2026-10-15-fix-core-configured-schema-runtime/` in this commit, after fold PR #829 merged as `8ce870ad58ca412d2e89c8bfc821fcc238e40247`.
 
 ## Proposal observations — before the proposal-only commit
 
