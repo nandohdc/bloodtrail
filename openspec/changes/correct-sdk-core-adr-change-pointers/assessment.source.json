@@ -1,0 +1,134 @@
+{
+  "assessment_level": "abbreviated",
+  "decision": "direct_implementation",
+  "forces": [
+    "The five SDK-core ADR owning-change directory pointers must resolve to their existing archived changes.",
+    "The correction must preserve decision provenance and every other ADR byte.",
+    "An active change must declare the SDK-core capability and own every edited governed implementation path."
+  ],
+  "applicability": {
+    "triggers_matched": [],
+    "full_trigger_absence_proof": "No full assessment trigger applies. This is one bounded correction to five ADR directory pointers, introducing no abstraction, module, class or interface. No public_api or integration changes: only line 6 of existing documents changes. No lifecycle_or_state, concurrency or persistence behavior changes: executable code and tests are untouched. No security_sensitive_behavior changes: the decision text and all fifteen security dimensions remain unchanged. No governance_core_path is edited, and no canonical_capability_requirement changes; this change uses skip_specs without a spec delta.",
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-sdk-core"
+    ]
+  },
+  "owned_paths": [
+    "packages/security-audit-sdk-core/adr/013-default-identifier-cryptographic-uniqueness.md",
+    "packages/security-audit-sdk-core/adr/014-transaction-bound-commit-state-requires-operation-evidence.md",
+    "packages/security-audit-sdk-core/adr/015-injected-provider-failures-are-contained.md",
+    "packages/security-audit-sdk-core/adr/016-outcome-and-commit-state-agree.md",
+    "packages/security-audit-sdk-core/adr/017-configured-schema-runtime-is-authoritative.md",
+    "openspec/changes/correct-sdk-core-adr-change-pointers/.openspec.yaml",
+    "openspec/changes/correct-sdk-core-adr-change-pointers/assessment.json",
+    "openspec/changes/correct-sdk-core-adr-change-pointers/assessment.source.json",
+    "openspec/changes/correct-sdk-core-adr-change-pointers/design.md",
+    "openspec/changes/correct-sdk-core-adr-change-pointers/proposal.md",
+    "openspec/changes/correct-sdk-core-adr-change-pointers/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-replace-directory-pointers",
+      "kind": "direct_implementation",
+      "summary": "Replace only line 6 of the five ADRs with the archived owning change directories, keeping the label and backticks, under this active change.",
+      "forces_addressed": [
+        "The five SDK-core ADR owning-change directory pointers must resolve to their existing archived changes.",
+        "The correction must preserve decision provenance and every other ADR byte.",
+        "An active change must declare the SDK-core capability and own every edited governed implementation path."
+      ]
+    },
+    {
+      "id": "approach-delete-owning-change-line",
+      "kind": "alternative",
+      "summary": "Delete the Owning change line.",
+      "forces_addressed": [
+        "The five SDK-core ADR owning-change directory pointers must resolve to their existing archived changes.",
+        "The correction must preserve decision provenance and every other ADR byte."
+      ]
+    },
+    {
+      "id": "approach-name-only-change-id",
+      "kind": "alternative",
+      "summary": "Name only the change id.",
+      "forces_addressed": [
+        "The five SDK-core ADR owning-change directory pointers must resolve to their existing archived changes.",
+        "The correction must preserve decision provenance and every other ADR byte."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-replace-directory-pointers",
+  "rejected_alternative_ids": [
+    "approach-delete-owning-change-line",
+    "approach-name-only-change-id"
+  ],
+  "rejection_reasons": {
+    "approach-delete-owning-change-line": {
+      "forces": [
+        "The correction must preserve decision provenance and every other ADR byte."
+      ],
+      "reason": "Deleting the Owning change line loses the decision's provenance instead of repairing the reference to it."
+    },
+    "approach-name-only-change-id": {
+      "forces": [
+        "The five SDK-core ADR owning-change directory pointers must resolve to their existing archived changes."
+      ],
+      "reason": "The existing ADRs name directories, and a bare id is less directly resolvable than the archived directory path."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-adr-pointers-resolve-to-archived-changes",
+    "implementation-adr-decision-text-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-adr-pointers-resolve-to-archived-changes": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Task 2.2 checks each archived target with git cat-file -e at baseline 6252e55abe49d760d61fc8b01a34e413783713d5.",
+        "Task 2.1 replaces only the five line-6 directory pointers; task 3.1 runs the existing governance gates."
+      ]
+    },
+    "implementation-adr-decision-text-unchanged": {
+      "task_ids": [
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Task 2.2 reverses only the pointer substitution and compares each ADR byte-for-byte with its baseline blob, including final newlines.",
+        "Task 3.1 runs the existing coherence and changed-path checks without modifying tests or scripts."
+      ]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "6252e55abe49d760d61fc8b01a34e413783713d5"
+  },
+  "security_sensitive": false,
+  "security_justification": {
+    "audit_integrity": "No audit event, contract or integrity assertion changes; only the five ADR owning-change directory pointers are corrected.",
+    "authentication_or_authorization": "No authentication or authorization mechanism changes; no executable code or permission decision is edited.",
+    "authority_provenance": "The ADRs retain their decision sources and owning-change provenance; only stale directory paths are replaced, with no authority or approval change.",
+    "concurrency": "No scheduler, lock, shared state or synchronization changes; the edits are restricted to five documentation pointers.",
+    "confidentiality": "No secret, credential or confidential payload handling changes; the replacement paths identify existing repository directories.",
+    "cryptography": "No algorithm, digest, key, signing or verification behavior changes; ADR-SDK-013's cryptographic decision text stays byte-for-byte unchanged.",
+    "error_disclosure": "No error type, diagnostic or disclosure behavior changes; ADR-SDK-015's provider-failure decision text remains untouched.",
+    "external_security_integration": "No external security product, network service or third-party integration changes; each replacement is a local archived-change path.",
+    "fail_posture": "No failure handling or fail-closed rule changes; the five ADR decisions and all executable behavior remain unchanged.",
+    "lifecycle": "No SDK, operation or resource lifecycle transition changes; this correction neither moves nor archives any change directory.",
+    "mutation_ownership": "No runtime ownership or mutation rule changes; only the existing owning-change reference line in each ADR is edited.",
+    "privacy_transformation": "No redaction, data classification, prohibited-data scan or personal-data processing changes; only directory pointers change.",
+    "resource_retention": "No storage, queue, buffer, retention policy or resource lifetime changes; archived directories are referenced without being modified.",
+    "retry_or_redelivery": "No retry, redelivery, attempt or ordering behavior changes; the correction contains no executable code changes.",
+    "trust_boundary": "No principal, package boundary or trust crossing changes; existing ADR decision text and runtime boundaries remain intact."
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "3.1"
+  ]
+}
