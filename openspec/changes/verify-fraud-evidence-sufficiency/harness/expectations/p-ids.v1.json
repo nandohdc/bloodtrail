@@ -1,0 +1,203 @@
+{
+  "probe": "P-ids",
+  "version": 1,
+  "drafted_from": {
+    "source": "#800 expectations comment, part 1/1 (800-expectations-comment.md)",
+    "commit": "5d931ad"
+  },
+  "corrected_at": "101d083636044fe86cc019d1f1228f7feb021e39",
+  "owner_decisions": {
+    "P-ids-04": "included: owner decision, 2026-10-16",
+    "P-ids-09": "included: owner decision, 2026-10-16",
+    "P-ids-11": "analysis only: owner decision, 2026-10-16; not executed: Stage 2 (G22)"
+  },
+  "definitions": {
+    "fresh_process": "New Node process resolving only the own service installed packed public API; no identifier-consuming call before the measured sequence. A restart is a fresh process.",
+    "plain_emission": "authenticationFailed without operation or correlation in input, ambient or authoritative context. Generates event.id, correlation.operation_id, correlation.correlation_id in that order; transaction_id absent.",
+    "base_input": {
+      "actor": "anonymousActor(request_boundary)",
+      "tenant": { "scope": "tenant", "actor_tenant_id": "tenant-pids-1", "effective_tenant_id": "tenant-pids-1", "resource_tenant_id": "tenant-pids-1" },
+      "authentication": { "method": "password_mfa", "assurance_level": "aal1", "mfa_state": "not_used", "credential_type": "password", "identity_provider": "https://idp.synthetic.test", "delegated": false, "impersonated": false },
+      "source": { "observed": { "address": "203.0.113.10", "port": 443 } },
+      "request": { "id": "req-pids-<i>", "method": "POST", "route": "/api/v1/auth/login" },
+      "event": { "outcome_reason": { "code": "credential_invalid" } }
+    },
+    "N": 100,
+    "M": 10,
+    "metrics": {
+      "positional_equality": "count of equal values at the same index",
+      "intersection": "size of the intersection of the two sets",
+      "within_process_distinctness": "size of the set of all generated ids compared with their count; supplied control ids reported separately"
+    },
+    "timestamp": "Record event.timestamp and event.observed_at raw. A system clock does not guarantee inequality between processes.",
+    "implementer_defaults": [
+      "Repeat beginOperation M=10 times in case 03; include all three handle fields in node case 08 comparisons.",
+      "Call constructors once per process and reuse branded input values; never provide correlation.",
+      "Count each direct SDK/public factory, constructor, testing inspector and direct provider invocation, including refusals. Count every harness-supplied identifier callback too. SDK-internal calls to untouched default providers are not extra harness calls. Public property reads and JavaScript builtins are not method occurrences. No shutdown call; a fresh process exits with only a capturing sink.",
+      "Negative configuration rows exercise both factories in the setup process; every call gets a fresh sink. This consumes no identifiers.",
+      "Budgets below are exact upper bounds for successful sequences under this counting model. A refused attempt still spends its call; stop at the first setup-positive or P-ids-01 emission refusal.",
+      "UUID collision-free outcomes are high-confidence hypotheses, not mathematical guarantees. A collision is reported, never rerun under the same approval."
+    ]
+  },
+  "planned_occurrence_budget": {
+    "processes": {
+      "setup": 28,
+      "core-A": 107,
+      "core-B": 106,
+      "core-C": 12,
+      "core-D": 12,
+      "core-E": 9,
+      "core-F": 10,
+      "core-G": 11,
+      "controls": 36,
+      "node-A": 116,
+      "node-B": 116,
+      "node-C": 9,
+      "node-D": 9,
+      "core-H": 406,
+      "core-I": 406
+    },
+    "total": 1393,
+    "limit": 5000
+  },
+  "cases": [
+    {
+      "case_id": "P-ids-00",
+      "setup": "Both factories: minimal config (contractVersion 2.1.0, producer pids-producer/0.0.1, service pids-service, environment synthetic, capturing sink); omit identifiers/clock/contextProvider/retention. Negative rows a-f: missing sink; version 2.0.0; producer without version; service without name; missing environment; identifiers with only eventId function.",
+      "expected": {
+        "positive": { "frozen": true, "state": "ready", "throws": false },
+        "core_defaults": "systemAuditIdentifiers uses host Web Crypto crypto.randomUUID; absent support fails closed with SDK_INVALID_CONFIGURATION/configuration at /identifiers (analysis, no extra probe). systemAuditClock uses new Date(); StackContextProvider via getContextProvider; retention 4096/4096; shutdownTimeoutMs 5000.",
+        "node_defaults": "nodeIdentifiers (node:crypto randomUUID), nodeContextProvider (AsyncLocalStorage), nodeClock; other Node platform providers precede config.",
+        "negative": [
+          { "row": "a", "code": "SDK_INVALID_CONFIGURATION", "category": "configuration", "path": "/sink" },
+          { "row": "b", "code": "SDK_UNSUPPORTED_CONTRACT_VERSION", "category": "configuration", "path": "/contractVersion" },
+          { "row": "c", "code": "SDK_INVALID_CONFIGURATION", "category": "configuration", "path": "/producer/version" },
+          { "row": "d", "code": "SDK_INVALID_CONFIGURATION", "category": "configuration", "path": "/service/name" },
+          { "row": "e", "code": "SDK_INVALID_CONFIGURATION", "category": "configuration", "path": "/environment" },
+          { "row": "f", "code": "SDK_INVALID_CONFIGURATION", "category": "configuration", "path": "/identifiers/operationId" }
+        ],
+        "check_order": "contractVersion, producer, service, environment, sink, optional providers, cryptographic support; service.version not required. Identifier function validation visits eventId then operationId."
+      },
+      "basis": [
+        "packages/security-audit-sdk-core/src/sdk.ts:461-463",
+        "packages/security-audit-sdk-core/src/config.ts:106-163,68,130-141,171-174,231-240",
+        "packages/security-audit-sdk-core/src/providers.ts:42-71,117-162,208-247",
+        "packages/security-audit-sdk-core/src/errors.ts:21-38",
+        "packages/security-audit-sdk-node/src/platform.ts:29-56",
+        "packages/security-audit-sdk-node/src/identifiers.ts:1-12",
+        "packages/security-audit-sdk-node/src/context.ts:1-16",
+        "packages/security-audit-sdk-node/src/clock.ts:1-5"
+      ],
+      "classification": "setup precondition, not a uniqueness verdict",
+      "confidence": "high",
+      "corrected_from": { "old_text": "Core identifiers = systemAuditIdentifiers, the fixed-seed PRNG.", "reason": "#796 fixed at 02ce833: host cryptographic UUIDs and construction fails closed without Web Crypto." }
+    },
+    {
+      "case_id": "P-ids-01",
+      "setup": "Fresh core-A/core-B; N sequential plain emissions, no prior identifier calls. Read sink arrays and raw timestamps. Any refused emission invalidates and immediately stops all further roles.",
+      "expected": { "accepted_per_process": 100, "sink_events_per_process": 100, "event_id": { "positional_equality": 0, "intersection": 0 }, "uuid": "lowercase v4", "distinct_within_process": true, "timestamps": "observations only, no inequality assertion" },
+      "basis": ["packages/security-audit-sdk-core/src/providers.ts:119-141,228-247", "packages/security-audit-sdk-core/src/events.ts:39,84-87,246-285,417-424,449-500", "packages/security-audit-sdk-core/src/testing.ts:21-34", "packages/security-audit-sdk-core/src/context.ts:155-166,284-292,305-307,321-323"],
+      "classification": "cross-process repeat: NO (hypothesis on fixed baseline)",
+      "confidence": "high (probabilistic)",
+      "corrected_from": { "old_text": "Event ids identical: positional equality N/N and intersection N; fixed-seed predictions. Timestamps DIFFER.", "reason": "Cryptographic UUID fix removes deterministic sequences; system clock cannot guarantee unequal timestamps." }
+    },
+    {
+      "case_id": "P-ids-02",
+      "setup": "Reuse core-A/core-B observations from 01; no new process or SDK call.",
+      "expected": { "operation_id": { "positional_equality": 0, "intersection": 0 }, "correlation_id": { "positional_equality": 0, "intersection": 0 }, "transaction_id": "absent on every plain emission", "distinct_generated_ids_per_process": 300 },
+      "basis": ["packages/security-audit-sdk-core/src/events.ts:246-285", "packages/security-audit-sdk-core/src/providers.ts:119-141,241"],
+      "classification": "cross-process repeat: NO; transaction_id n/a (absent)",
+      "confidence": "high (probabilistic)",
+      "corrected_from": { "old_text": "operation_id and correlation_id identical N/N in the fixed-seed stream.", "reason": "Both use host crypto.randomUUID, not process-restarted PRNG state." }
+    },
+    {
+      "case_id": "P-ids-03",
+      "setup": "Fresh core-C/core-D: first identifier-consuming call beginOperation(); repeat M=10. Read public operationId, transactionId, correlationId getters.",
+      "expected": { "accepted_per_process": 10, "operationId": { "positional_equality": 0, "intersection": 0 }, "transactionId": { "positional_equality": 0, "intersection": 0 }, "correlationId": { "positional_equality": 0, "intersection": 0 }, "distinct_within_process": true, "identifier_refusals": 0 },
+      "basis": ["packages/security-audit-sdk-core/src/operations.ts:30-45,97-99,131-145,204-223", "packages/security-audit-sdk-core/src/sdk.ts:86-106,549-556", "packages/security-audit-sdk-core/src/providers.ts:119-141"],
+      "classification": "cross-process repeat: NO (transaction ids included)",
+      "confidence": "high (probabilistic)",
+      "corrected_from": { "old_text": "All three handle fields identical M/M; unrelated transactions merge.", "reason": "All generated handle identifiers now draw host cryptographic UUIDs." }
+    },
+    {
+      "case_id": "P-ids-04",
+      "setup": "Included by owner decision, 2026-10-16. Fresh core-E emits 3; fresh core-F begins one operation, reads getters, then emits 3 without using the handle. Compare pooled cross-field ids and event ids.",
+      "expected": { "pooled_intersection": 0, "event_id": { "positional_equality": 0, "intersection": 0 }, "distinct_within_process": true, "pool_sizes": [9, 12] },
+      "basis": ["packages/security-audit-sdk-core/src/providers.ts:119-141", "packages/security-audit-sdk-core/src/operations.ts:131-145", "packages/security-audit-sdk-core/src/events.ts:84-87,259-285,484-500"],
+      "classification": "cross-process repeat: NO across different call patterns",
+      "confidence": "high (probabilistic)",
+      "corrected_from": { "old_text": "Pooled intersection 9; positional event equality 0 but event intersection 2; offset and cross-field collisions.", "reason": "No shared deterministic stream exists after #796." }
+    },
+    {
+      "case_id": "P-ids-05",
+      "setup": "Fresh core-G calls public systemAuditIdentifiers.eventId once FIRST, then creates SDK1/emits once, then SDK2/emits once, separate sinks. This remains the original within-process control, not a cross-process case.",
+      "expected": { "accepted_emissions": 2, "distinct_generated_ids": 7, "direct_and_two_instance_ids": "all distinct, no fixed-seed prediction" },
+      "basis": ["packages/security-audit-sdk-core/src/providers.ts:119-141", "packages/security-audit-sdk-core/src/index.ts:1,86-96", "packages/security-audit-sdk-core/package.json:25-34", "packages/security-audit-sdk-core/src/events.ts:84-87,259-285"],
+      "classification": "within-process direct-provider/two-instance control: uniqueness hypothesis",
+      "confidence": "high (probabilistic)",
+      "corrected_from": { "old_text": "Direct call and SDK1/SDK2 continue a module-global fixed-seed stream; repeats explained by shared fixed seed.", "reason": "Direct export and both instances now call host crypto.randomUUID. Within-process uniqueness outcome is retained; allocation predictions/explanation change." }
+    },
+    {
+      "case_id": "P-ids-06",
+      "setup": "Reuse core-A from 01: inspectSdkRetentionForTesting after N emissions, before process exits. No additional measured sequence.",
+      "expected": { "identifier_refusals": 0, "retention": { "generatedEventIds": { "size": 100, "capacity": 4096 }, "issuedOperationIds": { "size": 0, "capacity": 4096 } } },
+      "basis": ["packages/security-audit-sdk-core/src/sdk.ts:61-74,237-244,465-474", "packages/security-audit-sdk-core/src/testing.ts:4", "packages/security-audit-sdk-core/src/config.ts:68,171-174", "packages/security-audit-sdk-core/src/bounded-fifo.ts:20-32"],
+      "classification": "instance-local recent history control, not evidence of a current cross-process defect",
+      "confidence": "high",
+      "corrected_from": { "old_text": "History does NOT catch the defect; cannot catch the cross-process repeat from 01.", "reason": "The history scope remains instance-local, but #796 removes the predicted cross-process repeats. Raw retention expectation unchanged." }
+    },
+    {
+      "case_id": "P-ids-07",
+      "setup": "Fresh controls process: (a) constant valid event UUID on SDK1, emit twice; (b) same provider SDK2 emit once; (c) SDK1 beginOperation with operationId pids-op-fixed-1 twice; (d) new SDK with fresh event ids but constant operationId/correlationId emits twice. All seven methods provided, other values synthetic per-call.",
+      "expected": { "a": ["accepted", { "code": "SDK_INVALID_IDENTIFIER", "category": "validation", "path": "/event/id" }], "a_sink_count": 1, "b": "accepted", "c": ["accepted", { "code": "SDK_INVALID_IDENTIFIER", "category": "validation", "path": "/operation/operation_id" }], "d": "both accepted with repeated plain operation_id/correlation_id" },
+      "basis": ["packages/security-audit-sdk-core/src/sdk.ts:61-74,86-106,237-244", "packages/security-audit-sdk-core/src/events.ts:39,259-285,484-487", "packages/security-audit-sdk-core/src/operations.ts:204-223", "packages/security-audit-sdk-core/src/providers.ts:143-162"],
+      "classification": "positive control: instance-local event/issued-operation collision history; plain correlation ids not tracked",
+      "confidence": "high"
+    },
+    {
+      "case_id": "P-ids-08",
+      "setup": "Fresh node-A/node-B: no identifiers key; N plain emissions followed by M beginOperation calls. Compare event, plain operation/correlation and all handle fields.",
+      "expected": { "accepted_emissions_per_process": 100, "accepted_operations_per_process": 10, "cross_process_each_field": { "positional_equality": 0, "intersection": 0 }, "distinct_generated_ids_per_process": 330, "event_id_uuid": "lowercase v4", "plain_transaction_id": "absent", "identifier_refusals": 0 },
+      "basis": ["packages/security-audit-sdk-node/src/identifiers.ts:1-12", "packages/security-audit-sdk-node/src/platform.ts:29-56", "packages/security-audit-sdk-core/src/providers.ts:222-247", "packages/security-audit-sdk-core/src/events.ts:246-285"],
+      "classification": "cross-process repeat: NO",
+      "confidence": "high (probabilistic)",
+      "corrected_from": { "old_text": "events[0].event.id differs from the fixed core first UUID.", "reason": "Drop obsolete fixed-seed comparison. Node uniqueness prediction itself is unchanged." }
+    },
+    {
+      "case_id": "P-ids-09",
+      "setup": "Included by owner decision, 2026-10-16. Fresh node-C/node-D: JavaScript identifiers: undefined; emit 3 plain events each.",
+      "expected": { "accepted_per_process": 3, "each_generated_field": { "positional_equality": 0, "intersection": 0 }, "distinct_within_process": true, "provider_resolution": "explicit undefined overwrites nodeIdentifiers; core falls back to host Web Crypto randomUUID. Context provider stays Node unless explicitly undefined too (analysis only)." },
+      "basis": ["packages/security-audit-sdk-node/src/platform.ts:51-56", "packages/security-audit-sdk-core/src/providers.ts:222-247", "packages/security-audit-sdk-node/tsconfig.json:9"],
+      "classification": "cross-process repeat: NO; core cryptographic fallback",
+      "confidence": "high (probabilistic)",
+      "corrected_from": { "old_text": "identifiers: undefined falls back to core fixed seed; identical sequences across processes, silent regression path.", "reason": "Spread/fallback semantics unchanged, but fallback now uses host cryptographic randomness and fails closed without it." }
+    },
+    {
+      "case_id": "P-ids-10",
+      "setup": "Fresh core-H/core-I: complete caller-supplied seven-method provider using node:crypto randomUUID; N plain emissions. Record every harness provider callback as an occurrence.",
+      "expected": { "accepted_per_process": 100, "each_generated_field": { "positional_equality": 0, "intersection": 0 }, "distinct_within_process": true, "identifier_refusals": 0 },
+      "basis": ["packages/security-audit-sdk-core/src/providers.ts:143-162,222-247", "packages/security-audit-sdk-core/src/events.ts:259-285,484-487"],
+      "classification": "cross-process repeat: NO",
+      "confidence": "high (probabilistic)"
+    },
+    {
+      "case_id": "P-ids-11",
+      "setup": "not executed: Stage 2 (G22). Analysis only per owner decision, 2026-10-16. No collector package installed in the own service or imported. Consider duplicate/conflict outcomes only conditionally, not as consequences expected from fresh core-A/B.",
+      "expected": {
+        "execution": "not executed: Stage 2 (G22)",
+        "natural_repeat": "No natural duplicate expected from core-A/core-B or restart with cryptographic UUIDs.",
+        "conditional": [
+          "IF the same event id and sender recur without storage within 32 live records/300s: unequal canonical content yields COLLECTOR_DUPLICATE_CONFLICT/deduplication at /event/id; equal content yields duplicate acknowledged admitted.",
+          "IF sender differs without storage: identities are independent, capacity permitting.",
+          "IF id and storage scope match: unequal occurrence key yields COLLECTOR_STORAGE_CONFLICT/storage at /event/id; equal key yields duplicate acknowledged persisted; existing record remains untouched.",
+          "IF effective tenant scope differs with storage: independent rows.",
+          "IF receiver returns 409 for conflict: SDK_SINK_REJECTED/sink at /sink, http_permanent/non-retryable. Duplicate receiver acknowledgment is accepted. Equality of timestamps is not ruled out by clock source."
+        ]
+      },
+      "basis": ["packages/security-audit-sdk-core/src/providers.ts:119-141", "packages/security-audit-collector/src/deduplication.ts:7-8,28-45", "packages/security-audit-collector/src/ingress.ts:157-231,349-355,375-392,410-430", "packages/security-audit-collector/src/sqlite-storage.ts:85-90,168-180", "packages/security-audit-sdk-node/examples/evaluation-receiver.ts:115-143", "packages/security-audit-sdk-node/docs/wire-protocol.md:112-120", "packages/security-audit-sdk-core/src/sdk.ts:318-341"],
+      "classification": "conditional consumer analysis only; no current repeated-id loss finding",
+      "confidence": "medium (analysis only)",
+      "corrected_from": { "old_text": "Every core-B submission conflicts because its id repeats but timestamps differ; restart replays the same stream.", "reason": "Fixed baseline produces fresh cryptographic UUIDs. Duplicate/conflict semantics require a conditional repeated identity, not normal fresh processes; clock inequality is not guaranteed." }
+    }
+  ]
+}

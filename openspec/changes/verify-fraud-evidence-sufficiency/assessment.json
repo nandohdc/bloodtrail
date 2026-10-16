@@ -26,13 +26,57 @@
     "openspec/changes/verify-fraud-evidence-sufficiency/tasks.md",
     "openspec/changes/verify-fraud-evidence-sufficiency/specs/fraud-evidence-profile/spec.md",
     "openspec/changes/verify-fraud-evidence-sufficiency/assessment.source.json",
-    "openspec/changes/verify-fraud-evidence-sufficiency/assessment.json"
+    "openspec/changes/verify-fraud-evidence-sufficiency/assessment.json",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/README.md",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/expectations/p-ids.v1.json",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/kit-cli.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/approval.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/arguments.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/expectations.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/install.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/io.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/kit-pipeline.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/launcher.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/ledger.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/metrics.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/observe.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/results.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/runtime-facts.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/controls.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/evaluate.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/measure.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/orchestrate.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/probe-process.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/roles.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/run-p-ids.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/workload.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/run-ledger.md",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/approval.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/logic.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/observe.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/orchestration.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/permission.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pipeline.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/process-fixture.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/results-fixture.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/results.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/workload.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/identity.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/preflight.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/repository.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/approval-fixture.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/evaluator.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/evidence-failures.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/identity.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/preflight.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/refusals.test.mjs",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/repository.test.mjs"
   ],
   "candidate_approaches": [
     {
       "id": "approach-proposal-public-boundary",
       "kind": "direct_implementation",
-      "summary": "Author a proposal-only usage capability and Stage P public-boundary design with bounded per-run authorization, deferred probes and explicit trust/fix ownership; implement no harness here.",
+      "summary": "Retain the reviewed proposal and add the task 1.1 outside-repository kit tracer, frozen corrected P-ids expectations and offline fixture tests; defer every probe until separate S1 approval, preserving usage-only trust/fix ownership.",
       "forces_addressed": [
         "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields.",
         "Owner review must precede any harness; each later synthetic run needs exact-head approval, bounded shared volume and immutable expectations.",
@@ -119,7 +163,7 @@
         "8.1"
       ],
       "evidence_ids": [
-        "seven-file proposal inventory and existing strict validation, generated-drift, contract-reuse approved-skip and final governance gates verify no harness or protected-path changes"
+        "explicit owned-path inventory, fixture tests and strict validation/generated-drift/contract-reuse approved-skip/final governance verify build-only tracer scope: no protected-path edits, probe results or execution before S1"
       ]
     }
   },

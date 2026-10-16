@@ -1,10 +1,10 @@
 ## Sequencing and authorization
 
-This proposal completes no task below. G35 keeps all ten tickets separate. The proposal (#799) and tracer bullet (#800) are separate PRs; groups 2–5 run in parallel after group 1; groups 6–7 run in parallel after probes. Fold (#807) and archive (#808) are separate later PRs. Owner review and merge at S3 remain downstream. Each run requires S1 exact-head owner approval and S2 halt/report stops under the shared authorization in `proposal.md`.
+The build-only tracer completes task 1.1 only; no Stage P execution or approval is claimed. G35 keeps all ten tickets separate. The proposal (#799) and tracer bullet (#800) are separate PRs; groups 2–5 run in parallel after group 1; groups 6–7 run in parallel after probes. Fold (#807) and archive (#808) are separate later PRs. Owner review and merge at S3 remain downstream. Each run requires S1 exact-head owner approval and S2 halt/report stops under the shared authorization in `proposal.md`.
 
 ## 1. Tracer bullet and P-ids (#800)
 
-- [ ] 1.1 Implement the outside-repository packed-public-API own-service tracer, three observation boundaries, provenance recorder and precommitted hashed immutable expectations; confirm actual Node 26 runtime and `db.isTransaction` before database probing.
+- [x] 1.1 Implement the outside-repository packed-public-API own-service tracer, three observation boundaries, provenance recorder and precommitted hashed immutable expectations; confirm actual Node 26 runtime and `db.isTransaction` before database probing.
 - [ ] 1.2 Obtain the run-specific exact-head owner approval, verify kit identity and comment hash, enforce shared volume/window/data bounds and stops, then compare core/Node identifiers across two fresh processes and restarts on the #796-fixed baseline; commit raw synthetic evidence and confirm scratch deletion.
 
 ## 2. P-D (#801)
