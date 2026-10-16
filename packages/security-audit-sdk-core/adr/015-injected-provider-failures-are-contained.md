@@ -3,7 +3,7 @@
 - Status: Accepted for SDK-core implementation
 - Date: 2026-10-13
 - Issue: https://github.com/nandohdc/bloodtrail/issues/811
-- Owning change: `openspec/changes/fix-core-provider-fault-containment/`
+- Owning change: `openspec/changes/archive/2026-10-15-fix-core-provider-fault-containment/`
 - Decision source: owner decision, 2026-10-13, via grilling and triage in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
 - Follow-up decision source: owner decision, 2026-10-14, via code-review follow-up in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
 

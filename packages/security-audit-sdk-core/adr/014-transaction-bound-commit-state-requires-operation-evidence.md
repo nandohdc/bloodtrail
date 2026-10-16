@@ -3,7 +3,7 @@
 - Status: Accepted for SDK-core implementation
 - Date: 2026-10-13
 - Issue: https://github.com/nandohdc/bloodtrail/issues/797
-- Owning change: `openspec/changes/fix-core-transaction-bound-commit-state/`
+- Owning change: `openspec/changes/archive/2026-10-13-fix-core-transaction-bound-commit-state/`
 - Decision source: owner decision, 2026-10-13, via grilling in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
 
 ## Context

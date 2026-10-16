@@ -3,7 +3,7 @@
 - Status: Accepted for SDK-core implementation
 - Date: 2026-10-15
 - Issue: https://github.com/nandohdc/bloodtrail/issues/816
-- Owning change: `openspec/changes/fix-core-configured-schema-runtime/`
+- Owning change: `openspec/changes/archive/2026-10-15-fix-core-configured-schema-runtime/`
 - Decision source: owner decision, 2026-10-15, via grilling and triage in Claude Code session https://claude.ai/code/session_01BaG4eugfB66EmeehpsFN2E
 
 ## Context
