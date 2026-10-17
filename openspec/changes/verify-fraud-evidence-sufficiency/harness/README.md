@@ -193,3 +193,141 @@ correction, 2026-10-16; not an owner decision). All data is opaque synthetic; th
 address is documentation-range `203.0.113.10`. Pi/Tamandua transcripts persist
 outside the repository with synthetic data only. This work claims no run, owner
 approval, ledger entry, fraud verdict or deployment readiness.
+
+## P-D build only — #801 task 2.1
+
+P-ids run 1 is now historical evidence in `results/p-ids-run-1.json`; the earlier
+sections describe its original build handoff. **P-D has not executed.** Only task
+2.1 is completed here; task 2.2 needs a new exact-head S1 approval. No P-D result
+or execution-ledger row is created. Expectations are hypotheses, never measurements.
+
+The single P-D build/install-only dry run occurred at the clean G39 documentation
+commit, before any P-D edits. This is its reproduction form, **not permission to
+repeat it during this build**:
+
+```bash
+node openspec/changes/verify-fraud-evidence-sufficiency/harness/kit-cli.mjs --dry-run --repo "$PWD" --approved-head "$(git rev-parse HEAD)" --driver-run-id run-306a948c-b2f7-4412-b3f9-db4c647ce36d --driver-harness pi --driver-provider openai-codex --driver-model gpt-6.1-sol --driver-thinking high
+```
+
+It built/installed only; installed `.d.ts` text was observed externally before
+scratch deletion, without importing or executing installed kit/SDK code. Identity,
+digests, single-core manifests/realpath, declaration text/hashes and recursive
+scratch absence are in the external completion evidence. No dry-run artifact is
+committed. Declaration inspection includes Node factory/provider; core constants,
+catalog/methods, constructors, frame helpers, error/result/configuration types,
+validators; testing capturing sink; all 15 transaction-bound methods and the
+operation APIs/getters/reflection methods. No public package is imported by the
+fixture tests, evaluator, expectation validator or parent runner.
+
+### Future P-D execution, only after exact-head S1
+
+[G39](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6228616880)
+allows the orchestrator to post a delegated approval for #801–#804 only after
+head verification (full TEST_CMD, 10/10 CI, review and frozen expectation hash).
+The new unedited comment contains these exact whole lines, substituting the run
+number and exact lowercase 40-hex head:
+
+```text
+S1 approval: P-D run <N> for #801 at <HEAD>
+Delegated S1 under G39
+```
+
+Both whole lines trim surrounding whitespace and accept LF or CRLF; the hash
+still covers the exact original UTF-8 bytes. The approval URL must name a comment
+on the probe's own ticket (#801 for P-D), whether an issue or PR URL. A delegation
+line is refused before claim outside #801–#804: G39 does not cover #800 or any
+other ticket. Results record `delegation: "G39"` when that line is present on a
+covered ticket, otherwise null. Near-match text does not delegate. The operator verifies
+authority out of band; the harness performs no GitHub/network authentication.
+Exactly one execution per approval; reconcile the shared ledger first. The G34
+window opened 2026-10-17T02:22:47Z and closes 2026-10-24T02:22:47Z; expiry needs an
+amendment, never an extended timestamp. S2 and all volume/data limits remain.
+
+From that verified approved head, a future authorized operator supplies **all**
+arguments (the values below are placeholders, not approval):
+
+```bash
+git checkout --detach "$APPROVED_HEAD"
+test -z "$(git status --porcelain)"
+HARNESS=openspec/changes/verify-fraud-evidence-sufficiency/harness
+node "$HARNESS/p-d/run-p-d.mjs" --repo "$PWD" \
+  --approved-head "$APPROVED_HEAD" \
+  --approval-body-file "$CONTROL/approval-body.txt" --approval-url "$APPROVAL_URL" \
+  --approval-created-at "$CREATED_AT" --approval-updated-at "$UPDATED_AT" \
+  --approval-sha256 "$APPROVAL_SHA256" --window-opened-at "$WINDOW_OPENED_AT" \
+  --once-marker "$CONTROL/$APPROVAL_SHA256" \
+  --run-number "$LEDGER_RUN_NUMBER" --results "$CONTROL/p-d-results.json" \
+  --driver-run-id "$TAMANDUA_RUN_ID" --driver-harness pi \
+  --driver-provider openai-codex --driver-model gpt-6.1-sol --driver-thinking high
+```
+
+The shared session runner preserves P-ids' complete preclaim checks, full tracked
+Git-blob inventory, retained once-marker, child-process governed identity check,
+single-core install evidence, permission-constrained child and evidence-preserving
+write/deletion failure handling. There is no probe network, filesystem-write or
+child-spawn permission. The runner copies only approved bytes into the installed
+outside-repository own service. No change to P-ids run-1 evidence or v1 expectations.
+
+### Frozen P-D plan
+
+`expectations/p-d.v1.json` is frozen in this build commit before any execution.
+After this handoff, corrections require v2 and a new approval/run; never change v1
+to match observations. Its 66 cases preserve comment transcription order,
+including all appended review cases and 148 uniquely keyed steps. Every basis was
+re-derived at the pinned `corrected_at` base. The static B-MR baseline is justified
+by the accepted `mfaRemoved` conformance row and its fixtures, schema and semantic
+rules; no trial execution or runtime repair was used.
+
+| correction | draft | frozen hypothesis and reason |
+|---|---|---|
+| PD-C9 | Non-success with no handle accepted with inferred committed state (gap) | Returned PREMATURE_SUCCESS/validation at /operation/state, no sink; #797 owner decision, all 35 supported combinations across 15 events, including partial/cancelled |
+| PD-C11 basis | Could imply the custom invalid-receiver message | Raw native V8 TypeError name/message; the draft skeptic explained why the private-brand check runs first |
+| check ordering | Missing semantic prechecks/derived provenance | Include skeptic correction, #811 provider containment, #816 configured runtime and #812 final outcome consistency |
+
+C2–C5/C10/C12/C13 retain their drafted outcomes after explicit #812 review; their
+earlier checks still win or their accepted committed success remains consistent.
+No new #812 case or deliberate two-copy installation is added. A7 uses core's
+free helper with the Node provider explicitly. D3 b2 and D10 remain bypass
+observations; all prohibited keys/values are labelled synthetic marker recipes,
+assembled from fragments only at runtime, including expected diagnostic paths.
+The complete eleven corrected limits and case mappings are in
+`p-d/cannot-establish.md` (including host non-empty presence, corrected commit
+truth, and unbranded client-evidence/event/retry fields).
+
+One **integrity** process executes sequentially because Node shares one ALS
+provider. PD-00 and PD-01 run first; refusal or absent capture invalidates/stops.
+PD-01's exact completed handle/SDK are retained for C12/C13. Every other SDK
+acceptance/refusal/raw reflection throw is an observation, not a stop; harness
+faults and sticky provider-callback budget exhaustion invalidate globally.
+Captured events are cloned before mutation. Evaluation deep-strict-compares exact
+diagnostics, surfaces, sink deltas/frozen state and drafted event/callback/handle
+assertions, keyed by harness step id, and quotes observed/expected mismatches.
+
+The implementer-default accounting model counts every direct SDK/testing factory,
+constructor, context/frame helper, validator, named/generic call, operation or
+reflection invocation, error toJSON and harness transformation callback, before
+invocation, including refusals. SDK-internal calls/default providers and property
+reads do not count again; there are no hidden teardown calls. Descriptor counts
+sum mechanically to a **371-call prediction**; per-case predictions remain
+frozen in `calls_by_case` and `predicted_total`. The integrity process and total
+allowance is **742**, twice the prediction and below 5,000, to provide headroom
+for unexpected outcomes. Results place observed ledger-label counts beside each
+case's prediction. A count deviation is a mismatch note, never an invalidation
+unless the process allowance is exceeded; exhaustion remains sticky. Public-shape
+fixtures reproduce the predictions, including callback and error-method calls.
+
+Evaluation uses real runtime-assembled synthetic markers in memory. Only at results
+serialization, every occurrence in nested keys and values (including retained
+processes, diagnostic paths and mismatch notes) becomes `<synthetic-marker:NAME>`.
+Longest complete markers are replaced first, without partial overlapping matches.
+The `synthetic_markers` table records each recipe name, actual length and SHA-256,
+not its assembled value. The same serialization protects write-failure stderr
+evidence; observations and evaluation inputs are never rewritten. P-ids evidence
+and serialization are unchanged.
+
+New offline tests cover all frozen expectations, A–F negative evaluator mutations,
+missing/duplicate/wrong-surface records, baseline stop/ordinary continuation,
+sequential shared-provider/retained-handle dependencies, exact budgets and sticky
+exhaustion, P-D approvals/delegation/preflight/once semantics, evidence-preserving
+failures, runtime marker recipes and static literal hygiene. They execute no
+probe, installed SDK or real pipeline and use no network.

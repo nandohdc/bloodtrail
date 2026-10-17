@@ -37,6 +37,8 @@ A post-claim write failure emits complete result JSON to stderr once and exits
 nonzero; cleanup failure records recursive absence as false without discarding
 install evidence or observations. Neither permits reuse of the retained marker.
 
+Under G39, #801–#804 approvals may be delegated, and each such row is marked `delegated (G39)`.
+
 | run number | probe | ticket | approved head | approval URL | approval sha256 | occurrences | status |
 |---|---|---|---|---|---|---|---|
 | 1 | P-ids | #800 | ec192a5977e079089cb76b3595631dcb7d62aca3 | https://github.com/nandohdc/bloodtrail/issues/800#issuecomment-6228450746 | 988e6a8a26696a3b4e9f48450b873d94855902e1c8c6343136a0c24fc5c33e0c | 1393 | completed |

@@ -10,7 +10,7 @@ import { approvalBody, APPROVAL_URL, CREATED, NOW } from "./approval-fixture.mjs
 
 const HEAD = "1".repeat(40);
 const BODY = `${approvalBody({ head: HEAD })}\nopaque Ω`;
-const APPROVAL = { body: BODY, bodySha256: sha256(BODY), approvedHead: HEAD, url: APPROVAL_URL, createdAt: CREATED, updatedAt: CREATED, runNumber: 1, windowOpenedAt: CREATED, now: NOW };
+const APPROVAL = { probe: "P-ids", ticket: 800, body: BODY, bodySha256: sha256(BODY), approvedHead: HEAD, url: APPROVAL_URL, createdAt: CREATED, updatedAt: CREATED, runNumber: 1, windowOpenedAt: CREATED, now: NOW };
 const INVALID = [
   { body: BODY + "\n" }, { bodySha256: "0".repeat(64) },
   { updatedAt: "2026-10-16T00:00:01.000Z" }, { approvedHead: "2".repeat(40) },

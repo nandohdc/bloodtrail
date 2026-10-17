@@ -76,7 +76,9 @@ test("fixture mismatches are findings and do not fail an otherwise valid session
 
 test("orchestration imports have no automatic execution or kit imports", () => {
   const source = readFileSync(new URL("../p-ids/run-p-ids.mjs", import.meta.url), "utf8");
-  assert(source.includes("await runApprovedSession({"));
+  assert(source.includes('import { runProbe } from "../lib/probe-runner.mjs";'));
+  assert(source.includes("await runProbe({"));
+  assert(!source.includes("runApprovedSession"));
   assert(source.includes("process.exitCode = session.exitCode;"));
   assert(!source.includes("cases.some("));
   assert(!source.includes('from "@bloodtrail/'));
