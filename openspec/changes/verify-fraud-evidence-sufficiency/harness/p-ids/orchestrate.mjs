@@ -1,58 +1,14 @@
-import assert from "node:assert/strict";
-import { planBudget } from "../lib/ledger.mjs";
-import { approvalFromArgs, claimOnce } from "../lib/approval.mjs";
-import { sessionPreflight } from "../lib/preflight.mjs";
+import * as generic from "../lib/orchestrate.mjs";
 import { ROLES } from "./roles.mjs";
 
-export async function runApprovedSession({ options, entrypoint, session, failure, refuse, now }) {
-  let claimed = false;
-  let approval;
-  try {
-    approval = approvalFromArgs({ options, now });
-    const hashes = sessionPreflight({ options, approval, entrypoint });
-    claimOnce({ path: options["once-marker"], approvedHead: options.approvedHead });
-    claimed = true;
-    return await session(approval, hashes);
-  } catch (error) {
-    if (claimed) await failure({ error, approval });
-    else refuse(error.message);
-    return { exitCode: 1 };
-  }
+export function runApprovedSession(input) {
+  return generic.runApprovedSession({ ...input, probe: "P-ids", ticket: 800 });
 }
 
-export async function runRoles({ expectations, spawn }) {
-  const plan = planBudget(expectations.planned_occurrence_budget);
-  const observations = [];
-  const invalidations = [];
-  for (const role of ROLES) {
-    try {
-      const observed = await spawn({ role: role.role, budget: plan.processes[role.role] });
-      observations.push(observed);
-      assert(observed.ledger.occurrence_count <= plan.processes[role.role], "process budget exceeded");
-      invalidations.push(...observed.invalidations);
-      if (invalidations.length > 0) break;
-    } catch (error) {
-      invalidations.push({ role: role.role, message: error.message });
-      break;
-    }
-  }
-  return { observations, invalidations, occurrence_count: observations.reduce((count, process) => count + process.ledger.occurrence_count, 0) };
+export function runRoles(input) {
+  return generic.runRoles({ ...input, probe: "P-ids", ticket: 800, roles: ROLES });
 }
 
-export async function runSession({ pipeline, prepare, expectations, write }) {
-  let provenance = { invalidations: [], observations: { observations: [], invalidations: [], occurrence_count: 0 } };
-  try {
-    provenance = await pipeline(async (context) => {
-      const spawn = await prepare(context);
-      return runRoles({ expectations, spawn });
-    });
-  } catch (error) {
-    provenance.invalidations.push(error.message);
-  }
-  const observed = provenance.observations || { observations: [], invalidations: [], occurrence_count: 0 };
-  const invalidations = [...provenance.invalidations, ...observed.invalidations];
-  const result = { provenance, ...observed, invalidations };
-  const delivered = await write(result);
-  const success = delivered !== false && invalidations.length === 0;
-  return { result, exitCode: success ? 0 : 1 };
+export function runSession(input) {
+  return generic.runSession({ ...input, probe: "P-ids", ticket: 800, roles: ROLES });
 }

@@ -57,7 +57,7 @@ function pipelineFixture({ root }) {
   assertResolution({ service, resolvedCore: pathToFileURL(candidates[0]).href });
   assert.throws(() => assertResolution({ service, resolvedCore: pathToFileURL(source).href }), /outside service/);
   const output = { role: "fixture", resolved_core: pathToFileURL(candidates[0]).href, ledger: { occurrence_count: 1 } };
-  const launch = { service, role: "fixture", budget: 1, flags: ["--permission", `--allow-fs-read=${service}`], run: () => JSON.stringify(output) };
+  const launch = { probeDirectory: "p-ids", prefix: "harness", inventory: { "harness/p-ids/probe-process.mjs": { git_blob: "fixture" } }, service, role: "fixture", budget: 1, flags: ["--permission", `--allow-fs-read=${service}`], run: () => JSON.stringify(output) };
   assert.equal(launchProbe(launch).role, "fixture");
   assert.throws(() => launchProbe({ ...launch, flags: [...launch.flags, "--allow-net"] }), /permission grant/);
   assert.throws(() => launchProbe({ ...launch, budget: 0 }), /exceeded/);

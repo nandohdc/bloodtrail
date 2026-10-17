@@ -1,0 +1,3926 @@
+{
+  "probe": "P-D",
+  "version": 1,
+  "drafted_from": {
+    "commit": "5d931ad",
+    "comments": [
+      "https://github.com/nandohdc/bloodtrail/issues/801#issuecomment-6137540147",
+      "https://github.com/nandohdc/bloodtrail/issues/801#issuecomment-6137548820"
+    ]
+  },
+  "corrected_at": "dbdd0936ba874d7b622403103644206c4a6fa56f",
+  "decisions": [
+    {
+      "source": "#795 G-log implementer defaults",
+      "url": "https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6134522416",
+      "status": "implementer default",
+      "choices": [
+        "Node binding SDK factory",
+        "synthetic marker recipes allowed only in P-D under proposal Data class",
+        "raw reflection TypeErrors are observations"
+      ]
+    },
+    {
+      "source": "#797 owner decision 2026-10-13; #801 comment 6147123242",
+      "url": "https://github.com/nandohdc/bloodtrail/issues/801#issuecomment-6147123242",
+      "status": "owner decision",
+      "choice": "At fixed base, every transaction-bound catalog-supported non-success without handle refuses PREMATURE_SUCCESS/validation at /operation/state, no sink."
+    },
+    {
+      "source": "#795 G38",
+      "url": "https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6219739604",
+      "status": "owner decision",
+      "choice": "Owner macOS/Apple Silicon workstation, Node26 outside repo, distributable exact-head kit, Tamandua/pi driver provenance, no probe network."
+    },
+    {
+      "source": "#795 G39 issuecomment-6228616880",
+      "url": "https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6228616880",
+      "status": "owner decision",
+      "choice": "Orchestrator may delegate S1 for #801\u2013#804 only after head verification; exact approval line and Delegated S1 under G39 required."
+    },
+    {
+      "source": "task #801 drafting open questions",
+      "status": "implementer default",
+      "choices": [
+        "A7 core runWithAuditContext explicitly receives nodeContextProvider",
+        "D3 b2 and D10 retained as bypass observations",
+        "C11 retained with raw V8 TypeError name/message",
+        "PD-01 B-MR frozen from schema/semantics and accepted mfaRemoved conformance prior art; baseline refusal invalidates, never repair mid-run",
+        "Exactly one core copy; two-copy DUPLICATE_AUTHORITY experiment out of scope",
+        "Do not add #812 case; review existing sensitive cases instead"
+      ]
+    }
+  ],
+  "definitions": {
+    "surfaces": {
+      "returned-refusal": "AuditResult ok:false; exact entire error object",
+      "thrown-sdk": "instanceof SecurityAuditSdkError; exact code/category/path, name/message and counted toJSON",
+      "raw-throw": "C11 native TypeError constructor name and raw message, no invented SDK diagnostic",
+      "accepted": "Explicit ok:true, delivery status accepted and sink delta/frozen captures; validator/transition success is separately typed by assertions"
+    },
+    "equality": "deep strict equality, including unwanted metadata; key by unique harness step_id, never refused event id",
+    "ordering": [
+      "SDK lifecycle",
+      "read supplied operation and resolve exact same-instance handle",
+      "read active context provider with throw containment (#811)",
+      "duplicate-success precheck",
+      "bound-event mismatch",
+      "named redelivery validates with configured schema runtime (#816), checks name/binding then returns",
+      "per-call prohibited scan with normalization",
+      "frame-brand checks: actor, subject, authenticated_principal, delegation, credential, tenant, claimedTenant, resource, authentication, authorization, session, initiator, source, destination, data, risk, integrity, extensions",
+      "commit resolution: mismatched direct terminal state, operation pending success, operation state, direct state, not_applicable, otherwise no-handle refusal (#797)",
+      "event id then timestamp/observed-at with provider containment (#796/#811)",
+      "causality and correlation",
+      "transformations",
+      "full normalize; prohibited scan; configured schema allErrors first-error mapping (#816); base-semantic prechecks schema version, catalog name/category/action/delivery_class, lifecycle and outcome; commit, required context, causality, authority, tenant/resource, authorization outcome, delegation, extensions; derived provenance; final outcome consistency (#812); post-scan",
+      "event-id collision check",
+      "terminal-success completion reservation",
+      "sink handoff and settle completion"
+    ],
+    "ordering_corrected_from": {
+      "old_text": "Step 12 omitted base-semantic prechecks and derived provenance.",
+      "reason": "Apply skeptic correction and base semantic.ts:73-96 final denial consistency after derived provenance; SDK provider containment adds context-provider read before duplicate precheck."
+    },
+    "preconditions": [
+      "Single installed core copy proven by npm ls plus filesystem inventory",
+      "Sequential cases in one integrity process: Node context provider shared ALS",
+      "Clone captures before mutation; capture sink events frozen",
+      "PD-00 and PD-01 first; refusal or absent capture invalidates and stops",
+      "Only exact-head approved future execution; no run or approval in task2.1",
+      "Budget exhaustion sticky even when provider callbacks swallowed; harness faults invalidate, ordinary SDK outcomes continue"
+    ],
+    "integrity_classification": {
+      "holds": "Refused as invariant states, or designated accepted control/boundary behaving as designed",
+      "gap": "Accepted contrary to invariant; retained vocabulary, no current case after #797 correction",
+      "bypass": "Accepted heuristic-scan evasion; mixed cases name variants",
+      "cannot-establish": "Accepted documented host-truth/origin/time/instance/transform/retry limit"
+    },
+    "controls": "control:true is an orthogonal designation, not a fifth classification; baseline controls use holds; cross-instance brand control uses cannot-establish",
+    "counting": "implementer default: every harness SDK/testing factory, constructor, frame/context helper, validator, named/generic call, operation/reflection invocation, error toJSON and harness transform callback counts before invocation, accepted/refused. Property reads and SDK-internal default providers/constructor calls do not count again. No hidden teardown calls. Per-case predicted counts sum mechanically to 371. The 742-call process/total allowance is headroom (twice the prediction), not a predicted outcome. Observed counts different from a case prediction are recorded as mismatch notes, never invalidations unless the allowance is exceeded."
+  },
+  "definition_basis": [
+    "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+    "packages/security-audit-sdk-core/src/sdk.ts:452-459",
+    "packages/security-audit-sdk-core/src/events.ts:52-129",
+    "packages/security-audit-sdk-core/src/events.ts:205-224",
+    "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+    "packages/security-audit-sdk-core/src/validation/schema.ts:32-78",
+    "packages/security-audit-sdk-core/src/validation/semantic.ts:73-113",
+    "packages/security-audit-sdk-node/src/schema.ts:1-7"
+  ],
+  "fix_review": {
+    "#796": "Node default random identifiers used; no cross-process identifier experiment added.",
+    "#797": "C9 corrected; C2 already expected same no-handle refusal; C10 direct terminal-state refusal unchanged.",
+    "#811": "Active provider read before duplicate; budget faults remain sticky through containment. No new provider fault case.",
+    "#812": {
+      "reviewed": [
+        "PD-C2",
+        "PD-C3",
+        "PD-C4",
+        "PD-C5",
+        "PD-C9",
+        "PD-C10",
+        "PD-C12",
+        "PD-C13"
+      ],
+      "outcomes": "Only C9 changes from draft, due to #797; other listed outcomes unchanged. C3 success committed passes; C4 success not_applicable fails earlier catalog commit check; C5 direct-state precedence unchanged; C10 fails direct-state check; C12 duplicate precheck wins; C13 committed success remains consistent. Final denied consistency check is unreachable in no-handle C9 after #797."
+    },
+    "#816": "Node runtime used for each named/redelivery/emit path; free validator uses global default, never changed here.",
+    "#798": "Build/install only; receiver not imported or executed."
+  },
+  "baseline_inputs": {
+    "B-AF": {
+      "actor": {
+        "constructor": "anonymousActor"
+      },
+      "tenant": {
+        "constructor": "authoritativeTenant",
+        "input": {
+          "scope": "tenantless"
+        }
+      },
+      "authentication": {
+        "constructor": "authenticationEvidence",
+        "input": {
+          "method": "password",
+          "assurance_level": "aal1",
+          "mfa_state": "not_used",
+          "credential_type": "password",
+          "identity_provider": "https://idp.synthetic.test",
+          "delegated": false,
+          "impersonated": false
+        }
+      },
+      "source": {
+        "constructor": "observedSource",
+        "input": {
+          "observed": {
+            "address": "203.0.113.10",
+            "port": 443
+          }
+        }
+      },
+      "request": {
+        "id": "req_synthetic_0001",
+        "method": "POST",
+        "route": "/login"
+      },
+      "correlation": {
+        "correlation_id": "cor_synthetic_0001"
+      },
+      "event": {
+        "outcome_reason": {
+          "code": "credential_invalid"
+        }
+      }
+    },
+    "B-MR": {
+      "tenant": {
+        "scope": "tenant",
+        "actor_tenant_id": "tnt_synthetic_a",
+        "effective_tenant_id": "tnt_synthetic_a",
+        "resource_tenant_id": "tnt_synthetic_a"
+      },
+      "actor": {
+        "id": "usr_synthetic_0001",
+        "tenantId": "tnt_synthetic_a"
+      },
+      "subject": {
+        "type": "account",
+        "id": "acct_synthetic_0001",
+        "tenant_id": "tnt_synthetic_a"
+      },
+      "authentication": {
+        "method": "session",
+        "assurance_level": "aal2",
+        "mfa_state": "satisfied",
+        "credential_type": "session",
+        "authenticated_at": "2026-10-01T12:00:00.000Z",
+        "identity_provider": "https://idp.synthetic.test",
+        "delegated": false,
+        "impersonated": false
+      },
+      "authorization": {
+        "decision": "allow",
+        "policy_id": "policy.synthetic",
+        "policy_version": "1.0.0",
+        "capability": "remove_mfa",
+        "enforcement_point": "mfa-authority",
+        "decision_reason": "accepted",
+        "tenant_context": {
+          "effective_tenant_id": "tnt_synthetic_a"
+        }
+      },
+      "resource": {
+        "type": "credential",
+        "id": "cred_synthetic_0001",
+        "owning_tenant_id": "tnt_synthetic_a",
+        "data_classification": "confidential"
+      },
+      "constructors": "authoritativeTenant, authenticatedHumanActor, authoritativeSubject, authenticationEvidence, authorizationEvidence, authoritativeResource respectively",
+      "justification": "Conformance mfaRemoved row accepts same constructor/context/committed-handle pattern. Method/assurance are bounded strings; credential and resource enums accept session and credential; tenant IDs align; allow with success is consistent. All six required contexts present; no transaction context requirement. No runtime trial."
+    }
+  },
+  "planned_occurrence_budget": {
+    "processes": {
+      "integrity": 742
+    },
+    "total": 742,
+    "predicted_total": 371,
+    "limit": 5000,
+    "calls_by_case": {
+      "PD-00": 7,
+      "PD-01": 11,
+      "PD-A1": 5,
+      "PD-A2": 6,
+      "PD-A3": 6,
+      "PD-A4": 6,
+      "PD-A5": 5,
+      "PD-A6": 9,
+      "PD-A7": 7,
+      "PD-A8": 4,
+      "PD-A9": 4,
+      "PD-A10": 5,
+      "PD-A11": 6,
+      "PD-B1": 4,
+      "PD-B2": 4,
+      "PD-B3": 5,
+      "PD-B4": 5,
+      "PD-B5": 6,
+      "PD-B6": 4,
+      "PD-C1": 4,
+      "PD-C2": 3,
+      "PD-C3": 6,
+      "PD-C4": 4,
+      "PD-C5": 4,
+      "PD-C6": 14,
+      "PD-C7": 8,
+      "PD-C8": 4,
+      "PD-C9": 50,
+      "PD-C10": 4,
+      "PD-C11": 11,
+      "PD-D1": 3,
+      "PD-D2": 5,
+      "PD-D3": 5,
+      "PD-D4": 4,
+      "PD-D5": 3,
+      "PD-D6": 4,
+      "PD-D7": 3,
+      "PD-D8": 3,
+      "PD-D9": 3,
+      "PD-D10": 3,
+      "PD-D11": 6,
+      "PD-D12": 3,
+      "PD-E1": 4,
+      "PD-E2": 4,
+      "PD-F1": 3,
+      "PD-F2": 3,
+      "PD-F3": 3,
+      "PD-F4": 5,
+      "PD-F5": 3,
+      "PD-F6": 4,
+      "PD-F7": 3,
+      "PD-F8": 3,
+      "PD-F9": 4,
+      "PD-F10": 6,
+      "PD-A12": 5,
+      "PD-A13": 6,
+      "PD-B7": 4,
+      "PD-B8": 8,
+      "PD-B9": 9,
+      "PD-C12": 1,
+      "PD-C13": 2,
+      "PD-C14": 6,
+      "PD-D13": 6,
+      "PD-E3": 5,
+      "PD-E4": 3,
+      "PD-F11": 5
+    }
+  },
+  "synthetic_markers": {
+    "label": "synthetic marker",
+    "recipes_source": "p-d/markers.mjs",
+    "rule": "Build all keys and values only at runtime from fragments; paths and expected values use recipe references, never literals.",
+    "recipes": {
+      "keyHash": {
+        "fragments": [
+          "pass",
+          "word",
+          "_",
+          "hash"
+        ],
+        "length": 13
+      },
+      "keyRefresh": {
+        "fragments": [
+          "ref",
+          "resh",
+          "_",
+          "to",
+          "ken"
+        ],
+        "length": 13
+      },
+      "bearer16": {
+        "fragments": [
+          "Be",
+          "arer",
+          " "
+        ],
+        "length": 23,
+        "repeat": 16
+      },
+      "bearer15": {
+        "fragments": [
+          "Be",
+          "arer",
+          " "
+        ],
+        "length": 22,
+        "repeat": 15
+      },
+      "bearerBroken": {
+        "fragments": [
+          "Be",
+          "arer",
+          " ",
+          "xxxx",
+          "+"
+        ],
+        "length": 32,
+        "repeat": 20
+      },
+      "key16": {
+        "fragments": [
+          "s",
+          "k",
+          "-"
+        ],
+        "length": 19,
+        "repeat": 16
+      },
+      "key15": {
+        "fragments": [
+          "s",
+          "k",
+          "-"
+        ],
+        "length": 18,
+        "repeat": 15
+      },
+      "privateKey": {
+        "fragments": [
+          "-----",
+          "BE",
+          "GIN",
+          " ",
+          "PRI",
+          "VATE",
+          " ",
+          "K",
+          "EY",
+          "-----"
+        ],
+        "length": 27
+      },
+      "upperWord": {
+        "fragments": [
+          "SYNTHETIC",
+          " ",
+          "SEC",
+          "RET",
+          " ",
+          "MARKER"
+        ],
+        "length": 23
+      },
+      "lowerWord": {
+        "fragments": [
+          "synthetic",
+          " ",
+          "sec",
+          "ret",
+          " ",
+          "marker"
+        ],
+        "length": 23
+      },
+      "underscore": {
+        "fragments": [
+          "synthetic",
+          "_",
+          "sec",
+          "ret",
+          "_",
+          "user"
+        ],
+        "length": 21
+      },
+      "hyphen": {
+        "fragments": [
+          "synthetic",
+          "-",
+          "sec",
+          "ret",
+          "-",
+          "user"
+        ],
+        "length": 21
+      },
+      "pluralValue": {
+        "fragments": [
+          "synthetic",
+          " ",
+          "sec",
+          "ret",
+          "s"
+        ],
+        "length": 17
+      },
+      "pluralKey": {
+        "fragments": [
+          "sec",
+          "ret",
+          "s"
+        ],
+        "length": 7
+      },
+      "joinedKey": {
+        "fragments": [
+          "user",
+          "pass",
+          "word"
+        ],
+        "length": 12
+      }
+    }
+  },
+  "cases": [
+    {
+      "case_id": "PD-00",
+      "setup": {
+        "description": "B-AF: Node factory, no transformations or authoritativeContext; named authenticationFailed.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-00/main",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/event/outcome": "failure",
+            "events/0/event/commit_state": "not_applicable",
+            "events/0/actor/provenance/trust_level": "client_claim"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/generated/contract.generated.ts:601-626",
+        "packages/security-audit-sdk-core/src/events.ts:205-224",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:391-425",
+        "packages/security-audit-sdk-core/src/testing.ts:21-34",
+        "packages/security-audit-sdk-node/examples/evaluation-service.ts:95-140",
+        "packages/security-audit-sdk-node/src/platform.ts:51-56"
+      ],
+      "classification": "holds",
+      "confidence": "high",
+      "control": true
+    },
+    {
+      "case_id": "PD-01",
+      "setup": {
+        "description": "Freeze B-MR from header. Begin same-instance transactional handle; markCommitted, emit mfaRemoved, retain completed handle and SDK for C12/C13. No runtime repair.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-01/main",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/event/outcome": "success",
+            "events/0/event/commit_state": "committed",
+            "events/0/resource/operation_type": "delete",
+            "events/0/correlation/operation_id": {
+              "same_as": "PD-01/main/facts/operation_id"
+            },
+            "events/0/correlation/transaction_id": {
+              "same_as": "PD-01/main/facts/transaction_id"
+            },
+            "events/0/correlation/correlation_id": {
+              "same_as": "PD-01/main/facts/correlation_id"
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/generated/contract.generated.ts:655-684",
+        "packages/security-audit-sdk-core/src/events.ts:205-224",
+        "packages/security-audit-sdk-core/src/events.ts:227-254",
+        "packages/security-audit-sdk-core/src/events.ts:382-416",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:250-351",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:391-435",
+        "packages/security-audit-sdk-core/tests/conformance-account-authentication-session.test.ts:24-101",
+        "packages/security-audit-sdk-core/tests/conformance-account-authentication-session.test.ts:231-247",
+        "packages/security-audit-sdk-core/tests/conformance-harness.ts:41-80",
+        "packages/security-audit-sdk-core/tests/conformance-harness.ts:118-155",
+        "contracts/security-audit/schema/security-audit-event.schema.json:690-745"
+      ],
+      "classification": "holds",
+      "confidence": "high",
+      "control": true
+    },
+    {
+      "case_id": "PD-A1",
+      "setup": {
+        "description": "Handwritten tenant, authoritative-looking actor and plain claimedTenant, separately per call.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A1/tenant",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/tenant"
+          }
+        },
+        {
+          "step_id": "PD-A1/actor",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/actor"
+          }
+        },
+        {
+          "step_id": "PD-A1/claim",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/claimedTenant"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A2",
+      "setup": {
+        "description": "spread newly constructed tenant and actor separately; A3 actor is authenticatedHumanActor, others anonymousActor.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A2/tenant",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/tenant"
+          }
+        },
+        {
+          "step_id": "PD-A2/actor",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/actor"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A3",
+      "setup": {
+        "description": "structuredClone newly constructed tenant and actor separately; A3 actor is authenticatedHumanActor, others anonymousActor.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A3/tenant",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/tenant"
+          }
+        },
+        {
+          "step_id": "PD-A3/actor",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/actor"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A4",
+      "setup": {
+        "description": "JSON round trip newly constructed tenant and actor separately; A3 actor is authenticatedHumanActor, others anonymousActor.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A4/tenant",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/tenant"
+          }
+        },
+        {
+          "step_id": "PD-A4/actor",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/actor"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A5",
+      "setup": {
+        "description": "runWithContext with anonymousActor and handwritten tenant; callback must not run.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A5/main",
+          "assertions": {
+            "surface": "thrown-sdk",
+            "sink_count": 0,
+            "frozen": [],
+            "name": "SecurityAuditSdkError",
+            "message": "AUTHORITY_ESCALATION",
+            "facts/callbacks": 0
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/tenant"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58",
+        "packages/security-audit-sdk-core/src/sdk.ts:106-108"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A6",
+      "setup": {
+        "description": "runWithContext receives three clones of a fresh anonymousActor; no callback invocation.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A6/spread",
+          "assertions": {
+            "surface": "thrown-sdk",
+            "sink_count": 0,
+            "frozen": [],
+            "name": "SecurityAuditSdkError",
+            "message": "AUTHORITY_ESCALATION",
+            "facts/callbacks": 0
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/actor"
+          }
+        },
+        {
+          "step_id": "PD-A6/structured",
+          "assertions": {
+            "surface": "thrown-sdk",
+            "sink_count": 0,
+            "frozen": [],
+            "name": "SecurityAuditSdkError",
+            "message": "AUTHORITY_ESCALATION",
+            "facts/callbacks": 0
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/actor"
+          }
+        },
+        {
+          "step_id": "PD-A6/json",
+          "assertions": {
+            "surface": "thrown-sdk",
+            "sink_count": 0,
+            "frozen": [],
+            "name": "SecurityAuditSdkError",
+            "message": "AUTHORITY_ESCALATION",
+            "facts/callbacks": 0
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/actor"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A7",
+      "setup": {
+        "description": "createAuditContextFrame receives cloned tenant; core runWithAuditContext receives handwritten tenant with nodeContextProvider explicitly passed.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A7/frame",
+          "assertions": {
+            "surface": "thrown-sdk",
+            "sink_count": 0,
+            "frozen": [],
+            "name": "SecurityAuditSdkError",
+            "message": "AUTHORITY_ESCALATION"
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/tenant"
+          }
+        },
+        {
+          "step_id": "PD-A7/free",
+          "assertions": {
+            "surface": "thrown-sdk",
+            "sink_count": 0,
+            "frozen": [],
+            "name": "SecurityAuditSdkError",
+            "message": "AUTHORITY_ESCALATION",
+            "facts/callbacks": 0
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/tenant"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A8",
+      "setup": {
+        "description": "Node factory authoritativeContext has handwritten tenant; factory rewrites authority error.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A8/main",
+          "assertions": {
+            "surface": "thrown-sdk",
+            "sink_count": 0,
+            "frozen": [],
+            "name": "SecurityAuditSdkError",
+            "message": "SDK_INVALID_CONFIGURATION"
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_CONFIGURATION",
+            "category": "configuration",
+            "path": "/tenant"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58",
+        "packages/security-audit-sdk-core/src/config.ts:106-113",
+        "packages/security-audit-sdk-core/src/config.ts:150-150"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A9",
+      "setup": {
+        "description": "Wrong-kind authoritativeResource in subject slot.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A9/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/subject"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A10",
+      "setup": {
+        "description": "delegatedActorContext receives structuredClone(administratorActor).",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A10/main",
+          "assertions": {
+            "surface": "thrown-sdk",
+            "sink_count": 0,
+            "frozen": [],
+            "name": "SecurityAuditSdkError",
+            "message": "AUTHORITY_ESCALATION"
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/delegation/actor"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58",
+        "packages/security-audit-sdk-core/src/context.ts:226-233",
+        "packages/security-audit-sdk-core/src/context.ts:442-450"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A11",
+      "setup": {
+        "description": "Same identical B-AF brands reused across two fresh Node SDKs.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A11/a",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted"
+          }
+        },
+        {
+          "step_id": "PD-A11/b",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:42-55",
+        "packages/security-audit-sdk-core/src/context.ts:436-440"
+      ],
+      "classification": "cannot-establish",
+      "confidence": "high",
+      "control": true
+    },
+    {
+      "case_id": "PD-B1",
+      "setup": {
+        "description": "claimedActor authenticated_human forces client_claim/request_boundary.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-B1/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": [],
+            "facts/provenance": {
+              "trust_level": "client_claim",
+              "source": "request_boundary"
+            }
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/actor/provenance/trust_level"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:139-196",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:73-113",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:372-435"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-B2",
+      "setup": {
+        "description": "claimedActor overwrites attempted authority but preserves hand-written source.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-B2/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": [],
+            "facts/provenance": {
+              "trust_level": "client_claim",
+              "source": "hand-written"
+            }
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/actor/provenance/trust_level"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:139-196",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:73-113",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:372-435"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-B3",
+      "setup": {
+        "description": "Claimed actor via accepted frame; actor undefined in per-call input.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-B3/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": [],
+            "facts/callbacks": 1
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/actor/provenance/trust_level"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:139-196",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:73-113",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:372-435"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-B4",
+      "setup": {
+        "description": "Principal on per-call anonymousActor.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-B4/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/authenticated_principal"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:139-196",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:73-113",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:372-435"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-B5",
+      "setup": {
+        "description": "Principal on anonymousActor through accepted frame; per-call actor undefined.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-B5/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": [],
+            "facts/callbacks": 1
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/authenticated_principal"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:139-196",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:73-113",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:372-435"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-B6",
+      "setup": {
+        "description": "Client-presented opaque id deliberately routed through authenticatedHumanActor without server resolution.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-B6/main",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/actor": {
+              "type": "authenticated_human",
+              "id": "usr_synthetic_0001",
+              "provenance": {
+                "trust_level": "authoritative_server",
+                "source": "configured-authority"
+              }
+            },
+            "facts/provenance_ambiguity": 1
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:139-196",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:73-113",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:372-435",
+        "packages/security-audit-sdk-core/src/generated/contract.generated.ts:1703-1711"
+      ],
+      "classification": "cannot-establish",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C1",
+      "setup": {
+        "description": "Direct committed state without a handle on mfaRemoved and authenticationFailed.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C1/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/event/commit_state"
+          }
+        },
+        {
+          "step_id": "PD-C1/af",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/event/commit_state"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/events.ts:190-224",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:227-247"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C2",
+      "setup": {
+        "description": "Default success with no handle on mfaRemoved.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C2/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/events.ts:190-224",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:227-247"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C3",
+      "control_variants": ["committed"],
+      "setup": {
+        "description": "Pending transactional handle, then markCommitted and repeat; refusal does not reserve completion.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C3/pending",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C3/transition",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 0,
+            "frozen": [],
+            "raw/ok": true,
+            "raw/value/state": "committed",
+            "raw/value/commit_state": "committed"
+          }
+        },
+        {
+          "step_id": "PD-C3/committed",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/event/commit_state": "committed"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/events.ts:190-224",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:227-247",
+        "packages/security-audit-sdk-core/src/operations.ts:69-177",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C4",
+      "setup": {
+        "description": "Non-transactional started handle gives not_applicable, rejected for mfaRemoved.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C4/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/event/commit_state"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/events.ts:190-224",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:227-247",
+        "packages/security-audit-sdk-core/src/operations.ts:69-177",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C5",
+      "setup": {
+        "description": "Direct committed state disagrees with pending handle; direct check wins.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C5/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/event/commit_state"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/events.ts:190-224",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:227-247"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C6",
+      "setup": {
+        "description": "Forged plain handle, real committed snapshot, spread handle, structuredClone handle, JSON snapshot, inherited handle, null and string.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C6/plain",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_OPERATION_TRANSITION",
+            "category": "lifecycle",
+            "path": "/operation"
+          }
+        },
+        {
+          "step_id": "PD-C6/snapshot",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_OPERATION_TRANSITION",
+            "category": "lifecycle",
+            "path": "/operation"
+          }
+        },
+        {
+          "step_id": "PD-C6/spread",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_OPERATION_TRANSITION",
+            "category": "lifecycle",
+            "path": "/operation"
+          }
+        },
+        {
+          "step_id": "PD-C6/structured",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_OPERATION_TRANSITION",
+            "category": "lifecycle",
+            "path": "/operation"
+          }
+        },
+        {
+          "step_id": "PD-C6/json",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_OPERATION_TRANSITION",
+            "category": "lifecycle",
+            "path": "/operation"
+          }
+        },
+        {
+          "step_id": "PD-C6/inherited",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_OPERATION_TRANSITION",
+            "category": "lifecycle",
+            "path": "/operation"
+          }
+        },
+        {
+          "step_id": "PD-C6/null",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_OPERATION_TRANSITION",
+            "category": "lifecycle",
+            "path": "/operation"
+          }
+        },
+        {
+          "step_id": "PD-C6/string",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_OPERATION_TRANSITION",
+            "category": "lifecycle",
+            "path": "/operation"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/operations.ts:69-177",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+        "packages/security-audit-sdk-core/src/sdk.ts:558-564"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C7",
+      "control_variants": ["control"],
+      "setup": {
+        "description": "Foreign SDK handle refused by sdkA; same handle accepted by sdkB control.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C7/foreign",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_OPERATION_TRANSITION",
+            "category": "lifecycle",
+            "path": "/operation"
+          }
+        },
+        {
+          "step_id": "PD-C7/control",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/event/commit_state": "committed"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/operations.ts:69-177",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C8",
+      "setup": {
+        "description": "Forged frame.operation is cloned, not used as operation evidence; callback runs.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C8/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": [],
+            "facts/callbacks": 1
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58",
+        "packages/security-audit-sdk-core/src/events.ts:190-224",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:227-247"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C9",
+      "setup": {
+        "description": "All 35 supported non-success combinations across 15 transaction-bound catalog events; B-MR brands, no operation, deny authorization for denied; commit resolution precedes method-specific required context.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C9/accountRegistrationCompleted-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/accountRegistrationCompleted-partial",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/accountRegistrationCompleted-cancelled",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/mfaEnrolled-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/mfaEnrolled-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/mfaRemoved-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/mfaRemoved-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sessionRevoked-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sessionRevoked-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/passwordResetCompleted-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/passwordResetCompleted-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/roleAssigned-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/roleAssigned-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/roleRemoved-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/roleRemoved-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/privilegeElevated-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/privilegeElevated-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/impersonationStarted-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/impersonationStarted-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/impersonationEnded-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveResourceCreated-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveResourceCreated-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveResourceModified-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveResourceModified-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveResourceModified-partial",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveResourceDeleted-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveResourceDeleted-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveResourceDeleted-partial",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveDataExported-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveDataExported-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveDataExported-partial",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/sensitiveDataExported-cancelled",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/securityConfigurationChanged-failure",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/securityConfigurationChanged-denied",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        },
+        {
+          "step_id": "PD-C9/securityConfigurationChanged-partial",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/operation/state"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/events.ts:190-224",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:227-247",
+        "packages/security-audit-sdk-core/src/generated/contract.generated.ts:534-1200"
+      ],
+      "classification": "holds",
+      "confidence": "high",
+      "corrected_from": {
+        "old_text": "Accepted failure and denied mfaRemoved with inferred committed state and no transaction id; classified gap.",
+        "reason": "Owner #797 decision, 2026-10-13, #801 comment 6147123242: base now refuses every transaction-bound non-success without a handle at /operation/state; no sink. Expanded to all 35 supported combinations, including partial/cancelled."
+      },
+      "variants": [
+        {
+          "method": "accountRegistrationCompleted",
+          "outcome": "failure"
+        },
+        {
+          "method": "accountRegistrationCompleted",
+          "outcome": "partial"
+        },
+        {
+          "method": "accountRegistrationCompleted",
+          "outcome": "cancelled"
+        },
+        {
+          "method": "mfaEnrolled",
+          "outcome": "failure"
+        },
+        {
+          "method": "mfaEnrolled",
+          "outcome": "denied"
+        },
+        {
+          "method": "mfaRemoved",
+          "outcome": "failure"
+        },
+        {
+          "method": "mfaRemoved",
+          "outcome": "denied"
+        },
+        {
+          "method": "sessionRevoked",
+          "outcome": "failure"
+        },
+        {
+          "method": "sessionRevoked",
+          "outcome": "denied"
+        },
+        {
+          "method": "passwordResetCompleted",
+          "outcome": "failure"
+        },
+        {
+          "method": "passwordResetCompleted",
+          "outcome": "denied"
+        },
+        {
+          "method": "roleAssigned",
+          "outcome": "failure"
+        },
+        {
+          "method": "roleAssigned",
+          "outcome": "denied"
+        },
+        {
+          "method": "roleRemoved",
+          "outcome": "failure"
+        },
+        {
+          "method": "roleRemoved",
+          "outcome": "denied"
+        },
+        {
+          "method": "privilegeElevated",
+          "outcome": "failure"
+        },
+        {
+          "method": "privilegeElevated",
+          "outcome": "denied"
+        },
+        {
+          "method": "impersonationStarted",
+          "outcome": "failure"
+        },
+        {
+          "method": "impersonationStarted",
+          "outcome": "denied"
+        },
+        {
+          "method": "impersonationEnded",
+          "outcome": "failure"
+        },
+        {
+          "method": "sensitiveResourceCreated",
+          "outcome": "failure"
+        },
+        {
+          "method": "sensitiveResourceCreated",
+          "outcome": "denied"
+        },
+        {
+          "method": "sensitiveResourceModified",
+          "outcome": "failure"
+        },
+        {
+          "method": "sensitiveResourceModified",
+          "outcome": "denied"
+        },
+        {
+          "method": "sensitiveResourceModified",
+          "outcome": "partial"
+        },
+        {
+          "method": "sensitiveResourceDeleted",
+          "outcome": "failure"
+        },
+        {
+          "method": "sensitiveResourceDeleted",
+          "outcome": "denied"
+        },
+        {
+          "method": "sensitiveResourceDeleted",
+          "outcome": "partial"
+        },
+        {
+          "method": "sensitiveDataExported",
+          "outcome": "failure"
+        },
+        {
+          "method": "sensitiveDataExported",
+          "outcome": "denied"
+        },
+        {
+          "method": "sensitiveDataExported",
+          "outcome": "partial"
+        },
+        {
+          "method": "sensitiveDataExported",
+          "outcome": "cancelled"
+        },
+        {
+          "method": "securityConfigurationChanged",
+          "outcome": "failure"
+        },
+        {
+          "method": "securityConfigurationChanged",
+          "outcome": "denied"
+        },
+        {
+          "method": "securityConfigurationChanged",
+          "outcome": "partial"
+        }
+      ]
+    },
+    {
+      "case_id": "PD-C10",
+      "setup": {
+        "description": "Deny authorization; explicit denied/not_committed without handle still fails terminal direct-value provenance check.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C10/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PREMATURE_SUCCESS",
+            "category": "validation",
+            "path": "/event/commit_state"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/events.ts:190-224",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:227-247"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C11",
+      "setup": {
+        "description": "Prototype transition called with plain and foreign receivers; getter, snapshot and inherited getter invoke native private-brand check. Record raw V8 messages.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C11/plain-transition",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_OPERATION_TRANSITION",
+            "category": "lifecycle",
+            "path": "/operation"
+          }
+        },
+        {
+          "step_id": "PD-C11/foreign-transition",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_OPERATION_TRANSITION",
+            "category": "lifecycle",
+            "path": "/operation"
+          }
+        },
+        {
+          "step_id": "PD-C11/getter",
+          "assertions": {
+            "surface": "raw-throw",
+            "name": "TypeError",
+            "message": "Receiver must be an instance of class AuditOperationHandleImpl",
+            "sink_count": 0,
+            "frozen": []
+          }
+        },
+        {
+          "step_id": "PD-C11/snapshot",
+          "assertions": {
+            "surface": "raw-throw",
+            "name": "TypeError",
+            "message": "Receiver must be an instance of class AuditOperationHandleImpl",
+            "sink_count": 0,
+            "frozen": []
+          }
+        },
+        {
+          "step_id": "PD-C11/inherited-getter",
+          "assertions": {
+            "surface": "raw-throw",
+            "name": "TypeError",
+            "message": "Receiver must be an instance of class AuditOperationHandleImpl",
+            "sink_count": 0,
+            "frozen": []
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/operations.ts:69-177",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+        "packages/security-audit-sdk-core/tsconfig.json:3-3"
+      ],
+      "classification": "holds",
+      "confidence": "medium",
+      "confidence_note": "Raw message is V8-specific; record it, do not replace it with the unreachable custom throw.",
+      "corrected_from": {
+        "old_text": "Basis implied the custom Invalid operation handle receiver message could be asserted.",
+        "reason": "Draft skeptic correction: ES2024 native private method rejects before the custom throw; freeze V8 private-brand message and retain raw observation."
+      }
+    },
+    {
+      "case_id": "PD-D1",
+      "setup": {
+        "description": "Synthetic marker keyHash recipe on request.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D1/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": {
+              "path_recipe": {
+                "prefix": "/request",
+                "recipe": "keyHash"
+              }
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-D2",
+      "setup": {
+        "description": "Synthetic marker keyRefresh at top level and in authenticationEvidence; constructor returns normally.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D2/top",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": {
+              "path_recipe": {
+                "prefix": "",
+                "recipe": "keyRefresh"
+              }
+            }
+          }
+        },
+        {
+          "step_id": "PD-D2/constructor",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": {
+              "path_recipe": {
+                "prefix": "/authentication",
+                "recipe": "keyRefresh"
+              }
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78",
+        "packages/security-audit-sdk-core/src/context.ts:305-307",
+        "packages/security-audit-sdk-core/src/context.ts:430-434"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-D3",
+      "setup": {
+        "description": "Synthetic marker value recipes in request.user_agent: bearer16, bearer15, bearerBroken.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D3/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": "/request/user_agent"
+          }
+        },
+        {
+          "step_id": "PD-D3/b1",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/request/user_agent": {
+              "marker_recipe": "bearer15"
+            }
+          }
+        },
+        {
+          "step_id": "PD-D3/b2",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/request/user_agent": {
+              "marker_recipe": "bearerBroken"
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78"
+      ],
+      "classification": "bypass",
+      "confidence": "high",
+      "variant_classification": {
+        "main": "holds",
+        "b1": "holds",
+        "b2": "bypass"
+      }
+    },
+    {
+      "case_id": "PD-D4",
+      "setup": {
+        "description": "Synthetic marker value recipes in request.user_agent: key16, key15.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D4/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": "/request/user_agent"
+          }
+        },
+        {
+          "step_id": "PD-D4/boundary",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/request/user_agent": {
+              "marker_recipe": "key15"
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78"
+      ],
+      "classification": "holds",
+      "confidence": "high",
+      "variant_classification": {
+        "main": "holds",
+        "boundary": "holds"
+      }
+    },
+    {
+      "case_id": "PD-D5",
+      "setup": {
+        "description": "Synthetic marker value recipes in request.user_agent: privateKey.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D5/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": "/request/user_agent"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78"
+      ],
+      "classification": "holds",
+      "confidence": "high",
+      "variant_classification": {
+        "main": "holds"
+      }
+    },
+    {
+      "case_id": "PD-D6",
+      "setup": {
+        "description": "Synthetic marker value recipes in request.user_agent: upperWord, lowerWord.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D6/upper",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": "/request/user_agent"
+          }
+        },
+        {
+          "step_id": "PD-D6/lower",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": "/request/user_agent"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78"
+      ],
+      "classification": "holds",
+      "confidence": "high",
+      "variant_classification": {
+        "upper": "holds",
+        "lower": "holds"
+      }
+    },
+    {
+      "case_id": "PD-D7",
+      "setup": {
+        "description": "Synthetic marker value recipes in request.user_agent: underscore.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D7/main",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/request/user_agent": {
+              "marker_recipe": "underscore"
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78"
+      ],
+      "classification": "bypass",
+      "confidence": "high",
+      "variant_classification": {
+        "main": "bypass"
+      }
+    },
+    {
+      "case_id": "PD-D8",
+      "setup": {
+        "description": "Synthetic marker value recipes in request.user_agent: hyphen.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D8/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": "/request/user_agent"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78"
+      ],
+      "classification": "holds",
+      "confidence": "high",
+      "variant_classification": {
+        "main": "holds"
+      }
+    },
+    {
+      "case_id": "PD-D9",
+      "setup": {
+        "description": "Synthetic marker underscore recipe used as a key, not a value.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D9/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": {
+              "path_recipe": {
+                "prefix": "/request",
+                "recipe": "underscore"
+              }
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-D10",
+      "setup": {
+        "description": "Synthetic marker value recipes in request.user_agent: pluralValue.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D10/main",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/request/user_agent": {
+              "marker_recipe": "pluralValue"
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78"
+      ],
+      "classification": "bypass",
+      "confidence": "high",
+      "variant_classification": {
+        "main": "bypass"
+      }
+    },
+    {
+      "case_id": "PD-D11",
+      "setup": {
+        "description": "Synthetic marker bearer16 through merged request frame; hyphen recipe through claimedActor display_name. Helpers accept; emission scans refuse.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D11/frame",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": [],
+            "facts/callbacks": 1
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": "/request/user_agent"
+          }
+        },
+        {
+          "step_id": "PD-D11/constructor",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": "/actor/display_name"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78",
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-D12",
+      "setup": {
+        "description": "Synthetic marker keyHash plus handwritten tenant; privacy scan wins.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D12/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": {
+              "path_recipe": {
+                "prefix": "/request",
+                "recipe": "keyHash"
+              }
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-E1",
+      "setup": {
+        "description": "Raw documentation-range observed address without a hook.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-E1/main",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/source/observed/address": "203.0.113.10"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:321-323",
+        "packages/security-audit-sdk-core/src/events.ts:287-300",
+        "packages/security-audit-sdk-core/src/internal.ts:63-73",
+        "packages/security-audit-sdk-core/src/generated/contract.generated.ts:2223-2231"
+      ],
+      "classification": "cannot-establish",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-E2",
+      "setup": {
+        "description": "Raw documentation-range observed address without a hook.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-E2/main",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/source/observed/address": "2001:db8::10"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:321-323",
+        "packages/security-audit-sdk-core/src/events.ts:287-300",
+        "packages/security-audit-sdk-core/src/internal.ts:63-73",
+        "packages/security-audit-sdk-core/src/generated/contract.generated.ts:2223-2231"
+      ],
+      "classification": "cannot-establish",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-F1",
+      "setup": {
+        "description": "Empty object; standalone validator.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-F1/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_MISSING_EVENT_FIELD",
+            "category": "validation",
+            "path": "/event"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:8-18",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:94-159",
+        "packages/security-audit-sdk-core/src/errors.ts:71-144"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-F2",
+      "setup": {
+        "description": "Clone capture; delete tenant; standalone validator.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-F2/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "MISSING_TENANT_CONTEXT",
+            "category": "validation",
+            "path": "/tenant"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:8-18",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:94-159",
+        "packages/security-audit-sdk-core/src/errors.ts:71-144"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-F3",
+      "setup": {
+        "description": "Clone capture; delete actor; standalone validator.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-F3/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "MISSING_REQUIRED_ACTOR",
+            "category": "validation",
+            "path": "/actor"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:8-18",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:94-159",
+        "packages/security-audit-sdk-core/src/errors.ts:71-144"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-F4",
+      "setup": {
+        "description": "String, null, array; standalone validator.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-F4/string",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_SCHEMA_VALIDATION_FAILED",
+            "category": "validation",
+            "path": "/"
+          }
+        },
+        {
+          "step_id": "PD-F4/null",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_SCHEMA_VALIDATION_FAILED",
+            "category": "validation",
+            "path": "/"
+          }
+        },
+        {
+          "step_id": "PD-F4/array",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_SCHEMA_VALIDATION_FAILED",
+            "category": "validation",
+            "path": "/"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:8-18",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:94-159",
+        "packages/security-audit-sdk-core/src/errors.ts:71-144"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-F5",
+      "setup": {
+        "description": "Undefined; standalone validator.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-F5/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "FIELD_SERIALIZATION_FAILED",
+            "category": "validation",
+            "path": "/"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:8-18",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:94-159",
+        "packages/security-audit-sdk-core/src/errors.ts:71-144"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-F6",
+      "setup": {
+        "description": "Map and enumerable accessor; validator never invokes getter.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-F6/map",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_INPUT",
+            "category": "validation",
+            "path": "/"
+          }
+        },
+        {
+          "step_id": "PD-F6/accessor",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": [],
+            "facts/getters": 0
+          },
+          "diagnostic": {
+            "code": "SDK_INVALID_INPUT",
+            "category": "validation",
+            "path": "/"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:8-18",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:94-159",
+        "packages/security-audit-sdk-core/src/errors.ts:71-144"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-F7",
+      "setup": {
+        "description": "Cyclic object; standalone validator.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-F7/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "FIELD_SERIALIZATION_FAILED",
+            "category": "validation",
+            "path": "/"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:8-18",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:94-159",
+        "packages/security-audit-sdk-core/src/errors.ts:71-144"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-F8",
+      "setup": {
+        "description": "Clone capture; unknown catalog name; standalone validator.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-F8/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "UNKNOWN_CATALOG_VALUE",
+            "category": "validation",
+            "path": "/event/name"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:8-18",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:94-159",
+        "packages/security-audit-sdk-core/src/errors.ts:71-144"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-F9",
+      "setup": {
+        "description": "Clone capture; synthetic marker keyHash versus benign extra_field.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-F9/prohibited",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": {
+              "path_recipe": {
+                "prefix": "",
+                "recipe": "keyHash"
+              }
+            }
+          }
+        },
+        {
+          "step_id": "PD-F9/benign",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_SCHEMA_VALIDATION_FAILED",
+            "category": "validation",
+            "path": "/"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:8-18",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:94-159",
+        "packages/security-audit-sdk-core/src/errors.ts:71-144",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-F10",
+      "setup": {
+        "description": "Clone frozen capture and forge authoritative administrator; validate, emit, redeliver and named redelivery without handle.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-F10/validate",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 0,
+            "frozen": [],
+            "raw/ok": true,
+            "value_frozen": true,
+            "raw/value/actor/provenance/trust_level": "authoritative_server",
+            "raw/value/event/id": {
+              "same_as": "PD-00/main/events/0/event/id"
+            },
+            "facts/input_frozen": false
+          }
+        },
+        {
+          "step_id": "PD-F10/emit",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/actor/type": "administrator",
+            "events/0/actor/provenance/trust_level": "authoritative_server",
+            "events/0/event/id": {
+              "same_as": "PD-00/main/events/0/event/id"
+            }
+          }
+        },
+        {
+          "step_id": "PD-F10/redeliver",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/actor/type": "administrator",
+            "events/0/actor/provenance/trust_level": "authoritative_server",
+            "events/0/event/id": {
+              "same_as": "PD-00/main/events/0/event/id"
+            }
+          }
+        },
+        {
+          "step_id": "PD-F10/named",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/actor/type": "administrator",
+            "events/0/actor/provenance/trust_level": "authoritative_server",
+            "events/0/event/id": {
+              "same_as": "PD-00/main/events/0/event/id"
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/sdk.ts:78-84",
+        "packages/security-audit-sdk-core/src/sdk.ts:306-314",
+        "packages/security-audit-sdk-core/src/events.ts:56-70",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:372-389"
+      ],
+      "classification": "cannot-establish",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A12",
+      "setup": {
+        "description": "Spread authentication, cloned source and actor+tenant precedence, separately.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A12/authentication",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/authentication"
+          }
+        },
+        {
+          "step_id": "PD-A12/source",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/source"
+          }
+        },
+        {
+          "step_id": "PD-A12/precedence",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/actor"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-A13",
+      "setup": {
+        "description": "sdkA frame reaches sdkB through shared Node provider; no per-call actor/tenant.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-A13/main",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "facts/sink_a": 0,
+            "events/0/actor/type": "anonymous",
+            "events/0/actor/provenance/trust_level": "client_claim",
+            "events/0/tenant/scope": "tenantless"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-node/src/context.ts:4-16",
+        "packages/security-audit-sdk-node/src/platform.ts:29-36",
+        "packages/security-audit-sdk-core/src/sdk.ts:106-108",
+        "packages/security-audit-sdk-core/src/sdk.ts:218-220",
+        "packages/security-audit-sdk-core/src/events.ts:434-443"
+      ],
+      "classification": "cannot-establish",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-B7",
+      "setup": {
+        "description": "claimedTenant brand placed in authoritative tenant slot.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-B7/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/tenant"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58",
+        "packages/security-audit-sdk-core/src/context.ts:294-297"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-B8",
+      "setup": {
+        "description": "Claimed administrator through delegated and impersonating constructors.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-B8/delegatedActorContext",
+          "assertions": {
+            "surface": "thrown-sdk",
+            "sink_count": 0,
+            "frozen": [],
+            "name": "SecurityAuditSdkError",
+            "message": "AUTHORITY_ESCALATION"
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/delegation/actor"
+          }
+        },
+        {
+          "step_id": "PD-B8/impersonatingActorContext",
+          "assertions": {
+            "surface": "thrown-sdk",
+            "sink_count": 0,
+            "frozen": [],
+            "name": "SecurityAuditSdkError",
+            "message": "AUTHORITY_ESCALATION"
+          },
+          "diagnostic": {
+            "code": "AUTHORITY_ESCALATION",
+            "category": "authority",
+            "path": "/delegation/actor"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:111-130",
+        "packages/security-audit-sdk-core/src/context.ts:345-359",
+        "packages/security-audit-sdk-core/src/context.ts:387-440",
+        "packages/security-audit-sdk-core/src/events.ts:72-81",
+        "packages/security-audit-sdk-core/src/errors.ts:21-58",
+        "packages/security-audit-sdk-core/src/context.ts:226-242"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-B9",
+      "control_variants": ["repeat", "tenantless"],
+      "setup": {
+        "description": "Conflicting claimed tenant on committed mfaRemoved, then repeat without claim on same handle; tenantless contrast.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-B9/conflict",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "TENANT_RESOURCE_CONFLICT",
+            "category": "validation",
+            "path": "/tenant/claimed_tenant_id"
+          }
+        },
+        {
+          "step_id": "PD-B9/repeat",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/event/commit_state": "committed"
+          }
+        },
+        {
+          "step_id": "PD-B9/tenantless",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/tenant": {
+              "scope": "tenantless",
+              "claimed_tenant_id": "tnt_synthetic_b"
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:139-196",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:73-113",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:372-435",
+        "packages/security-audit-sdk-core/src/events.ts:190-224",
+        "packages/security-audit-sdk-core/src/sdk.ts:210-243",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:227-247"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C12",
+      "setup": {
+        "description": "Reuse exactly PD-01 completed handle and SDK, no new instance.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C12/main",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_DUPLICATE_SUCCESS",
+            "category": "lifecycle",
+            "path": "/operation/state"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/sdk.ts:248-265",
+        "packages/security-audit-sdk-core/src/sdk.ts:476-535",
+        "packages/security-audit-sdk-core/src/operations.ts:154-177"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C13",
+      "setup": {
+        "description": "Same PD-01 handle and SDK; bounded retry 1 with never-issued original id then retry 1001.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C13/1",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/event/outcome": "success",
+            "events/0/event/commit_state": "committed",
+            "events/0/correlation/operation_id": {
+              "same_as": "PD-01/main/facts/operation_id"
+            },
+            "events/0/correlation/transaction_id": {
+              "same_as": "PD-01/main/facts/transaction_id"
+            },
+            "events/0/correlation/retry_attempt": 1,
+            "events/0/correlation/original_event_id": "evt_synthetic_0001"
+          }
+        },
+        {
+          "step_id": "PD-C13/1001",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_DUPLICATE_SUCCESS",
+            "category": "lifecycle",
+            "path": "/operation/state"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/sdk.ts:476-535",
+        "packages/security-audit-sdk-core/src/events.ts:227-254",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:354-370"
+      ],
+      "classification": "cannot-establish",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-C14",
+      "setup": {
+        "description": "Committed handle bound to mfaEnrolled passed to mfaRemoved; beginOperation with unknown boundEvent.",
+        "baseline": "B-MR",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-C14/mismatch",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_OPERATION_EVENT_MISMATCH",
+            "category": "lifecycle",
+            "path": "/operation/bound_event"
+          }
+        },
+        {
+          "step_id": "PD-C14/unknown",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "UNKNOWN_CATALOG_VALUE",
+            "category": "validation",
+            "path": "/operation/bound_event"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/sdk.ts:86-93",
+        "packages/security-audit-sdk-core/src/events.ts:52-54",
+        "packages/security-audit-sdk-core/src/events.ts:521-530"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-D13",
+      "setup": {
+        "description": "Synthetic marker pluralKey and joinedKey in closed request; joinedKey in open source proxy_chain item.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-D13/pluralKey",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "PROHIBITED_DATA",
+            "category": "privacy",
+            "path": "/request"
+          }
+        },
+        {
+          "step_id": "PD-D13/joinedKey",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_SCHEMA_VALIDATION_FAILED",
+            "category": "validation",
+            "path": "/request"
+          }
+        },
+        {
+          "step_id": "PD-D13/open",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/source/observed/proxy_chain/0": {
+              "object_recipe": {
+                "key": "joinedKey",
+                "value": "synthetic-value"
+              }
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:11-12",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:45-50",
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:74-87",
+        "packages/security-audit-sdk-core/src/events.ts:72-78",
+        "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:8-18",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:94-159",
+        "packages/security-audit-sdk-core/src/errors.ts:71-144",
+        "contracts/security-audit/schema/security-audit-event.schema.json:946-955",
+        "contracts/security-audit/schema/security-audit-event.schema.json:1241-1244"
+      ],
+      "classification": "bypass",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-E3",
+      "setup": {
+        "description": "Own Node SDK with actor.id transformation; one counted callback returns opaque fingerprint and key id.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-E3/main",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "facts/hook_calls": [
+              {
+                "path": "actor.id",
+                "value": "usr_synthetic_0001",
+                "purpose": "authentication_failed"
+              }
+            ],
+            "facts/key_id_present": false,
+            "events/0/actor": {
+              "type": "authenticated_human",
+              "id": "kfp_synthetic_0001",
+              "provenance": {
+                "trust_level": "authoritative_server",
+                "source": "configured-authority"
+              }
+            }
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/config.ts:254-276",
+        "packages/security-audit-sdk-core/src/events.ts:303-353",
+        "packages/security-audit-sdk-core/src/internal.ts:63-73",
+        "packages/security-audit-sdk-core/src/generated/contract.generated.ts:1703-1711"
+      ],
+      "classification": "cannot-establish",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-E4",
+      "setup": {
+        "description": "Explicit timestamp in 2001 and observed_at in 2000; neither compared to clock or each other.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-E4/main",
+          "assertions": {
+            "surface": "accepted",
+            "sink_count": 1,
+            "frozen": [
+              true
+            ],
+            "raw/ok": true,
+            "raw/value/status": "accepted",
+            "events/0/event/timestamp": "2001-01-01T00:00:00.000Z",
+            "events/0/event/observed_at": "2000-01-01T00:00:00.000Z"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/events.ts:446-455",
+        "contracts/security-audit/schema/security-audit-event.schema.json:184-195"
+      ],
+      "classification": "cannot-establish",
+      "confidence": "high"
+    },
+    {
+      "case_id": "PD-F11",
+      "setup": {
+        "description": "Fresh clone for schema version, outcome and category semantic prechecks.",
+        "baseline": "B-AF",
+        "sequence": "sequential; fresh SDK/sink except explicit shared-instance and retained-handle controls"
+      },
+      "expected": [
+        {
+          "step_id": "PD-F11/version",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "UNSUPPORTED_SCHEMA_VERSION",
+            "category": "validation",
+            "path": "/schema/version"
+          }
+        },
+        {
+          "step_id": "PD-F11/outcome",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "SDK_SEMANTIC_VALIDATION_FAILED",
+            "category": "validation",
+            "path": "/event/outcome"
+          }
+        },
+        {
+          "step_id": "PD-F11/category",
+          "assertions": {
+            "surface": "returned-refusal",
+            "sink_count": 0,
+            "frozen": []
+          },
+          "diagnostic": {
+            "code": "UNKNOWN_CATALOG_VALUE",
+            "category": "validation",
+            "path": "/event/category"
+          }
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/index.ts:9-21",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:8-18",
+        "packages/security-audit-sdk-core/src/validation/schema.ts:94-159",
+        "packages/security-audit-sdk-core/src/errors.ts:71-144",
+        "packages/security-audit-sdk-core/src/validation/semantic.ts:73-96"
+      ],
+      "classification": "holds",
+      "confidence": "high"
+    }
+  ]
+}

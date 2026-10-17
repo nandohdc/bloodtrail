@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { command, inside, sha256 } from "./io.mjs";
+import { probeProcessPath } from "./plan.mjs";
 
 export function verifyFileBytes({ bytes, committed }) {
   assert.equal(sha256(bytes), sha256(committed), "executed file differs from approved Git blob");
@@ -31,9 +32,11 @@ export function assertResolution({ service, resolvedCore }) {
   inside({ root: realpathSync(service), path: realpathSync(fileURLToPath(resolvedCore)) });
 }
 
-export function launchProbe({ service, role, budget, flags, run = command }) {
+export function launchProbe({ service, role, budget, flags, run = command, probeDirectory, inventory, prefix }) {
   assert.deepEqual(flags, ["--permission", `--allow-fs-read=${service}`], "unexpected permission grant");
-  const script = join(service, "harness/p-ids/probe-process.mjs");
+  const path = probeProcessPath({ prefix, probeDirectory });
+  assert(Object.hasOwn(inventory, path), "probe process absent from approved tracked inventory");
+  const script = join(service, "harness", probeDirectory, "probe-process.mjs");
   const observed = JSON.parse(run({ program: process.execPath, args: [...flags, script, "--role", role, "--budget", String(budget)], cwd: service }));
   assertResolution({ service, resolvedCore: observed.resolved_core });
   assert.equal(observed.role, role);

@@ -9,7 +9,7 @@ The build-only tracer completes task 1.1 only; no Stage P execution or approval 
 
 ## 2. P-D (#801)
 
-- [ ] 2.1 Implement the complete public integrity-attempt matrix, with labelled synthetic prohibited markers confined to P-D and raw reflection TypeErrors retained.
+- [x] 2.1 Implement the complete public integrity-attempt matrix, with labelled synthetic prohibited markers confined to P-D and raw reflection TypeErrors retained.
 - [ ] 2.2 Under its own owner-approved run, record every acceptance/refusal at public boundaries and what the SDK cannot establish; preserve immutable expectations, provenance and deletion evidence.
 
 ## 3. P-attr (#802)

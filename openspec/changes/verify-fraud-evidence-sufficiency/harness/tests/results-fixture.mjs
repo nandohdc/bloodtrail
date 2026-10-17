@@ -3,7 +3,7 @@ import { G38, resultRecord } from "../lib/results.mjs";
 export function fixtureResult(patch = {}) {
   const identity = { commit: "1".repeat(40), package_set_digest: "2".repeat(64), manifest_digest: "3".repeat(64), distributable: true, artifacts: [{ filename: "fixture.tgz", sha256: "8".repeat(64) }] };
   return resultRecord({
-    runNumber: 1, approvedHead: identity.commit,
+    probe: "P-ids", ticket: 800, runNumber: 1, approvedHead: identity.commit,
     started: "2026-10-16T00:00:00.000Z", ended: "2026-10-16T00:00:01.000Z",
     approval: { url: G38, createdAt: "fixture", updatedAt: "fixture", body_sha256: "4".repeat(64) },
     expectations: { path: "expectations/p-ids.v1.json", sha256: "5".repeat(64) },
