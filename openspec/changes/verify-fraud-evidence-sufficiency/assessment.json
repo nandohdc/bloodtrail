@@ -34,6 +34,7 @@
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/orchestrate.mjs",
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/run-p-ids.mjs",
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/run-ledger.md",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/results/p-d-run-2.json",
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/expectations/p-d.v1.json",
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/probe-runner.mjs",
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/accounting.mjs",
