@@ -5,7 +5,7 @@ The build-only tracer completes task 1.1 only; no Stage P execution or approval 
 ## 1. Tracer bullet and P-ids (#800)
 
 - [x] 1.1 Implement the outside-repository packed-public-API own-service tracer, three observation boundaries, provenance recorder and precommitted hashed immutable expectations; confirm actual Node 26 runtime and `db.isTransaction` before database probing.
-- [ ] 1.2 Obtain the run-specific exact-head owner approval, verify kit identity and comment hash, enforce shared volume/window/data bounds and stops, then compare core/Node identifiers across two fresh processes and restarts on the #796-fixed baseline; commit raw synthetic evidence and confirm scratch deletion.
+- [x] 1.2 Obtain the run-specific exact-head owner approval, verify kit identity and comment hash, enforce shared volume/window/data bounds and stops, then compare core/Node identifiers across two fresh processes and restarts on the #796-fixed baseline; commit raw synthetic evidence and confirm scratch deletion.
 
 ## 2. P-D (#801)
 

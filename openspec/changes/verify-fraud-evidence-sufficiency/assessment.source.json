@@ -49,6 +49,7 @@
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/run-p-ids.mjs",
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/workload.mjs",
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/run-ledger.md",
+    "openspec/changes/verify-fraud-evidence-sufficiency/harness/results/p-ids-run-1.json",
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/approval.test.mjs",
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/logic.test.mjs",
     "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/observe.test.mjs",

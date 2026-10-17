@@ -10,7 +10,7 @@ comment. Expiry requires an authorization amendment, never an extended window
 by convention. The P-ids implementer-default accounting model and its 1,393-call
 plan are frozen in `expectations/p-ids.v1.json`; accepted and refused calls count.
 
-Window: **not yet opened**. Task 1.1's one build/install-only dry run is not a
+Window: opened at **2026-10-17T02:22:47Z**; closes at **2026-10-24T02:22:47Z** (UTC). Task 1.1's one build/install-only dry run is not a
 Stage P execution, consumes no run number and creates no row below. Before task
 1.2, the operator must reconcile this shared ledger with all probe tickets,
 verify the first approval's window and the next run number, and obtain S1's
@@ -39,6 +39,7 @@ install evidence or observations. Neither permits reuse of the retained marker.
 
 | run number | probe | ticket | approved head | approval URL | approval sha256 | occurrences | status |
 |---|---|---|---|---|---|---|---|
+| 1 | P-ids | #800 | ec192a5977e079089cb76b3595631dcb7d62aca3 | https://github.com/nandohdc/bloodtrail/issues/800#issuecomment-6228450746 | 988e6a8a26696a3b4e9f48450b873d94855902e1c8c6343136a0c24fc5c33e0c | 1393 | completed |
 
 Pi and Tamandua transcripts persist outside the repository. They contain only
 synthetic data. Kit, own service, builder archive and harness logs are disposable
