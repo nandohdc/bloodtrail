@@ -1,6 +1,6 @@
 ## Context and scope
 
-This is #799's proposal-only design for #795, based on main `6ee6f57037466ac80fd0b9b181f6e881cde62520` and contract 2.1.0. No harness, expectations, results, kit or run exists in this proposal. The owner reviews and merges at S3; no run approval is inferred.
+This retains #799's proposal design for #795, originally based on main `6ee6f57037466ac80fd0b9b181f6e881cde62520` and contract 2.1.0. #800 task 1.1 adds a build-only harness and frozen corrected P-ids expectations at baseline `101d083636044fe86cc019d1f1228f7feb021e39`. One clean-tree dry run built/installed a distributable kit and read declarations as text, without importing or executing kit code; scratch was deleted. No probe result or Stage P run exists. The owner approves the exact execution head at S1 and merges at S3; no run approval is inferred.
 
 The authoritative decision log is [#795's G1–G37 comment](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6134522416). The issue body wins disagreements except G34–G37, which postdate and override it. The decision register below preserves verbatim decision text and statuses; implementation choices and unanswered assumptions are separate.
 
@@ -20,9 +20,9 @@ Prior art informs design, not authorization or new evidence: the governed kit ga
 
 ## Provenance and expectations
 
-Before a future run, the recorder binds the kit identity **commit, package-set digest and kit digest**, package/contract and runtime versions, Node version, environment, authorization reference and hash of the approving owner comment. The kit commit must equal the exact approved head (S1). Runtime confirmation of `db.isTransaction` on Node 26 is a future recorder obligation, not an observation here.
+Before a future run, the recorder binds the kit identity **commit, package-set digest and kit digest**, package/contract and runtime versions, Node version, environment, authorization reference and hash of the approving owner comment. The kit commit must equal the exact approved head (S1). Task 1.1's build-only dry run confirmed Node 26 and availability of `db.isTransaction` in a closed in-memory database; this is runtime verification, not a P-E database probe.
 
-The future expectations file is committed and hashed **before a run**, with hypotheses, measurement thresholds and the redelivery count frozen. It is never edited after that run starts. Results are separate, raw observations tagged with provenance; a mismatch is reported, never "fixed" by changing expectations. Reproduction starts from the kit identity commit. Disposable kit/database/logs are deleted as the proposal requires; future committed synthetic evidence is distinct from scratch. No expectations or results file is created in #799.
+The future expectations file is committed and hashed **before a run**, with hypotheses, measurement thresholds and the redelivery count frozen. It is never edited after that run starts. Results are separate, raw observations tagged with provenance; a mismatch is reported, never "fixed" by changing expectations. Reproduction starts from the kit identity commit. Disposable kit/database/logs are deleted as the proposal requires; future committed synthetic evidence is distinct from scratch. #800 task 1.1 now freezes `harness/expectations/p-ids.v1.json`; it adds no probe results. `harness/README.md` documents the implementer-default counting model, exact per-role budgets, future permission-constrained execution and fixture-only verification.
 
 ## Stage P verdict and fix ownership
 
@@ -158,7 +158,7 @@ The following tables reproduce the authoritative log's decision cells and status
 |---|---|---|
 | G6 | Run Stage P first, then record the decisions in a system ADR (the next number, 0014), following the delivery-attempts ADR precedent: owner approval against a named head commit, no contract version move. | **Stands** |
 | G7 | Stage P runs **inside the change**, under a written run authorization in the style of the archived non-production delivery pilot. Harness and results are committed in the change. | **Stands** |
-| G15 | Stage P runs in a Claude cloud session container: Node 26 installed outside the repo, the kit built by the governed kit builder, loopback only. | **Stands** |
+| G15 | Stage P runs in a Claude cloud session container: Node 26 installed outside the repo, the kit built by the governed kit builder, loopback only. | **Superseded by G38** |
 | G20 | Run authorization terms. The owner holds the data, retention and key roles. Synthetic data only. A 7-day window (opening per G34). At most 10 runs of at most 5,000 occurrences each. Loopback only. Per-run keys held in memory. A harness-local synthetic host database. Scratch deleted at the end. Each run approved by an owner comment naming the exact head commit. | **Stands** |
 | G21 | Original verdict criteria. | **Superseded** by the redefined criteria in this issue's body |
 | G22 | Stage 2 (HTTP, outages, duplicates, restart, storage, throughput, reconstruction at scale) is proposed only after the owner reviews Stage P's results. | **Stands** |
@@ -179,3 +179,4 @@ The following tables reproduce the authoritative log's decision cells and status
 | G35 | Keep **all ten tickets separate**. P-D, P-attr, P-E and P-map run in parallel after the tracer bullet. The ADR and the consumer profile run in parallel. The proposal and the tracer bullet are separate PRs. | **Stands** |
 | G36 | The capability's non-disclosure requirement is **scoped to first-factor failures**. Second-factor reasons (`mfa_failed`) and per-account lockout reasons (`rate_limited`) are allowed, because disclosure is inherent once the first factor has resolved the account. They still carry no target. P-map records that the engine cannot attribute them to an account, as a further design input for the contract field. **This refines the issue body's "non-disclosing failures" requirement.** | **Stands** |
 | G37 | File the three defects before the tickets, so the tickets can reference them: #796, #797 and #798. | **Done** |
+| G38 | Stage P runs execute on the owner's workstation (macOS, Apple Silicon), driven by Tamandua with pi, not in a Claude cloud session container. See the terms below. | **Stands** (owner, 2026-10-16) — [decision and terms](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6219739604) |
