@@ -1,175 +1,152 @@
 {
-  "assessment_level": "full",
-  "decision": "direct_implementation",
-  "forces": [
+ "assessment_level": "full",
+ "decision": "direct_implementation",
+ "forces": [
+  "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields.",
+  "Owner review must precede any harness; each later synthetic run needs exact-head approval, bounded shared volume and immutable expectations.",
+  "Evidence must be reproducible through the packed public API outside the repository, without package changes or invented measurements.",
+  "Host facts, joins and delivery guarantees need explicit trust and fix-owner boundaries rather than fraud or deployment claims."
+ ],
+ "applicability": {
+  "triggers_matched": [
+   "canonical_capability_requirement",
+   "security_sensitive_behavior"
+  ],
+  "material_capability_modification": true,
+  "capabilities": [
+   "fraud-evidence-profile"
+  ]
+ },
+ "owned_paths": [
+  "openspec/changes/verify-fraud-evidence-sufficiency/.openspec.yaml",
+  "openspec/changes/verify-fraud-evidence-sufficiency/proposal.md",
+  "openspec/changes/verify-fraud-evidence-sufficiency/design.md",
+  "openspec/changes/verify-fraud-evidence-sufficiency/tasks.md",
+  "openspec/changes/verify-fraud-evidence-sufficiency/specs/fraud-evidence-profile/spec.md",
+  "openspec/changes/verify-fraud-evidence-sufficiency/assessment.source.json",
+  "openspec/changes/verify-fraud-evidence-sufficiency/assessment.json"
+ ],
+ "candidate_approaches": [
+  {
+   "id": "approach-proposal-public-boundary",
+   "kind": "direct_implementation",
+   "summary": "Retain proposal/tracer and P-D protections. Add P-attr's injected runtime, memory-only HMACs, four-family carriers, declared L1-L3 joins and observed-axis/verdict fixtures after one clean-base dry run. Wire the shared exact-head S1/#802/G39 runner, full tracked inventory, one sequential process, global baseline stops and sticky counted allowance. Consolidate delivery-new wrappers/fixtures to own every changed path within 60 exact entries. No packed code is imported/executed and no probe runs; task 3.2 remains gated.",
+   "forces_addressed": [
     "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields.",
     "Owner review must precede any harness; each later synthetic run needs exact-head approval, bounded shared volume and immutable expectations.",
     "Evidence must be reproducible through the packed public API outside the repository, without package changes or invented measurements.",
     "Host facts, joins and delivery guarantees need explicit trust and fix-owner boundaries rather than fraud or deployment claims."
-  ],
-  "applicability": {
-    "triggers_matched": [
-      "canonical_capability_requirement",
-      "security_sensitive_behavior"
-    ],
-    "material_capability_modification": true,
-    "capabilities": [
-      "fraud-evidence-profile"
-    ]
+   ]
   },
-  "owned_paths": [
-    "openspec/changes/verify-fraud-evidence-sufficiency/proposal.md",
-    "openspec/changes/verify-fraud-evidence-sufficiency/design.md",
-    "openspec/changes/verify-fraud-evidence-sufficiency/tasks.md",
-    "openspec/changes/verify-fraud-evidence-sufficiency/assessment.source.json",
-    "openspec/changes/verify-fraud-evidence-sufficiency/assessment.json",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/README.md",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/approval.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/launcher.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/orchestrate.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/plan.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/results.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/orchestrate.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/run-p-ids.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/run-ledger.md",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/results/p-d-run-2.json",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/expectations/p-d.v1.json",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/probe-runner.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/accounting.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/serialize.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/baselines.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/cannot-establish.md",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/cases.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/counted.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/evaluate.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/expectations.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-a.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-b.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-c-commit.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-c-handles.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-d.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-e.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-f.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/markers.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/probe-process.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/roles.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/run-p-d.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/runtime.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/workload.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-approval.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-evaluator.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-failures.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-fixtures.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-markers.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-preflight.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-public-doubles.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-workload.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/approval.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/orchestration.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pipeline.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/results-fixture.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-authorization.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-budget.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-independent.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-plan.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-references.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-serialization.test.mjs"
-  ],
-  "candidate_approaches": [
-    {
-      "id": "approach-proposal-public-boundary",
-      "kind": "direct_implementation",
-      "summary": "Retain the reviewed proposal/tracer and task 2.1's P-D matrix. Apply P1–P10: ticket-bound scoped approval, explicit generic orchestration, inventory-backed launching, reliable references, prediction/allowance separation, independent source fixtures and post-evaluation marker-safe serialization. Own every changed/new path within the 60-path cap; omit only untouched historical paths, which remain in the full tracked inventory. No probe or dry run executes; separate exact-head S1 still gates task 2.2.",
-      "forces_addressed": [
-        "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields.",
-        "Owner review must precede any harness; each later synthetic run needs exact-head approval, bounded shared volume and immutable expectations.",
-        "Evidence must be reproducible through the packed public API outside the repository, without package changes or invented measurements.",
-        "Host facts, joins and delivery guarantees need explicit trust and fix-owner boundaries rather than fraud or deployment claims."
-      ]
-    },
-    {
-      "id": "approach-contract-first",
-      "kind": "alternative",
-      "summary": "Add a presented-identifier contract field before probing existing carriers, then evaluate the new field as the baseline.",
-      "forces_addressed": [
-        "Host facts, joins and delivery guarantees need explicit trust and fix-owner boundaries rather than fraud or deployment claims."
-      ]
-    },
-    {
-      "id": "approach-combined-harness-pr",
-      "kind": "alternative",
-      "summary": "Combine the proposal with an in-repository harness and package-level tests to gather results before owner review.",
-      "forces_addressed": [
-        "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields."
-      ]
-    }
-  ],
-  "selected_approach_id": "approach-proposal-public-boundary",
-  "rejected_alternative_ids": [
-    "approach-contract-first",
-    "approach-combined-harness-pr"
-  ],
-  "rejection_reasons": {
-    "approach-contract-first": {
-      "forces": [
-        "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields.",
-        "Evidence must be reproducible through the packed public API outside the repository, without package changes or invented measurements."
-      ],
-      "reason": "Changing the canonical carrier first destroys the 2.1.0 comparison and assumes the gap that P-attr must prove or refute; G33 requires a separate later contract change and this proposal owns no contract path."
-    },
-    "approach-combined-harness-pr": {
-      "forces": [
-        "Owner review must precede any harness; each later synthetic run needs exact-head approval, bounded shared volume and immutable expectations.",
-        "Evidence must be reproducible through the packed public API outside the repository, without package changes or invented measurements."
-      ],
-      "reason": "A combined implementation bypasses G35's separate proposal/tracer review and package tests use the wrong seam. Results before exact-head run approval would not supply accountable evidence under the proposed authorization."
-    }
+  {
+   "id": "approach-contract-first",
+   "kind": "alternative",
+   "summary": "Add a presented-identifier contract field before probing existing carriers, then evaluate the new field as the baseline.",
+   "forces_addressed": [
+    "Host facts, joins and delivery guarantees need explicit trust and fix-owner boundaries rather than fraud or deployment claims."
+   ]
   },
-  "selected_pattern_ids": [],
-  "implementation_invariant_ids": [
-    "implementation-public-boundaries-only",
-    "implementation-authorized-immutable-evidence",
-    "implementation-usage-only-trust",
-    "implementation-proposal-only-scope"
-  ],
-  "invariant_evidence": {
-    "implementation-public-boundaries-only": {
-      "task_ids": ["1.1", "2.1", "8.2"],
-      "evidence_ids": ["planned tracer provenance and observation inventory must demonstrate packed public API only and exactly three public boundaries; no execution evidence claimed"]
-    },
-    "implementation-authorized-immutable-evidence": {
-      "task_ids": ["1.2", "8.2"],
-      "evidence_ids": ["future run records must bind approved head and kit digests, comment hash, immutable expectation hash, shared limits, stops and scratch deletion; not yet executed"]
-    },
-    "implementation-usage-only-trust": {
-      "task_ids": ["3.2", "6.1", "8.1"],
-      "evidence_ids": ["normative scenarios constrain usage without redefining fields; future carrier matrix and verdict must separate acceptance, provenance, resource rules and meaning with fix owners"]
-    },
-    "implementation-proposal-only-scope": {
-      "task_ids": ["8.1"],
-      "evidence_ids": ["explicit owned-path inventory, fixture tests and strict validation/generated-drift/contract-reuse approved-skip/final governance verify build-only P-D scope: no protected-path edits, new probe results or P-D execution before S1"]
-    }
+  {
+   "id": "approach-combined-harness-pr",
+   "kind": "alternative",
+   "summary": "Combine the proposal with an in-repository harness and package-level tests to gather results before owner review.",
+   "forces_addressed": [
+    "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields."
+   ]
+  }
+ ],
+ "selected_approach_id": "approach-proposal-public-boundary",
+ "rejected_alternative_ids": [
+  "approach-contract-first",
+  "approach-combined-harness-pr"
+ ],
+ "rejection_reasons": {
+  "approach-contract-first": {
+   "forces": [
+    "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields.",
+    "Evidence must be reproducible through the packed public API outside the repository, without package changes or invented measurements."
+   ],
+   "reason": "Changing the canonical carrier first destroys the 2.1.0 comparison and assumes the gap that P-attr must prove or refute; G33 requires a separate later contract change and this proposal owns no contract path."
   },
-  "security_sensitive": true,
-  "security_justification": {
-    "audit_integrity": "Event identity, byte-identical occurrence copies and consumer deduplication constrain evidence integrity. Future raw results remain separate from immutable expectations; this proposal claims no measured integrity outcome.",
-    "authentication_or_authorization": "The profile forbids failed-authentication targets and scopes non-disclosure to first-factor failures. Each future run requires its own exact-head owner comment; proposal review grants no run permission.",
-    "authority_provenance": "Published policy trust is distinguished from actual host value origin. SDK branding is not attestation, and future carrier observations must record provenance ambiguity independently of acceptance.",
-    "concurrency": "Future P-ids compares fresh processes and restarts, and P-E distinguishes in-memory handles from durable host transactions. The future orchestrator serializes fresh processes under preplanned budgets; fixture tests exercise only isolated synthetic state without importing SDK code.",
-    "confidentiality": "Only synthetic opaque identifiers and documentation-range addresses may be used; prohibited markers are confined to P-D. Secrets, bearer values and presented login identifiers remain excluded from emitted evidence.",
-    "cryptography": "The design uses memory-only per-run keys and host-computed session fingerprints under shared chain scope. Current fixed core and Node cryptographic UUID sources satisfy the event-ID obligation; no key material is created here.",
-    "error_disclosure": "First-factor outcome reasons, failure reasons, messages and resource content must not disclose account existence. Targetless second-factor and lockout reasons remain allowed per G36; future refusals are recorded without invented codes.",
-    "external_security_integration": "Bloodtrail supplies evidence only; external consumers own enrichment, detection, scoring and fraud verdicts. Future probes use the packed kit as an outside-repository own service and loopback-only exchanges.",
-    "fail_posture": "Non-synthetic data or a critical security defect halts and reports. Expectation mismatches are findings, not silently corrected thresholds. Any out-of-scope gate failure stops this proposal rather than bypassing enforcement.",
-    "lifecycle": "The proposed seven-day window opens at the first owner run-approval comment, with shared ten-run limits. Expiry requires amendment through the change; Stage 2 waits for owner review and separate authorization.",
-    "mutation_ownership": "This change owns planning files and each exact harness/expectations/test path in its directory, no package implementation. Task 1.1 performs only one clean-tree build/install dry run; probes await S1. Fold, archive, ADR and profile documents are deferred tickets; canonical contract fields remain untouched.",
-    "privacy_transformation": "Exact observed address and direct internal opaque account IDs require recorded purpose exceptions. Session fingerprints are host-computed, not per-event hook outputs; real-user exact-address use requires a DPIA.",
-    "resource_retention": "The owner holds data, retention and key roles. Future kit, harness-local synthetic database and logs are deleted at run end, including stops; committed synthetic evidence is separate from disposable scratch.",
-    "retry_or_redelivery": "P-E will count probe and commit-gate invocations across k=3 fail-closed redeliveries and new instances. Persistent retry and host atomicity are hypotheses to measure, not guarantees supplied by this proposal.",
-    "trust_boundary": "Only public-call outcomes, the core sink and injected handoff exchange are observation boundaries; the latter is fixture-only for P-ids. Trusted-hop extraction and host fact truth remain host responsibilities; structural acceptance never upgrades client claims to authority."
+  "approach-combined-harness-pr": {
+   "forces": [
+    "Owner review must precede any harness; each later synthetic run needs exact-head approval, bounded shared volume and immutable expectations.",
+    "Evidence must be reproducible through the packed public API outside the repository, without package changes or invented measurements."
+   ],
+   "reason": "A combined implementation bypasses G35's separate proposal/tracer review and package tests use the wrong seam. Results before exact-head run approval would not supply accountable evidence under the proposed authorization."
+  }
+ },
+ "selected_pattern_ids": [],
+ "implementation_invariant_ids": [
+  "implementation-public-boundaries-only",
+  "implementation-authorized-immutable-evidence",
+  "implementation-usage-only-trust",
+  "implementation-proposal-only-scope"
+ ],
+ "invariant_evidence": {
+  "implementation-public-boundaries-only": {
+   "task_ids": [
+    "1.1",
+    "2.1",
+    "8.2"
+   ],
+   "evidence_ids": [
+    "planned tracer provenance and observation inventory must demonstrate packed public API only and exactly three public boundaries; no execution evidence claimed"
+   ]
   },
-  "ordering": {
-    "proposal_baseline_commit": "6ee6f57037466ac80fd0b9b181f6e881cde62520"
+  "implementation-authorized-immutable-evidence": {
+   "task_ids": [
+    "1.2",
+    "8.2"
+   ],
+   "evidence_ids": [
+    "future run records must bind approved head and kit digests, comment hash, immutable expectation hash, shared limits, stops and scratch deletion; not yet executed"
+   ]
   },
-  "verification_task_ids": ["8.1", "8.2", "8.3"]
+  "implementation-usage-only-trust": {
+   "task_ids": [
+    "3.2",
+    "6.1",
+    "8.1"
+   ],
+   "evidence_ids": [
+    "normative scenarios constrain usage without redefining fields; future carrier matrix and verdict must separate acceptance, provenance, resource rules and meaning with fix owners"
+   ]
+  },
+  "implementation-proposal-only-scope": {
+   "task_ids": [
+    "3.1",
+    "8.1"
+   ],
+   "evidence_ids": [
+    "explicit owned-path inventory, fixture tests and strict validation/generated-drift/contract-reuse approved-skip/final governance verify build-only P-D and P-attr scope: no protected-path edits, new probe results or P-attr execution before S1; expectations/p-attr.v1.json is frozen and the ledger and all historical results/expectations stay byte-identical"
+   ]
+  }
+ },
+ "security_sensitive": true,
+ "security_justification": {
+  "audit_integrity": "Event identity, byte-identical occurrence copies and consumer deduplication constrain evidence integrity. Future raw results remain separate from immutable expectations; this proposal claims no measured integrity outcome.",
+  "authentication_or_authorization": "The profile forbids failed-authentication targets and scopes non-disclosure to first-factor failures. Each future run requires its own exact-head owner comment; proposal review grants no run permission.",
+  "authority_provenance": "Published policy trust is distinguished from actual host value origin. SDK branding is not attestation, and future carrier observations must record provenance ambiguity independently of acceptance.",
+  "concurrency": "Future P-ids compares fresh processes and restarts, and P-E distinguishes in-memory handles from durable host transactions. The future orchestrator serializes fresh processes under preplanned budgets; fixture tests exercise only isolated synthetic state without importing SDK code.",
+  "confidentiality": "Only synthetic opaque identifiers and documentation-range addresses may be used; prohibited markers are confined to P-D. Secrets, bearer values and presented login identifiers remain excluded from emitted evidence.",
+  "cryptography": "The design uses memory-only per-run keys and host-computed session fingerprints under shared chain scope. Current fixed core and Node cryptographic UUID sources satisfy the event-ID obligation; P-attr generates per-run HMAC material only in memory through crypto.randomBytes; closure-only storage and serialization-negative fixtures prevent persistence. Key identifiers are independent of the key.",
+  "error_disclosure": "First-factor outcome reasons, failure reasons, messages and resource content must not disclose account existence. Targetless second-factor and lockout reasons remain allowed per G36; future refusals are recorded without invented codes.",
+  "external_security_integration": "Bloodtrail supplies evidence only; external consumers own enrichment, detection, scoring and fraud verdicts. Future probes use the packed kit as an outside-repository own service and loopback-only exchanges.",
+  "fail_posture": "Non-synthetic data or a critical security defect halts and reports. Expectation mismatches are findings, not silently corrected thresholds. Any out-of-scope gate failure stops this proposal rather than bypassing enforcement.",
+  "lifecycle": "The proposed seven-day window opens at the first owner run-approval comment, with shared ten-run limits. Expiry requires amendment through the change; Stage 2 waits for owner review and separate authorization.",
+  "mutation_ownership": "This change owns its entire change directory through the design-pattern-governance perimeter's implicit change-directory grant (ownedPathsFor always grants openspec/changes/verify-fraud-evidence-sufficiency/ as a trailing-slash prefix), so every harness, expectation and test file inside it is owned without a per-file listing. owned_paths therefore lists only the change's seven planning files; no path outside the change directory is owned, and canonical contract fields remain untouched. Task 1.1 performs only one clean-tree build/install dry run; probes await S1. Fold, archive, ADR and profile documents are deferred tickets.",
+  "privacy_transformation": "Exact observed address and direct internal opaque account IDs require recorded purpose exceptions. Session fingerprints are host-computed, not per-event hook outputs; real-user exact-address use requires a DPIA.",
+  "resource_retention": "The owner holds data, retention and key roles. Future kit, harness-local synthetic database and logs are deleted at run end, including stops; committed synthetic evidence is separate from disposable scratch.",
+  "retry_or_redelivery": "P-E will count probe and commit-gate invocations across k=3 fail-closed redeliveries and new instances. Persistent retry and host atomicity are hypotheses to measure, not guarantees supplied by this proposal.",
+  "trust_boundary": "Only public-call outcomes, the core sink and injected handoff exchange are observation boundaries; the latter is fixture-only for P-ids. Trusted-hop extraction and host fact truth remain host responsibilities; structural acceptance never upgrades client claims to authority."
+ },
+ "ordering": {
+  "proposal_baseline_commit": "6ee6f57037466ac80fd0b9b181f6e881cde62520"
+ },
+ "verification_task_ids": [
+  "8.1",
+  "8.2",
+  "8.3"
+ ]
 }

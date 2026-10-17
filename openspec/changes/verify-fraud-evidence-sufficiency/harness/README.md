@@ -331,3 +331,152 @@ sequential shared-provider/retained-handle dependencies, exact budgets and stick
 exhaustion, P-D approvals/delegation/preflight/once semantics, evidence-preserving
 failures, runtime marker recipes and static literal hygiene. They execute no
 probe, installed SDK or real pipeline and use no network.
+
+## P-attr build only — #802 task 3.1
+
+P-ids run 1 and P-D run 2 are historical evidence in `results/`; the earlier
+sections describe their build handoffs. **P-attr has not executed.** Only task
+3.1 is completed here; task 3.2 (the run) needs a new exact-head S1 approval,
+delegated to the orchestrator under G39. No P-attr result or execution-ledger
+row is created, and no historical result, expectation or ledger row changes.
+
+### Sole dry run — history, not permission
+
+The single P-attr build/install-only dry run occurred at the clean pinned base
+`cc4fdf5a3309db5077b85c4954c916b9ba902b8e`, before any P-attr edit. This is its
+reproduction form, **not permission to repeat it during this build**:
+
+```bash
+node openspec/changes/verify-fraud-evidence-sufficiency/harness/kit-cli.mjs --dry-run --repo "$PWD" --approved-head "$(git rev-parse HEAD)" --driver-run-id run-90407814-cdd4-41fd-899f-124a5b90e7ad --driver-harness pi --driver-provider openai-codex --driver-model gpt-6.1-sol --driver-thinking high
+```
+
+It built/installed only; installed packed `.d.ts` files were read as text
+externally before scratch deletion, never imported or executed. Evidence:
+`identity.commit` is `cc4fdf5a3309db5077b85c4954c916b9ba902b8e` (the base),
+`distributable` true, kit digest
+`6c62fbfe5e558631af3eebfc07f86aa3a867cf40b61a643b858bd5331c97c992`, package-set
+digest `612a1f1c986163eae51879af37be5f68857f50a1c6b0024a1996930685ef45c6`,
+exactly one core copy under both npm-ls and a recursive filesystem scan, and
+scratch recursively absent after deletion. No dry-run artifact is committed.
+
+The 32 declaration symbols checked against the retained `.d.ts` text (not
+imports): CONTRACT_VERSION, createNodeSecurityAuditSdk,
+createCapturingAuditSink, anonymousActor, claimedActor, authoritativeActor,
+authenticatedHumanActor, authenticatedPrincipal, authoritativeSubject,
+credentialReference, authoritativeTenant, claimedTenant, authoritativeResource,
+authenticationEvidence, authorizationEvidence, sessionEvidence, observedSource,
+authenticationFailed, authenticationSucceeded, passwordResetRequested,
+accountRegistrationAttempted, AuditContextFrameInput, AuthoritativeActorInput,
+SecurityAuditSdk, NodeSecurityAuditSdkConfiguration, AuditResult,
+SecurityAuditSdkError, CapturingAuditSink, AuditTransformationInput,
+AuditTransformationOutput, AuditFieldTransformationHook,
+SecurityAuditSdkConfiguration.
+
+G38 names no model, so every driver lane is recorded. The sole dry run used
+`openai-codex`/`gpt-6.1-sol` with thinking high. This build ran US-001 through
+US-007 on `openai-codex`/`gpt-6.1-sol` (thinking high) and US-008/US-009 on pi
+with `deepseek/deepseek-v4-pro` (thinking max).
+
+### Build-only fixtures
+
+Every P-attr test is offline and uses public-shape doubles; no test imports a
+kit/SDK package, executes a probe entrypoint, runs the real pipeline or uses
+network. The only harness files that may import `@bloodtrail/*` packages are the
+three future permission-constrained probe processes
+(`p-ids/p-d/p-attr/probe-process.mjs`). Static scope tests pin: entrypoint
+imports are local harness modules only; no test imports or spawns a probe/CLI
+entrypoint; every address literal in P-attr sources, P-attr tests and the
+P-attr expectations is documentation range (192.0.2.0/24, 198.51.100.0/24,
+203.0.113.0/24, 2001:db8::/32) and every identifier opaque synthetic; the
+P-attr expectations hold no serialized HMAC key or digest; the explicit
+inventory covers every lib/p-attr module; and historical results, expectations
+and the ledger keep frozen digests.
+
+### Frozen P-attr plan
+
+`expectations/p-attr.v1.json` is frozen in this build commit before any
+execution. Its SHA-256 is
+`2954363d03a7e321c0ca379963eb554deedc3a6489b71b4432b5166749777887`. After this
+handoff, corrections require v2 and a new approval/run; never change v1 to
+match observations. It holds 73 case ids in documented #802 comment order (62
+drafted + 10 review-added + 1 implementer-default AF-F4), 149 matrix steps with
+exact surface/diagnostic or acceptance plus sink count plus axes, and 16
+`corrected_from` entries; every basis is re-derived at the frozen `corrected_at`
+base. The four axes are provenance ambiguity, resource-rule class
+(conforms/circumvents/violates), existence disclosure and field-meaning misuse;
+the in-occurrence flag is scoped as corrected (actor.id policy compared with
+in-event trust only when actor.id is present), and linkage runs over the eleven
+declared join pairs in the header. Every synthetic value is tagged with its
+true origin — CP client-presented, SR server-resolved or SC server-computed —
+and provenance ambiguity compares that origin against the published
+field-policy trust/authority for present fields only.
+
+The counting model predicts 2,305 public calls (1,199 matrix + 1,106 linkage,
+plus 31 linkage-setup calls inside the linkage budget) with an explicit
+one-process allowance of 4,610, at most 5,000. Every public call counts before
+invocation, including refusals. A deviation within the allowance is a note,
+never an invalidation; allowance exhaustion is sticky and stops the run. One
+sequential matrix process runs; captured events are cloned before mutation and
+fresh SDK instances are used as cases need. The seven positive controls (AF
+ex/nx, AS ex, PR ex/nx, RA ex/nx) run first: any baseline refusal, throw or
+absent capture invalidates the global precondition and stops the run. The
+deliberate hook preconditions (an async hook refused with
+SDK_UNSUPPORTED_HOOK_RESULT, a hook instance with no tenant refused with
+SDK_HOOK_FAILURE) and every other acceptance, refusal or throw are
+observations.
+
+Per-run HMAC keys come from crypto.randomBytes, exist only in a closure, and
+are never written to the kit, a database, logs or results. Results record only
+the key's purpose and a key id that is not derived from the key. Expectations
+hold keyed targets structurally (`{key_scope, input_origin, digest_format}`),
+never digests; the probe reports `matches_declared_input` booleans plus the
+format, and the evaluator compares structure and booleans. Mismatches are
+findings, not run failures: absent an invalidation, exit is zero regardless of
+mismatches, and a mismatch never repairs v1 or reruns under the same approval.
+
+### Future P-attr execution, only after exact-head S1
+
+[G39](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6228616880)
+allows the orchestrator to post a delegated approval for #801–#804 only after
+head verification (full TEST_CMD, 10/10 CI, review and frozen expectation
+hash). The new unedited comment contains these exact whole lines, substituting
+the run number and exact lowercase 40-hex head:
+
+```text
+S1 approval: P-attr run <N> for #802 at <HEAD>
+Delegated S1 under G39
+```
+
+Both whole lines trim surrounding whitespace and accept LF or CRLF; the hash
+covers the exact original UTF-8 bytes. The approval URL must name a comment on
+#802. Results record `delegation: "G39"`. The G34 window is unchanged: opened
+2026-10-17T02:22:47Z, closes 2026-10-24T02:22:47Z, with the shared ten-run and
+5,000-occurrence-per-run limits; expiry needs an amendment, never an extended
+timestamp. S2 and all volume/data limits remain.
+
+From that verified approved head, a future authorized operator supplies **all**
+arguments (the values below are placeholders, not approval):
+
+```bash
+git checkout --detach "$APPROVED_HEAD"
+test -z "$(git status --porcelain)"
+HARNESS=openspec/changes/verify-fraud-evidence-sufficiency/harness
+node "$HARNESS/p-attr/run-p-attr.mjs" --repo "$PWD" \
+  --approved-head "$APPROVED_HEAD" \
+  --approval-body-file "$CONTROL/approval-body.txt" --approval-url "$APPROVAL_URL" \
+  --approval-created-at "$CREATED_AT" --approval-updated-at "$UPDATED_AT" \
+  --approval-sha256 "$APPROVAL_SHA256" --window-opened-at "$WINDOW_OPENED_AT" \
+  --once-marker "$CONTROL/$APPROVAL_SHA256" \
+  --run-number "$LEDGER_RUN_NUMBER" --results "$CONTROL/p-attr-results.json" \
+  --driver-run-id "$TAMANDUA_RUN_ID" --driver-harness pi \
+  --driver-provider "$PROVIDER" --driver-model "$MODEL" --driver-thinking "$THINKING"
+```
+
+The shared session runner preserves P-ids/P-D's complete preclaim checks, full
+tracked Git-blob inventory, retained once-marker, child-process governed
+identity check, single-core install evidence, permission-constrained child and
+evidence-preserving write/deletion failure handling. There is no probe network,
+filesystem-write or child-spawn permission. No change to P-ids run-1 or P-D
+run-2 evidence, their v1 expectations or the ledger's existing rows; this
+build-only handoff claims no run, approval, ledger entry, fraud verdict or
+deployment readiness.

@@ -1,10 +1,10 @@
-import { counted } from "./counted.mjs";
+import { counted } from "../lib/counted.mjs";
 
 // Implementer default: property reads are not extra calls; reflection invocations are.
 
 export function createState({ core, node, testing, ledger }) {
   const state = { core, node, testing, ledger, records: [], invalidations: [], instances: [], current: "setup", calls: [], publicErrors: new Set() };
-  state.invoke = counted({ ledger, calls: state.calls, onThrow: (error) => state.publicErrors.add(error) });
+  state.invoke = counted({ ledger, calls: state.calls, onThrow: (error) => state.publicErrors.add(error), stepIds: true, keepRaw: false });
   state.call = (label, fn) => state.invoke({ label: `${state.current}:${label}`, fn });
   state.c = (name, ...args) => state.call(name, () => core[name](...args));
   state.method = (owner, name, ...args) => state.call(name, () => owner[name](...args));
