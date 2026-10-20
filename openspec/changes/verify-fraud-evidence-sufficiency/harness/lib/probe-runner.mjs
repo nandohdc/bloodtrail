@@ -25,13 +25,25 @@ export async function runProbe(plan) {
   return approvedSession({ context, expectations });
 }
 
-function writeSession(context, { provenance, observations, invalidations, occurrence_count }) {
+// Q2: the evaluator is total, but the shared runner still guards every
+// probe's plan.evaluate: a fault becomes an invalidation and the results
+// are still written with every raw observation and process record.
+export function evaluateWithGuard({ plan, context, observations, invalidations = context?.invalidations ?? [] }) {
+  try {
+    return { cases: plan.evaluate({ observations, expectations: context.expectations }), invalidations };
+  } catch (error) {
+    invalidations.push({ message: `evaluation fault: ${error.message}`, attribution: "harness_fault" });
+    return { cases: { evaluations: [], verdict: null }, invalidations };
+  }
+}
+
+export function writeSession(context, { provenance, observations, invalidations, occurrence_count }) {
   const { options, plan } = context;
-  const cases = plan.evaluate({ observations, expectations: context.expectations });
+  const evaluated = evaluateWithGuard({ plan, context, observations, invalidations });
   const result = resultRecord({
     probe: plan.probe, ticket: plan.ticket, runNumber: Number(options["run-number"]), approvedHead: options.approvedHead, approval: context.approval,
     expectations: { path: context.expectationsPath, sha256: context.expectationHash }, started: context.started, ended: new Date().toISOString(),
-    provenance: { driver: options.driver, ...provenance, executed_file_hashes: context.hashes }, cases, invalidations, occurrenceCount: occurrence_count,
+    provenance: { driver: options.driver, ...provenance, executed_file_hashes: context.hashes }, cases: evaluated.cases, invalidations: evaluated.invalidations, occurrenceCount: occurrence_count,
   });
   if (plan.retainProcesses) result.process_observations = observations;
   context.attempted = true;

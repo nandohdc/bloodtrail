@@ -20,68 +20,19 @@
     ]
   },
   "owned_paths": [
+    "openspec/changes/verify-fraud-evidence-sufficiency/.openspec.yaml",
     "openspec/changes/verify-fraud-evidence-sufficiency/proposal.md",
     "openspec/changes/verify-fraud-evidence-sufficiency/design.md",
     "openspec/changes/verify-fraud-evidence-sufficiency/tasks.md",
+    "openspec/changes/verify-fraud-evidence-sufficiency/specs/fraud-evidence-profile/spec.md",
     "openspec/changes/verify-fraud-evidence-sufficiency/assessment.source.json",
-    "openspec/changes/verify-fraud-evidence-sufficiency/assessment.json",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/README.md",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/approval.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/launcher.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/orchestrate.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/plan.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/results.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/orchestrate.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-ids/run-p-ids.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/run-ledger.md",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/results/p-d-run-2.json",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/expectations/p-d.v1.json",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/lib/probe-runner.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/accounting.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/serialize.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/baselines.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/cannot-establish.md",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/cases.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/counted.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/evaluate.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/expectations.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-a.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-b.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-c-commit.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-c-handles.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-d.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-e.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/group-f.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/markers.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/probe-process.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/roles.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/run-p-d.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/runtime.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/p-d/workload.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-approval.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-evaluator.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-failures.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-fixtures.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-markers.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-preflight.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-public-doubles.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-workload.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/approval.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/orchestration.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pipeline.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/results-fixture.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-authorization.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-budget.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-independent.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-plan.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-references.test.mjs",
-    "openspec/changes/verify-fraud-evidence-sufficiency/harness/tests/pd-serialization.test.mjs"
+    "openspec/changes/verify-fraud-evidence-sufficiency/assessment.json"
   ],
   "candidate_approaches": [
     {
       "id": "approach-proposal-public-boundary",
       "kind": "direct_implementation",
-      "summary": "Retain the reviewed proposal/tracer and task 2.1's P-D matrix. Apply P1–P10: ticket-bound scoped approval, explicit generic orchestration, inventory-backed launching, reliable references, prediction/allowance separation, independent source fixtures and post-evaluation marker-safe serialization. Own every changed/new path within the 60-path cap; omit only untouched historical paths, which remain in the full tracked inventory. No probe or dry run executes; separate exact-head S1 still gates task 2.2.",
+      "summary": "Retain proposal/tracer and P-D protections. Add P-attr's injected runtime, memory-only HMACs, four-family carriers, declared L1-L3 joins and observed-axis/verdict fixtures after one clean-base dry run. Wire the shared exact-head S1/#802/G39 runner, full tracked inventory, one sequential process, global baseline stops and sticky counted allowance. Consolidate delivery-new wrappers/fixtures to own every changed path within 60 exact entries. No packed code is imported/executed and no probe runs; task 3.2 remains gated.",
       "forces_addressed": [
         "Stage P must distinguish honest target attribution from mere SDK acceptance without redefining canonical contract 2.1.0 fields.",
         "Owner review must precede any harness; each later synthetic run needs exact-head approval, bounded shared volume and immutable expectations.",
@@ -166,10 +117,11 @@
     },
     "implementation-proposal-only-scope": {
       "task_ids": [
+        "3.1",
         "8.1"
       ],
       "evidence_ids": [
-        "explicit owned-path inventory, fixture tests and strict validation/generated-drift/contract-reuse approved-skip/final governance verify build-only P-D scope: no protected-path edits, new probe results or P-D execution before S1"
+        "explicit owned-path inventory, fixture tests and strict validation/generated-drift/contract-reuse approved-skip/final governance verify build-only P-D and P-attr scope: no protected-path edits, new probe results or P-attr execution before S1; expectations/p-attr.v1.json is frozen and the ledger and all historical results/expectations stay byte-identical"
       ]
     }
   },

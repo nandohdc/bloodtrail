@@ -14,7 +14,7 @@ The build-only tracer completes task 1.1 only; no Stage P execution or approval 
 
 ## 3. P-attr (#802)
 
-- [ ] 3.1 Implement all carrier candidates on failed authentication, success, reset request and registration attempt, including safe resolution, claimed tenants and authority-escalation negatives.
+- [x] 3.1 Implement all carrier candidates on failed authentication, success, reset request and registration attempt, including safe resolution, claimed tenants and authority-escalation negatives.
 - [ ] 3.2 Under its own owner-approved run, record acceptance, provenance ambiguity, resource-rule/account-existence disclosure and meaning misuse for every pair; report mismatches and the target-carrier gap without changing expectations.
 
 ## 4. P-E (#803)
