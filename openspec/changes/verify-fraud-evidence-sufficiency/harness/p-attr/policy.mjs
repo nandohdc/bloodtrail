@@ -1,24 +1,47 @@
+import assert from "node:assert/strict";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Analytical model backed by the published field policy, read as text only.
-// All citations are at cc4fdf5a3309db5077b85c4954c916b9ba902b8e. No canonical
-// code is loaded and no package is imported. The parent reads the approved
-// checkout's copy; offline tests read the repository file.
+// Text-only analytical policy; never import canonical code or an SDK package.
 export const POLICY_BASE = "cc4fdf5a3309db5077b85c4954c916b9ba902b8e";
-// Absolute repository path: the sandboxed child (cwd=<service>) can import
-// this module without any filesystem I/O, and parent/test callers resolve the
-// policy regardless of process.cwd().
-const POLICY_PATH = fileURLToPath(new URL("../../../../../contracts/security-audit/policies/field-policy.json", import.meta.url));
+export const POLICY_FILE = "contracts/security-audit/policies/field-policy.json";
+const ACTIVE = new AsyncLocalStorage();
+// Compatibility for existing standalone offline fixtures only. The runner
+// ALWAYS supplies its resolved --repo and approved head; it never uses this.
+const OFFLINE_SOURCE = { repo: fileURLToPath(new URL("../../../../../", import.meta.url)), approvedHead: POLICY_BASE };
+let offlinePolicies;
 
-let PUBLISHED = null;
+export function verifiedPolicies({ repo, approvedHead }) {
+  assert(typeof repo === "string" && isAbsolute(repo), "policy requires an absolute approved repository root");
+  assert(/^[a-f0-9]{40}$/.test(approvedHead), "policy requires an exact approved head");
+  const bytes = readFileSync(join(repo, POLICY_FILE));
+  const committed = execFileSync("git", ["show", `${approvedHead}:${POLICY_FILE}`], { cwd: repo, maxBuffer: 1024 * 1024 });
+  assert(bytes.equals(committed), "field policy bytes differ from approved head");
+  return new Map(JSON.parse(bytes.toString("utf8"))
+    .map((entry) => [entry.path, { authority: entry.authority, trust: entry.trust }]));
+}
+
+// Implementer default: evaluation-local scope, not a global root/head cache.
+// A second evaluation rechecks bytes, including after a dirty-file change.
+// The sandbox child performs no analysis and therefore no policy I/O.
+export function withPolicySource(source, evaluate) {
+  if (source === undefined) return evaluate();
+  return withPolicies(verifiedPolicies(source), evaluate);
+}
+
+// Offline callers may inject a verified fixture without filesystem access.
+export function withPolicies(policies, evaluate) {
+  return ACTIVE.run(policies, evaluate);
+}
 
 export function publishedPolicies() {
-  if (PUBLISHED === null) {
-    PUBLISHED = new Map(JSON.parse(readFileSync(POLICY_PATH, "utf8"))
-      .map((entry) => [entry.path, { authority: entry.authority, trust: entry.trust }]));
-  }
-  return PUBLISHED;
+  const active = ACTIVE.getStore();
+  if (active !== undefined) return active;
+  if (offlinePolicies === undefined) offlinePolicies = verifiedPolicies(OFFLINE_SOURCE);
+  return offlinePolicies;
 }
 
 // The published policy defines trust and authority only. The intended meaning

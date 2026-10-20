@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 
+export function requireDatabasePlan({ databaseScratch = false }) {
+  assert.equal(typeof databaseScratch, "boolean", "databaseScratch must be a boolean opt-in");
+}
+
 export function requireProbe({ probe, ticket }) {
   assert.equal(typeof probe, "string", "probe is required");
   assert.match(probe, /^P-[a-zA-Z]+$/, "invalid probe");

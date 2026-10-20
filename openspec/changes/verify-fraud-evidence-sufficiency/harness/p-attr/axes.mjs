@@ -9,6 +9,13 @@ const NO_AXES = Object.freeze({
   ambiguous_fields: [], allowed_source_violations: [], targets: [],
 });
 
+// Shared by linkage rows and the criterion verdict; equality is not honesty.
+export function honest(axes) {
+  return axes.provenance_ambiguity === false && axes.meaning_misuse === false
+    && axes.resource_rule === "conforms" && axes.discloses_existence === false
+    && axes.per_target_grouping === true;
+}
+
 export function originIssues({ event, origins, contents }) {
   const paths = Object.keys(leafOrigins({ value: event, origin: "SC" }));
   const missingOrigins = paths.filter((path) => !ORIGINS.includes(origins[path]))
@@ -30,7 +37,7 @@ function ambiguousFields({ event, origins }) {
 // this flag to actor.id PRESENT; authoritative CP actor provenance is invisible.
 function occurrenceFlag(event) {
   if (atPath(event, "actor.id") === undefined) return false;
-  return atPath(event, "actor.provenance.trust_level") !== fieldPolicy("actor.id").trust;
+  return atPath(event, "actor.provenance.trust_level") !== fieldPolicy("actor.id")?.trust;
 }
 
 function sourceViolations({ event, contents }) {

@@ -3,7 +3,7 @@ import { FAILURE_DATASETS, REQUEST_DATASETS, SUCCESS_DATASETS, TARGETS, REPETITI
 import { joinFacts, atPath } from "./comparison.mjs";
 import { cohortMetrics, usable } from "./linkage-metrics.mjs";
 import { analysisFor, byIdMap, eventView, shapeIssues } from "./observations.mjs";
-import { honest } from "./verdict.mjs";
+import { honest } from "./axes.mjs";
 
 const STAGES = [["L1", FAILURE_DATASETS, REPETITIONS], ["L2", SUCCESS_DATASETS, 1], ["L3", REQUEST_DATASETS, 1]];
 function rosterSlots() {
@@ -28,10 +28,10 @@ function slotIssues({ slot, byId, counts }) {
   const issues = isDeepStrictEqual(actual, slot) ? [] : ["ground truth/dataset slot mismatch"];
   return [...issues, ...shapeIssues(record), ...principalIssues(record)].map((issue) => `${slot.step_id}: ${issue}`);
 }
-function inventory(records, byId) {
+function inventory(records) {
   const slots = rosterSlots();
   const known = new Set(slots.map((slot) => slot.step_id));
-  const map = byId ?? byIdMap(records);
+  const map = byIdMap(records);
   const counts = new Map();
   for (const record of records) {
     counts.set(record.step_id, (counts.get(record.step_id) ?? 0) + 1);
@@ -83,13 +83,19 @@ function metrics({ records, from, to, pairs, repeats, analyses, byId }) {
 }
 // Uses only cloned core sink captures and raw method surfaces. No handoff body,
 // byte hash, or delivery-attempt claim is manufactured from canonical events.
-export function analyzeLinkage({ records, pairs = DECLARED_PAIRS, byId, analyses }) {
-  const map = byId ?? byIdMap(records);
-  const checked = inventory(records, map);
-  const context = { records: checked.records, pairs, byId: map, analyses: analyses ?? new Map() };
+export function analyzeLinkage({ records, pairs = DECLARED_PAIRS, analyses }) {
+  const checked = inventory(records);
+  // Slot validation changes the peer universe. Never reuse the caller's map
+  // or analyses computed before invalid/duplicate slots were removed.
+  const context = { records: checked.records, pairs, byId: byIdMap(checked.records), analyses: new Map() };
   const l1 = FAILURE_DATASETS.map((dataset) => metrics({ ...context, from: dataset.dataset_id, to: "AS-B/main", repeats: REPETITIONS }));
   const l2 = MIRRORS.map((mirror) => metrics({ ...context, ...mirror, repeats: REPETITIONS }));
   const l3 = REQUEST_DATASETS.map((dataset) => metrics({ ...context, from: dataset.dataset_id, to: "AS-B/main", repeats: 1 }));
+  // Publish validated analyses for later verdict consumers, but never read
+  // their unfiltered cache. This keeps one analysis per valid record.
+  if (analyses !== undefined) {
+    for (const [record, analysis] of context.analyses) analyses.set(record, analysis);
+  }
   const issues = [...checked.issues, ...[...l1, ...l2, ...l3].flatMap((row) => row.issues)];
   return { valid: issues.length === 0, issues,
     declared_pairs: structuredClone(pairs), L1: l1, L2: l2, L3: l3,

@@ -4,12 +4,28 @@ import { platform, release, type, arch } from "node:os";
 import { statfsSync } from "node:fs";
 import { command } from "./io.mjs";
 
+export function runtimeFactsSnapshot() {
+  const db = new DatabaseSync(":memory:");
+  try {
+    return { node: process.versions.node, isTransaction: db.isTransaction };
+  } finally {
+    db.close();
+  }
+}
+
+// Shared runtime precondition. sessionPreflight runs it before claimOnce, so a
+// wrong runtime refuses the run without spending the approval; runtimeFacts
+// re-uses the same assertions so provenance facts stay consistent.
+export function assertRuntimePrerequisites(facts = runtimeFactsSnapshot()) {
+  assert.equal(Number(facts.node.split(".")[0]), 26, "Stage P requires Node 26");
+  assert.equal(typeof facts.isTransaction, "boolean", "DatabaseSync.isTransaction missing");
+}
+
 export function runtimeFacts({ scratch }) {
-  assert.equal(Number(process.versions.node.split(".")[0]), 26, "Stage P requires Node 26");
   const db = new DatabaseSync(":memory:");
   let sqlite;
   try {
-    assert.equal(typeof db.isTransaction, "boolean", "DatabaseSync.isTransaction missing");
+    assertRuntimePrerequisites({ node: process.versions.node, isTransaction: db.isTransaction });
     sqlite = db.prepare("select sqlite_version() as version").get().version;
   } finally {
     db.close();

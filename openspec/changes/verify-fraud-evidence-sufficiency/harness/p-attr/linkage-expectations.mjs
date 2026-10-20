@@ -6,6 +6,31 @@ import { difference } from "./observations.mjs";
 // are matched by (stage, from, to); a missing observed row is an issue, and
 // observed rows with no frozen row are reported so nothing is silently ignored.
 
+const PAIR_FIELDS = ["from_family", "from", "to_family", "to"];
+
+function object(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function text(value) {
+  return typeof value === "string" && value.length > 0;
+}
+function pairShape(value) {
+  if (value === null) return true;
+  return object(value) && PAIR_FIELDS.every((key) => text(value[key]));
+}
+function honestyShape(value) {
+  return object(value) && typeof value.honest === "boolean" && text(value.reason);
+}
+
+// Shared by preflight validation and direct comparison: malformed plans are
+// intentional row-local diagnostics, never incidental property-access throws.
+export function plannedLinkageIssues(row) {
+  const issues = [];
+  if (!pairShape(row.declared_pair)) issues.push("declared_pair must be explicit null or a complete declared pair");
+  if (!honestyShape(row.honesty)) issues.push("honesty must contain boolean honest and nonempty string reason");
+  return issues;
+}
+
 function metricIssues({ path, actual, expected, targets }) {
   const issues = [];
   for (const target of targets) {
@@ -65,6 +90,9 @@ function honestyIssues({ path, planned, observed }) {
 
 function compareRow({ stage, planned, observed }) {
   const path = `${stage}/${planned.from} -> ${planned.to}`;
+  const malformed = plannedLinkageIssues(planned);
+  if (malformed.length > 0) return { stage, from: planned.from, to: planned.to, matched: false,
+    issues: malformed.map((issue) => `${path}: ${issue}`) };
   const issues = [...metricIssues({ path, actual: observed, expected: planned, targets: ["ex", "nx"] }),
     ...groupableIssues({ path, actual: observed, expected: planned }),
     ...declaredPairIssues({ path, planned, observed }),

@@ -1,5 +1,6 @@
 import { analysisFor, byIdMap } from "./observations.mjs";
 import { analyzeLinkage } from "./linkage-analysis.mjs";
+import { honest } from "./axes.mjs";
 import { usable } from "./linkage-metrics.mjs";
 import { atPath } from "./comparison.mjs";
 import { isDeepStrictEqual } from "node:util";
@@ -8,11 +9,6 @@ import { DECLARED_PAIRS } from "./linkage-cases.mjs";
 const PRINCIPAL_REFUSAL = { code: "AUTHORITY_ESCALATION", category: "authority", path: "/authenticated_principal" };
 const TENANT_REFUSAL = { code: "TENANT_RESOURCE_CONFLICT", category: "validation", path: "/tenant/claimed_tenant_id" };
 
-export function honest(axes) {
-  return axes.provenance_ambiguity === false && axes.meaning_misuse === false
-    && axes.resource_rule === "conforms" && axes.discloses_existence === false
-    && axes.per_target_grouping === true;
-}
 function independentFailure(axes) {
   if (axes === null) return false;
   return !honest(axes) || (axes.allowed_source_violations?.length ?? 0) > 0;

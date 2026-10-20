@@ -4,6 +4,7 @@ import { basename, dirname, isAbsolute, relative, sep } from "node:path";
 import { approvedRepository } from "./kit-pipeline.mjs";
 import { executingCheckout, harnessInventory } from "./repository.mjs";
 import { CHANGE } from "./results.mjs";
+import { assertRuntimePrerequisites } from "./runtime-facts.mjs";
 
 function assertAbsent(path) {
   try {
@@ -30,7 +31,8 @@ export function markerDestination({ path, repo, bodySha256 }) {
   assert(outside, "once-marker parent must be outside repository");
 }
 
-export function sessionPreflight({ options, approval, entrypoint }) {
+export function sessionPreflight({ options, approval, entrypoint, runtimeCheck = assertRuntimePrerequisites }) {
+  runtimeCheck();
   const approved = approvedRepository(options);
   executingCheckout({ entrypoint, repo: approved.repo });
   resultsDestination({ path: options.results });

@@ -5,10 +5,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runApprovedSession } from "../p-ids/orchestrate.mjs";
 import { writeResults } from "../lib/results.mjs";
+import { assertRuntimePrerequisites } from "../lib/runtime-facts.mjs";
 import { fixtureResult } from "./results-fixture.mjs";
 import { approvalBody, preflightFixture, setApproval } from "./approval-fixture.mjs";
 
 const REFUSALS = [
+  ["wrong node major", (fixture) => { fixture.runtimeCheck = () => assertRuntimePrerequisites({ node: "28.0.0", isTransaction: true }); }, /Stage P requires Node 26/],
+  ["missing isTransaction", (fixture) => { fixture.runtimeCheck = () => assertRuntimePrerequisites({ node: "26.12.0", isTransaction: "yes" }); }, /DatabaseSync.isTransaction missing/],
   ["dirty", ({ options }) => writeFileSync(join(options.repo, "dirty"), "fixture\n"), /clean tree/],
   ["wrong checkout head", ({ options }) => { options.approvedHead = "1".repeat(40); setApproval({ options }); }, /HEAD must equal/],
   ["invalid head", ({ options }) => { options.approvedHead = "invalid"; setApproval({ options }); }, /invalid approved head/],
