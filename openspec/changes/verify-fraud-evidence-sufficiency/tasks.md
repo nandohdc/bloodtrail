@@ -20,7 +20,7 @@ The build-only tracer completes task 1.1 only; no Stage P execution or approval 
 ## 4. P-E (#803)
 
 - [x] 4.1 Implement construction-before-commit, truthful/untruthful ordering, not_committed commit-gate and k=3 fail-closed redelivery cases; count probes and gates, including a new binding instance.
-- [ ] 4.2 Under its own owner-approved run, measure host transaction-bound sink commit/rollback, db.isTransaction and memory-handle versus durable state; record the later G5 binding concern.
+- [x] 4.2 Under its own owner-approved run, measure host transaction-bound sink commit/rollback, db.isTransaction and memory-handle versus durable state; record the later G5 binding concern.
 
 ## 5. P-map (#804)
 
