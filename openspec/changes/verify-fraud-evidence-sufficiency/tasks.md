@@ -25,7 +25,7 @@ The build-only tracer completes task 1.1 only; no Stage P execution or approval 
 ## 5. P-map (#804)
 
 - [x] 5.1 Implement fits/strained/misrepresents classification for logout, MFA challenge failure, contact-detail change, lockout, lockout release and credential rotation against existing events.
-- [ ] 5.2 Under its own owner-approved run, record criterion-2 observations and G36's permitted targetless reasons/account-attribution limitation as later-field design input.
+- [x] 5.2 Under its own owner-approved run, record criterion-2 observations and G36's permitted targetless reasons/account-attribution limitation as later-field design input.
 
 ## 6. ADR 0014 and Stage P verdict (#805)
 
