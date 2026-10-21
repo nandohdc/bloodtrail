@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { isDeepStrictEqual } from "node:util";
 import { assertionIssues } from "../p-e/assertions.mjs";
 import { validateStep } from "./step-validation.mjs";
+import { fieldOf } from "./evidence.mjs";
 
 export function compareStep(step, context) {
   try {
@@ -51,7 +52,7 @@ function metadataIssues(metadata) {
 
 function publicIssues(record) {
   if (record.kind !== "returned") return [];
-  if (record.raw?.ok !== record.accepted) return ["raw public outcome disagrees with acceptance"];
+  if (fieldOf(record.raw, "ok") !== record.accepted) return ["raw public outcome disagrees with acceptance"];
   return record.accepted ? [] : diagnosticIssues(record);
 }
 

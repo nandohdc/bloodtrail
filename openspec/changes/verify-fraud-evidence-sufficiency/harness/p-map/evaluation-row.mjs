@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { natural } from "../p-e/shape.mjs";
 import { validateCase } from "./case-validation.mjs";
-import { ownsRecord } from "./evidence.mjs";
+import { caseIdOf, ownsRecord } from "./evidence.mjs";
 import { compareStep } from "./step-evaluation.mjs";
 import { READINGS } from "./signal-rules.mjs";
 
@@ -57,8 +57,8 @@ function uniqueRecords(raw) {
 // Route first, validate second: even malformed rows retain their owned records.
 export function evaluateRow(entry, context) {
   const raw = context.records.filter((record) => ownsRecord(entry, record));
-  const accounting = context.accounting.filter((row) => typeof entry?.case_id === "string" && row?.case_id === entry.case_id);
-  const base = { case_id: entry?.case_id, raw, accounting, notes: [], integrity: false, steps: [] };
+  const accounting = context.accounting.filter((row) => typeof caseIdOf(entry) === "string" && row?.case_id === caseIdOf(entry));
+  const base = { case_id: caseIdOf(entry), raw, accounting, notes: [], integrity: false, steps: [] };
   try {
     validateCase(entry);
     const input = { ...context, raw, case_id: entry.case_id };

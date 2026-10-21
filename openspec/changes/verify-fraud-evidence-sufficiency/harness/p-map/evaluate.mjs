@@ -1,4 +1,4 @@
-import { array, ownsRecord } from "./evidence.mjs";
+import { array, caseIdOf, fieldOf, ownsRecord } from "./evidence.mjs";
 import { SIGNAL_IDS } from "./plan.mjs";
 import { evaluateRow } from "./evaluation-row.mjs";
 import { evaluateAggregate } from "./aggregate-evaluation.mjs";
@@ -13,13 +13,13 @@ function planNotes(expectations) {
 }
 
 function duplicates(cases) {
-  const ids = cases.map((entry) => entry?.case_id);
+  const ids = cases.map(caseIdOf);
   return new Set(ids.filter((id, index) => ids.indexOf(id) !== index));
 }
 
 function unowned(context, cases) {
   const records = context.records.filter((record) => !cases.some((entry) => ownsRecord(entry, record)));
-  const summaries = context.accounting.filter((row) => !cases.some((entry) => typeof entry?.case_id === "string" && entry.case_id === row?.case_id));
+  const summaries = context.accounting.filter((row) => !cases.some((entry) => typeof caseIdOf(entry) === "string" && caseIdOf(entry) === row?.case_id));
   return [...records.map((record) => ({ case_id: record?.step_id, matched: false, raw: [record], notes: [],
     mismatches: [`unknown step ${record?.step_id}`] })),
   ...summaries.map((row) => ({ case_id: row?.case_id, matched: false, raw: [], accounting: [row], notes: [],
@@ -29,16 +29,16 @@ function unowned(context, cases) {
 function evaluate(input) {
   const processes = array(input.observations);
   const malformed = observationIssues(input.observations);
-  const cases = array(input.expectations?.cases);
+  const cases = array(fieldOf(input.expectations, "cases"));
   const context = { records: processes.flatMap((process) => array(process?.records)),
     accounting: processes.flatMap((process) => array(process?.accounting)), duplicates: duplicates(cases) };
-  const concrete = cases.filter((entry) => !SIGNAL_IDS.includes(entry?.case_id));
+  const concrete = cases.filter((entry) => !SIGNAL_IDS.includes(caseIdOf(entry)));
   const rows = concrete.map((entry) => evaluateRow(entry, context));
   const verdicts = computeVerdicts({ records: context.records, rows, readings: input.readings ?? {} });
-  const aggregates = cases.filter((entry) => SIGNAL_IDS.includes(entry?.case_id))
+  const aggregates = cases.filter((entry) => SIGNAL_IDS.includes(caseIdOf(entry)))
     .map((entry) => evaluateAggregate(entry, { ...context, verdicts }));
   const byEntry = new Map([...concrete.map((entry, index) => [entry, rows[index]]),
-    ...cases.filter((entry) => SIGNAL_IDS.includes(entry?.case_id)).map((entry, index) => [entry, aggregates[index]])]);
+    ...cases.filter((entry) => SIGNAL_IDS.includes(caseIdOf(entry))).map((entry, index) => [entry, aggregates[index]])]);
   return { evaluations: [...cases.map((entry) => byEntry.get(entry)), ...unowned(context, cases), ...malformed],
     verdicts, baseline_evaluations: evaluateBaselines(processes),
     notes: [...planNotes(input.expectations), ...malformed.flatMap((row) => row.mismatches)],

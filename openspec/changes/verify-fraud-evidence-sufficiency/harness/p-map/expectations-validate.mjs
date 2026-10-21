@@ -5,6 +5,7 @@ import { validateCase } from "./case-validation.mjs";
 import { validateAggregate } from "./aggregate-validation.mjs";
 import { validatePeers } from "./step-validation.mjs";
 import { validateFrozenBudget } from "./budget.mjs";
+import { caseIdOf } from "./evidence.mjs";
 
 export { validateCase } from "./case-validation.mjs";
 
@@ -29,6 +30,6 @@ export function validateExpectations(value) {
 }
 
 export function validateEntry(entry) {
-  if (SIGNAL_IDS.includes(entry?.case_id)) return validateAggregate(entry);
+  if (SIGNAL_IDS.includes(caseIdOf(entry))) return validateAggregate(entry);
   return validateCase(entry);
 }
