@@ -9,7 +9,7 @@ import { CONSTRUCTION_CASES } from "./construction-cases.mjs";
 
 async function pendingHandleCase(state, entry) {
   const seqStart = state.sequence.length;
-  const { input, target, business, counters } = construct(state, entry.case_id);
+  const { input, target, counters } = construct(state, entry.case_id);
   const begin = state.method(target.sdk, "beginOperation", { boundEvent: "mfaRemoved" });
   const handle = begin.value;
   await recordStep(state, { id: "refusal", target, counters, refusalExpected: true,
@@ -30,7 +30,7 @@ async function pendingHandleCase(state, entry) {
 // input surface distinct (events.ts:205-225 order of checks).
 async function refusedConstruction(state, entry, { operation, extraInput = {}, stepId }) {
   const seqStart = state.sequence.length;
-  const { input, target, business, counters } = construct(state, entry.case_id);
+  const { input, target, counters } = construct(state, entry.case_id);
   const handle = operation === undefined ? undefined : state.method(target.sdk, "beginOperation", operation).value;
   const run = () => {
     const next = { ...input, ...extraInput };
