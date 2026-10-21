@@ -45,6 +45,7 @@ Under G39, #801–#804 approvals may be delegated, and each such row is marked `
 | 2 | P-D | #801 | 09847df832a0691152db290920c151152780ac33 | https://github.com/nandohdc/bloodtrail/issues/801#issuecomment-6231926171 | b13e97b32055f4c1c7ca3a189767900368c02fde3b6d7ceb8c6d50de9beca93f | 371 | completed, delegated (G39) |
 | 3 | P-attr | #802 | 03d9df47675b611f051ae0938f0eef1f8b4cbe78 | https://github.com/nandohdc/bloodtrail/issues/802#issuecomment-6290595161 | e265daa97da1bd1978a16ad1bf64c60282d26784c04bd2f9d332af521993b973 | 2305 | completed, delegated (G39) |
 | 4 | P-E | #803 | 9afdcb53bd8f73e5753bbd8daecb0f2f3ab63b03 | https://github.com/nandohdc/bloodtrail/issues/803#issuecomment-6308449511 | ab85ea0190938726389c0a91ba931f9ca2e5d5bd1031b17b263b2ce8f33288fe | 802 | completed, delegated (G39) |
+| 5 | P-map | #804 | 18efa6d57756976c0973c7d28ecf91f68cce941b | https://github.com/nandohdc/bloodtrail/issues/804#issuecomment-6327356873 | 56d6e2587523e2355b17f75ca22d2a925fa6a164059595a739dd7e477f007332 | 623 | completed, delegated (G39) |
 
 Pi and Tamandua transcripts persist outside the repository. They contain only
 synthetic data. Kit, own service, builder archive and harness logs are disposable
