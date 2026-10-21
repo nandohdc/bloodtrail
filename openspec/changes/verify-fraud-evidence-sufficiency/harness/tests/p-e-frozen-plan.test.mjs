@@ -1,11 +1,11 @@
-// US-013: the frozen 32-case P-E plan and the build-only handoff. Reads
+// US-013: the frozen 32-case P-E plan and the evidence-aware handoff. Reads
 // expectations/p-e.v1.json as data; validates it strictly, cross-checks it
 // against the independent source-cited oracle (p-e-evaluator-oracle.mjs),
 // evaluates a full offline fixture measure against it, applies one negative
 // mutation per family, and pins the header/tick/handoff facts. No probe, SDK
 // package, network or real pipeline is involved.
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -225,10 +225,22 @@ for (const [family, mutate] of Object.entries(NEGATIVES)) {
   });
 }
 
-test("the build-only handoff keeps task 4.1 as the only P-E tick and the seven owned_paths", () => {
+function assertRunTaskState({ tasks, hasResult }) {
+  assert.match(tasks, hasResult ? /^- \[x\] 4\.2 /m : /^- \[ \] 4\.2 /m);
+}
+
+for (const hasResult of [false, true]) {
+  test(`task 4.2 state follows run-4 result existence (${hasResult})`, () => {
+    const tasks = `- [${hasResult ? "x" : " "}] 4.2 Run the approved probe\n`;
+    assertRunTaskState({ tasks, hasResult });
+    assert.throws(() => assertRunTaskState({ tasks, hasResult: !hasResult }), assert.AssertionError);
+  });
+}
+
+test("the P-E handoff keeps task 4.1 ticked, tracks the run-4 tick against its results, and keeps the seven owned_paths", () => {
   const tasks = readFileSync(new URL("../../tasks.md", import.meta.url), "utf8");
   assert.match(tasks, /- \[x\] 4\.1/);
-  assert.match(tasks, /- \[ \] 4\.2/);
+  assertRunTaskState({ tasks, hasResult: existsSync(new URL("../results/p-e-run-4.json", import.meta.url)) });
   assert.match(tasks, /- \[ \] 8\.1/);
   assert.match(tasks, /- \[ \] 8\.2/);
   const assessment = JSON.parse(readFileSync(new URL("../../assessment.source.json", import.meta.url), "utf8"));
