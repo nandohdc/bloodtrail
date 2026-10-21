@@ -3,13 +3,14 @@ import { planBudget } from "./ledger.mjs";
 import { approvalFromArgs, claimOnce } from "./approval.mjs";
 import { sessionPreflight } from "./preflight.mjs";
 import { requireProbe, requireRoles } from "./plan.mjs";
+import { assertRuntimePrerequisites } from "./runtime-facts.mjs";
 
-export async function runApprovedSession({ options, entrypoint, session, failure, refuse, now, probe, ticket }) {
+export async function runApprovedSession({ options, entrypoint, session, failure, refuse, now, probe, ticket, runtimeCheck = assertRuntimePrerequisites }) {
   let claimed = false;
   let approval;
   try {
     approval = approvalFromArgs({ options, now, probe, ticket });
-    const hashes = sessionPreflight({ options, approval, entrypoint });
+    const hashes = sessionPreflight({ options, approval, entrypoint, runtimeCheck });
     claimOnce({ path: options["once-marker"], approvedHead: options.approvedHead });
     claimed = true;
     return await session(approval, hashes);

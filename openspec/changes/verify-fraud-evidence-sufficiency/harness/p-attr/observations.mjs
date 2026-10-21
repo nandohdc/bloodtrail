@@ -44,18 +44,17 @@ export function eventView(record) {
 function disclosureFor({ record, records, byId, issues }) {
   const peer = record.existence_peer;
   if (peer === undefined) return "n/a";
-  const peers = byId === undefined
-    ? records.filter((candidate) => candidate.step_id === peer)
-    : byId.has(peer) ? [byId.get(peer)] : [];
-  if (peers.length !== 1) {
+  const map = byId ?? byIdMap(records);
+  const candidate = map.get(peer);
+  if (candidate === undefined) {
     issues.push(`${record.step_id}: missing/duplicate existence peer ${peer}`);
     return "n/a";
   }
-  if (peers[0].events.length !== 1) {
+  if (candidate.events.length !== 1) {
     issues.push(`${record.step_id}: existence peer has no unique capture`);
     return "n/a";
   }
-  return compareExistence({ ex: eventView(record), nx: eventView(peers[0]) }).discloses;
+  return compareExistence({ ex: eventView(record), nx: eventView(candidate) }).discloses;
 }
 
 export function analyzeRecord({ record, records, byId }) {
@@ -70,8 +69,8 @@ export function analyzeRecord({ record, records, byId }) {
 }
 
 // Q10: one step-id map and one cached analysis per record per evaluation pass.
-// The Map is keyed by record identity, so every stage (case comparison, verdict,
-// linkage rows) that inspects the same record shares one analyzeRecord result.
+// The Map is keyed by record identity within one peer universe. Linkage uses
+// a separate cache after slot validation, never an unfiltered caller's cache.
 export function analysisFor({ record, records, byId, analyses }) {
   let analysis = analyses.get(record);
   if (analysis === undefined) {
@@ -83,6 +82,11 @@ export function analysisFor({ record, records, byId, analyses }) {
 
 export function byIdMap(records) {
   const byId = new Map();
-  for (const record of records) byId.set(record.step_id, record);
+  const seen = new Set();
+  for (const record of records) {
+    if (seen.has(record.step_id)) byId.delete(record.step_id);
+    else byId.set(record.step_id, record);
+    seen.add(record.step_id);
+  }
   return byId;
 }

@@ -16,9 +16,10 @@ export const PROBE_FILES = [
   "p-attr/linkage-analysis.mjs", "p-attr/linkage-metrics.mjs", "p-attr/linkage-expectations.mjs",
   "p-attr/expectations-validate.mjs", "p-attr/expected-targets.mjs", "p-attr/verdict.mjs",
   "lib/probe-runner.mjs", "lib/plan.mjs", "lib/arguments.mjs", "lib/kit-pipeline.mjs", "lib/identity.mjs",
-  "lib/install.mjs", "lib/runtime-facts.mjs", "lib/launcher.mjs", "lib/io.mjs", "lib/results.mjs",
+  "lib/install.mjs", "lib/runtime-facts.mjs", "lib/launcher.mjs", "lib/database-permissions.mjs", "lib/io.mjs", "lib/results.mjs",
   "lib/orchestrate.mjs", "lib/approval.mjs", "lib/preflight.mjs", "lib/repository.mjs",
   "lib/ledger.mjs", "lib/observe.mjs", "lib/counted.mjs", "lib/expectations.mjs", "lib/metrics.mjs",
+  "lib/import-closure.mjs",
 ];
 
 export { validateExpectations, DECLARED_PAIRS, P_ATTR_BUDGET };

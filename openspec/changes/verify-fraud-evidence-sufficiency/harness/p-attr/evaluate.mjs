@@ -2,6 +2,7 @@ import { atPath } from "./comparison.mjs";
 import { analysisFor, byIdMap, difference } from "./observations.mjs";
 import { evaluateVerdict } from "./verdict.mjs";
 import { compareLinkageExpectations } from "./linkage-expectations.mjs";
+import { withPolicySource } from "./policy.mjs";
 
 const OUTCOME_FIELDS = ["kind", "accepted", "diagnostic", "sink_count", "frozen"];
 const AXES_FIELDS = ["provenance_ambiguity", "in_occurrence_flag", "resource_rule", "meaning_misuse",
@@ -124,7 +125,7 @@ export function evaluateCases({ records, expectations, calls = [], byId, analyse
 // to the declared linkage inventory never become "unknown steps" here; the
 // linkage inventory reports its own unknowns. Linkage expectations are frozen
 // as per-row aggregates, never per-run digests or per-slot steps.
-export function evaluateProbe({ observations, expectations }) {
+function evaluateObserved({ observations, expectations }) {
   const records = observations.flatMap((process) => process.records);
   const calls = observations.flatMap((process) => process.public_calls);
   const matrixRecords = records.filter((record) => record.linkage === undefined);
@@ -137,4 +138,8 @@ export function evaluateProbe({ observations, expectations }) {
   return { evaluations: evaluations.map((entry) => ({ ...entry,
     raw: records.filter((record) => record.step_id.split("/")[0] === entry.case_id) })),
     verdict };
+}
+
+export function evaluateProbe({ source, ...input }) {
+  return withPolicySource(source, () => evaluateObserved(input));
 }

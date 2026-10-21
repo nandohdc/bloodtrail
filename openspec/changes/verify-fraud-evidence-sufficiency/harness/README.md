@@ -46,6 +46,28 @@ codes/check order come from source, not declarations. Every case's `basis` lists
 re-derived file:line ranges at the frozen `corrected_at` base, not draft line
 numbers. Declaration reading is not execution evidence.
 
+## P-E database scratch permission planning (#803 build only)
+
+Plan/proposal: the synthetic host database is harness-local `node:sqlite`, not
+Bloodtrail storage or a Bloodtrail outbox, and is deleted with pipeline scratch.
+Only a plan declaring `databaseScratch: true` opts in. Implementer defaults:
+allocate `<scratch>/host-database`, a sibling of `own-service`; pass its canonical
+path as `--database-directory` to that plan's child processes. Real-path checks
+refuse protected trees, overlapping roots, traversal and symlink escapes before
+launch. This declaration accepts no directory list or arbitrary permission grant.
+
+The exact opted-in flags are `--permission`, `--allow-fs-read=<own-service>`,
+`--allow-fs-write=<database-directory>`, in that order. The write grant confines
+only the harness's `fs` reserve (`openSync(..., "wx")`) and unlink operations.
+On Node 26.12.0, `node:sqlite` file access is not enforced by the permission
+model; database placement rests on `p-e/host.mjs` path checks before SQLite
+opens a file. Native fixtures commit, roll back and reopen without a database
+read grant, so none is added (implementer default). No network, child-process or
+native-addon grant is added. P-ids, P-D and P-attr keep their original two flags.
+Actual flags remain in provenance/results; the existing evidence-preserving
+scratch finalizer removes the database ancestor on success or failure. These are
+fixture-only checks, not authorization or P-E run evidence.
+
 ## Future execution — only after S1
 
 An owner must first approve the **exact technical head** in an unedited comment.
@@ -480,3 +502,179 @@ filesystem-write or child-spawn permission. No change to P-ids run-1 or P-D
 run-2 evidence, their v1 expectations or the ledger's existing rows; this
 build-only handoff claims no run, approval, ledger entry, fraud verdict or
 deployment readiness.
+
+## P-E build only — #803 task 4.1
+
+P-ids run 1, P-D run 2 and P-attr run 3 are historical evidence in `results/`;
+the earlier sections describe their build handoffs. **P-E has not executed.**
+Only task 4.1 is completed here; task 4.2 (the run) stays gated behind a new
+exact-head S1 approval, delegated to the orchestrator under G39. No P-E result,
+expectation-hash observation or execution-ledger row is created, and no
+historical result, expectation or ledger row changes.
+
+### Sole dry run — history, not permission
+
+The single P-E build/install-only dry run occurred at the clean pinned base
+`abcbefa03d5b0afc610deb712d7f4ded5a9e82be`, before any P-E edit. This is its
+reproduction form, **not permission to repeat it during this build**:
+
+```bash
+node openspec/changes/verify-fraud-evidence-sufficiency/harness/kit-cli.mjs --dry-run --repo "$PWD" --approved-head "$(git rev-parse HEAD)" --driver-run-id run-29cdaf98-9cf3-4d7b-9633-059867ffa795 --driver-harness pi --driver-provider openai-codex --driver-model gpt-6.1-sol --driver-thinking high
+```
+
+It built/installed only; installed packed `.d.ts` files were read as text
+externally before scratch deletion, never imported or executed. Evidence:
+`identity.commit` is `abcbefa03d5b0afc610deb712d7f4ded5a9e82be` (the base),
+`distributable` true, kit digest
+`ccdf852af37efc02b828f7d21bc7cda1cf825b4348e904692aafc3df0e4ca26e`, package-set
+digest `612a1f1c986163eae51879af37be5f68857f50a1c6b0024a1996930685ef45c6`,
+exactly one installed core copy under both npm-ls and a recursive filesystem
+scan, and scratch recursively absent after deletion. All 34 observed packed
+declaration text hashes match the pipeline's installed evidence. No dry-run
+artifact is committed; the full declaration audit lives in the external
+completion evidence.
+
+The 62 symbols checked as retained `.d.ts` text (not imports): CONTRACT_VERSION,
+createNodeSecurityAuditSdk, NodeSecurityAuditSdkConfiguration, SecurityAuditSdk,
+NamedSecurityAuditApi, AuditResult, AuditDeliveryResult, SafeAuditError,
+SecurityAuditSdkError, createCapturingAuditSink, CapturingAuditSink,
+CapturingAuditSinkOptions, AuditEventSink, authenticatedHumanActor,
+authoritativeTenant, authoritativeSubject, authenticationEvidence,
+authorizationEvidence, authoritativeResource, anonymousActor, observedSource,
+beginOperation, mfaRemoved, authenticationFailed, redeliver, AuditOperationInput,
+AuditOperationHandle, AuditOperationSnapshot, AuditOperationState, operationId,
+transactionId, correlationId, boundEvent, transactional, state, snapshot,
+markCommitted, markNotCommitted, markPartiallyCommitted, markCompensated,
+markCancelled, MfaRemovedEventInput, AuthenticationFailedEventInput,
+RetryRelationshipInput, RedeliveryInput, createTransactionCriticalDelivery,
+TransactionCriticalDelivery, TransactionCriticalDeliveryOptions,
+TransactionCriticalDeliveryResult, BusinessCommitGate, DeliveryClassGuarantees,
+durabilityProbe, createHttpDeliveryHandoff, HttpDeliveryHandoff,
+HttpDeliveryHandoffOptions, HttpDeliveryHandoffResult, HttpExchange,
+HttpExchangeRequest, HttpExchangeOutcome, HttpAcknowledgment, handoff, deliver.
+
+G38 names no model, so every driver lane is recorded. The sole dry run used
+`openai-codex`/`gpt-6.1-sol` with thinking high. This build ran US-001 through
+US-004 on `openai-codex`/`gpt-6.1-sol` (thinking high); US-004 verification,
+US-005, US-006 and US-007 up to its interruption on `deepseek/deepseek-v4-pro`
+(thinking max); US-007 from its resumption through US-010, and US-011 up to its
+interruption, on `openai-codex`/`gpt-6.1-sol`; and US-011 from its resumption
+and every later story on `deepseek/deepseek-v4-pro`. No single lane is claimed
+for the whole build.
+
+- review fixes G3, G5, G6 and the probe side of G1 (Tamandua run-7ba34714-6905-4883-a37c-dd1d25f9e7cd): `deepseek/deepseek-v4-pro, thinking max`.
+- review fixes: the evaluator side of G1, G2, G4, G7 and the fixup verification (Tamandua run-7ba34714-6905-4883-a37c-dd1d25f9e7cd): `openai-codex/gpt-6.1-sol, thinking high`.
+- review fix G8: the P-E-6 parking flag left unfrozen (Tamandua run-231ec5fd-ae55-4a37-b420-bb0ed167693f): `openai-codex/gpt-6.1-sol, thinking high`.
+
+### Frozen P-E plan
+
+`expectations/p-e.v1.json` is frozen in this build commit before any execution.
+Its SHA-256 is recorded in the results at run start, never before. After this
+handoff, corrections require v2 and a new approval/run; never change v1 to match
+observations. It holds all 32 case ids in #803 comment 6137619745 transcription
+order (23 drafted plus 9 review-added, ending with P-E-x3), 232 uniquely keyed
+planned steps, per-step result shapes/counters/assertions and per-case summary
+aggregates. Every basis is re-derived at the frozen `corrected_at` base; changed
+line numbers live in `basis`, never in `corrected_from`.
+
+| correction | draft | frozen hypothesis and reason |
+|---|---|---|
+| P-E-1f | Accepted handle-less failure with outcome-derived `committed` | Returned PREMATURE_SUCCESS/validation at /operation/state, no sink; #797 removed the outcome-derived commit default |
+| P-E-4 | Nothing links a corrective record to the false one | A fresh handle can carry the false handle's transactionId/correlationId and a retry's original_event_id can point at the false occurrence; the SDK just never requires or checks the link |
+| P-E-10b(ii) | Retry on the rolled-back handle accepted | Sequenced after P-E-10 the handle is compensated: PREMATURE_SUCCESS/validation at /event/commit_state; options (i), both (iii) paths and (iv) unchanged |
+| P-E-adm | Admission used P-E-1f's handle-free occurrence | Legitimate handle-backed occurrence with explicit undefined/empty caller ids; refusal outcomes unchanged |
+
+P-E-6's parking deferred is created before d1 starts and released explicitly in
+a finally (the skeptic's harness hazard); gate/exchange timing at d2 resolution
+stays an observation. The parking flag `exchange_entered_after_release` is
+recorded raw and never frozen; `parking.released` and the final 1/1/1 totals
+stay frozen. Its d2 step
+explicitly marks `counters`, `callback_order` and `exchange` metadata as
+`observed_not_frozen`: d1 can enter its exchange before d2's refusal settles.
+The refusal result, immediate synchronous probe count and final totals remain
+checked; the overlapping exchange attempts stay in raw observations. The four
+expected findings are P-E-x2 (the gate fails open on anything but exactly
+"declined"), P-E-9c (a deferred insert past synchronous ROLLBACK persists an
+orphan row), P-E-6c (two occurrences sharing one transaction id run the gate
+twice) and P-E-3a (`committed_and_durable` labels a `not_committed` occurrence).
+The observation that `durabilityAttempted` can be true without an exchange call
+is recorded as a note for a later Node-binding change, not as a case.
+
+The counting model predicts **802 public calls**; every per-case prediction is
+frozen in the case's `predicted_calls`, and they sum mechanically to
+`predicted_total`. One sequential process runs with an allowance of **1,604**
+(twice the prediction) and the shared 5,000-occurrence cap. A deviation within
+the allowance is a note, never an invalidation; allowance exhaustion is sticky
+and stops the run. Baselines P-E-g and P-E-adm run first: a guarantees or
+construction/capture refusal there invalidates the precondition and stops every
+remaining case. Evaluation is layered-total: malformed planned rows become
+mismatch notes, raw observations are always retained, and an inconclusive row
+never voids an unrelated verdict. Expected findings and mismatch notes are
+observations, not expectation edits.
+
+The synthetic host database is harness-local `node:sqlite` under the pipeline
+scratch (`<scratch>/host-database`), neither Bloodtrail storage nor a Bloodtrail
+outbox, and it is deleted with the scratch in a finally. The exact planned
+child flags, in order, are `--permission`, `--allow-fs-read=<own-service>`,
+`--allow-fs-write=<pipeline-scratch>/host-database`; no network, child-process,
+native-addon or database-read grant is added. This write grant confines only
+the harness's `fs` reserve and unlink, not SQLite. On Node 26.12.0, `node:sqlite`
+file access is not enforced by the permission model; database placement rests
+on `p-e/host.mjs` path checks. Neither SDK package imports `node:sqlite`.
+The provenance recorder confirms `db.isTransaction` on the Node 26 runtime
+through `lib/runtime-facts.mjs`. All data is opaque synthetic, addresses stay
+in the documentation ranges, and no
+per-run HMAC key, secret or prohibited marker is persisted.
+
+### Future P-E execution, only after exact-head S1
+
+[G39](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6228616880)
+allows the orchestrator to post a delegated approval for #801–#804 only after
+head verification (full TEST_CMD, 10/10 CI, review and frozen expectation
+hash). The new unedited comment contains these exact whole lines, substituting
+the run number and exact lowercase 40-hex head:
+
+```text
+S1 approval: P-E run <N> for #803 at <HEAD>
+Delegated S1 under G39
+```
+
+Both whole lines trim surrounding whitespace and accept LF or CRLF; the hash
+covers the exact original UTF-8 bytes. The approval URL must name a comment on
+#803. Results record `delegation: "G39"` when the line is present. The G34
+window is unchanged: opened 2026-10-17T02:22:47Z, closes 2026-10-24T02:22:47Z,
+with the shared ten-run and 5,000-occurrence-per-run limits; expiry needs an
+amendment, never an extended timestamp. S2 and all volume/data limits remain.
+
+From that verified approved head, a future authorized operator supplies **all**
+arguments (the values below are placeholders, not approval):
+
+```bash
+git checkout --detach "$APPROVED_HEAD"
+test -z "$(git status --porcelain)"
+HARNESS=openspec/changes/verify-fraud-evidence-sufficiency/harness
+node "$HARNESS/p-e/run-p-e.mjs" --repo "$PWD" \
+  --approved-head "$APPROVED_HEAD" \
+  --approval-body-file "$CONTROL/approval-body.txt" --approval-url "$APPROVAL_URL" \
+  --approval-created-at "$CREATED_AT" --approval-updated-at "$UPDATED_AT" \
+  --approval-sha256 "$APPROVAL_SHA256" --window-opened-at "$WINDOW_OPENED_AT" \
+  --once-marker "$CONTROL/$APPROVAL_SHA256" \
+  --run-number "$LEDGER_RUN_NUMBER" --results "$CONTROL/p-e-results.json" \
+  --driver-run-id "$TAMANDUA_RUN_ID" --driver-harness pi \
+  --driver-provider "$PROVIDER" --driver-model "$MODEL" --driver-thinking "$THINKING"
+```
+
+The shared session runner preserves the complete preclaim checks, full tracked
+Git-blob inventory (every P-E module plus the shared lib chain, including
+`lib/import-closure.mjs`, verified by `validateProbeInventory` **before** any
+claim or marker), retained once-marker, child-process governed identity check,
+single-core install evidence, permission-constrained child with the exact
+database-write grant above, and evidence-preserving write/deletion failure
+handling. There is no probe network or child-spawn permission. The write grant
+confines only the harness's `fs` operations to the declared database directory;
+`node:sqlite` file access is not enforced by the Node 26.12.0 permission model,
+so database placement rests on `p-e/host.mjs` path checks, not the grant.
+No change to P-ids run-1, P-D run-2 or P-attr run-3 evidence, their v1
+expectations or the ledger's existing
+rows; this build-only handoff claims no run, approval, ledger entry, fraud
+verdict or deployment readiness, and task 4.2 remains unexecuted.

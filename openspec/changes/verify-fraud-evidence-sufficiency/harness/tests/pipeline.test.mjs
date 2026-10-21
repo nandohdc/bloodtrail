@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { assertNoInstallScripts, CORE, NODE, ownServiceManifest, singleCoreEvidence } from "../lib/install.mjs";
 import { assertResolution, copyApprovedFiles, launchProbe, verifyFileBytes } from "../lib/launcher.mjs";
+import { deleteScratch, finalizeScratch, scratchSession } from "../lib/kit-pipeline.mjs";
 import { command } from "../lib/io.mjs";
 import { runtimeFacts } from "../lib/runtime-facts.mjs";
 
@@ -63,3 +64,44 @@ function pipelineFixture({ root }) {
   assert.throws(() => launchProbe({ ...launch, budget: 0 }), /exceeded/);
   assert.equal(runtimeFacts({ scratch: root }).runtime.isTransaction, true);
 }
+
+const SCRATCH_INCLUDES = ["evaluation-kit", "own-service", "archive", "logs"];
+const DELETION_SHAPES = [
+  { label: "databaseScratch omitted", options: {}, includes: SCRATCH_INCLUDES },
+  { label: "databaseScratch false", options: { databaseScratch: false }, includes: SCRATCH_INCLUDES },
+  { label: "databaseScratch true", options: { databaseScratch: true }, includes: [...SCRATCH_INCLUDES, "host-database"] },
+];
+for (const { label, options, includes } of DELETION_SHAPES) {
+  test(`deleteScratch with ${label} deletes the tree and returns the ${includes.length}-entry includes list`, () => {
+    const scratch = mkdtempSync(join(tmpdir(), "pids-delete-scratch-"));
+    try {
+      const record = deleteScratch({ scratch, ...options });
+      assert.equal(record.recursively_absent, true);
+      assert.deepEqual(record.includes, includes);
+      assert.equal(existsSync(scratch), false);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+}
+
+test("finalizeScratch forwards databaseScratch to the remover", () => {
+  let received;
+  const record = { root: "/fixture/scratch", recursively_absent: true, includes: [...SCRATCH_INCLUDES, "host-database"] };
+  const result = { invalidations: [] };
+  finalizeScratch({ result, scratch: "/fixture/scratch", databaseScratch: true, remove: (input) => { received = input; return record; } });
+  assert.deepEqual(received, { scratch: "/fixture/scratch", databaseScratch: true });
+  assert.equal(result.scratch_deletion, record);
+  assert.equal(result.invalidations.length, 0);
+});
+
+test("scratchSession threads databaseScratch into the real deletion record", async () => {
+  const scratch = mkdtempSync(join(tmpdir(), "pids-session-scratch-"));
+  try {
+    const result = await scratchSession({ scratch, databaseScratch: true, result: { invalidations: [] }, work: async () => null });
+    assert.deepEqual(result.scratch_deletion.includes, [...SCRATCH_INCLUDES, "host-database"]);
+    assert.equal(existsSync(scratch), false);
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
+});

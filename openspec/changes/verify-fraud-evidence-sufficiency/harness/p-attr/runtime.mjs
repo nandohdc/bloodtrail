@@ -8,7 +8,18 @@ import { returned, thrown } from "../lib/observe.mjs";
 // containment can never swallow exhaustion.
 export function createState({ core, node, testing, ledger }) {
   const state = { core, node, testing, ledger, current: "setup", calls: [], records: [], invalidations: [] };
-  const invoke = counted({ ledger, calls: state.calls, keepRaw: true, assertAfter: true });
+  // Out-of-band ordinals preserve the serialized public-call shape. An outer
+  // rejection overwrites a nested callback's attribution for the same error.
+  const failures = new Map();
+  const outcomes = new Map();
+  const invoke = counted({ ledger, calls: state.calls, keepRaw: true, assertAfter: true,
+    onThrow: (error, { ordinal }) => failures.set(error, ordinal),
+    projectOutcome: ({ outcome, ordinal }) => {
+      outcomes.set(ordinal, outcome);
+      return outcome;
+    },
+  });
+  state.thrownCall = (error) => outcomes.get(failures.get(error));
   state.call = (label, fn) => invoke({ label: `${state.current}:${label}`, fn });
   state.c = (name, ...args) => state.call(name, () => core[name](...args));
   state.method = (owner, name, ...args) => state.call(name, () => owner[name](...args));

@@ -64,8 +64,9 @@ async function executeVariant(context) {
 
 export function setupRefusal({ state, error, stepId }) {
   state.ledger.assertAvailable();
-  const { label, ...surface } = state.calls.at(-1);
-  if (surface.kind !== "thrown") throw error;
+  const call = state.thrownCall(error);
+  if (call?.kind !== "thrown") throw error;
+  const { label, ...surface } = call;
   const record = { step_id: stepId, ...surface,
     sink_count: 0, frozen: [], events: [], origins: {}, captured_origins: [] };
   state.records.push(record);

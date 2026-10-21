@@ -7,6 +7,7 @@ import { DECLARED_PAIRS, FAILURE_DATASETS, MIRRORS, P_ATTR_BUDGET, REPETITIONS, 
 import { ORIGINS } from "./origins.mjs";
 import { DIGEST_FORMAT } from "./keying.mjs";
 import { expectedTargets } from "./expected-targets.mjs";
+import { plannedLinkageIssues } from "./linkage-expectations.mjs";
 
 export const CORRECTED_AT = "cc4fdf5a3309db5077b85c4954c916b9ba902b8e";
 export const DRAFT_COMMIT = "5d931ad";
@@ -222,10 +223,11 @@ function validateRowTarget(metrics) {
 }
 
 function validateLinkageRow(row) {
+  const issues = plannedLinkageIssues(row);
+  assert.equal(issues.length, 0, `${row.from}: malformed linkage row: ${issues.join("; ")}`);
   declaredPair(row);
   validateRowTarget(row.ex);
   validateRowTarget(row.nx);
-  assert(typeof row.honesty.honest === "boolean" && typeof row.honesty.reason === "string");
   assert(Array.isArray(row.basis) && row.basis.length > 0);
 }
 

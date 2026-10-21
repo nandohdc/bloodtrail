@@ -6,13 +6,15 @@ import { callRecorder } from "./observe.mjs";
 // - stepIds: emit { step_id: `${label}/${ordinal}`, ...outcome } (P-D shape).
 // - keepRaw: keep the raw result field (P-attr shape; opaque returns are
 //   replaced later by the probe's callSnapshot).
+// - projectOutcome: optional probe-local snapshot at completion, with the
+//   assigned ordinal; its default preserves every existing probe's shape.
 // Nested calls (for example provider hook callbacks) get their own recorder,
 // and every drained outcome is inserted into calls before the first entry
 // whose ledger ordinal is larger, so public_calls stays in ledger-take order
 // regardless of completion order.
 function reject({ context, error }) {
   context.thrown = error;
-  context.onThrow(error);
+  context.onThrow(error, { ordinal: context.ordinal });
   throw error;
 }
 
@@ -40,7 +42,8 @@ function drain(context) {
   context.recorder.outcomes.length = 0;
 }
 
-function shape(context, outcome) {
+function shape(context, recorded) {
+  const outcome = context.projectOutcome({ outcome: recorded, ordinal: context.ordinal });
   if (context.stepIds) {
     const { raw, ...rest } = outcome;
     return { step_id: `${context.label}/${context.ordinal}`, ...rest };
@@ -70,7 +73,10 @@ function invokeCounted(context) {
   return result instanceof Promise ? result.then(finish, (error) => failed({ context, error })) : finish(result);
 }
 
-export function counted({ ledger, calls, onThrow = () => {}, stepIds = false, keepRaw = true, assertAfter = false }) {
-  const shared = { ledger, calls, onThrow, stepIds, keepRaw, assertAfter, ordinals: [] };
+const unchangedOutcome = ({ outcome }) => outcome;
+
+export function counted({ ledger, calls, ...options }) {
+  const { onThrow = () => {}, stepIds = false, keepRaw = true, assertAfter = false, projectOutcome = unchangedOutcome } = options;
+  const shared = { ledger, calls, onThrow, stepIds, keepRaw, assertAfter, projectOutcome, ordinals: [] };
   return ({ label, fn }) => invokeCounted({ ...shared, label, fn, thrown: undefined, ordinal: 0, recorder: callRecorder({ ledger }) });
 }
