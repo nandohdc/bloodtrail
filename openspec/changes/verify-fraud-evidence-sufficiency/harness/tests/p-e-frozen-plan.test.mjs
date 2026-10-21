@@ -12,7 +12,6 @@ import test from "node:test";
 import { evaluateProbe } from "../p-e/evaluate.mjs";
 import { validateExpectations } from "../p-e/expectations-validate.mjs";
 import { measure } from "../p-e/workload.mjs";
-import { peDouble } from "./p-e-case-fixtures.mjs";
 import { authenticationFailed } from "./p-e-concurrency-fixtures.mjs";
 import { oraclePlan } from "./p-e-evaluator-oracle.mjs";
 import { recoveryDouble } from "./p-e-recovery-fixtures.mjs";

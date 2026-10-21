@@ -85,7 +85,7 @@ async function withApproved(fn) {
 }
 function wrongHead(fixture) {
   fixture.options.approvedHead = HEAD;
-  setApproval({ options: fixture.options, body: BODY.replace("run 1", "run 1") });
+  setApproval({ options: fixture.options, body: BODY });
 }
 function trackedMutation(fixture) {
   const path = `${CHANGE}/harness/lib/parent.mjs`;

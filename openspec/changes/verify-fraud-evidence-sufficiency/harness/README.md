@@ -678,3 +678,222 @@ No change to P-ids run-1, P-D run-2 or P-attr run-3 evidence, their v1
 expectations or the ledger's existing
 rows; this build-only handoff claims no run, approval, ledger entry, fraud
 verdict or deployment readiness, and task 4.2 remains unexecuted.
+
+## P-map — #804 build-only handoff (task 5.1)
+
+The P-E section above is its historical build handoff; its inherited run-4
+result and task 4.2 tick are preserved at this build's pinned base
+`8e6cdf781445574c67883a465eb37581ca14b5ab` (same tree as the reachable
+gate base `0f3e02a7f50aed916ea0fd1e717330f0632db317`).
+**P-map has not executed.** Only task 5.1 is completed here. Task 5.2 is ticked
+exactly when `results/p-map-run-5.json` exists, never by a build or approval.
+No P-map result or ledger row is created by this build. Handoff checks preserve
+every inherited expectations/results blob and every inherited ledger byte.
+Only `results/p-map-run-5.json` and exactly one paired ledger row starting
+`| 5 | P-map | #804 | ` may later be added; neither may exist without the other.
+Checks use the full reachable gate-base SHA, not a local ref or moving main.
+No claim about #805's verdict, #806's
+consumer policy, fraud detection or deployment readiness is made.
+
+### P-map sole dry run and declaration audit (history only)
+
+Before any edit, the one build/install-only dry run exited 0 at the clean base.
+The following records that invocation; **do not repeat it during this build**:
+
+```bash
+node openspec/changes/verify-fraud-evidence-sufficiency/harness/kit-cli.mjs --dry-run --repo "$PWD" --approved-head "$(git rev-parse HEAD)" --driver-run-id run-a668e11c-1be0-4418-813c-edc3bea8f70c --driver-harness pi --driver-provider openai-codex --driver-model gpt-6.1-sol --driver-thinking high
+```
+
+Identity commit: `8e6cdf781445574c67883a465eb37581ca14b5ab`, distributable true;
+kit digest `0a3c636f6f4c63ec79d4b62165662fdd428d8b0b656d0c759d90043a0869ee0f`;
+package-set digest `612a1f1c986163eae51879af37be5f68857f50a1c6b0024a1996930685ef45c6`.
+Both npm-ls and recursive filesystem evidence showed exactly one installed core.
+All 34 packed `.d.ts` text hashes matched installed evidence. Scratch
+`bloodtrail-stage-p-5Cn2k0` was recursively removed in finally and its absence
+independently verified. No installed code was imported or executed. The full
+symbol/text audit and dry-run evidence are retained **externally**, under this
+Tamandua run's `p-map-build-audit/`, not committed as run observations.
+
+Symbols checked as packed declaration **text**: CONTRACT_VERSION;
+createNodeSecurityAuditSdk and NodeSecurityAuditSdkConfiguration;
+SecurityAuditSdkConfiguration, SecurityAuditSdk, NamedSecurityAuditApi and
+NamedAuditEventInputMap; AuditResult, AuditDeliveryResult, SafeAuditError and
+SecurityAuditSdkError; createCapturingAuditSink, CapturingAuditSink and
+AuditEventSink; anonymousActor, authenticatedHumanActor, administratorActor,
+serviceAccountActor, workloadIdentityActor, scheduledProcessActor,
+authenticatedPrincipal, authoritativeSubject, authoritativeTenant,
+authoritativeResource, authenticationEvidence, authorizationEvidence,
+sessionEvidence, credentialReference and observedSource, with their context
+input types; authenticationSucceeded, authenticationFailed, sessionCreated,
+sessionRevoked, mfaEnrolled, mfaRemoved, passwordResetRequested,
+passwordResetCompleted, sensitiveResourceModified, securityConfigurationChanged,
+authorizationDenied, roleAssigned and their generated input types; beginOperation,
+AuditOperationInput/Handle/Snapshot/State, operationId, transactionId,
+correlationId, boundEvent, transactional, state, snapshot, markCommitted,
+markNotCommitted, markPartiallyCommitted, markCompensated and markCancelled;
+SecurityAuditEvent, event lifecycle/outcome/commit/delivery fields and correlation
+causation/original-event fields. Named methods return status, not an event ID:
+causal links read the captured event. Objects in change_categories are allowed
+at runtime; the intentional object-with-kind variant exceeds its TS item type.
+
+### Frozen P-map hypotheses, not measured verdicts
+
+`expectations/p-map.v1.json` is frozen in this build commit **before** a run.
+It pins #804 comment 6137646538 at `5d931ad`, corrected against the base above:
+39 ordered headings, seven computed S rows (no separate SDK calls), 32 concrete
+cases, 59 emissions plus handle steps, and two positive controls. Its hash is
+recorded at the future run start; never edit v1 to match observations. A later
+post-run correction requires v2, a new exact-head approval and a new run.
+The pre-run review revision below retains v1: no run has used it, and no public
+outcome, diagnostic, sink count, prediction, budget or verdict default changed.
+
+Every source citation was re-derived. Only L5a changes an expected SDK outcome:
+
+| case | draft | frozen hypothesis and reason |
+|---|---|---|
+| L5a | Accepted denied/committed without a handle | Returned PREMATURE_SUCCESS/validation at /operation/state, zero sink; #797 removed catalog-first terminal fallback |
+
+L5b's direct terminal-state refusal remains `/event/commit_state`; explicit
+L5c denied/not_committed remains accepted. All other no-handle non-success
+transaction-bound constructions use the same #797 rule; events with
+not_applicable in their catalog (M1, K1, K4) retain no-handle acceptance.
+#812-sensitive M4, U2 and R1–R3 retain the draft outcomes: failure/pending
+refuses; nontransactional failure accepts; compensation is partial/compensated;
+missing causality refuses; genuine and wrongly typed linked originals accept.
+#796, #811 and #816 change no expected outcome here. Citation drift alone is
+not a correction. Source-cited independent hand-written fixtures cover every
+emission; tests mutate each family and report both owner-review alternatives.
+
+Expected rubric classifications (not run results): logout/MFA **FITS**;
+contact/lockout/release/rotation **STRAINED**; criterion 2 conditionally **PASS**.
+The G-log factory default uses the Node binding. G36 is an owner decision:
+second-factor/per-account lockout reasons are allowed, still targetless, so the
+account-attribution limitation is a later contract-field design input.
+Everything else in this plan is labelled **implementer default**:
+
+- K2a treats threshold policy evaluation as a genuine authorization decision.
+  Alternative: MISREPRESENTS and criterion-2 failure on lockout, owner review
+  required. R2 reads authenticated actors plus takeover/credential lifecycle as
+  covering a password change. Alternative: reset only, MISREPRESENTS and failure
+  on password-change coverage, owner review required. API/factor rotation cannot
+  substitute for password change. Results report default and alternative.
+- change_categories has no registry, enum or item maxLength and admits objects.
+  No vocabulary is defined; maxItems 16 and the 8192-byte input scan are separate.
+- `host_linkage_preserved` measures the SDK preserving host-supplied request
+  and correlation IDs on both K1 and K2a captures. That permits a **host-side
+  join**, not SDK account attribution. Missing either capture makes only this
+  finding null: K2a runs independently of K1. Whether such joins are forbidden
+  belongs to #806. Login accepts tenantless but the best logout/contact/lockout/
+  release/rotation expressions do not; this is recorded, not resolved here.
+- Logout versus administrator revocation uses actor/subject equality and policy
+  fields; per-path hook keying can destroy equality. session.revoked fail-closed
+  posture can keep a compromised session alive; this is a containment finding,
+  not a measured delivery guarantee. Lazy expiry has no commit point: analysis
+  only, unlike U1's explicitly committed scheduled release.
+
+The baseline-inclusive prediction is **623 public calls** (601 concrete + 22
+controls). Each case freezes its predicted_calls; the seven S rows use zero.
+One sequential process has allowance **1,246**, twice the prediction, capped at
+5,000. Constructors, factories, methods and sink callbacks all count. Count
+drift within allowance is only a note; exhaustion is sticky. Baseline refusal
+stops the run as a precondition invalidation. Ordinary unexpected case throws
+become owned case_aborted mismatches and later cases continue. Malformed planned
+steps never throw from the evaluator, unrelated verdicts remain independent,
+and evaluation faults retain every observation. Each row reports per-step
+matches and mismatches as well as its unchanged whole-row result. Signal
+conclusiveness rests on the matched steps of the accepted expression, not
+incidental control variants. Findings read only their own matched source step.
+Aborts, malformed rows, duplicate/unowned records and accounting integrity
+faults still make every candidate of the affected case inconclusive; the
+couldImprove rule and owner alternatives are unchanged. Runtime identities
+compare structurally; no random ID, digest, clock or scheduling-dependent value
+is frozen.
+
+### Pre-run review fixes V1–V8
+
+Review-fix provenance: Tamandua run-8f715dad-cf14-4131-b943-da210a77a12b, pi on openai-codex/gpt-6.1-sol, thinking high.
+
+Authorization policies now use semantic `policy_version: "1.0.0"`. The offline
+`tests/p-map-schema-inputs.test.mjs` reads the contract JSON schema as data,
+resolves local references and checks supplied scalar patterns, enums/constants
+and length limits, with Unicode regexes. Existing public-shape doubles build
+all 59 planned emissions and both controls: 15 constructors, 62 canonical scalar
+paths and 2,291 scalar leaves across 756 constructor/property inputs. Exact
+exemptions are C2a/bytes-8193 `/resource/change_categories/0` (intentional byte
+scan refusal) and C2b/items-17 `/resource/change_categories` (intentional array
+bound refusal; its scalar items are still checked). A copied policy version of
+`"1"` must fail at `/authorization/policy_version`; no SDK validator is imported.
+
+Reviewed v1 SHA-256: `a63e26fb8f30b1cf4ed3419affee0564152f149d485529254470703e44caca27`.
+It retains 134 planned steps, with 749 concrete and 25 aggregate assertions.
+The single `revisions` entry records the pre-run assertion audit:
+- K2a/policy's seven `join.*` assertions move off the step to S-LOCK's honest
+  host-linkage finding; they can no longer make K2a depend on K1.
+- L3/tenantless drops `handle_state_unchanged`; acceptance at L3/usable-handle
+  proves usability instead. U2/same-instance drops
+  `compensation.original_still_committed`, an immutable earlier clone.
+- M4/nontransactional and U2/same-instance drop emission `handle.state`
+  assertions: an emission does not transition the handle.
+- C5/enrolled drops `replacement.removed_resource_type` and
+  `replacement.removed_credential_type`, which read only the earlier clone.
+- R1/unlinked drops always-false `causality.complete` (no original supplied).
+  R2/pair-completed and R3/completed drop both `causality.original_is_*` fields,
+  which read only the earlier precursor. The rotation finding now reads the
+  independently matched R2/pair-request occurrence name.
+
+Missing target, handle and shared-control dependencies fail before entering a
+public step. A throwing begin/mark prerequisite retains its own public throw
+and aborts with the prerequisite-refused message, never a secondary TypeError.
+L3's missing login control is a harness abort, never an SDK session outcome.
+The workloads were audited for later variants consuming earlier assignments.
+P-E's unchanged handle/ownership helpers are reused directly; capture reading
+is consolidated and the explicit import inventory is exactly the new closure.
+No probe, pipeline, dry run, SDK or kit import/execution occurred in this review
+work; required routine stock CI gates are distinct from Stage P execution.
+
+### Future P-map execution — documentation only, after new #804/G39 S1
+
+After the full TEST_CMD, 10/10 CI, code review and frozen-expectations hash are
+verified, G39 permits the orchestrator to post a **new, unedited** #804 comment
+with these exact whole lines and the exact lowercase 40-hex head:
+
+```text
+S1 approval: P-map run <N> for #804 at <HEAD>
+Delegated S1 under G39
+```
+
+The URL is bound to #804, and the exact UTF-8 approval body is hashed. The G34
+window remains 2026-10-17T02:22:47Z through 2026-10-24T02:22:47Z, shared ten-run
+and per-run 5,000 limits. Expiry needs an amendment. G38 and S2 still apply;
+this build approves no run. The later task 5.2 operator supplies all arguments:
+
+```bash
+git checkout --detach "$APPROVED_HEAD"
+test -z "$(git status --porcelain)"
+HARNESS=openspec/changes/verify-fraud-evidence-sufficiency/harness
+node "$HARNESS/p-map/run-p-map.mjs" --repo "$PWD" \
+  --approved-head "$APPROVED_HEAD" \
+  --approval-body-file "$CONTROL/approval-body.txt" --approval-url "$APPROVAL_URL" \
+  --approval-created-at "$CREATED_AT" --approval-updated-at "$UPDATED_AT" \
+  --approval-sha256 "$APPROVAL_SHA256" --window-opened-at "$WINDOW_OPENED_AT" \
+  --once-marker "$CONTROL/$APPROVAL_SHA256" \
+  --run-number "$LEDGER_RUN_NUMBER" --results "$CONTROL/p-map-results.json" \
+  --driver-run-id "$TAMANDUA_RUN_ID" --driver-harness pi \
+  --driver-provider "$PROVIDER" --driver-model "$MODEL" --driver-thinking "$THINKING"
+```
+
+The shared runner validates runtime, budget and each prediction **before claim**,
+then approval/head/clean checkout/free results path, full tracked-harness Git
+inventory (including fixtures), explicit transitive import closure, marker and
+G39 delegation, without weakened protections. The governed identity verifier
+requires the kit commit to equal approved HEAD; results retain distributable
+identity/digests, single-core install evidence, approval hash/delegation, runtime
+and environment, model lane, expectations hash and every raw observation.
+
+The exact child flags are `--permission`, `--allow-fs-read=<own-service>` only:
+no extra write, network, spawn, native-addon or database grant. P-map creates no
+host database and measures no exchange. Observations cover returned/thrown public
+surfaces and frozen sink captures; P-E owns delivery guarantees. The pipeline
+removes kit/host/log scratch in finally and retains evidence if evaluation,
+writing or cleanup fails. Self-tests use only injected public-shape doubles,
+never SDK/kit imports, guarded probe entrypoints, network or a real pipeline.
