@@ -4,6 +4,16 @@ export function array(value) {
   return Array.isArray(value) ? value : [];
 }
 
+// Read routing fields without normalizing the value forwarded to validators.
+export function fieldOf(value, field) {
+  if (value === null || typeof value !== "object") return undefined;
+  return value[field];
+}
+
+export function caseIdOf(value) {
+  return fieldOf(value, "case_id");
+}
+
 export { ownsRecord } from "../p-e/evaluation-row.mjs";
 
 export function captured(record) {

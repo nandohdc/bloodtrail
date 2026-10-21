@@ -1,6 +1,6 @@
 import { assertionIssues } from "../p-e/assertions.mjs";
 import { validateAggregate } from "./aggregate-validation.mjs";
-import { array, ownsRecord } from "./evidence.mjs";
+import { array, caseIdOf, fieldOf, ownsRecord } from "./evidence.mjs";
 
 function ownEvidenceIssues(entry, context) {
   const records = context.records.filter((record) => ownsRecord(entry, record));
@@ -10,11 +10,11 @@ function ownEvidenceIssues(entry, context) {
 }
 
 export function evaluateAggregate(entry, context) {
-  const owners = [entry, ...array(entry?.dependencies).map((case_id) => ({ case_id }))];
+  const owners = [entry, ...array(fieldOf(entry, "dependencies")).map((case_id) => ({ case_id }))];
   const raw = context.records.filter((record) => owners.some((owner) => ownsRecord(owner, record)));
-  const accounting = context.accounting.filter((row) => owners.some((owner) => owner?.case_id === row?.case_id));
-  const actual = context.verdicts.find((row) => row.case_id === entry?.case_id);
-  const base = { case_id: entry?.case_id, raw, accounting, actual, notes: [] };
+  const accounting = context.accounting.filter((row) => owners.some((owner) => caseIdOf(owner) === row?.case_id));
+  const actual = context.verdicts.find((row) => row.case_id === caseIdOf(entry));
+  const base = { case_id: caseIdOf(entry), raw, accounting, actual, notes: [] };
   try {
     validateAggregate(entry);
     const mismatches = [...ownEvidenceIssues(entry, context),
