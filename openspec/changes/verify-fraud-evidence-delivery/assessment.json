@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.1",
+  "change_id": "verify-fraud-evidence-delivery",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Evidence comes only through the evaluation kit's packed public API, consumed as an evaluator's own service outside the repository.",
+    "Expectations are frozen and hashed before each run, and results are raw observations that never edit them.",
+    "Every run stays inside its authorization: synthetic data, loopback only, scratch-only writes and the shared G42 limits."
+  ],
+  "applicability": {
+    "triggers_matched": ["integration", "security_sensitive_behavior"],
+    "material_capability_modification": false,
+    "capabilities": []
+  },
+  "owned_paths": [
+    "openspec/changes/verify-fraud-evidence-delivery/.openspec.yaml",
+    "openspec/changes/verify-fraud-evidence-delivery/proposal.md",
+    "openspec/changes/verify-fraud-evidence-delivery/design.md",
+    "openspec/changes/verify-fraud-evidence-delivery/assessment.json",
+    "openspec/changes/verify-fraud-evidence-delivery/tasks.md"
+  ],
+  "candidate_approaches": [
+    {"id": "approach-own-service-harness", "kind": "direct_implementation", "summary": "A harness inside the change that drives the packed kit as an evaluator's own service over loopback into the kit's collector with storage, with frozen expectations, deterministic faults and an accounting identity.", "forces_addressed": ["Evidence comes only through the evaluation kit's packed public API, consumed as an evaluator's own service outside the repository.", "Expectations are frozen and hashed before each run, and results are raw observations that never edit them.", "Every run stays inside its authorization: synthetic data, loopback only, scratch-only writes and the shared G42 limits."]},
+    {"id": "approach-in-repo-package-tests", "kind": "alternative", "summary": "Measure delivery with in-repository package tests against the workspace packages.", "forces_addressed": ["Expectations are frozen and hashed before each run, and results are raw observations that never edit them."]},
+    {"id": "approach-hand-written-consumer", "kind": "alternative", "summary": "Deliver into a hand-written ledger instead of the kit's collector.", "forces_addressed": ["Every run stays inside its authorization: synthetic data, loopback only, scratch-only writes and the shared G42 limits."]},
+    {"id": "approach-wall-clock-faults", "kind": "alternative", "summary": "Time restarts and outages by wall clock with default retry parameters.", "forces_addressed": ["Evidence comes only through the evaluation kit's packed public API, consumed as an evaluator's own service outside the repository."]}
+  ],
+  "selected_approach_id": "approach-own-service-harness",
+  "rejected_alternative_ids": ["approach-in-repo-package-tests", "approach-hand-written-consumer", "approach-wall-clock-faults"],
+  "rejection_reasons": {
+    "approach-in-repo-package-tests": {"forces": ["Evidence comes only through the evaluation kit's packed public API, consumed as an evaluator's own service outside the repository."], "reason": "In-repository package tests are excluded by the single seam (#833); they measure the workspace, not what an integrator installs."},
+    "approach-hand-written-consumer": {"forces": ["Evidence comes only through the evaluation kit's packed public API, consumed as an evaluator's own service outside the repository."], "reason": "A hand-written consumer grades its own compatibility, the trap the 2026-10-15 plan review found; the kit's collector decides duplicates, conflicts and persistence."},
+    "approach-wall-clock-faults": {"forces": ["Expectations are frozen and hashed before each run, and results are raw observations that never edit them."], "reason": "With default-like parameters the retry window is at most about 140 ms, so a wall-clock restart is a race whose outcome no frozen expectation can predict; restarts are timed by retry callbacks and injected timers."}
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": ["implementation-single-seam", "implementation-expectations-before-results", "implementation-accounting-identity", "implementation-bounded-authorization"],
+  "invariant_evidence": {
+    "implementation-single-seam": {"task_ids": ["2.1", "2.2", "11.2"], "evidence_ids": ["Planned: every run records a kit identity equal to its approved head and imports only the kit's packed core, Node binding and collector from the outside-repository own service."]},
+    "implementation-expectations-before-results": {"task_ids": ["2.1", "3.1", "4.1", "5.1", "6.1", "7.1", "8.1", "11.2"], "evidence_ids": ["Planned: each probe's expectations file is committed and hashed before its S1, and its results record that hash unchanged."]},
+    "implementation-accounting-identity": {"task_ids": ["2.1", "3.2", "4.2", "5.2", "8.2"], "evidence_ids": ["Planned: every run reports each generated occurrence in exactly one terminal bucket, with unexplained equal to 0 or reported as a finding, and the planted dropped-occurrence control breaks the identity."]},
+    "implementation-bounded-authorization": {"task_ids": ["2.1", "2.2", "11.2"], "evidence_ids": ["Planned: the loopback guard's planted control halts before traffic, the ledger stays within 12 runs and 50,000 SDK calls per run inside the 14-day window, and scratch deletion is proven after every run."]}
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Copies are compared by body hash at the exchange and the ingress, and the accounting identity makes silent loss a checked failure.",
+    "authentication_or_authorization": "Each run needs an exact-head S1 approval; no product authentication or authorization logic changes.",
+    "authority_provenance": "Every result carries kit identity, approval reference and approving-comment hash; the kit commit must equal the approved head.",
+    "concurrency": "Restarts and outages are sequenced by retry callbacks and injected timers, never wall-clock races.",
+    "confidentiality": "Only synthetic opaque identifiers and documentation-range addresses are used; per-run keys stay in memory.",
+    "cryptography": "Session fingerprints use per-run in-memory HMAC keys; no product cryptography changes.",
+    "error_disclosure": "The collector's bounded diagnostic triples are recorded as returned; no secret or real data exists to disclose.",
+    "external_security_integration": "No external system is reached: probe traffic is loopback only, enforced by the guard and an S2 stop.",
+    "fail_posture": "Any S2 stop condition halts the run; a mismatch is reported, never fixed by editing expectations.",
+    "lifecycle": "Each run is one execution guarded by a once-marker; an invalidation needs a new head, S1 and run number.",
+    "mutation_ownership": "Only this change directory and documentation change; no contract, package or canonical spec path is touched.",
+    "privacy_transformation": "Failed authentication carries an anonymous actor and no target, per the fraud-evidence profile; no real-user data is processed.",
+    "resource_retention": "Kit, collector storage, synthetic database and logs are deleted after every run, including after a stop.",
+    "retry_or_redelivery": "Delivery retry and redelivery are the measured behaviour, inside the kit's primitives; the harness adds no delivery product.",
+    "trust_boundary": "The harness consumes the kit as an evaluator would and adds no seam into Bloodtrail."
+  },
+  "ordering": {"proposal_baseline_commit": "91afc83fbfe2e5524c36f107997d2beedbbf28e7"},
+  "verification_task_ids": ["1.2", "11.1", "11.2"]
+}
