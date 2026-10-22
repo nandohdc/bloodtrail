@@ -49,4 +49,4 @@ Groups 1–5 are complete: five Stage P runs executed, each once under its own S
 
 ## 10. Archive (#808)
 
-- [ ] 10.1 In a separate later PR, archive the completed change and validate the archive after fold and owner review.
+- [x] 10.1 In a separate later PR, archive the completed change and validate the archive after fold and owner review.
