@@ -29,7 +29,9 @@ test("P-map handoff ticks only 5.1, retains inherited 4.2 and ties 5.2 to run-5 
   assert.match(tasks, /^- \[x\] 4\.2 /m);
   assertRunTaskState({ tasks, hasResult: existsSync(resolve(ROOT, `${HARNESS}results/p-map-run-5.json`)) });
   const before = git("show", `${BASE}:${CHANGE}tasks.md`).toString("utf8");
-  const withoutProbeTicks = (value) => value.replace(/^- \[[ x]\] (5\.[12] )/gm, "- [ ] $1");
+  // Groups 1-5 are the probes' inherited state; group 6 onward belongs to the close-out tickets (#805+).
+  const probeGroups = (value) => value.slice(value.indexOf("## 1. "), value.indexOf("## 6. "));
+  const withoutProbeTicks = (value) => probeGroups(value).replace(/^- \[[ x]\] (5\.[12] )/gm, "- [ ] $1");
   assert.equal(withoutProbeTicks(tasks), withoutProbeTicks(before));
 });
 
