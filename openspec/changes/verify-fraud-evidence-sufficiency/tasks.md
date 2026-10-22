@@ -34,8 +34,8 @@ Groups 1–5 are complete: five Stage P runs executed, each once under its own S
 
 ## 7. Consumer integration profile and fraud-evidence consumer glossary (#806)
 
-- [ ] 7.1 Document field meaning/trust, exclusions, keyed-value marking limits, host-composed guarantees, source/target gaps, engine-governed cross-tenant address joins and real-user DPIA.
-- [ ] 7.2 Add the consumer glossary context and context-map entry, distinguishing a fraud-evidence consumer from an own service and defining the six G32 terms.
+- [x] 7.1 Document field meaning/trust, exclusions, keyed-value marking limits, host-composed guarantees, source/target gaps, engine-governed cross-tenant address joins and real-user DPIA.
+- [x] 7.2 Add the consumer glossary context and context-map entry, distinguishing a fraud-evidence consumer from an own service and defining the six G32 terms.
 
 ## 8. Verification
 
