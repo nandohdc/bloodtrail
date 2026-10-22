@@ -97,6 +97,8 @@ The application must invoke authoritative constructors only after server-side au
 
 The application resolves tenant routing and resource ownership. The SDK cross-validates actor, effective, resource-owning, authorization, claimed, platform, and cross-tenant roles. A caller-provided tenant never becomes ownership evidence.
 
+In tenant scope, a `claimedTenant` that conflicts with the effective tenant is refused on every event except `tenantContextViolationDetected` (`TENANT_RESOURCE_CONFLICT` / `validation` / `/tenant/claimed_tenant_id`). Drop the claim from the original event and pass it to `tenantContextViolationDetected` instead. See `ADR-SDK-018`.
+
 ### Authentication and authorization
 
 - `authenticationEvidence` preserves method, assurance, MFA, credential category, identity-provider, recovery, delegation, and impersonation facts established by the application authority.

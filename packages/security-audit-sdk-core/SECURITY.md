@@ -57,6 +57,8 @@ Never include raw credentials. `credentialReference` accepts a non-secret refere
 
 Represent actor tenant, effective tenant, claimed tenant, resource-owning tenant, parent tenant, cross-tenant scope, platform scope, and tenantless scope separately. Cross-tenant scope requires authoritative target/resource context and authoritative authorization evidence. The dedicated tenant-violation event may preserve a conflicting claim but never treats the claim as authorization.
 
+In tenant scope, the SDK refuses any other event whose claimed tenant conflicts with its effective tenant (`TENANT_RESOURCE_CONFLICT` / `validation` / `/tenant/claimed_tenant_id`). This is SDK policy under the contract's "if policy permits" (`ADR-SDK-018`). To keep the claim, drop it from the original event and carry it on `tenant.context_violation.detected`, which records the claimed and authoritative tenants side by side.
+
 ## Transaction and causality
 
 An operation handle records an application-reported state transition; it does not open or inspect a database transaction and does not make business state atomic with the sink. Mark a transition only after the trusted transaction boundary knows it. Named methods resolve identity, state, and immutable event binding from SDK-instance-private weak state. Snapshots and copies carry no authority, and an operation from one SDK instance is rejected by another.

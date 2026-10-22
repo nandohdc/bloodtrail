@@ -10,7 +10,7 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 
 ## 2. Claimed-tenant policy (#861)
 
-- [ ] 2.1 Add ADR-SDK-018 and the host guidance to sdk-core `SECURITY.md` and `API.md`, moving the coherence ADR
+- [x] 2.1 Add ADR-SDK-018 and the host guidance to sdk-core `SECURITY.md` and `API.md`, moving the coherence ADR
   pins to 018. Change no code; cite the existing `tests/pass2.test.ts` coverage.
 
 ## 3. Failed-authentication target rule (#862)
