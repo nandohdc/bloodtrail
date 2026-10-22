@@ -40,7 +40,7 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 
 ## 5. Verification
 
-- [ ] 5.1 Run the verification chain on the candidate and record each exit status:
+- [x] 5.1 Run the verification chain on the candidate and record each exit status:
   - strict validation;
   - assessment- and final-phase governance;
   - the dual check;
@@ -60,3 +60,53 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 - [ ] 6.2 Merge as a merge commit after the checks pass.
 - [ ] 6.3 Fold the MODIFIED requirements into the canonical specs in a separate PR.
 - [ ] 6.4 Archive the change in a separate PR, after the fold lands.
+
+## Evidence
+
+Observed on 2026-10-22 on the macOS (Apple Silicon) workstation with Node v26.12.1. The base is `main` at
+`79fa1270318513f5d17d06ea0508c8ef327f6b32`. Local results do not imply remote CI, review or approval.
+
+- **1.2.** Before the proposal commit:
+  - `check-design-pattern-governance.mjs --phase assessment` printed "design-pattern governance passed in
+    assessment phase: enforcement active";
+  - `openspec validate --strict` printed "Change 'correct-transaction-critical-delivery-claims' is valid";
+  - contract reuse was an approved skip.
+- **2.2.** Before the runtime commit, typecheck and build exited 0, and the existing Node runtime tests passed
+  162 of 162.
+- **3.1.** `tests/transaction-critical-claims.test.ts` passes 29 of 29. The differential against `main`'s
+  `delivery-classes.ts` (same tests, rebuilt) gives 29 tests, 11 pass and 18 fail.
+  - **The 18 that fail** are every corrected behaviour:
+    - truthy out-of-type probes;
+    - out-of-type and rejecting gates;
+    - the unconfirmed pair staying deliverable;
+    - `durable_without_commit`;
+    - P-E-6c;
+    - the four handoff-failure cases;
+    - frozen results;
+    - the rejection cases.
+  - **The 11 that pass** are controls (committed, declined, falsy probes, deduplication repeat, the
+    unreachable-before-commit case, the declaration) and P-E-7, which this change documents but does not alter.
+- **4.1.** `npm run test:kit` exited 0 after the README section was worded for the kit's planned-feature rule.
+  `test:exports` reports 19 value and 44 type-only exports, unchanged.
+- **5.1.** The full chain ran on the candidate whose runtime, documentation and change artifacts are identical to
+  this head's. It differs only in one test assertion, which was tightened afterwards and then re-run at 29 of 29.
+  Every step exited 0:
+  - `openspec validate --strict` and `generate-assessment.mjs --check` (no source file);
+  - assessment-phase governance;
+  - contract reuse for all three active changes (approved skip);
+  - final-phase governance ("inspected 4 commit(s) and 14 path(s)");
+  - the dual check, where candidate and baseline both passed;
+  - `check-git-state.mjs`, `check:generated` and `test:changed-paths` (archived mode);
+  - `make test`:
+    - sdk-core runtime 685 of 685;
+    - sdk-node runtime 191 of 191;
+    - exports 19/44;
+    - scope, compatibility, dependencies and package;
+    - the evaluation kit, and kit controls 81 of 81;
+  - `test:coherence` and contract-version currency;
+  - CodeScene CLI 1.0.53 `cs delta`, with no findings;
+  - `check-git-state.mjs` again, with an empty working tree afterwards.
+- **Review.** `/code-review high` and AGY reviewed the change, and the review-driven refinements are recorded in
+  `design.md`. AGY's final round accepted, with HEAD and the tree unchanged after each read-only review.
+  - Two of its low findings were taken: a tightened assertion and a reworded commit message.
+  - One was declined: the `fraud-evidence-profile` scenario changes in place by decision Q5.
