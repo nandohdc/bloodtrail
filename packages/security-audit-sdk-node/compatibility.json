@@ -36,6 +36,13 @@
         "adr": "adr/004-http-audit-sink-and-shared-response-classification.md",
         "valueExportCount": 19,
         "typeExportCount": 44
+      },
+      {
+        "issue": 860,
+        "reason": "Governed widening of two public unions without a new export (#859, #860): DeliveryClassRefusalCode gains business_commit_unconfirmed and audit_durability_failed_after_commit, and TransactionCriticalDeliveryResult gains the durable_without_commit status, so transaction-critical delivery claims only what it checks.",
+        "adr": "adr/005-transaction-critical-delivery-claims-only-what-it-checks.md",
+        "valueExportCount": 19,
+        "typeExportCount": 44
       }
     ]
   },

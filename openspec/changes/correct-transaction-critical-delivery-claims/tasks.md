@@ -30,7 +30,7 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 
 ## 4. Documentation
 
-- [ ] 4.1 Add:
+- [x] 4.1 Add:
   - the README "Transaction-critical delivery" section with its migration note;
   - the "Commit claim" glossary term;
   - ADR-NODE-005;

@@ -146,10 +146,11 @@ On 2.1.0 there is no honest way to link failures before authentication to the la
 **Not provided by the binding: only the host can compose these.**
 
 - **Commit evidence.** The transaction-critical binding's result and declared guarantees are not proof of a
-  business commit. Stage P saw `committed_and_durable` reported for a `not_committed` occurrence, and a failure
-  after the commit gate ran declared as failing closed before commit (#860). Out-of-type probe and gate values
-  fail open (#859). The consumer reads whether a business change committed from the occurrence's own
-  `event.commit_state`.
+  business commit. Stage P measured them claiming more than the binding checked (#859, #860). Since that was
+  corrected, a `not_committed` occurrence is reported `durable_without_commit` without the commit gate running,
+  a failure after the gate committed is reported as `audit_durability_failed_after_commit`, and out-of-type
+  probe and gate values fail closed. The consumer still reads whether a business change committed from the
+  occurrence's own `event.commit_state`.
 - **Atomicity.** A host that needs the business change and its audit record to commit or roll back together
   writes the audit record inside the business transaction, and never defers that write past the commit or
   rollback. A write deferred past a rollback left an orphan audit row in Stage P.

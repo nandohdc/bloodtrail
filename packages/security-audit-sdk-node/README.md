@@ -8,7 +8,8 @@ The public API surface of this package is **frozen** under ADR-NODE-001 (#111), 
 exports and 24 type-only exports. It widens only additively, each time through a governed change that records
 an amendment: ADR-NODE-002 (#112), ADR-NODE-003 (#113) and ADR-NODE-004 (#589), which added the HTTP audit
 sink. It now has 19 value exports and 44 type-only exports. `npm run test:exports` fails on any export added,
-removed or renamed outside such a change.
+removed or renamed outside such a change. ADR-NODE-005 (#859, #860) widened two result unions without adding
+an export.
 
 ## Overview
 
@@ -236,6 +237,50 @@ deadline expires is counted `abandoned` and never reported delivered, but its
 own `submit()` call still resolves once it eventually settles — shutdown
 never causes an admitted operation to be lost. `shutdown()` is idempotent:
 repeated calls return the identical accounting from the first call.
+
+## Transaction-critical delivery
+
+`createTransactionCriticalDelivery` orders audit durability around the caller's business commit for
+`transaction_critical` events. It probes audit durability, runs the caller's commit gate, and only then hands
+the occurrence to the durability point, in one attempt (ADR-NODE-005).
+
+| Situation | Result |
+|---|---|
+| The probe returns anything but `true`, or rejects | `failed_closed` / `audit_durability_unreachable`; the gate never runs |
+| The gate returns `"declined"` | `failed_closed` / `business_commit_declined` |
+| The gate returns anything but `"committed"` or `"declined"`, or rejects | `failed_closed` / `business_commit_unconfirmed` |
+| The occurrence's commit state is `not_committed` | the gate never runs; `durable_without_commit` once acknowledged |
+| The handoff fails or rejects for a `not_committed` occurrence | `failed_closed` / `audit_durability_unreachable`, with `durabilityAttempted: true` |
+| The handoff fails or rejects after the gate committed | `failed_closed` / `audit_durability_failed_after_commit` |
+| The gate committed and the handoff acknowledged | `committed_and_durable` |
+
+`deliver()` returns one of these results and does not reject because a probe, gate or handoff did. Every
+failure also records `commitGateInvoked` and `durabilityAttempted`.
+
+`audit_durability_failed_after_commit` means the business change has committed. `business_commit_unconfirmed`
+means the gate ran, so the change may have committed. Calling `deliver()` again for the same pair runs the commit
+gate again, so reconcile the business change first (#870).
+
+The result is not commit evidence: read whether the business change committed from the occurrence's own
+`event.commit_state`. The binding does not provide the following, which are not implemented:
+
+- **business and audit atomicity.** `failsClosedBeforeCommit` covers failures before the commit gate runs. A
+  failure after it is reported, but the business commit has already happened;
+- **persistent retry.** It makes one handoff attempt and holds nothing for later;
+- **deduplication across instances.** The event id and transaction id pair is remembered in memory, inside
+  one binding instance only.
+
+### Migration (#859, #860)
+
+- **New values.** `TransactionCriticalDeliveryResult` gains the status `durable_without_commit`, and
+  `DeliveryClassRefusalCode` gains `business_commit_unconfirmed` and `audit_durability_failed_after_commit`. A
+  host that switches exhaustively over the status or the code gets a type error until it handles them.
+- **Stricter values.** A probe or gate result outside its declared type used to continue. It now fails closed.
+- **After the commit.** A handoff failure after the gate committed used to be `audit_durability_unreachable`.
+  It is now `audit_durability_failed_after_commit`, so a host that compensates a committed business change
+  should key on that code.
+- **Uncommitted occurrences.** A `not_committed` occurrence used to run the gate and report
+  `committed_and_durable`. It now skips the gate and reports `durable_without_commit`.
 
 ## Usage
 
