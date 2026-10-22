@@ -55,10 +55,15 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 
 ## 6. Merge, fold and archive
 
-- [ ] 6.1 Obtain every required CI context plus DeepScan green, and the AGY and `/code-review high` reviews, on the
-  pull request head.
-- [ ] 6.2 Merge as a merge commit after the checks pass.
-- [ ] 6.3 Fold the MODIFIED requirements into the canonical specs in a separate PR.
+- [x] 6.1 Obtain every required CI context plus DeepScan green, and the AGY and `/code-review high` reviews, on the
+  pull request head. Evidence: on head `c90f34cf874a28b04e32f626ffdbcc3be3a5c5d2` in PR #871, all ten required contexts plus
+  DeepScan, the CodeScene review and codecov reported SUCCESS; AGY accepted, and `/code-review high` findings were resolved
+  or filed as #869 and #870 (`design.md`, "Review-driven refinements").
+- [x] 6.2 Merge as a merge commit after the checks pass. Evidence: PR #871 was merged into `main` as merge commit
+  `7fbddd565629f2cff69045f8487d5ee50484501c` by the orchestrator under the owner's delegation (G45).
+- [x] 6.3 Fold the MODIFIED requirements into the canonical specs in a separate PR. Evidence: the three MODIFIED blocks replace their canonical
+  blocks in `openspec/specs/security-audit-sdk-node/spec.md` and `openspec/specs/fraud-evidence-profile/spec.md`
+  in this dedicated fold PR, while the change is active (ADR 0001).
 - [ ] 6.4 Archive the change in a separate PR, after the fold lands.
 
 ## Evidence

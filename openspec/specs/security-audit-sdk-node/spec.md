@@ -391,14 +391,33 @@ absent.
 ### Requirement: Transaction-critical delivery orders durability after the business commit and fails closed before it
 
 A `transaction_critical` binding SHALL perform, in this fixed order: prove audit durability is
-reachable, then run the caller's business commit gate, then reach the durability point.
+reachable, then run the caller's business commit gate, then reach the durability point. An
+occurrence whose commit state is `not_committed` has no business commit to gate, and skips only the
+commit gate, as stated below.
 
 When audit durability is not reachable, the binding SHALL fail closed and the business commit gate
 SHALL NOT be invoked. When the business commit gate declines, the occurrence SHALL NOT reach the
-durability point. Only after a successful business commit SHALL the occurrence be made durable.
+durability point. Except for an occurrence whose commit state is `not_committed`, only after a
+successful business commit SHALL the occurrence be made durable.
+
+The binding SHALL continue past the durability probe only when the probe returns exactly `true`, and
+past the commit gate only when the gate returns exactly `committed`. Any other probe value, or a
+probe that rejects, SHALL be treated as unreachable audit durability. Any commit gate value other
+than `committed` or `declined`, or a gate that rejects, SHALL fail closed with an outcome distinct
+from a declined commit, SHALL record that the commit gate ran, and SHALL NOT let the occurrence reach
+the durability point. A durability handoff that rejects SHALL be treated as not acknowledged. The
+binding SHALL return a result rather than reject in each of these cases.
+
+An occurrence whose commit state is `not_committed` SHALL be delivered without a commit claim. The
+binding SHALL prove audit durability is reachable and then reach the durability point, SHALL NOT
+invoke the business commit gate, and SHALL report a durable outcome distinct from committed and
+durable.
 
 Each failure SHALL carry a distinct outcome and SHALL record whether the commit gate was invoked and
-whether the durability point was reached, so that the ordering is observable rather than asserted.
+whether the durability point was reached, so that the ordering is observable rather than asserted. A
+failure at the durability point after the commit gate ran SHALL carry an outcome distinct from
+unreachable audit durability. The binding's declaration that it fails closed before the business
+commit SHALL cover only failures before the commit gate runs.
 
 #### Scenario: Unreachable audit durability stops the business commit
 - **WHEN** audit durability cannot be reached
@@ -417,6 +436,32 @@ whether the durability point was reached, so that the ordering is observable rat
 - **WHEN** the business commit succeeds and the durability point does not acknowledge
 - **THEN** the binding fails closed, recording that both the commit gate ran and durability was
   attempted
+
+#### Scenario: An out-of-type probe result fails closed
+- **WHEN** the durability probe returns any value other than exactly `true`
+- **THEN** the binding fails closed as unreachable audit durability, the commit gate is never invoked,
+  and no delivery attempt is made
+
+#### Scenario: An out-of-type commit gate result fails closed
+- **WHEN** the business commit gate returns any value other than `committed` or `declined`
+- **THEN** the binding fails closed with an outcome distinct from a declined commit, records that the
+  commit gate ran, and the occurrence never reaches the durability point
+
+#### Scenario: An uncommitted occurrence is delivered without a commit claim
+- **WHEN** an occurrence whose commit state is `not_committed` is delivered and the durability point
+  acknowledges
+- **THEN** the commit gate is never invoked, and the binding reports the occurrence durable without
+  claiming a business commit
+
+#### Scenario: A failure after the commit is distinguishable from one before it
+- **WHEN** the business commit gate commits and the durability point does not acknowledge
+- **THEN** the binding fails closed with an outcome distinct from unreachable audit durability
+
+#### Scenario: A rejected probe, gate or handoff fails closed
+- **WHEN** the durability probe, the business commit gate or the durability handoff rejects instead of
+  returning a value
+- **THEN** the binding returns the same failed-closed outcome it returns for a value it cannot
+  confirm, rather than rejecting
 
 ### Requirement: Transaction-critical deduplication is keyed on event identity and transaction identity together
 
@@ -437,6 +482,10 @@ premature success. The duplicate check and the reservation that follows it SHALL
 step with no interleaving point between them, so that a concurrently reachable duplicate is
 impossible rather than merely unlikely. A reservation SHALL be released whether the attempt succeeds
 or fails.
+
+Deduplication SHALL hold within one binding instance only. The binding SHALL NOT claim that another
+binding instance, or a restarted process, recognises a pair it delivered; persistent deduplication
+across instances is the host's.
 
 #### Scenario: A missing transaction identifier is refused
 - **WHEN** an occurrence is offered without a transaction identifier
@@ -459,6 +508,11 @@ or fails.
 - **WHEN** the same pair is offered again while the first attempt is still in flight
 - **THEN** the second is refused with an outcome distinct from already-delivered, and only one
   occurrence reaches the durability point
+
+#### Scenario: Deduplication does not span binding instances
+- **WHEN** the same pair is delivered once through each of two binding instances
+- **THEN** each instance reaches the durability point, and neither reports the pair as already
+  delivered
 
 ### Requirement: Policy-critical delivery is blocked without a recorded policy-owner decision
 
