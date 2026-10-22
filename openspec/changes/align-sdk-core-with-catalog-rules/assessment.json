@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.1",
+  "change_id": "align-sdk-core-with-catalog-rules",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The SDK refuses only what the catalog forbids: the approved contract example and honest failed authentications stay valid.",
+    "Every shared validation path refuses the same events before any sink handoff.",
+    "Preserve earlier diagnostics, the public surface, the frozen contract, collector admission and the verification lifecycle record."
+  ],
+  "applicability": {
+    "triggers_matched": ["security_sensitive_behavior", "canonical_capability_requirement"],
+    "material_capability_modification": true,
+    "capabilities": ["security-audit-sdk-core"]
+  },
+  "owned_paths": [
+    "openspec/changes/align-sdk-core-with-catalog-rules/.openspec.yaml",
+    "openspec/changes/align-sdk-core-with-catalog-rules/proposal.md",
+    "openspec/changes/align-sdk-core-with-catalog-rules/design.md",
+    "openspec/changes/align-sdk-core-with-catalog-rules/assessment.json",
+    "openspec/changes/align-sdk-core-with-catalog-rules/tasks.md",
+    "openspec/changes/align-sdk-core-with-catalog-rules/specs/security-audit-sdk-core/spec.md",
+    "packages/security-audit-sdk-core/src/validation/semantic.ts",
+    "packages/security-audit-sdk-core/tests/failed-authentication-target.test.ts",
+    "packages/security-audit-sdk-core/adr/018-claimed-tenant-conflict-is-refused-by-policy.md",
+    "packages/security-audit-sdk-core/adr/019-failed-authentication-carries-only-a-credential-target.md",
+    "packages/security-audit-sdk-core/scripts/check-coherence.mjs",
+    "packages/security-audit-sdk-core/API.md",
+    "packages/security-audit-sdk-core/SECURITY.md",
+    "packages/security-audit-sdk-core/MIGRATION.md",
+    "packages/security-audit-sdk-core/CONTEXT.md",
+    "packages/security-audit-sdk-node/docs/error-catalog.md"
+  ],
+  "candidate_approaches": [
+    {"id": "approach-type-rule", "kind": "direct_implementation", "summary": "One module-scope table and one function in the shared semantic layer that judge the target's type on authentication_failed, called last.", "forces_addressed": ["The SDK refuses only what the catalog forbids: the approved contract example and honest failed authentications stay valid.", "Every shared validation path refuses the same events before any sink handoff.", "Preserve earlier diagnostics, the public surface, the frozen contract, collector admission and the verification lifecycle record."]},
+    {"id": "approach-field-presence", "kind": "alternative", "summary": "Refuse subject, credential.reference, credential.key_id, resource.id and resource.parent_id on authentication_failed.", "forces_addressed": ["Every shared validation path refuses the same events before any sink handoff."]},
+    {"id": "approach-document-only", "kind": "alternative", "summary": "Document that SDK acceptance is not conformance and enforce nothing.", "forces_addressed": ["Preserve earlier diagnostics, the public surface, the frozen contract, collector admission and the verification lifecycle record."]},
+    {"id": "approach-separate-module", "kind": "alternative", "summary": "Put the rule in a new src/validation/resource-rules.ts module.", "forces_addressed": ["Every shared validation path refuses the same events before any sink handoff."]}
+  ],
+  "selected_approach_id": "approach-type-rule",
+  "rejected_alternative_ids": ["approach-field-presence", "approach-document-only", "approach-separate-module"],
+  "rejection_reasons": {
+    "approach-field-presence": {"forces": ["The SDK refuses only what the catalog forbids: the approved contract example and honest failed authentications stay valid."], "reason": "The approved authentication.failed example carries a credential subject, credential.reference, credential.key_id and a credential resource.id, so presence-based refusal would reject the contract's own example."},
+    "approach-document-only": {"forces": ["Every shared validation path refuses the same events before any sink handoff."], "reason": "The owner chose enforcement; documentation alone leaves account targets on failed authentication accepted on every path."},
+    "approach-separate-module": {"forces": ["Preserve earlier diagnostics, the public surface, the frozen contract, collector admission and the verification lifecycle record."], "reason": "A new SDK source file must be listed in verification-lifecycle.json, a governance record that also binds the CB-018 candidate; a twenty-line rule does not justify editing it."}
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": ["implementation-credential-only-target", "implementation-shared-paths-no-exemption", "implementation-preserved-boundaries", "implementation-tenant-policy-recorded"],
+  "invariant_evidence": {
+    "implementation-credential-only-target": {"task_ids": ["3.1", "3.2", "4.1", "6.1"], "evidence_ids": ["Planned: tests/failed-authentication-target.test.ts proves an account subject, a typeless subject, an account resource and an untyped resource identity are refused at /subject/type or /resource/type, while the approved example and the derived resource are accepted; the same tests fail against main's semantic.ts."]},
+    "implementation-shared-paths-no-exemption": {"task_ids": ["3.1", "4.1", "6.1"], "evidence_ids": ["Planned: each refused shape is refused identically by the named authenticationFailed method, emit(), redeliver() and free validateSecurityAuditEvent(), with zero sink calls."]},
+    "implementation-preserved-boundaries": {"task_ids": ["1.2", "3.2", "4.1", "6.1"], "evidence_ids": ["Planned: existing runtime tests, approved positive fixtures and negative first codes pass unchanged; an earlier semantic failure keeps its code; another event with an account subject is unaffected; test:exports is unchanged."]},
+    "implementation-tenant-policy-recorded": {"task_ids": ["2.1", "6.1"], "evidence_ids": ["Planned: ADR-SDK-018 cites the canonical scenario and the existing tests/pass2.test.ts refusal and violation-event tests, which pass unchanged; no source file changes for #861."]}
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Failed authentication can no longer name a non-credential target through subject, resource or the authorization resource context, which would record which account a failed login aimed at; the approved credential target stays accepted.",
+    "authentication_or_authorization": "The rule judges only the target type of authentication.failed; authentication evidence, actor and authorization checks are unchanged.",
+    "authority_provenance": "The SDK still cannot establish where a value came from; the rule refuses by type only and does not claim provenance.",
+    "concurrency": "A pure check over an already-normalized event; no shared state, ordering or concurrency is introduced.",
+    "confidentiality": "Refusal returns a fixed code, category and path; no subject, resource or caller value is echoed.",
+    "cryptography": "No algorithm, key, digest or keyed reference handling changes.",
+    "error_disclosure": "It reuses SDK_SEMANTIC_VALIDATION_FAILED with six fixed bounded paths (subject type and display name, resource type and parent type and id, authorization resource context type); no new code, message or value is disclosed.",
+    "external_security_integration": "The frozen contract and the collector's structural admission are unchanged; the Node error catalog gains one documented cause.",
+    "fail_posture": "Every shared path fails closed with zero sink calls; old events get no redelivery exemption.",
+    "lifecycle": "No operation, commit or lifecycle-phase rule changes; the check runs after every existing semantic check.",
+    "mutation_ownership": "One production source file, one new top-level test file and enumerated documentation; #861 changes no code.",
+    "privacy_transformation": "No transformation hook or privacy policy changes; refusing account targets narrows what a failed login can disclose.",
+    "resource_retention": "No state, cache or retention is added; the policy is a module-scope constant.",
+    "retry_or_redelivery": "redeliver() refuses an old account-target event exactly as a new one; delivery mechanics are unchanged.",
+    "trust_boundary": "Claimed tenants remain refused on the original event and preserved only on the dedicated violation event (#861); failed-authentication targets are limited to the credential (#862)."
+  },
+  "ordering": {"proposal_baseline_commit": "7fbddd565629f2cff69045f8487d5ee50484501c"},
+  "verification_task_ids": ["1.2", "3.2", "4.1", "6.1"]
+}
