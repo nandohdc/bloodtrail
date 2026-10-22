@@ -1,6 +1,6 @@
 ## Sequencing and authorization
 
-The build-only tracer completes task 1.1 only; no Stage P execution or approval is claimed. G35 keeps all ten tickets separate. The proposal (#799) and tracer bullet (#800) are separate PRs; groups 2–5 run in parallel after group 1; groups 6–7 run in parallel after probes. Fold (#807) and archive (#808) are separate later PRs. Owner review and merge at S3 remain downstream. Each run requires S1 exact-head owner approval and S2 halt/report stops under the shared authorization in `proposal.md`.
+Groups 1–5 are complete: five Stage P runs executed, each once under its own S1 approval (run 1 by the owner's comment, runs 2–5 delegated under G39), and their raw evidence is committed. Group 6 records the verdict in system ADR 0014. G35 keeps all ten tickets separate. The proposal (#799) and tracer bullet (#800) are separate PRs; groups 2–5 run in parallel after group 1; groups 6–7 run in parallel after probes. Fold (#807) and archive (#808) are separate later PRs. Owner review and merge at S3 remain downstream. Each run requires S1 exact-head owner approval and S2 halt/report stops under the shared authorization in `proposal.md`.
 
 ## 1. Tracer bullet and P-ids (#800)
 
@@ -29,8 +29,8 @@ The build-only tracer completes task 1.1 only; no Stage P execution or approval 
 
 ## 6. ADR 0014 and Stage P verdict (#805)
 
-- [ ] 6.1 Record decisions and measured Stage P evidence in system ADR 0014, hook-key-ID absence, criteria 1–2 verdicts and fix owners (contract/package/host/engine); seek owner approval against named head.
-- [ ] 6.2 If the carrier gap is proven, document the requirement for a separate governed minor contract change after normative-precedence work, with withdrawn ideas labelled open design inputs.
+- [x] 6.1 Record decisions and measured Stage P evidence in system ADR 0014, hook-key-ID absence, criteria 1–2 verdicts and fix owners (contract/package/host/engine); seek owner approval against named head.
+- [x] 6.2 If the carrier gap is proven, document the requirement for a separate governed minor contract change after normative-precedence work, with withdrawn ideas labelled open design inputs.
 
 ## 7. Consumer integration profile and fraud-evidence consumer glossary (#806)
 

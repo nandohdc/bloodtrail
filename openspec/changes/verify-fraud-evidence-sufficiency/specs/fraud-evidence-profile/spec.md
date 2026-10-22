@@ -1,6 +1,6 @@
 ## Purpose
 
-Constrain usage of canonical Bloodtrail contract 2.1.0 as evidence for external fraud-evidence consumers without redefining a contract field. Bloodtrail emits evidence; external consumers own detection, scoring and fraud verdicts. This profile excludes client evidence and risk and makes no execution or evidence-sufficiency claim.
+Constrain usage of canonical Bloodtrail contract 2.1.0 as evidence for external fraud-evidence consumers without redefining a contract field. Bloodtrail emits evidence; external consumers own detection, scoring and fraud verdicts. This profile excludes client evidence and risk and makes no evidence-sufficiency claim. Stage P's synthetic verdict, recorded in system ADR 0014, is that evidence-sufficiency is not met on 2.1.0, because no existing field honestly carries a failed login's target.
 
 ## ADDED Requirements
 
@@ -15,6 +15,14 @@ For failed authentication, producers SHALL send no subject, no credential refere
 #### Scenario: Resolved failed login
 - **WHEN** authentication fails after the host has resolved an account
 - **THEN** the occurrence still carries no target, including no subject, credential reference or account reference in any server-authoritative field
+
+### Requirement: No per-target grouping of failed logins
+
+Consumers SHALL NOT derive a target, or a per-target grouping or count, for failed logins from any 2.1.0 field. Grouping failed logins by source and time remains available.
+
+#### Scenario: Consumer seeks per-target failure counts
+- **WHEN** a consumer wants to count or group failed logins per attempted account on contract 2.1.0
+- **THEN** it derives no target from the actor identifier, display names, subjects, credential references, principals or keyed values, and groups the failures by source and time only
 
 ### Requirement: Resolved accounts only as the contract allows
 
@@ -86,7 +94,7 @@ Producers SHALL supply event IDs unique across processes and restarts, satisfied
 
 ### Requirement: Consumers interpret trust and deduplicate
 
-Consumers SHALL read trust from the published field policy together with in-event actor provenance and SHALL deduplicate on event id. Consumers SHALL NOT treat SDK acceptance or branding as attestation of host truth or origin, or assume an unmarked value is raw.
+Consumers SHALL read trust from the published field policy together with in-event actor provenance and SHALL deduplicate on event id. Consumers SHALL NOT treat SDK acceptance or branding as attestation of host truth or origin, or of conformance to the catalog's resource rules, or assume an unmarked value is raw.
 
 #### Scenario: Accepted authoritative field
 - **WHEN** a consumer receives a structurally accepted occurrence
@@ -96,9 +104,29 @@ Consumers SHALL read trust from the published field policy together with in-even
 - **WHEN** a consumer receives a value that may have been keyed
 - **THEN** absence of a marker does not establish that it is raw: a transformation hook's key ID does not reach the occurrence, apart from a credential key ID separately set by the host
 
+#### Scenario: Accepted target on failed authentication
+- **WHEN** a consumer receives an accepted failed-authentication occurrence that carries a subject, credential reference or authenticated principal
+- **THEN** it treats the occurrence as a host conformance failure rather than as attributed evidence, because SDK acceptance does not enforce the catalog's resource rules
+
 #### Scenario: Duplicate occurrence
 - **WHEN** a consumer receives another copy with the same event id
 - **THEN** it deduplicates that occurrence rather than inflating evidence counts
+
+### Requirement: Delivery results are not commit evidence
+
+Hosts SHALL NOT treat the Node binding's transaction-critical delivery result or its declared guarantees as proof of a business commit, of business and audit atomicity, of persistent retry, or of deduplication across binding instances (G4, G5). Consumers SHALL read whether a business change committed from the occurrence's own commit state.
+
+#### Scenario: Delivery reported for an uncommitted occurrence
+- **WHEN** the binding reports `committed_and_durable` for an occurrence whose commit state is `not_committed`
+- **THEN** the host and the consumer rely on the occurrence's commit state, not on the delivery result
+
+### Requirement: Host-composed audit atomicity
+
+A host that needs its business change and its audit record to commit or roll back together SHALL write the audit record inside the business transaction, and SHALL NOT defer that write past the commit or rollback (G4).
+
+#### Scenario: Host outbox transaction rolls back
+- **WHEN** a host writes the audit record to its own outbox inside the business transaction and that transaction rolls back
+- **THEN** no audit record survives the rollback, because the write was neither deferred past it nor made outside the transaction
 
 ### Requirement: Exclusions and recorded purpose exceptions
 
