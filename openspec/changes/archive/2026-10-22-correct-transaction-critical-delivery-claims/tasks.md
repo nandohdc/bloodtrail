@@ -64,7 +64,9 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 - [x] 6.3 Fold the MODIFIED requirements into the canonical specs in a separate PR. Evidence: the three MODIFIED blocks replace their canonical
   blocks in `openspec/specs/security-audit-sdk-node/spec.md` and `openspec/specs/fraud-evidence-profile/spec.md`
   in this dedicated fold PR, while the change is active (ADR 0001).
-- [ ] 6.4 Archive the change in a separate PR, after the fold lands.
+- [x] 6.4 Archive the change in a separate PR, after the fold lands. Evidence: relocated to
+  `openspec/changes/archive/2026-10-22-correct-transaction-critical-delivery-claims/` in this dedicated archive PR,
+  after fold PR #872 merged as `fbb4189e14b0a696d7b88edf40ce8ddeb69b838b`.
 
 ## Evidence
 
