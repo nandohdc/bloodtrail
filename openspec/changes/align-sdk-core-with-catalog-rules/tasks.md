@@ -20,7 +20,7 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 
 ## 4. Tests (#862)
 
-- [ ] 4.1 Add the top-level `tests/failed-authentication-target.test.ts`:
+- [x] 4.1 Add the top-level `tests/failed-authentication-target.test.ts`:
   - every refused shape on named methods, `emit()`, `redeliver()` and free validation, with zero sink calls;
   - the approved example and the derived resource accepted;
   - precedence;
