@@ -38,6 +38,12 @@ _Avoid_: retry attempt
 One transmitted instance of an occurrence. All copies of one occurrence are byte-identical.
 _Avoid_: duplicate, duplicate event
 
+**Commit claim**:
+A transaction-critical delivery result's statement that the caller's business commit gate confirmed the
+commit. Only `committed_and_durable` makes one. It is never evidence that the business change committed; the
+occurrence's own commit state is.
+_Avoid_: commit evidence, commit proof
+
 ## Sinks and Handoffs
 
 **HTTP audit sink**:
