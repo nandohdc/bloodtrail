@@ -10,14 +10,14 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 
 ## 2. Runtime
 
-- [ ] 2.1 In `packages/security-audit-sdk-node/src/delivery-classes.ts`:
+- [x] 2.1 In `packages/security-audit-sdk-node/src/delivery-classes.ts`:
   - read the probe and gate results as `unknown`, and continue only on exactly `true` and `"committed"`;
   - add `business_commit_unconfirmed` and `audit_durability_failed_after_commit`;
   - deliver a `not_committed` occurrence without running the gate, as `durable_without_commit`;
   - narrow the doc comments.
 
   Add no export.
-- [ ] 2.2 Run typecheck, build and the existing Node runtime tests before the runtime-only commit.
+- [x] 2.2 Run typecheck, build and the existing Node runtime tests before the runtime-only commit.
 
 ## 3. Tests
 

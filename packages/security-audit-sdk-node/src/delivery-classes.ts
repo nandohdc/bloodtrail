@@ -47,7 +47,11 @@ export type DeliveryClassGuarantees = Readonly<{
   readonly semantic: "at_most_once" | "at_least_once";
   /** True only where the class row promises delivery after producer acceptance. */
   readonly claimsAtLeastOnce: boolean;
-  /** True where the row requires refusing the business operation rather than losing the record. */
+  /**
+   * True where the row requires refusing the business operation rather than losing the record. For
+   * `transaction_critical` it covers only failures before the business commit gate runs; a failure
+   * after the gate committed is reported as `audit_durability_failed_after_commit`.
+   */
   readonly failsClosedBeforeCommit: boolean;
 }>;
 
@@ -57,7 +61,9 @@ export type DeliveryClassRefusalCode =
   | "transaction_id_required"
   | "duplicate_transaction_delivery"
   | "audit_durability_unreachable"
-  | "business_commit_declined";
+  | "audit_durability_failed_after_commit"
+  | "business_commit_declined"
+  | "business_commit_unconfirmed";
 
 export type BestEffortObservability = Readonly<{
   /** Called once per dropped occurrence, with the saturating loss total after the drop. */
@@ -186,6 +192,12 @@ function isBoundedCeiling(value: number): boolean {
  * The caller's business commit. Runs *after* audit durability has been proven
  * reachable and *before* the audit record is made durable, which is the only
  * ordering that satisfies both halves of the `transaction_critical` row.
+ *
+ * Only `"committed"` continues to the durability point. `"declined"` fails
+ * closed as `business_commit_declined`; any other value — which a JavaScript
+ * host, a cast or an `any` result can still produce — and a rejection both fail
+ * closed as `business_commit_unconfirmed`. It is never invoked for an
+ * occurrence whose commit state is `not_committed`.
  */
 export type BusinessCommitGate = () => Promise<"committed" | "declined">;
 
@@ -193,9 +205,9 @@ export type TransactionCriticalDeliveryOptions = Readonly<{
   readonly handoff: HttpDeliveryHandoff;
   /**
    * Proves audit durability is reachable before the business commit runs.
-   * Resolving `false` makes the binding fail closed with the commit gate never
-   * invoked, per the row's `fail_closed before business commit if audit
-   * durability cannot be reached`.
+   * Resolving anything other than exactly `true`, or rejecting, makes the
+   * binding fail closed with the commit gate never invoked, per the row's
+   * `fail_closed before business commit if audit durability cannot be reached`.
    */
   readonly durabilityProbe: () => Promise<boolean>;
 }>;
@@ -203,6 +215,16 @@ export type TransactionCriticalDeliveryOptions = Readonly<{
 export type TransactionCriticalDeliveryResult =
   | Readonly<{
     readonly status: "committed_and_durable";
+    readonly event_id: string;
+    readonly transaction_id: string;
+  }>
+  | Readonly<{
+    /**
+     * A `not_committed` occurrence reached the durability point without the
+     * commit gate running. The result makes no commit claim; the occurrence's
+     * own commit state says what happened to the business change.
+     */
+    readonly status: "durable_without_commit";
     readonly event_id: string;
     readonly transaction_id: string;
   }>
@@ -232,17 +254,26 @@ export interface TransactionCriticalDelivery {
 }
 
 /**
- * `transaction_critical`: audit durability atomic with a successful business
+ * `transaction_critical`: orders audit durability around the caller's business
  * commit, deduplicated by event id *and* transaction id.
  *
  * The order is fixed and is the whole point of the class:
  *
- *   1. probe audit durability — unreachable means fail closed and the commit
- *      gate is never invoked, so no business commit happens without an audit
- *      record being possible;
- *   2. run the caller's commit gate — a declined commit stops here, so the
- *      audit record never becomes durable ahead of the commit;
+ *   1. probe audit durability — anything but `true` means fail closed and the
+ *      commit gate is never invoked, so no business commit happens without an
+ *      audit record being possible;
+ *   2. run the caller's commit gate — anything but `"committed"` stops here, so
+ *      the audit record never becomes durable ahead of the commit;
  *   3. only then hand the occurrence to the durability point.
+ *
+ * An occurrence whose commit state is `not_committed` skips step 2 and is
+ * reported `durable_without_commit`: there is no business commit to gate, and
+ * the result must not claim one.
+ *
+ * What it does not provide: business and audit atomicity (a failure after the
+ * gate committed is reported as `audit_durability_failed_after_commit`, but the
+ * commit has happened), persistent retry (one handoff attempt), and
+ * deduplication beyond this binding instance (the sets below live in memory).
  */
 export function createTransactionCriticalDelivery(
   options: TransactionCriticalDeliveryOptions,
@@ -270,17 +301,15 @@ export function createTransactionCriticalDelivery(
       transactionId: string,
       commitGate: BusinessCommitGate,
     ): Promise<TransactionCriticalDeliveryResult> {
-      const eventId = event.event.id;
       const admission = admitTransaction(event, transactionId, settled, reserved);
       if (admission.refusal !== null) return admission.refusal;
 
       const key = admission.key;
       reserved.add(key);
       try {
-        const outcome = await runTransactionPipeline({ handoff, durabilityProbe, commitGate, event });
-        if (outcome !== null) return outcome;
-        settled.add(key);
-        return { status: "committed_and_durable", event_id: eventId, transaction_id: transactionId };
+        const result = await runTransactionPipeline({ handoff, durabilityProbe, commitGate, event, transactionId });
+        if (reachedDurability(result)) settled.add(key);
+        return result;
       } finally {
         reserved.delete(key);
       }
@@ -332,29 +361,80 @@ interface TransactionPipelineInput {
   readonly durabilityProbe: () => Promise<boolean>;
   readonly commitGate: BusinessCommitGate;
   readonly event: Readonly<SecurityAuditEvent>;
+  readonly transactionId: string;
 }
 
 /**
  * The fixed order: prove audit durability is reachable, run the business
- * commit, then reach the durability point. Returns the failure that stopped
- * it, or `null` when the occurrence is committed and durable.
+ * commit unless the occurrence records that nothing committed, then reach the
+ * durability point. Returns the settled result and never rejects.
  */
 async function runTransactionPipeline(
   input: TransactionPipelineInput,
-): Promise<TransactionCriticalDeliveryResult | null> {
+): Promise<TransactionCriticalDeliveryResult> {
   const eventId = input.event.event.id;
 
-  if (!(await input.durabilityProbe())) {
+  if ((await settledValue(input.durabilityProbe)) !== true) {
     return failClosed("audit_durability_unreachable", eventId, false, false);
   }
-  if ((await input.commitGate()) === "declined") {
-    return failClosed("business_commit_declined", eventId, true, false);
+  return input.event.event.commit_state === "not_committed"
+    ? deliverWithoutCommit(input)
+    : deliverWithCommit(input);
+}
+
+/** An occurrence that claims a commit: only a confirmed commit lets it become durable. */
+async function deliverWithCommit(input: TransactionPipelineInput): Promise<TransactionCriticalDeliveryResult> {
+  const eventId = input.event.event.id;
+  const decision = await settledValue(input.commitGate);
+  if (decision === "declined") return failClosed("business_commit_declined", eventId, true, false);
+  if (decision !== "committed") return failClosed("business_commit_unconfirmed", eventId, true, false);
+  if (!(await acknowledged(input))) {
+    return failClosed("audit_durability_failed_after_commit", eventId, true, true);
   }
-  const outcome = await input.handoff.handoff(input.event, 0);
-  if (outcome.status !== "acknowledged") {
-    return failClosed("audit_durability_unreachable", eventId, true, true);
+  return durable(input, "committed_and_durable");
+}
+
+/** A `not_committed` occurrence: there is no business commit to gate, and the result claims none. */
+async function deliverWithoutCommit(input: TransactionPipelineInput): Promise<TransactionCriticalDeliveryResult> {
+  if (!(await acknowledged(input))) {
+    return failClosed("audit_durability_unreachable", input.event.event.id, false, true);
   }
-  return null;
+  return durable(input, "durable_without_commit");
+}
+
+/**
+ * Settles a caller's probe or gate to a plain value. Its declared type is a
+ * promise the binding cannot enforce: a JavaScript host, a cast or an `any`
+ * result can resolve anything (#859), and a rejection confirms no more than a
+ * wrong value does, so it settles to `undefined`.
+ */
+async function settledValue(read: () => Promise<unknown>): Promise<unknown> {
+  try {
+    return await read();
+  } catch {
+    return undefined;
+  }
+}
+
+/** True only when the durability point acknowledged; a rejecting handoff has not. */
+async function acknowledged(input: TransactionPipelineInput): Promise<boolean> {
+  try {
+    return (await input.handoff.handoff(input.event, 0)).status === "acknowledged";
+  } catch {
+    return false;
+  }
+}
+
+function durable(
+  input: TransactionPipelineInput,
+  status: "committed_and_durable" | "durable_without_commit",
+): TransactionCriticalDeliveryResult {
+  return Object.freeze({ status, event_id: input.event.event.id, transaction_id: input.transactionId });
+}
+
+/** Only a result that reached the durability point is recorded for deduplication. */
+function reachedDurability(result: TransactionCriticalDeliveryResult): boolean {
+  return result.status === "committed_and_durable" || result.status === "durable_without_commit";
 }
 
 /** The behaviours a policy owner may approve, exactly as the contract row enumerates them. */
