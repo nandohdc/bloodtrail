@@ -39,13 +39,13 @@ Groups 1–5 are complete: five Stage P runs executed, each once under its own S
 
 ## 8. Verification
 
-- [ ] 8.1 Run strict OpenSpec validation, assessment generated-drift check, assessment/final design-pattern governance and contract-reuse approved-skip on the exact technical head; verify proposal scope, normative WHEN/THEN scenarios, no module-export-shaped lines and unchanged canonical contract/package paths.
-- [ ] 8.2 Run empty-index git-state/whitespace checks and make test/typechecks; verify full matrix coverage, immutable expectations/result separation, provenance, exact-head run approvals, shared bounds/stops and scratch deletion before declaring Stage P complete. Future harness must pass CodeScene delta with warnings treated as errors.
-- [ ] 8.3 Verify and record all ten required CI contexts on the exact PR head.
+- [x] 8.1 Run strict OpenSpec validation, assessment generated-drift check, assessment/final design-pattern governance and contract-reuse approved-skip on the exact technical head; verify proposal scope, normative WHEN/THEN scenarios, no module-export-shaped lines and unchanged canonical contract/package paths.
+- [x] 8.2 Run empty-index git-state/whitespace checks and make test/typechecks; verify full matrix coverage, immutable expectations/result separation, provenance, exact-head run approvals, shared bounds/stops and scratch deletion before declaring Stage P complete. Future harness must pass CodeScene delta with warnings treated as errors.
+- [x] 8.3 Verify and record all ten required CI contexts on the exact PR head.
 
 ## 9. Fold (#807)
 
-- [ ] 9.1 In a separate later PR, fold the reviewed capability delta into canonical specs after implementation and verification.
+- [x] 9.1 In a separate later PR, fold the reviewed capability delta into canonical specs after implementation and verification.
 
 ## 10. Archive (#808)
 
