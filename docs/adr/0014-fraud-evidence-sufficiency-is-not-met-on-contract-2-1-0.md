@@ -28,11 +28,12 @@ are not judged here.
 
 ## Evidence
 
-The results files live under `openspec/changes/verify-fraud-evidence-sufficiency/harness/results/`, next to
-the frozen expectations in `harness/expectations/`. In every run, the kit identity commit equals the approved
-head, every executed case matched its frozen expectation, and no invalidation was recorded. The ledger,
-`harness/run-ledger.md`, holds five of the ten authorized runs, all inside the window
-2026-10-17T02:22:47Z to 2026-10-24T02:22:47Z, for 5,494 occurrences in total.
+The results files live under
+`openspec/changes/archive/2026-10-22-verify-fraud-evidence-sufficiency/harness/results/` (the change's
+directory since #808 archived it), next to the frozen expectations in `harness/expectations/`. In every run,
+the kit identity commit equals the approved head, every executed case matched its frozen expectation, and no
+invalidation was recorded. The ledger, `harness/run-ledger.md`, holds five of the ten authorized runs, all
+inside the window 2026-10-17T02:22:47Z to 2026-10-24T02:22:47Z, for 5,494 occurrences in total.
 
 | Run | Probe | Ticket | Approved head | Cases | Occurrences |
 |---|---|---|---|---|---|
