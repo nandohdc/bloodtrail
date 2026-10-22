@@ -29,6 +29,20 @@ const successfulCommitStates: Readonly<Partial<Record<SecurityAuditEvent["event"
 const commitAssertingStates: ReadonlySet<SecurityAuditEvent["event"]["commit_state"]> = new Set([
   "committed", "partially_committed", "compensated",
 ]);
+// Each field that would name something other than the credential as a failed authentication's
+// target, with the pointer its refusal reports, in the order checked (ADR-SDK-019).
+const nonCredentialTargets: readonly (readonly [string, (event: SecurityAuditEvent) => boolean])[] = [
+  ["/subject/type", ({ subject }) => subject !== undefined && (subject.type === undefined ? subject.id !== undefined || subject.tenant_id !== undefined : subject.type !== "credential")],
+  ["/subject/display_name", ({ subject }) => subject?.display_name !== undefined],
+  ["/resource/type", ({ resource }) => (resource.type === undefined ? resource.id !== undefined : resource.type !== "credential")],
+  ["/resource/parent_type", ({ resource }) => resource.parent_type !== undefined],
+  ["/resource/parent_id", ({ resource }) => resource.parent_id !== undefined],
+  ["/authorization/resource_context/type", ({ authorization }) => {
+    const context = authorization?.resource_context;
+    if (context === undefined) return false;
+    return context.type === undefined ? context.id !== undefined : context.type !== "credential";
+  }],
+];
 const asyncCompletionSemantics = new Set(["account_registration_completed", "password_reset_completed"]);
 const resourceIdentityRequiredSemantics = new Set([
   "sensitive_resource_viewed",
@@ -85,7 +99,25 @@ export function validateBaseSemantics(event: SecurityAuditEvent): AuditResult<Se
   if (!semanticResult.ok) return semanticResult;
   const provenanceResult = validateDerivedFieldProvenance(event);
   if (!provenanceResult.ok) return provenanceResult;
-  return validateOutcomeConsistency(event);
+  return validateSdkOnlyRules(event, definition);
+}
+
+// The SDK-only rules run last, in this order, so every contract diagnostic keeps precedence:
+// denial consistency (ADR-SDK-016), then the failed-authentication target rule (ADR-SDK-019).
+function validateSdkOnlyRules(event: SecurityAuditEvent, definition: EventDefinition): AuditResult<SecurityAuditEvent> {
+  const consistencyResult = validateOutcomeConsistency(event);
+  if (!consistencyResult.ok) return consistencyResult;
+  return validateCredentialOnlyTarget(event, definition);
+}
+
+// SDK-only rule in ADR-SDK-019, run last so every earlier diagnostic keeps precedence: a failed
+// authentication's target may only be the credential, as its catalog resource rule ("credential
+// type only when safe") and the approved example require. The resource the SDK derives when none
+// is supplied has neither a type nor an identity, so it stays valid.
+function validateCredentialOnlyTarget(event: SecurityAuditEvent, definition: EventDefinition): AuditResult<SecurityAuditEvent> {
+  if (definition.semantic !== "authentication_failed") return { ok: true, value: event };
+  const refused = nonCredentialTargets.find(([, namesAnotherTarget]) => namesAnotherTarget(event));
+  return refused ? failure("SDK_SEMANTIC_VALIDATION_FAILED", "validation", refused[0]) : { ok: true, value: event };
 }
 
 function validateOutcomeConsistency(event: SecurityAuditEvent): AuditResult<SecurityAuditEvent> {

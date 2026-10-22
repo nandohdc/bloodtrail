@@ -15,8 +15,8 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 
 ## 3. Failed-authentication target rule (#862)
 
-- [ ] 3.1 Add the SDK-only rule to `src/validation/semantic.ts`, called last in `validateBaseSemantics`.
-- [ ] 3.2 Run typecheck, build and the existing runtime tests before the rule-only commit.
+- [x] 3.1 Add the SDK-only rule to `src/validation/semantic.ts`, called last in `validateBaseSemantics`.
+- [x] 3.2 Run typecheck, build and the existing runtime tests before the rule-only commit.
 
 ## 4. Tests (#862)
 
