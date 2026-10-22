@@ -227,6 +227,24 @@ If an integration relied on `setSchemaRuntime()` to change instance behavior, co
 
 Results otherwise retain their codes, categories, paths and check order. Configured-runtime faults still return `SDK_INVALID_CONFIGURATION` / `configuration` / `/schemaRuntime` without provider leakage or sink handoff; bounded verdict sanitization and #812's outcome rules remain unchanged. This non-breaking `fix(sdk-core)` changes no public type, signature, export, error code, frozen contract `2.1.0` or collector behavior. `ADR-SDK-017` refines unchanged `ADR-SDK-003` and `ADR-SDK-011`. Exactly-once validation does not promise delivery or durability, release or production authorization.
 
+## Failed-authentication target correction
+
+Decision source: owner decision, 2026-10-22, via AskUserQuestion and grilling in Claude Code session https://claude.ai/code/session_012Y6oT9KjPZ1BMvT63hU3ay
+
+A failed authentication (`bloodtrail.audit.authentication.failed`) may now target only the credential. Named methods, `emit()`, `redeliver()` and free `validateSecurityAuditEvent()` refuse, with no sink call:
+
+- a `subject` typed other than `credential`, or carrying an `id` or `tenant_id` without a type, at `/subject/type`;
+- a `subject` carrying a `display_name`, at `/subject/display_name`;
+- a `resource` typed other than `credential`, or one carrying an `id` without a type, at `/resource/type`;
+- a `resource` naming a parent, at `/resource/parent_type` or `/resource/parent_id`;
+- an `authorization.resource_context` typed other than `credential`, or carrying an `id` without a type, at `/authorization/resource_context/type`.
+
+Each returns `SDK_SEMANTIC_VALIDATION_FAILED` / `validation`. A `subject` or `resource` inherited from `authoritativeContext` or a `runWithContext` scope counts too. Emit failed authentications outside a scope that sets an account subject, or pass a credential `subject` or `resource` in the call input, which overrides the inherited one. TypeScript does not flag these shapes; the refusal is at runtime. An inherited value cannot be cleared per call, so do not configure a non-credential `subject` or `resource` in `authoritativeContext` on an instance that emits failed authentications. A stored failed authentication that carries a refused target cannot be redelivered; emit it again as a new occurrence without the target.
+
+Drop the targeted account from failed authentications. Keep the credential as the target: a credential `subject`, `credentialReference()` fields and a credential `resource` remain valid, as in the contract's approved example. Omitting the resource still yields the SDK's derived `{ operation_type: "execute" }`. Actor fields, other events and earlier diagnostics are unchanged; the rule runs last. Stored events get no `redeliver()` exemption.
+
+This is a non-breaking `fix(sdk-core)` with no release/version change. Public types, exports, error codes, frozen contract `2.1.0` and collector admission remain unchanged. See `ADR-SDK-019`. Contract 2.1.0 has no honest carrier for a failed login's target; that is the separate contract minor version tracked in #863.
+
 ## Contract-version upgrades
 
 A contract semantic change requires the `security-audit-event-contract` governance lifecycle before SDK work. An additive contract-minor version remains contract-minor on that independent version axis. After a new contract version is approved, SDK adaptation must use a separate reviewed change that preserves `EXACT_ONE`:

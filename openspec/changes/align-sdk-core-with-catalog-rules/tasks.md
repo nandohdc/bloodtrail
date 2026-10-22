@@ -30,7 +30,7 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 
 ## 5. Documentation (#862)
 
-- [ ] 5.1 Add:
+- [x] 5.1 Add:
   - ADR-SDK-019, moving the coherence pins to 019;
   - the MIGRATION entry;
   - API and SECURITY sections;

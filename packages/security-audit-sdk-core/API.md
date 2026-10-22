@@ -413,3 +413,19 @@ The success rule runs with commit checks first, before authorization: `deny` + `
 These rules do not judge `failure`, `partial`, `cancelled`, catalog-permitted non-committing denial, or success outside `completed`/`compensating`. Catalog restrictions still apply. Derived defaults remain accepted; no-handle and pending-handle success retain `PREMATURE_SUCCESS` / `validation` / `/operation/state`. Explicit outcomes must agree with the handle's commit state; an outcome never changes it.
 
 Old events have no exemption on `redeliver()`. This non-breaking `fix(sdk-core)` changes no public types, exports, error codes or frozen contract `2.1.0`. See `ADR-SDK-016` in `adr/016-outcome-and-commit-state-agree.md` and the correction in `MIGRATION.md`. It proves neither producer truth nor durability and changes no collector admission policy.
+
+## Failed-authentication target correction
+
+Decision source: owner decision, 2026-10-22, via AskUserQuestion and grilling in Claude Code session https://claude.ai/code/session_012Y6oT9KjPZ1BMvT63hU3ay
+
+`authenticationFailed`, and any complete `bloodtrail.audit.authentication.failed` event, may target only the credential. Shared semantic validation refuses, as its last check and before any sink handoff:
+
+| Target | Exact code / category / path |
+|---|---|
+| a `subject` typed other than `credential`, or with an `id` or `tenant_id` but no type | `SDK_SEMANTIC_VALIDATION_FAILED` / `validation` / `/subject/type` |
+| a `subject` with a `display_name` | `SDK_SEMANTIC_VALIDATION_FAILED` / `validation` / `/subject/display_name` |
+| a `resource` typed other than `credential`, or with an `id` but no type | `SDK_SEMANTIC_VALIDATION_FAILED` / `validation` / `/resource/type` |
+| a `resource` naming a parent | `SDK_SEMANTIC_VALIDATION_FAILED` / `validation` / `/resource/parent_type` or `/resource/parent_id` |
+| an `authorization.resource_context` typed other than `credential`, or with an `id` but no type | `SDK_SEMANTIC_VALIDATION_FAILED` / `validation` / `/authorization/resource_context/type` |
+
+A credential `subject`, `credentialReference()` fields and a credential `resource` are accepted, as is the resource the SDK derives when none is supplied. Actor fields and other events are not judged. A `subject` or `resource` inherited from `authoritativeContext` or `runWithContext` is judged like call input, and a credential value in the call input overrides it; an inherited value cannot be cleared per call. TypeScript does not reject these shapes, so the refusal is at runtime. See `ADR-SDK-019` in `adr/019-failed-authentication-carries-only-a-credential-target.md` and the correction in `MIGRATION.md`. Acceptance is not conformance: the SDK cannot establish where an accepted value came from.
