@@ -240,8 +240,8 @@ test("the P-E handoff keeps task 4.1 ticked, tracks the run-4 tick against its r
   const tasks = readFileSync(new URL("../../tasks.md", import.meta.url), "utf8");
   assert.match(tasks, /- \[x\] 4\.1/);
   assertRunTaskState({ tasks, hasResult: existsSync(new URL("../results/p-e-run-4.json", import.meta.url)) });
-  assert.match(tasks, /- \[ \] 8\.1/);
-  assert.match(tasks, /- \[ \] 8\.2/);
+  // Verification (group 8) may close only after the close-out groups 6 and 7.
+  if (/^- \[x\] 8\.\d /m.test(tasks)) assert.doesNotMatch(tasks, /^- \[ \] [67]\.\d /m);
   const assessment = JSON.parse(readFileSync(new URL("../../assessment.source.json", import.meta.url), "utf8"));
   assert.equal(assessment.owned_paths.length, 7, "owned_paths stays the seven planning entries");
   const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
