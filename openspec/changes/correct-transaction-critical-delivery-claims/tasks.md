@@ -21,7 +21,7 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 
 ## 3. Tests
 
-- [ ] 3.1 Add the top-level `packages/security-audit-sdk-node/tests/transaction-critical-claims.test.ts`:
+- [x] 3.1 Add the top-level `packages/security-audit-sdk-node/tests/transaction-critical-claims.test.ts`:
   - every P-E-x2 probe and gate value;
   - P-E-3a, P-E-6c, P-E-7 and P-E-8;
   - the unchanged committed, declined and duplicate controls.
