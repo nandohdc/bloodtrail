@@ -39,3 +39,19 @@ _Avoid_: correlation ID, user ID, tracking ID
 A host-computed keyed digest of the server session handle, under one key scope shared by the whole chain,
 that stands in for the session identifier. It is never the session's bearer value.
 _Avoid_: session token, raw session ID, device fingerprint
+
+**Reference composition**:
+The host-side delivery stack the integration profile measures. It nests deadline-bounded shutdown admission
+around the backpressure admission gate, which goes around bounded delivery retry, which goes around the
+single-attempt HTTP handoff over the governed fetch adapter. Backpressure admits or rejects; it is not a queue.
+_Avoid_: delivery pipeline, outbox, queue
+
+**Terminal bucket**:
+The single place a generated occurrence's delivery ends: persisted at the collector, reported undelivered by a
+delivery result, reported by an admission signal, abandoned in the shutdown report, or unexplained.
+_Avoid_: delivery status, outcome
+
+**Accounting identity**:
+The check that every generated occurrence lands in exactly one terminal bucket and that the unexplained bucket
+is empty. Expected losses count in the denominator, so no fault plan improves completeness by hiding a loss.
+_Avoid_: delivery rate, completeness score
