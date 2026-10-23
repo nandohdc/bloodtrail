@@ -6,7 +6,7 @@
 // random source and holds no acceptance logic: "acknowledge" hands the body to the kit's collector.
 import assert from "node:assert/strict";
 
-export const FAULT_ACTIONS = Object.freeze(["acknowledge", "status", "delay", "destroy_before_ingest", "destroy_after_ingest"]);
+export const FAULT_ACTIONS = Object.freeze(["acknowledge", "status", "delay", "destroy_before_ingest", "destroy_after_ingest", "malformed_after_ingest"]);
 
 function validRule(rule) {
   assert(Number.isSafeInteger(rule.occurrence) && rule.occurrence >= 1, "fault rule occurrence must be a 1-based ordinal");
@@ -27,6 +27,27 @@ export function validateFaultPlan(plan) {
     keys.add(key);
   }
   return plan;
+}
+
+// A schedule names one scenario per occurrence, repeated `cycles` times: occurrence k (1-based) runs
+// schedule[(k - 1) % schedule.length]. The injector's rules and the evaluator's attribution both expand the
+// schedule here. The injector counts occurrences in the order event ids first reach the ingress and the
+// evaluator in delivery order; the two agree whenever every delivery reaches the ingress, as every frozen
+// scenario's does, and any divergence shows as mismatches.
+export function expandSchedule({ schedule, cycles }) {
+  assert(Array.isArray(schedule) && schedule.length > 0, "a schedule needs at least one scenario");
+  assert(Number.isSafeInteger(cycles) && cycles > 0, "a schedule needs a positive number of cycles");
+  return Array.from({ length: schedule.length * cycles }, (_, index) => schedule[index % schedule.length]);
+}
+
+// A probe freezes named scenarios, each a list of per-attempt rules without an occurrence; each occurrence
+// gets its scheduled scenario's rules. The expanded plan is validated like any other.
+export function scheduledFaultPlan({ scenarios, schedule, cycles }) {
+  const rules = expandSchedule({ schedule, cycles }).flatMap((name, index) => {
+    assert(Object.hasOwn(scenarios, name), `unknown scenario: ${name}`);
+    return scenarios[name].map((rule) => ({ ...rule, occurrence: index + 1 }));
+  });
+  return validateFaultPlan({ default: "acknowledge", rules });
 }
 
 // Tracks first-seen ordinals and per-occurrence attempts, and answers the plan's decision for each request.

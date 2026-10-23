@@ -65,3 +65,11 @@ export function seededJitter(seed) {
   assert(Number.isSafeInteger(seed) && seed > 0, "jitter seed must be a positive integer");
   return seededRandom(seed);
 }
+
+// The delay bounded retry schedules before attempt `next` (delivery-retry.ts computeDelayMs): the base delay
+// doubled per earlier attempt, capped at the maximum, times the next jitter draw, rounded down. `draw` is
+// omitted for the cap alone.
+export function retryDelay({ composition, next, draw = () => 1 }) {
+  const cap = Math.min(composition.base_delay_ms * 2 ** (next - 1), composition.max_delay_ms);
+  return Math.floor(cap * draw());
+}

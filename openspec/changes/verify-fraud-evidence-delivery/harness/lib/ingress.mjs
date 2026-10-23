@@ -47,8 +47,10 @@ function credentialsOf(request) {
   return authorization.startsWith("Bearer ") ? { credential: authorization.slice(7) } : undefined;
 }
 
-function respond({ response, status, eventId }) {
-  const acknowledgments = status === 202 ? [{ event_id: eventId, outcome: "accepted" }] : [];
+// A 202 acknowledges the event unless `acknowledged` is false: a 2xx that acknowledges nothing is what the
+// binding's classifier reads as a malformed acknowledgment (http-response-classification.ts).
+function respond({ response, status, eventId, acknowledged = status === 202 }) {
+  const acknowledgments = acknowledged ? [{ event_id: eventId, outcome: "accepted" }] : [];
   response.writeHead(status, { "content-type": "application/json" });
   response.end(JSON.stringify({ acknowledgments }));
 }
@@ -83,6 +85,14 @@ const ACTIONS = {
     const { outcome } = ingest(context);
     context.finish({ status: null, outcome });
     context.request.socket.destroy();
+  },
+  // The collector decides the body as usual; the answer is a 202 that acknowledges nothing, so a protocol
+  // error can follow a durable write. The recorded status is the answer on the wire; the outcome is the
+  // collector's decision.
+  malformed_after_ingest: (context) => {
+    const { outcome } = ingest(context);
+    context.finish({ status: 202, outcome });
+    respond({ response: context.response, status: 202, eventId: context.eventId, acknowledged: false });
   },
 };
 

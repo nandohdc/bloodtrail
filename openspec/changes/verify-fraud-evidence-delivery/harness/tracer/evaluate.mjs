@@ -1,19 +1,8 @@
 // Compares the tracer's raw observations with its frozen expectations. A mismatch is reported, never
 // corrected: each case records what was expected, what was observed, and whether they are equal.
 import { isDeepStrictEqual } from "node:util";
-import { accountFor, delayIdentity } from "../lib/accounting.mjs";
-
-function deliveriesOf(sender) {
-  return new Map(Object.entries(sender.deliveries).map(([eventId, delivery]) => [eventId, delivery.status]));
-}
-
-// An occurrence counts as persisted only when storage holds a copy with bytes the sender sent for that
-// event id. A conflicting copy (another tenant scope, other bytes) stored under the same id does not
-// explain the sender's occurrence.
-function persistedOf({ sender, ingress }) {
-  const sent = new Set(sender.exchanges.map((entry) => `${entry.event_id}\n${entry.body_sha256}`));
-  return new Set(ingress.read_back.filter((entry) => entry.persisted && sent.has(`${entry.event_id}\n${entry.stored_body_sha256}`)).map((entry) => entry.event_id));
-}
+import { identities } from "../lib/accounting.mjs";
+import { isolationControls } from "../lib/evaluation.mjs";
 
 function storedCount(ingress) {
   return ingress.read_back.filter((entry) => entry.persisted).length;
@@ -45,10 +34,7 @@ const OBSERVERS = {
   // The denominator is the frozen workload, not what reached the sink, so an occurrence lost before the
   // composition is counted as unexplained rather than vanishing from the identity.
   "T-02": ({ sender, ingress }, expectations) => {
-    const accounting = accountFor({
-      planned: expectations.workload.occurrences, generated: Object.keys(sender.deliveries), deliveries: deliveriesOf(sender), persisted: persistedOf({ sender, ingress }),
-    });
-    const delays = delayIdentity({ scheduledDelays: sender.callbacks.scheduled.length, exchangeAttempts: sender.exchanges.map((entry) => entry.attempt) });
+    const { accounting, delays } = identities({ sender, ingress, planned: expectations.workload.occurrences });
     return {
       counts: accounting.counts, missing: accounting.missing, unexplained: accounting.unexplained, disagreements: accounting.disagreements,
       accounting_holds: accounting.holds, scheduled_delays: delays.scheduled, delay_identity_holds: delays.holds,
@@ -67,11 +53,7 @@ const OBSERVERS = {
   },
   "T-05": (observations) => ({ byte_identical: byteIdentical(observations) }),
   "T-06": ({ sender }) => ({ shutdown_report: sender.shutdown_report }),
-  "T-07": ({ sender, ingress }) => ({
-    sender_loopback_guard: sender.controls.loopback_guard.holds, sender_write_refused: sender.controls.write_outside_grant.holds,
-    sender_synthetic_data: sender.controls.synthetic_data.holds, ingress_write_refused: ingress.controls.write_outside_grant.holds,
-    guard_violations: sender.guard_violations.map((entry) => entry.host),
-  }),
+  "T-07": isolationControls,
 };
 
 export function evaluateCases({ observations, expectations }) {

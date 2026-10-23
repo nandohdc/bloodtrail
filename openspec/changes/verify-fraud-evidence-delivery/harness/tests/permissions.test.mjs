@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { test } from "node:test";
 import { ingressFlags, prepareStorage, roleFlags, senderFlags, storageDirectory } from "../lib/permissions.mjs";
-import { deleteScratch, finalizeScratch } from "../lib/kit-pipeline.mjs";
+import { deleteScratch, finalizeScratch, scratchSession } from "../lib/kit-pipeline.mjs";
 
 function layout() {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "stage-2-permissions-fixture-")));
@@ -50,6 +50,26 @@ test("scratch deletion is proven, and a failed deletion becomes an invalidation"
     const result = finalizeScratch({ result: { invalidations: [] }, scratch, remove: () => { throw new Error("busy"); } });
     assert.deepEqual(result.scratch_deletion, { root: scratch, recursively_absent: false });
     assert.deepEqual(result.invalidations, [{ message: "scratch deletion failed: busy" }]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a session that fails after partial work keeps its observations beside the invalidation, and scratch is deleted", async () => {
+  const { root, scratch } = layout();
+  try {
+    const partial = { passes: { small: { occurrence_count: 10 }, volume: null }, occurrence_count: null };
+    const failing = await scratchSession({ result: { invalidations: [] }, scratch, work: async () => {
+      const error = new Error("volume pass failed");
+      error.observations = partial;
+      throw error;
+    } });
+    assert.deepEqual(failing.invalidations, [{ message: "volume pass failed" }]);
+    assert.equal(failing.observations, partial);
+    assert.equal(failing.scratch_deletion.recursively_absent, true);
+    mkdirSync(scratch);
+    const plain = await scratchSession({ result: { invalidations: [] }, scratch, work: async () => { throw new Error("small pass failed"); } });
+    assert.equal(Object.hasOwn(plain, "observations"), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

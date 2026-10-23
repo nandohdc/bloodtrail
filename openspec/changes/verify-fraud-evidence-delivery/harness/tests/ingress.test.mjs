@@ -142,3 +142,53 @@ test("planted defect: the ingress hashes the bytes that arrived, so two invalid 
     await server.close();
   }
 });
+
+test("a malformed acknowledgment follows the collector's decision: a 202 that acknowledges nothing", async () => {
+  const fixture = fixtureCollector();
+  const server = await startIngress({ collector: fixture.collector, ingress: fixture.ingress, faults: faultInjector({ default: "acknowledge", rules: [
+    { occurrence: 1, attempt: 0, action: "malformed_after_ingest" },
+  ] }) });
+  try {
+    const body = event("e-3");
+    assert.deepEqual(await post({ port: server.port, body }), { status: 202, body: JSON.stringify({ acknowledgments: [] }) });
+    assert.equal((await post({ port: server.port, body })).status, 202);
+    assert.deepEqual(server.state.records.map(({ action, status, outcome }) => [action, status, outcome.kind]), [
+      ["malformed_after_ingest", 202, "persisted"], ["acknowledge", 202, "duplicate"],
+    ]);
+    assert.equal(readBack({ state: server.state, storage: fixture.storage })[0].stored_body_sha256, sha256(body));
+  } finally {
+    await server.close();
+  }
+});
+
+// The outages probe's timeout: the ingress ingests, then answers only after the client's deadline. The
+// aborted request must not keep the server from closing, and the late answer must not throw. Only the
+// first request has a short deadline; the margins are wide so a slow runner cannot fail an honest run.
+test("a delayed answer past the client's deadline is a timeout after ingest, and the ingress still closes", async () => {
+  const LATE_MS = 2000;
+  const fixture = fixtureCollector();
+  const server = await startIngress({ collector: fixture.collector, ingress: fixture.ingress, faults: faultInjector({ default: "acknowledge", rules: [
+    { occurrence: 1, attempt: 0, action: "delay", delay_ms: LATE_MS },
+  ] }) });
+  const body = event("e-4");
+  const send = (timeoutMs) => fetch(`http://127.0.0.1:${server.port}/v1/security-audit`, {
+    method: "POST", headers: { authorization: "Bearer token", "content-type": "application/json" }, body, signal: AbortSignal.timeout(timeoutMs),
+  });
+  const sentAt = Date.now();
+  let closed = false;
+  try {
+    await assert.rejects(send(100), { name: "TimeoutError" });
+    const redelivered = await send(10_000);
+    assert.equal(redelivered.status, 202);
+    assert.deepEqual(await redelivered.json(), { acknowledgments: [{ event_id: "e-4", outcome: "accepted" }] });
+    await server.close();
+    closed = true;
+    assert(Date.now() < sentAt + LATE_MS, "the aborted request held the server open until its late answer");
+    await new Promise((resolveWait) => { setTimeout(resolveWait, sentAt + LATE_MS + 300 - Date.now()); });
+    assert.deepEqual(server.state.records.map(({ action, status, outcome, delayed_ms: delayed }) => [action, status, outcome.kind, delayed]), [
+      ["delay", 202, "persisted", LATE_MS], ["acknowledge", 202, "duplicate", undefined],
+    ]);
+  } finally {
+    if (!closed) await server.close();
+  }
+});
