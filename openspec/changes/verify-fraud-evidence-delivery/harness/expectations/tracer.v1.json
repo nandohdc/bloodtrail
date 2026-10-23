@@ -1,0 +1,87 @@
+{
+  "probe": "S2-tracer",
+  "version": 1,
+  "ticket": 836,
+  "base": "91afc83fbfe2e5524c36f107997d2beedbbf28e7",
+  "contract_version": "2.1.0",
+  "workload": {
+    "seed": 836001,
+    "occurrences": 1,
+    "event": "bloodtrail.audit.authentication.succeeded"
+  },
+  "clock": {
+    "start": "2026-10-23T00:00:00.000Z",
+    "step_ms": 1000
+  },
+  "composition": {
+    "exchange_timeout_ms": 2000,
+    "max_attempts": 3,
+    "base_delay_ms": 50,
+    "max_delay_ms": 500,
+    "jitter_seed": 836,
+    "capacity": 4,
+    "shutdown_deadline_ms": 5000
+  },
+  "fault_plan": {
+    "default": "acknowledge",
+    "rules": []
+  },
+  "deadline_ms": 120000,
+  "planned_call_budget": {
+    "processes": {
+      "sender": 1
+    },
+    "total": 1
+  },
+  "thresholds": {
+    "unexplained": 0
+  },
+  "hypotheses": [
+    "One synthetic security_significant occurrence leaves a Node-binding SDK installed from the kit, crosses the full reference composition over loopback, and is admitted and persisted by the kit's collector with storage.",
+    "Every observation boundary records it: the SDK call outcome, the composition's callbacks and results, the exchange body hash, and the ingress outcome and stored body."
+  ],
+  "cases": [
+    {
+      "case_id": "T-01",
+      "setup": "One authenticationSucceeded call built from the kit's public context constructors, emitted into the composition sink.",
+      "expected": { "calls": 1, "ok": true, "status": "accepted" },
+      "basis": ["packages/security-audit-sdk-core/src/sdk.ts:331"]
+    },
+    {
+      "case_id": "T-02",
+      "setup": "The accounting identity over the one planned occurrence, and the delay identity.",
+      "expected": { "counts": { "persisted": 1, "reported_undelivered": 0, "admission_signal": 0, "abandoned": 0, "unexplained": 0 }, "missing": 0, "unexplained": [], "disagreements": [], "accounting_holds": true, "scheduled_delays": 0, "delay_identity_holds": true },
+      "basis": ["packages/security-audit-sdk-node/src/delivery-retry.ts:14", "packages/security-audit-collector/src/ingress.ts:192"]
+    },
+    {
+      "case_id": "T-03",
+      "setup": "The composition's result and callbacks for the occurrence, with no fault planned.",
+      "expected": { "delivery": "acknowledged", "attempts": 1, "exchange_attempts": [0], "callbacks": { "scheduled": 0, "exhausted": 0, "admitted": 1, "rejected_overload": 0, "released": 1 } },
+      "basis": ["packages/security-audit-sdk-node/src/http-handoff.ts:15", "packages/security-audit-sdk-node/src/delivery-backpressure.ts:39"]
+    },
+    {
+      "case_id": "T-04",
+      "setup": "The harness ingress hands the body to the kit's collector with SQLite storage.",
+      "expected": { "requests": 1, "occurrence": 1, "attempt": 0, "action": "acknowledge", "status": 202, "outcome": "persisted", "read_back_persisted": 1 },
+      "basis": ["packages/security-audit-collector/src/ingress.ts:192"]
+    },
+    {
+      "case_id": "T-05",
+      "setup": "Body hashes at the exchange, at the ingress and in storage.",
+      "expected": { "byte_identical": true },
+      "basis": ["packages/security-audit-sdk-node/src/http-handoff.ts:146"]
+    },
+    {
+      "case_id": "T-06",
+      "setup": "Deadline-bounded shutdown after the occurrence settled.",
+      "expected": { "shutdown_report": { "accepted": 1, "completed": 1, "abandoned": 0 } },
+      "basis": ["packages/security-audit-sdk-node/src/delivery-shutdown.ts:68"]
+    },
+    {
+      "case_id": "T-07",
+      "setup": "Planted-defect controls in both live role processes, before any traffic.",
+      "expected": { "sender_loopback_guard": true, "sender_write_refused": true, "sender_synthetic_data": true, "ingress_write_refused": true, "guard_violations": ["192.0.2.1"] },
+      "basis": ["packages/security-audit-sdk-node/src/fetch-exchange.ts:45"]
+    }
+  ]
+}

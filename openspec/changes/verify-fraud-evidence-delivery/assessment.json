@@ -11,7 +11,7 @@
   "applicability": {
     "triggers_matched": ["integration", "security_sensitive_behavior"],
     "material_capability_modification": false,
-    "capabilities": []
+    "capabilities": ["fraud-evidence-profile"]
   },
   "owned_paths": [
     "openspec/changes/verify-fraud-evidence-delivery/.openspec.yaml",
