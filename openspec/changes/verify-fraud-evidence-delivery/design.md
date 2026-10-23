@@ -54,6 +54,10 @@ createDeliveryShutdown            deadline-bounded shutdown admission
                  └─ createFetchHttpExchange  the governed fetch adapter, loopback origin only
 ```
 
+`authorization.allowed`, the catalog's only `best_effort` event, does not go through this stack. It goes
+through the binding's `best_effort` class (`createBestEffortDelivery`) over the same governed exchange: one
+attempt, no retry, a drop on any non-acknowledgment, and a saturating loss counter with a ceiling signal (#838).
+
 The consumer is the kit's collector, configured with SQLite storage on a scratch file, so identity is decided
 durably. One phase of #839 runs it without storage, to measure the in-memory bound of 32 identities for five
 minutes. The harness's HTTP wrapper around the ingress owns fault injection only, never acceptance logic.
@@ -123,7 +127,8 @@ injector receives the schedule expanded into per-occurrence rules.
 
 **Accounting identity.** Every generated occurrence ends in exactly one terminal bucket:
 1. persisted at the collector;
-2. reported undelivered by a delivery result (`non_retryable`, `protocol_error`, `exhausted`);
+2. reported undelivered by a delivery result (`non_retryable`, `protocol_error`, `exhausted`, or a
+   `best_effort` drop);
 3. reported by an admission signal (`rejected_overload`, rejected while shutting down);
 4. abandoned in the shutdown report;
 5. unexplained.
@@ -228,6 +233,11 @@ Serial PRs, each a build commit followed by an evidence commit after its S1 (Q18
 - **#838, load and shutdown.** Overload through the backpressure gate is reported with depth and capacity.
   Deadline-bounded shutdown mid-burst accounts for every admitted occurrence. `best_effort` drops are visible
   through the loss counter and the loss-ceiling signal.
+  - The probe has its own sender role. Its ingress is the tracer's.
+  - Each phase is one exchange. The small pass has four phases: overload, drain, abandon and `best_effort`.
+    The volume pass has three: overload, drain and `best_effort` at volume.
+  - A burst submits every occurrence at once, against answers the ingress holds. Each occurrence therefore
+    meets the admission gate before any held delivery can settle, and the gate's decisions are deterministic.
 - **#839, copies, duplicates, conflicts and restarts:**
   - every copy is byte-identical, compared by body hash at the exchange and at the ingress;
   - the attempt ordinal stays out of the occurrence;
@@ -273,6 +283,13 @@ results pin their blobs.
   the permanent 4xx's accounting.
 - #837's timeout also follows ingest: the ingress stores the body, then answers after the exchange deadline, so
   the redelivery is a duplicate as with a lost acknowledgment.
+- #838's held answers also follow ingest. An occurrence the abandoning shutdown reports abandoned has
+  therefore already been stored, and it settles after the report. It is persisted, and the disagreement with
+  its abandoned label is kept as an observation: shutdown reports what it could not finish, not what was lost.
+- The reference composition records, inside the operation the lifecycle tracks, which occurrences the
+  lifecycle ran and which of them settled. An occurrence settles before the lifecycle releases it. So when
+  the drain returns, exactly the started and unsettled occurrences were in flight, and only those are
+  labelled abandoned. A submission rejected while shutting down never ran and keeps its own status.
 - The assessment declares the `fraud-evidence-profile` capability, the one whose criteria Stage 2 measures, with
   `material_capability_modification: false`. Harness files under `openspec/changes/` are governed implementation,
   and design-pattern governance associates them only with a change that declares a capability. The declaration
