@@ -33,3 +33,4 @@ and goes to the owner.
 | Run | Probe | Ticket | Approved head | S1 comment | SDK calls | Result | Scratch deleted |
 |---|---|---|---|---|---|---|---|
 | 1 | S2-tracer | #836 | 693c18d671e4cfdc685c0b95930bb4be1eaf63c9 | https://github.com/nandohdc/bloodtrail/issues/836#issuecomment-6365806337, delegated (G44) | 1 | 7 of 7 cases matched, no invalidations: `results/tracer-run-1.json` | yes, `recursively_absent: true` |
+| 2 | S2-outages | #837 | c23b98388f8b3e33159d2ca0d350e63587481047 | https://github.com/nandohdc/bloodtrail/issues/837#issuecomment-6372110299, delegated (G44) | 510 | 14 of 14 cases matched (small pass gated the volume pass, which completed), no invalidations: `results/outages-run-2.json` | yes, `recursively_absent: true` |
