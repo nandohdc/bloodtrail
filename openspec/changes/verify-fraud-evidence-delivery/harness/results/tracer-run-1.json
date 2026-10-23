@@ -1,0 +1,939 @@
+{
+  "approval": {
+    "body_sha256": "eeaad85e1fcb7868538f5118a7d0a25dae8080c90a88f17b1a921ef4b24015d9",
+    "createdAt": "2026-10-23T13:18:26Z",
+    "delegation": "G44",
+    "once_marker": {
+      "name": "run-1",
+      "prior_claims": [],
+      "window_recorded_by_prior_claims": null
+    },
+    "updatedAt": "2026-10-23T13:18:26Z",
+    "url": "https://github.com/nandohdc/bloodtrail/issues/836#issuecomment-6365806337",
+    "window_opened_at": "2026-10-23T13:18:26Z"
+  },
+  "authorization": {
+    "G42": "https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6346915049",
+    "reference": "openspec/changes/verify-fraud-evidence-delivery/proposal.md#run-authorization at 693c18d671e4cfdc685c0b95930bb4be1eaf63c9"
+  },
+  "call_bound": 1,
+  "cases": {
+    "evaluations": [
+      {
+        "case_id": "T-01",
+        "expected": {
+          "calls": 1,
+          "ok": true,
+          "status": "accepted"
+        },
+        "matched": true,
+        "observed": {
+          "calls": 1,
+          "ok": true,
+          "status": "accepted"
+        }
+      },
+      {
+        "case_id": "T-02",
+        "expected": {
+          "accounting_holds": true,
+          "counts": {
+            "abandoned": 0,
+            "admission_signal": 0,
+            "persisted": 1,
+            "reported_undelivered": 0,
+            "unexplained": 0
+          },
+          "delay_identity_holds": true,
+          "disagreements": [],
+          "missing": 0,
+          "scheduled_delays": 0,
+          "unexplained": []
+        },
+        "matched": true,
+        "observed": {
+          "accounting_holds": true,
+          "counts": {
+            "abandoned": 0,
+            "admission_signal": 0,
+            "persisted": 1,
+            "reported_undelivered": 0,
+            "unexplained": 0
+          },
+          "delay_identity_holds": true,
+          "disagreements": [],
+          "missing": 0,
+          "scheduled_delays": 0,
+          "unexplained": []
+        }
+      },
+      {
+        "case_id": "T-03",
+        "expected": {
+          "attempts": 1,
+          "callbacks": {
+            "admitted": 1,
+            "exhausted": 0,
+            "rejected_overload": 0,
+            "released": 1,
+            "scheduled": 0
+          },
+          "delivery": "acknowledged",
+          "exchange_attempts": [
+            0
+          ]
+        },
+        "matched": true,
+        "observed": {
+          "attempts": 1,
+          "callbacks": {
+            "admitted": 1,
+            "exhausted": 0,
+            "rejected_overload": 0,
+            "released": 1,
+            "scheduled": 0
+          },
+          "delivery": "acknowledged",
+          "exchange_attempts": [
+            0
+          ]
+        }
+      },
+      {
+        "case_id": "T-04",
+        "expected": {
+          "action": "acknowledge",
+          "attempt": 0,
+          "occurrence": 1,
+          "outcome": "persisted",
+          "read_back_persisted": 1,
+          "requests": 1,
+          "status": 202
+        },
+        "matched": true,
+        "observed": {
+          "action": "acknowledge",
+          "attempt": 0,
+          "occurrence": 1,
+          "outcome": "persisted",
+          "read_back_persisted": 1,
+          "requests": 1,
+          "status": 202
+        }
+      },
+      {
+        "case_id": "T-05",
+        "expected": {
+          "byte_identical": true
+        },
+        "matched": true,
+        "observed": {
+          "byte_identical": true
+        }
+      },
+      {
+        "case_id": "T-06",
+        "expected": {
+          "shutdown_report": {
+            "abandoned": 0,
+            "accepted": 1,
+            "completed": 1
+          }
+        },
+        "matched": true,
+        "observed": {
+          "shutdown_report": {
+            "abandoned": 0,
+            "accepted": 1,
+            "completed": 1
+          }
+        }
+      },
+      {
+        "case_id": "T-07",
+        "expected": {
+          "guard_violations": [
+            "192.0.2.1"
+          ],
+          "ingress_write_refused": true,
+          "sender_loopback_guard": true,
+          "sender_synthetic_data": true,
+          "sender_write_refused": true
+        },
+        "matched": true,
+        "observed": {
+          "guard_violations": [
+            "192.0.2.1"
+          ],
+          "ingress_write_refused": true,
+          "sender_loopback_guard": true,
+          "sender_synthetic_data": true,
+          "sender_write_refused": true
+        }
+      }
+    ],
+    "verdict": {
+      "matched": 7,
+      "mismatched": 0
+    }
+  },
+  "driver": {
+    "lane": "claude-code",
+    "model": "claude-opus-5-5"
+  },
+  "ended_at": "2026-10-23T13:18:52.532Z",
+  "environment": {
+    "arch": "arm64",
+    "filesystem": "statfs.type:0x1a",
+    "kernel": "Darwin",
+    "platform": "darwin",
+    "release": "27.0.0"
+  },
+  "executed_file_hashes": {
+    "openspec/changes/verify-fraud-evidence-delivery/harness/README.md": {
+      "git_blob": "f031e765658a58f93a264e0b02abd36d49ffe8d6",
+      "sha256": "d7569ad1b75f7b535e0c59bf98731798dcaccc721510251aba9aa180e2262947"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/expectations/tracer.v1.json": {
+      "git_blob": "1925f80c94c7f4d7ca2db57e7689cbb6d144c967",
+      "sha256": "03e01328cdf83bda6b280eaf48c4413e8ccb1eb04c07939a819f7194843957d9"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/kit-cli.mjs": {
+      "git_blob": "216886d5a534e522129223c5a93951f8c7e1ff24",
+      "sha256": "b14da296995ab2ae51b8bf7154f184e30faeb680fadff9a7b06a5d2422556267"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/accounting.mjs": {
+      "git_blob": "fee29acc7f8d25dcadf95b38b12485efe4eb1f0b",
+      "sha256": "ab2026ec18c95fc0b5db481701b3e14af2d369141f0df1729b9a6157968d6add"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/approval.mjs": {
+      "git_blob": "29669093c60bbf956ff6b403b757f04c4db46f30",
+      "sha256": "0f64e36c2c92b90a52792e2eb6281ae725bfe951a70c5ff9cce69868f844e176"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/arguments.mjs": {
+      "git_blob": "8bfa4a3d5c196ffc1c3c92b766bab19984edbe02",
+      "sha256": "52e933197ec0d257ee79e973097c63f374572d04d5c1bb9b0bf7fd5169d76b50"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/clock.mjs": {
+      "git_blob": "92ae971c9d8998e602312646e1c797347f4dabb7",
+      "sha256": "a82c4b206df869b1c895842f5a96c84bda8d9f83c22fc83adf6af6805ef523dd"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/composition.mjs": {
+      "git_blob": "1faddc29ade72bf63657360cb04eefde47d423c9",
+      "sha256": "6a2dd6af8312d79d9b55d82c2e674e688f192a582c033477aec5270bd38be749"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/controls.mjs": {
+      "git_blob": "1d5885dcbcdd59ed8fc664f015d1c7312d136b36",
+      "sha256": "99d796c912c188090e4d402ffefb18c61ed72d0ee220a3ad9889dfe5eddc4610"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/deadline.mjs": {
+      "git_blob": "f01187c6160305b26e529048baa8749d7a3b695f",
+      "sha256": "61d538802ffa05392308a3882ce2a36fe92a41254d6134eef4119329481a72ee"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/faults.mjs": {
+      "git_blob": "242dd9a148132b7d688b3342126473d391a42494",
+      "sha256": "9d2cd9fc99c1b8ddd5fe16a19b278a8c93544b8f66e60ced9815b62c0ae65127"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/identity.mjs": {
+      "git_blob": "2e0b8cd5616b16f5e93b92cc0ad924dd8f06c23e",
+      "sha256": "2464a0affd348862abbad47acd9b5686db043ac731d57873f6dfaf92d37b08ae"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/import-closure.mjs": {
+      "git_blob": "086199fa6cde5b177d872290347a88e9dc4ca887",
+      "sha256": "406f42b5bc05a2473ef0e643e0d401de54c0b87b6e6bda825c6b56920db57af2"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/ingress.mjs": {
+      "git_blob": "da7ca1a3d101e04921e2fd07dd06784c79738d33",
+      "sha256": "7ac682311a0535720e38bed4436723cc8859ac4b7ec2876f0cf8c5f1d327d7b7"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/install.mjs": {
+      "git_blob": "afaae76a423e8092661af308045fc2abe49a564c",
+      "sha256": "e6c75b11a1154bf813749d6898fb41dd91df95954d615b117ce17d390658ea96"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/io.mjs": {
+      "git_blob": "cfc2b52160d362083c7c4adf12c07657051f7952",
+      "sha256": "6ce58c862011b649162bc1ebda01dcae31fde6423ee024bf247b6f38e2e84ff1"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/kit-pipeline.mjs": {
+      "git_blob": "44252e5be3823eaa5621364aef48f585c4dd813d",
+      "sha256": "595b34723fb66a409169a76358eef4f84b0a8ed0e53f3de3e5d94d2a932713e7"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/launcher.mjs": {
+      "git_blob": "55f7afb3f5849f50c44fc762eeebce8689d36a00",
+      "sha256": "24bb7efb1798362147962dd0ddb8a678f937cb4f1e1b8bd2528bcf84ce2575c2"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/ledger.mjs": {
+      "git_blob": "8d18f5e8dcf34c06d2959feec28be3e6f08c3c0f",
+      "sha256": "5f6b92818eb5cf51e914239fff078b9a2f4ba074620ad094e627fb02e620a0c5"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/loopback-guard.mjs": {
+      "git_blob": "a67832f888f020af7694b61f41ad8f404ca48015",
+      "sha256": "ead5553a62e0f9be90119e632573bf645065c5fff1cbde17f54444e7fb0955bb"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/orchestrate.mjs": {
+      "git_blob": "02a50bd167c20b006abb4ec930c603727c09bf5e",
+      "sha256": "b454f2dc388deaca39360ab258998e8b73ebdf42b361dc355e6cfebb68b905cc"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/permissions.mjs": {
+      "git_blob": "ff6d2dd6918418b7f54effa255847d24d753d39f",
+      "sha256": "8cf6a64ee4aaa7090a582f63c6b4e599fc7094619b5fbfeba0b06b418898d94a"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/plan.mjs": {
+      "git_blob": "bb09aeef108ed2b9779d780b9450c151c4e209d5",
+      "sha256": "080db1c230362cf5dee2a874203a89b356a5f07b5b25f936a083a854e1101539"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/preflight.mjs": {
+      "git_blob": "e1215993d3b0759cbb5fc524fe27afc901ac414d",
+      "sha256": "f4712532740f290ce3b8d505e36a1c77eb71be19e1b99eb91e3b1f0764c34bbd"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/probe-runner.mjs": {
+      "git_blob": "c7906697f0c238ab3387e538074e6914ea6d6818",
+      "sha256": "2848888e17592bf0cea7023f9d04099ec2c597d00fe93acb80332943f769988c"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/repository.mjs": {
+      "git_blob": "156b34a51cc4df1dec55239cd8e0c24cfc71520e",
+      "sha256": "b946b1a0af532e8f51d631d3370f3c66800869b86ac5458ef6c36411c4791938"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/results.mjs": {
+      "git_blob": "4c0f1ba57f2fba02189d9ed697f45cdf5faf04fe",
+      "sha256": "6afff38485d2ee1b9d5276299e1827b009c3af24786fb9bcc3f0ee1e0ef46b39"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/role-guard.mjs": {
+      "git_blob": "40cc01219e6ddadfea089f0a343be47bf88268ee",
+      "sha256": "df77188942deb573708bcdab7d76d366ecf17ba63102fc10d463257c7bed0f45"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/runtime-facts.mjs": {
+      "git_blob": "cd00c45610f3e0f8f55bb2c9bbab772796152a87",
+      "sha256": "7127ba65769632cee0c912868c1f4cc809f260949db839699c789f2de55b508f"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/workload.mjs": {
+      "git_blob": "8dd9ad7cc000548133834f156aef2bfa8232baba",
+      "sha256": "512b9d1d7ae9ae783432305cd6d48637a1bc2a91a4093e8446989bb3be049ce6"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/run-ledger.md": {
+      "git_blob": "7d34c9c83c35072644584c427a8cabe9fad7970a",
+      "sha256": "03d4216e0f22f3d5123da2607e76e0eca4bf3cf6732b1ae0e6d425f60f47d4cf"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/accounting.test.mjs": {
+      "git_blob": "740cc4e7cdfb31a4659cd8037ab7401deed92d91",
+      "sha256": "ecce43ff8f7f66beb475fc89f4f9c58ac343493f07b8f88e733cc80daf166a36"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/approval.test.mjs": {
+      "git_blob": "f8a564a4bf26abd4a3d5abc83df1e0c6c9ea1ae2",
+      "sha256": "3da984cee848d3d4660e1eff66c846fc1dc96ed266b8cf598e6dc7abfec7647b"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/clock.test.mjs": {
+      "git_blob": "1d8bafb53c638db0b3534bd76f267c03edd06c38",
+      "sha256": "e781686f1b89272333b88280764556ec23d1461882e2cd8499e370e630e60d71"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/composition.test.mjs": {
+      "git_blob": "bb50cb14ac28ef8530ad22e0140876e5a34c6741",
+      "sha256": "8ad20b612c5049fc006050a227f24f27d8a38eed0db433a3fc2df294b0826f4b"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/faults.test.mjs": {
+      "git_blob": "7c7caa2681006d9c508974000f2ef36f0d9af847",
+      "sha256": "db9945cc82b3e0b2b72184483c276f43de2fe804713bc74ebe07e79e5673aab5"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/ingress.test.mjs": {
+      "git_blob": "cca6bcae54ec86e9296615402511fab41583bbc2",
+      "sha256": "897fe941d57de27010ecf183bb354a77fa4eaeb53365192ecbb35c0f6c1f02fe"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/launcher.test.mjs": {
+      "git_blob": "6f9629cd5e6485a925fac2990519bc48e2879fc8",
+      "sha256": "da135dbfa3d5e53c79dcd58218b1813fc3cb6356b341460e63e18e86a238342d"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/limits.test.mjs": {
+      "git_blob": "2f7418dedea052b0b808bff28bafef5214732be9",
+      "sha256": "99312348bc9ce484d05e7d71728acfe24ba76dfec81986ccc42c99767f177e0d"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/loopback-guard.test.mjs": {
+      "git_blob": "c764ae19e940e739d677577f5f0a49062cc1153a",
+      "sha256": "1e5d1ad585aeb2d4b9192802dbcb004e28df0a178f13109b29903f4dc5904cb7"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/permissions.test.mjs": {
+      "git_blob": "d1925922eb207af074145f812f747572401da778",
+      "sha256": "bfe7e8cd291c8e1035d01a4366ccbbba831e87b01e847a3c5102f3edb5bf381c"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/tracer-evaluate.test.mjs": {
+      "git_blob": "7f8cc15429a37bd9db4b3db0480401df31fd86a2",
+      "sha256": "27d8873d60e35f578b220aedf29d43690c1f84b30af6a8aa50704ce63e95f53e"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/tracer-plan.test.mjs": {
+      "git_blob": "c68972d46a6ca249b481479af9bc555f1afd0811",
+      "sha256": "2ea2d502cb83f8823cd5da6585fa1efce8a2e86a151c676f4f63dd2337b17865"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tests/workload.test.mjs": {
+      "git_blob": "05b402cc5df95e3b11bcb4dcfb357d88164b6650",
+      "sha256": "3abc26570dcafdd36dd4292b926de5d628fc53a70270276e264d64e8c8e1837e"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tracer/evaluate.mjs": {
+      "git_blob": "876678f3f6c0c6e54d08d6729bf76df28073d707",
+      "sha256": "055f080a0912283ca7941b525517c0fcc955f4e3da9ded4882a5609fc93b96d8"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tracer/expectations.mjs": {
+      "git_blob": "3ae3fdaf156609755b37d2defbed3fb4c604906a",
+      "sha256": "f048ef8af04d5d1ddff0b38f3862adb64086d1fb6e9d9fa5ffcf570d4d986e80"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tracer/files.mjs": {
+      "git_blob": "f768ed9869486b7ff19ceccbfa27a9bbbc799e71",
+      "sha256": "6f43dd452ebb36433c0fc58164ef916d111b67b7485389a916844a7cd49a1b72"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tracer/ingress-process.mjs": {
+      "git_blob": "90e8dd9b195d2da924c2df89d9eb4dfbf3778455",
+      "sha256": "56da0290ec124db2fdb3bec7c95be3594ce357deda19b087ef6a83731fbcf142"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tracer/run-tracer.mjs": {
+      "git_blob": "7efb0c686b1047a1e4424e227be75a34b53a84b0",
+      "sha256": "66ff91285f1eb59a0458578b9dcb2cfbc248f38e2212dafa98576a75f62a4a55"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tracer/sender-process.mjs": {
+      "git_blob": "890f01e170fceb4a0e5ad033a9516c537c34fcaa",
+      "sha256": "9834c449f4dff4fe764fcc67ddcb9019a7828db5de2490454dbdd7b5f2db3051"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tracer/session.mjs": {
+      "git_blob": "223261394ef0c94072959286ba75e7f6e9c235fb",
+      "sha256": "b3359c2cd72026586ebd942cc92ab7c5efbf37d18c2ad6871b4acaeec54256d2"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tracer/workload.mjs": {
+      "git_blob": "c6fffd6b430623ae88aea36ad7723f2388c332ac",
+      "sha256": "9fb01128ea46a3aa41c2aae8ca85123219a3ce9dbd2b7c74f74aafbfd3e293b6"
+    }
+  },
+  "expectations": {
+    "path": "openspec/changes/verify-fraud-evidence-delivery/harness/expectations/tracer.v1.json",
+    "sha256": "03e01328cdf83bda6b280eaf48c4413e8ccb1eb04c07939a819f7194843957d9"
+  },
+  "install": {
+    "declarations": [
+      {
+        "declarations": [
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/bounded-fifo.d.ts",
+            "sha256": "ea8932b34653458889a5866b7184a70203dbe1884123689ce3d901bcd98c96b8"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/config.d.ts",
+            "sha256": "2daf7d1691dc635acc4340bfb56fe2df4d8c201f8bfaa34519431ae345eb3b39"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/context.d.ts",
+            "sha256": "709a03baec0b51fc6476f8a128b1688e8d1aa0cec6644de5b35eaf608e16d2b1"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/duplicate-copy-probe.d.ts",
+            "sha256": "5db2805c0a664b6a481c53fddb6d20d0bccec6b25b9906a0dd936f5f5b8233a6"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/errors.d.ts",
+            "sha256": "fb6369dbe25522c8f631d243fdedecdb75d7531b5daadb6b522e09741a1c5f63"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/events.d.ts",
+            "sha256": "b42923126fed16e2c644f9399dfb3bdc8f4f2395f7000ac7f7dff61dd78e6191"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/generated/contract.generated.d.ts",
+            "sha256": "fdfb2c8a4170eb92b33b5069b310613a3b12aa12fba2b60da85c9b5fcf87c330"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/index.d.ts",
+            "sha256": "70f7cca0c797271987ad1890f33acc88fa6d5a768613835aac00d4f91da9fd77"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/internal.d.ts",
+            "sha256": "df2af3de4e742978233bfb902b4d24e18313bce6248107a61fa714fb7ecfd337"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/operations.d.ts",
+            "sha256": "a05bda8b7cef17a02cca8bcddc96e03837818c60d18f618fb3050a5277285678"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/providers.d.ts",
+            "sha256": "382f30b4e79f919e9124053b700c86fbd6611f772744f76c64283c48e42145d7"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/sdk.d.ts",
+            "sha256": "c4dc740e2e4ec7ec79e6d123a83cf26cedc0a8607c6b7bf2647807e86b72285d"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/sink.d.ts",
+            "sha256": "536642bbe0c9460941aca9496ea1be3b521a368758db2d404671f0ec5aa7c34a"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/testing.d.ts",
+            "sha256": "f8129de0d6bf5d458d4cdf6e3fd5d195e7aa741e1e2d7057c125c7dabe6806f4"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/validation/index.d.ts",
+            "sha256": "bcbc9fbfd35fd6044b13a664e561ca0638d7c270e5cbc8556df2c25d721c5411"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/validation/prohibited.d.ts",
+            "sha256": "647db9a60a6324c71cec657e04b409e605c25ec5254b4ad897e50fc40e7f8e39"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/validation/schema.d.ts",
+            "sha256": "e59bf03ed965ed1649942d47d025bfec31d617d127f23689c1053773d9a0f73b"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-core/dist/validation/semantic.d.ts",
+            "sha256": "a07261eb7ef01902f96b04c337441039575948ace46206746d3588e50a5cfd47"
+          }
+        ],
+        "name": "@bloodtrail/security-audit-sdk-core",
+        "symbols": [
+          "authenticatedHumanActor",
+          "authoritativeTenant",
+          "authenticatedPrincipal",
+          "authenticationEvidence",
+          "credentialReference",
+          "sessionEvidence",
+          "observedSource",
+          "AuditEventSink",
+          "AuditDeliveryResult",
+          "AuditClock"
+        ]
+      },
+      {
+        "declarations": [
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/byte-length.d.ts",
+            "sha256": "eb570c20744f19357cbda3fc4acadc3e739648af8c1634e7d4fbd98b6a8ac055"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/clock.d.ts",
+            "sha256": "e3db056571352530d2db030a842e97790a155e24c3f776910c83bc8678050785"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/context.d.ts",
+            "sha256": "e545c7595eb60bb8791bdbb3c73f50699b1e32452200997bce82c818c4cb828a"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/delivery-backpressure.d.ts",
+            "sha256": "a0b636d2a5ded7c5c9d239a279de6f7614bc0a6cdba0fca8bf656fd2e6edd92f"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/delivery-classes.d.ts",
+            "sha256": "88e974f1825b4d86afc14ee3c59d5675ec56907d754e7600dcdbaba74a29e7b7"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/delivery-retry.d.ts",
+            "sha256": "ad08d1cc6dd342db9507c833e2a65e49b4e011af4e1a872a158d74500243cda4"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/delivery-shutdown.d.ts",
+            "sha256": "2eb8a1a4ffe779c95a36741e0dac7732ae3dc0f50678a3b248114ccaf9d29e07"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/fetch-exchange.d.ts",
+            "sha256": "3fb9240551ce0fb76aeeb936d377ff6c28f08b9fd0bcc8487495c4edc5870535"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/http-audit-sink.d.ts",
+            "sha256": "e6a2426260d04c07849f75912de295bc9142f3b673e7547e3b12012307fef7c4"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/http-handoff.d.ts",
+            "sha256": "e85c226203746ba81765c5499b3450a6ee13070c1672c1b07c078e3ea563aa3e"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/http-response-classification.d.ts",
+            "sha256": "de92157379a19bb661d354281e488c4c7065e2dfe178c6e4bbe4b816786cb0e8"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/identifiers.d.ts",
+            "sha256": "1d88dee88fa61f920978e8f5ba04200fe9834a75c7965b4eca14bd15bb67ee68"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/index.d.ts",
+            "sha256": "2dd53dc0939b5460da2207550e45340e016f30e2badeac75fd6c2f9454bee843"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/platform.d.ts",
+            "sha256": "46ac75ec7da3e3079728fbac0a048689040019ce39c99b1e8919002a5a3bd28c"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/schema.d.ts",
+            "sha256": "7747708d8a76f59333907966e1e1e0b19587fe0697312a625155cded24a06a47"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-sdk-node/dist/timers.d.ts",
+            "sha256": "4a7d95105226ab21216ec4077c4d06c414b623354d00dbcfc91cc6d4846693fa"
+          }
+        ],
+        "name": "@bloodtrail/security-audit-sdk-node",
+        "symbols": [
+          "createNodeSecurityAuditSdk",
+          "createHttpDeliveryHandoff",
+          "createFetchHttpExchange",
+          "createBoundedDeliveryRetry",
+          "createBoundedDeliveryBackpressure",
+          "createDeliveryShutdown",
+          "nodeTimers"
+        ]
+      },
+      {
+        "declarations": [
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/auth.d.ts",
+            "sha256": "6307dc8124a3df157965a0c824cb575662c4b39f663d53701182c228e87de675"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/bounds.d.ts",
+            "sha256": "b1066c75820d081e30e936215aa4addfa52cd900a7ba22d616c7883b0b24c56a"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/deduplication.d.ts",
+            "sha256": "9104c767a2fe13cd3619870c6f6cd41b54c5322caf4c2b954e60ca4061f6cb44"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/diagnostics.d.ts",
+            "sha256": "d83e48a55d2fa179eb749a9a1556a00c92ab841b96f97fcb9c3d1603a8e5ae26"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/envelope-ingress.d.ts",
+            "sha256": "7456e6f1900acd80a1c566c8116a68983c99fd306c289a20b44f625cd5a5f706"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/envelope-mapping.d.ts",
+            "sha256": "8387862065021d32c992c13f1361e75778bd504ae5e2c1011c88684985b4c624"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/envelope-nonces.d.ts",
+            "sha256": "8f64a72c888aad5466653057ebf3c7c12095016f715d11daa6f407f1d043b2f6"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/envelope-validation.d.ts",
+            "sha256": "d0062bd14f5af12438a06a9907e114a4db886bbce030d39ae220ef2550423f9f"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/generated/bounds.generated.d.ts",
+            "sha256": "45fb8359fba2e9b35c933c23682e86409dad4a39ca562635056eb56f42c78777"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/generated/envelope-rules.generated.d.ts",
+            "sha256": "730d395e6bc96a9ce00b545ac96619ca1a64b55749e4ee5c06265b4315c3a5f4"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/index.d.ts",
+            "sha256": "b6e7ff3b2465ea7470b7cec9982eb5e1c7255600069e520fb8c1ceeba031137b"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/ingress.d.ts",
+            "sha256": "f4bbbb560b21e7988d2d900c6549195d3dcb7d6fef31c2021fe606b330b5d44a"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/metrics.d.ts",
+            "sha256": "fe14d20e5c28c9c491377bc888d0c146c3096beacf85aa212fce97b075e6f1ad"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/schema.d.ts",
+            "sha256": "67c9348901ab67ac456e48387f9ca57b5ea2afb123724740627e5ad330a99c8e"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/sqlite-storage.d.ts",
+            "sha256": "ce0cad0827dd554232a08a4c95442d2f40a9dc3ab583cf1c0a79ea30148977e5"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/storage.d.ts",
+            "sha256": "37f64755ae8e3094391a32db8580cd12133a7a148e1761fb45f2441df382b60a"
+          },
+          {
+            "path": "node_modules/@bloodtrail/security-audit-collector/dist/version.d.ts",
+            "sha256": "865e26da3055da181e3dde792b1fa85c48aa6b64d0d9ad1e72ecbe3c6fc9e285"
+          }
+        ],
+        "name": "@bloodtrail/security-audit-collector",
+        "symbols": [
+          "CollectorIngress",
+          "SqliteStorage",
+          "SyntheticFixtureAuthenticator",
+          "DIAGNOSTIC_CODES"
+        ]
+      }
+    ],
+    "lifecycle": [
+      {
+        "install_lifecycle_absent": true,
+        "name": "@bloodtrail/security-audit-collector"
+      },
+      {
+        "install_lifecycle_absent": true,
+        "name": "@bloodtrail/security-audit-sdk-core"
+      },
+      {
+        "install_lifecycle_absent": true,
+        "name": "@bloodtrail/security-audit-sdk-node"
+      }
+    ],
+    "single_core": {
+      "filesystem_manifests": [
+        "/private/var/folders/bw/szhz9z3x7qs5bmqc7s185zcr0000gn/T/bloodtrail-stage-2-TDNZm5/own-service/node_modules/@bloodtrail/security-audit-sdk-core/package.json"
+      ],
+      "npm_ls_paths": [
+        "/private/var/folders/bw/szhz9z3x7qs5bmqc7s185zcr0000gn/T/bloodtrail-stage-2-TDNZm5/own-service/node_modules/@bloodtrail/security-audit-sdk-core"
+      ]
+    }
+  },
+  "invalidations": [],
+  "kit_identity": {
+    "artifacts": [
+      {
+        "filename": "bloodtrail-security-audit-collector-0.1.0.tgz",
+        "name": "collector",
+        "sha256": "965cde4d9031099e9949e22c5d98be8a196c9524831d1639b02280f23da21378"
+      },
+      {
+        "filename": "bloodtrail-security-audit-sdk-core-0.4.0.tgz",
+        "name": "core",
+        "sha256": "505e2e49136c72ee8aa140fd40e4972fc5d98f7d3cab2754219cc8ae1366f7ef"
+      },
+      {
+        "filename": "bloodtrail-security-audit-sdk-node-0.4.0.tgz",
+        "name": "node",
+        "sha256": "24a69b2caa2792ce4e1811a8410bb829f0d23a89af8e1e86a005d12436cca3c7"
+      }
+    ],
+    "commit": "693c18d671e4cfdc685c0b95930bb4be1eaf63c9",
+    "distributable": true,
+    "kit_digest": "4028747366718f63860d0c796b809e3625ffa529cfce85bc13ae73bc7aea901f",
+    "manifest_digest": "813928c49e008e04a0fc2adde1162f120a0c00d74ecf81ffc7be93b348e0e990",
+    "package_set_digest": "b2b701f05de8c6f627f7c73243615e99368b9aeefa221936a41d85bbf4775a57"
+  },
+  "observations": {
+    "ingress": {
+      "controls": {
+        "write_outside_grant": {
+          "holds": true,
+          "null_control_allowed": true,
+          "planted_refused": true
+        }
+      },
+      "port": 61676,
+      "read_back": [
+        {
+          "event_id": "fcf1b512-d3c7-4082-9255-a8db643536d8",
+          "persisted": true,
+          "scope": {
+            "kind": "tenant",
+            "tenantId": "syn-tenant-81614398"
+          },
+          "stored_body_sha256": "7278f0a0844b006f0f8dc7998d16482fe472630011bbc0621b232e2aba77fbb8"
+        }
+      ],
+      "records": [
+        {
+          "action": "acknowledge",
+          "attempt": 0,
+          "body_sha256": "7278f0a0844b006f0f8dc7998d16482fe472630011bbc0621b232e2aba77fbb8",
+          "event_id": "fcf1b512-d3c7-4082-9255-a8db643536d8",
+          "occurrence": 1,
+          "outcome": {
+            "kind": "persisted"
+          },
+          "status": 202
+        }
+      ],
+      "resolved": {
+        "collector": "file:///private/var/folders/bw/szhz9z3x7qs5bmqc7s185zcr0000gn/T/bloodtrail-stage-2-TDNZm5/own-service/node_modules/@bloodtrail/security-audit-collector/dist/index.js"
+      }
+    },
+    "occurrence_count": 1,
+    "sender": {
+      "callbacks": {
+        "admitted": [
+          [
+            1,
+            4
+          ]
+        ],
+        "exhausted": [],
+        "rejected_overload": [],
+        "released": [
+          [
+            0,
+            4
+          ]
+        ],
+        "scheduled": []
+      },
+      "calls": [
+        {
+          "label": "authenticationSucceeded",
+          "ok": true,
+          "value": {
+            "status": "accepted"
+          }
+        }
+      ],
+      "controls": {
+        "loopback_guard": {
+          "holds": true,
+          "null_control": {
+            "connected": true,
+            "silent": true
+          },
+          "planted": {
+            "fired": true,
+            "refused": true
+          }
+        },
+        "synthetic_data": {
+          "holds": true,
+          "null_control_passed": true,
+          "planted_refused": true
+        },
+        "write_outside_grant": {
+          "holds": true,
+          "null_control_allowed": true,
+          "planted_refused": true
+        }
+      },
+      "deliveries": {
+        "fcf1b512-d3c7-4082-9255-a8db643536d8": {
+          "attempts": 1,
+          "status": "acknowledged"
+        }
+      },
+      "delivery_log": [
+        {
+          "attempts": 1,
+          "event_id": "fcf1b512-d3c7-4082-9255-a8db643536d8",
+          "status": "acknowledged"
+        }
+      ],
+      "exchanges": [
+        {
+          "attempt": 0,
+          "body_sha256": "7278f0a0844b006f0f8dc7998d16482fe472630011bbc0621b232e2aba77fbb8",
+          "event_id": "fcf1b512-d3c7-4082-9255-a8db643536d8"
+        }
+      ],
+      "guard_violations": [
+        {
+          "host": "192.0.2.1",
+          "stage": "before_connect"
+        }
+      ],
+      "identities": {
+        "address": "198.51.100.99",
+        "ids": {
+          "account": "syn-account-bd22969d",
+          "credential": "syn-credential-b66d07c0",
+          "session_handle": "syn-handle-99d420d9",
+          "tenant": "syn-tenant-81614398"
+        }
+      },
+      "ledger": {
+        "budget": 1,
+        "calls": [
+          {
+            "label": "authenticationSucceeded",
+            "ordinal": 1
+          }
+        ],
+        "exhausted": false,
+        "occurrence_count": 1
+      },
+      "resolved": {
+        "core": "file:///private/var/folders/bw/szhz9z3x7qs5bmqc7s185zcr0000gn/T/bloodtrail-stage-2-TDNZm5/own-service/node_modules/@bloodtrail/security-audit-sdk-core/dist/index.js",
+        "node": "file:///private/var/folders/bw/szhz9z3x7qs5bmqc7s185zcr0000gn/T/bloodtrail-stage-2-TDNZm5/own-service/node_modules/@bloodtrail/security-audit-sdk-node/dist/index.js"
+      },
+      "shutdown_report": {
+        "abandoned": 0,
+        "accepted": 1,
+        "completed": 1
+      }
+    }
+  },
+  "occurrence_count": 1,
+  "permission_flags": {
+    "ingress": [
+      "--permission",
+      "--allow-net",
+      "--allow-fs-read=/private/var/folders/bw/szhz9z3x7qs5bmqc7s185zcr0000gn/T/bloodtrail-stage-2-TDNZm5/own-service",
+      "--allow-fs-read=/private/var/folders/bw/szhz9z3x7qs5bmqc7s185zcr0000gn/T/bloodtrail-stage-2-TDNZm5/collector-storage",
+      "--allow-fs-write=/private/var/folders/bw/szhz9z3x7qs5bmqc7s185zcr0000gn/T/bloodtrail-stage-2-TDNZm5/collector-storage"
+    ],
+    "sender": [
+      "--permission",
+      "--allow-net",
+      "--allow-fs-read=/private/var/folders/bw/szhz9z3x7qs5bmqc7s185zcr0000gn/T/bloodtrail-stage-2-TDNZm5/own-service"
+    ]
+  },
+  "probe": "S2-tracer",
+  "role_files": {
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/clock.mjs": {
+      "git_blob": "92ae971c9d8998e602312646e1c797347f4dabb7",
+      "sha256": "a82c4b206df869b1c895842f5a96c84bda8d9f83c22fc83adf6af6805ef523dd"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/composition.mjs": {
+      "git_blob": "1faddc29ade72bf63657360cb04eefde47d423c9",
+      "sha256": "6a2dd6af8312d79d9b55d82c2e674e688f192a582c033477aec5270bd38be749"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/controls.mjs": {
+      "git_blob": "1d5885dcbcdd59ed8fc664f015d1c7312d136b36",
+      "sha256": "99d796c912c188090e4d402ffefb18c61ed72d0ee220a3ad9889dfe5eddc4610"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/faults.mjs": {
+      "git_blob": "242dd9a148132b7d688b3342126473d391a42494",
+      "sha256": "9d2cd9fc99c1b8ddd5fe16a19b278a8c93544b8f66e60ced9815b62c0ae65127"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/ingress.mjs": {
+      "git_blob": "da7ca1a3d101e04921e2fd07dd06784c79738d33",
+      "sha256": "7ac682311a0535720e38bed4436723cc8859ac4b7ec2876f0cf8c5f1d327d7b7"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/io.mjs": {
+      "git_blob": "cfc2b52160d362083c7c4adf12c07657051f7952",
+      "sha256": "6ce58c862011b649162bc1ebda01dcae31fde6423ee024bf247b6f38e2e84ff1"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/ledger.mjs": {
+      "git_blob": "8d18f5e8dcf34c06d2959feec28be3e6f08c3c0f",
+      "sha256": "5f6b92818eb5cf51e914239fff078b9a2f4ba074620ad094e627fb02e620a0c5"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/loopback-guard.mjs": {
+      "git_blob": "a67832f888f020af7694b61f41ad8f404ca48015",
+      "sha256": "ead5553a62e0f9be90119e632573bf645065c5fff1cbde17f54444e7fb0955bb"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/role-guard.mjs": {
+      "git_blob": "40cc01219e6ddadfea089f0a343be47bf88268ee",
+      "sha256": "df77188942deb573708bcdab7d76d366ecf17ba63102fc10d463257c7bed0f45"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/lib/workload.mjs": {
+      "git_blob": "8dd9ad7cc000548133834f156aef2bfa8232baba",
+      "sha256": "512b9d1d7ae9ae783432305cd6d48637a1bc2a91a4093e8446989bb3be049ce6"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tracer/ingress-process.mjs": {
+      "git_blob": "90e8dd9b195d2da924c2df89d9eb4dfbf3778455",
+      "sha256": "56da0290ec124db2fdb3bec7c95be3594ce357deda19b087ef6a83731fbcf142"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tracer/sender-process.mjs": {
+      "git_blob": "890f01e170fceb4a0e5ad033a9516c537c34fcaa",
+      "sha256": "9834c449f4dff4fe764fcc67ddcb9019a7828db5de2490454dbdd7b5f2db3051"
+    },
+    "openspec/changes/verify-fraud-evidence-delivery/harness/tracer/workload.mjs": {
+      "git_blob": "c6fffd6b430623ae88aea36ad7723f2388c332ac",
+      "sha256": "9fb01128ea46a3aa41c2aae8ca85123219a3ce9dbd2b7c74f74aafbfd3e293b6"
+    }
+  },
+  "run_id": 1,
+  "runtime": {
+    "is_transaction_on_fresh_connection": false,
+    "is_transaction_present": true,
+    "node": "26.12.1",
+    "npm": "11.20.0",
+    "sqlite": "3.54.1",
+    "v8": "14.6.202.34-node.40"
+  },
+  "scratch_deletion": {
+    "includes": [
+      "evaluation-kit",
+      "own-service",
+      "collector-storage",
+      "logs"
+    ],
+    "recursively_absent": true,
+    "root": "/private/var/folders/bw/szhz9z3x7qs5bmqc7s185zcr0000gn/T/bloodtrail-stage-2-TDNZm5"
+  },
+  "started_at": "2026-10-23T13:18:44.218Z"
+}

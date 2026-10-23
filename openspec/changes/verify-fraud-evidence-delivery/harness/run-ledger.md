@@ -9,9 +9,9 @@ run**, accepted or refused (delivery attempts are recorded but not capped), with
 S1. Expiry needs an authorization amendment, never a window extended by convention. The planned budget is: six
 runs for the single-run probes, three for #841, and three spare.
 
-Window: not yet opened. It opens at the first Stage 2 S1 comment's `createdAt`, and that value is passed as
-`--window-opened-at` for every run after it. The first claimed run records it in its once-marker, and the
-harness refuses any later run that passes another value.
+Window: opened at `2026-10-23T13:18:26Z`, the `createdAt` of run 1's S1 comment, the first Stage 2 S1. It
+closes at `2026-11-06T13:18:26Z`. That value is passed as `--window-opened-at` for every run after it. Run 1
+recorded it in its once-marker, and the harness refuses any later run that passes another value.
 
 S1 is delegated under G44. Each approval is a comment on the probe's ticket naming the exact head:
 
@@ -32,3 +32,4 @@ and goes to the owner.
 
 | Run | Probe | Ticket | Approved head | S1 comment | SDK calls | Result | Scratch deleted |
 |---|---|---|---|---|---|---|---|
+| 1 | S2-tracer | #836 | 693c18d671e4cfdc685c0b95930bb4be1eaf63c9 | https://github.com/nandohdc/bloodtrail/issues/836#issuecomment-6365806337, delegated (G44) | 1 | 7 of 7 cases matched, no invalidations: `results/tracer-run-1.json` | yes, `recursively_absent: true` |
