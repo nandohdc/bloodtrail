@@ -254,15 +254,21 @@ allows, or its denied outcome contradicts a commit state asserting committed wor
 does not allow, such as `outcome: "success"` for `authorizationDenied`. TypeScript rejects most of
 these, so they arise from JavaScript, through a cast, or in an event passed to `emit`.
 Another cause is `denied` with a commit state asserting the work committed: `committed`,
-`partially_committed` or `compensated`. This additional denial rule is SDK-only.
+`partially_committed` or `compensated`. This additional denial rule is SDK-only. A third is a failed
+authentication that targets something other than the credential: a `subject` typed other than
+`credential`, identified without a type, or carrying a display name; a `resource` typed other than
+`credential`, identified without a type, or naming a parent; or an authorization resource context naming
+something other than the credential. This rule is SDK-only too.
 
 **Fix.** Use one of the event's allowed values, which the core's `EVENT_CATALOG` lists as `outcomes`,
 `phase` and `commit`, or leave the value out and let the SDK choose the default. For a genuinely denied
 operation, use `markNotCommitted()` and explicit `denied` plus authorization decision `deny`;
-do not relabel committed work as a refusal.
+do not relabel committed work as a refusal. For a failed authentication, drop the targeted account and
+keep only the credential as the target.
 
-**Fields.** `category` is `validation`. `path` is `/event/outcome`, `/event/lifecycle_phase` or
-`/event/commit_state`.
+**Fields.** `category` is `validation`. `path` is `/event/outcome`, `/event/lifecycle_phase`,
+`/event/commit_state`, `/subject/type`, `/subject/display_name`, `/resource/type`,
+`/resource/parent_type`, `/resource/parent_id` or `/authorization/resource_context/type`.
 
 ### `SDK_SINK_REJECTED`
 
