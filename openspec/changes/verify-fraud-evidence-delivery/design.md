@@ -62,13 +62,16 @@ minutes. The harness's HTTP wrapper around the ingress owns fault injection only
 
 **Files.**
 - **`harness/lib/`** holds adapted copies of Stage P's modules:
-  - kit-pipeline, install, identity, import-closure and preflight;
-  - ledger, observe, metrics and results;
-  - runtime-facts, approval, expectations, io, launcher and orchestrate.
+  - kit-pipeline, install, identity, import-closure, repository and preflight;
+  - ledger and results;
+  - runtime-facts, approval, arguments, plan, io, launcher and orchestrate.
 
-  Nothing imports from the archived change.
-- **New modules:** `ingress`, `faults`, `composition`, `accounting`, `workload`, `reconstruct`, `clock` and
-  `loopback-guard`.
+  Nothing imports from the archived change. Stage P's `observe` and `metrics` are adapted when a probe first
+  needs them, and each probe validates its own expectations in its own directory.
+- **New modules:** `ingress`, `faults`, `composition`, `accounting`, `workload`, `clock`, `loopback-guard`,
+  `role-guard` (imported first by each role), `controls` (the in-process planted-defect controls), `deadline`,
+  `permissions` and `probe-runner`.
+  `reconstruct` arrives with #840.
 - **Per-probe directories**, plus `tests/`, `expectations/`, `results/`, `run-ledger.md` and `README.md`.
 
 **Processes and permissions.**
@@ -80,12 +83,22 @@ minutes. The harness's HTTP wrapper around the ingress owns fault injection only
 - They talk over loopback HTTP and IPC. IPC under `--permission` was verified on Node 26.12.1.
 
 **Loopback guard.**
-- **What it watches:** every outbound socket, through `diagnostics_channel` `net.client.socket` and
-  `undici:client:connected`. Both channels were verified on Node 26.12.1 for `net` and `fetch`. It also applies
-  an allow-list of `127.0.0.1`/`::1` to the exchange URL.
+- **What it watches:** every outbound socket, before it connects. The guard wraps `net.Socket.prototype.connect`,
+  which both raw sockets and `fetch` (undici) reach, and refuses any target that is not literally `127.0.0.1` or
+  `::1` by destroying the socket before the connection is attempted. A host name, `localhost` included, is
+  refused, because it could resolve off-host. A `diagnostics_channel` `undici:client:connected` subscriber
+  re-checks each connected socket's remote address. Both were verified on Node 26.12.1 for `net` and `fetch`. The
+  composition also refuses a non-loopback exchange origin before it builds anything.
+- **When it is installed:** each role imports `lib/role-guard.mjs` first, so the guard is in place before any kit
+  module evaluates. A violation recorded while the modules loaded is reported as soon as the role body runs.
+- **What else it refuses:** UDP, outright, because the roles send no datagrams. Direct `node:dns` queries are not
+  intercepted; the roles make none, and every connection target is a literal address.
 - **What it does:** any other address halts the run under S2.
 - **Why it is needed:** `--allow-net` cannot restrict hosts.
-- **Planted control:** a connection to `192.0.2.1:9` must halt the run before any traffic.
+- **Planted control:** inside each live sender, before any probe traffic, a `fetch` to `192.0.2.1:80` must be
+  refused and recorded as exactly one violation, and a null-control connection to the ingress must pass silently.
+  Port 80 is used because `fetch` refuses some ports itself, port 9 among them, which would hide whether the guard
+  fired.
 
 **Time.**
 - Workload event times come from an injected synthetic clock through the Node binding's platform provider, so
@@ -112,7 +125,8 @@ no random choices. Its fault types are:
 5. unexplained.
 
 Unexplained must be 0. Expected losses stay in the denominator, and every count carries an explicit numerator and
-denominator.
+denominator. The denominator is the frozen workload's planned occurrences, not what reached the composition: an
+occurrence refused or dropped before the sink, or a delivery that settles by throwing, counts as unexplained.
 
 **Workload and ground truth.** A seeded PRNG generates the workload. The seed is frozen in the expectations file,
 along with the ground truth: chains, per-source counts and per-tenant partitions. Event identifiers come from the
@@ -247,6 +261,12 @@ results pin their blobs.
 - Composition parameters per fault plan (attempt budget, base and maximum delay, capacity, deadline) are chosen in
   each probe's expectations, before its run.
 - Each probe's volume stays within the cap and is set in its expectations.
+- The assessment declares the `fraud-evidence-profile` capability, the one whose criteria Stage 2 measures, with
+  `material_capability_modification: false`. Harness files under `openspec/changes/` are governed implementation,
+  and design-pattern governance associates them only with a change that declares a capability. The declaration
+  modifies no requirement: the change still carries no spec deltas. The trade-off: while the change is active,
+  the association also counts `openspec/specs/fraud-evidence-profile/` as covered by it. Canonical edits to that
+  spec arrive only through a fold, and this change plans none (#845).
 
 ## Decision register — verbatim provenance
 
@@ -281,7 +301,10 @@ The owner accepted the recommended option on each:
 
 - **Q14:** copy and adapt Stage P's harness modules; never import from the archive.
 - **Q15 and Q43:** the loopback guard, using `diagnostics_channel` plus a URL allow-list, with a planted
-  `192.0.2.1:9` control.
+  `192.0.2.1:9` control. *Build note (#836, task 2.1):* the decision holds, and the mechanism is refined as
+  described under **Loopback guard**. A pre-connect wrap refuses the connection, because on Node 26.12.1 destroying the
+  socket from a `net.client.socket` subscriber does not stop it: the peer still accepted both a raw and a `fetch`
+  connection. The planted control moves to port 80, because `fetch` refuses port 9 itself.
 - **Q16:** the kit collector's SQLite storage on scratch, plus one storage-less phase in #839.
 - **Q17:** no performance thresholds.
 - **Q18:** serial probe PRs, #836 → #837 → #838 → #839 → #840 → #842 → #841.
