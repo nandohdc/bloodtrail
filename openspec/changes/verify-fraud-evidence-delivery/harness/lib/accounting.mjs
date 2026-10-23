@@ -44,6 +44,44 @@ export function accountFor({ planned, generated, deliveries, persisted }) {
   return { denominator: planned, counts, total, missing, unexplained, disagreements, holds: total === planned && counts.unexplained === 0 };
 }
 
+// The status each occurrence's delivery reported to the sender, by event id.
+export function deliveryStatuses(sender) {
+  return new Map(Object.entries(sender.deliveries).map(([eventId, delivery]) => [eventId, delivery.status]));
+}
+
+// An occurrence counts as persisted only when storage holds a copy with bytes the sender sent for that
+// event id. A conflicting copy (another tenant scope, other bytes) stored under the same id does not
+// explain the sender's occurrence.
+export function persistedCopies({ sender, ingress }) {
+  const sent = new Set(sender.exchanges.map((entry) => `${entry.event_id}\n${entry.body_sha256}`));
+  return new Set(ingress.read_back.filter((entry) => entry.persisted && sent.has(`${entry.event_id}\n${entry.stored_body_sha256}`)).map((entry) => entry.event_id));
+}
+
+// One pass's accounting inputs: the planned occurrences are the denominator, whatever reached the sink.
+export function accountingInputs({ sender, ingress, planned }) {
+  return { planned, generated: Object.keys(sender.deliveries), deliveries: deliveryStatuses(sender), persisted: persistedCopies({ sender, ingress }) };
+}
+
+// Both identities over one pass's observations: the accounting identity and the delay identity.
+export function identities({ sender, ingress, planned }) {
+  return {
+    accounting: accountFor(accountingInputs({ sender, ingress, planned })),
+    delays: delayIdentity({ scheduledDelays: sender.callbacks.scheduled.length, exchangeAttempts: sender.exchanges.map((entry) => entry.attempt) }),
+  };
+}
+
+// The planted-defect control on live observations: a harness path that drops the first occurrence's
+// result and stored copy must break the identity, and its null control, the same inputs untouched, must not.
+export function droppedOccurrenceControl(inputs) {
+  const [dropped] = inputs.generated;
+  const deliveries = new Map(inputs.deliveries);
+  const persisted = new Set(inputs.persisted);
+  deliveries.delete(dropped);
+  persisted.delete(dropped);
+  const planted = accountFor({ ...inputs, deliveries, persisted });
+  return { planted_breaks_identity: !planted.holds, planted_unexplained: planted.counts.unexplained, null_control_holds: accountFor(inputs).holds };
+}
+
 // Every scheduled retry delay is reported: the onAttemptScheduled count equals the retry attempts the
 // exchange saw (every attempt ordinal after 0). Counting at the exchange keeps the attempts of repeat
 // deliveries and of deliveries that threw or were abandoned. A retry scheduled but never sent (a shutdown

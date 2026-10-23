@@ -1,0 +1,765 @@
+{
+  "probe": "S2-outages",
+  "version": 1,
+  "ticket": 837,
+  "base": "04c6a5fbc1d3d5e8fab3cd191bc4e427892115f7",
+  "contract_version": "2.1.0",
+  "workload": {
+    "seed": 837001,
+    "event": "bloodtrail.audit.authentication.succeeded"
+  },
+  "clock": {
+    "start": "2026-10-23T00:00:00.000Z",
+    "step_ms": 1000
+  },
+  "composition": {
+    "exchange_timeout_ms": 1000,
+    "max_attempts": 4,
+    "base_delay_ms": 20,
+    "max_delay_ms": 160,
+    "jitter_seed": 837,
+    "capacity": 4,
+    "shutdown_deadline_ms": 5000
+  },
+  "scenarios": {
+    "clean": [],
+    "status_503": [
+      {
+        "attempt": 0,
+        "action": "status",
+        "status": 503
+      }
+    ],
+    "status_429": [
+      {
+        "attempt": 0,
+        "action": "status",
+        "status": 429
+      },
+      {
+        "attempt": 1,
+        "action": "status",
+        "status": 429
+      }
+    ],
+    "status_408": [
+      {
+        "attempt": 0,
+        "action": "status",
+        "status": 408
+      }
+    ],
+    "timeout": [
+      {
+        "attempt": 0,
+        "action": "delay",
+        "delay_ms": 2500
+      }
+    ],
+    "transport_failure": [
+      {
+        "attempt": 0,
+        "action": "destroy_before_ingest"
+      }
+    ],
+    "lost_acknowledgment": [
+      {
+        "attempt": 0,
+        "action": "destroy_after_ingest"
+      }
+    ],
+    "exhausted": [
+      {
+        "attempt": 0,
+        "action": "status",
+        "status": 503
+      },
+      {
+        "attempt": 1,
+        "action": "status",
+        "status": 503
+      },
+      {
+        "attempt": 2,
+        "action": "status",
+        "status": 503
+      },
+      {
+        "attempt": 3,
+        "action": "status",
+        "status": 503
+      }
+    ],
+    "permanent_400": [
+      {
+        "attempt": 0,
+        "action": "status",
+        "status": 400
+      }
+    ],
+    "malformed_acknowledgment": [
+      {
+        "attempt": 0,
+        "action": "malformed_after_ingest"
+      }
+    ]
+  },
+  "passes": [
+    {
+      "name": "small",
+      "schedule": [
+        "clean",
+        "status_503",
+        "status_429",
+        "status_408",
+        "timeout",
+        "transport_failure",
+        "lost_acknowledgment",
+        "exhausted",
+        "permanent_400",
+        "malformed_acknowledgment"
+      ],
+      "cycles": 1,
+      "occurrences": 10
+    },
+    {
+      "name": "volume",
+      "schedule": [
+        "clean",
+        "status_503",
+        "status_429",
+        "status_408",
+        "timeout",
+        "transport_failure",
+        "lost_acknowledgment",
+        "exhausted",
+        "permanent_400",
+        "malformed_acknowledgment"
+      ],
+      "cycles": 50,
+      "occurrences": 500
+    }
+  ],
+  "deadline_ms": 300000,
+  "planned_call_budget": {
+    "processes": {
+      "small": 10,
+      "volume": 500
+    },
+    "total": 510
+  },
+  "thresholds": {
+    "unexplained": 0
+  },
+  "hypotheses": [
+    "Retryable outcomes (503, 429 and 408, an exchange timeout and a transport failure) are retried within the attempt budget. Every scheduled delay is reported with its attempt ordinal and drawn from the injected jitter source, and each occurrence ends acknowledged, or reported exhausted with an exhaustion alert.",
+    "A permanent 4xx and a malformed acknowledgment stop retrying at once and are reported: the 4xx as a rejection, the malformed acknowledgment as an unknown outcome although the collector stored the occurrence.",
+    "A lost acknowledgment, and a timeout after ingest, are redelivered byte-identical; the collector acknowledges the redelivery as a duplicate and stores the occurrence once.",
+    "Every planned occurrence ends in exactly one terminal bucket, with expected losses in the denominator and none unexplained, at small volume and at volume."
+  ],
+  "cases": [
+    {
+      "case_id": "O-01",
+      "pass": "small",
+      "observer": "profiles",
+      "setup": "Small pass, one occurrence per scenario in schedule order. Each occurrence's profile: the SDK call's result, the composition's result and attempt count, the attempt ordinals the exchange saw, each request the ingress answered (fault action, HTTP status, collector outcome) and the copies storage holds.",
+      "expected": [
+        {
+          "scenario": "clean",
+          "sdk": "accepted",
+          "delivery": "acknowledged",
+          "attempts": 1,
+          "exchange_attempts": [
+            0
+          ],
+          "requests": [
+            {
+              "attempt": 0,
+              "action": "acknowledge",
+              "status": 202,
+              "outcome": "persisted"
+            }
+          ],
+          "stored": 1
+        },
+        {
+          "scenario": "status_503",
+          "sdk": "accepted",
+          "delivery": "acknowledged",
+          "attempts": 2,
+          "exchange_attempts": [
+            0,
+            1
+          ],
+          "requests": [
+            {
+              "attempt": 0,
+              "action": "status",
+              "status": 503,
+              "outcome": "not_ingested"
+            },
+            {
+              "attempt": 1,
+              "action": "acknowledge",
+              "status": 202,
+              "outcome": "persisted"
+            }
+          ],
+          "stored": 1
+        },
+        {
+          "scenario": "status_429",
+          "sdk": "accepted",
+          "delivery": "acknowledged",
+          "attempts": 3,
+          "exchange_attempts": [
+            0,
+            1,
+            2
+          ],
+          "requests": [
+            {
+              "attempt": 0,
+              "action": "status",
+              "status": 429,
+              "outcome": "not_ingested"
+            },
+            {
+              "attempt": 1,
+              "action": "status",
+              "status": 429,
+              "outcome": "not_ingested"
+            },
+            {
+              "attempt": 2,
+              "action": "acknowledge",
+              "status": 202,
+              "outcome": "persisted"
+            }
+          ],
+          "stored": 1
+        },
+        {
+          "scenario": "status_408",
+          "sdk": "accepted",
+          "delivery": "acknowledged",
+          "attempts": 2,
+          "exchange_attempts": [
+            0,
+            1
+          ],
+          "requests": [
+            {
+              "attempt": 0,
+              "action": "status",
+              "status": 408,
+              "outcome": "not_ingested"
+            },
+            {
+              "attempt": 1,
+              "action": "acknowledge",
+              "status": 202,
+              "outcome": "persisted"
+            }
+          ],
+          "stored": 1
+        },
+        {
+          "scenario": "timeout",
+          "sdk": "accepted",
+          "delivery": "acknowledged",
+          "attempts": 2,
+          "exchange_attempts": [
+            0,
+            1
+          ],
+          "requests": [
+            {
+              "attempt": 0,
+              "action": "delay",
+              "status": 202,
+              "outcome": "persisted"
+            },
+            {
+              "attempt": 1,
+              "action": "acknowledge",
+              "status": 202,
+              "outcome": "duplicate"
+            }
+          ],
+          "stored": 1
+        },
+        {
+          "scenario": "transport_failure",
+          "sdk": "accepted",
+          "delivery": "acknowledged",
+          "attempts": 2,
+          "exchange_attempts": [
+            0,
+            1
+          ],
+          "requests": [
+            {
+              "attempt": 0,
+              "action": "destroy_before_ingest",
+              "status": null,
+              "outcome": "not_ingested"
+            },
+            {
+              "attempt": 1,
+              "action": "acknowledge",
+              "status": 202,
+              "outcome": "persisted"
+            }
+          ],
+          "stored": 1
+        },
+        {
+          "scenario": "lost_acknowledgment",
+          "sdk": "accepted",
+          "delivery": "acknowledged",
+          "attempts": 2,
+          "exchange_attempts": [
+            0,
+            1
+          ],
+          "requests": [
+            {
+              "attempt": 0,
+              "action": "destroy_after_ingest",
+              "status": null,
+              "outcome": "persisted"
+            },
+            {
+              "attempt": 1,
+              "action": "acknowledge",
+              "status": 202,
+              "outcome": "duplicate"
+            }
+          ],
+          "stored": 1
+        },
+        {
+          "scenario": "exhausted",
+          "sdk": "SDK_SINK_FAILURE",
+          "delivery": "exhausted",
+          "attempts": 4,
+          "exchange_attempts": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "requests": [
+            {
+              "attempt": 0,
+              "action": "status",
+              "status": 503,
+              "outcome": "not_ingested"
+            },
+            {
+              "attempt": 1,
+              "action": "status",
+              "status": 503,
+              "outcome": "not_ingested"
+            },
+            {
+              "attempt": 2,
+              "action": "status",
+              "status": 503,
+              "outcome": "not_ingested"
+            },
+            {
+              "attempt": 3,
+              "action": "status",
+              "status": 503,
+              "outcome": "not_ingested"
+            }
+          ],
+          "stored": 0
+        },
+        {
+          "scenario": "permanent_400",
+          "sdk": "SDK_SINK_REJECTED",
+          "delivery": "non_retryable",
+          "attempts": 1,
+          "exchange_attempts": [
+            0
+          ],
+          "requests": [
+            {
+              "attempt": 0,
+              "action": "status",
+              "status": 400,
+              "outcome": "not_ingested"
+            }
+          ],
+          "stored": 0
+        },
+        {
+          "scenario": "malformed_acknowledgment",
+          "sdk": "SDK_SINK_FAILURE",
+          "delivery": "protocol_error",
+          "attempts": 1,
+          "exchange_attempts": [
+            0
+          ],
+          "requests": [
+            {
+              "attempt": 0,
+              "action": "malformed_after_ingest",
+              "status": 202,
+              "outcome": "persisted"
+            }
+          ],
+          "stored": 1
+        }
+      ],
+      "basis": [
+        "packages/security-audit-sdk-node/src/http-response-classification.ts:57",
+        "packages/security-audit-sdk-node/src/http-response-classification.ts:58",
+        "packages/security-audit-sdk-node/src/http-response-classification.ts:59",
+        "packages/security-audit-sdk-node/src/http-response-classification.ts:73",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:16",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:17",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:18",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:19",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:20",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:112",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:94",
+        "packages/security-audit-sdk-node/src/fetch-exchange.ts:57",
+        "packages/security-audit-collector/src/ingress.ts:190",
+        "packages/security-audit-collector/src/ingress.ts:196",
+        "packages/security-audit-sdk-core/src/sdk.ts:331",
+        "packages/security-audit-sdk-core/src/sdk.ts:332"
+      ]
+    },
+    {
+      "case_id": "O-02",
+      "pass": "small",
+      "observer": "retry_callbacks",
+      "setup": "Small pass: every onAttemptScheduled(next, delayMs) and onExhausted(attempts) callback, attributed to its scenario. The delays are the seeded jitter source's draws, in call order, applied to each attempt's backoff cap (base 20 ms doubling, at most 160 ms).",
+      "expected": {
+        "scheduled": [
+          {
+            "scenario": "status_503",
+            "next": 1,
+            "delay_ms": 8
+          },
+          {
+            "scenario": "status_429",
+            "next": 1,
+            "delay_ms": 5
+          },
+          {
+            "scenario": "status_429",
+            "next": 2,
+            "delay_ms": 10
+          },
+          {
+            "scenario": "status_408",
+            "next": 1,
+            "delay_ms": 3
+          },
+          {
+            "scenario": "timeout",
+            "next": 1,
+            "delay_ms": 5
+          },
+          {
+            "scenario": "transport_failure",
+            "next": 1,
+            "delay_ms": 11
+          },
+          {
+            "scenario": "lost_acknowledgment",
+            "next": 1,
+            "delay_ms": 9
+          },
+          {
+            "scenario": "exhausted",
+            "next": 1,
+            "delay_ms": 3
+          },
+          {
+            "scenario": "exhausted",
+            "next": 2,
+            "delay_ms": 26
+          },
+          {
+            "scenario": "exhausted",
+            "next": 3,
+            "delay_ms": 70
+          }
+        ],
+        "exhausted": [
+          {
+            "scenario": "exhausted",
+            "attempts": 4
+          }
+        ]
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:94",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:102",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:108",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:127",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:128",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:129"
+      ]
+    },
+    {
+      "case_id": "O-03",
+      "pass": "small",
+      "observer": "accounting",
+      "setup": "Small pass: the accounting identity over the 10 planned occurrences, with the expected losses (exhaustion, permanent rejection) in the denominator, and the delay identity. The malformed acknowledgment followed a durable write, so it is persisted and kept as a disagreement.",
+      "expected": {
+        "denominator": 10,
+        "counts": {
+          "persisted": 8,
+          "reported_undelivered": 2,
+          "admission_signal": 0,
+          "abandoned": 0,
+          "unexplained": 0
+        },
+        "missing": 0,
+        "unexplained": {},
+        "disagreements": {
+          "malformed_acknowledgment:protocol_error": 1
+        },
+        "accounting_holds": true,
+        "scheduled_delays": 10,
+        "delay_identity_holds": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:33",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:108",
+        "packages/security-audit-collector/src/ingress.ts:190",
+        "packages/security-audit-collector/src/ingress.ts:196"
+      ]
+    },
+    {
+      "case_id": "O-04",
+      "pass": "small",
+      "observer": "dropped_occurrence_control",
+      "setup": "Small pass, planted defect on the live observations: a harness path that drops the first occurrence's result and stored copy breaks the accounting identity; its null control, the same observations untouched, holds.",
+      "expected": {
+        "planted_breaks_identity": true,
+        "planted_unexplained": 1,
+        "null_control_holds": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:33",
+        "packages/security-audit-collector/src/ingress.ts:190"
+      ]
+    },
+    {
+      "case_id": "O-05",
+      "pass": "small",
+      "observer": "retry_predicates",
+      "setup": "Small pass: G4's in-process retry predicates. Attempts stay within the budget of 4; every scheduled delay is reported with the ordinal of the attempt it precedes; every delay is within its cap and reproduces the seeded draw; every exhaustion is alerted with the attempts spent.",
+      "expected": {
+        "attempts_within_budget": true,
+        "every_delay_reported": true,
+        "delays_within_cap": true,
+        "jitter_reproduced": true,
+        "every_exhaustion_alerted": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:94",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:102",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:108",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:129"
+      ]
+    },
+    {
+      "case_id": "O-06",
+      "pass": "small",
+      "observer": "shutdown_report",
+      "setup": "Small pass: deadline-bounded shutdown after every occurrence settled.",
+      "expected": {
+        "shutdown_report": {
+          "accepted": 10,
+          "completed": 10,
+          "abandoned": 0
+        }
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-shutdown.ts:59",
+        "packages/security-audit-sdk-node/src/delivery-shutdown.ts:61",
+        "packages/security-audit-sdk-node/src/delivery-shutdown.ts:68"
+      ]
+    },
+    {
+      "case_id": "O-07",
+      "pass": "small",
+      "observer": "byte_identity",
+      "setup": "Small pass: every copy of each occurrence, at the exchange, at the ingress and in storage, has one body hash, redeliveries included.",
+      "expected": {
+        "occurrences": 10,
+        "byte_identical": 10
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/http-handoff.ts:146",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:137"
+      ]
+    },
+    {
+      "case_id": "O-08",
+      "pass": "small",
+      "observer": "isolation_controls",
+      "setup": "Small pass: planted-defect controls in both live role processes, before any traffic.",
+      "expected": {
+        "sender_loopback_guard": true,
+        "sender_write_refused": true,
+        "sender_synthetic_data": true,
+        "ingress_write_refused": true,
+        "guard_violations": [
+          "192.0.2.1"
+        ]
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/fetch-exchange.ts:45"
+      ]
+    },
+    {
+      "case_id": "O-09",
+      "pass": "volume",
+      "observer": "conformance",
+      "setup": "Volume pass, the small pass's schedule repeated 50 times: each of the 500 occurrences compared with its scenario's frozen small-pass profile (O-01).",
+      "expected": {
+        "occurrences": 500,
+        "conforming": {
+          "clean": 50,
+          "status_503": 50,
+          "status_429": 50,
+          "status_408": 50,
+          "timeout": 50,
+          "transport_failure": 50,
+          "lost_acknowledgment": 50,
+          "exhausted": 50,
+          "permanent_400": 50,
+          "malformed_acknowledgment": 50
+        },
+        "nonconforming": []
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/http-response-classification.ts:57",
+        "packages/security-audit-sdk-node/src/http-response-classification.ts:58",
+        "packages/security-audit-sdk-node/src/http-response-classification.ts:59",
+        "packages/security-audit-sdk-node/src/http-response-classification.ts:73",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:16",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:17",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:18",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:19",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:20",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:112",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:94",
+        "packages/security-audit-sdk-node/src/fetch-exchange.ts:57",
+        "packages/security-audit-collector/src/ingress.ts:190",
+        "packages/security-audit-collector/src/ingress.ts:196",
+        "packages/security-audit-sdk-core/src/sdk.ts:331",
+        "packages/security-audit-sdk-core/src/sdk.ts:332"
+      ]
+    },
+    {
+      "case_id": "O-10",
+      "pass": "volume",
+      "observer": "accounting",
+      "setup": "Volume pass: the accounting identity over the 500 planned occurrences, and the delay identity.",
+      "expected": {
+        "denominator": 500,
+        "counts": {
+          "persisted": 400,
+          "reported_undelivered": 100,
+          "admission_signal": 0,
+          "abandoned": 0,
+          "unexplained": 0
+        },
+        "missing": 0,
+        "unexplained": {},
+        "disagreements": {
+          "malformed_acknowledgment:protocol_error": 50
+        },
+        "accounting_holds": true,
+        "scheduled_delays": 500,
+        "delay_identity_holds": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:33",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:108",
+        "packages/security-audit-collector/src/ingress.ts:190",
+        "packages/security-audit-collector/src/ingress.ts:196"
+      ]
+    },
+    {
+      "case_id": "O-11",
+      "pass": "volume",
+      "observer": "retry_predicates",
+      "setup": "Volume pass: G4's in-process retry predicates, as in O-05.",
+      "expected": {
+        "attempts_within_budget": true,
+        "every_delay_reported": true,
+        "delays_within_cap": true,
+        "jitter_reproduced": true,
+        "every_exhaustion_alerted": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:94",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:102",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:108",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:129"
+      ]
+    },
+    {
+      "case_id": "O-12",
+      "pass": "volume",
+      "observer": "shutdown_report",
+      "setup": "Volume pass: deadline-bounded shutdown after every occurrence settled.",
+      "expected": {
+        "shutdown_report": {
+          "accepted": 500,
+          "completed": 500,
+          "abandoned": 0
+        }
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-shutdown.ts:59",
+        "packages/security-audit-sdk-node/src/delivery-shutdown.ts:61",
+        "packages/security-audit-sdk-node/src/delivery-shutdown.ts:68"
+      ]
+    },
+    {
+      "case_id": "O-13",
+      "pass": "volume",
+      "observer": "byte_identity",
+      "setup": "Volume pass: every copy of each occurrence has one body hash, as in O-07.",
+      "expected": {
+        "occurrences": 500,
+        "byte_identical": 500
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/http-handoff.ts:146",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:137"
+      ]
+    },
+    {
+      "case_id": "O-14",
+      "pass": "volume",
+      "observer": "isolation_controls",
+      "setup": "Volume pass: planted-defect controls in both live role processes, before any traffic.",
+      "expected": {
+        "sender_loopback_guard": true,
+        "sender_write_refused": true,
+        "sender_synthetic_data": true,
+        "ingress_write_refused": true,
+        "guard_violations": [
+          "192.0.2.1"
+        ]
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/fetch-exchange.ts:45"
+      ]
+    }
+  ]
+}

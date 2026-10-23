@@ -33,7 +33,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 ## 3. Outages, delivery retries and loss accounting (#837)
 
-- [ ] 3.1 Build and freeze the fault plans:
+- [x] 3.1 Build and freeze the fault plans:
   - 503, 429 and 408;
   - timeouts and transport failures;
   - permanent 4xx;

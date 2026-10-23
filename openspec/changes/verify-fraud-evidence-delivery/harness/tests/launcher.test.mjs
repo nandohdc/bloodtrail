@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { StopCondition } from "../lib/deadline.mjs";
 import { roleChannel, verifyFileBytes } from "../lib/launcher.mjs";
 import { invalidationOf } from "../lib/results.mjs";
-import { stopRoles, withRoleStderr } from "../tracer/session.mjs";
+import { stopRoles, withRoleStderr } from "../lib/session.mjs";
 
 function fixtureChild() {
   const child = new EventEmitter();

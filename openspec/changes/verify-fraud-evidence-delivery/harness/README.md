@@ -4,8 +4,44 @@ Authorization: `../proposal.md#run-authorization` at each run's exact approved h
 [G42](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6346915049) (environment and limits) and
 G44 (delegated S1). See `run-ledger.md` for the shared run budget.
 
-**No Stage 2 probe has executed yet.** Self-tests here use fixtures and public-shape doubles only. They never
-import a kit package, never run a role process, and never send traffic off loopback.
+**One Stage 2 probe has executed:** the tracer, as run 1 (`results/tracer-run-1.json`). The outages probe has
+not run. Self-tests here use fixtures and public-shape doubles only. They never import a kit package, never run a
+role process, and never send traffic off loopback.
+
+Each run's results pin every harness file's git blob and sha256 at that run's approved head
+(`executed_file_hashes`, `role_files`). A later build may change a shared file without altering that evidence:
+a run is checked and reproduced against its approved head, never against the current tree.
+
+## Probes
+
+| Probe | Ticket | Directory | Expectations | What one run does |
+|---|---|---|---|---|
+| S2-tracer | #836 | `tracer/` | `expectations/tracer.v1.json` | one occurrence through the reference composition into the collector |
+| S2-outages | #837 | `outages/` | `expectations/outages.v1.json` | a small pass, then a volume pass, of the ten outage scenarios below |
+
+The outages probe reuses the tracer's two role processes unchanged: `outages/sender-process.mjs` and
+`outages/ingress-process.mjs` import the role guard, then the tracer's role. Each pass is one exchange between a
+fresh ingress, with its own SQLite file and the pass's scheduled fault plan, and a fresh sender, which the
+session hands that pass's occurrences and call budget (`outages/session.mjs` `senderInput`).
+
+The ten scenarios, one per occurrence in schedule order, each a list of per-attempt fault rules
+(`lib/faults.mjs` `scheduledFaultPlan`), with any other attempt acknowledged:
+
+| Scenario | Faults | Expected end |
+|---|---|---|
+| `clean` | none | acknowledged, 1 attempt |
+| `status_503`, `status_408` | the status on attempt 0 | acknowledged, 2 attempts |
+| `status_429` | 429 on attempts 0 and 1 | acknowledged, 3 attempts |
+| `timeout` | stored, then answered after the 1000 ms exchange deadline | acknowledged as a duplicate, 2 attempts |
+| `transport_failure` | socket destroyed before ingest | acknowledged, 2 attempts |
+| `lost_acknowledgment` | stored, then the socket destroyed | acknowledged as a duplicate, 2 attempts |
+| `exhausted` | 503 on all 4 attempts | reported `exhausted`, with an exhaustion alert |
+| `permanent_400` | 400 on attempt 0 | reported `non_retryable`, no retry |
+| `malformed_acknowledgment` | stored, then a 202 that acknowledges nothing | reported `protocol_error`, no retry, yet persisted |
+
+The small pass runs the schedule once (10 occurrences). Only if all eight small-pass cases match does the volume
+pass repeat it 50 times (500 occurrences); otherwise the volume pass does not run and its six cases observe
+nothing. Each volume occurrence is compared with its scenario's frozen small-pass profile.
 
 ## The seam
 
@@ -18,9 +54,9 @@ expectations are frozen and before every run (`lib/install.mjs` `SYMBOLS`).
 
 | Process | Runs | Permissions |
 |---|---|---|
-| orchestrator (`tracer/run-tracer.mjs`) | the kit pipeline, the approval checks, the session, the evaluation | unrestricted; loads no SDK |
-| sender (`tracer/sender-process.mjs`) | the SDK, the reference composition, the in-process controls | `--permission --allow-net --allow-fs-read=<own service>` |
-| ingress (`tracer/ingress-process.mjs`) | the kit collector with SQLite storage, behind the fault injector | the sender's, plus read and write on `<scratch>/collector-storage` |
+| orchestrator (`<probe>/run-<probe>.mjs`) | the kit pipeline, the approval checks, the session, the evaluation | unrestricted; loads no SDK |
+| sender (`<probe>/sender-process.mjs`; the outages shim loads `tracer/sender-process.mjs`) | the SDK, the reference composition, the in-process controls | `--permission --allow-net --allow-fs-read=<own service>` |
+| ingress (`<probe>/ingress-process.mjs`; the outages shim loads `tracer/ingress-process.mjs`) | the kit collector with SQLite storage, behind the fault injector | the sender's, plus read and write on `<scratch>/collector-storage` |
 
 The orchestrator forks both roles with an IPC channel. The ingress token is generated per run, held only in
 memory, and never recorded. Both roles import `lib/role-guard.mjs` first, so the loopback guard
@@ -56,7 +92,12 @@ silent. A live control that does neither stops its role before any traffic, and 
 | one claim per run number | a second approval naming a claimed run; a spent run limit; a restarted window | `tests/approval.test.mjs` |
 | live controls stop traffic | a control that does not hold | `tests/loopback-guard.test.mjs` |
 | bounded commands | a stalled child command | `tests/limits.test.mjs` |
-| refusal before the claim | expectations the sender or the kit would reject after it | `tests/tracer-plan.test.mjs` |
+| refusal before the claim | expectations the sender or the kit would reject after it | `tests/tracer-plan.test.mjs`, `tests/outages-plan.test.mjs` |
+| accounting identity, on the run's own data | the first occurrence's result and stored copy dropped from a copy of the run's observations: proves the identity fails on this data (the check itself is O-03 and O-10) | `outages/evaluate.mjs` (case O-04), `tests/outages-evaluate.test.mjs` |
+| retry predicates | an unplanned retry; a delay off the seeded draw; a delay past its cap; an exhaustion without its alert | `tests/outages-evaluate.test.mjs` |
+| redelivery | a redelivery admitted as a second write; a redelivery whose bytes changed; a volume occurrence unlike its scenario | `tests/outages-evaluate.test.mjs` |
+| pass sequencing | a small-pass mismatch (the volume pass must not run); a failed volume pass (the small pass's observations must survive); a deadline during the small pass (no further pass may start); a halt while an ingress starts (no sender may spawn) | `tests/outages-evaluate.test.mjs`, `tests/session.test.mjs` |
+| frozen expectations | delays that are not the seeded draws; a profile its scenario's rules do not produce (refused before the claim, `outages/expectations.mjs` `derivedProfile`); a rule no attempt reaches; a sender field the pass view lacks | `tests/outages-plan.test.mjs` |
 
 ## Dry run (build only)
 
@@ -75,13 +116,15 @@ It runs no kit code and spends no run.
 Only after a delegated S1 under G44 names the exact head:
 
 ```bash
-node openspec/changes/verify-fraud-evidence-delivery/harness/tracer/run-tracer.mjs \
+node openspec/changes/verify-fraud-evidence-delivery/harness/$PROBE/run-$PROBE.mjs \
   --approved-head "$HEAD" --run-number "$N" --window-opened-at "$OPENED" \
   --approval-body-file "$BODY" --approval-url "$URL" --approval-created-at "$CREATED" \
   --approval-updated-at "$UPDATED" --approval-sha256 "$BODY_SHA256" \
-  --once-marker "$HOME/.bloodtrail/stage-2/once-markers/run-$N" --results "$CHANGE/harness/results/tracer-run-$N.json" \
+  --once-marker "$HOME/.bloodtrail/stage-2/once-markers/run-$N" --results "$CHANGE/harness/results/$PROBE-run-$N.json" \
   --driver-lane claude-code --driver-model "$MODEL"
 ```
+
+`$PROBE` is `tracer` or `outages`. `--window-opened-at` is `2026-10-23T13:18:26Z` for every run (`run-ledger.md`).
 
 `results/` is created empty before the run; an empty directory leaves the tree clean. The once-marker lives in
 the one pinned control directory `~/.bloodtrail/stage-2/once-markers/` (created once, mode 700), shared by every

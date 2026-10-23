@@ -36,11 +36,14 @@ export function finalizeScratch({ result, scratch, remove = deleteScratch }) {
   return result;
 }
 
+// A session that fails after completing part of its work may attach those observations to its error
+// (`error.observations`); they are kept beside the invalidation rather than lost with the spent run.
 export async function scratchSession({ result, scratch, work }) {
   try {
     await work();
   } catch (error) {
     result.invalidations.push(invalidationOf(error));
+    if (error.observations !== undefined) result.observations = error.observations;
   } finally {
     finalizeScratch({ result, scratch });
   }
