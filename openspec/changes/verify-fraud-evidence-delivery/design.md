@@ -115,7 +115,11 @@ no random choices. Its fault types are:
 - a delay beyond the exchange timeout;
 - socket destruction before ingest (transport failure);
 - socket destruction after ingest (a lost acknowledgment);
+- a malformed acknowledgment after ingest: a 202 that acknowledges nothing, once the collector has decided the body;
 - a restart with storage persisted.
+
+A probe may freeze named scenarios (per-attempt rules) and a schedule naming one scenario per occurrence; the
+injector receives the schedule expanded into per-occurrence rules.
 
 **Accounting identity.** Every generated occurrence ends in exactly one terminal bucket:
 1. persisted at the collector;
@@ -219,6 +223,8 @@ Serial PRs, each a build commit followed by an evidence commit after its S1 (Q18
     budget, ending in an acknowledgment or a reported exhaustion.
   - Permanent 4xx and malformed acknowledgments stop retrying at once and are reported.
   - A lost acknowledgment is redelivered as a duplicate that the collector acknowledges and never admits twice.
+  - The probe reuses the tracer's two role processes unchanged. Its small pass runs one occurrence per scenario;
+    only if every small-pass case matches does the volume pass repeat the same schedule.
 - **#838, load and shutdown.** Overload through the backpressure gate is reported with depth and capacity.
   Deadline-bounded shutdown mid-burst accounts for every admitted occurrence. `best_effort` drops are visible
   through the loss counter and the loss-ceiling signal.
@@ -261,6 +267,12 @@ results pin their blobs.
 - Composition parameters per fault plan (attempt budget, base and maximum delay, capacity, deadline) are chosen in
   each probe's expectations, before its run.
 - Each probe's volume stays within the cap and is set in its expectations.
+- #837's malformed acknowledgment is answered after the collector has stored the occurrence, so the run shows a
+  protocol error that follows a durable write: the occurrence is persisted, and the disagreement with its
+  reported `protocol_error` is kept as an observation. A malformed answer to an unstored body would only repeat
+  the permanent 4xx's accounting.
+- #837's timeout also follows ingest: the ingress stores the body, then answers after the exchange deadline, so
+  the redelivery is a duplicate as with a lost acknowledgment.
 - The assessment declares the `fraud-evidence-profile` capability, the one whose criteria Stage 2 measures, with
   `material_capability_modification: false`. Harness files under `openspec/changes/` are governed implementation,
   and design-pattern governance associates them only with a change that declares a capability. The declaration
