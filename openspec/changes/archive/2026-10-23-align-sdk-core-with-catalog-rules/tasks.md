@@ -63,7 +63,9 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 - [x] 7.3 Fold the ADDED requirement into the canonical spec in a separate PR. Evidence: the requirement is appended
   unchanged to `openspec/specs/security-audit-sdk-core/spec.md` in this dedicated fold PR, while the change is
   active (ADR 0001).
-- [ ] 7.4 Archive the change in a separate PR, after the fold lands.
+- [x] 7.4 Archive the change in a separate PR, after the fold lands. Evidence: relocated to
+  `openspec/changes/archive/2026-10-23-align-sdk-core-with-catalog-rules/` in this dedicated archive PR, after fold
+  PR #875 merged as `b748c4561721e9d0789125348f04037e78c90bf2`.
 
 ## Evidence
 
