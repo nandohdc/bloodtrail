@@ -54,10 +54,15 @@ Groups complete in order. Merge, fold and archive stay unchecked while the chang
 
 ## 7. Merge, fold and archive
 
-- [ ] 7.1 Obtain every required CI context plus DeepScan green, and the AGY and `/code-review high` reviews, on the
-  pull request head.
-- [ ] 7.2 Merge as a merge commit after the checks pass.
-- [ ] 7.3 Fold the ADDED requirement into the canonical spec in a separate PR.
+- [x] 7.1 Obtain every required CI context plus DeepScan green, and the AGY and `/code-review high` reviews, on the
+  pull request head. Evidence: on head `a953448d0b18c7f6ecedcc972d2327728c1db885` in PR #874, all ten required
+  contexts plus DeepScan, the CodeScene review and codecov reported SUCCESS; AGY's final round accepted, and three
+  `/code-review high` rounds were resolved (`design.md`, "Review-driven refinements").
+- [x] 7.2 Merge as a merge commit after the checks pass. Evidence: PR #874 was merged into `main` as merge commit
+  `91afc83fbfe2e5524c36f107997d2beedbbf28e7` by the orchestrator under the owner's delegation (G45).
+- [x] 7.3 Fold the ADDED requirement into the canonical spec in a separate PR. Evidence: the requirement is appended
+  unchanged to `openspec/specs/security-audit-sdk-core/spec.md` in this dedicated fold PR, while the change is
+  active (ADR 0001).
 - [ ] 7.4 Archive the change in a separate PR, after the fold lands.
 
 ## Evidence
