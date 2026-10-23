@@ -39,7 +39,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
   - permanent 4xx;
   - malformed acknowledgments;
   - a lost acknowledgment.
-- [ ] 3.2 Under its own S1, record every retry, exhaustion and terminal bucket against the expectations.
+- [x] 3.2 Under its own S1, record every retry, exhaustion and terminal bucket against the expectations.
 
 ## 4. Saturation, shutdown and `best_effort` loss (#838)
 
