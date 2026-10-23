@@ -22,7 +22,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 ## 2. Tracer bullet (#836)
 
-- [ ] 2.1 Build the shared harness:
+- [x] 2.1 Build the shared harness:
   - the kit pipeline, provenance, the loopback guard, the injected clock and timers, the fault injector;
   - the ingress around the kit collector with SQLite storage;
   - the accounting identity, its planted-defect and null controls, and the tracer's frozen expectations.
