@@ -28,7 +28,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
   - the accounting identity, its planted-defect and null controls, and the tracer's frozen expectations.
 
   Check every symbol against the packed declarations without importing the kit.
-- [ ] 2.2 Under its own S1, run one synthetic occurrence through the reference composition into the collector over
+- [x] 2.2 Under its own S1, run one synthetic occurrence through the reference composition into the collector over
   loopback. Commit the provenance-tagged result, the ledger row and the scratch-deletion proof.
 
 ## 3. Outages, delivery retries and loss accounting (#837)
