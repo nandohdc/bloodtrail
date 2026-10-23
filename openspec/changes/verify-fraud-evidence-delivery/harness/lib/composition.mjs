@@ -28,21 +28,28 @@ function callbackRecorder({ onAttemptScheduled }) {
   };
 }
 
-// The status the composition reports for one occurrence, whichever layer settled it.
+// The status the composition reports for one occurrence, whichever layer settled it. An overload rejection
+// keeps the depth and capacity its admission result reported.
 export function flatten(outcome) {
   if (outcome.status !== "admitted") return { status: outcome.status, attempts: 0 };
   const gated = outcome.result;
-  if (gated.status !== "admitted") return { status: gated.status, attempts: 0 };
+  if (gated.status !== "admitted") return { status: gated.status, attempts: 0, depth: gated.depth, capacity: gated.capacity };
   return { status: gated.result.status, attempts: gated.result.attempts };
 }
 
-function buildStack({ sdkNode, origin, token, parameters, timers, jitter, recorder, exchanges }) {
-  const transport = sdkNode.createFetchHttpExchange({ origin, timeoutMs: parameters.exchange_timeout_ms, headers: { authorization: `Bearer ${token}` } });
+// The single-attempt handoff over the governed fetch adapter, recording each attempt's ordinal and body hash
+// (observation boundary 3) before the exchange runs.
+function recordingHandoff({ sdkNode, origin, token, timeoutMs, exchanges }) {
+  const transport = sdkNode.createFetchHttpExchange({ origin, timeoutMs, headers: { authorization: `Bearer ${token}` } });
   const exchange = async (request) => {
     exchanges.push({ event_id: request.event_id, attempt: request.attempt, body_sha256: sha256(request.body) });
     return transport(request);
   };
-  const handoff = sdkNode.createHttpDeliveryHandoff({ path: DELIVERY_PATH, exchange });
+  return sdkNode.createHttpDeliveryHandoff({ path: DELIVERY_PATH, exchange });
+}
+
+function buildStack({ sdkNode, origin, token, parameters, timers, jitter, recorder, exchanges }) {
+  const handoff = recordingHandoff({ sdkNode, origin, token, timeoutMs: parameters.exchange_timeout_ms, exchanges });
   const retry = sdkNode.createBoundedDeliveryRetry({
     handoff, maxAttempts: parameters.max_attempts, baseDelayMs: parameters.base_delay_ms, maxDelayMs: parameters.max_delay_ms,
     jitterSource: jitter, timers, observability: recorder.retry,
@@ -64,6 +71,18 @@ export function referenceComposition({ sdkNode, origin, token, parameters, timer
   const deliveries = new Map();
   const deliveryLog = [];
   const shutdown = { reported: false };
+  // Which occurrences the lifecycle ran, and which of those settled, both recorded inside the operation the
+  // lifecycle tracks: an occurrence settles before the lifecycle releases it, so at the drain's deadline
+  // exactly the started and unfinished ones are in flight, and those are the ones shutdown labels abandoned.
+  const lifecycle = { started: new Set(), finished: new Set() };
+  const tracked = (event) => async () => {
+    lifecycle.started.add(event.event.id);
+    try {
+      return await stack.backpressure.submit(() => stack.retry.deliver(event));
+    } finally {
+      lifecycle.finished.add(event.event.id);
+    }
+  };
   const settle = (eventId, delivery) => {
     if (shutdown.reported && deliveries.get(eventId)?.status === "abandoned") {
       deliveryLog.push({ event_id: eventId, ...delivery, after_shutdown: true });
@@ -83,7 +102,7 @@ export function referenceComposition({ sdkNode, origin, token, parameters, timer
       deliveries.set(event.event.id, { status: "pending", attempts: 0 });
       let outcome;
       try {
-        outcome = await stack.lifecycle.submit(() => stack.backpressure.submit(() => stack.retry.deliver(event)));
+        outcome = await stack.lifecycle.submit(tracked(event));
       } catch (error) {
         settle(event.event.id, { status: "threw", attempts: 0, error: error.message });
         throw error;
@@ -92,13 +111,59 @@ export function referenceComposition({ sdkNode, origin, token, parameters, timer
       settle(event.event.id, settled);
       return settled;
     },
-    // Shutdown drains within its deadline. Anything still pending when it returns was abandoned.
+    // Shutdown drains within its deadline. An occurrence the lifecycle ran and that had not settled when the
+    // drain returned was abandoned; one rejected while shutting down never ran and keeps its own status.
     async shutdown() {
       const report = await stack.lifecycle.shutdown();
-      for (const [eventId, delivery] of deliveries) if (delivery.status === "pending") settle(eventId, { status: "abandoned", attempts: 0 });
+      for (const eventId of lifecycle.started) if (!lifecycle.finished.has(eventId)) settle(eventId, { status: "abandoned", attempts: 0 });
       shutdown.reported = true;
       return report;
     },
+  };
+}
+
+// What a best_effort result says beyond its status: a drop's saturating loss count, a refusal's code.
+function outcomeDetail(result) {
+  if (result.status === "dropped") return { loss_count: result.lossCount };
+  if (result.status === "refused") return { code: result.code };
+  return {};
+}
+
+// The binding's `best_effort` class over the same governed exchange: one attempt, no retry, a drop on any
+// non-acknowledgment, and a saturating loss counter. Its drop and ceiling callbacks are recorded, and its
+// shutdown returns the class health signal.
+export function bestEffortComposition({ sdkNode, origin, token, parameters }) {
+  assert(isLoopbackUrl(origin), `delivery origin must be loopback: ${origin}`);
+  const exchanges = [];
+  const callbacks = { dropped: [], loss_ceiling_reached: [] };
+  const handoff = recordingHandoff({ sdkNode, origin, token, timeoutMs: parameters.exchange_timeout_ms, exchanges });
+  const binding = sdkNode.createBestEffortDelivery({
+    handoff, lossCeiling: parameters.loss_ceiling,
+    observability: { onDropped: (eventId, lossCount) => callbacks.dropped.push([eventId, lossCount]), onLossCeilingReached: (lossCount) => callbacks.loss_ceiling_reached.push([lossCount]) },
+  });
+  const deliveries = new Map();
+  const deliveryLog = [];
+  return {
+    exchanges, callbacks, deliveries, deliveryLog, guarantees: binding.guarantees,
+    // As in the reference composition, a delivery that settles by throwing is recorded as "threw" and the
+    // throw still reaches the SDK.
+    async deliver(event) {
+      const record = (settled) => {
+        deliveries.set(event.event.id, settled);
+        deliveryLog.push({ event_id: event.event.id, ...settled });
+        return settled;
+      };
+      deliveries.set(event.event.id, { status: "pending", attempts: 0 });
+      let result;
+      try {
+        result = await binding.deliver(event);
+      } catch (error) {
+        record({ status: "threw", attempts: 0, error: error.message });
+        throw error;
+      }
+      return record({ status: result.status, attempts: result.attempts ?? 0, ...outcomeDetail(result) });
+    },
+    shutdown: async () => binding.shutdown(),
   };
 }
 
@@ -106,14 +171,17 @@ export function referenceComposition({ sdkNode, origin, token, parameters, timer
 // HTTP sink (http-audit-sink.ts SINK_STATUS_BY_CODE). Every other non-acknowledgment leaves the outcome
 // unknown to the SDK: a protocol error (a malformed or unexpected answer) may follow a persisted write, and
 // exhaustion, overload and shutdown say nothing about the peer.
-const REFUSED = new Set(["non_retryable"]);
+// The best_effort binding's own refusal (a delivery-class mismatch or an unknown event) is known too.
+const REFUSED = new Set(["non_retryable", "refused"]);
+// Acknowledged through the reference composition, or delivered by the `best_effort` binding.
+export const DELIVERED = Object.freeze(new Set(["acknowledged", "delivered"]));
 
 // The core sink the SDK emits into: each occurrence goes through the composition.
 export function compositionSink({ composition }) {
   return {
     async emit(event) {
       const settled = await composition.deliver(event);
-      if (settled.status === "acknowledged") return { status: "accepted" };
+      if (DELIVERED.has(settled.status)) return { status: "accepted" };
       return { status: REFUSED.has(settled.status) ? "rejected" : "unknown", code: settled.status };
     },
   };

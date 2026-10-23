@@ -14,5 +14,6 @@ export const PROBE_FILES = Object.freeze([
   "lib/ledger.mjs",
   "lib/loopback-guard.mjs",
   "lib/role-guard.mjs",
+  "lib/sender-role.mjs",
   "lib/workload.mjs",
 ]);

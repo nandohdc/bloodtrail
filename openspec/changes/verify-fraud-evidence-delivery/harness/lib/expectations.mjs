@@ -8,19 +8,25 @@ import { seededRandom } from "./workload.mjs";
 const CASE_KEYS = ["case_id", "setup", "expected", "basis"];
 const COMPOSITION_KEYS = ["exchange_timeout_ms", "max_attempts", "base_delay_ms", "max_delay_ms", "jitter_seed", "capacity", "shutdown_deadline_ms"];
 // The kit factories' own ceilings at the frozen base: fetch-exchange.ts MAX_TIMEOUT_MS, delivery-retry.ts
-// MAX_ATTEMPTS_CEILING and delivery-backpressure.ts MAX_CAPACITY_CEILING. Past them the factory throws.
-const KIT_CEILINGS = Object.freeze({ exchange_timeout_ms: 60_000, max_attempts: 1000, capacity: 100_000 });
+// MAX_ATTEMPTS_CEILING, delivery-backpressure.ts MAX_CAPACITY_CEILING and delivery-classes.ts
+// BEST_EFFORT_LOSS_CEILING. Past them the factory throws.
+export const KIT_CEILINGS = Object.freeze({ exchange_timeout_ms: 60_000, max_attempts: 1000, capacity: 100_000, loss_ceiling: 1_000_000 });
+const COMPOSITION_CEILINGS = COMPOSITION_KEYS.filter((key) => Object.hasOwn(KIT_CEILINGS, key));
 
 export function validateComposition(composition) {
   for (const key of COMPOSITION_KEYS) assert(Number.isSafeInteger(composition[key]) && composition[key] > 0, `composition.${key}`);
-  for (const [key, ceiling] of Object.entries(KIT_CEILINGS)) assert(composition[key] <= ceiling, `composition.${key} exceeds the kit ceiling ${ceiling}`);
+  for (const key of COMPOSITION_CEILINGS) assert(composition[key] <= KIT_CEILINGS[key], `composition.${key} exceeds the kit ceiling ${KIT_CEILINGS[key]}`);
   assert(composition.max_delay_ms >= composition.base_delay_ms, "composition.max_delay_ms must be at least base_delay_ms");
   seededJitter(composition.jitter_seed);
 }
 
-export function validateWorkloadInputs(value) {
+export function validateSeedAndClock(value) {
   seededRandom(value.workload.seed);
   syntheticClock({ start: value.clock.start, stepMs: value.clock.step_ms });
+}
+
+export function validateWorkloadInputs(value) {
+  validateSeedAndClock(value);
   validateComposition(value.composition);
 }
 

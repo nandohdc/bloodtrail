@@ -18,6 +18,7 @@ a run is checked and reproduced against its approved head, never against the cur
 |---|---|---|---|---|
 | S2-tracer | #836 | `tracer/` | `expectations/tracer.v1.json` | one occurrence through the reference composition into the collector |
 | S2-outages | #837 | `outages/` | `expectations/outages.v1.json` | a small pass, then a volume pass, of the ten outage scenarios below |
+| S2-load | #838 | `load/` | `expectations/load.v1.json` | bursts against backpressure and shutdown, and `best_effort` drops, in the phases below |
 
 The outages probe reuses the tracer's two role processes unchanged: `outages/sender-process.mjs` and
 `outages/ingress-process.mjs` import the role guard, then the tracer's role. Each pass is one exchange between a
@@ -42,6 +43,20 @@ The ten scenarios, one per occurrence in schedule order, each a list of per-atte
 The small pass runs the schedule once (10 occurrences). Only if all eight small-pass cases match does the volume
 pass repeat it 50 times (500 occurrences); otherwise the volume pass does not run and its six cases observe
 nothing. Each volume occurrence is compared with its scenario's frozen small-pass profile.
+
+The load probe has its own sender (`load/sender-process.mjs`); its ingress loads the tracer's. Each phase is one
+exchange, sequenced by `lib/gated-session.mjs` as the outages passes are. Burst phases submit every occurrence at
+once against answers the ingress holds, so each meets the admission gate before any held delivery can settle:
+
+| Phase | Pass | What it does | Frozen end |
+|---|---|---|---|
+| `overload` | small | 10 at once, capacity 4, answers held 300 ms, shutdown after settling | 4 admitted; 6 rejected with depth and capacity 4/4, never reaching the exchange |
+| `drain` | small | 8 at once, capacity 16, held 300 ms; shutdown (deadline 5000 ms) as soon as all met the gate; 2 submitted after | 8 drained and acknowledged; the 2 rejected while shutting down |
+| `abandon` | small | 6 at once, held 3000 ms; shutdown deadline 200 ms | report 6 accepted, 0 completed, 6 abandoned; each settles later and was stored |
+| `best_effort` | small | 8 `authorization.allowed` in sequence through the `best_effort` class, 5 answered 503, loss ceiling 3 | 3 delivered, 5 dropped with loss counts 1, 2, 3, 3, 3; the ceiling signal fires once |
+| `overload_volume` | volume | 1000 at once, capacity 100, held 500 ms | 100 admitted, 900 rejected |
+| `drain_volume` | volume | 200 at once, capacity 1000, held 500 ms; shutdown (deadline 5000 ms) as soon as all met the gate; 10 submitted after | 200 drained; the 10 rejected while shutting down |
+| `best_effort_volume` | volume | 200 in sequence, every second one 503, loss ceiling 50 | 100 dropped; the count saturates at 50 and the ceiling signals once |
 
 ## The seam
 
@@ -96,7 +111,11 @@ silent. A live control that does neither stops its role before any traffic, and 
 | accounting identity, on the run's own data | the first occurrence's result and stored copy dropped from a copy of the run's observations: proves the identity fails on this data (the check itself is O-03 and O-10) | `outages/evaluate.mjs` (case O-04), `tests/outages-evaluate.test.mjs` |
 | retry predicates | an unplanned retry; a delay off the seeded draw; a delay past its cap; an exhaustion without its alert | `tests/outages-evaluate.test.mjs` |
 | redelivery | a redelivery admitted as a second write; a redelivery whose bytes changed; a volume occurrence unlike its scenario | `tests/outages-evaluate.test.mjs` |
-| pass sequencing | a small-pass mismatch (the volume pass must not run); a failed volume pass (the small pass's observations must survive); a deadline during the small pass (no further pass may start); a halt while an ingress starts (no sender may spawn) | `tests/outages-evaluate.test.mjs`, `tests/session.test.mjs` |
+| pass sequencing | a small-pass mismatch (the volume pass must not run); a failed volume pass (the small pass's observations must survive); a deadline during the small pass (no further pass may start); a halt while an ingress starts (no sender may spawn) | `tests/outages-evaluate.test.mjs`, `tests/load-evaluate.test.mjs`, `tests/session.test.mjs` |
+| load, on the run's own data | a shutdown report that leaves one admitted operation out; a drop with no drop callback (`load/evaluate.mjs` case L-06) | `tests/load-evaluate.test.mjs` |
+| load predicates | an overload rejection without its callback; a rejected occurrence that reached the exchange; an ingress request beyond the admitted; a shutdown report that adds up yet misses an admitted operation; a shutdown past its deadline, including a 200 ms deadline overrun by half; a later submission admitted while shutting down; a wrapped loss count; a drop whose result and callback disagree; a silent ceiling; a binding claiming delivery of a drop | `tests/load-evaluate.test.mjs` |
+| shutdown labels | a submission rejected while shutting down relabelled abandoned; a delivery held at the deadline left pending | `tests/composition.test.mjs` |
+| frozen expectations (load) | admission, shutdown and loss values that do not follow from the frozen phases; a held answer that cannot beat its deadline; a phase or case of the wrong kind or pass; a sender field the phase view lacks | `tests/load-plan.test.mjs` |
 | frozen expectations | delays that are not the seeded draws; a profile its scenario's rules do not produce (refused before the claim, `outages/expectations.mjs` `derivedProfile`); a rule no attempt reaches; a sender field the pass view lacks | `tests/outages-plan.test.mjs` |
 
 ## Dry run (build only)
@@ -124,7 +143,7 @@ node openspec/changes/verify-fraud-evidence-delivery/harness/$PROBE/run-$PROBE.m
   --driver-lane claude-code --driver-model "$MODEL"
 ```
 
-`$PROBE` is `tracer` or `outages`. `--window-opened-at` is `2026-10-23T13:18:26Z` for every run (`run-ledger.md`).
+`$PROBE` is `tracer`, `outages` or `load`. `--window-opened-at` is `2026-10-23T13:18:26Z` for every run (`run-ledger.md`).
 
 `results/` is created empty before the run; an empty directory leaves the tree clean. The once-marker lives in
 the one pinned control directory `~/.bloodtrail/stage-2/once-markers/` (created once, mode 700), shared by every

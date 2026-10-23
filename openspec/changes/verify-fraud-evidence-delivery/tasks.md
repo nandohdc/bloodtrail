@@ -43,7 +43,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 ## 4. Saturation, shutdown and `best_effort` loss (#838)
 
-- [ ] 4.1 Build and freeze the overload, mid-burst deadline-bounded shutdown and `best_effort` loss plans.
+- [x] 4.1 Build and freeze the overload, mid-burst deadline-bounded shutdown and `best_effort` loss plans.
 - [ ] 4.2 Under its own S1, record overload rejections with depth and capacity, the shutdown report, and the loss
   counter and ceiling signals.
 
