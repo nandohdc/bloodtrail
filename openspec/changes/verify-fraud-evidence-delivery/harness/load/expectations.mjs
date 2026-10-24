@@ -20,26 +20,31 @@ function positiveInteger(value, limit, label) {
 
 // A burst runs through the reference composition; its held answers must come back before the exchange
 // deadline, so every admitted delivery is acknowledged unless shutdown abandons it first.
-function validateBurst({ phase, scenarios }) {
-  validateComposition(phase.composition);
-  assert(BURST_SHUTDOWN.includes(phase.shutdown), `${phase.name}: unknown shutdown timing`);
-  assert(Number.isSafeInteger(phase.after_shutdown) && phase.after_shutdown >= 0, `${phase.name}: after_shutdown`);
-  if (phase.after_shutdown > 0) assert.notEqual(phase.shutdown, "after_settle", `${phase.name}: later submissions need a shutdown in progress`);
-  if (phase.shutdown === "after_retry_scheduled") {
-    assert(phase.composition.max_attempts > 1, `${phase.name}: pending retries require multiple attempts`);
-    assert(phase.occurrences > phase.composition.capacity, `${phase.name}: the combined case must saturate admission`);
-    assert(phase.after_shutdown > 0, `${phase.name}: the combined case checks shutdown rejection`);
-    for (const name of phase.schedule) {
-      assert.deepEqual(scenarios[name], Array.from({ length: phase.composition.max_attempts }, (_, attempt) => ({ attempt, action: "status", status: 503 })), `${phase.name}: every possible attempt must fail uniformly before ingest`);
-    }
-    return;
+function validateCombinedBurst({ phase, scenarios }) {
+  assert(phase.composition.max_attempts > 1, `${phase.name}: pending retries require multiple attempts`);
+  assert(phase.occurrences > phase.composition.capacity, `${phase.name}: the combined case must saturate admission`);
+  assert(phase.after_shutdown > 0, `${phase.name}: the combined case checks shutdown rejection`);
+  for (const name of phase.schedule) {
+    assert.deepEqual(scenarios[name], Array.from({ length: phase.composition.max_attempts }, (_, attempt) => ({ attempt, action: "status", status: 503 })), `${phase.name}: every possible attempt must fail uniformly before ingest`);
   }
+}
+
+function validateHeldBurst({ phase, scenarios }) {
   for (const name of phase.schedule) {
     for (const rule of scenarios[name]) {
       assert.equal(rule.action, "delay", `${phase.name}: a burst's answers are held, not failed`);
       assert(rule.delay_ms < phase.composition.exchange_timeout_ms, `${phase.name}: a held answer must beat the exchange deadline`);
     }
   }
+}
+
+function validateBurst({ phase, scenarios }) {
+  validateComposition(phase.composition);
+  assert(BURST_SHUTDOWN.includes(phase.shutdown), `${phase.name}: unknown shutdown timing`);
+  assert(Number.isSafeInteger(phase.after_shutdown) && phase.after_shutdown >= 0, `${phase.name}: after_shutdown`);
+  if (phase.after_shutdown > 0) assert.notEqual(phase.shutdown, "after_settle", `${phase.name}: later submissions need a shutdown in progress`);
+  if (phase.shutdown === "after_retry_scheduled") validateCombinedBurst({ phase, scenarios });
+  else validateHeldBurst({ phase, scenarios });
 }
 
 // best_effort runs through the binding's class: one attempt over the governed exchange, a loss ceiling. A

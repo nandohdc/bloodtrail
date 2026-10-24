@@ -118,21 +118,32 @@ function plantedControls({ observed, phases, names: [burst, effort] }) {
   };
 }
 
+const reachedOperation = (entry) => entry.kind === "operation_started" || entry.kind === "exchange";
+
+// The one overload callback of an occurrence, when it is reported exactly once and before its result.
+function orderedRejectionCallback(entries) {
+  const callbacks = entries.filter((entry) => entry.kind === "rejected_overload");
+  const results = entries.filter((entry) => entry.kind === "result" && entry.status === "rejected_overload");
+  const single = callbacks.length === 1 && results.length === 1;
+  return single && callbacks[0].sequence < results[0].sequence ? callbacks[0] : undefined;
+}
+
+function rejectionAttributed(trace, [eventId, delivery]) {
+  const entries = trace.filter((entry) => entry.event_id === eventId);
+  const callback = orderedRejectionCallback(entries);
+  return callback !== undefined && callback.values[0] === delivery.depth && callback.values[1] === delivery.capacity
+    && !entries.some(reachedOperation);
+}
+
+const sequentialTrace = (trace) => trace.every((entry, index) => entry.sequence === index + 1);
+const saturatedRejections = (sender) => sender.callbacks.rejected_overload.every(([depth, capacity]) => depth === capacity);
+
 export function alertsBeforeLoss({ sender }) {
   const { rejected, reachedExchange } = overloadRejections(sender);
   const trace = sender.trace ?? [];
-  const ordered = trace.every((entry, index) => entry.sequence === index + 1);
-  const attributed = rejected.every(([eventId, delivery]) => {
-    const entries = trace.filter((entry) => entry.event_id === eventId);
-    const callbacks = entries.filter((entry) => entry.kind === "rejected_overload");
-    const results = entries.filter((entry) => entry.kind === "result" && entry.status === "rejected_overload");
-    return callbacks.length === 1 && results.length === 1 && callbacks[0].sequence < results[0].sequence
-      && callbacks[0].values[0] === delivery.depth && callbacks[0].values[1] === delivery.capacity
-      && !entries.some((entry) => entry.kind === "operation_started" || entry.kind === "exchange");
-  });
+  const attributed = rejected.every((rejection) => rejectionAttributed(trace, rejection));
   return rejected.length === sender.callbacks.rejected_overload.length
-    && sender.callbacks.rejected_overload.every(([depth, capacity]) => depth === capacity)
-    && reachedExchange === 0 && ordered && attributed;
+    && saturatedRejections(sender) && reachedExchange === 0 && sequentialTrace(trace) && attributed;
 }
 
 // Every drop has its callback, each callback carries the saturating count at that drop, and the count the
@@ -153,50 +164,108 @@ function noBacklog({ sender, ingress }) {
     && isDeepStrictEqual(sender.exchanges.map(attemptKey).sort(), ingress.records.map(attemptKey).sort());
 }
 
-// In the combined case, delayed retries remain pending at report time and are then allowed to finish.
-// Late exhaustion is read from the log: the primary delivery map preserves the shutdown's abandonment.
-export function retryAccounting({ observed: { sender, ingress }, phase }) {
-  const scheduled = sender.trace.filter((entry) => entry.kind === "scheduled");
-  const exhausted = sender.trace.filter((entry) => entry.kind === "exhausted");
-  const retried = sender.trace.filter((entry) => entry.kind === "exchange" && entry.attempt > 0);
+const retryKey = (eventId, ordinal) => JSON.stringify([eventId, ordinal]);
+
+function retryTrace(sender) {
+  const ofKind = (kind) => sender.trace.filter((entry) => entry.kind === kind);
   const late = sender.delivery_log.filter((entry) => entry.after_shutdown && entry.status === "exhausted");
-  const lateIds = new Set(late.map((entry) => entry.event_id));
-  const report = sender.trace.find((entry) => entry.kind === "shutdown_report");
-  const key = (id, ordinal) => JSON.stringify([id, ordinal]);
-  const draws = seededJitter(phase.composition.jitter_seed);
-  const attempts = new Map();
-  for (const entry of sender.exchanges) attempts.set(entry.event_id, [...attempts.get(entry.event_id) ?? [], entry.attempt]);
   return {
-    scheduled: scheduled.length, retry_exchanges: retried.length, exhausted: exhausted.length,
-    pending_at_shutdown: scheduled.filter((entry) => entry.sequence < report?.sequence
-      && retried.some((attempt) => attempt.event_id === entry.event_id && attempt.attempt === entry.values[0] && attempt.sequence > report.sequence)).length,
-    late_exhausted: late.length,
-    unpersisted: ingress.read_back.filter((entry) => lateIds.has(entry.event_id) && entry.persisted === false && entry.storage_result === "not_found").length,
-    every_delay_reported: isDeepStrictEqual(scheduled.map((entry) => entry.values), sender.callbacks.scheduled)
-      && isDeepStrictEqual(scheduled.map((entry) => key(entry.event_id, entry.values[0])).sort(), retried.map((entry) => key(entry.event_id, entry.attempt)).sort()),
-    every_exhaustion_reported: lateIds.size === late.length && exhausted.length === late.length
-      && new Set(exhausted.map((entry) => entry.event_id)).size === exhausted.length
-      && exhausted.every((entry) => lateIds.has(entry.event_id) && entry.values[0] === phase.composition.max_attempts)
-      && isDeepStrictEqual(exhausted.map((entry) => entry.values), sender.callbacks.exhausted),
-    bounded_attempts: attempts.size === sender.callbacks.admitted.length && [...attempts.values()].every((ordinals) =>
-      isDeepStrictEqual(ordinals, Array.from({ length: phase.composition.max_attempts }, (_, index) => index)))
-      && late.every((entry) => entry.attempts === phase.composition.max_attempts),
-    seeded_delays_hold: scheduled.every((entry) => entry.values[1] === retryDelay({ composition: phase.composition, next: entry.values[0], draw: draws })),
+    scheduled: ofKind("scheduled"),
+    exhausted: ofKind("exhausted"),
+    retried: ofKind("exchange").filter((entry) => entry.attempt > 0),
+    late,
+    lateIds: new Set(late.map((entry) => entry.event_id)),
+    report: sender.trace.find((entry) => entry.kind === "shutdown_report"),
   };
 }
 
-export function ceilingSignalled({ sender, phase }) {
-  const reached = sender.callbacks.dropped.length >= phase.composition.loss_ceiling;
-  const signals = (sender.trace ?? []).filter((entry) => entry.kind === "loss_ceiling_reached");
-  const first = sender.callbacks.dropped[phase.composition.loss_ceiling - 1]?.[0];
+function retryFollowsReport({ retried, report }, entry) {
+  return retried.some((attempt) => attempt.event_id === entry.event_id && attempt.attempt === entry.values[0] && attempt.sequence > report.sequence);
+}
+
+function pendingAtShutdown(trace) {
+  const { scheduled, report } = trace;
+  return scheduled.filter((entry) => entry.sequence < report?.sequence && retryFollowsReport(trace, entry)).length;
+}
+
+function unpersistedLate({ ingress }, { lateIds }) {
+  return ingress.read_back.filter((entry) => lateIds.has(entry.event_id) && entry.persisted === false && entry.storage_result === "not_found").length;
+}
+
+function everyDelayReported(sender, { scheduled, retried }) {
+  const scheduledKeys = scheduled.map((entry) => retryKey(entry.event_id, entry.values[0])).sort();
+  return isDeepStrictEqual(scheduled.map((entry) => entry.values), sender.callbacks.scheduled)
+    && isDeepStrictEqual(scheduledKeys, retried.map((entry) => retryKey(entry.event_id, entry.attempt)).sort());
+}
+
+function exhaustionReported({ sender, composition }, { exhausted, late, lateIds }) {
+  const reportedOnce = lateIds.size === late.length && exhausted.length === late.length
+    && new Set(exhausted.map((entry) => entry.event_id)).size === exhausted.length;
+  return reportedOnce && exhausted.every((entry) => lateIds.has(entry.event_id) && entry.values[0] === composition.max_attempts)
+    && isDeepStrictEqual(exhausted.map((entry) => entry.values), sender.callbacks.exhausted);
+}
+
+function attemptsByEvent(sender) {
+  const attempts = new Map();
+  for (const entry of sender.exchanges) attempts.set(entry.event_id, [...attempts.get(entry.event_id) ?? [], entry.attempt]);
+  return attempts;
+}
+
+function boundedAttempts({ sender, composition }, { late }) {
+  const attempts = attemptsByEvent(sender);
+  const expected = Array.from({ length: composition.max_attempts }, (_, index) => index);
+  return attempts.size === sender.callbacks.admitted.length && [...attempts.values()].every((ordinals) => isDeepStrictEqual(ordinals, expected))
+    && late.every((entry) => entry.attempts === composition.max_attempts);
+}
+
+function seededDelaysHold({ composition }, { scheduled }) {
+  const draws = seededJitter(composition.jitter_seed);
+  return scheduled.every((entry) => entry.values[1] === retryDelay({ composition, next: entry.values[0], draw: draws }));
+}
+
+// In the combined case, delayed retries remain pending at report time and are then allowed to finish.
+// Late exhaustion is read from the log: the primary delivery map preserves the shutdown's abandonment.
+export function retryAccounting({ observed: { sender, ingress }, phase }) {
+  const trace = retryTrace(sender);
+  const subject = { sender, composition: phase.composition };
+  return {
+    scheduled: trace.scheduled.length, retry_exchanges: trace.retried.length, exhausted: trace.exhausted.length,
+    pending_at_shutdown: pendingAtShutdown(trace),
+    late_exhausted: trace.late.length,
+    unpersisted: unpersistedLate({ ingress }, trace),
+    every_delay_reported: everyDelayReported(sender, trace),
+    every_exhaustion_reported: exhaustionReported(subject, trace),
+    bounded_attempts: boundedAttempts(subject, trace),
+    seeded_delays_hold: seededDelaysHold(subject, trace),
+  };
+}
+
+function ceilingEvidence({ sender, phase }) {
+  const ceiling = phase.composition.loss_ceiling;
+  const trace = sender.trace ?? [];
+  const first = sender.callbacks.dropped[ceiling - 1]?.[0];
+  const event = trace.filter((entry) => entry.event_id === first);
+  return {
+    ceiling, first,
+    reached: sender.callbacks.dropped.length >= ceiling,
+    signals: trace.filter((entry) => entry.kind === "loss_ceiling_reached"),
+    exchange: event.find((entry) => entry.kind === "exchange"),
+    result: event.find((entry) => entry.kind === "result" && entry.status === "dropped"),
+  };
+}
+
+function signalledAtCeiling({ ceiling, first, signals, exchange, result }) {
   const signal = signals[0];
-  const event = (sender.trace ?? []).filter((entry) => entry.event_id === first);
-  const exchange = event.find((entry) => entry.kind === "exchange");
-  const result = event.find((entry) => entry.kind === "result" && entry.status === "dropped");
-  const atCeiling = !reached || (signal?.event_id === first && signal.loss_count === phase.composition.loss_ceiling
-    && exchange?.sequence < signal.sequence && signal.sequence < result?.sequence);
-  return sender.callbacks.loss_ceiling_reached.length === (reached ? 1 : 0) && signals.length === (reached ? 1 : 0)
-    && sender.health.lossCeilingReached === reached && sender.health.claimsDelivered === false && atCeiling;
+  return signal?.event_id === first && signal.loss_count === ceiling
+    && exchange?.sequence < signal.sequence && signal.sequence < result?.sequence;
+}
+
+export function ceilingSignalled({ sender, phase }) {
+  const evidence = ceilingEvidence({ sender, phase });
+  const expected = evidence.reached ? 1 : 0;
+  const atCeiling = !evidence.reached || signalledAtCeiling(evidence);
+  return sender.callbacks.loss_ceiling_reached.length === expected && evidence.signals.length === expected
+    && sender.health.lossCeilingReached === evidence.reached && sender.health.claimsDelivered === false && atCeiling;
 }
 
 // G4's predicates for the load cells (design.md, the G4 test), over every named phase of its kind: alert

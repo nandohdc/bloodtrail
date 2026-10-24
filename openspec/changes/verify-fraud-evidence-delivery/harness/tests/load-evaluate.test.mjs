@@ -25,32 +25,85 @@ function stores({ ingress, eventId, attempt, action, status }) {
   ingress.read_back.push({ event_id: eventId, persisted: true, stored_body_sha256: sha256(eventId) });
 }
 
+function pushAdmission({ push, sender, capacity, retrying }, eventId, admitted) {
+  push(eventId, "admitted", { values: [admitted, capacity] });
+  push(eventId, "operation_started");
+  const attempted = (entry) => entry.event_id === eventId && (!retrying || entry.attempt === 0);
+  for (const attempt of sender.exchanges.filter(attempted)) push(eventId, "exchange", { attempt: attempt.attempt });
+  if (retrying) push(eventId, "scheduled", { values: sender.callbacks.scheduled[admitted - 1] });
+}
+
+function pushDelivery(context, eventId, delivery, counter) {
+  if (delivery.status === "rejected_overload") context.push(eventId, "rejected_overload", { values: [delivery.depth, delivery.capacity] });
+  else if (delivery.status !== "rejected_shutting_down") pushAdmission(context, eventId, ++counter.admitted);
+  context.push(eventId, "result", { status: delivery.status, after_shutdown: false });
+}
+
+function pushLateRetries({ push, sender }) {
+  const ids = Object.keys(sender.deliveries).filter((id) => sender.deliveries[id].status === "abandoned");
+  ids.forEach((eventId, index) => {
+    push(eventId, "exchange", { attempt: 1 });
+    push(eventId, "scheduled", { values: sender.callbacks.scheduled[ids.length + index] });
+    push(eventId, "exchange", { attempt: 2 });
+    push(eventId, "exhausted", { values: [3] });
+  });
+}
+
 function burstTrace(sender, capacity, retrying) {
   const trace = [];
   const push = (eventId, kind, fields = {}) => trace.push({ sequence: trace.length + 1, event_id: eventId, kind, ...fields });
-  let admitted = 0;
-  for (const [eventId, delivery] of Object.entries(sender.deliveries)) {
-    if (delivery.status === "rejected_overload") push(eventId, "rejected_overload", { values: [delivery.depth, delivery.capacity] });
-    else if (delivery.status !== "rejected_shutting_down") {
-      push(eventId, "admitted", { values: [++admitted, capacity] });
-      push(eventId, "operation_started");
-      for (const attempt of sender.exchanges.filter((entry) => entry.event_id === eventId && (!retrying || entry.attempt === 0))) push(eventId, "exchange", { attempt: attempt.attempt });
-      if (retrying) push(eventId, "scheduled", { values: sender.callbacks.scheduled[admitted - 1] });
-    }
-    push(eventId, "result", { status: delivery.status, after_shutdown: false });
-  }
+  const context = { push, sender, capacity, retrying };
+  const counter = { admitted: 0 };
+  for (const [eventId, delivery] of Object.entries(sender.deliveries)) pushDelivery(context, eventId, delivery, counter);
   push(null, "shutdown_report", { report: sender.shutdown_report });
-  if (retrying) {
-    const ids = Object.keys(sender.deliveries).filter((id) => sender.deliveries[id].status === "abandoned");
-    ids.forEach((eventId, index) => {
-      push(eventId, "exchange", { attempt: 1 });
-      push(eventId, "scheduled", { values: sender.callbacks.scheduled[ids.length + index] });
-      push(eventId, "exchange", { attempt: 2 });
-      push(eventId, "exhausted", { values: [3] });
-    });
-  }
+  if (retrying) pushLateRetries(context);
   for (const entry of sender.delivery_log.filter((delivery) => delivery.after_shutdown)) push(entry.event_id, "result", { status: entry.status, after_shutdown: true });
   return trace;
+}
+
+function rejectOverload({ sender, capacity }, eventId) {
+  sender.deliveries[eventId] = { status: "rejected_overload", attempts: 0, depth: capacity, capacity };
+  sender.callbacks.rejected_overload.push([capacity, capacity]);
+  sender.calls.push(call(false, "SDK_SINK_FAILURE"));
+}
+
+function ingestRetries({ sender, ingress }, eventId) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (attempt > 0) sender.exchanges.push({ event_id: eventId, attempt, body_sha256: sha256(eventId) });
+    ingress.records.push({ event_id: eventId, attempt, action: "status", status: 503, outcome: { kind: "not_ingested" }, body_sha256: sha256(eventId) });
+  }
+  ingress.read_back.push({ event_id: eventId, persisted: false, storage_result: "not_found" });
+}
+
+function admitOccurrence(burst, eventId, index) {
+  const { sender, ingress, capacity, retrying, abandoning } = burst;
+  sender.callbacks.admitted.push([index + 1, capacity]);
+  sender.exchanges.push({ event_id: eventId, attempt: 0, body_sha256: sha256(eventId) });
+  if (retrying) ingestRetries(burst, eventId);
+  else stores({ ingress, eventId, attempt: 0, action: "delay", status: 202 });
+  sender.deliveries[eventId] = abandoning ? { status: "abandoned", attempts: 0 } : { status: "acknowledged", attempts: 1 };
+  if (abandoning) sender.delivery_log.push({ event_id: eventId, status: retrying ? "exhausted" : "acknowledged", attempts: retrying ? 3 : 1, after_shutdown: true });
+  sender.calls.push(call(!retrying, "SDK_SINK_FAILURE"));
+}
+
+function rejectAfterShutdown({ sender, id }, phase) {
+  for (let index = 0; index < phase.after_shutdown; index += 1) {
+    sender.deliveries[id(phase.occurrences + index)] = { status: "rejected_shutting_down", attempts: 0 };
+    sender.calls.push(call(false, "SDK_SINK_FAILURE"));
+  }
+}
+
+// Independently frozen worked example for seed 838: four first retries, then four second retries.
+function freezeRetryCallbacks(sender) {
+  sender.callbacks.scheduled = [[1, 14], [1, 2], [1, 16], [1, 16], [2, 35], [2, 3], [2, 12], [2, 6]];
+  sender.callbacks.exhausted = [[3], [3], [3], [3]];
+}
+
+function shutdownOutcome(phase, { admitted, abandoning, deadline }) {
+  return {
+    report: { accepted: phase.occurrences, completed: abandoning ? phase.occurrences - admitted : phase.occurrences, abandoned: abandoning ? admitted : 0 },
+    elapsed: abandoning ? deadline : 300,
+  };
 }
 
 // A burst as frozen: the first `capacity` admitted and held, the rest rejected at the gate, later
@@ -62,39 +115,17 @@ function honestBurst(phase) {
   const admitted = Math.min(phase.occurrences, capacity);
   const retrying = phase.shutdown === "after_retry_scheduled";
   const abandoning = retrying || deadline < FROZEN.scenarios[phase.schedule[0]][0].delay_ms;
+  const burst = { sender, ingress, capacity, retrying, abandoning };
   sender.callbacks = { scheduled: [], exhausted: [], admitted: [], rejected_overload: [], released: [] };
   for (let index = 0; index < phase.occurrences; index += 1) {
-    const eventId = id(index);
-    if (index >= admitted) {
-      sender.deliveries[eventId] = { status: "rejected_overload", attempts: 0, depth: capacity, capacity };
-      sender.callbacks.rejected_overload.push([capacity, capacity]);
-      sender.calls.push(call(false, "SDK_SINK_FAILURE"));
-      continue;
-    }
-    sender.callbacks.admitted.push([index + 1, capacity]);
-    sender.exchanges.push({ event_id: eventId, attempt: 0, body_sha256: sha256(eventId) });
-    if (retrying) {
-      for (let attempt = 0; attempt < 3; attempt += 1) {
-        if (attempt > 0) sender.exchanges.push({ event_id: eventId, attempt, body_sha256: sha256(eventId) });
-        ingress.records.push({ event_id: eventId, attempt, action: "status", status: 503, outcome: { kind: "not_ingested" }, body_sha256: sha256(eventId) });
-      }
-      ingress.read_back.push({ event_id: eventId, persisted: false, storage_result: "not_found" });
-    } else stores({ ingress, eventId, attempt: 0, action: "delay", status: 202 });
-    sender.deliveries[eventId] = abandoning ? { status: "abandoned", attempts: 0 } : { status: "acknowledged", attempts: 1 };
-    if (abandoning) sender.delivery_log.push({ event_id: eventId, status: retrying ? "exhausted" : "acknowledged", attempts: retrying ? 3 : 1, after_shutdown: true });
-    sender.calls.push(call(!retrying, "SDK_SINK_FAILURE"));
+    if (index >= admitted) rejectOverload(burst, id(index));
+    else admitOccurrence(burst, id(index), index);
   }
-  for (let index = 0; index < phase.after_shutdown; index += 1) {
-    sender.deliveries[id(phase.occurrences + index)] = { status: "rejected_shutting_down", attempts: 0 };
-    sender.calls.push(call(false, "SDK_SINK_FAILURE"));
-  }
-  if (retrying) {
-    // Independently frozen worked example for seed 838: four first retries, then four second retries.
-    sender.callbacks.scheduled = [[1, 14], [1, 2], [1, 16], [1, 16], [2, 35], [2, 3], [2, 12], [2, 6]];
-    sender.callbacks.exhausted = [[3], [3], [3], [3]];
-  }
-  sender.shutdown_report = { accepted: phase.occurrences, completed: abandoning ? phase.occurrences - admitted : phase.occurrences, abandoned: abandoning ? admitted : 0 };
-  sender.shutdown_elapsed_ms = abandoning ? deadline : 300;
+  rejectAfterShutdown({ sender, id }, phase);
+  if (retrying) freezeRetryCallbacks(sender);
+  const outcome = shutdownOutcome(phase, { admitted, abandoning, deadline });
+  sender.shutdown_report = outcome.report;
+  sender.shutdown_elapsed_ms = outcome.elapsed;
   sender.trace = burstTrace(sender, capacity, retrying);
   return { sender, ingress, role_closure: closed(), occurrence_count: phase.occurrences + phase.after_shutdown };
 }

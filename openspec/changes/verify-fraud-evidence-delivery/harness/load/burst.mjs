@@ -40,4 +40,3 @@ export async function emitBurst({ composition, phase, call }) {
   composition.releaseRetries();
   return { calls: await Promise.all([...calls, ...later]), shutdown_report: shutdownReport, shutdown_elapsed_ms: elapsed, shutdown_primitive_elapsed_ms: composition.shutdownTiming.primitive_elapsed_ms };
 }
-
