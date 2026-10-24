@@ -7,7 +7,7 @@
 
 ## 2. Refresh the vulnerable transitive dependency
 
-- [ ] 2.1 Run `npm audit fix --package-lock-only` in `packages/security-audit-sdk-core`. Verify the diff
+- [x] 2.1 Run `npm audit fix --package-lock-only` in `packages/security-audit-sdk-core`. Verify the diff
   changes only the `node_modules/fast-uri` version, registry URL and integrity, to 3.1.9, and that
   `package.json` is unchanged.
 
