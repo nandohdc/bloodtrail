@@ -349,3 +349,17 @@ The owner accepted the recommended option on each:
 - **Q39:** the harness layout above.
 - **Q41:** a deterministic fault injector keyed by event id and attempt ordinal.
 - **Q42:** a seeded PRNG for ground truth, with the seed frozen.
+
+## Owner addendum for #838 and #877 (2026-10-24)
+
+The owner confirmed the following requirements in the Codex grilling session (Q1–Q9), then explicitly instructed "Implement the plan." This addendum supplements G45 for these two tickets only and preserves the historical decision text above.
+
+- Codex authors #838 and the separate #877 CI prerequisite; AGY remains the independent reviewer, using `gemini-3.8-flash-high` in sandboxed plan mode. The #877 lifecycle has the same review, all-green merge and closure delegation. #884 remains an external prerequisite. Product APIs do not change.
+- #877 requires every active harness suite in the existing required governance context. Missing, empty, unreadable or undiscoverable suites fail; archives are excluded; no active harness is explicitly not applicable. Its canonical fold and archive are separate PRs.
+- #838's strict deadline covers the reference composition's report return, including bookkeeping. Elapsed time is monotonic and unrounded, with no grace margin. Primitive time and subsequent work are separate observations. An overrun is a measured composition failure; its owner is assigned only from supporting evidence.
+- Preserve the existing scenarios and add one combined pending-retry, saturation and shutdown case that also leaves admitted evidence unpersisted at the final observation boundary. This measures report completion, not process-crash recovery or cancellation.
+- Every drop must have its own callback with the correct saturating count. Rejection callbacks/results/operation starts have a shared occurrence-attributed ordering trace. Deterministic accounting planted/null controls execute inside each approved run before traffic, in addition to CI and checks on the run's own observations.
+- Final storage observations follow confirmed sender closure and ingress quiescence. An actual close must be observed; a timeout is not proof. Scratch deletion and child closure are recorded. Persisted copies retain accounting priority, shutdown abandonment stays immutable, and late results remain separately visible.
+- Complete independent small phases unless S2 fires; any small mismatch blocks volume. Genuine failures are published with #838 left open. At most one replacement is allowed for a non-S2 harness invalidation, after correction, fresh review/checks and a new exact-head S1. S2, G42's window and shared limits remain unchanged.
+
+The additional frozen small phase submits ten occurrences against capacity four, then two after shutdown begins. Every attempt receives a pre-ingest 503. Four admitted operations wait on retry timers while shutdown reports; releasing those timers afterward produces bounded exhaustion and an explicit storage absence. The shutdown report counts the outer lifecycle's ten submissions: six completed overload decisions and four abandoned operations. Final accounting has eight admission signals and four abandoned occurrences. The full planned call bound is 1,456 (46 small, 1,410 volume).
