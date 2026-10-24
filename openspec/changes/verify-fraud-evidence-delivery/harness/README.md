@@ -4,8 +4,8 @@ Authorization: `../proposal.md#run-authorization` at each run's exact approved h
 [G42](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6346915049) (environment and limits) and
 G44 (delegated S1). See `run-ledger.md` for the shared run budget.
 
-**Two Stage 2 probes have executed:** the tracer, as run 1 (`results/tracer-run-1.json`), and the outages
-probe, as run 2 (`results/outages-run-2.json`). Self-tests here use fixtures and public-shape doubles only.
+**Three Stage 2 probes have executed:** the tracer, as run 1 (`results/tracer-run-1.json`), the outages
+probe, as run 2 (`results/outages-run-2.json`), and the load probe, as run 3 (`results/load-run-3.json`). Self-tests here use fixtures and public-shape doubles only.
 They never import a kit package or execute a harness role; fixture subprocesses, temporary files and loopback sockets are permitted.
 
 Each run's results pin every harness file's git blob and sha256 at that run's approved head
