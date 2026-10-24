@@ -4,8 +4,8 @@
 
 ## 2. Runner and CI
 
-- [ ] 2.1 Implement discovery and execution with vertical TDD at the runner command seam; verify multiple active suites, archive exclusion, no-harness not-applicable, missing/empty/unreadable suites, symbolic links and a failing fixture with its passing null control.
-- [ ] 2.2 Wire the runner into the existing required governance context; verify the real active harness suite runs on Node 26.5.0 without a probe approval and the workflow retains its context names.
+- [x] 2.1 Implement discovery and execution with vertical TDD at the runner command seam; verify multiple active suites, archive exclusion, no-harness not-applicable, missing/empty/unreadable suites, symbolic links and a failing fixture with its passing null control.
+- [x] 2.2 Wire the runner into the existing required governance context; verify the real active harness suite runs on Node 26.5.0 without a probe approval and the workflow retains its context names.
 
 ## 3. Verification
 

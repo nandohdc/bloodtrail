@@ -202,6 +202,9 @@ jobs:
       - name: Repository script test suite
         run: node --test .github/scripts/*.test.mjs
 
+      - name: Active change harness self-tests
+        run: node .github/scripts/run-active-harness-tests.mjs
+
       - name: Governance checker
         run: node openspec/scripts/check-design-pattern-governance.mjs --phase final
 
