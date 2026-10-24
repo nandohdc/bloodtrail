@@ -6,26 +6,36 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
-function directory(path, optional = false) {
-  let stat;
+function rejectSymbolicLink(entry, label) {
+  if (entry.isSymbolicLink()) throw new Error(`symbolic link in harness discovery: ${label}`);
+}
+
+function lstatOptional(path, optional) {
   try {
-    stat = lstatSync(path);
+    return lstatSync(path);
   } catch (error) {
-    if (optional && error.code === "ENOENT") return false;
+    if (optional && error.code === "ENOENT") return undefined;
     throw error;
   }
-  if (stat.isSymbolicLink()) throw new Error(`symbolic link in harness discovery: ${path}`);
+}
+
+function directory(path, optional = false) {
+  const stat = lstatOptional(path, optional);
+  if (!stat) return false;
+  rejectSymbolicLink(stat, path);
   if (!stat.isDirectory()) throw new Error(`not a directory in harness discovery: ${path}`);
   return true;
 }
 
-function testFiles(directory) {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(directory, entry.name);
-    if (entry.isSymbolicLink()) throw new Error(`symbolic link in harness discovery: ${path}`);
-    if (entry.isDirectory()) return testFiles(path);
-    return entry.name.endsWith(".test.mjs") ? [path] : [];
-  });
+function testFilesIn(parent, entry) {
+  const path = join(parent, entry.name);
+  rejectSymbolicLink(entry, path);
+  if (entry.isDirectory()) return testFiles(path);
+  return entry.name.endsWith(".test.mjs") ? [path] : [];
+}
+
+function testFiles(parent) {
+  return readdirSync(parent, { withFileTypes: true }).flatMap((entry) => testFilesIn(parent, entry));
 }
 
 function killProcessGroup(child, grouped, onError) {
@@ -49,10 +59,19 @@ function assertTimeout(timeoutMs) {
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new Error("invalid harness test timeout");
 }
 
+function terminationFailure(failure, signal) {
+  if (failure) return failure;
+  return signal ? new Error(`test process terminated: ${signal}`) : undefined;
+}
+
 function exitCode(failure, code, signal) {
-  const error = failure ?? (signal ? new Error(`test process terminated: ${signal}`) : undefined);
+  const error = terminationFailure(failure, signal);
   if (error) console.error(`Active harness self-tests failed: ${error.message}`);
   return error ? 1 : code ?? 1;
+}
+
+function spawnTests({ root, files }, grouped) {
+  return spawn(process.execPath, ["--test", ...files], { cwd: root, stdio: "inherit", detached: grouped });
 }
 
 // A separate process group contains both Node's coordinator and its test workers. Killing only the
@@ -61,7 +80,7 @@ function executeTests({ root, files, timeoutMs }) {
   assertTimeout(timeoutMs);
   return new Promise((resolveResult) => {
     const grouped = process.platform !== "win32";
-    const child = spawn(process.execPath, ["--test", ...files], { cwd: root, stdio: "inherit", detached: grouped });
+    const child = spawnTests({ root, files }, grouped);
     let failure;
     const terminate = () => killProcessGroup(child, grouped, (error) => { failure ??= error; });
     const abort = (error) => {
@@ -80,17 +99,20 @@ function executeTests({ root, files, timeoutMs }) {
   });
 }
 
-function harnessSuite(root, changes, entry) {
-  if (entry.name === "archive") return [];
-  if (entry.isSymbolicLink()) throw new Error(`symbolic link in harness discovery: ${entry.name}`);
-  if (!entry.isDirectory()) return [];
-  const harness = join(changes, entry.name, "harness");
-  if (!directory(harness, true)) return [];
+function testSuite(root, harness) {
   const tests = join(harness, "tests");
   directory(tests);
   const suite = testFiles(tests);
   if (suite.length === 0) throw new Error(`no self-tests in ${relative(root, harness)}`);
   return suite;
+}
+
+function harnessSuite(root, changes, entry) {
+  if (entry.name === "archive") return [];
+  rejectSymbolicLink(entry, entry.name);
+  if (!entry.isDirectory()) return [];
+  const harness = join(changes, entry.name, "harness");
+  return directory(harness, true) ? testSuite(root, harness) : [];
 }
 
 function discoverHarnessFiles(root) {
