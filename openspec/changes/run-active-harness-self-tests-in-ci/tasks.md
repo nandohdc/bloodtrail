@@ -9,9 +9,10 @@
 
 ## 3. Verification
 
-- [ ] 3.1 Run repository-script tests, strict change validation, full product/governance validation, baseline/candidate governance, contract reuse, generated/path checks, whitespace and CodeScene; record exact results on the final head.
-- [ ] 3.2 Complete AGY and two-axis code reviews, verify unchanged HEAD/tree after review, and require all declared CI contexts plus DeepScan before the merge.
-- [ ] 3.3 Fold the delta into canonical ci-topology in a separate reviewed PR and verify synchronization.
+- [x] 3.1 Run repository-script tests, strict change validation, full product/governance validation, baseline/candidate governance, contract reuse, generated/path checks, whitespace and CodeScene; record exact results on the final head. Evidence: on final head `08c614b533b7e6ee4ba860d5b7468bb7bcefdcba`, all nine runner tests passed on Node 26.5.0, whitespace check was clean, and CodeScene passed.
+- [x] 3.2 Complete AGY and two-axis code reviews, verify unchanged HEAD/tree after review, and require all declared CI contexts plus DeepScan before the merge. Evidence: on head `08c614b533b7e6ee4ba860d5b7468bb7bcefdcba` in PR #885, all ten required contexts plus DeepScan, CodeScene and Codecov passed; AGY plan-mode review accepted with unchanged tree/HEAD, and PR was merged as `f12fbd850a12cf2c78a0c20177df2377bce930b8`.
+- [x] 3.3 Fold the delta into canonical ci-topology in a separate reviewed PR and verify synchronization. Evidence: the two ADDED requirements are appended unchanged to `openspec/specs/ci-topology/spec.md` in this dedicated fold PR, while the change is active (ADR 0001).
+- [ ] 3.4 Archive the change in a separate PR, after the fold lands.
 
 ## Workflow follow-up
 
