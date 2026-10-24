@@ -43,7 +43,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 ## 4. Saturation, shutdown and `best_effort` loss (#838)
 
-- [ ] 4.1 Build and freeze the overload, strict mid-burst deadline-bounded shutdown, combined pending-retry/saturation/unpersisted-abandonment and `best_effort` loss plans. Verify per-occurrence callback ordering and drop identity, runtime pre-traffic accounting controls, confirmed final quiescence, cleanup failures, the bounded Codex lane and the 1,456-call cap with focused fixture tests.
+- [x] 4.1 Build and freeze the overload, strict mid-burst deadline-bounded shutdown, combined pending-retry/saturation/unpersisted-abandonment and `best_effort` loss plans. Verify per-occurrence callback ordering and drop identity, runtime pre-traffic accounting controls, confirmed final quiescence, cleanup failures, the bounded Codex lane and the 1,456-call cap with focused fixture tests.
 - [ ] 4.2 Under its own S1, record overload rejections with depth and capacity, the shutdown report, and the loss
   counter and ceiling signals.
 

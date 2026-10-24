@@ -3,6 +3,7 @@
 // frozen deadline. The ingress token is generated per run and held only in memory (sent over IPC, never
 // written or recorded).
 import { join } from "node:path";
+import assert from "node:assert/strict";
 import { assertResolution, spawnRole } from "./launcher.mjs";
 import { roleProcessPath } from "./plan.mjs";
 
@@ -17,22 +18,34 @@ export function killAll(roles) {
 // SQLite files while they are removed. The wait is bounded; scratch deletion retries and is proven.
 export const ROLE_CLOSE_TIMEOUT_MS = 5000;
 
-export async function stopRoles(roles, { timeoutMs = ROLE_CLOSE_TIMEOUT_MS } = {}) {
-  killAll(roles);
+async function waitForClose(roles, timeoutMs = ROLE_CLOSE_TIMEOUT_MS) {
   let timer;
-  const timeout = new Promise((resolveTimeout) => { timer = setTimeout(resolveTimeout, timeoutMs); });
+  const timeout = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`role closure exceeded its ${timeoutMs} ms deadline`)), timeoutMs); });
   try {
-    await Promise.race([Promise.all(Object.values(roles).map((role) => role.whenClosed())), timeout]);
+    const closed = Promise.all(Object.entries(roles).map(async ([name, role]) => [name, await role.whenClosed()]));
+    return Object.fromEntries(await Promise.race([closed, timeout]));
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function stopAll(roles) {
-  for (const [name, role] of Object.entries(roles)) {
-    role.send({ type: "stop" });
-    await role.next("stopped", name);
+export async function stopRoles(roles, { timeoutMs = ROLE_CLOSE_TIMEOUT_MS, failure } = {}) {
+  killAll(roles);
+  try {
+    return await waitForClose(roles, timeoutMs);
+  } catch (error) {
+    if (!failure) throw error;
+    failure.role_closure_error = error.message;
+    throw failure;
   }
+}
+
+async function stopRole(name, role) {
+  role.send({ type: "stop" });
+  await role.next("stopped", name);
+  const closed = (await waitForClose({ [name]: role }))[name];
+  assert.equal(closed.code, 0, `${name} must close cleanly`);
+  return closed;
 }
 
 function checkResolutions({ service, resolved }) {
@@ -55,12 +68,14 @@ export async function roleExchange({ service, directory, flags, probeDirectory, 
   roles.sender.send({ type: "start", expectations: senderInput, origin: `http://127.0.0.1:${ready.port}`, token, port: ready.port });
   const report = await roles.sender.next("report", "sender");
   checkResolutions({ service, resolved: report.resolved });
-  roles.ingress.send({ type: "read_back" });
+  const senderClosed = await stopRole("sender", roles.sender);
+  roles.ingress.send({ type: "finalize" });
   const back = await roles.ingress.next("read_back", "ingress");
-  await stopAll(roles);
+  assert.equal(back.quiescent, true, "final read-back requires ingress quiescence");
+  const ingressClosed = await stopRole("ingress", roles.ingress);
   const { type: _ready, ...ingress } = ready;
   const { type: _report, ...sender } = report;
-  return { ingress: { ...ingress, records: back.records, read_back: back.read_back }, sender, occurrence_count: report.ledger.occurrence_count };
+  return { ingress: { ...ingress, records: back.records, read_back: back.read_back, quiescent: back.quiescent }, sender, role_closure: { sender: senderClosed, ingress: ingressClosed }, occurrence_count: report.ledger.occurrence_count };
 }
 
 // The failure that ends a session carries each started role's bounded stderr, with the run's token

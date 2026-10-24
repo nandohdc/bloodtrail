@@ -92,6 +92,7 @@ export async function gatedSession({ expectations, units, runUnit, evaluate, key
   const byUnit = {};
   const token = randomBytes(24).toString("hex");
   const context = { ...base, expectations, byUnit, token, halted: false };
+  let failure;
   const halt = () => {
     context.halted = true;
     killAll(flatRoles(byUnit));
@@ -101,8 +102,9 @@ export async function gatedSession({ expectations, units, runUnit, evaluate, key
   } catch (error) {
     context.halted = true;
     if (context.partial !== undefined) error.observations = context.partial;
-    throw withRoleStderr({ error, roles: flatRoles(byUnit), token });
+    failure = withRoleStderr({ error, roles: flatRoles(byUnit), token });
+    throw failure;
   } finally {
-    await stopRoles(flatRoles(byUnit));
+    await stopRoles(flatRoles(byUnit), { failure });
   }
 }

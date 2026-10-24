@@ -94,7 +94,7 @@ test("a run number is claimed once across approvals, and the control directory n
   }
 });
 
-test("G45: the run CLI requires every argument and the Claude Code driver lane", () => {
+test("G45: the run CLI requires every argument and the historical Claude Code lane", () => {
   const required = ["approved-head", ...RUN_ARGS, ...DRIVER_ARGS];
   const values = Object.fromEntries(required.map((key) => [key, key === "driver-lane" ? "claude-code" : "fixture"]));
   const toArgs = (entries) => Object.entries(entries).flatMap(([key, value]) => [`--${key}`, value]);
@@ -104,6 +104,15 @@ test("G45: the run CLI requires every argument and the Claude Code driver lane",
     assert.throws(() => argumentsFor({ args, run: true }), /required argument/, missing);
   }
   assert.throws(() => argumentsFor({ args: toArgs({ ...values, "driver-lane": "pi" }), run: true }), /Claude Code lane/);
+});
+
+test("the owner Codex exception is bounded to #838 and build-only checks", () => {
+  const values = Object.fromEntries(["approved-head", ...RUN_ARGS, ...DRIVER_ARGS].map((key) => [key, key === "driver-lane" ? "codex" : "fixture"]));
+  const args = Object.entries(values).flatMap(([key, value]) => [`--${key}`, value]);
+  assert.equal(argumentsFor({ args, run: true, probe: "S2-load", ticket: 838 }).driver.lane, "codex");
+  assert.throws(() => argumentsFor({ args, run: true, probe: "S2-outages", ticket: 837 }), /Claude Code lane/);
+  assert.throws(() => argumentsFor({ args, run: true }), /Claude Code lane/);
+  assert.equal(argumentsFor({ args: ["--dry-run", "--driver-lane", "codex", "--driver-model", "fixture"] }).driver.lane, "codex");
 });
 
 test("the once-marker must be in the one pinned Stage 2 control directory", () => {

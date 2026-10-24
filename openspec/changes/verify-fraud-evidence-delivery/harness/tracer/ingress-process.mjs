@@ -11,7 +11,7 @@ import { requireControls, writeControls } from "../lib/controls.mjs";
 
 reportViolations((violation) => process.send({ type: "violation", message: `non-loopback connection to ${violation.host}` }));
 
-const state = { server: null, storage: null };
+const state = { server: null, storage: null, quiescent: false };
 
 async function start({ token, fault_plan: faultPlan, storage_directory: directory, owners }) {
   const controls = requireControls({ write_outside_grant: writeControls({ refusedPath: join(process.cwd(), "planted-write"), allowedPath: join(directory, "null-control-write") }) });
@@ -26,12 +26,18 @@ function report() {
 }
 
 async function stop() {
-  await state.server.close();
+  if (!state.quiescent) await state.server.close();
   state.storage.close();
   return { type: "stopped" };
 }
 
-const HANDLERS = { start, read_back: async () => report(), stop };
+async function finalize() {
+  await state.server.quiesce();
+  state.quiescent = true;
+  return { ...report(), quiescent: true };
+}
+
+const HANDLERS = { start, read_back: async () => report(), finalize, stop };
 
 process.on("message", (message) => {
   const handler = HANDLERS[message.type];

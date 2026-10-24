@@ -6,5 +6,6 @@
 import { PROBE_FILES as TRACER_FILES } from "../tracer/files.mjs";
 
 export const PROBE_FILES = Object.freeze([
-  "load/sender-process.mjs", "load/ingress-process.mjs", "load/workload.mjs", ...TRACER_FILES.filter((path) => path !== "tracer/sender-process.mjs"),
+  "load/sender-process.mjs", "load/ingress-process.mjs", "load/workload.mjs", "load/burst.mjs", "load/controls.mjs", "load/evaluate.mjs",
+  "lib/accounting.mjs", "lib/evaluation.mjs", ...TRACER_FILES.filter((path) => path !== "tracer/sender-process.mjs"),
 ]);

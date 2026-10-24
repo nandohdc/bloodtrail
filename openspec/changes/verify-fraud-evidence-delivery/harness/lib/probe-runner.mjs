@@ -75,7 +75,7 @@ async function runSession(context) {
 
 export async function runProbe(plan) {
   requireProbe(plan);
-  const options = argumentsFor({ args: process.argv.slice(2), run: true });
+  const options = argumentsFor({ args: process.argv.slice(2), run: true, probe: plan.probe, ticket: plan.ticket });
   const runNumber = Number(options["run-number"]);
   assert(Number.isInteger(runNumber) && runNumber >= 1 && runNumber <= RUN_LIMIT, "run number outside shared authorization");
   const repo = resolve(options.repo || command({ program: "git", args: ["rev-parse", "--show-toplevel"] }).trim());

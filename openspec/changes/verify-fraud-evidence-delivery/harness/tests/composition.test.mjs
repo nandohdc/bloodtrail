@@ -79,6 +79,21 @@ test("a non-loopback origin is refused before anything is built", () => {
   assert.throws(() => compose({ statuses: [], origin: "http://192.0.2.1:80" }), /delivery origin must be loopback/);
 });
 
+test("an overload callback is attributed before its result and the rejected operation never starts", async () => {
+  const { sdkNode } = fixtureBinding({ statuses: [] });
+  sdkNode.createBoundedDeliveryBackpressure = ({ observability }) => ({ submit: async () => {
+    observability.onRejectedOverload(4, 4);
+    return { status: "rejected_overload", depth: 4, capacity: 4 };
+  } });
+  const composition = referenceComposition({ sdkNode, origin: "http://127.0.0.1:9999", token: "fixture", parameters: PARAMETERS, timers: {}, jitter: () => 0.5 });
+  await composition.deliver({ event: { id: "rejected" } });
+  const callback = composition.trace.find((entry) => entry.kind === "rejected_overload");
+  const result = composition.trace.find((entry) => entry.kind === "result");
+  assert.equal(callback.event_id, "rejected");
+  assert(callback.sequence < result.sequence);
+  assert.equal(composition.trace.some((entry) => entry.kind === "operation_started" || entry.kind === "exchange"), false);
+});
+
 test("each attempt's ordinal and body hash are recorded, and retry callbacks are observed", async () => {
   const scheduled = [];
   const { composition } = compose({ statuses: ["retryable", "acknowledged"], scheduled });
@@ -200,6 +215,9 @@ test("the best_effort composition records each result, the binding's callbacks, 
     "b-3": { status: "threw", attempts: 0, error: "planted binding fault" }, "b-4": { status: "refused", attempts: 0, code: "delivery_class_mismatch" },
   });
   assert.deepEqual(composition.callbacks, { dropped: [["b-2", 1]], loss_ceiling_reached: [[1]] });
+  const signal = composition.trace.find((entry) => entry.kind === "loss_ceiling_reached");
+  assert.equal(signal.event_id, "b-2");
+  assert(signal.sequence < composition.trace.find((entry) => entry.event_id === "b-2" && entry.kind === "result").sequence);
   assert.equal(composition.exchanges.length, 4);
   assert.deepEqual(await composition.shutdown(), { deliveryClass: "best_effort", lossCount: 1, lossCeilingReached: true, claimsDelivered: false });
   assert.equal(bucketFor({ persisted: false, delivery: "refused" }), "unexplained", "a refusal is a misrouted occurrence, not an explained loss");

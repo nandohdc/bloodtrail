@@ -40,6 +40,23 @@
         "action": "status",
         "status": 503
       }
+    ],
+    "never_ingested": [
+      {
+        "attempt": 0,
+        "action": "status",
+        "status": 503
+      },
+      {
+        "attempt": 1,
+        "action": "status",
+        "status": 503
+      },
+      {
+        "attempt": 2,
+        "action": "status",
+        "status": 503
+      }
     ]
   },
   "phases": [
@@ -130,6 +147,27 @@
       }
     },
     {
+      "name": "retry_shutdown",
+      "pass": "small",
+      "kind": "burst",
+      "occurrences": 10,
+      "shutdown": "after_retry_scheduled",
+      "after_shutdown": 2,
+      "schedule": [
+        "never_ingested"
+      ],
+      "cycles": 12,
+      "composition": {
+        "exchange_timeout_ms": 5000,
+        "max_attempts": 3,
+        "base_delay_ms": 20,
+        "max_delay_ms": 160,
+        "jitter_seed": 838,
+        "capacity": 4,
+        "shutdown_deadline_ms": 200
+      }
+    },
+    {
       "name": "overload_volume",
       "pass": "volume",
       "kind": "burst",
@@ -196,11 +234,12 @@
       "drain": 10,
       "abandon": 6,
       "best_effort": 8,
+      "retry_shutdown": 12,
       "overload_volume": 1000,
       "drain_volume": 210,
       "best_effort_volume": 200
     },
-    "total": 1444
+    "total": 1456
   },
   "thresholds": {
     "unexplained": 0
@@ -278,7 +317,8 @@
         },
         "unexplained": 0,
         "disagreements": {},
-        "accounting_holds": true
+        "accounting_holds": true,
+        "denominator": 10
       },
       "basis": [
         "packages/security-audit-sdk-node/src/delivery-shutdown.ts:57",
@@ -324,7 +364,8 @@
         },
         "unexplained": 0,
         "disagreements": {},
-        "accounting_holds": true
+        "accounting_holds": true,
+        "denominator": 10
       },
       "basis": [
         "packages/security-audit-sdk-node/src/delivery-shutdown.ts:57",
@@ -372,7 +413,8 @@
         "disagreements": {
           "abandoned": 6
         },
-        "accounting_holds": true
+        "accounting_holds": true,
+        "denominator": 6
       },
       "basis": [
         "packages/security-audit-sdk-node/src/delivery-shutdown.ts:57",
@@ -436,7 +478,8 @@
           "abandoned": 0,
           "unexplained": 0
         },
-        "accounting_holds": true
+        "accounting_holds": true,
+        "denominator": 8
       },
       "basis": [
         "packages/security-audit-sdk-node/src/delivery-classes.ts:133",
@@ -480,7 +523,8 @@
         "overload",
         "drain",
         "abandon",
-        "best_effort"
+        "best_effort",
+        "retry_shutdown"
       ],
       "setup": "G4's load predicates over the small pass: alert before silent loss, bounded flush (the deadline checked where shutdown starts mid-burst), no backlog, and the best_effort row's bounded loss reporting.",
       "expected": {
@@ -508,7 +552,8 @@
         "overload",
         "drain",
         "abandon",
-        "best_effort"
+        "best_effort",
+        "retry_shutdown"
       ],
       "setup": "Planted-defect controls in both live role processes of every small-pass phase, before any traffic.",
       "expected": {
@@ -519,7 +564,10 @@
           "ingress_write_refused": true,
           "guard_violations": [
             "192.0.2.1"
-          ]
+          ],
+          "accounting_pretraffic": true,
+          "final_quiescent": true,
+          "role_closure_confirmed": true
         },
         "drain": {
           "sender_loopback_guard": true,
@@ -528,7 +576,10 @@
           "ingress_write_refused": true,
           "guard_violations": [
             "192.0.2.1"
-          ]
+          ],
+          "accounting_pretraffic": true,
+          "final_quiescent": true,
+          "role_closure_confirmed": true
         },
         "abandon": {
           "sender_loopback_guard": true,
@@ -537,7 +588,10 @@
           "ingress_write_refused": true,
           "guard_violations": [
             "192.0.2.1"
-          ]
+          ],
+          "accounting_pretraffic": true,
+          "final_quiescent": true,
+          "role_closure_confirmed": true
         },
         "best_effort": {
           "sender_loopback_guard": true,
@@ -546,7 +600,22 @@
           "ingress_write_refused": true,
           "guard_violations": [
             "192.0.2.1"
-          ]
+          ],
+          "accounting_pretraffic": true,
+          "final_quiescent": true,
+          "role_closure_confirmed": true
+        },
+        "retry_shutdown": {
+          "sender_loopback_guard": true,
+          "sender_write_refused": true,
+          "sender_synthetic_data": true,
+          "ingress_write_refused": true,
+          "guard_violations": [
+            "192.0.2.1"
+          ],
+          "accounting_pretraffic": true,
+          "final_quiescent": true,
+          "role_closure_confirmed": true
         }
       },
       "basis": [
@@ -555,6 +624,100 @@
     },
     {
       "case_id": "L-09",
+      "pass": "small",
+      "observer": "admission",
+      "phases": [
+        "retry_shutdown"
+      ],
+      "setup": "Uniform pre-ingest failures hold four admitted retry waits at capacity; six overload and two post-shutdown submissions never run.",
+      "expected": {
+        "submitted": 12,
+        "admitted": 4,
+        "admitted_depth_max": 4,
+        "rejected_overload": 6,
+        "rejection_results": {
+          "4/4": 6
+        },
+        "rejection_callbacks": {
+          "4/4": 6
+        },
+        "rejected_reached_exchange": 0,
+        "exchanges": 12,
+        "ingress_requests": 12,
+        "stored": 0
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-backpressure.ts:51"
+      ]
+    },
+    {
+      "case_id": "L-10",
+      "pass": "small",
+      "observer": "shutdown_accounting",
+      "phases": [
+        "retry_shutdown"
+      ],
+      "setup": "The report abandons four pending retry operations; later exhaustion changes no shutdown label, and final public storage lookups report not_found.",
+      "expected": {
+        "shutdown_report": {
+          "accepted": 10,
+          "completed": 6,
+          "abandoned": 4
+        },
+        "within_deadline": true,
+        "deliveries": {
+          "rejected_overload": 6,
+          "abandoned": 4,
+          "rejected_shutting_down": 2
+        },
+        "settled_after_shutdown": {
+          "exhausted": 4
+        },
+        "sdk": {
+          "SDK_SINK_FAILURE": 12
+        },
+        "counts": {
+          "persisted": 0,
+          "reported_undelivered": 0,
+          "admission_signal": 8,
+          "abandoned": 4,
+          "unexplained": 0
+        },
+        "unexplained": 0,
+        "disagreements": {},
+        "accounting_holds": true,
+        "denominator": 12
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-shutdown.ts:75"
+      ]
+    },
+    {
+      "case_id": "L-11",
+      "pass": "small",
+      "observer": "retry_accounting",
+      "phases": [
+        "retry_shutdown"
+      ],
+      "setup": "Every scheduled retry is attributed and eventually sent after the held gate releases; all four admitted operations exhaust with their callback and remain absent from storage.",
+      "expected": {
+        "scheduled": 8,
+        "retry_exchanges": 8,
+        "exhausted": 4,
+        "pending_at_shutdown": 4,
+        "late_exhausted": 4,
+        "unpersisted": 4,
+        "every_delay_reported": true,
+        "every_exhaustion_reported": true,
+        "bounded_attempts": true,
+        "seeded_delays_hold": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:106"
+      ]
+    },
+    {
+      "case_id": "L-12",
       "pass": "volume",
       "observer": "admission",
       "phases": [
@@ -587,7 +750,7 @@
       ]
     },
     {
-      "case_id": "L-10",
+      "case_id": "L-13",
       "pass": "volume",
       "observer": "shutdown_accounting",
       "phases": [
@@ -619,7 +782,8 @@
         },
         "unexplained": 0,
         "disagreements": {},
-        "accounting_holds": true
+        "accounting_holds": true,
+        "denominator": 1000
       },
       "basis": [
         "packages/security-audit-sdk-node/src/delivery-shutdown.ts:57",
@@ -633,7 +797,7 @@
       ]
     },
     {
-      "case_id": "L-11",
+      "case_id": "L-14",
       "pass": "volume",
       "observer": "shutdown_accounting",
       "phases": [
@@ -665,7 +829,8 @@
         },
         "unexplained": 0,
         "disagreements": {},
-        "accounting_holds": true
+        "accounting_holds": true,
+        "denominator": 210
       },
       "basis": [
         "packages/security-audit-sdk-node/src/delivery-shutdown.ts:57",
@@ -679,7 +844,7 @@
       ]
     },
     {
-      "case_id": "L-12",
+      "case_id": "L-15",
       "pass": "volume",
       "observer": "loss",
       "phases": [
@@ -824,7 +989,8 @@
           "abandoned": 0,
           "unexplained": 0
         },
-        "accounting_holds": true
+        "accounting_holds": true,
+        "denominator": 200
       },
       "basis": [
         "packages/security-audit-sdk-node/src/delivery-classes.ts:133",
@@ -842,7 +1008,7 @@
       ]
     },
     {
-      "case_id": "L-13",
+      "case_id": "L-16",
       "pass": "volume",
       "observer": "g4_predicates",
       "phases": [
@@ -869,7 +1035,7 @@
       ]
     },
     {
-      "case_id": "L-14",
+      "case_id": "L-17",
       "pass": "volume",
       "observer": "isolation_controls",
       "phases": [
@@ -886,7 +1052,10 @@
           "ingress_write_refused": true,
           "guard_violations": [
             "192.0.2.1"
-          ]
+          ],
+          "accounting_pretraffic": true,
+          "final_quiescent": true,
+          "role_closure_confirmed": true
         },
         "drain_volume": {
           "sender_loopback_guard": true,
@@ -895,7 +1064,10 @@
           "ingress_write_refused": true,
           "guard_violations": [
             "192.0.2.1"
-          ]
+          ],
+          "accounting_pretraffic": true,
+          "final_quiescent": true,
+          "role_closure_confirmed": true
         },
         "best_effort_volume": {
           "sender_loopback_guard": true,
@@ -904,7 +1076,10 @@
           "ingress_write_refused": true,
           "guard_violations": [
             "192.0.2.1"
-          ]
+          ],
+          "accounting_pretraffic": true,
+          "final_quiescent": true,
+          "role_closure_confirmed": true
         }
       },
       "basis": [

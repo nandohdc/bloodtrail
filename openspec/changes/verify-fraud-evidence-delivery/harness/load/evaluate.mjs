@@ -4,10 +4,7 @@
 import { isDeepStrictEqual } from "node:util";
 import { accountFor, accountingInputs } from "../lib/accounting.mjs";
 import { isolationControls } from "../lib/evaluation.mjs";
-
-// A shutdown that overran its deadline by more than half of it (and at least 100 ms, for the event loop's
-// timer granularity) is not bounded; a 200 ms deadline is checked at 300 ms, not at a flat second.
-export const DEADLINE_MARGIN = Object.freeze({ ratio: 0.5, floor_ms: 100 });
+import { retryDelay, seededJitter } from "../lib/clock.mjs";
 
 export function phaseOf(expectations, name) {
   return expectations.phases.find((phase) => phase.name === name);
@@ -61,9 +58,9 @@ function planned(phase) {
   return phase.occurrences + phase.after_shutdown;
 }
 
-function withinDeadline({ sender, phase }) {
+export function withinDeadline({ sender, phase }) {
   const deadline = phase.composition.shutdown_deadline_ms;
-  return sender.shutdown_elapsed_ms <= deadline + Math.max(DEADLINE_MARGIN.floor_ms, deadline * DEADLINE_MARGIN.ratio);
+  return Number.isFinite(sender.shutdown_elapsed_ms) && sender.shutdown_elapsed_ms >= 0 && sender.shutdown_elapsed_ms <= deadline;
 }
 
 // The shutdown report, how every occurrence ended (including any that settled only after shutdown reported),
@@ -76,7 +73,7 @@ function shutdownAccounting({ observed: { sender, ingress }, phase }) {
     settled_after_shutdown: tally(sender.delivery_log.filter((entry) => entry.after_shutdown).map((entry) => entry.status)),
     sdk: tally(sender.calls.map(sdkResult)),
     counts: accounting.counts, unexplained: accounting.unexplained.length,
-    disagreements: tally(accounting.disagreements.map((entry) => entry.delivery)), accounting_holds: accounting.holds,
+    disagreements: tally(accounting.disagreements.map((entry) => entry.delivery)), accounting_holds: accounting.holds, denominator: accounting.denominator,
   };
 }
 
@@ -91,18 +88,20 @@ function loss({ observed: { sender, ingress }, phase }) {
     loss_ceiling_reached: sender.callbacks.loss_ceiling_reached.map(([lossCount]) => lossCount),
     health: sender.health, guarantees: sender.guarantees,
     exchanges: sender.exchanges.length, stored: stored(ingress), sdk: tally(sender.calls.map(sdkResult)),
-    counts: accounting.counts, accounting_holds: accounting.holds,
+    counts: accounting.counts, accounting_holds: accounting.holds, denominator: accounting.denominator,
   };
 }
 
 // A shutdown report accounts for everything admitted when it counts every submission made before shutdown
 // started (the phase's occurrences) and splits them into completed and abandoned.
-function accountsForAdmitted({ report, phase }) {
+export function accountsForAdmitted({ report, phase }) {
   return report.accepted === phase.occurrences && report.accepted === report.completed + report.abandoned;
 }
 
 function dropsCounted({ sender, dropped }) {
-  return dropped.length === statuses(sender).filter((status) => status === "dropped").length;
+  const ids = dropped.map(([eventId]) => eventId);
+  return dropped.length === statuses(sender).filter((status) => status === "dropped").length
+    && new Set(ids).size === ids.length && ids.every((eventId) => sender.deliveries[eventId]?.status === "dropped");
 }
 
 // Planted defects on the run's own data (the first named phase is a burst, the second best_effort): a
@@ -119,25 +118,85 @@ function plantedControls({ observed, phases, names: [burst, effort] }) {
   };
 }
 
-function alertsBeforeLoss({ sender }) {
+export function alertsBeforeLoss({ sender }) {
   const { rejected, reachedExchange } = overloadRejections(sender);
+  const trace = sender.trace ?? [];
+  const ordered = trace.every((entry, index) => entry.sequence === index + 1);
+  const attributed = rejected.every(([eventId, delivery]) => {
+    const entries = trace.filter((entry) => entry.event_id === eventId);
+    const callbacks = entries.filter((entry) => entry.kind === "rejected_overload");
+    const results = entries.filter((entry) => entry.kind === "result" && entry.status === "rejected_overload");
+    return callbacks.length === 1 && results.length === 1 && callbacks[0].sequence < results[0].sequence
+      && callbacks[0].values[0] === delivery.depth && callbacks[0].values[1] === delivery.capacity
+      && !entries.some((entry) => entry.kind === "operation_started" || entry.kind === "exchange");
+  });
   return rejected.length === sender.callbacks.rejected_overload.length
     && sender.callbacks.rejected_overload.every(([depth, capacity]) => depth === capacity)
-    && reachedExchange === 0;
+    && reachedExchange === 0 && ordered && attributed;
 }
 
 // Every drop has its callback, each callback carries the saturating count at that drop, and the count the
 // drop's own result reported is the same one.
-function dropsReported({ sender, phase }) {
+export function dropsReported({ sender, phase }) {
   const ceiling = phase.composition.loss_ceiling;
   const saturating = sender.callbacks.dropped.every(([, lossCount], index) => lossCount === Math.min(index + 1, ceiling));
-  const agreeing = sender.callbacks.dropped.every(([eventId, lossCount]) => sender.deliveries[eventId]?.loss_count === lossCount);
+  const agreeing = sender.callbacks.dropped.every(([eventId, lossCount]) => sender.deliveries[eventId]?.status === "dropped" && sender.deliveries[eventId].loss_count === lossCount);
   return dropsCounted({ sender, dropped: sender.callbacks.dropped }) && saturating && agreeing;
 }
 
-function ceilingSignalled({ sender, phase }) {
+function noBacklog({ sender, ingress }) {
+  const starts = (sender.trace ?? []).filter((entry) => entry.kind === "operation_started").map((entry) => entry.event_id);
+  const allowed = new Set(starts);
+  const attemptKey = (entry) => JSON.stringify([entry.event_id, entry.attempt]);
+  return starts.length === allowed.size && starts.length === sender.callbacks.admitted.length
+    && sender.exchanges.every((entry) => allowed.has(entry.event_id))
+    && isDeepStrictEqual(sender.exchanges.map(attemptKey).sort(), ingress.records.map(attemptKey).sort());
+}
+
+// In the combined case, delayed retries remain pending at report time and are then allowed to finish.
+// Late exhaustion is read from the log: the primary delivery map preserves the shutdown's abandonment.
+export function retryAccounting({ observed: { sender, ingress }, phase }) {
+  const scheduled = sender.trace.filter((entry) => entry.kind === "scheduled");
+  const exhausted = sender.trace.filter((entry) => entry.kind === "exhausted");
+  const retried = sender.trace.filter((entry) => entry.kind === "exchange" && entry.attempt > 0);
+  const late = sender.delivery_log.filter((entry) => entry.after_shutdown && entry.status === "exhausted");
+  const lateIds = new Set(late.map((entry) => entry.event_id));
+  const report = sender.trace.find((entry) => entry.kind === "shutdown_report");
+  const key = (id, ordinal) => JSON.stringify([id, ordinal]);
+  const draws = seededJitter(phase.composition.jitter_seed);
+  const attempts = new Map();
+  for (const entry of sender.exchanges) attempts.set(entry.event_id, [...attempts.get(entry.event_id) ?? [], entry.attempt]);
+  return {
+    scheduled: scheduled.length, retry_exchanges: retried.length, exhausted: exhausted.length,
+    pending_at_shutdown: scheduled.filter((entry) => entry.sequence < report?.sequence
+      && retried.some((attempt) => attempt.event_id === entry.event_id && attempt.attempt === entry.values[0] && attempt.sequence > report.sequence)).length,
+    late_exhausted: late.length,
+    unpersisted: ingress.read_back.filter((entry) => lateIds.has(entry.event_id) && entry.persisted === false && entry.storage_result === "not_found").length,
+    every_delay_reported: isDeepStrictEqual(scheduled.map((entry) => entry.values), sender.callbacks.scheduled)
+      && isDeepStrictEqual(scheduled.map((entry) => key(entry.event_id, entry.values[0])).sort(), retried.map((entry) => key(entry.event_id, entry.attempt)).sort()),
+    every_exhaustion_reported: lateIds.size === late.length && exhausted.length === late.length
+      && new Set(exhausted.map((entry) => entry.event_id)).size === exhausted.length
+      && exhausted.every((entry) => lateIds.has(entry.event_id) && entry.values[0] === phase.composition.max_attempts)
+      && isDeepStrictEqual(exhausted.map((entry) => entry.values), sender.callbacks.exhausted),
+    bounded_attempts: attempts.size === sender.callbacks.admitted.length && [...attempts.values()].every((ordinals) =>
+      isDeepStrictEqual(ordinals, Array.from({ length: phase.composition.max_attempts }, (_, index) => index)))
+      && late.every((entry) => entry.attempts === phase.composition.max_attempts),
+    seeded_delays_hold: scheduled.every((entry) => entry.values[1] === retryDelay({ composition: phase.composition, next: entry.values[0], draw: draws })),
+  };
+}
+
+export function ceilingSignalled({ sender, phase }) {
   const reached = sender.callbacks.dropped.length >= phase.composition.loss_ceiling;
-  return sender.callbacks.loss_ceiling_reached.length === (reached ? 1 : 0) && sender.health.lossCeilingReached === reached && sender.health.claimsDelivered === false;
+  const signals = (sender.trace ?? []).filter((entry) => entry.kind === "loss_ceiling_reached");
+  const first = sender.callbacks.dropped[phase.composition.loss_ceiling - 1]?.[0];
+  const signal = signals[0];
+  const event = (sender.trace ?? []).filter((entry) => entry.event_id === first);
+  const exchange = event.find((entry) => entry.kind === "exchange");
+  const result = event.find((entry) => entry.kind === "result" && entry.status === "dropped");
+  const atCeiling = !reached || (signal?.event_id === first && signal.loss_count === phase.composition.loss_ceiling
+    && exchange?.sequence < signal.sequence && signal.sequence < result?.sequence);
+  return sender.callbacks.loss_ceiling_reached.length === (reached ? 1 : 0) && signals.length === (reached ? 1 : 0)
+    && sender.health.lossCeilingReached === reached && sender.health.claimsDelivered === false && atCeiling;
 }
 
 // G4's predicates for the load cells (design.md, the G4 test), over every named phase of its kind: alert
@@ -152,15 +211,20 @@ function g4Predicates({ observed, phases, names }) {
   const efforts = of("best_effort");
   return {
     alert_before_silent_loss: bursts.every(alertsBeforeLoss),
-    bounded_flush: bursts.every(({ sender, phase }) => accountsForAdmitted({ report: sender.shutdown_report, phase }) && (phase.shutdown !== "after_admission" || withinDeadline({ sender, phase }))),
-    no_backlog: bursts.every(({ sender, ingress }) => ingress.records.length === sender.callbacks.admitted.length),
+    bounded_flush: bursts.every(({ sender, phase }) => accountsForAdmitted({ report: sender.shutdown_report, phase }) && (phase.shutdown === "after_settle" || withinDeadline({ sender, phase }))),
+    no_backlog: bursts.every(noBacklog),
     every_drop_reported: efforts.every(dropsReported),
     loss_ceiling_signalled: efforts.every(ceilingSignalled),
   };
 }
 
 function controlsByPhase({ observed, names }) {
-  return Object.fromEntries(names.map((name) => [name, isolationControls(observed[name])]));
+  return Object.fromEntries(names.map((name) => {
+    const phase = observed[name];
+    return [name, { ...isolationControls(phase), accounting_pretraffic: phase.sender.controls.accounting_checks?.holds === true,
+      final_quiescent: phase.ingress.quiescent === true,
+      role_closure_confirmed: phase.role_closure?.sender?.code === 0 && phase.role_closure?.ingress?.code === 0 }];
+  }));
 }
 
 const single = (observer) => ({ observed, phases, names: [name] }) => observer({ observed: observed[name], phase: phases[name] });
@@ -168,6 +232,7 @@ const single = (observer) => ({ observed, phases, names: [name] }) => observer({
 export const OBSERVERS = Object.freeze({
   admission: single(admission),
   shutdown_accounting: single(shutdownAccounting),
+  retry_accounting: single(retryAccounting),
   loss: single(loss),
   planted_controls: plantedControls,
   g4_predicates: g4Predicates,

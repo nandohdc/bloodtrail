@@ -97,6 +97,17 @@ test("stopping roles kills them and waits until each has closed, within a bound"
   const stuck = roleChannel(fixtureChild());
   const started = Date.now();
   stuck.kill = () => {};
-  await stopRoles({ sender: stuck }, { timeoutMs: 30 });
+  await assert.rejects(stopRoles({ sender: stuck }, { timeoutMs: 30 }), /role closure exceeded/);
   assert(Date.now() - started < 1000, "a role that never closes does not hang the session");
+});
+
+test("a closure failure cannot erase an S2 stop condition", async () => {
+  const role = { exited: () => null, kill() {}, whenClosed: () => new Promise(() => {}) };
+  const failure = new StopCondition("deadline", "planted stop");
+  await assert.rejects(stopRoles({ sender: role }, { timeoutMs: 10, failure }), (error) => {
+    assert.equal(error, failure);
+    assert.equal(error.condition, "deadline");
+    assert.match(error.role_closure_error, /role closure exceeded/);
+    return true;
+  });
 });

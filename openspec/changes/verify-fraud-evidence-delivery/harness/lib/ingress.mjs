@@ -75,7 +75,17 @@ const ACTIONS = {
   delay: (context) => {
     const { status, outcome } = ingest(context);
     context.finish({ status, outcome, delayed_ms: context.rule.delay_ms });
-    setTimeout(() => respond({ response: context.response, status, eventId: context.eventId }), context.rule.delay_ms);
+    let finished;
+    const pending = new Promise((resolveTask) => { finished = resolveTask; });
+    context.state.pending.add(pending);
+    context.state.timers.setTimeout(() => {
+      try {
+        respond({ response: context.response, status, eventId: context.eventId });
+      } finally {
+        context.state.pending.delete(pending);
+        finished();
+      }
+    }, context.rule.delay_ms);
   },
   destroy_before_ingest: (context) => {
     context.finish({ status: null, outcome: { kind: "not_ingested" } });
@@ -115,15 +125,20 @@ function handle({ state, request, response, raw }) {
   ACTIONS[decision.rule.action]({ state, request, response, body, eventId, rule: decision.rule, finish });
 }
 
-export function startIngress({ collector, ingress, faults }) {
-  const state = { ingress, faults, codes: collector.DIAGNOSTIC_CODES, records: [], lookups: new Map() };
+export function startIngress({ collector, ingress, faults, timers = globalThis }) {
+  const state = { ingress, faults, timers, pending: new Set(), codes: collector.DIAGNOSTIC_CODES, records: [], lookups: new Map() };
   const server = createServer((request, response) => {
     const chunks = [];
     request.on("data", (chunk) => chunks.push(chunk));
     request.on("end", () => handle({ state, request, response, raw: Buffer.concat(chunks) }));
   });
   return new Promise((resolveServer) => {
-    server.listen(0, "127.0.0.1", () => resolveServer({ port: server.address().port, state, close: () => new Promise((resolveClose) => server.close(resolveClose)) }));
+    const close = () => new Promise((resolveClose) => server.close(resolveClose));
+    const quiesce = async () => {
+      await close();
+      await Promise.all(state.pending);
+    };
+    server.listen(0, "127.0.0.1", () => resolveServer({ port: server.address().port, state, close, quiesce }));
   });
 }
 

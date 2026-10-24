@@ -8,11 +8,11 @@ import { occurrenceLedger, planBudget } from "../lib/ledger.mjs";
 import { OBSERVERS } from "./evaluate.mjs";
 
 const KINDS = Object.freeze(["burst", "best_effort"]);
-const BURST_SHUTDOWN = Object.freeze(["after_settle", "after_admission"]);
+const BURST_SHUTDOWN = Object.freeze(["after_settle", "after_admission", "after_retry_scheduled"]);
 // The observers that judge a whole pass, so they must read every one of its phases.
 const PASS_WIDE = Object.freeze(["g4_predicates", "isolation_controls"]);
 // The phase kind each single-phase observer reads.
-const OBSERVER_KINDS = Object.freeze({ admission: "burst", shutdown_accounting: "burst", loss: "best_effort" });
+const OBSERVER_KINDS = Object.freeze({ admission: "burst", shutdown_accounting: "burst", retry_accounting: "burst", loss: "best_effort" });
 
 function positiveInteger(value, limit, label) {
   assert(Number.isSafeInteger(value) && value > 0 && value <= limit, label);
@@ -24,7 +24,16 @@ function validateBurst({ phase, scenarios }) {
   validateComposition(phase.composition);
   assert(BURST_SHUTDOWN.includes(phase.shutdown), `${phase.name}: unknown shutdown timing`);
   assert(Number.isSafeInteger(phase.after_shutdown) && phase.after_shutdown >= 0, `${phase.name}: after_shutdown`);
-  if (phase.after_shutdown > 0) assert.equal(phase.shutdown, "after_admission", `${phase.name}: later submissions need a shutdown in progress`);
+  if (phase.after_shutdown > 0) assert.notEqual(phase.shutdown, "after_settle", `${phase.name}: later submissions need a shutdown in progress`);
+  if (phase.shutdown === "after_retry_scheduled") {
+    assert(phase.composition.max_attempts > 1, `${phase.name}: pending retries require multiple attempts`);
+    assert(phase.occurrences > phase.composition.capacity, `${phase.name}: the combined case must saturate admission`);
+    assert(phase.after_shutdown > 0, `${phase.name}: the combined case checks shutdown rejection`);
+    for (const name of phase.schedule) {
+      assert.deepEqual(scenarios[name], Array.from({ length: phase.composition.max_attempts }, (_, attempt) => ({ attempt, action: "status", status: 503 })), `${phase.name}: every possible attempt must fail uniformly before ingest`);
+    }
+    return;
+  }
   for (const name of phase.schedule) {
     for (const rule of scenarios[name]) {
       assert.equal(rule.action, "delay", `${phase.name}: a burst's answers are held, not failed`);

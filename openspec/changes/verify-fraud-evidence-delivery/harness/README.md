@@ -6,7 +6,7 @@ G44 (delegated S1). See `run-ledger.md` for the shared run budget.
 
 **Two Stage 2 probes have executed:** the tracer, as run 1 (`results/tracer-run-1.json`), and the outages
 probe, as run 2 (`results/outages-run-2.json`). Self-tests here use fixtures and public-shape doubles only.
-They never import a kit package, never run a role process, and never send traffic off loopback.
+They never import a kit package or execute a harness role; fixture subprocesses, temporary files and loopback sockets are permitted.
 
 Each run's results pin every harness file's git blob and sha256 at that run's approved head
 (`executed_file_hashes`, `role_files`). A later build may change a shared file without altering that evidence:
@@ -54,9 +54,18 @@ once against answers the ingress holds, so each meets the admission gate before 
 | `drain` | small | 8 at once, capacity 16, held 300 ms; shutdown (deadline 5000 ms) as soon as all met the gate; 2 submitted after | 8 drained and acknowledged; the 2 rejected while shutting down |
 | `abandon` | small | 6 at once, held 3000 ms; shutdown deadline 200 ms | report 6 accepted, 0 completed, 6 abandoned; each settles later and was stored |
 | `best_effort` | small | 8 `authorization.allowed` in sequence through the `best_effort` class, 5 answered 503, loss ceiling 3 | 3 delivered, 5 dropped with loss counts 1, 2, 3, 3, 3; the ceiling signal fires once |
+| `retry_shutdown` | small | 10 at capacity 4; every attempt receives pre-ingest 503; retry waits held across a 200 ms shutdown, then released; 2 later submissions | report 10 accepted, 6 completed overload decisions, 4 abandoned; 8 admission signals, 4 final storage absences, 8 scheduled retries and 4 late exhaustion alerts |
 | `overload_volume` | volume | 1000 at once, capacity 100, held 500 ms | 100 admitted, 900 rejected |
 | `drain_volume` | volume | 200 at once, capacity 1000, held 500 ms; shutdown (deadline 5000 ms) as soon as all met the gate; 10 submitted after | 200 drained; the 10 rejected while shutting down |
 | `best_effort_volume` | volume | 200 in sequence, every second one 503, loss ceiling 50 | 100 dropped; the count saturates at 50 and the ceiling signals once |
+
+The load call bound is **1,456**: 46 small and 1,410 volume. All eleven small cases must match before the six volume cases execute. A genuine mismatch is retained and leaves #838 open; it is not an automatic reason to spend a replacement run.
+
+Shutdown time covers the composition's report return, including bookkeeping, measured monotonically without rounding or a grace margin. Primitive timing is recorded separately. Shutdown stops waiting rather than cancelling work: late acknowledgments or exhaustion remain separate observations, and cannot rewrite the report's abandoned classification. A found byte-matching stored copy retains terminal-bucket priority; an abandonment claim alone proves no storage absence.
+
+Backpressure callbacks, operation starts, exchanges and results carry an occurrence-attributed sequence trace. Each rejected overload must have its callback before the result, and its operation must never start. Drop callbacks must cover dropped event IDs bijectively, including after saturation. Accounting results retain the full planned denominator.
+
+Every load sender runs deterministic planted/null accounting controls before constructing the SDK. The runtime control checks include missing/duplicate drops, omitted admission, missing occurrence, strict deadline, rejection ordering, retry delay/exhaustion reporting and storage absence. These consume no SDK calls. Final read-back follows actual sender closure and ingress quiescence, including pending fault tasks; both role closes are recorded. Closure failure invalidates the run and never masks an S2 condition.
 
 ## The seam
 
@@ -113,7 +122,7 @@ silent. A live control that does neither stops its role before any traffic, and 
 | redelivery | a redelivery admitted as a second write; a redelivery whose bytes changed; a volume occurrence unlike its scenario | `tests/outages-evaluate.test.mjs` |
 | pass sequencing | a small-pass mismatch (the volume pass must not run); a failed volume pass (the small pass's observations must survive); a deadline during the small pass (no further pass may start); a halt while an ingress starts (no sender may spawn) | `tests/outages-evaluate.test.mjs`, `tests/load-evaluate.test.mjs`, `tests/session.test.mjs` |
 | load, on the run's own data | a shutdown report that leaves one admitted operation out; a drop with no drop callback (`load/evaluate.mjs` case L-06) | `tests/load-evaluate.test.mjs` |
-| load predicates | an overload rejection without its callback; a rejected occurrence that reached the exchange; an ingress request beyond the admitted; a shutdown report that adds up yet misses an admitted operation; a shutdown past its deadline, including a 200 ms deadline overrun by half; a later submission admitted while shutting down; a wrapped loss count; a drop whose result and callback disagree; a silent ceiling; a binding claiming delivery of a drop | `tests/load-evaluate.test.mjs` |
+| load predicates | missing, late or misattributed overload callbacks; rejected operations starting; unexplained ingress attempts; incomplete shutdown reports; fractional deadline overruns; post-shutdown admission; missing/duplicate drop IDs; wrapped counts; silent ceilings; hidden retry delays/exhaustion; uncertain storage absence | `tests/load-evaluate.test.mjs` |
 | shutdown labels | a submission rejected while shutting down relabelled abandoned; a delivery held at the deadline left pending | `tests/composition.test.mjs` |
 | frozen expectations (load) | admission, shutdown and loss values that do not follow from the frozen phases; a held answer that cannot beat its deadline; a phase or case of the wrong kind or pass; a sender field the phase view lacks | `tests/load-plan.test.mjs` |
 | frozen expectations | delays that are not the seeded draws; a profile its scenario's rules do not produce (refused before the claim, `outages/expectations.mjs` `derivedProfile`); a rule no attempt reaches; a sender field the pass view lacks | `tests/outages-plan.test.mjs` |
@@ -124,6 +133,8 @@ silent. A live control that does neither stops its role before any traffic, and 
 node openspec/changes/verify-fraud-evidence-delivery/harness/kit-cli.mjs --dry-run \
   --driver-lane claude-code --driver-model "$MODEL"
 ```
+
+For #838's owner-authorized Codex lane, use `--driver-lane codex` and the actual driver model. The exception covers the load probe and build-only checks; other probe executions retain G45's historical lane.
 
 It requires a clean tree. It builds the governed kit from HEAD, verifies the kit identity, refuses kit
 manifests that declare install lifecycle scripts, installs the own service with `--ignore-scripts`, proves a

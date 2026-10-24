@@ -28,7 +28,7 @@ function ordered(value) {
 // failed roles' bounded stderr when a session attached it.
 export function invalidationOf(failure) {
   if (typeof failure === "string") return { message: failure };
-  const fields = { message: failure.message, condition: failure.condition, role_stderr: failure.role_stderr };
+  const fields = { message: failure.message, condition: failure.condition, role_stderr: failure.role_stderr, role_closure_error: failure.role_closure_error };
   return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined));
 }
 

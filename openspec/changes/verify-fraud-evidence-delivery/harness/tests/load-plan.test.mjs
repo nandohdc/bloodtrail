@@ -28,7 +28,7 @@ test("the frozen expectations validate, and mutating them is refused", () => {
     (value) => { value.cases[0].phases = ["best_effort"]; },
     (value) => { value.cases[4].phases = ["overload"]; },
     (value) => { value.cases[5].phases = ["best_effort", "drain"]; },
-    (value) => { value.cases[8].phases = ["overload"]; },
+    (value) => { value.cases.find((entry) => entry.pass === "volume").phases = ["overload"]; },
     (value) => { value.phases[0].pass = "volume"; },
     (value) => { value.phases[1].after_shutdown = 3; },
     (value) => { value.phases[0].after_shutdown = 1; value.phases[0].cycles = 11; value.planned_call_budget.processes.overload = 11; value.planned_call_budget.total += 1; },
@@ -46,8 +46,11 @@ test("the frozen expectations validate, and mutating them is refused", () => {
     (value) => { value.planned_call_budget.total = 1235; },
     (value) => { value.thresholds.unexplained = 1; },
     (value) => { value.cases[6].phases = ["overload", "drain", "best_effort"]; },
-    (value) => { value.cases[13].phases = ["overload_volume", "best_effort_volume"]; },
+    (value) => { value.cases.find((entry) => entry.pass === "volume" && entry.observer === "isolation_controls").phases = ["overload_volume", "best_effort_volume"]; },
     (value) => { value.workload.seed = 0; },
+    (value) => { value.scenarios.never_ingested.pop(); },
+    (value) => { value.scenarios.never_ingested[0].status = 200; },
+    (value) => { value.phases.find((phase) => phase.name === "retry_shutdown").composition.max_attempts = 1; },
   ];
   for (const mutate of mutations) {
     const value = structuredClone(FROZEN);
@@ -70,22 +73,22 @@ test("every basis citation names an existing line of package source at the froze
 // The frozen values must agree with the frozen phases, so a slip in hand-derived expectations is caught at
 // build time rather than reported as a finding after a spent run.
 test("the frozen admission, shutdown and loss values follow from the frozen phases", () => {
-  for (const id of ["L-01", "L-09"]) {
+  for (const id of ["L-01", "L-09", "L-12"]) {
     const phase = phaseOf(caseOf(id).phases[0]);
     const { expected } = caseOf(id);
-    assert.equal(expected.submitted, phase.occurrences);
+    assert.equal(expected.submitted, phase.occurrences + phase.after_shutdown);
     assert.equal(expected.admitted, Math.min(phase.occurrences, phase.composition.capacity));
     assert.equal(expected.rejected_overload + expected.admitted, phase.occurrences);
-    assert.equal(expected.ingress_requests, expected.admitted);
+    assert.equal(expected.ingress_requests, expected.admitted * (phase.shutdown === "after_retry_scheduled" ? phase.composition.max_attempts : 1));
   }
-  for (const id of ["L-02", "L-03", "L-04", "L-10", "L-11"]) {
+  for (const id of ["L-02", "L-03", "L-04", "L-10", "L-13", "L-14"]) {
     const phase = phaseOf(caseOf(id).phases[0]);
     const { shutdown_report: report, counts } = caseOf(id).expected;
     assert.equal(report.accepted, report.completed + report.abandoned, id);
     assert.equal(Object.values(counts).reduce((sum, count) => sum + count, 0), phase.occurrences + phase.after_shutdown, id);
     assert.equal(counts.admission_signal, phase.after_shutdown + Math.max(0, phase.occurrences - phase.composition.capacity), id);
   }
-  for (const id of ["L-05", "L-12"]) {
+  for (const id of ["L-05", "L-15"]) {
     const phase = phaseOf(caseOf(id).phases[0]);
     const scheduled = Array.from({ length: phase.occurrences }, (_, index) => phase.schedule[index % phase.schedule.length]);
     // A drop is an occurrence whose scenario refuses its one attempt, whatever the scenario is named.
@@ -146,6 +149,9 @@ test("every input field the load sender reads is in each phase's view", () => {
     for (const path of paths) assert(resolves({ object: view, path }), `${phase.name}: the view lacks ${path}`);
   }
   const fields = ["occurrences", "shutdown", "after_shutdown", "kind"];
-  const used = new Set([...dottedReads({ text: source("load/sender-process.mjs"), name: "phase" })]);
+  const used = new Set([
+    ...dottedReads({ text: source("load/sender-process.mjs"), name: "phase" }),
+    ...dottedReads({ text: source("load/burst.mjs"), name: "phase" }),
+  ]);
   for (const field of fields) assert(used.has(field) || paths.has(`phase.${field}`), `the sender never reads phase.${field}`);
 });
