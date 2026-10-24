@@ -1,0 +1,143 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Every active harness must receive required CI coverage even when its test directory or metadata disappears.",
+    "Fixture failures must propagate without executing an approval-gated Stage 2 probe.",
+    "Existing required context names and independent baseline/candidate governance must remain intact."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "ci-topology"
+    ]
+  },
+  "owned_paths": [
+    ".github/workflows/ci.yml",
+    ".github/scripts/run-active-harness-tests.mjs",
+    ".github/scripts/run-active-harness-tests.test.mjs",
+    "openspec/specs/ci-topology/spec.md",
+    "openspec/changes/run-active-harness-self-tests-in-ci/.openspec.yaml",
+    "openspec/changes/run-active-harness-self-tests-in-ci/proposal.md",
+    "openspec/changes/run-active-harness-self-tests-in-ci/design.md",
+    "openspec/changes/run-active-harness-self-tests-in-ci/tasks.md",
+    "openspec/changes/run-active-harness-self-tests-in-ci/assessment.source.json",
+    "openspec/changes/run-active-harness-self-tests-in-ci/assessment.json",
+    "openspec/changes/run-active-harness-self-tests-in-ci/specs/ci-topology/spec.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-discover-active-harnesses",
+      "kind": "direct_implementation",
+      "summary": "Enumerate active harnesses with a dependency-free runner in the existing required governance job, failing on missing suites and fixture failures.",
+      "forces_addressed": [
+        "Every active harness must receive required CI coverage even when its test directory or metadata disappears.",
+        "Fixture failures must propagate without executing an approval-gated Stage 2 probe.",
+        "Existing required context names and independent baseline/candidate governance must remain intact."
+      ]
+    },
+    {
+      "id": "approach-hard-coded-stage-2",
+      "kind": "alternative",
+      "summary": "Add only the current Stage 2 tests as a hard-coded command.",
+      "forces_addressed": [
+        "Fixture failures must propagate without executing an approval-gated Stage 2 probe.",
+        "Existing required context names and independent baseline/candidate governance must remain intact."
+      ]
+    },
+    {
+      "id": "approach-new-required-job",
+      "kind": "alternative",
+      "summary": "Create a separate harness job and manually update required contexts.",
+      "forces_addressed": [
+        "Every active harness must receive required CI coverage even when its test directory or metadata disappears.",
+        "Fixture failures must propagate without executing an approval-gated Stage 2 probe."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-discover-active-harnesses",
+  "rejected_alternative_ids": [
+    "approach-hard-coded-stage-2",
+    "approach-new-required-job"
+  ],
+  "rejection_reasons": {
+    "approach-hard-coded-stage-2": {
+      "forces": [
+        "Every active harness must receive required CI coverage even when its test directory or metadata disappears."
+      ],
+      "reason": "A fixed Stage 2 path silently omits future active harnesses and can lose coverage when that path moves."
+    },
+    "approach-new-required-job": {
+      "forces": [
+        "Existing required context names and independent baseline/candidate governance must remain intact."
+      ],
+      "reason": "A new job is not required until branch protection changes; the existing stable repository concern already owns this tooling."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-active-harness-completeness",
+    "implementation-harness-failure-propagation",
+    "implementation-harness-context-stability"
+  ],
+  "invariant_evidence": {
+    "implementation-active-harness-completeness": {
+      "task_ids": [
+        "2.1"
+      ],
+      "evidence_ids": [
+        "Runner fixture tests require all active harness suites, reject missing suites and symbolic links, exclude archive and report no harness explicitly."
+      ]
+    },
+    "implementation-harness-failure-propagation": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "A planted failing fixture produces a nonzero command result; its passing null control succeeds; the real active suites execute without claiming a run."
+      ]
+    },
+    "implementation-harness-context-stability": {
+      "task_ids": [
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Workflow diff retains the existing design-pattern-governance context and the dual check records baseline and candidate results separately."
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Required fixture checks protect accounting and observation controls before a bounded approved run is spent.",
+    "authentication_or_authorization": "CI executes fixtures only and grants no Stage 2 S1 or production authority.",
+    "authority_provenance": "The new required check is assessed before implementation; existing owner decisions and exact-head approvals retain their meaning.",
+    "concurrency": "Suites may exercise fixture concurrency; the runner bounds its child and propagates termination.",
+    "confidentiality": "No new secret is introduced or made available; existing CI permissions remain.",
+    "cryptography": "No key, signature or digest algorithm changes; approval and kit hashes remain untouched.",
+    "error_disclosure": "Discovery names repository-relative paths and retains test diagnostics without introducing credential handling.",
+    "external_security_integration": "No external security service is added; existing required contexts stay stable.",
+    "fail_posture": "Missing suites, discovery errors, launch failures and failing tests fail closed; absence of all active harnesses is visibly not applicable.",
+    "lifecycle": "Fold and archive are separate PRs; CI self-tests never spend the governed probe run ledger.",
+    "mutation_ownership": "Only the assessed runner, its tests, the CI step and owning specification lifecycle paths change.",
+    "privacy_transformation": "Fixture inputs remain synthetic; no collection or privacy transformation is added.",
+    "resource_retention": "Fixture temporary resources remain test-owned and bounded child execution prevents an unbounded runner wait.",
+    "retry_or_redelivery": "No package retry semantics change; fixture retry checks are now executed by required CI.",
+    "trust_boundary": "CI gains a new population of fixture suites; archive exclusion and fail-closed discovery bound that population."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "1961a11892766c2b63674eefd8d16ac08511096a"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "3.3"
+  ]
+}
