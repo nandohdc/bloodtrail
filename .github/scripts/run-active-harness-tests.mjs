@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { lstatSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -28,7 +28,45 @@ function testFiles(directory) {
   });
 }
 
-export function runActiveHarnessTests({ root = REPOSITORY, timeoutMs = 600_000 } = {}) {
+// A separate process group contains both Node's coordinator and its test workers. Killing only the
+// coordinator leaves workers alive after a timeout. Wait for its close before reporting the result.
+function executeTests({ root, files, timeoutMs }) {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new Error("invalid harness test timeout");
+  return new Promise((resolveResult) => {
+    const grouped = process.platform !== "win32";
+    const child = spawn(process.execPath, ["--test", ...files], { cwd: root, stdio: "inherit", detached: grouped });
+    let failure;
+    const terminate = () => {
+      try {
+        if (grouped && child.pid) process.kill(-child.pid, "SIGKILL");
+        else child.kill("SIGKILL");
+      } catch (error) {
+        if (error.code !== "ESRCH") failure ??= error;
+      }
+    };
+    const interrupted = (signal) => () => {
+      failure = new Error(`harness tests interrupted: ${signal}`);
+      terminate();
+    };
+    const signals = { SIGINT: interrupted("SIGINT"), SIGTERM: interrupted("SIGTERM") };
+    for (const [signal, handler] of Object.entries(signals)) process.once(signal, handler);
+    const timer = setTimeout(() => {
+      failure = new Error(`ETIMEDOUT: harness tests exceeded ${timeoutMs} ms`);
+      terminate();
+    }, timeoutMs);
+    child.once("error", (error) => { failure = error; });
+    child.once("close", (code, signal) => {
+      clearTimeout(timer);
+      for (const [name, handler] of Object.entries(signals)) process.removeListener(name, handler);
+      terminate();
+      if (signal) failure ??= new Error(`test process terminated: ${signal}`);
+      if (failure) console.error(`Active harness self-tests failed: ${failure.message}`);
+      resolveResult(failure ? 1 : code ?? 1);
+    });
+  });
+}
+
+export async function runActiveHarnessTests({ root = REPOSITORY, timeoutMs = 600_000 } = {}) {
   try {
     const changes = join(root, "openspec/changes");
     directory(changes);
@@ -51,13 +89,11 @@ export function runActiveHarnessTests({ root = REPOSITORY, timeoutMs = 600_000 }
       return 0;
     }
     for (const file of files) console.log(`Active harness self-test: ${relative(root, file)}`);
-    const result = spawnSync(process.execPath, ["--test", ...files], { cwd: root, stdio: "inherit", timeout: timeoutMs, killSignal: "SIGKILL" });
-    if (result.error || result.signal) throw result.error ?? new Error(`test process terminated: ${result.signal}`);
-    return result.status ?? 1;
+    return await executeTests({ root, files, timeoutMs });
   } catch (error) {
     console.error(`Active harness self-tests failed: ${error.message}`);
     return 1;
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) process.exitCode = runActiveHarnessTests();
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) process.exitCode = await runActiveHarnessTests();

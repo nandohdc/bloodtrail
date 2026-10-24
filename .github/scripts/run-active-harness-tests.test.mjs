@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
+import { setTimeout as delay } from "node:timers/promises";
 
 const RUNNER = new URL("./run-active-harness-tests.mjs", import.meta.url).href;
 const PASS = 'import { test } from "node:test"; test("fixture passed", () => {});\n';
@@ -22,7 +23,7 @@ function put(root, path, content = PASS) {
 }
 
 function run(root, options = {}) {
-  const code = `import { runActiveHarnessTests } from ${JSON.stringify(RUNNER)}; process.exitCode = runActiveHarnessTests(${JSON.stringify({ root, ...options })});`;
+  const code = `import { runActiveHarnessTests } from ${JSON.stringify(RUNNER)}; process.exitCode = await runActiveHarnessTests(${JSON.stringify({ root, ...options })});`;
   const env = { ...process.env };
   delete env.NODE_TEST_CONTEXT;
   return spawnSync(process.execPath, ["--input-type=module", "--eval", code], { encoding: "utf8", timeout: 15_000, env });
@@ -125,10 +126,17 @@ test("an unreadable suite fails", { skip: process.getuid?.() === 0 }, (t) => {
   }
 });
 
-test("a stalled test process is bounded and reported as failure", (t) => {
+test("a stalled test and its worker stop before timeout failure returns", async (t) => {
   const root = fixture(t);
-  put(root, "active/harness/tests/check.test.mjs", 'import { test } from "node:test"; test("stall", () => new Promise(() => { setInterval(() => {}, 1000); }));\n');
-  const result = run(root, { timeoutMs: 500 });
+  const heartbeat = join(root, "heartbeat");
+  const pid = join(root, "worker-pid");
+  put(root, "active/harness/tests/check.test.mjs", `import { test } from "node:test"; import { appendFileSync, writeFileSync } from "node:fs"; writeFileSync(${JSON.stringify(pid)}, String(process.pid)); test("stall", () => new Promise(() => { setInterval(() => appendFileSync(${JSON.stringify(heartbeat)}, "x"), 10); }));\n`);
+  const result = run(root, { timeoutMs: 1500 });
+  const worker = Number(readFileSync(pid, "utf8"));
+  t.after(() => { try { process.kill(worker, "SIGKILL"); } catch (error) { if (error.code !== "ESRCH") throw error; } });
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /ETIMEDOUT|terminated/i);
+  const before = readFileSync(heartbeat, "utf8");
+  await delay(150);
+  assert.equal(readFileSync(heartbeat, "utf8"), before, "no fixture work may survive timeout");
 });
