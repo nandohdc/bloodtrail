@@ -12,8 +12,14 @@ const INSTALL_SCRIPTS = ["preinstall", "install", "postinstall", "prepare"];
 // Every public symbol the Stage 2 harness uses, checked against the packed declarations as text before
 // expectations are frozen and before every run; nothing is imported or executed here.
 export const SYMBOLS = Object.freeze({
-  [CORE]: ["authenticatedHumanActor", "authoritativeTenant", "authenticatedPrincipal", "authenticationEvidence", "credentialReference", "sessionEvidence", "observedSource", "AuditEventSink", "AuditDeliveryResult", "AuditClock"],
-  [NODE]: ["createNodeSecurityAuditSdk", "createHttpDeliveryHandoff", "createFetchHttpExchange", "createBoundedDeliveryRetry", "createBoundedDeliveryBackpressure", "createDeliveryShutdown", "nodeTimers"],
+  [CORE]: [
+    "authenticatedHumanActor", "authoritativeTenant", "authenticatedPrincipal", "authenticationEvidence", "credentialReference", "sessionEvidence",
+    "observedSource", "workloadIdentityActor", "authoritativeResource", "authorizationEvidence", "AuditEventSink", "AuditDeliveryResult", "AuditClock",
+  ],
+  [NODE]: [
+    "createNodeSecurityAuditSdk", "createHttpDeliveryHandoff", "createFetchHttpExchange", "createBoundedDeliveryRetry", "createBoundedDeliveryBackpressure",
+    "createDeliveryShutdown", "createBestEffortDelivery", "nodeTimers",
+  ],
   [COLLECTOR]: ["CollectorIngress", "SqliteStorage", "SyntheticFixtureAuthenticator", "DIAGNOSTIC_CODES"],
 });
 

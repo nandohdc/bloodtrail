@@ -11,6 +11,7 @@ import { CHANGE } from "../lib/results.mjs";
 import { validateExpectations } from "../outages/expectations.mjs";
 import { PROBE_FILES } from "../outages/files.mjs";
 import { flatRoles, senderInput } from "../outages/session.mjs";
+import { dottedReads, resolves } from "./field-reads.mjs";
 
 const HARNESS = dirname(dirname(fileURLToPath(import.meta.url)));
 const REPO = command({ program: "git", args: ["rev-parse", "--show-toplevel"], cwd: HARNESS }).trim();
@@ -129,17 +130,15 @@ test("the approval-gated entry only delegates to the shared runner", () => {
 // The view is an adapter over the tracer's sender, so every field that role reads must be in it.
 test("every expectations field the tracer's sender reads is in the pass view", () => {
   const view = senderInput({ expectations: FROZEN, pass: FROZEN.passes[1] });
-  const sender = source("tracer/sender-process.mjs");
-  // The field scan below sees dotted reads only, so the role may read its expectations no other way.
-  assert.doesNotMatch(sender, /=\s*expectations\b|expectations\s*\[|expectations\?\./);
-  const paths = new Set([...sender.matchAll(/expectations((?:\.[a-z_]+)+)/g)].map((match) => match[1].slice(1)));
-  assert(paths.size > 0);
-  for (const path of paths) assert.notEqual(path.split(".").reduce((value, key) => value?.[key], view), undefined, `the view lacks ${path}`);
-  assert.throws(() => {
-    const missing = senderInput({ expectations: FROZEN, pass: FROZEN.passes[1] });
-    delete missing.clock;
-    for (const path of paths) assert.notEqual(path.split(".").reduce((value, key) => value?.[key], missing), undefined, path);
-  }, /clock/);
+  const paths = new Set([
+    ...dottedReads({ text: source("tracer/sender-process.mjs"), name: "expectations" }),
+    ...dottedReads({ text: source("lib/sender-role.mjs"), name: "input" }),
+  ]);
+  assert(paths.has("clock.start") && paths.has("planned_call_budget.processes.sender"));
+  for (const path of paths) assert(resolves({ object: view, path }), `the view lacks ${path}`);
+  const missing = senderInput({ expectations: FROZEN, pass: FROZEN.passes[1] });
+  delete missing.clock;
+  assert(![...paths].every((path) => resolves({ object: missing, path })), "a view without the clock must be caught");
 });
 
 test("each pass hands the tracer's sender only its own occurrences and budget", () => {

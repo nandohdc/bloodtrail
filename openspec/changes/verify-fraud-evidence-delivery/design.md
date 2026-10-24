@@ -54,6 +54,10 @@ createDeliveryShutdown            deadline-bounded shutdown admission
                  └─ createFetchHttpExchange  the governed fetch adapter, loopback origin only
 ```
 
+`authorization.allowed`, the catalog's only `best_effort` event, does not go through this stack. It goes
+through the binding's `best_effort` class (`createBestEffortDelivery`) over the same governed exchange: one
+attempt, no retry, a drop on any non-acknowledgment, and a saturating loss counter with a ceiling signal (#838).
+
 The consumer is the kit's collector, configured with SQLite storage on a scratch file, so identity is decided
 durably. One phase of #839 runs it without storage, to measure the in-memory bound of 32 identities for five
 minutes. The harness's HTTP wrapper around the ingress owns fault injection only, never acceptance logic.
@@ -123,7 +127,8 @@ injector receives the schedule expanded into per-occurrence rules.
 
 **Accounting identity.** Every generated occurrence ends in exactly one terminal bucket:
 1. persisted at the collector;
-2. reported undelivered by a delivery result (`non_retryable`, `protocol_error`, `exhausted`);
+2. reported undelivered by a delivery result (`non_retryable`, `protocol_error`, `exhausted`, or a
+   `best_effort` drop);
 3. reported by an admission signal (`rejected_overload`, rejected while shutting down);
 4. abandoned in the shutdown report;
 5. unexplained.
@@ -228,6 +233,11 @@ Serial PRs, each a build commit followed by an evidence commit after its S1 (Q18
 - **#838, load and shutdown.** Overload through the backpressure gate is reported with depth and capacity.
   Deadline-bounded shutdown mid-burst accounts for every admitted occurrence. `best_effort` drops are visible
   through the loss counter and the loss-ceiling signal.
+  - The probe has its own sender role. Its ingress is the tracer's.
+  - Each phase is one exchange. The small pass has four phases: overload, drain, abandon and `best_effort`.
+    The volume pass has three: overload, drain and `best_effort` at volume.
+  - A burst submits every occurrence at once, against answers the ingress holds. Each occurrence therefore
+    meets the admission gate before any held delivery can settle, and the gate's decisions are deterministic.
 - **#839, copies, duplicates, conflicts and restarts:**
   - every copy is byte-identical, compared by body hash at the exchange and at the ingress;
   - the attempt ordinal stays out of the occurrence;
@@ -273,6 +283,13 @@ results pin their blobs.
   the permanent 4xx's accounting.
 - #837's timeout also follows ingest: the ingress stores the body, then answers after the exchange deadline, so
   the redelivery is a duplicate as with a lost acknowledgment.
+- #838's held answers also follow ingest. An occurrence the abandoning shutdown reports abandoned has
+  therefore already been stored, and it settles after the report. It is persisted, and the disagreement with
+  its abandoned label is kept as an observation: shutdown reports what it could not finish, not what was lost.
+- The reference composition records, inside the operation the lifecycle tracks, which occurrences the
+  lifecycle ran and which of them settled. An occurrence settles before the lifecycle releases it. So when
+  the drain returns, exactly the started and unsettled occurrences were in flight, and only those are
+  labelled abandoned. A submission rejected while shutting down never ran and keeps its own status.
 - The assessment declares the `fraud-evidence-profile` capability, the one whose criteria Stage 2 measures, with
   `material_capability_modification: false`. Harness files under `openspec/changes/` are governed implementation,
   and design-pattern governance associates them only with a change that declares a capability. The declaration
@@ -332,3 +349,17 @@ The owner accepted the recommended option on each:
 - **Q39:** the harness layout above.
 - **Q41:** a deterministic fault injector keyed by event id and attempt ordinal.
 - **Q42:** a seeded PRNG for ground truth, with the seed frozen.
+
+## Owner addendum for #838 and #877 (2026-10-24)
+
+The owner confirmed the following requirements in the Codex grilling session (Q1–Q9), then explicitly instructed "Implement the plan." This addendum supplements G45 for these two tickets only and preserves the historical decision text above.
+
+- Codex authors #838 and the separate #877 CI prerequisite; AGY remains the independent reviewer, using `gemini-3.8-flash-high` in sandboxed plan mode. The #877 lifecycle has the same review, all-green merge and closure delegation. #884 remains an external prerequisite. Product APIs do not change.
+- #877 requires every active harness suite in the existing required governance context. Missing, empty, unreadable or undiscoverable suites fail; archives are excluded; no active harness is explicitly not applicable. Its canonical fold and archive are separate PRs.
+- #838's strict deadline covers the reference composition's report return, including bookkeeping. Elapsed time is monotonic and unrounded, with no grace margin. Primitive time and subsequent work are separate observations. An overrun is a measured composition failure; its owner is assigned only from supporting evidence.
+- Preserve the existing scenarios and add one combined pending-retry, saturation and shutdown case that also leaves admitted evidence unpersisted at the final observation boundary. This measures report completion, not process-crash recovery or cancellation.
+- Every drop must have its own callback with the correct saturating count. Rejection callbacks/results/operation starts have a shared occurrence-attributed ordering trace. Deterministic accounting planted/null controls execute inside each approved run before traffic, in addition to CI and checks on the run's own observations.
+- Final storage observations follow confirmed sender closure and ingress quiescence. An actual close must be observed; a timeout is not proof. Scratch deletion and child closure are recorded. Persisted copies retain accounting priority, shutdown abandonment stays immutable, and late results remain separately visible.
+- Complete independent small phases unless S2 fires; any small mismatch blocks volume. Genuine failures are published with #838 left open. At most one replacement is allowed for a non-S2 harness invalidation, after correction, fresh review/checks and a new exact-head S1. S2, G42's window and shared limits remain unchanged.
+
+The additional frozen small phase submits ten occurrences against capacity four, then two after shutdown begins. Every attempt receives a pre-ingest 503. Four admitted operations wait on retry timers while shutdown reports; releasing those timers afterward produces bounded exhaustion and an explicit storage absence. The shutdown report counts the outer lifecycle's ten submissions: six completed overload decisions and four abandoned operations. Final accounting has eight admission signals and four abandoned occurrences. The full planned call bound is 1,456 (46 small, 1,410 volume).

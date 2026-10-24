@@ -3,10 +3,13 @@
 // that is persisted AND reported undelivered (a lost acknowledgment that exhausted retries) counts once,
 // as persisted, and the disagreement is kept as an observation rather than hidden.
 import assert from "node:assert/strict";
+import { DELIVERED } from "./composition.mjs";
 
 export const BUCKETS = Object.freeze(["persisted", "reported_undelivered", "admission_signal", "abandoned", "unexplained"]);
 
-const UNDELIVERED = new Set(["non_retryable", "protocol_error", "exhausted"]);
+// A best_effort binding's refusal (a delivery-class mismatch or an unknown event) is a misrouted occurrence,
+// not an explained loss: it stays unexplained, so the identity fails on it.
+const UNDELIVERED = new Set(["non_retryable", "protocol_error", "exhausted", "dropped"]);
 const ADMISSION = new Set(["rejected_overload", "rejected_shutting_down"]);
 
 export function bucketFor({ persisted, delivery }) {
@@ -36,7 +39,7 @@ export function accountFor({ planned, generated, deliveries, persisted }) {
     const bucket = bucketFor({ persisted: persisted.has(eventId), delivery });
     counts[bucket] += 1;
     if (bucket === "unexplained") unexplained.push(eventId);
-    if (bucket === "persisted" && delivery !== "acknowledged") disagreements.push({ event_id: eventId, delivery });
+    if (bucket === "persisted" && !DELIVERED.has(delivery)) disagreements.push({ event_id: eventId, delivery });
   }
   const missing = Math.max(0, planned - generated.length);
   counts.unexplained += missing;

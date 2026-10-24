@@ -50,6 +50,37 @@ function fixtureCollector() {
   return { collector: { DIAGNOSTIC_CODES: CODES }, ingress, storage, submissions };
 }
 
+test("final quiescence waits for fault tasks after the connection closes", async () => {
+  const fixture = fixtureCollector();
+  let fire;
+  let scheduled;
+  const ready = new Promise((resolveReady) => { scheduled = resolveReady; });
+  const timers = { setTimeout(callback) { fire = callback; scheduled(); } };
+  const server = await startIngress({ collector: fixture.collector, ingress: fixture.ingress, timers,
+    faults: faultInjector({ default: "acknowledge", rules: [{ occurrence: 1, attempt: 0, action: "delay", delay_ms: 300 }] }) });
+  let outgoing;
+  let finished = false;
+  try {
+    assert.equal(typeof server.quiesce, "function");
+    outgoing = request({ host: "127.0.0.1", port: server.port, method: "POST", path: "/v1/security-audit", headers: { authorization: "Bearer token" } });
+    outgoing.on("error", () => {});
+    outgoing.end(event("quiescent"));
+    await ready;
+    outgoing.destroy();
+    const closing = server.quiesce().then(() => { finished = true; });
+    await new Promise((resolveTurn) => setImmediate(resolveTurn));
+    assert.equal(finished, false, "a closed connection is not proof the fault task finished");
+    fire();
+    fire = undefined;
+    await closing;
+    assert.equal(finished, true);
+  } finally {
+    outgoing?.destroy();
+    fire?.();
+    if (!finished) await server.close();
+  }
+});
+
 function post({ port, body, token = "token" }) {
   return new Promise((resolvePost) => {
     const outgoing = request({ host: "127.0.0.1", port, method: "POST", path: "/v1/security-audit", headers: { authorization: `Bearer ${token}` } }, (response) => {

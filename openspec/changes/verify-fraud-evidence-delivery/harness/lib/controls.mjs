@@ -3,6 +3,7 @@
 // invalidates the run, because a green result would not show the check could have failed.
 import { connect } from "node:net";
 import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { assertSynthetic } from "./workload.mjs";
 
 // The guard must refuse a documentation-range address before connecting (port 80: fetch itself blocks
@@ -100,4 +101,13 @@ export function syntheticControls() {
     control = false;
   }
   return { planted_refused: planted, null_control_passed: control, holds: planted && control };
+}
+
+// Every sender role's live controls, run in the role's own service directory before any probe traffic.
+export async function senderControls({ guard, port }) {
+  return requireControls({
+    loopback_guard: await guardControls({ guard, port }),
+    write_outside_grant: writeControls({ refusedPath: join(process.cwd(), "planted-write"), allowedReadPath: join(process.cwd(), "package.json") }),
+    synthetic_data: syntheticControls(),
+  });
 }
