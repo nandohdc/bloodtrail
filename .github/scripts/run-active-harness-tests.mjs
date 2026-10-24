@@ -28,62 +28,82 @@ function testFiles(directory) {
   });
 }
 
+function killProcessGroup(child, grouped, onError) {
+  try {
+    if (grouped && child.pid) process.kill(-child.pid, "SIGKILL");
+    else child.kill("SIGKILL");
+  } catch (error) {
+    if (error.code !== "ESRCH") onError(error);
+  }
+}
+
+function listenForTermination(onSignal) {
+  const handlers = { SIGINT: () => onSignal("SIGINT"), SIGTERM: () => onSignal("SIGTERM") };
+  for (const [signal, handler] of Object.entries(handlers)) process.once(signal, handler);
+  return () => {
+    for (const [signal, handler] of Object.entries(handlers)) process.removeListener(signal, handler);
+  };
+}
+
+function assertTimeout(timeoutMs) {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new Error("invalid harness test timeout");
+}
+
+function exitCode(failure, code, signal) {
+  const error = failure ?? (signal ? new Error(`test process terminated: ${signal}`) : undefined);
+  if (error) console.error(`Active harness self-tests failed: ${error.message}`);
+  return error ? 1 : code ?? 1;
+}
+
 // A separate process group contains both Node's coordinator and its test workers. Killing only the
 // coordinator leaves workers alive after a timeout. Wait for its close before reporting the result.
 function executeTests({ root, files, timeoutMs }) {
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new Error("invalid harness test timeout");
+  assertTimeout(timeoutMs);
   return new Promise((resolveResult) => {
     const grouped = process.platform !== "win32";
     const child = spawn(process.execPath, ["--test", ...files], { cwd: root, stdio: "inherit", detached: grouped });
     let failure;
-    const terminate = () => {
-      try {
-        if (grouped && child.pid) process.kill(-child.pid, "SIGKILL");
-        else child.kill("SIGKILL");
-      } catch (error) {
-        if (error.code !== "ESRCH") failure ??= error;
-      }
-    };
-    const interrupted = (signal) => () => {
-      failure = new Error(`harness tests interrupted: ${signal}`);
+    const terminate = () => killProcessGroup(child, grouped, (error) => { failure ??= error; });
+    const abort = (error) => {
+      failure = error;
       terminate();
     };
-    const signals = { SIGINT: interrupted("SIGINT"), SIGTERM: interrupted("SIGTERM") };
-    for (const [signal, handler] of Object.entries(signals)) process.once(signal, handler);
-    const timer = setTimeout(() => {
-      failure = new Error(`ETIMEDOUT: harness tests exceeded ${timeoutMs} ms`);
-      terminate();
-    }, timeoutMs);
+    const stopListening = listenForTermination((signal) => abort(new Error(`harness tests interrupted: ${signal}`)));
+    const timer = setTimeout(() => abort(new Error(`ETIMEDOUT: harness tests exceeded ${timeoutMs} ms`)), timeoutMs);
     child.once("error", (error) => { failure = error; });
     child.once("close", (code, signal) => {
       clearTimeout(timer);
-      for (const [name, handler] of Object.entries(signals)) process.removeListener(name, handler);
+      stopListening();
       terminate();
-      if (signal) failure ??= new Error(`test process terminated: ${signal}`);
-      if (failure) console.error(`Active harness self-tests failed: ${failure.message}`);
-      resolveResult(failure ? 1 : code ?? 1);
+      resolveResult(exitCode(failure, code, signal));
     });
   });
 }
 
+function harnessSuite(root, changes, entry) {
+  if (entry.name === "archive") return [];
+  if (entry.isSymbolicLink()) throw new Error(`symbolic link in harness discovery: ${entry.name}`);
+  if (!entry.isDirectory()) return [];
+  const harness = join(changes, entry.name, "harness");
+  if (!directory(harness, true)) return [];
+  const tests = join(harness, "tests");
+  directory(tests);
+  const suite = testFiles(tests);
+  if (suite.length === 0) throw new Error(`no self-tests in ${relative(root, harness)}`);
+  return suite;
+}
+
+function discoverHarnessFiles(root) {
+  const changes = join(root, "openspec/changes");
+  directory(changes);
+  return readdirSync(changes, { withFileTypes: true })
+    .flatMap((entry) => harnessSuite(root, changes, entry))
+    .sort();
+}
+
 export async function runActiveHarnessTests({ root = REPOSITORY, timeoutMs = 600_000 } = {}) {
   try {
-    const changes = join(root, "openspec/changes");
-    directory(changes);
-    const files = [];
-    for (const entry of readdirSync(changes, { withFileTypes: true })) {
-      if (entry.name === "archive") continue;
-      if (entry.isSymbolicLink()) throw new Error(`symbolic link in harness discovery: ${entry.name}`);
-      if (!entry.isDirectory()) continue;
-      const harness = join(changes, entry.name, "harness");
-      if (!directory(harness, true)) continue;
-      const tests = join(harness, "tests");
-      directory(tests);
-      const suite = testFiles(tests);
-      if (suite.length === 0) throw new Error(`no self-tests in ${relative(root, harness)}`);
-      files.push(...suite);
-    }
-    files.sort();
+    const files = discoverHarnessFiles(root);
     if (files.length === 0) {
       console.log("Active harness self-tests not applicable: no active change harnesses");
       return 0;
