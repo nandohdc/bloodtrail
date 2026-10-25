@@ -10,6 +10,8 @@ They never import a kit package or execute a harness role; fixture subprocesses,
 
 Run 3 matched seven cases. Four executed small-pass cases mismatched (L-04, L-07, L-10 and L-11); all six volume cases were unexecuted. The 200 ms shutdown reports returned in 200.77874999999997 ms and 201.91920900000002 ms (#890). L-11's absence counter expected `not_found`, while the collector's public result and all four final read-backs say `absent` (#889). All 46 executed occurrences were accounted for, with zero unexplained; the original JSON still records L-11 as a mismatch. #838 remains open and no automatic rerun follows these measurements.
 
+Run 3 declares driver lane `codex` and model `gpt-5`. The actual model identity has not been independently verified; retain this as declared provenance, with any later correction recorded separately from the raw JSON.
+
 Each run's results pin every harness file's git blob and sha256 at that run's approved head
 (`executed_file_hashes`, `role_files`). A later build may change a shared file without altering that evidence:
 a run is checked and reproduced against its approved head, never against the current tree.
