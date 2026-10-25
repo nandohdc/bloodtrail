@@ -16,6 +16,9 @@ Create this assessment in a separate commit before replaying the original depend
 Rebase the replacement branch on current main; preserve the original lockfile patch exactly.
 This establishes assessment-before-implementation in the submitted history, without claiming
 that the bot's historical unassessed commit had prior approval.
+The policy recognizes `assessment.json` as planning evidence but does not exclude
+`assessment.source.json` from implementation ordering. Commit the canonical assessment with the
+planning artifacts and add its generator input in the later repair commit; do not relax the policy.
 
 Use a job-level Sonar condition: non-PR events run normally; PRs run only when the actor and
 author are not Dependabot and the head repository matches the current repository. Check both

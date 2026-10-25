@@ -374,6 +374,14 @@ jobs:
   # with the longer SDK/contract jobs while preserving build and test gating.
   sonar:
     needs: [coverage]
+    # ci-topology permits a visible skip for untrusted PRs. Keep this at job
+    # level: an empty successful scan step would misreport analysis as passed.
+    # Check the author too, so maintainer updates do not trust a Dependabot PR.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
     permissions:
       contents: read
