@@ -49,6 +49,9 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
   Run 3 recorded 46 SDK calls. L-04, L-07 and L-10 expose the strict timing failure (#890); L-11 exposes the harness's storage-result discriminator defect (#889). Six volume cases remain unexecuted. This task records the evidence; #838's unmet acceptance criteria remain open.
 
+- [ ] 4.3 Correct the public storage-absence discriminator and its runtime/fixture controls (#889); verify absent, found and uncertain outcomes without changing frozen expectations or run 3.
+- [ ] 4.4 Prevent scratch deletion after unconfirmed role closure (#891); verify failed-close and confirmed-close controls, original S2 classification and partial observations across the finalization seam.
+
 ## 5. Copies, duplicates, conflicts and restarts (#839)
 
 - [ ] 5.1 Build and freeze:
