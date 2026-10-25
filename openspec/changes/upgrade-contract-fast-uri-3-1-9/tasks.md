@@ -4,12 +4,12 @@
 
 ## 2. Dependency refresh
 
-- [ ] 2.1 Apply the exact contract lockfile bytes from #888; verify only fast-uri's version, resolved URL and integrity change to 3.1.9, with unchanged direct dependencies and all unrelated entries.
+- [x] 2.1 Apply the exact contract lockfile bytes from #888; verify only fast-uri's version, resolved URL and integrity change to 3.1.9, with unchanged direct dependencies and all unrelated entries.
 
 ## 3. Integration verification
 
-- [ ] 3.1 Install with npm ci in the contract workspace, then run check:generated, validate and audits at low and high; verify installed fast-uri is 3.1.9 and generated content has no drift.
-- [ ] 3.2 Verify SDK frozen-contract and changed-path checks, final governance, independent baseline/candidate checker arms, contract reuse, merge-stage normative precedence and whitespace checks; record exact outcomes in the PR.
+- [x] 3.1 Install with npm ci in the contract workspace, then run check:generated, validate and audits at low and high; verify installed fast-uri is 3.1.9 and generated content has no drift.
+- [x] 3.2 Verify SDK frozen-contract and changed-path checks, final governance, independent baseline/candidate checker arms, contract reuse, merge-stage normative precedence and whitespace checks; record exact outcomes in the PR.
 
 ## Workflow follow-up
 
