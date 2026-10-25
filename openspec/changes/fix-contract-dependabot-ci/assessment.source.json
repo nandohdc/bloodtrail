@@ -1,0 +1,144 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The contract toolchain lockfile update in PR #888 has no owning OpenSpec change, while the SDK fast-uri assessment explicitly excludes this workspace.",
+    "Dependabot and fork PRs cannot receive restricted secrets; starting Sonar without its host and token fails before analysis, and existing ci-topology policy permits a visible skip.",
+    "Trusted main and same-repository human PR analysis must still execute and fail on scanner or quality errors; static and mutation checks must continue for every PR."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "ci-topology"
+    ]
+  },
+  "owned_paths": [
+    "contracts/security-audit/package-lock.json",
+    ".github/workflows/ci.yml",
+    ".github/scripts/sonar-trust-boundary.test.mjs",
+    "openspec/changes/fix-contract-dependabot-ci/.openspec.yaml",
+    "openspec/changes/fix-contract-dependabot-ci/proposal.md",
+    "openspec/changes/fix-contract-dependabot-ci/design.md",
+    "openspec/changes/fix-contract-dependabot-ci/tasks.md",
+    "openspec/changes/fix-contract-dependabot-ci/assessment.source.json",
+    "openspec/changes/fix-contract-dependabot-ci/assessment.json",
+    "openspec/changes/fix-contract-dependabot-ci/contract-reuse.json"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-own-patch-and-gate-private-analysis",
+      "kind": "direct_implementation",
+      "summary": "Own the bounded contract toolchain patch and apply a Sonar job-level trust condition implementing the existing ci-topology rule, verified with actual workflow event fixtures.",
+      "forces_addressed": [
+        "The contract toolchain lockfile update in PR #888 has no owning OpenSpec change, while the SDK fast-uri assessment explicitly excludes this workspace.",
+        "Dependabot and fork PRs cannot receive restricted secrets; starting Sonar without its host and token fails before analysis, and existing ci-topology policy permits a visible skip.",
+        "Trusted main and same-repository human PR analysis must still execute and fail on scanner or quality errors; static and mutation checks must continue for every PR."
+      ]
+    },
+    {
+      "id": "approach-expose-secrets-to-bot",
+      "kind": "alternative",
+      "summary": "Provide Sonar credentials to Dependabot or run untrusted PR code under a privileged trigger.",
+      "forces_addressed": [
+        "Dependabot and fork PRs cannot receive restricted secrets; starting Sonar without its host and token fails before analysis, and existing ci-topology policy permits a visible skip."
+      ]
+    },
+    {
+      "id": "approach-skip-missing-secrets",
+      "kind": "alternative",
+      "summary": "Skip private analysis on any event whenever the scanner credentials are absent.",
+      "forces_addressed": [
+        "Dependabot and fork PRs cannot receive restricted secrets; starting Sonar without its host and token fails before analysis, and existing ci-topology policy permits a visible skip."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-own-patch-and-gate-private-analysis",
+  "rejected_alternative_ids": [
+    "approach-expose-secrets-to-bot",
+    "approach-skip-missing-secrets"
+  ],
+  "rejection_reasons": {
+    "approach-expose-secrets-to-bot": {
+      "forces": [
+        "Dependabot and fork PRs cannot receive restricted secrets; starting Sonar without its host and token fails before analysis, and existing ci-topology policy permits a visible skip."
+      ],
+      "reason": "Violates the existing trust boundary that withholds restricted secrets from untrusted PRs; a visible job skip satisfies the canonical rule without a privilege change."
+    },
+    "approach-skip-missing-secrets": {
+      "forces": [
+        "Trusted main and same-repository human PR analysis must still execute and fail on scanner or quality errors; static and mutation checks must continue for every PR."
+      ],
+      "reason": "Would silently hide missing configuration on trusted events and turn a required private-analysis failure into an unperformed check."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-untrusted-sonar-skips",
+    "implementation-trusted-analysis-and-static-checks-preserved",
+    "implementation-contract-patch-bounded"
+  ],
+  "invariant_evidence": {
+    "implementation-untrusted-sonar-skips": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "Actual workflow-condition tests reject forks, Dependabot actors and Dependabot-authored PRs, including maintainer-triggered events."
+      ]
+    },
+    "implementation-trusted-analysis-and-static-checks-preserved": {
+      "task_ids": [
+        "2.2",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "Workflow tests admit trusted PRs and main pushes, reject predicate-removal mutations, and assert static/mutation jobs remain ungated."
+      ]
+    },
+    "implementation-contract-patch-bounded": {
+      "task_ids": [
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Original Dependabot patch comparison, contract generated-drift check, complete validation and npm audit."
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "5c5b8cbf2b5472ce2ca5e2bbae13d5d7e579ab4e",
+    "assessment_commit": "18a363584c2f17cd104548329080fff04efd30c1",
+    "earliest_governed_implementation_commit": "b43e3ff8afa18028b115cd615a88c16d6376a421"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4"
+  ],
+  "security_justification": {
+    "trust_boundary": "Fork and Dependabot PRs visibly skip private Sonar analysis. No untrusted checkout gains access to restricted secrets.",
+    "authority_provenance": "Actor, PR author and head repository are GitHub event metadata. Both bot actor and bot author disqualify a PR; no author assertion establishes trust.",
+    "authentication_or_authorization": "No tokens are created, copied or exposed. Trusted Sonar authentication and quality gates are unchanged.",
+    "audit_integrity": "GitHub records a skipped job distinctly from a successful analysis. Frozen contract events and generated artifacts are unchanged.",
+    "confidentiality": "The job guard prevents secret-bearing analysis of untrusted PRs. Tests use synthetic public event identities and no credentials.",
+    "mutation_ownership": "Only the enumerated workflow, regression test, planning artifacts and contract development lockfile are owned. Canonical source and generated contract files are excluded.",
+    "fail_posture": "Only policy-authorized untrusted analysis skips. Missing trusted credentials, scan failures and quality-gate failures still fail; merge logic is unchanged.",
+    "error_disclosure": "The guard and tests handle public repository and login metadata. No new credential or payload diagnostic is emitted.",
+    "concurrency": "No worker, shared mutable state or CI concurrency setting changes. Existing job dependencies and scan ordering remain.",
+    "lifecycle": "The assessment precedes the replayed implementation in submitted history. Historical bot execution is not retroactively approved. Archive remains a separate lifecycle step.",
+    "resource_retention": "Untrusted runs allocate no Sonar job resources. Trusted caches, artifacts and retention are unchanged.",
+    "retry_or_redelivery": "Trusted scan retry and coverage-download retry semantics remain intact. Untrusted analysis is skipped before either executes.",
+    "cryptography": "The lockfile integrity is the upstream patched artifact hash. No signing, verification algorithm or secret-storage policy changes.",
+    "privacy_transformation": "No personal payload, telemetry, event transformation or privacy policy changes. Fixtures use synthetic event metadata.",
+    "external_security_integration": "Existing Sonar analysis is gated by its existing trust policy; no new analysis service, collector or integration is introduced."
+  }
+}

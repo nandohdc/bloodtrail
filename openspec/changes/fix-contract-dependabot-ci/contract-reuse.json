@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@2.1.0",
+  "mode": "assessment",
+  "disposition": "reuse",
+  "mechanism_references": [
+    "metadata.contract",
+    "metadata.schema_version",
+    "compatibility_policy"
+  ],
+  "rationale": "The only contract workspace edit updates the development-only fast-uri lockfile entry from 3.1.8 to 3.1.9. The existing security-audit@2.1.0 identity, version and compatibility policy are consumed unchanged. No field, event, schema, fixture, registry or generated artifact changes, and no compatibility classification is introduced.",
+  "trust_boundary": "The contract producer, consumer, tenant and event authority boundaries remain unchanged. The existing CI trust boundary is restored by withholding private Sonar execution from fork and Dependabot PRs; no restricted secret is copied or exposed. The development toolchain lockfile remains the existing bounded frozen-contract exemption.",
+  "transformation_ownership": "The canonical contract source remains the sole generation input, and existing generators retain ownership of their derived artifacts. URI parsing remains in the existing AJV development toolchain; no production transformation or public contract mechanism is introduced or moved.",
+  "alternatives": [
+    {
+      "approach": "extend",
+      "rejection_reason": "A development dependency patch and enforcement of an existing CI trust rule change no event semantic or contract representation. Calling this an extension would invent a compatibility change."
+    },
+    {
+      "approach": "new_contract",
+      "rejection_reason": "No new producer-consumer contract is needed to update an existing transitive development dependency or gate an existing private analysis job."
+    }
+  ],
+  "author": {
+    "name": "Codex, under direct instruction from the project owner",
+    "handle": "nandohdc"
+  },
+  "evidence_references": [
+    "openspec/changes/fix-contract-dependabot-ci/proposal.md",
+    "openspec/changes/fix-contract-dependabot-ci/design.md",
+    "contracts/security-audit/package-lock.json",
+    "packages/security-audit-sdk-core/contract-provenance.json",
+    "packages/security-audit-sdk-core/verification-lifecycle.json",
+    ".github/scripts/sonar-trust-boundary.test.mjs"
+  ],
+  "assurance_limitations": [
+    "This author-written reuse assessment is not independent review, owner approval, merge authority, activation or release authorization.",
+    "The unchanged generated-artifact claim is supported by the contract generated-drift check and validation after a clean install of fast-uri 3.1.9; the complete workspace governance-gate chain also passed.",
+    "Sonar remains unperformed for untrusted PRs. A skipped analysis is not a passing analysis, and the existing merge gate continues to distinguish it."
+  ]
+}
