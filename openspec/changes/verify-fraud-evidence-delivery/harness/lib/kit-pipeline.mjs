@@ -26,7 +26,11 @@ export function deleteScratch({ scratch }) {
   return { root: scratch, recursively_absent: !existsSync(scratch), includes: ["evaluation-kit", "own-service", "collector-storage", "logs"] };
 }
 
-export function finalizeScratch({ result, scratch, remove = deleteScratch }) {
+export function finalizeScratch({ result, scratch, remove = deleteScratch, roleClosureConfirmed = true }) {
+  if (!roleClosureConfirmed) {
+    result.scratch_deletion = { root: scratch, recursively_absent: false, role_closure_confirmed: false };
+    return result;
+  }
   try {
     result.scratch_deletion = remove({ scratch });
   } catch (error) {
@@ -39,13 +43,15 @@ export function finalizeScratch({ result, scratch, remove = deleteScratch }) {
 // A session that fails after completing part of its work may attach those observations to its error
 // (`error.observations`); they are kept beside the invalidation rather than lost with the spent run.
 export async function scratchSession({ result, scratch, work }) {
+  let roleClosureConfirmed = true;
   try {
     await work();
   } catch (error) {
+    roleClosureConfirmed = error.role_closure_confirmed !== false;
     result.invalidations.push(invalidationOf(error));
     if (error.observations !== undefined) result.observations = error.observations;
   } finally {
-    finalizeScratch({ result, scratch });
+    finalizeScratch({ result, scratch, roleClosureConfirmed });
   }
   return result;
 }
