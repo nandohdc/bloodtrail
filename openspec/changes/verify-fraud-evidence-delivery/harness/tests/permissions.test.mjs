@@ -9,6 +9,7 @@ import { ingressFlags, prepareStorage, roleFlags, senderFlags, storageDirectory 
 import { deleteScratch, finalizeScratch, scratchSession } from "../lib/kit-pipeline.mjs";
 import { stopRoles } from "../lib/session.mjs";
 import { StopCondition } from "../lib/deadline.mjs";
+import { gatedSession } from "../lib/gated-session.mjs";
 
 function layout() {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "stage-2-permissions-fixture-")));
@@ -122,6 +123,32 @@ test("an unconfirmed close without an earlier session error also prevents deleti
     assert.equal(result.scratch_deletion.recursively_absent, false);
     assert.equal(result.invalidations[0].role_closure_confirmed, false);
     assert.match(result.invalidations[0].message, /role closure.*deadline/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a deadline kill failure keeps S2 and partial results; later confirmed closure permits cleanup", async () => {
+  const { root, scratch } = layout();
+  let kills = 0;
+  const role = { exited: () => null, kill() { if (++kills === 1) throw new Error("fixture kill failed"); }, whenClosed: async () => ({ code: null, signal: "SIGKILL" }) };
+  const units = [{ name: "done", pass: "small" }, { name: "stuck", pass: "small" }];
+  try {
+    const result = await scratchSession({ result: { invalidations: [] }, scratch, work: () => gatedSession({
+      expectations: { deadline_ms: 10 }, units, key: "phases", evaluate: () => assert.fail("a halted session must not reach evaluation"),
+      runUnit: async ({ context, unit }) => {
+        if (unit.name === "done") return { occurrence_count: 1 };
+        context.byUnit.stuck = { sender: { ...role, stderr: () => "" } };
+        return new Promise(() => {});
+      },
+    }) });
+    assert.equal(kills, 2);
+    assert.equal(result.invalidations[0].condition, "deadline");
+    assert.equal(result.invalidations[0].halt_error, "fixture kill failed");
+    assert.equal(result.observations.phases.done.occurrence_count, 1);
+    assert.equal(result.observations.phases.stuck, null);
+    assert.equal(existsSync(scratch), false, "later actual closure permits cleanup despite the earlier kill error");
+    assert.equal(result.scratch_deletion.recursively_absent, true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

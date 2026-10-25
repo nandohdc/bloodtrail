@@ -33,7 +33,9 @@ async function waitForClose(roles, timeoutMs = ROLE_CLOSE_TIMEOUT_MS) {
 export async function stopRoles(roles, { timeoutMs = ROLE_CLOSE_TIMEOUT_MS, failure } = {}) {
   try {
     killAll(roles);
-    return await waitForClose(roles, timeoutMs);
+    const closed = await waitForClose(roles, timeoutMs);
+    if (failure?.role_closure_confirmed === false) failure.role_closure_confirmed = true;
+    return closed;
   } catch (error) {
     const failed = failure ?? error;
     failed.role_closure_error = error.message;
