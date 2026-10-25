@@ -27,7 +27,8 @@
     "openspec/changes/fix-contract-dependabot-ci/design.md",
     "openspec/changes/fix-contract-dependabot-ci/tasks.md",
     "openspec/changes/fix-contract-dependabot-ci/assessment.source.json",
-    "openspec/changes/fix-contract-dependabot-ci/assessment.json"
+    "openspec/changes/fix-contract-dependabot-ci/assessment.json",
+    "openspec/changes/fix-contract-dependabot-ci/contract-reuse.json"
   ],
   "candidate_approaches": [
     {
@@ -122,6 +123,7 @@
     "2.2",
     "3.1",
     "3.2",
-    "3.3"
+    "3.3",
+    "3.4"
   ]
 }
