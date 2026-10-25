@@ -47,6 +47,8 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 - [x] 4.2 Under its own S1, record overload rejections with depth and capacity, the shutdown report, and the loss
   counter and ceiling signals.
 
+  Run 3 recorded 46 SDK calls. L-04, L-07 and L-10 expose the strict timing failure (#890); L-11 exposes the harness's storage-result discriminator defect (#889). Six volume cases remain unexecuted. This task records the evidence; #838's unmet acceptance criteria remain open.
+
 ## 5. Copies, duplicates, conflicts and restarts (#839)
 
 - [ ] 5.1 Build and freeze:
