@@ -34,3 +34,6 @@ and goes to the owner.
 |---|---|---|---|---|---|---|---|
 | 1 | S2-tracer | #836 | 693c18d671e4cfdc685c0b95930bb4be1eaf63c9 | https://github.com/nandohdc/bloodtrail/issues/836#issuecomment-6365806337, delegated (G44) | 1 | 7 of 7 cases matched, no invalidations: `results/tracer-run-1.json` | yes, `recursively_absent: true` |
 | 2 | S2-outages | #837 | c23b98388f8b3e33159d2ca0d350e63587481047 | https://github.com/nandohdc/bloodtrail/issues/837#issuecomment-6372110299, delegated (G44) | 510 | 14 of 14 cases matched (small pass gated the volume pass, which completed), no invalidations: `results/outages-run-2.json` | yes, `recursively_absent: true` |
+| 3 | S2-load | #838 | 1949518c5501f40482ec489fca86f9ad1b678e69 | https://github.com/nandohdc/bloodtrail/issues/838#issuecomment-6390168250, delegated (G44) | 46 | 7 of 17 cases matched; 4 executed small cases mismatched (L-04, L-07, L-10, L-11), 6 volume cases unexecuted; no invalidations: `results/load-run-3.json`. Strict timing finding #890; absence-evaluator defect #889. | yes, `recursively_absent: true` |
+
+After run 3: **3 of 12 runs used, 557 SDK calls recorded**. #838 remains open. No replacement run was started: the timing failures are genuine measured outcomes. The raw result and frozen v1 expectations are unchanged.

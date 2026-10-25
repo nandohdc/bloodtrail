@@ -44,8 +44,10 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 ## 4. Saturation, shutdown and `best_effort` loss (#838)
 
 - [x] 4.1 Build and freeze the overload, strict mid-burst deadline-bounded shutdown, combined pending-retry/saturation/unpersisted-abandonment and `best_effort` loss plans. Verify per-occurrence callback ordering and drop identity, runtime pre-traffic accounting controls, confirmed final quiescence, cleanup failures, the bounded Codex lane and the 1,456-call cap with focused fixture tests.
-- [ ] 4.2 Under its own S1, record overload rejections with depth and capacity, the shutdown report, and the loss
+- [x] 4.2 Under its own S1, record overload rejections with depth and capacity, the shutdown report, and the loss
   counter and ceiling signals.
+
+  Run 3 recorded 46 SDK calls. L-04, L-07 and L-10 expose the strict timing failure (#890); L-11 exposes the harness's storage-result discriminator defect (#889). Six volume cases remain unexecuted. This task records the evidence; #838's unmet acceptance criteria remain open.
 
 ## 5. Copies, duplicates, conflicts and restarts (#839)
 
