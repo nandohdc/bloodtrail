@@ -1,0 +1,144 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The contract lockfile pins fast-uri 3.1.8; Dependabot #888 proposes 3.1.9 within AJV's existing range without changing a direct dependency.",
+    "The bot PR fails governed-path ownership and has no Sonar credentials; canonical CI policy denies restricted secrets to Dependabot.",
+    "The frozen security-audit@2.1.0 source, generated artifacts, fixtures, version and direct dependency declarations must remain byte-identical."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "security-audit-event-contract"
+    ]
+  },
+  "owned_paths": [
+    "contracts/security-audit/package-lock.json",
+    "openspec/changes/upgrade-contract-fast-uri-3-1-9/.openspec.yaml",
+    "openspec/changes/upgrade-contract-fast-uri-3-1-9/assessment.json",
+    "openspec/changes/upgrade-contract-fast-uri-3-1-9/assessment.source.json",
+    "openspec/changes/upgrade-contract-fast-uri-3-1-9/contract-reuse.json",
+    "openspec/changes/upgrade-contract-fast-uri-3-1-9/design.md",
+    "openspec/changes/upgrade-contract-fast-uri-3-1-9/proposal.md",
+    "openspec/changes/upgrade-contract-fast-uri-3-1-9/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-governed-lock-refresh",
+      "kind": "direct_implementation",
+      "summary": "Author ownership and a contract reuse assessment before applying #888's exact lockfile bytes in a maintainer-authored replacement PR.",
+      "forces_addressed": [
+        "The contract lockfile pins fast-uri 3.1.8; Dependabot #888 proposes 3.1.9 within AJV's existing range without changing a direct dependency.",
+        "The bot PR fails governed-path ownership and has no Sonar credentials; canonical CI policy denies restricted secrets to Dependabot.",
+        "The frozen security-audit@2.1.0 source, generated artifacts, fixtures, version and direct dependency declarations must remain byte-identical."
+      ]
+    },
+    {
+      "id": "approach-amend-dependabot-branch",
+      "kind": "alternative",
+      "summary": "Append governance artifacts to the existing Dependabot implementation branch and retry CI.",
+      "forces_addressed": [
+        "The bot PR fails governed-path ownership and has no Sonar credentials; canonical CI policy denies restricted secrets to Dependabot."
+      ]
+    },
+    {
+      "id": "approach-expand-bot-secrets",
+      "kind": "alternative",
+      "summary": "Give the bot context the restricted analysis credentials so its Sonar scan can run.",
+      "forces_addressed": [
+        "The bot PR fails governed-path ownership and has no Sonar credentials; canonical CI policy denies restricted secrets to Dependabot."
+      ]
+    },
+    {
+      "id": "approach-direct-dependency",
+      "kind": "alternative",
+      "summary": "Add a direct fast-uri constraint or upgrade AJV to force the transitive version.",
+      "forces_addressed": [
+        "The contract lockfile pins fast-uri 3.1.8; Dependabot #888 proposes 3.1.9 within AJV's existing range without changing a direct dependency.",
+        "The frozen security-audit@2.1.0 source, generated artifacts, fixtures, version and direct dependency declarations must remain byte-identical."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-governed-lock-refresh",
+  "rejected_alternative_ids": [
+    "approach-amend-dependabot-branch",
+    "approach-expand-bot-secrets",
+    "approach-direct-dependency"
+  ],
+  "rejection_reasons": {
+    "approach-amend-dependabot-branch": {
+      "forces": [
+        "The bot PR fails governed-path ownership and has no Sonar credentials; canonical CI policy denies restricted secrets to Dependabot."
+      ],
+      "reason": "Appending the assessment after implementation violates ordering and does not supply missing bot credentials. Rewriting the bot branch also races its automation."
+    },
+    "approach-expand-bot-secrets": {
+      "forces": [
+        "The bot PR fails governed-path ownership and has no Sonar credentials; canonical CI policy denies restricted secrets to Dependabot."
+      ],
+      "reason": "Canonical ci-topology prohibits restricted secrets for Dependabot. A normal maintainer-authored governed replacement needs no workflow, secret policy or gate change."
+    },
+    "approach-direct-dependency": {
+      "forces": [
+        "The contract lockfile pins fast-uri 3.1.8; Dependabot #888 proposes 3.1.9 within AJV's existing range without changing a direct dependency.",
+        "The frozen security-audit@2.1.0 source, generated artifacts, fixtures, version and direct dependency declarations must remain byte-identical."
+      ],
+      "reason": "AJV already admits the requested version. A direct constraint or AJV upgrade changes additional inputs and no longer preserves the exact bounded update."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-contract-fast-uri-patched-resolution",
+    "implementation-contract-content-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-contract-fast-uri-patched-resolution": {
+      "task_ids": [
+        "2.1",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "Planned: exact byte comparison with #888 and installed fast-uri 3.1.9; contract audits pass at low and high."
+      ]
+    },
+    "implementation-contract-content-unchanged": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "Planned: contract generated-artifact checks and validation; SDK contract immutability and changed-path checks."
+      ]
+    }
+  },
+  "ordering": {
+    "proposal_baseline_commit": "b1baaba1a1227b8eb49948e8fd8a45d13ef315ba"
+  },
+  "security_sensitive": true,
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "3.1",
+    "3.2"
+  ],
+  "security_justification": {
+    "audit_integrity": "The dependency refresh preserves frozen contract content and every audit event definition; npm integrity and exact lockfile comparison bind the artifact.",
+    "authentication_or_authorization": "No product authorization changes. Existing maintainer CI credentials remain in their current context; Dependabot receives no additional permission.",
+    "authority_provenance": "The agent authors governance evidence before the lockfile implementation; review, CI and merge remain separate from authored assertions.",
+    "concurrency": "No runtime concurrency changes. A maintainer-owned branch avoids rewriting history underneath Dependabot automation.",
+    "confidentiality": "No credential value is copied, printed or committed; the restricted-secret policy for Dependabot remains enforced.",
+    "cryptography": "The existing npm artifact integrity field changes with the requested registry artifact; no product cryptographic code or key changes.",
+    "error_disclosure": "Verification reports package versions, drift and gate diagnostics; it does not expose credentials or user event data.",
+    "external_security_integration": "Existing analysis services execute in the normal maintainer PR context. No endpoint, integration scope or secret-access policy changes.",
+    "fail_posture": "The owning assessment, contract reuse, frozen-content checks and all required CI remain mandatory; no missing or skipped check is treated as a pass.",
+    "lifecycle": "Planning precedes the bounded implementation; independent review and CI precede merge, and archival is a separate later change.",
+    "mutation_ownership": "Only the contract lockfile and this owning change directory may change; canonical source and generated contract paths remain immutable.",
+    "privacy_transformation": "No personal information, event payload or privacy transformation is introduced by a development-tool lockfile update.",
+    "resource_retention": "Only normal local and CI dependency installation artifacts are created; no production data-retention or storage behavior changes.",
+    "retry_or_redelivery": "No delivery, retry, redelivery or shutdown behavior changes; this update is restricted to the contract development toolchain.",
+    "trust_boundary": "Restricted credentials stay unavailable to Dependabot. The replacement uses the existing maintainer review and CI boundary without broadening it."
+  }
+}

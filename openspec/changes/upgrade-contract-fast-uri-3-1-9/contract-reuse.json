@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "contract": "security-audit@2.1.0",
+  "mode": "assessment",
+  "disposition": "reuse",
+  "mechanism_references": [
+    "metadata.contract",
+    "metadata.schema_version",
+    "compatibility_policy"
+  ],
+  "rationale": "This change modifies only contracts/security-audit/package-lock.json, moving transitive development dependency fast-uri from 3.1.8 to 3.1.9. The lockfile is tooling, not declared contract content. metadata.contract, metadata.schema_version and compatibility_policy are reused unchanged; no event, schema, policy, registry or fixture is redefined.",
+  "trust_boundary": "No trust boundary moves. fast-uri stays dev: true and is loaded only when the contract tests compile the generated schema with AJV; nothing crosses a process, network or tenancy boundary at runtime, and no shipped artifact changes. The governance boundary is unchanged: the lockfile was already the one path contract.toolchainExemptions exempts from the frozen-contract prefix rule.",
+  "transformation_ownership": "No transformation is added, removed or relocated. The canonical contract source keeps sole ownership of event identity and shape, the contract generator keeps sole ownership of the generated artifacts, and check-contract-immutability.mjs keeps sole ownership of proving that every path contract-provenance.json declares is unchanged.",
+  "alternatives": [
+    {
+      "approach": "extend",
+      "rejection_reason": "Extending security-audit@2.1.0 would claim a contract change in order to remediate a dev dependency advisory. The advisory is in the test toolchain, and no contract input or output changes, so no compatibility classification applies."
+    },
+    {
+      "approach": "new_contract",
+      "rejection_reason": "A new contract would redefine scope to move a transitive development dependency; the requested update introduces no contract semantics."
+    }
+  ],
+  "author": {
+    "name": "Codex, under direct instruction from Fernando Homem da Costa",
+    "handle": "nandohdc"
+  },
+  "evidence_references": [
+    "openspec/changes/upgrade-contract-fast-uri-3-1-9/proposal.md",
+    "openspec/changes/upgrade-contract-fast-uri-3-1-9/design.md",
+    "packages/security-audit-sdk-core/verification-lifecycle.json",
+    "packages/security-audit-sdk-core/contract-provenance.json",
+    "packages/security-audit-sdk-core/tests/verification/contract-toolchain-exemption.test.mjs"
+  ],
+  "assurance_limitations": [
+    "This is agent-authored reuse evidence, not a signed owner decision, review approval or authorization to publish a package or activate contract semantics.",
+    "Generated-content identity and dependency behavior must be verified by the recorded installation, validation and frozen-contract checks for this candidate.",
+    "The author handle identifies the repository account used for this instructed work; it is not a claim that the human authored this assessment."
+  ]
+}
