@@ -220,6 +220,26 @@ export type TransactionCriticalDeliveryResult =
   }>
   | Readonly<{
     /**
+     * A `partially_committed` occurrence reached the durability point after the
+     * commit gate ran. The result truthfully reflects that the business change
+     * was partial rather than claiming a full commit (#869).
+     */
+    readonly status: "partially_committed_and_durable";
+    readonly event_id: string;
+    readonly transaction_id: string;
+  }>
+  | Readonly<{
+    /**
+     * A `compensated` occurrence reached the durability point after the
+     * commit gate ran. The result truthfully reflects that the business change
+     * was compensated/undone rather than claiming a full commit (#869).
+     */
+    readonly status: "compensated_and_durable";
+    readonly event_id: string;
+    readonly transaction_id: string;
+  }>
+  | Readonly<{
+    /**
      * A `not_committed` occurrence reached the durability point without the
      * commit gate running. The result makes no commit claim; the occurrence's
      * own commit state says what happened to the business change.
@@ -269,6 +289,11 @@ export interface TransactionCriticalDelivery {
  * An occurrence whose commit state is `not_committed` skips step 2 and is
  * reported `durable_without_commit`: there is no business commit to gate, and
  * the result must not claim one.
+ *
+ * An occurrence whose commit state is `partially_committed` or `compensated`
+ * runs step 2 and is reported `partially_committed_and_durable` or
+ * `compensated_and_durable` respectively (#869): the result claims only what
+ * the occurrence's commit state attests.
  *
  * What it does not provide: business and audit atomicity (a failure after the
  * gate committed is reported as `audit_durability_failed_after_commit`, but the
@@ -391,6 +416,13 @@ async function deliverWithCommit(input: TransactionPipelineInput): Promise<Trans
   if (!(await acknowledged(input))) {
     return failClosed("audit_durability_failed_after_commit", eventId, true, true);
   }
+  const commitState = input.event.event.commit_state;
+  if (commitState === "partially_committed") {
+    return durable(input, "partially_committed_and_durable");
+  }
+  if (commitState === "compensated") {
+    return durable(input, "compensated_and_durable");
+  }
   return durable(input, "committed_and_durable");
 }
 
@@ -427,14 +459,23 @@ async function acknowledged(input: TransactionPipelineInput): Promise<boolean> {
 
 function durable(
   input: TransactionPipelineInput,
-  status: "committed_and_durable" | "durable_without_commit",
+  status:
+    | "committed_and_durable"
+    | "partially_committed_and_durable"
+    | "compensated_and_durable"
+    | "durable_without_commit",
 ): TransactionCriticalDeliveryResult {
   return Object.freeze({ status, event_id: input.event.event.id, transaction_id: input.transactionId });
 }
 
 /** Only a result that reached the durability point is recorded for deduplication. */
 function reachedDurability(result: TransactionCriticalDeliveryResult): boolean {
-  return result.status === "committed_and_durable" || result.status === "durable_without_commit";
+  return (
+    result.status === "committed_and_durable" ||
+    result.status === "partially_committed_and_durable" ||
+    result.status === "compensated_and_durable" ||
+    result.status === "durable_without_commit"
+  );
 }
 
 /** The behaviours a policy owner may approve, exactly as the contract row enumerates them. */
