@@ -89,6 +89,8 @@ function countingGate(decision: unknown) {
 
 const COMMITTED = transactionCriticalEvent("committed");
 const NOT_COMMITTED = transactionCriticalEvent("not_committed");
+const PARTIALLY_COMMITTED = transactionCriticalEvent("partially_committed");
+const COMPENSATED = transactionCriticalEvent("compensated");
 
 // ---------------------------------------------------------------------------
 // P-E-x2 (#859): out-of-type probe and gate values fail closed
@@ -373,5 +375,110 @@ describe("transaction_critical: deduplication is per binding instance (P-E-7, #8
 
     assert.deepEqual(results.map((result) => result.status), ["committed_and_durable", "committed_and_durable"]);
     assert.equal(attempts.length, 2, "each instance reached the durability point");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Qualified durability claims for partial and compensated (#869)
+// ---------------------------------------------------------------------------
+
+describe("transaction_critical: qualified durability claims for partial and compensated (#869)", () => {
+  it("a partially_committed occurrence runs the commit gate and reports partially_committed_and_durable upon commit", async () => {
+    const { handoff, attempts } = acknowledging();
+    const gate = countingGate("committed");
+    const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: async () => true });
+
+    const result = await binding.deliver(PARTIALLY_COMMITTED, "txn-partial", gate.run);
+
+    assert.deepEqual(result, {
+      status: "partially_committed_and_durable",
+      event_id: PARTIALLY_COMMITTED.event.id,
+      transaction_id: "txn-partial",
+    });
+    assert.equal(gate.calls, 1, "the commit gate must run for partially_committed");
+    assert.equal(attempts.length, 1, "the occurrence reached durability");
+    assert.ok(Object.isFrozen(result));
+  });
+
+  it("a compensated occurrence runs the commit gate and reports compensated_and_durable upon commit", async () => {
+    const { handoff, attempts } = acknowledging();
+    const gate = countingGate("committed");
+    const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: async () => true });
+
+    const result = await binding.deliver(COMPENSATED, "txn-compensated", gate.run);
+
+    assert.deepEqual(result, {
+      status: "compensated_and_durable",
+      event_id: COMPENSATED.event.id,
+      transaction_id: "txn-compensated",
+    });
+    assert.equal(gate.calls, 1, "the commit gate must run for compensated");
+    assert.equal(attempts.length, 1, "the occurrence reached durability");
+    assert.ok(Object.isFrozen(result));
+  });
+
+  it("deduplicates repeated deliveries of partially_committed and compensated occurrences", async () => {
+    const { handoff, attempts } = acknowledging();
+    const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: async () => true });
+
+    const firstPartial = await binding.deliver(PARTIALLY_COMMITTED, "txn-dedup-p", countingGate("committed").run);
+    const secondPartial = await binding.deliver(PARTIALLY_COMMITTED, "txn-dedup-p", countingGate("committed").run);
+
+    assert.equal(firstPartial.status, "partially_committed_and_durable");
+    assert.deepEqual(secondPartial, {
+      status: "already_delivered",
+      event_id: PARTIALLY_COMMITTED.event.id,
+      transaction_id: "txn-dedup-p",
+    });
+
+    const firstComp = await binding.deliver(COMPENSATED, "txn-dedup-c", countingGate("committed").run);
+    const secondComp = await binding.deliver(COMPENSATED, "txn-dedup-c", countingGate("committed").run);
+
+    assert.equal(firstComp.status, "compensated_and_durable");
+    assert.deepEqual(secondComp, {
+      status: "already_delivered",
+      event_id: COMPENSATED.event.id,
+      transaction_id: "txn-dedup-c",
+    });
+    assert.equal(attempts.length, 2, "only first attempts reached durability");
+  });
+
+  it("fails closed when the commit gate declines or is unconfirmed for partially_committed", async () => {
+    const { handoff, attempts } = acknowledging();
+    const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: async () => true });
+
+    const declined = await binding.deliver(PARTIALLY_COMMITTED, "txn-declined", countingGate("declined").run);
+    assert.deepEqual(declined, {
+      status: "failed_closed",
+      code: "business_commit_declined",
+      event_id: PARTIALLY_COMMITTED.event.id,
+      commitGateInvoked: true,
+      durabilityAttempted: false,
+    });
+
+    const unconfirmed = await binding.deliver(COMPENSATED, "txn-unconfirmed", countingGate("failed").run);
+    assert.deepEqual(unconfirmed, {
+      status: "failed_closed",
+      code: "business_commit_unconfirmed",
+      event_id: COMPENSATED.event.id,
+      commitGateInvoked: true,
+      durabilityAttempted: false,
+    });
+    assert.equal(attempts.length, 0);
+  });
+
+  it("reports audit_durability_failed_after_commit when handoff fails after commit for compensated", async () => {
+    const { handoff, attempts } = failing();
+    const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: async () => true });
+
+    const result = await binding.deliver(COMPENSATED, "txn-durability-fail", countingGate("committed").run);
+    assert.deepEqual(result, {
+      status: "failed_closed",
+      code: "audit_durability_failed_after_commit",
+      event_id: COMPENSATED.event.id,
+      commitGateInvoked: true,
+      durabilityAttempted: true,
+    });
+    assert.equal(attempts.length, 1);
   });
 });
