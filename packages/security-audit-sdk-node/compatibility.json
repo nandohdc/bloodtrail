@@ -43,6 +43,13 @@
         "adr": "adr/005-transaction-critical-delivery-claims-only-what-it-checks.md",
         "valueExportCount": 19,
         "typeExportCount": 44
+      },
+      {
+        "issue": 869,
+        "reason": "Governed widening of the TransactionCriticalDeliveryResult public union without a new export (#869): gains partially_committed_and_durable and compensated_and_durable statuses so transaction-critical delivery claims match partial and compensated commit states truthfully.",
+        "adr": "adr/005-transaction-critical-delivery-claims-only-what-it-checks.md",
+        "valueExportCount": 19,
+        "typeExportCount": 44
       }
     ]
   },
