@@ -250,9 +250,11 @@ the occurrence to the durability point, in one attempt (ADR-NODE-005).
 | The gate returns `"declined"` | `failed_closed` / `business_commit_declined` |
 | The gate returns anything but `"committed"` or `"declined"`, or rejects | `failed_closed` / `business_commit_unconfirmed` |
 | The occurrence's commit state is `not_committed` | the gate never runs; `durable_without_commit` once acknowledged |
+| The occurrence's commit state is `partially_committed` | the gate runs; `partially_committed_and_durable` once committed and acknowledged (#869) |
+| The occurrence's commit state is `compensated` | the gate runs; `compensated_and_durable` once committed and acknowledged (#869) |
 | The handoff fails or rejects for a `not_committed` occurrence | `failed_closed` / `audit_durability_unreachable`, with `durabilityAttempted: true` |
 | The handoff fails or rejects after the gate committed | `failed_closed` / `audit_durability_failed_after_commit` |
-| The gate committed and the handoff acknowledged | `committed_and_durable` |
+| The gate committed and the handoff acknowledged (and commit state is `committed`) | `committed_and_durable` |
 
 `deliver()` returns one of these results and does not reject because a probe, gate or handoff did. Every
 failure also records `commitGateInvoked` and `durabilityAttempted`.
@@ -270,9 +272,13 @@ The result is not commit evidence: read whether the business change committed fr
 - **deduplication across instances.** The event id and transaction id pair is remembered in memory, inside
   one binding instance only.
 
-### Migration (#859, #860)
+### Migration (#859, #860, #869)
 
-- **New values.** `TransactionCriticalDeliveryResult` gains the status `durable_without_commit`, and
+- **Qualified durable values (#869).** `TransactionCriticalDeliveryResult` gains the statuses
+  `partially_committed_and_durable` and `compensated_and_durable`. An occurrence whose commit state is
+  `partially_committed` or `compensated` runs the commit gate and reports the corresponding qualified outcome
+  once committed and acknowledged, rather than over-claiming `committed_and_durable`.
+- **New values (#859, #860).** `TransactionCriticalDeliveryResult` gains the status `durable_without_commit`, and
   `DeliveryClassRefusalCode` gains `business_commit_unconfirmed` and `audit_durability_failed_after_commit`. A
   host that switches exhaustively over the status or the code gets a type error until it handles them.
 - **Stricter values.** A probe or gate result outside its declared type used to continue. It now fails closed.
