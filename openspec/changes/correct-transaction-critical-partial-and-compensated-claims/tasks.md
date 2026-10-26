@@ -28,3 +28,10 @@
 - [x] 4.1 Run `npm run validate --prefix packages/security-audit-sdk-node` (typecheck, build, tests, scope, frozen exports, dependencies, evaluation kit controls).
 - [x] 4.2 Run `make test` across workspaces.
 - [x] 4.3 Run `git diff --check` to ensure no whitespace or formatting errors.
+
+## 5. Merge, fold and archive
+
+- [x] 5.1 Obtain every required CI context plus DeepScan green on PR #896 head (`ce4a1b2d3b74f928169a5393b2fed19b1225bc5e`).
+- [x] 5.2 Merge PR #896 as a merge commit after checks pass. Evidence: PR #896 merged into `main` as merge commit `7f37d50278a7024f8ffdf85954a2948e4d14a325`.
+- [x] 5.3 Fold the MODIFIED requirement into the canonical spec (`openspec/specs/security-audit-sdk-node/spec.md`) in a separate dedicated fold PR, while the change is active (ADR 0001).
+- [ ] 5.4 Archive the change in a separate dedicated archive PR after the fold lands.

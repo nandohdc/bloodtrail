@@ -413,6 +413,12 @@ binding SHALL prove audit durability is reachable and then reach the durability 
 invoke the business commit gate, and SHALL report a durable outcome distinct from committed and
 durable.
 
+An occurrence whose commit state is `partially_committed` or `compensated` SHALL invoke the business
+commit gate, SHALL require a successful business commit before reaching the durability point, and
+upon acknowledged durability SHALL report a qualified durable outcome (`partially_committed_and_durable`
+or `compensated_and_durable`, respectively) truthful to the occurrence's commit state, rather than
+claiming a full business commit.
+
 Each failure SHALL carry a distinct outcome and SHALL record whether the commit gate was invoked and
 whether the durability point was reached, so that the ordering is observable rather than asserted. A
 failure at the durability point after the commit gate ran SHALL carry an outcome distinct from
@@ -452,6 +458,14 @@ commit SHALL cover only failures before the commit gate runs.
   acknowledges
 - **THEN** the commit gate is never invoked, and the binding reports the occurrence durable without
   claiming a business commit
+
+#### Scenario: A partially committed occurrence reports qualified durability
+- **WHEN** an occurrence whose commit state is `partially_committed` is delivered, the business commit gate commits, and the durability point acknowledges
+- **THEN** the binding reports the occurrence as partially committed and durable, distinct from committed and durable
+
+#### Scenario: A compensated occurrence reports qualified durability
+- **WHEN** an occurrence whose commit state is `compensated` is delivered, the business commit gate commits, and the durability point acknowledges
+- **THEN** the binding reports the occurrence as compensated and durable, distinct from committed and durable
 
 #### Scenario: A failure after the commit is distinguishable from one before it
 - **WHEN** the business commit gate commits and the durability point does not acknowledge
@@ -513,6 +527,10 @@ across instances is the host's.
 - **WHEN** the same pair is delivered once through each of two binding instances
 - **THEN** each instance reaches the durability point, and neither reports the pair as already
   delivered
+
+#### Scenario: Qualified durable deliveries are deduplicated
+- **WHEN** a partially committed or compensated delivery succeeds and the same pair is offered again
+- **THEN** the second is reported as already delivered and reaches no durability point
 
 ### Requirement: Policy-critical delivery is blocked without a recorded policy-owner decision
 
