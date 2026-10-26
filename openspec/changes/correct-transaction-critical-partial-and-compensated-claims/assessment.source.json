@@ -1,0 +1,138 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The transaction-critical result and declaration claim only what the binding checked, matching partial and compensated commit states truthfully.",
+    "Occurrences with partially_committed and compensated commit states must still execute the business commit gate before reaching durability.",
+    "Preserve the fixed order, existing outcomes, the frozen export surface, the shared guarantees type, and the other delivery classes."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "lifecycle_or_state",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/correct-transaction-critical-partial-and-compensated-claims/.openspec.yaml",
+    "openspec/changes/correct-transaction-critical-partial-and-compensated-claims/assessment.json",
+    "openspec/changes/correct-transaction-critical-partial-and-compensated-claims/assessment.source.json",
+    "openspec/changes/correct-transaction-critical-partial-and-compensated-claims/design.md",
+    "openspec/changes/correct-transaction-critical-partial-and-compensated-claims/proposal.md",
+    "openspec/changes/correct-transaction-critical-partial-and-compensated-claims/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/correct-transaction-critical-partial-and-compensated-claims/tasks.md",
+    "packages/security-audit-sdk-node/README.md",
+    "packages/security-audit-sdk-node/compatibility.json",
+    "packages/security-audit-sdk-node/src/delivery-classes.ts",
+    "packages/security-audit-sdk-node/tests/transaction-critical-claims.test.ts"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-qualified-commit-claims",
+      "kind": "direct_implementation",
+      "summary": "In deliverWithCommit and reachedDurability, branch on partially_committed and compensated to return partially_committed_and_durable and compensated_and_durable respectively, while retaining gate execution and settled deduplication.",
+      "forces_addressed": [
+        "The transaction-critical result and declaration claim only what the binding checked, matching partial and compensated commit states truthfully.",
+        "Occurrences with partially_committed and compensated commit states must still execute the business commit gate before reaching durability.",
+        "Preserve the fixed order, existing outcomes, the frozen export surface, the shared guarantees type, and the other delivery classes."
+      ]
+    },
+    {
+      "id": "approach-bypass-gate-for-partial",
+      "kind": "alternative",
+      "summary": "Bypass the commit gate for partially_committed and compensated occurrences like not_committed does.",
+      "forces_addressed": [
+        "The transaction-critical result and declaration claim only what the binding checked, matching partial and compensated commit states truthfully."
+      ]
+    },
+    {
+      "id": "approach-single-qualified-status",
+      "kind": "alternative",
+      "summary": "Collapse both partially_committed and compensated occurrences into a single generic qualified_commit_and_durable outcome.",
+      "forces_addressed": [
+        "Preserve the fixed order, existing outcomes, the frozen export surface, the shared guarantees type, and the other delivery classes."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-qualified-commit-claims",
+  "rejected_alternative_ids": [
+    "approach-bypass-gate-for-partial",
+    "approach-single-qualified-status"
+  ],
+  "rejection_reasons": {
+    "approach-bypass-gate-for-partial": {
+      "forces": [
+        "Occurrences with partially_committed and compensated commit states must still execute the business commit gate before reaching durability."
+      ],
+      "reason": "A partial or compensated transaction represents a real business state change undergoing commit or rollback; bypassing the gate fails to coordinate with the host's transactional boundary."
+    },
+    "approach-single-qualified-status": {
+      "forces": [
+        "The transaction-critical result and declaration claim only what the binding checked, matching partial and compensated commit states truthfully."
+      ],
+      "reason": "The contract catalog explicitly differentiates partially_committed from compensated; combining them loses valuable semantic distinction."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-partial-and-compensated-outcomes",
+    "implementation-partial-and-compensated-deduplication",
+    "implementation-preserved-surface-and-failures"
+  ],
+  "invariant_evidence": {
+    "implementation-partial-and-compensated-outcomes": {
+      "task_ids": [
+        "2.1",
+        "3.1",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "tests/transaction-critical-claims.test.ts proves partially_committed_and_durable and compensated_and_durable run the commit gate and return qualified statuses upon commit + durability"
+      ]
+    },
+    "implementation-partial-and-compensated-deduplication": {
+      "task_ids": [
+        "2.1",
+        "3.1",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "tests/transaction-critical-claims.test.ts proves repeated deliveries of partially_committed and compensated occurrences are reported as already_delivered"
+      ]
+    },
+    "implementation-preserved-surface-and-failures": {
+      "task_ids": [
+        "3.1",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "npm run test:exports passes 19/44, npm run test:compatibility passes, and failure modes (declined, unconfirmed, durability fail) remain intact"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Results truthfully reflect whether a business commit was partial or compensated rather than over-claiming committed_and_durable.",
+    "authentication_or_authorization": "No authentication or authorization logic changes; class mismatch and unknown events remain refused.",
+    "authority_provenance": "Commit state is read directly from the validated occurrence built from the operation handle; trusts no caller claims.",
+    "concurrency": "Admission and reservation remain synchronous before asynchronous probe/gate/durability; in-flight pairs remain refused.",
+    "confidentiality": "Results carry only event_id, transaction_id, status, code, and flags; no sensitive payload or caller secret is echoed.",
+    "cryptography": "No cryptographic primitives, hashes, or algorithms are altered.",
+    "error_disclosure": "Standard refused and failed-closed codes remain intact; no stack traces or secrets disclosed.",
+    "external_security_integration": "Handoff and external transport boundaries remain unchanged.",
+    "fail_posture": "Fail-closed behavior before and after commit is preserved; unconfirmed commits and declines still fail closed.",
+    "lifecycle": "Probe -> gate -> durability order is strictly maintained for partial and compensated occurrences.",
+    "mutation_ownership": "Changes are confined to sdk-node delivery-classes.ts, tests, README.md, and compatibility.json.",
+    "privacy_transformation": "No transformation hooks or privacy projections are modified.",
+    "resource_retention": "In-memory sets (settled, reserved) maintain existing lifecycle without memory leaks.",
+    "retry_or_redelivery": "Single handoff attempt per deliver call; failed attempts remain retryable without persistent retry.",
+    "trust_boundary": "Host gate returns are settled as untrusted runtime values and checked strictly."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "7eede0ef772d7571dcaa973435caee7bac0d70b5"
+  }
+}
