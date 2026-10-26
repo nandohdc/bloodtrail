@@ -8,7 +8,7 @@
     "metadata.schema_version",
     "compatibility_policy"
   ],
-  "rationale": "This change modifies only contracts/security-audit/package-lock.json, moving transitive development dependency fast-uri from 3.1.8 to 3.1.9. The lockfile is tooling, not declared contract content. metadata.contract, metadata.schema_version and compatibility_policy are reused unchanged; no event, schema, policy, registry or fixture is redefined.",
+  "rationale": "This change modifies only contracts/security-audit/package-lock.json, moving transitive development dependency fast-uri from 3.1.8 to 3.1.9. The lockfile is tooling, not declared contract content. metadata.contract, metadata.schema_version and compatibility_policy are reused unchanged; no event, schema, policy, registry or fixture is redefined. This assessment was authored for original replacement candidate 7dc8aed1bfda8324fbf8d691fe3e4340ad3ff1ca. The owner has since merged the dependency via #888; the rebased integration changes only these OpenSpec records and is not retroactive assessment or authority for that implementation.",
   "trust_boundary": "No trust boundary moves. fast-uri stays dev: true and is loaded only when the contract tests compile the generated schema with AJV; nothing crosses a process, network or tenancy boundary at runtime, and no shipped artifact changes. The governance boundary is unchanged: the lockfile was already the one path contract.toolchainExemptions exempts from the frozen-contract prefix rule.",
   "transformation_ownership": "No transformation is added, removed or relocated. The canonical contract source keeps sole ownership of event identity and shape, the contract generator keeps sole ownership of the generated artifacts, and check-contract-immutability.mjs keeps sole ownership of proving that every path contract-provenance.json declares is unchanged.",
   "alternatives": [
@@ -35,6 +35,7 @@
   "assurance_limitations": [
     "This is agent-authored reuse evidence, not a signed owner decision, review approval or authorization to publish a package or activate contract semantics.",
     "Generated-content identity and dependency behavior must be verified by the recorded installation, validation and frozen-contract checks for this candidate.",
-    "The author handle identifies the repository account used for this instructed work; it is not a claim that the human authored this assessment."
+    "The author handle identifies the repository account used for this instructed work; it is not a claim that the human authored this assessment.",
+    "The current main-relative integration has no dependency or runtime change. Its CRA applicability must be reported for that current range separately from this historical reuse assessment."
   ]
 }

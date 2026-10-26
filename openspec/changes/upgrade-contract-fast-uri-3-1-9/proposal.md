@@ -1,18 +1,20 @@
 ## Why
 
-Dependabot PR #888 proposes the contract toolchain's fast-uri 3.1.8 → 3.1.9 refresh, but CI rejects the unowned governed lockfile and Sonar receives no credentials in the bot context. A maintainer-authored, assessed replacement follows the prior contract fast-uri update and preserves the repository's restriction on Dependabot access to restricted secrets.
+This change originally prepared a maintainer-authored replacement for Dependabot PR #888 under #893. Before this replacement landed, the owner merged #888 as `2ae8c925a1c2ec893ba174e2cf78678deac125d0`, including its own `fix-contract-dependabot-ci` assessment and the exact fast-uri 3.1.9 lockfile.
+
+Rebasing this PR on current main drops the already-applied dependency commit. The remaining integration preserves the alternative proposal, assessment and verification history; it changes no dependency or runtime behavior. These records do not retroactively assess, approve or take ownership of #888's implementation.
 
 ## What Changes
 
-- Own the contract lockfile refresh in this change before applying it, with a full assessment and a contract reuse record.
-- Apply the exact `contracts/security-audit/package-lock.json` bytes proposed by #888, changing only fast-uri's version, registry URL and integrity.
-- Deliver through a maintainer-authored replacement PR with the normal required CI checks; supersede #888 after the replacement lands.
+- Retain this change's authored assessment and contract-reuse record for the original replacement candidate `7dc8aed1bfda8324fbf8d691fe3e4340ad3ff1ca`.
+- Explain the existing owner-merged delivery and the documentation-only remainder.
+- Revalidate the unchanged installed dependency and frozen contract, and require fresh exact-head review and CI for these records.
 
 ## Capabilities
 
 ### New Capabilities
 
-None. This is a transitive development-tool dependency refresh, declared `skip_specs: true`.
+None. `skip_specs: true`; no new capability or contract meaning is introduced.
 
 ### Modified Capabilities
 
@@ -20,9 +22,9 @@ None. No contract requirement, source, generated artifact, fixture, version or p
 
 ## Impact
 
-- `contracts/security-audit/package-lock.json` and this change directory.
-- AJV's existing range already admits 3.1.9; direct dependency declarations remain unchanged.
-- The contract lockfile is the existing toolchain exemption in the SDK's frozen-contract path policy; declared contract content remains immutable.
-- No workflow, audit threshold, branch-protection setting or secret-access policy changes.
+- Only this OpenSpec change directory differs from current main.
+- The existing contract lockfile remains byte-identical to #888 and to main, with fast-uri 3.1.9 inside AJV's existing range.
+- The original assessment's lockfile ownership inventory describes the historical replacement candidate; the landed implementation retains its separate owning change from #888.
+- No workflow, audit threshold, branch-protection setting, secret-access policy or frozen contract content changes.
 
-Refs #893, #888.
+Refs #893, #888, #894.

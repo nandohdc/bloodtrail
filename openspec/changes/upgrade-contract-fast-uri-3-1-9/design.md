@@ -1,33 +1,31 @@
 ## Context
 
-See `proposal.md`. The contract workspace uses fast-uri through AJV as development tooling. Its lockfile is the existing frozen-contract toolchain exemption; declared contract content is still bound by SDK provenance checks. The canonical CI topology denies restricted secrets to Dependabot. The previous `upgrade-contract-fast-uri-3-1-8` change delivered the same kind of bot proposal through an assessed maintainer PR.
+The original candidate `7dc8aed` proposed the contract development-toolchain fast-uri 3.1.8 to 3.1.9 update through a maintainer-authored replacement for #888. Its assessment preceded its own lockfile commit. The owner subsequently merged #888 with its distinct governance records as `2ae8c925a1c2ec893ba174e2cf78678deac125d0`.
+
+Current main already contains the exact lockfile bytes, Git blob `763106d71ef78f821ab6e84798c30fd55336f7ed`. The replacement's lockfile commit is therefore omitted by the rebase. The remaining seven files are change records only.
 
 ## Goals / Non-Goals
 
-**Goals:** Install the exact 3.1.9 artifact proposed by #888, establish path ownership before implementation, and execute the normal required CI in a maintainer-authored PR.
+**Goals:** Preserve the original alternative's authored reasoning and verification history, make the actual integration scope explicit, and verify the record-only candidate with fresh review and CI.
 
-**Non-Goals:** Contract semantics, generated artifacts, direct dependency declarations, workflow or secret permissions, audit thresholds, package publication and release activation.
+**Non-Goals:** Reapplying the dependency update, redefining its landed ownership, retroactive implementation approval, contract semantics, generated artifacts, direct dependencies, CI policy, secrets, publication or activation.
 
 ## Decisions
 
-### Author the assessment before the lockfile commit
+### Preserve history without duplicating implementation
 
-Create a new full assessment and contract reuse record, then apply the exact lockfile bytes from #888. This preserves dependency intent while making the governed path attributable to this change. Adding an assessment after the bot's existing implementation commit would not satisfy ordering, and rewriting an automation-owned branch introduces concurrency with Dependabot.
+Retain the original full assessment and generated assessment source as historical authored reasoning for this alternative. Retain its original verification tasks with an explicit candidate binding. Update the integration narrative instead of describing an already-landed dependency change as new work.
 
-### Use the existing maintainer CI context
+The separate `fix-contract-dependabot-ci` change owns the implementation delivered by #888. Merging these records neither replaces that ownership nor retroactively authorizes an earlier candidate. The current diff contains no lockfile, manifest, product, workflow or canonical-spec edit.
 
-Use a maintainer-authored replacement with the same required jobs. Retrying the bot run cannot supply missing path ownership or its unavailable Sonar credentials. Forwarding restricted secrets to Dependabot contradicts `ci-topology`; skipping or weakening required analysis would leave the merge gate unsatisfied. No workflow or secret configuration changes are needed.
+### Revalidate the existing contract and dependency
 
-### Reuse the frozen contract
+Confirm that current main, this candidate and #888 have identical contract lockfile bytes. A clean contract install must resolve fast-uri 3.1.9, generation must remain current, and validation/audits must pass. The retained reuse record concerns the unchanged security-audit@2.1.0 contract; distinguish a validated original CRA from an approved skip when the current range has no CRA-triggering path.
 
-The contract reuse record declares `reuse` of security-audit@2.1.0. A transitive development-tool pin introduces no event field, validation requirement, schema, registry or compatibility change. Compare declared contract content and generated artifacts against the baseline after installation.
+### Bind integration evidence to the current candidate
 
-## Risks / Trade-offs
+Refresh the technical reviews, final governance, independent checker arms and required CI after the rebase. Passing evidence permits the owner's authorized merge only; it grants no contract activation, publication or Stage 2 execution authority.
 
-- URI handling can affect AJV's contract tests → install with `npm ci`, run contract validation and generated-artifact checks, and prove the manifest and unrelated lockfile entries remain unchanged.
-- A replacement creates another PR → link #888 and #893, preserve identical lockfile bytes, and supersede the bot proposal through the replacement's delivery record.
-- Ordinary CI may still encounter infrastructure errors → report actual statuses; no skipped or absent check counts as a pass.
+## Lifecycle
 
-## Migration Plan
-
-Land the reviewed, all-green replacement, then supersede #888. Archive this skip-specs change in a separate later PR. A rollback restores only the prior lockfile entry and does not alter frozen contract content.
+#888 is already merged, so no future bot supersession or replacement operation is pending here. Archive this record-only skip-specs change separately after integration; no canonical fold is needed. Historical planning and verification are not substituted for the authority or evidence governing the already-landed implementation.
