@@ -72,7 +72,7 @@ function ingestRetries({ sender, ingress }, eventId) {
     if (attempt > 0) sender.exchanges.push({ event_id: eventId, attempt, body_sha256: sha256(eventId) });
     ingress.records.push({ event_id: eventId, attempt, action: "status", status: 503, outcome: { kind: "not_ingested" }, body_sha256: sha256(eventId) });
   }
-  ingress.read_back.push({ event_id: eventId, persisted: false, storage_result: "not_found" });
+  ingress.read_back.push({ event_id: eventId, persisted: false, storage_result: "absent" });
 }
 
 function admitOccurrence(burst, eventId, index) {
@@ -144,7 +144,7 @@ function honestSequence(phase) {
     trace(eventId, "exchange", { attempt: 0 });
     if (dropped) {
       ingress.records.push({ event_id: eventId, occurrence: index + 1, attempt: 0, action: "status", status: 503, outcome: { kind: "not_ingested" }, body_sha256: sha256(eventId) });
-      ingress.read_back.push({ event_id: eventId, persisted: false, storage_result: "not_found" });
+      ingress.read_back.push({ event_id: eventId, persisted: false, storage_result: "absent" });
       if (lossCount < ceiling && lossCount + 1 === ceiling) {
         sender.callbacks.loss_ceiling_reached.push([ceiling]);
         trace(eventId, "loss_ceiling_reached", { loss_count: ceiling });
@@ -229,6 +229,15 @@ test("combined retry accounting detects hidden delays, exhaustion, attempts and 
     const run = honest();
     mutate(run.phases.retry_shutdown);
     assert(mismatched(evaluateCases({ observations: run, expectations: FROZEN })).includes("L-11"), mutate.toString());
+  }
+});
+
+test("only the collector's public absent result proves final storage absence", () => {
+  assert(!mismatched(evaluateCases({ observations: honest(), expectations: FROZEN })).includes("L-11"));
+  for (const storageResult of ["found", "unsupported_version", "failed", "unknown", "not_found", undefined]) {
+    const run = honest();
+    run.phases.retry_shutdown.ingress.read_back[0].storage_result = storageResult;
+    assert(mismatched(evaluateCases({ observations: run, expectations: FROZEN })).includes("L-11"), String(storageResult));
   }
 });
 

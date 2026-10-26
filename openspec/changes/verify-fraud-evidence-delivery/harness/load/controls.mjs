@@ -19,7 +19,7 @@ function retryFixture() {
           { sequence: 5, event_id: "retry", kind: "exhausted", values: [2] },
         ],
       },
-      ingress: { read_back: [{ event_id: "retry", persisted: false, storage_result: "not_found" }] },
+      ingress: { read_back: [{ event_id: "retry", persisted: false, storage_result: "absent" }] },
     },
   };
 }

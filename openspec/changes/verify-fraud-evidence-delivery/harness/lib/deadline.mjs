@@ -15,8 +15,14 @@ export async function withDeadline({ ms, work, onTimeout, timers = globalThis })
   let timer;
   const expired = new Promise((_, reject) => {
     timer = timers.setTimeout(() => {
-      onTimeout();
-      reject(new StopCondition("deadline", `run exceeded ${ms} ms`));
+      const failure = new StopCondition("deadline", `run exceeded ${ms} ms`);
+      try {
+        onTimeout();
+      } catch (error) {
+        failure.halt_error = error.message;
+        failure.role_closure_confirmed = false;
+      }
+      reject(failure);
     }, ms);
   });
   try {

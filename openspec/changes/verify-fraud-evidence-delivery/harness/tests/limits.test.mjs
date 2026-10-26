@@ -63,6 +63,19 @@ test("S2 deadline: work past its deadline halts with a stop condition and kills 
   await assert.rejects(withDeadline({ ms: 0, onTimeout() {}, work: async () => {} }), /deadline must be a positive integer/);
 });
 
+test("a throwing deadline halt hook still rejects with the S2 stop condition", async () => {
+  let fire;
+  const timers = { setTimeout(callback) { fire = callback; return 1; }, clearTimeout() {} };
+  const pending = withDeadline({ ms: 10, timers, work: () => new Promise(() => {}), onTimeout() { throw new Error("fixture kill failed"); } });
+  const observed = pending.catch((error) => error);
+  assert.doesNotThrow(() => fire(), "the timer callback must not escape S2 handling");
+  const failure = await observed;
+  assert(failure instanceof StopCondition);
+  assert.equal(failure.condition, "deadline");
+  assert.equal(failure.halt_error, "fixture kill failed");
+  assert.equal(failure.role_closure_confirmed, false);
+});
+
 test("every child command is bounded: a stalled one is killed and fails instead of hanging", () => {
   assert.equal(COMMAND_TIMEOUT_MS, 600_000);
   assert.throws(() => command({ program: process.execPath, args: ["-e", "setTimeout(() => {}, 10_000)"], timeout: 200 }), (error) => error.code === "ETIMEDOUT" || error.signal === "SIGKILL");

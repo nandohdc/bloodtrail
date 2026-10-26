@@ -189,7 +189,7 @@ function pendingAtShutdown(trace) {
 }
 
 function unpersistedLate({ ingress }, { lateIds }) {
-  return ingress.read_back.filter((entry) => lateIds.has(entry.event_id) && entry.persisted === false && entry.storage_result === "not_found").length;
+  return ingress.read_back.filter((entry) => lateIds.has(entry.event_id) && entry.persisted === false && entry.storage_result === "absent").length;
 }
 
 function everyDelayReported(sender, { scheduled, retried }) {

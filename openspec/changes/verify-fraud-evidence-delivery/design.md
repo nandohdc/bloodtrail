@@ -363,3 +363,14 @@ The owner confirmed the following requirements in the Codex grilling session (Q1
 - Complete independent small phases unless S2 fires; any small mismatch blocks volume. Genuine failures are published with #838 left open. At most one replacement is allowed for a non-S2 harness invalidation, after correction, fresh review/checks and a new exact-head S1. S2, G42's window and shared limits remain unchanged.
 
 The additional frozen small phase submits ten occurrences against capacity four, then two after shutdown begins. Every attempt receives a pre-ingest 503. Four admitted operations wait on retry timers while shutdown reports; releasing those timers afterward produces bounded exhaustion and an explicit storage absence. The shutdown report counts the outer lifecycle's ten submissions: six completed overload decisions and four abandoned operations. Final accounting has eight admission signals and four abandoned occurrences. The full planned call bound is 1,456 (46 small, 1,410 volume).
+
+
+## Post-run harness corrections (#889, #891)
+
+These corrections implement the existing storage-evidence and confirmed-closure requirements after run 3. They neither reinterpret that run nor authorize another execution. The approved commit, raw observations and frozen `load.v1.json` remain immutable.
+
+- Use the collector public `GetResult` spelling `absent` for an explicitly unpersisted final lookup. A found, unknown or legacy `not_found` result cannot prove absence. Runtime controls and fixtures use that public shape, with independent negative outcomes.
+- Propagate an explicit unconfirmed-closure state from role shutdown through the outer scratch finalizer. Cleanup may delete scratch only after closure is confirmed. If closure cannot be confirmed, report failed cleanup, leave scratch for owner-directed recovery and preserve its path. This records a cleanup failure; it does not grant a retention exception or claim the run completed successfully.
+- Preserve the original S2 condition and partial observations when closing or killing a role fails. A passing confirmed-close control must still delete scratch. No new probe run, replacement, deadline policy, package API or canonical specification is part of these fixes.
+
+Unconditional cleanup was rejected because recursive absence does not prove a writer stopped. Treating unknown storage outcomes as absence was rejected because it turns missing evidence into a positive storage assertion. Fixture regressions exercise the evaluator and the role-stop-to-scratch-finalization seam without kit execution.

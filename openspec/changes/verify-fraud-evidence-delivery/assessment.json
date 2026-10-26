@@ -55,7 +55,7 @@
     "lifecycle": "Each run is one execution guarded by a once-marker; an invalidation needs a new head, S1 and run number.",
     "mutation_ownership": "Only this change directory and documentation change; no contract, package or canonical spec path is touched.",
     "privacy_transformation": "Failed authentication carries an anonymous actor and no target, per the fraud-evidence profile; no real-user data is processed.",
-    "resource_retention": "Kit, collector storage, synthetic database and logs are deleted after every run, including after a stop.",
+    "resource_retention": "Kit, collector storage, synthetic database and logs must be deleted after confirmed role closure, including after a stop. Unconfirmed closure is a cleanup failure: retain scratch for owner-directed recovery, record its path and failed deletion state, and grant no retention exception.",
     "retry_or_redelivery": "Delivery retry and redelivery are the measured behaviour, inside the kit's primitives; the harness adds no delivery product.",
     "trust_boundary": "The harness consumes the kit as an evaluator would and adds no seam into Bloodtrail."
   },

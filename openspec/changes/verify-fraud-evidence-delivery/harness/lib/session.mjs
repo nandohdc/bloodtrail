@@ -15,7 +15,8 @@ export function killAll(roles) {
 }
 
 // Scratch is deleted only after every role has closed, so a dying ingress cannot still be writing its
-// SQLite files while they are removed. The wait is bounded; scratch deletion retries and is proven.
+// SQLite files while they are removed. A bounded wait failure marks closure as unconfirmed so the outer
+// finalizer records failed cleanup instead of removing scratch.
 export const ROLE_CLOSE_TIMEOUT_MS = 5000;
 
 async function waitForClose(roles, timeoutMs = ROLE_CLOSE_TIMEOUT_MS) {
@@ -30,13 +31,16 @@ async function waitForClose(roles, timeoutMs = ROLE_CLOSE_TIMEOUT_MS) {
 }
 
 export async function stopRoles(roles, { timeoutMs = ROLE_CLOSE_TIMEOUT_MS, failure } = {}) {
-  killAll(roles);
   try {
-    return await waitForClose(roles, timeoutMs);
+    killAll(roles);
+    const closed = await waitForClose(roles, timeoutMs);
+    if (failure?.role_closure_confirmed === false) failure.role_closure_confirmed = true;
+    return closed;
   } catch (error) {
-    if (!failure) throw error;
-    failure.role_closure_error = error.message;
-    throw failure;
+    const failed = failure ?? error;
+    failed.role_closure_error = error.message;
+    failed.role_closure_confirmed = false;
+    throw failed;
   }
 }
 
