@@ -116,9 +116,11 @@ function validateCases({ cases, phases }) {
   for (const pass of PASSES) assert(order.includes(PASSES.indexOf(pass)), `the ${pass} pass has no case`);
 }
 
+const SUPPORTED_VERSIONS = Object.freeze([1, 2]);
+
 export function validateExpectations(value) {
   assert.equal(value.probe, "S2-load");
-  assert.equal(value.version, 1);
+  assert(SUPPORTED_VERSIONS.includes(value.version), `unsupported expectations version: ${value.version}`);
   assert.equal(value.ticket, 838);
   assert.match(value.base, /^[0-9a-f]{40}$/);
   assert.equal(value.contract_version, "2.1.0");
@@ -128,5 +130,14 @@ export function validateExpectations(value) {
   assert(Number.isSafeInteger(value.deadline_ms) && value.deadline_ms > 0);
   assert.equal(value.thresholds.unexplained, 0);
   validateCases(value);
+  if (value.version === 2) {
+    for (const name of ["abandon", "retry_shutdown"]) {
+      const phase = value.phases.find((p) => p.name === name);
+      assert(phase, `version 2 requires phase: ${name}`);
+      assert.equal(phase.composition.shutdown_deadline_ms, 200, `${name}: shutdown_deadline_ms must be 200`);
+      assert.equal(phase.composition.drain_budget_ms, 180, `${name}: drain_budget_ms must be 180`);
+      assert.equal(phase.composition.report_reserve_ms, 20, `${name}: report_reserve_ms must be 20`);
+    }
+  }
   return value;
 }

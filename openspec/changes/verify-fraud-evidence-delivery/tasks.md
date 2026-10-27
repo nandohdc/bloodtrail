@@ -51,6 +51,11 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 - [x] 4.3 Correct the public storage-absence discriminator and its runtime/fixture controls (#889); verify absent, found and uncertain outcomes without changing frozen expectations or run 3.
 - [x] 4.4 Prevent scratch deletion after unconfirmed role closure (#891); verify failed-close and confirmed-close controls, original S2 classification and partial observations across the finalization seam.
+- [x] 4.5 Implement the composition shutdown budget remedy (#890, #838):
+  - Split the 200 ms shutdown budget into a 180 ms primitive drain budget and a 20 ms report reserve for `abandon` and `retry_shutdown` while keeping the outer complete-report deadline strictly 200 ms.
+  - Freeze these parameters in `load.v2.json`; keep `load.v1.json`, its hash, approved source, and run-3 output unchanged.
+  - Replace hardcoded v1 selection in the harness runner with explicit expectation path/version selection; reject unsupported versions and dynamic discovery.
+  - Verify 180 ms inner versus 200 ms outer budget, zero-margin timing assertions (200.000 ms passes, 200.001 ms fails), budget validations before approval consumption, and suppression of volume pass on failed small pass.
 
 ## 5. Copies, duplicates, conflicts and restarts (#839)
 

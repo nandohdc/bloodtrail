@@ -8,6 +8,7 @@ import { loadSession } from "./session.mjs";
 
 const session = await runProbe({
   probe: "S2-load", ticket: 838, probeDirectory: "load", entrypoint: import.meta.url,
+  expectationsVersion: 2, supportedVersions: [1, 2],
   validate: validateExpectations, files: PROBE_FILES, session: loadSession, evaluate: evaluateCases,
 });
 process.exitCode = session.exitCode;

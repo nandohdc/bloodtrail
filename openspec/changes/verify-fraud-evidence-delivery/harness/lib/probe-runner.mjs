@@ -4,7 +4,7 @@
 //   - session({ service, storage, flags, expectations }) runs the probe's two processes and returns raw
 //     observations; evaluate({ observations, expectations }) compares them with the frozen expectations.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { argumentsFor } from "./arguments.mjs";
 import { kitPipeline } from "./kit-pipeline.mjs";
@@ -79,12 +79,29 @@ export async function runProbe(plan) {
   const runNumber = Number(options["run-number"]);
   assert(Number.isInteger(runNumber) && runNumber >= 1 && runNumber <= RUN_LIMIT, "run number outside shared authorization");
   const repo = resolve(options.repo || command({ program: "git", args: ["rev-parse", "--show-toplevel"] }).trim());
-  const expectationsPath = `${PREFIX}/expectations/${plan.probeDirectory}.v1.json`;
-  const expectations = plan.validate(jsonFile(join(repo, expectationsPath)));
+  const supportedVersions = plan.supportedVersions ?? [1];
+  const version = options["expectations-version"] ? Number(options["expectations-version"]) : (plan.expectationsVersion ?? 1);
+  assert(supportedVersions.includes(version), `unsupported expectations version ${version} for probe ${plan.probe} (supported: ${supportedVersions.join(", ")})`);
+
+  let expectationsPath;
+  if (options["expectations-path"]) {
+    expectationsPath = options["expectations-path"];
+    assert.equal(
+      expectationsPath,
+      `${PREFIX}/expectations/${plan.probeDirectory}.v${version}.json`,
+      `expectations-path does not match approved version v${version}`,
+    );
+  } else {
+    expectationsPath = `${PREFIX}/expectations/${plan.probeDirectory}.v${version}.json`;
+  }
+  const fullExpectationsPath = join(repo, expectationsPath);
+  assert(existsSync(fullExpectationsPath), `expectations file does not exist: ${expectationsPath}`);
+  const expectations = plan.validate(jsonFile(fullExpectationsPath));
+  assert.equal(expectations.version, version, `expectations version mismatch: expected ${version}, got ${expectations.version}`);
   // The role scripts' full relative import closure must be declared before any claim, so a missing
   // support module never spends an approved run.
   validateProbeInventory({ repo, prefix: PREFIX, probeDirectory: plan.probeDirectory, files: plan.files, roleScripts: Object.values(ROLE_SCRIPTS) });
-  const context = { plan, options, expectations, expectationsPath, expectationHash: sha256(readFileSync(join(repo, expectationsPath))), started: new Date().toISOString(), attempted: false };
+  const context = { plan, options, expectations, expectationsPath, expectationHash: sha256(readFileSync(fullExpectationsPath)), started: new Date().toISOString(), attempted: false };
   return runApprovedSession({
     options, entrypoint: plan.entrypoint, probe: plan.probe, ticket: plan.ticket,
     session: (approval, hashes) => {

@@ -75,6 +75,13 @@ test("the composition passes the frozen parameters to each primitive", () => {
   assert.deepEqual(built.shutdown, { deadlineMs: 5000, timers: { fixture: "node-timers" } });
 });
 
+test("the composition uses drain_budget_ms for the shutdown primitive deadline", () => {
+  const { sdkNode, built } = fixtureBinding({ statuses: [] });
+  const parameters = { ...PARAMETERS, shutdown_deadline_ms: 200, drain_budget_ms: 180, report_reserve_ms: 20 };
+  referenceComposition({ sdkNode, origin: "http://127.0.0.1:9999", token: "t", parameters, timers: {}, jitter: () => 0.5 });
+  assert.deepEqual(built.shutdown, { deadlineMs: 180, timers: { fixture: "node-timers" } });
+});
+
 test("a non-loopback origin is refused before anything is built", () => {
   assert.throws(() => compose({ statuses: [], origin: "http://192.0.2.1:80" }), /delivery origin must be loopback/);
 });

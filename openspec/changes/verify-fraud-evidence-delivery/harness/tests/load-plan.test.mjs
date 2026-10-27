@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { validateProbeInventory } from "../lib/import-closure.mjs";
-import { command, jsonFile } from "../lib/io.mjs";
+import { command, jsonFile, sha256 } from "../lib/io.mjs";
 import { ROLE_SCRIPTS } from "../lib/plan.mjs";
 import { CHANGE } from "../lib/results.mjs";
 import { validateExpectations } from "../load/expectations.mjs";
@@ -15,6 +15,7 @@ import { dottedReads, resolves } from "./field-reads.mjs";
 const HARNESS = dirname(dirname(fileURLToPath(import.meta.url)));
 const REPO = command({ program: "git", args: ["rev-parse", "--show-toplevel"], cwd: HARNESS }).trim();
 const FROZEN = jsonFile(new URL("../expectations/load.v1.json", import.meta.url));
+const FROZEN_V2 = jsonFile(new URL("../expectations/load.v2.json", import.meta.url));
 const source = (path) => readFileSync(join(HARNESS, path), "utf8");
 const caseOf = (id) => FROZEN.cases.find((entry) => entry.case_id === id);
 const phaseOf = (name) => FROZEN.phases.find((phase) => phase.name === name);
@@ -154,4 +155,45 @@ test("every input field the load sender reads is in each phase's view", () => {
     ...dottedReads({ text: source("load/burst.mjs"), name: "phase" }),
   ]);
   for (const field of fields) assert(used.has(field) || paths.has(`phase.${field}`), `the sender never reads phase.${field}`);
+});
+
+test("the frozen load.v1.json is byte-identical and retains its hash", () => {
+  const bytes = readFileSync(new URL("../expectations/load.v1.json", import.meta.url));
+  assert.equal(sha256(bytes), "6d279b19eaa9118c29b0cbc95e9fe073327086d185042a0ddeac2b815646d970");
+});
+
+test("load.v2.json freezes the 180 ms drain budget and 20 ms report reserve for abandon and retry_shutdown", () => {
+  assert.equal(validateExpectations(structuredClone(FROZEN_V2)).version, 2);
+  const abandon = FROZEN_V2.phases.find((p) => p.name === "abandon");
+  assert.equal(abandon.composition.shutdown_deadline_ms, 200);
+  assert.equal(abandon.composition.drain_budget_ms, 180);
+  assert.equal(abandon.composition.report_reserve_ms, 20);
+
+  const retryShutdown = FROZEN_V2.phases.find((p) => p.name === "retry_shutdown");
+  assert.equal(retryShutdown.composition.shutdown_deadline_ms, 200);
+  assert.equal(retryShutdown.composition.drain_budget_ms, 180);
+  assert.equal(retryShutdown.composition.report_reserve_ms, 20);
+
+  for (const name of ["overload", "drain", "overload_volume", "drain_volume"]) {
+    const phase = FROZEN_V2.phases.find((p) => p.name === name);
+    assert.equal(phase.composition.shutdown_deadline_ms, 5000);
+  }
+});
+
+test("invalid shutdown budgets fail before approval consumption", () => {
+  const mutations = [
+    (val) => { val.phases.find((p) => p.name === "abandon").composition.drain_budget_ms = 190; },
+    (val) => { val.phases.find((p) => p.name === "abandon").composition.drain_budget_ms = 0; },
+    (val) => { val.phases.find((p) => p.name === "abandon").composition.drain_budget_ms = -180; },
+    (val) => { val.phases.find((p) => p.name === "abandon").composition.report_reserve_ms = -20; },
+    (val) => { val.phases.find((p) => p.name === "abandon").composition.drain_budget_ms = 200; val.phases.find((p) => p.name === "abandon").composition.report_reserve_ms = 20; },
+    (val) => { val.version = 3; },
+    (val) => { val.version = "latest"; },
+    (val) => { val.phases.find((p) => p.name === "retry_shutdown").composition.drain_budget_ms = 170; },
+  ];
+  for (const mutate of mutations) {
+    const value = structuredClone(FROZEN_V2);
+    mutate(value);
+    assert.throws(() => validateExpectations(value), undefined, mutate.toString());
+  }
 });

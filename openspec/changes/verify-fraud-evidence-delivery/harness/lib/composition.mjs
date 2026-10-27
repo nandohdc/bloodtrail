@@ -71,7 +71,8 @@ function buildStack({ sdkNode, origin, token, parameters, timers, jitter, record
     jitterSource: jitter, timers, observability: recorder.retry,
   });
   const backpressure = sdkNode.createBoundedDeliveryBackpressure({ capacity: parameters.capacity, observability: recorder.backpressure });
-  const lifecycle = sdkNode.createDeliveryShutdown({ deadlineMs: parameters.shutdown_deadline_ms, timers: sdkNode.nodeTimers });
+  const drainDeadlineMs = parameters.drain_budget_ms ?? (parameters.shutdown_deadline_ms - (parameters.report_reserve_ms ?? 0));
+  const lifecycle = sdkNode.createDeliveryShutdown({ deadlineMs: drainDeadlineMs, timers: sdkNode.nodeTimers });
   return { retry, backpressure, lifecycle };
 }
 
