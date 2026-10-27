@@ -23,6 +23,7 @@ a run is checked and reproduced against its approved head, never against the cur
 | S2-tracer | #836 | `tracer/` | `expectations/tracer.v1.json` | one occurrence through the reference composition into the collector |
 | S2-outages | #837 | `outages/` | `expectations/outages.v1.json` | a small pass, then a volume pass, of the ten outage scenarios below |
 | S2-load | #838 | `load/` | `expectations/load.v1.json` | bursts against backpressure and shutdown, and `best_effort` drops, in the phases below |
+| S2-copies | #839 | `copies/` | `expectations/copies.v1.json` | redeliveries, duplicates, conflicts, re-executions, collector and consumer restarts, and storage-less capacity |
 
 The outages probe reuses the tracer's two role processes unchanged: `outages/sender-process.mjs` and
 `outages/ingress-process.mjs` import the role guard, then the tracer's role. Each pass is one exchange between a
