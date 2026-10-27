@@ -60,7 +60,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 ## 5. Copies, duplicates, conflicts and restarts (#839)
 
-- [ ] 5.1 Build and freeze:
+- [x] 5.1 Build and freeze:
   - the byte-identity checks at the exchange and the ingress;
   - the attempt-ordinal check;
   - the duplicate and conflict cases;

@@ -18,9 +18,8 @@ function rejectionStatuses(codes) {
 
 export function statusFor({ result, codes }) {
   if (result.kind === "persisted") return 202;
-  // A collector without storage admits without persisting. Its answer is frozen by the storage-less phase
-  // (#839), not guessed here.
-  if (result.kind === "admitted") throw new Error("storage-less admission has no frozen status mapping");
+  // A collector without storage admits without persisting (#839).
+  if (result.kind === "admitted") return 202;
   // A duplicate is acknowledged only when its first occurrence is durably stored.
   if (result.kind === "duplicate") return result.acknowledgment === "persisted" ? 202 : 503;
   return rejectionStatuses(codes).get(result.diagnostic.code) ?? 422;
@@ -147,6 +146,7 @@ export function startIngress({ collector, ingress, faults, timers = globalThis }
 // identity can be checked from the exchange through the ingress to storage.
 export function readBack({ state, storage }) {
   return [...state.lookups.values()].map(({ eventId, scope }) => {
+    if (!storage) return { event_id: eventId, scope, persisted: false, storage_result: "absent" };
     const found = storage.get(scope, eventId);
     if (found.kind !== "found") return { event_id: eventId, scope, persisted: false, storage_result: found.kind };
     return { event_id: eventId, scope, persisted: true, stored_body_sha256: sha256(found.record.body) };

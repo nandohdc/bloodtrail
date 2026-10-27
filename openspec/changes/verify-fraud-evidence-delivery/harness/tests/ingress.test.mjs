@@ -17,13 +17,12 @@ const rejected = (code) => ({ kind: "rejected", diagnostic: { code } });
 
 test("collector results map to the pilot's statuses", () => {
   const rows = [
-    [{ kind: "persisted" }, 202], [{ kind: "duplicate", acknowledgment: "persisted" }, 202], [{ kind: "duplicate", acknowledgment: "admitted" }, 503],
+    [{ kind: "persisted" }, 202], [{ kind: "admitted" }, 202], [{ kind: "duplicate", acknowledgment: "persisted" }, 202], [{ kind: "duplicate", acknowledgment: "admitted" }, 503],
     [rejected(CODES.AUTH_MISSING), 401], [rejected(CODES.AUTH_REJECTED), 401], [rejected(CODES.SIZE_EXCEEDED), 413],
     [rejected(CODES.STORAGE_WRITE_FAILED), 503], [rejected(CODES.STORAGE_WRITE_INDETERMINATE), 503], [rejected(CODES.DEDUPLICATION_CAPACITY), 503],
     [rejected(CODES.DUPLICATE_CONFLICT), 409], [rejected(CODES.STORAGE_CONFLICT), 409], [rejected(CODES.SCHEMA_INVALID), 422],
   ];
   for (const [result, status] of rows) assert.equal(statusFor({ result, codes: CODES }), status, JSON.stringify(result));
-  assert.throws(() => statusFor({ result: { kind: "admitted" }, codes: CODES }), /storage-less admission has no frozen status mapping/);
 });
 
 test("storage scopes mirror the collector's derivation", () => {
