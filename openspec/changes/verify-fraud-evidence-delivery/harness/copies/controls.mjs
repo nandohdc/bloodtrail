@@ -20,10 +20,7 @@ export function copiesControls() {
   const nullChangedClassified = classifyCandidate({ originalBody: original, candidateBody: changedOneByte }) === "conflict";
   const nullClassificationHolds = nullIdenticalClassified && nullChangedClassified;
 
-  const plantedDefect1Classifier = (args) => {
-    void args;
-    return "duplicate";
-  };
+  const plantedDefect1Classifier = ({ originalBody, candidateBody }) => (originalBody && candidateBody ? "duplicate" : "conflict");
   const plantedDefect1Detected = plantedDefect1Classifier({ originalBody: original, candidateBody: changedOneByte }) !== "conflict";
 
   const cleanRecords = [{ event_id: "evt_1", body: original }];
@@ -32,14 +29,12 @@ export function copiesControls() {
   const inflatedRecords = [{ event_id: "evt_1", body: original }, { event_id: "evt_1", body: original }];
   const plantedDefect2Detected = !duplicateAccountingCheck({ records: inflatedRecords });
 
-  const holds = plantedDefect1Detected && plantedDefect2Detected && nullClassificationHolds && nullDuplicateAccountingHolds;
-
-  return {
+  const checks = {
     changed_byte_classified_as_conflict: nullChangedClassified,
     duplicate_classified_as_duplicate: nullIdenticalClassified,
     changed_byte_defect_detected: plantedDefect1Detected,
     duplicate_double_count_defect_detected: plantedDefect2Detected,
     null_controls_pass: nullClassificationHolds && nullDuplicateAccountingHolds,
-    holds,
   };
+  return { ...checks, holds: Object.values(checks).every((value) => value === true) };
 }
