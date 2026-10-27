@@ -56,6 +56,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
   - Freeze these parameters in `load.v2.json`; keep `load.v1.json`, its hash, approved source, and run-3 output unchanged.
   - Replace hardcoded v1 selection in the harness runner with explicit expectation path/version selection; reject unsupported versions and dynamic discovery.
   - Verify 180 ms inner versus 200 ms outer budget, zero-margin timing assertions (200.000 ms passes, 200.001 ms fails), budget validations before approval consumption, and suppression of volume pass on failed small pass.
+- [x] 4.6 Under its delegated S1 (G44), execute Stage 2 load probe run 4 using frozen `load.v2.json`. Record 17/17 cases matched (all 11 small cases and all 6 volume cases, 1,456 SDK calls), with zero invalidations and confirmed scratch deletion. Fulfills #838 acceptance criteria.
 
 ## 5. Copies, duplicates, conflicts and restarts (#839)
 
