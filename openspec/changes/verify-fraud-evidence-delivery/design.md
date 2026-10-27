@@ -374,3 +374,16 @@ These corrections implement the existing storage-evidence and confirmed-closure 
 - Preserve the original S2 condition and partial observations when closing or killing a role fails. A passing confirmed-close control must still delete scratch. No new probe run, replacement, deadline policy, package API or canonical specification is part of these fixes.
 
 Unconditional cleanup was rejected because recursive absence does not prove a writer stopped. Treating unknown storage outcomes as absence was rejected because it turns missing evidence into a positive storage assertion. Fixture regressions exercise the evaluator and the role-stop-to-scratch-finalization seam without kit execution.
+
+
+## Composition shutdown budget remedy (#890, #838)
+
+Investigate strict shutdown-report deadline overruns observed in Stage 2 run 3 (#890). Distinguish the primitive's timer/report work from reference-composition bookkeeping. The record establishes a failure of the measured host composition against its configured strict deadline; Node provides no exact timer-callback guarantee.
+
+Implement the prospective composition remedy:
+- Keep the outer complete-report deadline strictly at 200 ms with no rounding or grace margin.
+- Split the 200 ms budget into a 180 ms primitive drain budget and a 20 ms report reserve for `abandon` and `retry_shutdown`.
+- Preserve the existing explicitly configured budgets for other phases (5000 ms).
+- Freeze these parameters in `load.v2.json`; keep `load.v1.json`, its hash, approved source, and run-3 output unchanged.
+- Replace hardcoded v1 selection in the harness runner with explicit approved expectation path/version selection; reject unsupported versions and dynamic "latest" discovery.
+- Include occurrence reconciliation, bookkeeping, and the final report inside the outer timing measurement.

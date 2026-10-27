@@ -18,6 +18,20 @@ export function validateComposition(composition) {
   for (const key of COMPOSITION_CEILINGS) assert(composition[key] <= KIT_CEILINGS[key], `composition.${key} exceeds the kit ceiling ${KIT_CEILINGS[key]}`);
   assert(composition.max_delay_ms >= composition.base_delay_ms, "composition.max_delay_ms must be at least base_delay_ms");
   seededJitter(composition.jitter_seed);
+  const hasDrainBudget = composition.drain_budget_ms !== undefined;
+  const hasReportReserve = composition.report_reserve_ms !== undefined;
+  if (hasDrainBudget || hasReportReserve) {
+    assert(Number.isSafeInteger(composition.drain_budget_ms) && composition.drain_budget_ms > 0, "composition.drain_budget_ms must be a positive integer");
+    assert(Number.isSafeInteger(composition.report_reserve_ms) && composition.report_reserve_ms >= 0, "composition.report_reserve_ms must be a non-negative integer");
+    assert.equal(
+      composition.drain_budget_ms + composition.report_reserve_ms,
+      composition.shutdown_deadline_ms,
+      "composition drain budget and report reserve must sum to shutdown_deadline_ms",
+    );
+    if (composition.report_reserve_ms > 0) {
+      assert(composition.drain_budget_ms < composition.shutdown_deadline_ms, "drain budget must be strictly less than shutdown_deadline_ms when reserve is positive");
+    }
+  }
 }
 
 export function validateSeedAndClock(value) {

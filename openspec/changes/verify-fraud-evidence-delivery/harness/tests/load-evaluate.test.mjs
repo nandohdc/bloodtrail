@@ -8,6 +8,7 @@ import { validateExpectations } from "../load/expectations.mjs";
 import { loadSession } from "../load/session.mjs";
 
 const FROZEN = validateExpectations(jsonFile(new URL("../expectations/load.v1.json", import.meta.url)));
+const FROZEN_V2 = validateExpectations(jsonFile(new URL("../expectations/load.v2.json", import.meta.url)));
 const CONTROLS = { loopback_guard: { holds: true }, write_outside_grant: { holds: true }, synthetic_data: { holds: true }, accounting_checks: { holds: true } };
 const closed = () => ({ sender: { code: 0, signal: null }, ingress: { code: 0, signal: null } });
 const call = (ok, code) => (ok ? { label: "fixture", ok: true, value: { status: "accepted" } } : { label: "fixture", ok: false, error: { code } });
@@ -174,7 +175,18 @@ test("an honest run built from the frozen phases matches every case", () => {
   assert.deepEqual(result.verdict, { matched: 17, mismatched: 0 });
 });
 
-test("the shutdown deadline has no rounding or grace margin", () => {
+test("an honest run built from the frozen v2 phases matches every case", () => {
+  const honestV2 = { phases: Object.fromEntries(FROZEN_V2.phases.map((phase) => [phase.name, honestPhase(phase)])), gate: { small_matched: true, small_mismatched: [], volume_pass: "completed" } };
+  const result = evaluateCases({ observations: honestV2, expectations: FROZEN_V2 });
+  assert.deepEqual(mismatched(result), []);
+  assert.deepEqual(result.verdict, { matched: 17, mismatched: 0 });
+});
+
+test("the shutdown deadline has no rounding or grace margin: 200 passes and 200.001 fails", () => {
+  const passing = honest();
+  passing.phases.abandon.sender.shutdown_elapsed_ms = 200;
+  assert(!mismatched(evaluateCases({ observations: passing, expectations: FROZEN })).includes("L-04"));
+
   for (const elapsed of [200.001, 200.49, 201]) {
     const run = honest();
     run.phases.abandon.sender.shutdown_elapsed_ms = elapsed;

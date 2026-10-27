@@ -115,6 +115,22 @@ test("the owner Codex exception is bounded to #838 and build-only checks", () =>
   assert.equal(argumentsFor({ args: ["--dry-run", "--driver-lane", "codex", "--driver-model", "fixture"] }).driver.lane, "codex");
 });
 
+test("explicit expectation version is parsed, and dynamic discovery is rejected", () => {
+  const values = Object.fromEntries(["approved-head", ...RUN_ARGS, ...DRIVER_ARGS].map((key) => [key, key === "driver-lane" ? "codex" : "fixture"]));
+  const toArgs = (entries) => Object.entries(entries).flatMap(([key, value]) => [`--${key}`, value]);
+  const parsed = argumentsFor({ args: toArgs({ ...values, "expectations-version": "2" }), run: true, probe: "S2-load", ticket: 838 });
+  assert.equal(parsed.expectationsVersion, 2);
+
+  assert.throws(
+    () => argumentsFor({ args: toArgs({ ...values, "expectations-version": "latest" }), run: true, probe: "S2-load", ticket: 838 }),
+    /never discover expectations version 'latest' dynamically/,
+  );
+  assert.throws(
+    () => argumentsFor({ args: toArgs({ ...values, "expectations-version": "0" }), run: true, probe: "S2-load", ticket: 838 }),
+    /positive integer/,
+  );
+});
+
 test("the once-marker must be in the one pinned Stage 2 control directory", () => {
   const home = mkdtempSync(join(tmpdir(), "stage-2-home-fixture-"));
   try {
