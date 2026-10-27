@@ -33,5 +33,5 @@
 
 - [x] 5.1 Obtain every required CI context plus DeepScan green on PR #896 head (`ce4a1b2d3b74f928169a5393b2fed19b1225bc5e`).
 - [x] 5.2 Merge PR #896 as a merge commit after checks pass. Evidence: PR #896 merged into `main` as merge commit `7f37d50278a7024f8ffdf85954a2948e4d14a325`.
-- [x] 5.3 Fold the MODIFIED requirement into the canonical spec (`openspec/specs/security-audit-sdk-node/spec.md`) in a separate dedicated fold PR, while the change is active (ADR 0001).
-- [ ] 5.4 Archive the change in a separate dedicated archive PR after the fold lands.
+- [x] 5.3 Fold the MODIFIED requirement into the canonical spec (`openspec/specs/security-audit-sdk-node/spec.md`) in a separate dedicated fold PR, while the change is active (ADR 0001). Evidence: PR #897 merged into `main` as merge commit `0a2088dc44f1c61fd11884502229de8d12ac4b12`.
+- [x] 5.4 Archive the change in a separate dedicated archive PR after the fold lands. Evidence: relocated to `openspec/changes/archive/2026-10-26-correct-transaction-critical-partial-and-compensated-claims/` in this dedicated archive PR, after fold PR #897 merged as `0a2088dc44f1c61fd11884502229de8d12ac4b12`.
