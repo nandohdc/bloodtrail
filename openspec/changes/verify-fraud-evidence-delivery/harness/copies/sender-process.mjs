@@ -44,36 +44,32 @@ function buildComposition({ input, origin, token, onAttemptScheduled = () => {} 
   return { ...composition, releaseTimers: () => gate.open(), gate };
 }
 
-async function runIdentitiesPhase({ sdk, composition, ledger, input, sessionKey }) {
+async function submitDuplicate({ composition, ledger, label, event }) {
+  return recordedCall({
+    ledger,
+    label,
+    invoke: async () => {
+      const settled = await composition.deliver(event);
+      return settled.status === "acknowledged" ? { ok: true, value: { status: "accepted" } } : { ok: false, error: settled.status };
+    },
+  });
+}
+
+async function runIdentitiesPhase({ sdk, composition, ledger, input, sessionKey, getCaptured }) {
   const identitiesList = copiesIdentities({ seed: input.workload.seed, count: 5 });
   const calls = [];
-  let capturedEvent = null;
 
   // 1. First occurrence (Occ 0)
   const input0 = authenticationInput({ core, identities: identitiesList[0], at: input.clock.start, sessionKey });
   calls.push(await recordedCall({ ledger, label: "clean_submission", invoke: () => sdk.authenticationSucceeded(input0) }));
-  const event0 = capturedEvent;
+  const event0 = getCaptured();
 
   // 2. Duplicate copy of Occ 0 (identical payload and event ID)
-  calls.push(await recordedCall({
-    ledger,
-    label: "duplicate_submission",
-    invoke: async () => {
-      const settled = await composition.deliver(event0);
-      return settled.status === "acknowledged" ? { ok: true, value: { status: "accepted" } } : { ok: false, error: settled.status };
-    },
-  }));
+  calls.push(await submitDuplicate({ composition, ledger, label: "duplicate_submission", event: event0 }));
 
   // 3. Conflict of Occ 0 (same event ID, modified payload)
   const conflicting0 = createConflictingEvent(event0);
-  calls.push(await recordedCall({
-    ledger,
-    label: "conflict_submission",
-    invoke: async () => {
-      const settled = await composition.deliver(conflicting0);
-      return settled.status === "acknowledged" ? { ok: true, value: { status: "accepted" } } : { ok: false, error: settled.status };
-    },
-  }));
+  calls.push(await submitDuplicate({ composition, ledger, label: "conflict_submission", event: conflicting0 }));
 
   // 4. Re-execution (Occ 1, distinct event ID)
   const input1 = authenticationInput({ core, identities: identitiesList[1], at: input.clock.start, sessionKey });
@@ -86,29 +82,21 @@ async function runIdentitiesPhase({ sdk, composition, ledger, input, sessionKey 
   return { calls, health: await composition.shutdown() };
 }
 
-async function runCollectorRestartPhase({ sdk, composition, ledger, input, sessionKey }) {
+async function runCollectorRestartPhase({ sdk, composition, ledger, input, sessionKey, getCaptured }) {
   const identitiesList = copiesIdentities({ seed: input.workload.seed + 100, count: 3 });
   const calls = [];
-  let capturedEvent = null;
 
   // 1. Occurrence before restart
   const input0 = authenticationInput({ core, identities: identitiesList[0], at: input.clock.start, sessionKey });
   calls.push(await recordedCall({ ledger, label: "before_restart_submission", invoke: () => sdk.authenticationSucceeded(input0) }));
-  const event0 = capturedEvent;
+  const event0 = getCaptured();
 
   // 2. Request collector restart
   process.send({ type: "request_ingress_restart" });
   await awaitParentMessage("ingress_restarted");
 
   // 3. Duplicate submission of occurrence 0 across restart
-  calls.push(await recordedCall({
-    ledger,
-    label: "duplicate_across_restart_submission",
-    invoke: async () => {
-      const settled = await composition.deliver(event0);
-      return settled.status === "acknowledged" ? { ok: true, value: { status: "accepted" } } : { ok: false, error: settled.status };
-    },
-  }));
+  calls.push(await submitDuplicate({ composition, ledger, label: "duplicate_across_restart_submission", event: event0 }));
 
   // 4. Fresh occurrence after restart
   const input1 = authenticationInput({ core, identities: identitiesList[1], at: input.clock.start, sessionKey });
@@ -156,32 +144,24 @@ async function runStorageLessPhase({ sdk, ledger, input, sessionKey }) {
   return { calls };
 }
 
-async function runVolumeDuplicatesPhase({ sdk, composition, ledger, input, sessionKey }) {
+async function runVolumeDuplicatesPhase({ sdk, composition, ledger, input, sessionKey, getCaptured }) {
   const count = input.phase.occurrences; // 50 occurrences
   const identitiesList = copiesIdentities({ seed: input.workload.seed + 400, count });
   const events = [];
-  let capturedEvent = null;
 
   // First delivery of all 50 occurrences
   const initialCalls = [];
   for (let i = 0; i < count; i += 1) {
     const inputI = authenticationInput({ core, identities: identitiesList[i], at: input.clock.start, sessionKey });
     initialCalls.push(await recordedCall({ ledger, label: `vol_first_${i}`, invoke: () => sdk.authenticationSucceeded(inputI) }));
-    events.push(capturedEvent);
+    events.push(getCaptured());
   }
 
   // Second delivery (duplicate copy) of all 50 occurrences
   const duplicateCalls = [];
   for (let i = 0; i < count; i += 1) {
     const eventI = events[i];
-    duplicateCalls.push(await recordedCall({
-      ledger,
-      label: `vol_duplicate_${i}`,
-      invoke: async () => {
-        const settled = await composition.deliver(eventI);
-        return settled.status === "acknowledged" ? { ok: true, value: { status: "accepted" } } : { ok: false, error: settled.status };
-      },
-    }));
+    duplicateCalls.push(await submitDuplicate({ composition, ledger, label: `vol_duplicate_${i}`, event: eventI }));
   }
 
   return { calls: [...initialCalls, ...duplicateCalls], health: await composition.shutdown() };
@@ -212,106 +192,21 @@ async function run({ expectations: input, origin, token, port }) {
   const sdk = senderSdk({ sdkNode, input, sink });
   const ledger = occurrenceLedger({ budget: input.planned_call_budget.processes.sender });
   const sessionKey = randomBytes(32);
+  const getCaptured = () => captured;
 
   let outcome;
   const kind = input.phase.kind;
 
   if (kind === "identities") {
-    // Monkey patch captured reference
-    const originalIdentitiesRun = runIdentitiesPhase;
-    outcome = await (async () => {
-      const identitiesList = copiesIdentities({ seed: input.workload.seed, count: 5 });
-      const calls = [];
-
-      const input0 = authenticationInput({ core, identities: identitiesList[0], at: input.clock.start, sessionKey });
-      calls.push(await recordedCall({ ledger, label: "clean_submission", invoke: () => sdk.authenticationSucceeded(input0) }));
-      const event0 = captured;
-
-      calls.push(await recordedCall({
-        ledger,
-        label: "duplicate_submission",
-        invoke: async () => {
-          const settled = await composition.deliver(event0);
-          return settled.status === "acknowledged" ? { ok: true, value: { status: "accepted" } } : { ok: false, error: settled.status };
-        },
-      }));
-
-      const conflicting0 = createConflictingEvent(event0);
-      calls.push(await recordedCall({
-        ledger,
-        label: "conflict_submission",
-        invoke: async () => {
-          const settled = await composition.deliver(conflicting0);
-          return settled.status === "acknowledged" ? { ok: true, value: { status: "accepted" } } : { ok: false, error: settled.status };
-        },
-      }));
-
-      const input1 = authenticationInput({ core, identities: identitiesList[1], at: input.clock.start, sessionKey });
-      calls.push(await recordedCall({ ledger, label: "re_execution_submission", invoke: () => sdk.authenticationSucceeded(input1) }));
-
-      const input2 = authenticationInput({ core, identities: identitiesList[2], at: input.clock.start, sessionKey });
-      calls.push(await recordedCall({ ledger, label: "retry_redelivery_submission", invoke: () => sdk.authenticationSucceeded(input2) }));
-
-      return { calls, health: await composition.shutdown() };
-    })();
+    outcome = await runIdentitiesPhase({ sdk, composition, ledger, input, sessionKey, getCaptured });
   } else if (kind === "collector_restart") {
-    outcome = await (async () => {
-      const identitiesList = copiesIdentities({ seed: input.workload.seed + 100, count: 3 });
-      const calls = [];
-
-      const input0 = authenticationInput({ core, identities: identitiesList[0], at: input.clock.start, sessionKey });
-      calls.push(await recordedCall({ ledger, label: "before_restart_submission", invoke: () => sdk.authenticationSucceeded(input0) }));
-      const event0 = captured;
-
-      process.send({ type: "request_ingress_restart" });
-      await awaitParentMessage("ingress_restarted");
-
-      calls.push(await recordedCall({
-        ledger,
-        label: "duplicate_across_restart_submission",
-        invoke: async () => {
-          const settled = await composition.deliver(event0);
-          return settled.status === "acknowledged" ? { ok: true, value: { status: "accepted" } } : { ok: false, error: settled.status };
-        },
-      }));
-
-      const input1 = authenticationInput({ core, identities: identitiesList[1], at: input.clock.start, sessionKey });
-      calls.push(await recordedCall({ ledger, label: "fresh_after_restart_submission", invoke: () => sdk.authenticationSucceeded(input1) }));
-
-      return { calls, health: await composition.shutdown() };
-    })();
+    outcome = await runCollectorRestartPhase({ sdk, composition, ledger, input, sessionKey, getCaptured });
   } else if (kind === "consumer_restart") {
     outcome = await runConsumerRestartPhase({ sdk, composition, ledger, input, sessionKey, triggerRestart });
   } else if (kind === "storage_less") {
     outcome = await runStorageLessPhase({ sdk, ledger, input, sessionKey });
   } else if (kind === "duplicates_volume") {
-    outcome = await (async () => {
-      const count = input.phase.occurrences;
-      const identitiesList = copiesIdentities({ seed: input.workload.seed + 400, count });
-      const events = [];
-
-      const initialCalls = [];
-      for (let i = 0; i < count; i += 1) {
-        const inputI = authenticationInput({ core, identities: identitiesList[i], at: input.clock.start, sessionKey });
-        initialCalls.push(await recordedCall({ ledger, label: `vol_first_${i}`, invoke: () => sdk.authenticationSucceeded(inputI) }));
-        events.push(captured);
-      }
-
-      const duplicateCalls = [];
-      for (let i = 0; i < count; i += 1) {
-        const eventI = events[i];
-        duplicateCalls.push(await recordedCall({
-          ledger,
-          label: `vol_duplicate_${i}`,
-          invoke: async () => {
-            const settled = await composition.deliver(eventI);
-            return settled.status === "acknowledged" ? { ok: true, value: { status: "accepted" } } : { ok: false, error: settled.status };
-          },
-        }));
-      }
-
-      return { calls: [...initialCalls, ...duplicateCalls], health: await composition.shutdown() };
-    })();
+    outcome = await runVolumeDuplicatesPhase({ sdk, composition, ledger, input, sessionKey, getCaptured });
   } else {
     throw new Error(`unknown phase kind: ${kind}`);
   }

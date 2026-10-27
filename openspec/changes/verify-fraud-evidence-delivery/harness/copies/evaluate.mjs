@@ -2,7 +2,34 @@
 import { isDeepStrictEqual } from "node:util";
 
 function getPhase(observations, name) {
-  return observations?.phases?.[name] ?? null;
+  if (!observations || !observations.phases) return null;
+  return observations.phases[name] || null;
+}
+
+function matchExchangesWithRecords(exchanges, records) {
+  if (exchanges.length !== records.length) return false;
+  for (let i = 0; i < exchanges.length; i += 1) {
+    const ex = exchanges[i];
+    const rec = records[i];
+    if (!rec) return false;
+    if (rec.event_id !== ex.event_id) return false;
+    if (rec.body_sha256 !== ex.body_sha256) return false;
+  }
+  return true;
+}
+
+function matchStoredOccurrence(readBack, cleanExch) {
+  for (const r of readBack) {
+    if (r.event_id === cleanExch.event_id && r.persisted) {
+      return r.stored_body_sha256 === cleanExch.body_sha256;
+    }
+  }
+  return false;
+}
+
+function matchDuplicateExchange(dupExch, cleanExch) {
+  if (!dupExch) return false;
+  return dupExch.event_id === cleanExch.event_id && dupExch.body_sha256 === cleanExch.body_sha256;
 }
 
 // C-01: Byte identity
@@ -11,21 +38,18 @@ export function byteIdentityObserver({ observed }) {
   if (!phase) return null;
   const { sender, ingress } = phase;
 
-  // Verify that for every exchange attempt, sender sha256 matches ingress sha256 sequentially
-  const exchangeMatch = sender.exchanges.length === ingress.records.length &&
-    sender.exchanges.every((exch, idx) => ingress.records[idx]?.event_id === exch.event_id && ingress.records[idx]?.body_sha256 === exch.body_sha256);
-
-  // All copies of the clean occurrence share one hash across exchange, ingress and storage
+  const exchangeMatch = matchExchangesWithRecords(sender.exchanges, ingress.records);
   const cleanExch = sender.exchanges[0];
-  const cleanStored = ingress.read_back.find((r) => r.event_id === cleanExch.event_id && r.persisted);
-  const storedMatch = cleanStored !== undefined && cleanStored.stored_body_sha256 === cleanExch.body_sha256;
-
-  // Duplicate exchange has same body sha256
-  const dupExch = sender.exchanges[1];
-  const dupMatch = dupExch !== undefined && dupExch.event_id === cleanExch.event_id && dupExch.body_sha256 === cleanExch.body_sha256;
+  const storedMatch = matchStoredOccurrence(ingress.read_back, cleanExch);
+  const dupMatch = matchDuplicateExchange(sender.exchanges[1], cleanExch);
 
   const holds = exchangeMatch && storedMatch && dupMatch;
   return { byte_identical: holds, all_boundaries_match: holds };
+}
+
+function recordContainsAttempt(body) {
+  if (!body) return false;
+  return body.includes('"attempt"') || body.includes('"retry_attempt"');
 }
 
 // C-02: Attempt ordinal exclusion
@@ -34,14 +58,10 @@ export function attemptOrdinalExclusionObserver({ observed }) {
   if (!phase) return null;
   const { ingress } = phase;
 
-  // Check all ingress records
-  const noAttemptInRecords = ingress.records.every((record) => {
-    return !record.body || (!record.body.includes('"attempt"') && !record.body.includes('"retry_attempt"'));
-  });
-
+  const anyAttempt = ingress.records.some((record) => recordContainsAttempt(record.body));
   return {
-    attempt_in_body: !noAttemptInRecords,
-    attempt_observable_only_to_sender: noAttemptInRecords,
+    attempt_in_body: anyAttempt,
+    attempt_observable_only_to_sender: !anyAttempt,
   };
 }
 
@@ -67,6 +87,12 @@ export function duplicateAcknowledgmentObserver({ observed }) {
   };
 }
 
+function checkConflictRejection(records, deliveryLog, eventId) {
+  const recordRejected = records.some((r) => r.event_id === eventId && r.action === "status" && r.status === 409);
+  if (recordRejected) return true;
+  return deliveryLog.some((d) => d.event_id === eventId && d.status === "non_retryable");
+}
+
 // C-04: Conflict refusal
 export function conflictRefusalObserver({ observed }) {
   const phase = observed.identities;
@@ -74,9 +100,7 @@ export function conflictRefusalObserver({ observed }) {
   const { sender, ingress } = phase;
 
   const cleanExch = sender.exchanges[0];
-  const conflictRecord = ingress.records.find((r) => r.event_id === cleanExch.event_id && r.action === "status" && r.status === 409);
-  const conflictRejected = conflictRecord !== undefined || sender.delivery_log.some((d) => d.event_id === cleanExch.event_id && d.status === "non_retryable");
-
+  const conflictRejected = checkConflictRejection(ingress.records, sender.delivery_log, cleanExch.event_id);
   const stored = ingress.read_back.find((r) => r.event_id === cleanExch.event_id && r.persisted);
   const originalBodyIntact = stored !== undefined && stored.stored_body_sha256 === cleanExch.body_sha256;
 
@@ -95,7 +119,7 @@ export function reExecutionObserver({ observed }) {
 
   const cleanId = sender.exchanges[0]?.event_id;
   const reExecCall = sender.calls.find((c) => c.label === "re_execution_submission");
-  const reExecPersisted = reExecCall?.ok === true;
+  const reExecPersisted = Boolean(reExecCall && reExecCall.ok);
 
   const distinctStored = ingress.read_back.filter((r) => r.persisted && r.event_id !== cleanId);
   return {
@@ -112,7 +136,7 @@ export function collectorRestartObserver({ observed }) {
 
   const beforeCall = sender.calls.find((c) => c.label === "before_restart_submission");
   const dupCall = sender.calls.find((c) => c.label === "duplicate_across_restart_submission");
-  const duplicateAcrossRestart = beforeCall?.ok === true && dupCall?.ok === true;
+  const duplicateAcrossRestart = Boolean(beforeCall?.ok && dupCall?.ok);
 
   const firstId = sender.exchanges[0]?.event_id;
   const storedForFirst = ingress.read_back.filter((r) => r.event_id === firstId && r.persisted);
@@ -149,7 +173,7 @@ export function storageLessBoundObserver({ observed }) {
 
   const admittedCalls = sender.calls.filter((c, idx) => idx < 32 && c.ok);
   const capacityCall = sender.calls[32];
-  const capacityRejected = capacityCall?.ok === false;
+  const capacityRejected = Boolean(capacityCall && !capacityCall.ok);
 
   return {
     admitted_at_bound: admittedCalls.length,

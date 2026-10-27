@@ -20,7 +20,10 @@ export function copiesControls() {
   const nullChangedClassified = classifyCandidate({ originalBody: original, candidateBody: changedOneByte }) === "conflict";
   const nullClassificationHolds = nullIdenticalClassified && nullChangedClassified;
 
-  const plantedDefect1Classifier = () => "duplicate";
+  const plantedDefect1Classifier = (args) => {
+    void args;
+    return "duplicate";
+  };
   const plantedDefect1Detected = plantedDefect1Classifier({ originalBody: original, candidateBody: changedOneByte }) !== "conflict";
 
   const cleanRecords = [{ event_id: "evt_1", body: original }];

@@ -7,6 +7,143 @@ import { passGate } from "../lib/gated-session.mjs";
 
 const FROZEN = jsonFile(new URL("../expectations/copies.v1.json", import.meta.url));
 
+function buildIdentitiesPhase(hash0, hash1, hash2, hashConflict) {
+  return {
+    sender: {
+      calls: [
+        { label: "clean_submission", ok: true },
+        { label: "duplicate_submission", ok: true },
+        { label: "conflict_submission", ok: false },
+        { label: "re_execution_submission", ok: true },
+        { label: "retry_redelivery_submission", ok: true },
+      ],
+      exchanges: [
+        { event_id: "evt_0", attempt: 0, body_sha256: hash0 },
+        { event_id: "evt_0", attempt: 0, body_sha256: hash0 },
+        { event_id: "evt_0", attempt: 0, body_sha256: hashConflict },
+        { event_id: "evt_1", attempt: 0, body_sha256: hash1 },
+        { event_id: "evt_2", attempt: 0, body_sha256: hash2 },
+        { event_id: "evt_2", attempt: 1, body_sha256: hash2 },
+      ],
+      delivery_log: [
+        { event_id: "evt_0", status: "acknowledged" },
+        { event_id: "evt_0", status: "acknowledged" },
+        { event_id: "evt_0", status: "non_retryable" },
+        { event_id: "evt_1", status: "acknowledged" },
+        { event_id: "evt_2", status: "acknowledged" },
+      ],
+      guard_violations: [],
+      controls: { write_outside_grant: true, copies_checks: copiesControls() },
+    },
+    ingress: {
+      records: [
+        { event_id: "evt_0", attempt: 0, body_sha256: hash0, body: '{"event":{"id":"evt_0"}}', action: "acknowledge", status: 202 },
+        { event_id: "evt_0", attempt: 0, body_sha256: hash0, body: '{"event":{"id":"evt_0"}}', action: "acknowledge", status: 202 },
+        { event_id: "evt_0", attempt: 0, body_sha256: hashConflict, body: '{"event":{"id":"evt_0"},"port":8443}', action: "status", status: 409 },
+        { event_id: "evt_1", attempt: 0, body_sha256: hash1, body: '{"event":{"id":"evt_1"}}', action: "acknowledge", status: 202 },
+        { event_id: "evt_2", attempt: 0, body_sha256: hash2, body: '{"event":{"id":"evt_2"}}', action: "status", status: 503 },
+        { event_id: "evt_2", attempt: 1, body_sha256: hash2, body: '{"event":{"id":"evt_2"}}', action: "acknowledge", status: 202 },
+      ],
+      read_back: [
+        { event_id: "evt_0", persisted: true, stored_body_sha256: hash0 },
+        { event_id: "evt_1", persisted: true, stored_body_sha256: hash1 },
+        { event_id: "evt_2", persisted: true, stored_body_sha256: hash2 },
+      ],
+      controls: { write_outside_grant: true },
+    },
+  };
+}
+
+function buildCollectorRestartPhase(hash0, hash1) {
+  return {
+    sender: {
+      calls: [
+        { label: "before_restart_submission", ok: true },
+        { label: "duplicate_across_restart_submission", ok: true },
+        { label: "fresh_after_restart_submission", ok: true },
+      ],
+      exchanges: [
+        { event_id: "evt_restart_0", attempt: 0, body_sha256: hash0 },
+        { event_id: "evt_restart_0", attempt: 0, body_sha256: hash0 },
+        { event_id: "evt_restart_1", attempt: 0, body_sha256: hash1 },
+      ],
+      guard_violations: [],
+      controls: { write_outside_grant: true, copies_checks: copiesControls() },
+    },
+    ingress: {
+      read_back: [
+        { event_id: "evt_restart_0", persisted: true, stored_body_sha256: hash0 },
+        { event_id: "evt_restart_1", persisted: true, stored_body_sha256: hash1 },
+      ],
+      controls: { write_outside_grant: true },
+    },
+  };
+}
+
+function buildConsumerRestartPhase(hash2) {
+  return {
+    sender: {
+      calls: [
+        { label: "consumer_restart_call_0", ok: false },
+        { label: "consumer_restart_call_1", ok: false },
+        { label: "consumer_restart_call_2", ok: true },
+        { label: "consumer_restart_call_3", ok: true },
+      ],
+      restart_triggered: true,
+      delivery_log: [
+        { event_id: "evt_cr_0", status: "abandoned" },
+        { event_id: "evt_cr_1", status: "abandoned" },
+        { event_id: "evt_cr_2", status: "acknowledged" },
+        { event_id: "evt_cr_3", status: "acknowledged" },
+      ],
+      guard_violations: [],
+      controls: { write_outside_grant: true, copies_checks: copiesControls() },
+    },
+    ingress: {
+      read_back: [
+        { event_id: "evt_cr_2", persisted: true, stored_body_sha256: hash2 },
+        { event_id: "evt_cr_3", persisted: true, stored_body_sha256: hash2 },
+      ],
+      controls: { write_outside_grant: true },
+    },
+  };
+}
+
+function buildStorageLessPhase() {
+  return {
+    sender: {
+      calls: [
+        ...Array.from({ length: 32 }, (_, i) => ({ label: `storage_less_call_${i}`, ok: true })),
+        { label: "storage_less_call_32", ok: false, error: "SDK_SINK_FAILURE" },
+      ],
+      guard_violations: [],
+      controls: { write_outside_grant: true, copies_checks: copiesControls() },
+    },
+    ingress: {
+      records: [
+        ...Array.from({ length: 32 }, (_, i) => ({ event_id: `sl_${i}`, status: 202 })),
+        { event_id: "sl_32", status: 503 },
+      ],
+      read_back: [],
+      controls: { write_outside_grant: true },
+    },
+  };
+}
+
+function buildDuplicatesVolumePhase(hash0) {
+  return {
+    sender: {
+      calls: Array.from({ length: 100 }, () => ({ ok: true })),
+      guard_violations: [],
+      controls: { write_outside_grant: true, copies_checks: copiesControls() },
+    },
+    ingress: {
+      read_back: Array.from({ length: 50 }, (_, i) => ({ event_id: `vol_${i}`, persisted: true, stored_body_sha256: hash0 })),
+      controls: { write_outside_grant: true },
+    },
+  };
+}
+
 function honestFixture() {
   const hash0 = "a".repeat(64);
   const hash1 = "b".repeat(64);
@@ -15,128 +152,11 @@ function honestFixture() {
 
   return {
     phases: {
-      identities: {
-        sender: {
-          calls: [
-            { label: "clean_submission", ok: true },
-            { label: "duplicate_submission", ok: true },
-            { label: "conflict_submission", ok: false },
-            { label: "re_execution_submission", ok: true },
-            { label: "retry_redelivery_submission", ok: true },
-          ],
-          exchanges: [
-            { event_id: "evt_0", attempt: 0, body_sha256: hash0 },
-            { event_id: "evt_0", attempt: 0, body_sha256: hash0 },
-            { event_id: "evt_0", attempt: 0, body_sha256: hashConflict },
-            { event_id: "evt_1", attempt: 0, body_sha256: hash1 },
-            { event_id: "evt_2", attempt: 0, body_sha256: hash2 },
-            { event_id: "evt_2", attempt: 1, body_sha256: hash2 },
-          ],
-          delivery_log: [
-            { event_id: "evt_0", status: "acknowledged" },
-            { event_id: "evt_0", status: "acknowledged" },
-            { event_id: "evt_0", status: "non_retryable" },
-            { event_id: "evt_1", status: "acknowledged" },
-            { event_id: "evt_2", status: "acknowledged" },
-          ],
-          guard_violations: [],
-          controls: { write_outside_grant: true, copies_checks: copiesControls() },
-        },
-        ingress: {
-          records: [
-            { event_id: "evt_0", attempt: 0, body_sha256: hash0, body: '{"event":{"id":"evt_0"}}', action: "acknowledge", status: 202 },
-            { event_id: "evt_0", attempt: 0, body_sha256: hash0, body: '{"event":{"id":"evt_0"}}', action: "acknowledge", status: 202 },
-            { event_id: "evt_0", attempt: 0, body_sha256: hashConflict, body: '{"event":{"id":"evt_0"},"port":8443}', action: "status", status: 409 },
-            { event_id: "evt_1", attempt: 0, body_sha256: hash1, body: '{"event":{"id":"evt_1"}}', action: "acknowledge", status: 202 },
-            { event_id: "evt_2", attempt: 0, body_sha256: hash2, body: '{"event":{"id":"evt_2"}}', action: "status", status: 503 },
-            { event_id: "evt_2", attempt: 1, body_sha256: hash2, body: '{"event":{"id":"evt_2"}}', action: "acknowledge", status: 202 },
-          ],
-          read_back: [
-            { event_id: "evt_0", persisted: true, stored_body_sha256: hash0 },
-            { event_id: "evt_1", persisted: true, stored_body_sha256: hash1 },
-            { event_id: "evt_2", persisted: true, stored_body_sha256: hash2 },
-          ],
-          controls: { write_outside_grant: true },
-        },
-      },
-      collector_restart: {
-        sender: {
-          calls: [
-            { label: "before_restart_submission", ok: true },
-            { label: "duplicate_across_restart_submission", ok: true },
-            { label: "fresh_after_restart_submission", ok: true },
-          ],
-          exchanges: [
-            { event_id: "evt_restart_0", attempt: 0, body_sha256: hash0 },
-            { event_id: "evt_restart_0", attempt: 0, body_sha256: hash0 },
-            { event_id: "evt_restart_1", attempt: 0, body_sha256: hash1 },
-          ],
-          guard_violations: [],
-          controls: { write_outside_grant: true, copies_checks: copiesControls() },
-        },
-        ingress: {
-          read_back: [
-            { event_id: "evt_restart_0", persisted: true, stored_body_sha256: hash0 },
-            { event_id: "evt_restart_1", persisted: true, stored_body_sha256: hash1 },
-          ],
-          controls: { write_outside_grant: true },
-        },
-      },
-      consumer_restart: {
-        sender: {
-          calls: [
-            { label: "consumer_restart_call_0", ok: false },
-            { label: "consumer_restart_call_1", ok: false },
-            { label: "consumer_restart_call_2", ok: true },
-            { label: "consumer_restart_call_3", ok: true },
-          ],
-          restart_triggered: true,
-          delivery_log: [
-            { event_id: "evt_cr_0", status: "abandoned" },
-            { event_id: "evt_cr_1", status: "abandoned" },
-            { event_id: "evt_cr_2", status: "acknowledged" },
-            { event_id: "evt_cr_3", status: "acknowledged" },
-          ],
-          guard_violations: [],
-          controls: { write_outside_grant: true, copies_checks: copiesControls() },
-        },
-        ingress: {
-          read_back: [
-            { event_id: "evt_cr_2", persisted: true, stored_body_sha256: hash2 },
-            { event_id: "evt_cr_3", persisted: true, stored_body_sha256: hash2 },
-          ],
-          controls: { write_outside_grant: true },
-        },
-      },
-      storage_less: {
-        sender: {
-          calls: [
-            ...Array.from({ length: 32 }, (_, i) => ({ label: `storage_less_call_${i}`, ok: true })),
-            { label: "storage_less_call_32", ok: false, error: "SDK_SINK_FAILURE" },
-          ],
-          guard_violations: [],
-          controls: { write_outside_grant: true, copies_checks: copiesControls() },
-        },
-        ingress: {
-          records: [
-            ...Array.from({ length: 32 }, (_, i) => ({ event_id: `sl_${i}`, status: 202 })),
-            { event_id: "sl_32", status: 503 },
-          ],
-          read_back: [],
-          controls: { write_outside_grant: true },
-        },
-      },
-      duplicates_volume: {
-        sender: {
-          calls: Array.from({ length: 100 }, () => ({ ok: true })),
-          guard_violations: [],
-          controls: { write_outside_grant: true, copies_checks: copiesControls() },
-        },
-        ingress: {
-          read_back: Array.from({ length: 50 }, (_, i) => ({ event_id: `vol_${i}`, persisted: true, stored_body_sha256: hash0 })),
-          controls: { write_outside_grant: true },
-        },
-      },
+      identities: buildIdentitiesPhase(hash0, hash1, hash2, hashConflict),
+      collector_restart: buildCollectorRestartPhase(hash0, hash1),
+      consumer_restart: buildConsumerRestartPhase(hash2),
+      storage_less: buildStorageLessPhase(),
+      duplicates_volume: buildDuplicatesVolumePhase(hash0),
     },
   };
 }

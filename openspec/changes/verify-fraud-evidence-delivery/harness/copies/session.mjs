@@ -89,8 +89,10 @@ export async function exchangeCopiesUnit({ context, unit, senderInput }) {
   const back = await roles.ingress.next("read_back", "ingress");
   assert.equal(back.quiescent, true, "final read-back requires ingress quiescence");
   const ingressClosed = await stopRole("ingress", roles.ingress);
-  const { type: _ready, ...ingress } = ready;
-  const { type: _report, ...sender } = report;
+  const ingress = { ...ready };
+  delete ingress.type;
+  const sender = { ...report };
+  delete sender.type;
   return {
     ingress: { ...ingress, records: back.records, read_back: back.read_back, quiescent: back.quiescent },
     sender,
