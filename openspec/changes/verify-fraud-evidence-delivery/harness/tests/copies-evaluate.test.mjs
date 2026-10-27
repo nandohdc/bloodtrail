@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { evaluateCases, OBSERVERS } from "../copies/evaluate.mjs";
+import { evaluateCases } from "../copies/evaluate.mjs";
 import { copiesControls } from "../copies/controls.mjs";
 import { jsonFile } from "../lib/io.mjs";
 import { passGate } from "../lib/gated-session.mjs";
