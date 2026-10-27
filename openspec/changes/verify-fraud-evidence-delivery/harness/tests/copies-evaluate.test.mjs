@@ -166,6 +166,7 @@ test("copies controls reject planted defects and pass null controls", () => {
   assert.equal(result.changed_byte_defect_detected, true);
   assert.equal(result.duplicate_double_count_defect_detected, true);
   assert.equal(result.null_controls_pass, true);
+  assert.equal(result.holds, true);
 });
 
 test("an honest run matches every case", () => {

@@ -32,11 +32,14 @@ export function copiesControls() {
   const inflatedRecords = [{ event_id: "evt_1", body: original }, { event_id: "evt_1", body: original }];
   const plantedDefect2Detected = !duplicateAccountingCheck({ records: inflatedRecords });
 
+  const holds = plantedDefect1Detected && plantedDefect2Detected && nullClassificationHolds && nullDuplicateAccountingHolds;
+
   return {
     changed_byte_classified_as_conflict: nullChangedClassified,
     duplicate_classified_as_duplicate: nullIdenticalClassified,
     changed_byte_defect_detected: plantedDefect1Detected,
     duplicate_double_count_defect_detected: plantedDefect2Detected,
     null_controls_pass: nullClassificationHolds && nullDuplicateAccountingHolds,
+    holds,
   };
 }
