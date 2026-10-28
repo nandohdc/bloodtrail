@@ -1,0 +1,2732 @@
+{
+  "probe": "S2-chains",
+  "version": 1,
+  "ticket": 840,
+  "base": "efdf42a7348d08e475c2aa83277b2fbd6b124a63",
+  "contract_version": "2.1.0",
+  "workload": {
+    "seed": 840001
+  },
+  "clock": {
+    "start": "2026-10-23T00:00:00.000Z",
+    "step_ms": 1000
+  },
+  "composition": {
+    "exchange_timeout_ms": 2000,
+    "max_attempts": 3,
+    "base_delay_ms": 50,
+    "max_delay_ms": 500,
+    "jitter_seed": 840,
+    "capacity": 16,
+    "shutdown_deadline_ms": 5000
+  },
+  "scenarios": {
+    "clean": []
+  },
+  "phases": [
+    {
+      "name": "chains_small",
+      "pass": "small",
+      "kind": "chains",
+      "occurrences": 36,
+      "distinct_occurrences": 36,
+      "schedule": [
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean"
+      ],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 3,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 840,
+        "capacity": 16,
+        "shutdown_deadline_ms": 5000
+      },
+      "chain_count": 6,
+      "tenant_count": 3,
+      "failed_count": 6,
+      "seed_offset": 0
+    },
+    {
+      "name": "chains_volume",
+      "pass": "volume",
+      "kind": "chains",
+      "occurrences": 360,
+      "distinct_occurrences": 360,
+      "schedule": [
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean"
+      ],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 3,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 840,
+        "capacity": 16,
+        "shutdown_deadline_ms": 5000
+      },
+      "chain_count": 60,
+      "tenant_count": 10,
+      "failed_count": 60,
+      "seed_offset": 100
+    }
+  ],
+  "deadline_ms": 120000,
+  "planned_call_budget": {
+    "processes": {
+      "chains_small": 72,
+      "chains_volume": 720
+    },
+    "total": 792
+  },
+  "ground_truth": {
+    "chains_small": {
+      "chains": {
+        "syn-tenant-c742b41c": {
+          "syn-account-c1592a3b": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:00.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:01.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:02.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:03.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:04.000Z"
+            }
+          ],
+          "syn-account-cacf590c": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:05.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:06.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:07.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:08.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:09.000Z"
+            }
+          ]
+        },
+        "syn-tenant-29b621a7": {
+          "syn-account-05bebe46": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:10.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:11.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:12.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:13.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:14.000Z"
+            }
+          ],
+          "syn-account-0c52eefe": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:15.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:16.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:17.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:18.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:19.000Z"
+            }
+          ]
+        },
+        "syn-tenant-d63016c2": {
+          "syn-account-b031c280": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:20.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:21.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:22.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:23.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:24.000Z"
+            }
+          ],
+          "syn-account-4bad04b4": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:25.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:26.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:27.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:28.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:29.000Z"
+            }
+          ]
+        }
+      },
+      "per_source_counts": {
+        "192.0.2.65": 12,
+        "198.51.100.140": 12,
+        "203.0.113.152": 6,
+        "203.0.113.150": 6
+      },
+      "per_tenant_partitions": {
+        "syn-tenant-c742b41c": [
+          "syn-account-c1592a3b",
+          "syn-account-cacf590c"
+        ],
+        "syn-tenant-29b621a7": [
+          "syn-account-05bebe46",
+          "syn-account-0c52eefe"
+        ],
+        "syn-tenant-d63016c2": [
+          "syn-account-4bad04b4",
+          "syn-account-b031c280"
+        ]
+      },
+      "failed_authentications": {
+        "192.0.2.65": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:00:30.000Z"
+          },
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:00:31.000Z"
+          }
+        ],
+        "198.51.100.140": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:00:32.000Z"
+          },
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:00:33.000Z"
+          }
+        ],
+        "203.0.113.152": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:00:34.000Z"
+          }
+        ],
+        "203.0.113.150": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:00:35.000Z"
+          }
+        ]
+      },
+      "shared_source_pairs": [
+        [
+          "syn-account-c1592a3b",
+          "syn-account-cacf590c"
+        ],
+        [
+          "syn-account-05bebe46",
+          "syn-account-0c52eefe"
+        ]
+      ]
+    },
+    "chains_volume": {
+      "chains": {
+        "syn-tenant-c3a5c1be": {
+          "syn-account-65dad0aa": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:00.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:01.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:02.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:03.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:04.000Z"
+            }
+          ],
+          "syn-account-09420f75": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:05.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:06.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:07.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:08.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:09.000Z"
+            }
+          ],
+          "syn-account-0ef62a97": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:10.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:11.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:12.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:13.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:14.000Z"
+            }
+          ],
+          "syn-account-89e31d72": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:15.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:16.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:17.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:18.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:19.000Z"
+            }
+          ],
+          "syn-account-1d69f0ee": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:20.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:21.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:22.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:23.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:24.000Z"
+            }
+          ],
+          "syn-account-11fccdfd": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:25.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:26.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:27.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:28.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:29.000Z"
+            }
+          ]
+        },
+        "syn-tenant-a7fa4d5d": {
+          "syn-account-f7c004d3": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:30.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:31.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:32.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:33.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:34.000Z"
+            }
+          ],
+          "syn-account-f612f373": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:35.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:36.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:37.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:38.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:39.000Z"
+            }
+          ],
+          "syn-account-6662a836": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:40.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:41.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:42.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:43.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:44.000Z"
+            }
+          ],
+          "syn-account-5992a468": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:45.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:46.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:47.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:48.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:49.000Z"
+            }
+          ],
+          "syn-account-cb68b903": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:50.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:51.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:52.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:53.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:54.000Z"
+            }
+          ],
+          "syn-account-3ad0a826": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:00:55.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:00:56.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:00:57.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:00:58.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:00:59.000Z"
+            }
+          ]
+        },
+        "syn-tenant-c38c8208": {
+          "syn-account-04fdc95e": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:00.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:01.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:02.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:03.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:04.000Z"
+            }
+          ],
+          "syn-account-49ced383": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:05.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:06.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:07.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:08.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:09.000Z"
+            }
+          ],
+          "syn-account-1dcdf9b2": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:10.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:11.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:12.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:13.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:14.000Z"
+            }
+          ],
+          "syn-account-1dbad410": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:15.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:16.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:17.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:18.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:19.000Z"
+            }
+          ],
+          "syn-account-786d1487": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:20.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:21.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:22.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:23.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:24.000Z"
+            }
+          ],
+          "syn-account-2c0627a4": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:25.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:26.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:27.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:28.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:29.000Z"
+            }
+          ]
+        },
+        "syn-tenant-405bea18": {
+          "syn-account-2df5e28a": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:30.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:31.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:32.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:33.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:34.000Z"
+            }
+          ],
+          "syn-account-2fbb3e2f": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:35.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:36.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:37.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:38.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:39.000Z"
+            }
+          ],
+          "syn-account-12a23797": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:40.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:41.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:42.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:43.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:44.000Z"
+            }
+          ],
+          "syn-account-699d7358": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:45.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:46.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:47.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:48.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:49.000Z"
+            }
+          ],
+          "syn-account-0c51ddb4": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:50.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:51.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:52.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:53.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:54.000Z"
+            }
+          ],
+          "syn-account-51a35721": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:01:55.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:01:56.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:01:57.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:01:58.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:01:59.000Z"
+            }
+          ]
+        },
+        "syn-tenant-5aa50517": {
+          "syn-account-5fe1d249": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:00.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:01.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:02.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:03.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:04.000Z"
+            }
+          ],
+          "syn-account-8bea22a8": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:05.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:06.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:07.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:08.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:09.000Z"
+            }
+          ],
+          "syn-account-e1294efc": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:10.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:11.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:12.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:13.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:14.000Z"
+            }
+          ],
+          "syn-account-8ac91708": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:15.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:16.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:17.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:18.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:19.000Z"
+            }
+          ],
+          "syn-account-d4accd68": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:20.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:21.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:22.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:23.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:24.000Z"
+            }
+          ],
+          "syn-account-2c0450d5": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:25.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:26.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:27.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:28.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:29.000Z"
+            }
+          ]
+        },
+        "syn-tenant-34be082c": {
+          "syn-account-90ba9ab1": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:30.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:31.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:32.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:33.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:34.000Z"
+            }
+          ],
+          "syn-account-bd49910f": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:35.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:36.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:37.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:38.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:39.000Z"
+            }
+          ],
+          "syn-account-13762731": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:40.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:41.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:42.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:43.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:44.000Z"
+            }
+          ],
+          "syn-account-252a6827": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:45.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:46.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:47.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:48.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:49.000Z"
+            }
+          ],
+          "syn-account-05ab1064": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:50.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:51.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:52.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:53.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:54.000Z"
+            }
+          ],
+          "syn-account-0b3c8f77": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:02:55.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:02:56.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:02:57.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:02:58.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:02:59.000Z"
+            }
+          ]
+        },
+        "syn-tenant-f6e30b2e": {
+          "syn-account-0a11737a": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:00.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:01.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:02.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:03.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:04.000Z"
+            }
+          ],
+          "syn-account-8f7e5889": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:05.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:06.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:07.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:08.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:09.000Z"
+            }
+          ],
+          "syn-account-57351a9b": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:10.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:11.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:12.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:13.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:14.000Z"
+            }
+          ],
+          "syn-account-b67aafef": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:15.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:16.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:17.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:18.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:19.000Z"
+            }
+          ],
+          "syn-account-79f83e67": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:20.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:21.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:22.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:23.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:24.000Z"
+            }
+          ],
+          "syn-account-a75cf390": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:25.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:26.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:27.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:28.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:29.000Z"
+            }
+          ]
+        },
+        "syn-tenant-1076a568": {
+          "syn-account-761271d4": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:30.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:31.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:32.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:33.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:34.000Z"
+            }
+          ],
+          "syn-account-873e7663": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:35.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:36.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:37.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:38.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:39.000Z"
+            }
+          ],
+          "syn-account-6b542e58": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:40.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:41.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:42.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:43.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:44.000Z"
+            }
+          ],
+          "syn-account-7431488d": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:45.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:46.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:47.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:48.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:49.000Z"
+            }
+          ],
+          "syn-account-05da0a40": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:50.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:51.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:52.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:53.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:54.000Z"
+            }
+          ],
+          "syn-account-0d9ba9fc": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:03:55.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:03:56.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:03:57.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:03:58.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:03:59.000Z"
+            }
+          ]
+        },
+        "syn-tenant-988398ac": {
+          "syn-account-df536029": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:00.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:01.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:02.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:03.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:04.000Z"
+            }
+          ],
+          "syn-account-b6a3c9e1": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:05.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:06.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:07.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:08.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:09.000Z"
+            }
+          ],
+          "syn-account-bbb94891": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:10.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:11.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:12.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:13.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:14.000Z"
+            }
+          ],
+          "syn-account-28254bc6": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:15.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:16.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:17.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:18.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:19.000Z"
+            }
+          ],
+          "syn-account-9d1c93d9": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:20.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:21.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:22.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:23.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:24.000Z"
+            }
+          ],
+          "syn-account-ee22c6d5": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:25.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:26.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:27.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:28.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:29.000Z"
+            }
+          ]
+        },
+        "syn-tenant-3d13cb36": {
+          "syn-account-bd087d2b": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:30.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:31.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:32.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:33.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:34.000Z"
+            }
+          ],
+          "syn-account-b0b74b0e": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:35.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:36.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:37.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:38.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:39.000Z"
+            }
+          ],
+          "syn-account-846302c0": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:40.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:41.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:42.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:43.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:44.000Z"
+            }
+          ],
+          "syn-account-c9d1e7cb": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:45.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:46.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:47.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:48.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:49.000Z"
+            }
+          ],
+          "syn-account-0c135240": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:50.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:51.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:52.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:53.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:54.000Z"
+            }
+          ],
+          "syn-account-ba79501b": [
+            {
+              "name": "bloodtrail.audit.authentication.succeeded",
+              "timestamp": "2026-10-23T00:04:55.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.created",
+              "timestamp": "2026-10-23T00:04:56.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.authentication.mfa.removed",
+              "timestamp": "2026-10-23T00:04:57.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.account.password_reset.completed",
+              "timestamp": "2026-10-23T00:04:58.000Z"
+            },
+            {
+              "name": "bloodtrail.audit.session.revoked",
+              "timestamp": "2026-10-23T00:04:59.000Z"
+            }
+          ]
+        }
+      },
+      "per_source_counts": {
+        "203.0.113.112": 12,
+        "192.0.2.162": 12,
+        "198.51.100.183": 6,
+        "192.0.2.114": 6,
+        "192.0.2.169": 6,
+        "198.51.100.169": 6,
+        "192.0.2.125": 6,
+        "198.51.100.92": 6,
+        "203.0.113.82": 6,
+        "192.0.2.113": 6,
+        "198.51.100.5": 6,
+        "203.0.113.193": 6,
+        "198.51.100.217": 6,
+        "192.0.2.39": 6,
+        "192.0.2.245": 6,
+        "203.0.113.64": 6,
+        "203.0.113.24": 6,
+        "198.51.100.239": 6,
+        "192.0.2.2": 6,
+        "198.51.100.67": 6,
+        "198.51.100.171": 6,
+        "192.0.2.84": 6,
+        "192.0.2.232": 6,
+        "203.0.113.92": 6,
+        "192.0.2.197": 6,
+        "198.51.100.157": 6,
+        "203.0.113.67": 6,
+        "198.51.100.108": 6,
+        "192.0.2.203": 6,
+        "198.51.100.191": 6,
+        "198.51.100.210": 6,
+        "203.0.113.223": 6,
+        "203.0.113.200": 6,
+        "198.51.100.56": 6,
+        "198.51.100.253": 6,
+        "192.0.2.33": 6,
+        "192.0.2.90": 6,
+        "192.0.2.154": 6,
+        "203.0.113.94": 6,
+        "192.0.2.22": 6,
+        "198.51.100.71": 6,
+        "198.51.100.102": 6,
+        "203.0.113.46": 6,
+        "203.0.113.40": 6,
+        "203.0.113.240": 6,
+        "203.0.113.83": 6,
+        "192.0.2.63": 6,
+        "198.51.100.65": 6,
+        "203.0.113.239": 6,
+        "192.0.2.19": 6,
+        "198.51.100.146": 6,
+        "198.51.100.58": 6,
+        "192.0.2.189": 6,
+        "192.0.2.61": 6,
+        "192.0.2.132": 6,
+        "192.0.2.179": 6,
+        "192.0.2.17": 6,
+        "203.0.113.91": 6
+      },
+      "per_tenant_partitions": {
+        "syn-tenant-c3a5c1be": [
+          "syn-account-09420f75",
+          "syn-account-0ef62a97",
+          "syn-account-11fccdfd",
+          "syn-account-1d69f0ee",
+          "syn-account-65dad0aa",
+          "syn-account-89e31d72"
+        ],
+        "syn-tenant-a7fa4d5d": [
+          "syn-account-3ad0a826",
+          "syn-account-5992a468",
+          "syn-account-6662a836",
+          "syn-account-cb68b903",
+          "syn-account-f612f373",
+          "syn-account-f7c004d3"
+        ],
+        "syn-tenant-c38c8208": [
+          "syn-account-04fdc95e",
+          "syn-account-1dbad410",
+          "syn-account-1dcdf9b2",
+          "syn-account-2c0627a4",
+          "syn-account-49ced383",
+          "syn-account-786d1487"
+        ],
+        "syn-tenant-405bea18": [
+          "syn-account-0c51ddb4",
+          "syn-account-12a23797",
+          "syn-account-2df5e28a",
+          "syn-account-2fbb3e2f",
+          "syn-account-51a35721",
+          "syn-account-699d7358"
+        ],
+        "syn-tenant-5aa50517": [
+          "syn-account-2c0450d5",
+          "syn-account-5fe1d249",
+          "syn-account-8ac91708",
+          "syn-account-8bea22a8",
+          "syn-account-d4accd68",
+          "syn-account-e1294efc"
+        ],
+        "syn-tenant-34be082c": [
+          "syn-account-05ab1064",
+          "syn-account-0b3c8f77",
+          "syn-account-13762731",
+          "syn-account-252a6827",
+          "syn-account-90ba9ab1",
+          "syn-account-bd49910f"
+        ],
+        "syn-tenant-f6e30b2e": [
+          "syn-account-0a11737a",
+          "syn-account-57351a9b",
+          "syn-account-79f83e67",
+          "syn-account-8f7e5889",
+          "syn-account-a75cf390",
+          "syn-account-b67aafef"
+        ],
+        "syn-tenant-1076a568": [
+          "syn-account-05da0a40",
+          "syn-account-0d9ba9fc",
+          "syn-account-6b542e58",
+          "syn-account-7431488d",
+          "syn-account-761271d4",
+          "syn-account-873e7663"
+        ],
+        "syn-tenant-988398ac": [
+          "syn-account-28254bc6",
+          "syn-account-9d1c93d9",
+          "syn-account-b6a3c9e1",
+          "syn-account-bbb94891",
+          "syn-account-df536029",
+          "syn-account-ee22c6d5"
+        ],
+        "syn-tenant-3d13cb36": [
+          "syn-account-0c135240",
+          "syn-account-846302c0",
+          "syn-account-b0b74b0e",
+          "syn-account-ba79501b",
+          "syn-account-bd087d2b",
+          "syn-account-c9d1e7cb"
+        ]
+      },
+      "failed_authentications": {
+        "203.0.113.112": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:00.000Z"
+          },
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:01.000Z"
+          }
+        ],
+        "192.0.2.162": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:02.000Z"
+          },
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:03.000Z"
+          }
+        ],
+        "198.51.100.183": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:04.000Z"
+          }
+        ],
+        "192.0.2.114": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:05.000Z"
+          }
+        ],
+        "192.0.2.169": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:06.000Z"
+          }
+        ],
+        "198.51.100.169": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:07.000Z"
+          }
+        ],
+        "192.0.2.125": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:08.000Z"
+          }
+        ],
+        "198.51.100.92": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:09.000Z"
+          }
+        ],
+        "203.0.113.82": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:10.000Z"
+          }
+        ],
+        "192.0.2.113": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:11.000Z"
+          }
+        ],
+        "198.51.100.5": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:12.000Z"
+          }
+        ],
+        "203.0.113.193": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:13.000Z"
+          }
+        ],
+        "198.51.100.217": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:14.000Z"
+          }
+        ],
+        "192.0.2.39": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:15.000Z"
+          }
+        ],
+        "192.0.2.245": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:16.000Z"
+          }
+        ],
+        "203.0.113.64": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:17.000Z"
+          }
+        ],
+        "203.0.113.24": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:18.000Z"
+          }
+        ],
+        "198.51.100.239": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:19.000Z"
+          }
+        ],
+        "192.0.2.2": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:20.000Z"
+          }
+        ],
+        "198.51.100.67": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:21.000Z"
+          }
+        ],
+        "198.51.100.171": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:22.000Z"
+          }
+        ],
+        "192.0.2.84": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:23.000Z"
+          }
+        ],
+        "192.0.2.232": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:24.000Z"
+          }
+        ],
+        "203.0.113.92": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:25.000Z"
+          }
+        ],
+        "192.0.2.197": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:26.000Z"
+          }
+        ],
+        "198.51.100.157": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:27.000Z"
+          }
+        ],
+        "203.0.113.67": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:28.000Z"
+          }
+        ],
+        "198.51.100.108": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:29.000Z"
+          }
+        ],
+        "192.0.2.203": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:30.000Z"
+          }
+        ],
+        "198.51.100.191": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:31.000Z"
+          }
+        ],
+        "198.51.100.210": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:32.000Z"
+          }
+        ],
+        "203.0.113.223": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:33.000Z"
+          }
+        ],
+        "203.0.113.200": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:34.000Z"
+          }
+        ],
+        "198.51.100.56": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:35.000Z"
+          }
+        ],
+        "198.51.100.253": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:36.000Z"
+          }
+        ],
+        "192.0.2.33": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:37.000Z"
+          }
+        ],
+        "192.0.2.90": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:38.000Z"
+          }
+        ],
+        "192.0.2.154": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:39.000Z"
+          }
+        ],
+        "203.0.113.94": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:40.000Z"
+          }
+        ],
+        "192.0.2.22": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:41.000Z"
+          }
+        ],
+        "198.51.100.71": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:42.000Z"
+          }
+        ],
+        "198.51.100.102": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:43.000Z"
+          }
+        ],
+        "203.0.113.46": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:44.000Z"
+          }
+        ],
+        "203.0.113.40": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:45.000Z"
+          }
+        ],
+        "203.0.113.240": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:46.000Z"
+          }
+        ],
+        "203.0.113.83": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:47.000Z"
+          }
+        ],
+        "192.0.2.63": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:48.000Z"
+          }
+        ],
+        "198.51.100.65": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:49.000Z"
+          }
+        ],
+        "203.0.113.239": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:50.000Z"
+          }
+        ],
+        "192.0.2.19": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:51.000Z"
+          }
+        ],
+        "198.51.100.146": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:52.000Z"
+          }
+        ],
+        "198.51.100.58": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:53.000Z"
+          }
+        ],
+        "192.0.2.189": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:54.000Z"
+          }
+        ],
+        "192.0.2.61": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:55.000Z"
+          }
+        ],
+        "192.0.2.132": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:56.000Z"
+          }
+        ],
+        "192.0.2.179": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:57.000Z"
+          }
+        ],
+        "192.0.2.17": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:58.000Z"
+          }
+        ],
+        "203.0.113.91": [
+          {
+            "name": "bloodtrail.audit.authentication.failed",
+            "timestamp": "2026-10-23T00:05:59.000Z"
+          }
+        ]
+      },
+      "shared_source_pairs": [
+        [
+          "syn-account-65dad0aa",
+          "syn-account-09420f75"
+        ],
+        [
+          "syn-account-0ef62a97",
+          "syn-account-89e31d72"
+        ]
+      ]
+    }
+  },
+  "cases": [
+    {
+      "case_id": "R-01",
+      "pass": "small",
+      "phases": [
+        "chains_small"
+      ],
+      "observer": "chain_reconstruction",
+      "setup": "Every ground-truth chain is reconstructed exactly in event-time order across tenant, account, and session boundaries.",
+      "expected": {
+        "chains_match": true,
+        "reconstructed_chains_count": 6
+      },
+      "basis": [
+        "packages/security-audit-collector/src/sqlite-storage.ts:137",
+        "packages/security-audit-collector/src/sqlite-storage.ts:145"
+      ]
+    },
+    {
+      "case_id": "R-02",
+      "pass": "small",
+      "phases": [
+        "chains_small"
+      ],
+      "observer": "no_shared_source_merge",
+      "setup": "Accounts sharing observed source addresses stay separated in distinct reconstructed chains without merging.",
+      "expected": {
+        "shared_source_accounts_separated": true,
+        "merged_chains_count": 0,
+        "shared_pairs_evaluated": 2
+      },
+      "basis": [
+        "packages/security-audit-collector/src/ingress.ts:353",
+        "packages/security-audit-collector/src/sqlite-storage.ts:124"
+      ]
+    },
+    {
+      "case_id": "R-03",
+      "pass": "small",
+      "phases": [
+        "chains_small"
+      ],
+      "observer": "per_source_counts",
+      "setup": "Per-source observed occurrence counts match ground truth exactly across all documentation-range addresses.",
+      "expected": {
+        "source_counts_match": true,
+        "sources_evaluated": 4
+      },
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:321",
+        "packages/security-audit-collector/src/ingress.ts:189"
+      ]
+    },
+    {
+      "case_id": "R-04",
+      "pass": "small",
+      "phases": [
+        "chains_small"
+      ],
+      "observer": "per_tenant_partitions",
+      "setup": "Per-tenant account partitions match ground truth without cross-tenant leakage or misattribution.",
+      "expected": {
+        "tenant_partitions_match": true,
+        "tenants_evaluated": 3
+      },
+      "basis": [
+        "packages/security-audit-collector/src/ingress.ts:323",
+        "packages/security-audit-collector/src/sqlite-storage.ts:124"
+      ]
+    },
+    {
+      "case_id": "R-05",
+      "pass": "small",
+      "phases": [
+        "chains_small"
+      ],
+      "observer": "failed_authentications",
+      "setup": "Pre-authentication failures use anonymous actor, are grouped by source and timestamp, and are not linked to accounts.",
+      "expected": {
+        "failed_authentications_match": true,
+        "unlinked_from_accounts": true,
+        "failed_count": 6
+      },
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:158",
+        "packages/security-audit-sdk-core/src/sdk.ts:124"
+      ]
+    },
+    {
+      "case_id": "R-06",
+      "pass": "small",
+      "phases": [
+        "chains_small"
+      ],
+      "observer": "opaque_identifiers",
+      "setup": "All identifiers are opaque synthetic syn-... IDs, never email-like, and all addresses are from documentation ranges.",
+      "expected": {
+        "opaque_identifiers": true,
+        "no_email_identifiers": true,
+        "documentation_addresses_only": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-core/src/validation/prohibited.ts:14"
+      ]
+    },
+    {
+      "case_id": "R-07",
+      "pass": "small",
+      "phases": [
+        "chains_small"
+      ],
+      "observer": "session_fingerprints",
+      "setup": "Session identifiers in reconstructed chains are keyed HMAC-SHA256 fingerprints, never raw server session handles.",
+      "expected": {
+        "session_ids_are_fingerprints": true,
+        "raw_handles_absent": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-core/src/context.ts:313"
+      ]
+    },
+    {
+      "case_id": "R-08",
+      "pass": "small",
+      "phases": [
+        "chains_small"
+      ],
+      "observer": "event_time_order",
+      "setup": "Chain events are reconstructed in strict event-time order from event.timestamp, ignoring permuted arrival order.",
+      "expected": {
+        "event_time_ordered": true,
+        "arrival_order_differed": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-core/src/events.ts:450"
+      ]
+    },
+    {
+      "case_id": "R-09",
+      "pass": "small",
+      "phases": [
+        "chains_small"
+      ],
+      "observer": "planted_controls",
+      "setup": "Planted defects (merge-by-source reconstruction and arrival-order reconstruction) are detected, and null controls pass.",
+      "expected": {
+        "merge_by_source_defect_detected": true,
+        "arrival_order_defect_detected": true,
+        "null_controls_pass": true
+      },
+      "basis": [
+        "packages/security-audit-collector/src/sqlite-storage.ts:86"
+      ]
+    },
+    {
+      "case_id": "R-10",
+      "pass": "small",
+      "phases": [
+        "chains_small"
+      ],
+      "observer": "isolation_controls",
+      "setup": "The loopback, permission and synthetic-data checks are the harness's own pre-traffic attestations, and the cited line is the fetch they constrain.",
+      "expected": {
+        "loopback_holds": true,
+        "permissions_hold": true,
+        "synthetic_data_holds": true,
+        "guard_violations_match": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/fetch-exchange.ts:45"
+      ]
+    },
+    {
+      "case_id": "R-11",
+      "pass": "volume",
+      "phases": [
+        "chains_small",
+        "chains_volume"
+      ],
+      "observer": "accounting_identity",
+      "setup": "The accounting identity holds for every phase, with each occurrence in exactly one bucket and zero unexplained occurrences (#910).",
+      "expected": {
+        "all_phases_hold": true,
+        "unexplained_total": 0,
+        "every_occurrence_persisted": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/delivery-shutdown.ts:15",
+        "packages/security-audit-collector/src/sqlite-storage.ts:86"
+      ]
+    }
+  ]
+}
