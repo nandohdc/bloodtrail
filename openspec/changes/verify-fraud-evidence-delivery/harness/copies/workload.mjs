@@ -42,12 +42,12 @@ export function authenticationInput({ core, identities, at, sessionKey, override
 }
 
 // Produces a conflicting event by cloning an existing event, preserving event.id while mutating a field.
+// In the schema, source is top-level and observed.port is an integer. Mutating it produces a schema-valid
+// conflict that hits the collector's storage conflict path (#839, D4).
 export function createConflictingEvent(event) {
   const cloned = structuredClone(event);
-  if (cloned.data?.source?.observed) {
-    cloned.data.source.observed.port = 8443;
-  } else if (cloned.data) {
-    cloned.data.detail = "conflicting_payload";
+  if (cloned.source?.observed) {
+    cloned.source.observed.port = cloned.source.observed.port === 8443 ? 443 : 8443;
   }
   return Object.freeze(cloned);
 }

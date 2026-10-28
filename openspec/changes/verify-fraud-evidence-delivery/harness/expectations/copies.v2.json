@@ -1,0 +1,271 @@
+{
+  "probe": "S2-copies",
+  "version": 2,
+  "ticket": 839,
+  "base": "a2cdbc120eabaf95479bc83e8afbd3aff50ed9f2",
+  "contract_version": "2.1.0",
+  "workload": {
+    "seed": 839001,
+    "event": "bloodtrail.audit.authentication.succeeded"
+  },
+  "clock": {
+    "start": "2026-10-23T00:00:00.000Z",
+    "step_ms": 1000
+  },
+  "composition": {
+    "exchange_timeout_ms": 2000,
+    "max_attempts": 3,
+    "base_delay_ms": 50,
+    "max_delay_ms": 500,
+    "jitter_seed": 839,
+    "capacity": 16,
+    "shutdown_deadline_ms": 5000
+  },
+  "scenarios": {
+    "clean": [],
+    "retry_once": [
+      { "attempt": 0, "action": "status", "status": 503 }
+    ]
+  },
+  "phases": [
+    {
+      "name": "identities",
+      "pass": "small",
+      "kind": "identities",
+      "occurrences": 3,
+      "distinct_occurrences": 3,
+      "schedule": ["clean", "clean", "retry_once"],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 3,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 839,
+        "capacity": 16,
+        "shutdown_deadline_ms": 5000
+      }
+    },
+    {
+      "name": "collector_restart",
+      "pass": "small",
+      "kind": "collector_restart",
+      "occurrences": 2,
+      "distinct_occurrences": 2,
+      "schedule": ["clean", "clean"],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 3,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 839,
+        "capacity": 16,
+        "shutdown_deadline_ms": 5000
+      }
+    },
+    {
+      "name": "consumer_restart",
+      "pass": "small",
+      "kind": "consumer_restart",
+      "occurrences": 4,
+      "distinct_occurrences": 4,
+      "gate_timers": true,
+      "schedule": ["retry_once", "retry_once", "clean", "clean"],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 3,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 839,
+        "capacity": 16,
+        "shutdown_deadline_ms": 5000
+      }
+    },
+    {
+      "name": "storage_less",
+      "pass": "small",
+      "kind": "storage_less",
+      "occurrences": 33,
+      "distinct_occurrences": 33,
+      "schedule": [
+        "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean",
+        "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean",
+        "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean",
+        "clean", "clean", "clean"
+      ],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 3,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 839,
+        "capacity": 64,
+        "shutdown_deadline_ms": 5000
+      }
+    },
+    {
+      "name": "duplicates_volume",
+      "pass": "volume",
+      "kind": "duplicates_volume",
+      "occurrences": 50,
+      "distinct_occurrences": 50,
+      "schedule": [
+        "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean",
+        "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean",
+        "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean",
+        "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean",
+        "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean", "clean"
+      ],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 3,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 839,
+        "capacity": 64,
+        "shutdown_deadline_ms": 5000
+      }
+    }
+  ],
+  "deadline_ms": 120000,
+  "planned_call_budget": {
+    "processes": {
+      "identities": 5,
+      "collector_restart": 3,
+      "consumer_restart": 8,
+      "storage_less": 33,
+      "duplicates_volume": 100
+    },
+    "total": 149
+  },
+  "hypotheses": [
+    "Redeliveries, duplicates, conflicts, re-executions and restarts are handled deterministically through the reference composition and collector storage.",
+    "Byte identity holds across exchange, ingress and storage boundaries; delivery attempt ordinals stay out of occurrences; duplicates are acknowledged without readmission; conflicts are rejected; storage durably preserves identity across restarts; and the in-memory deduplication ledger enforces its 32-record / 5-minute bound."
+  ],
+  "cases": [
+    {
+      "case_id": "C-01",
+      "pass": "small",
+      "phases": ["identities"],
+      "observer": "byte_identity",
+      "setup": "Comparison of body hashes across the injected exchange, the ingress record, and final read-back storage.",
+      "expected": { "byte_identical": true, "all_boundaries_match": true },
+      "basis": ["packages/security-audit-sdk-node/src/http-handoff.ts:136", "packages/security-audit-collector/src/ingress.ts:189"]
+    },
+    {
+      "case_id": "C-02",
+      "pass": "small",
+      "phases": ["identities"],
+      "observer": "attempt_ordinal_exclusion",
+      "setup": "Verification that delivery attempts of an occurrence do not increment correlation.retry_attempt, which stays constant across attempts with identical body bytes.",
+      "expected": { "multi_attempt_occurrences": 1, "retry_attempt_constant_across_attempts": true, "body_identical_across_attempts": true },
+      "basis": ["packages/security-audit-sdk-core/src/events.ts:252", "packages/security-audit-sdk-node/src/http-handoff.ts:137"]
+    },
+    {
+      "case_id": "C-03",
+      "pass": "small",
+      "phases": ["identities"],
+      "observer": "duplicate_acknowledgment",
+      "setup": "A canonically identical copy under a live identity is acknowledged as duplicate without second admission or duplicate write.",
+      "expected": { "duplicate_acknowledged": true, "readmitted": false, "stored_count": 1 },
+      "basis": ["packages/security-audit-collector/src/sqlite-storage.ts:178", "packages/security-audit-collector/src/ingress.ts:196"]
+    },
+    {
+      "case_id": "C-04",
+      "pass": "small",
+      "phases": ["identities"],
+      "observer": "conflict_rejection",
+      "setup": "A submission that reuses a live identity with different content is rejected with conflict outcome, leaving original record intact.",
+      "expected": { "conflict_rejected": true, "outcome_kind": "rejected", "conflict_code": "COLLECTOR_STORAGE_CONFLICT", "original_body_intact": true },
+      "basis": ["packages/security-audit-collector/src/sqlite-storage.ts:179", "packages/security-audit-collector/src/ingress.ts:387"]
+    },
+    {
+      "case_id": "C-05",
+      "pass": "small",
+      "phases": ["identities"],
+      "observer": "re_execution",
+      "setup": "A re-execution with a new event ID is persisted as a distinct occurrence in storage.",
+      "expected": { "re_execution_persisted": true, "distinct_occurrence_stored": true },
+      "basis": [
+        "packages/security-audit-sdk-core/src/events.ts:234",
+        "packages/security-audit-sdk-core/src/events.ts:252",
+        "packages/security-audit-sdk-core/src/events.ts:253",
+        "packages/security-audit-collector/src/sqlite-storage.ts:86"
+      ]
+    },
+    {
+      "case_id": "C-06",
+      "pass": "small",
+      "phases": ["collector_restart"],
+      "observer": "collector_restart",
+      "setup": "A collector restart with storage persisted retains duplicate decisions across the restart boundary.",
+      "expected": {
+        "restart_count": 1,
+        "persisted_before_boundary": true,
+        "duplicate_at_or_after_boundary": true,
+        "read_back_persisted": true,
+        "storage_closed": true,
+        "storage_reopened": true
+      },
+      "basis": ["packages/security-audit-collector/src/sqlite-storage.ts:86", "packages/security-audit-collector/src/sqlite-storage.ts:178"]
+    },
+    {
+      "case_id": "C-07",
+      "pass": "small",
+      "phases": ["consumer_restart"],
+      "observer": "consumer_restart",
+      "setup": "A consumer restart mid-burst triggered from retry observability callbacks leaves zero unexplained occurrences.",
+      "expected": {
+        "restart_triggered": true,
+        "abandoned_matches_unacknowledged": true,
+        "redeliveries_match_first_exchange": true,
+        "redeliveries_persisted": true,
+        "no_abandoned_in_accounting": true,
+        "fenced_attempts": true,
+        "fenced_produced_no_ingress": true,
+        "unexplained": 0
+      },
+      "basis": ["packages/security-audit-sdk-node/src/delivery-retry.ts:14", "packages/security-audit-sdk-node/src/delivery-shutdown.ts:15", "packages/security-audit-sdk-core/src/events.ts:56"]
+    },
+    {
+      "case_id": "C-08",
+      "pass": "small",
+      "phases": ["storage_less"],
+      "observer": "storage_less_bound",
+      "setup": "Storage-less in-memory deduplication ledger admits 32 identities and rejects the 33rd at capacity.",
+      "expected": { "admitted_at_bound": 32, "capacity_rejected": true, "outcome_kind": "rejected", "capacity_code": "COLLECTOR_DEDUPLICATION_CAPACITY" },
+      "basis": ["packages/security-audit-collector/src/deduplication.ts:8", "packages/security-audit-collector/src/ingress.ts:227", "packages/security-audit-collector/src/ingress.ts:291"]
+    },
+    {
+      "case_id": "C-09",
+      "pass": "small",
+      "phases": ["identities"],
+      "observer": "planted_controls",
+      "setup": "Planted defects (changed byte as conflict, duplicate double count detected) and passing null controls.",
+      "expected": { "changed_byte_defect_detected": true, "duplicate_double_count_defect_detected": true, "null_controls_pass": true },
+      "basis": ["packages/security-audit-collector/src/sqlite-storage.ts:179"]
+    },
+    {
+      "case_id": "C-10",
+      "pass": "small",
+      "phases": ["identities", "collector_restart", "consumer_restart", "storage_less"],
+      "observer": "isolation_controls",
+      "setup": "The loopback, permission and synthetic-data checks are the harness's own pre-traffic attestations (lib/loopback-guard.mjs, lib/controls.mjs), and the cited adapter line is the unrestricted fetch they constrain.",
+      "expected": { "loopback_holds": true, "permissions_hold": true, "synthetic_data_holds": true, "guard_violations_match": true },
+      "basis": ["packages/security-audit-sdk-node/src/fetch-exchange.ts:45"]
+    },
+    {
+      "case_id": "C-11",
+      "pass": "volume",
+      "phases": ["duplicates_volume"],
+      "observer": "volume_duplicates",
+      "setup": "Volume duplicate delivery of 50 occurrences (100 total deliveries) resulting in exactly 50 stored records and zero inflation.",
+      "expected": { "deliveries": 100, "stored_count": 50, "duplicate_inflation": 0 },
+      "basis": ["packages/security-audit-collector/src/sqlite-storage.ts:86", "packages/security-audit-collector/src/sqlite-storage.ts:178"]
+    }
+  ]
+}

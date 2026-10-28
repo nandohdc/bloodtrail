@@ -35,9 +35,14 @@ export function storageScopeOf(tenant) {
 function parsedEvent(body) {
   try {
     const value = JSON.parse(body);
-    return { eventId: value?.event?.id, tenant: value?.tenant };
+    return {
+      eventId: value?.event?.id,
+      tenant: value?.tenant,
+      retryAttempt: value?.correlation?.retry_attempt,
+      originalEventId: value?.correlation?.original_event_id,
+    };
   } catch {
-    return { eventId: undefined, tenant: undefined };
+    return { eventId: undefined, tenant: undefined, retryAttempt: undefined, originalEventId: undefined };
   }
 }
 
@@ -116,10 +121,18 @@ function remember({ state, eventId, tenant }) {
 // to the same text, and byte identity must not see them as one.
 function handle({ state, request, response, raw }) {
   const body = raw.toString("utf8");
-  const { eventId, tenant } = parsedEvent(body);
+  const { eventId, tenant, retryAttempt, originalEventId } = parsedEvent(body);
   if (eventId !== undefined) remember({ state, eventId, tenant });
   const decision = state.faults.decide(eventId ?? "unparsed");
-  const record = { event_id: eventId ?? null, occurrence: decision.occurrence, attempt: decision.attempt, body_sha256: sha256(raw), action: decision.rule.action };
+  const record = {
+    event_id: eventId ?? null,
+    occurrence: decision.occurrence,
+    attempt: decision.attempt,
+    body_sha256: sha256(raw),
+    action: decision.rule.action,
+    retry_attempt: retryAttempt ?? null,
+    original_event_id: originalEventId ?? null,
+  };
   const finish = (fields) => state.records.push({ ...record, ...fields });
   ACTIONS[decision.rule.action]({ state, request, response, body, eventId, rule: decision.rule, finish });
 }
@@ -131,13 +144,20 @@ export function startIngress({ collector, ingress, faults, timers = globalThis }
     request.on("data", (chunk) => chunks.push(chunk));
     request.on("end", () => handle({ state, request, response, raw: Buffer.concat(chunks) }));
   });
-  return new Promise((resolveServer) => {
-    const close = () => new Promise((resolveClose) => server.close(resolveClose));
+  return new Promise((resolveServer, rejectServer) => {
+    const onListenError = (error) => rejectServer(error);
+    server.once("error", onListenError);
+    const close = () => new Promise((resolveClose, rejectClose) => {
+      server.close((error) => (error ? rejectClose(error) : resolveClose()));
+    });
     const quiesce = async () => {
       await close();
       await Promise.all(state.pending);
     };
-    server.listen(0, "127.0.0.1", () => resolveServer({ port: server.address().port, state, close, quiesce }));
+    server.listen(0, "127.0.0.1", () => {
+      server.off("error", onListenError);
+      resolveServer({ port: server.address().port, state, close, quiesce });
+    });
   });
 }
 
