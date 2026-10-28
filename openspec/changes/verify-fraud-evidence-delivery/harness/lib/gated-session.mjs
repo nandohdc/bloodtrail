@@ -75,8 +75,8 @@ async function runPasses({ context, units, runUnit, evaluate, key }) {
 
 // One unit's exchange: a fresh storage directory and role set under the unit's name, the unit's scheduled
 // fault plan, and the probe's sender input for the unit (`senderInput(unit)`). A halt stops the sender's spawn.
-export function exchangeUnit({ context, unit, probeDirectory, senderInput }) {
-  const { service, storage, flags, expectations, byUnit, token } = context;
+export function exchangeUnit({ context, unit, probeDirectory, senderInput, ingressOptions = {}, afterSenderStart }) {
+  const { service, storage, flags, expectations, byUnit, token, spawn } = context;
   const directory = join(storage, unit.name);
   mkdirSync(directory);
   byUnit[unit.name] = {};
@@ -84,6 +84,9 @@ export function exchangeUnit({ context, unit, probeDirectory, senderInput }) {
     service, directory, flags, probeDirectory, senderInput: senderInput(unit),
     faultPlan: scheduledFaultPlan({ scenarios: expectations.scenarios, schedule: unit.schedule, cycles: unit.cycles }), roles: byUnit[unit.name], token,
     proceed: () => !context.halted,
+    ingressOptions,
+    afterSenderStart,
+    ...(spawn !== undefined ? { spawn } : {}),
   });
 }
 

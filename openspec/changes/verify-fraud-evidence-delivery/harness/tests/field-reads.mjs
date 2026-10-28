@@ -3,8 +3,8 @@
 import assert from "node:assert/strict";
 
 export function dottedReads({ text, name }) {
-  assert.doesNotMatch(text, new RegExp(`=\\s*${name}\\b(?!\\s*\\.)|${name}\\s*\\[|${name}\\?\\.`), `${name} is read other than by dotted access`);
-  return new Set([...text.matchAll(new RegExp(`\\b${name}((?:\\.[a-z_]+)+)`, "g"))].map((match) => match[1].slice(1)));
+  assert.doesNotMatch(text, new RegExp(`=\\s*${name}\\b(?!\\s*\\.)|\\b${name}\\s*\\[|${name}\\?\\.`), `${name} is read other than by dotted access`);
+  return new Set([...text.matchAll(new RegExp(`\\b${name}((?:\\.[a-z0-9_]+)+)`, "g"))].map((match) => match[1].slice(1)));
 }
 
 export function resolves({ object, path }) {

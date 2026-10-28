@@ -68,6 +68,19 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
   - the callback-timed collector restart;
   - the storage-less bound phase.
 - [ ] 5.2 Under its own S1, record the collector outcomes and durable identity across the restart.
+- [x] 5.3 Rebuild the copies probe under expectations/copies.v2.json (#905, G47):
+  - in-process collector restart tracking restart boundaries (before-restart record count, storage closure, and reopening) keeping server, port, storage mode, and fault ordinals across SQLite reopen;
+  - observable-only verdicts deriving from ingress records, sender calls/logs, and read-back without unobservable constants;
+  - total observers normalized without branches and strict element field-read parity;
+  - transport-neutral storage conflict and deduplication capacity assertions (COLLECTOR_STORAGE_CONFLICT and COLLECTOR_DEDUPLICATION_CAPACITY);
+  - distinct occurrences derived per phase from workload generators independent of retry attempts, with occurrence-aligned retry schedule;
+  - consumer restart mid-burst with pure phase module, post-shutdown fencing, timer release to fence, byte-identical unacknowledged redelivery via core SDK redelivery path, and total accounting;
+  - sanctioned re-attempt using identical identities with SDK retry correlation (original_event_id and retry_attempt);
+  - correlation.retry_attempt and correlation.original_event_id recorded by ingress from parsed event;
+  - real observers exercised by pre-traffic planted controls;
+  - pre-traffic isolation controls with exact planted guard violation (192.0.2.1);
+  - planned call budget upper bound (149 calls);
+  - freeze expectations/copies.v2.json at base a2cdbc120eabaf95479bc83e8afbd3aff50ed9f2 while preserving copies.v1.json byte-identical.
 
 ## 6. Account-takeover chain reconstruction (#840)
 

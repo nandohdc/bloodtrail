@@ -23,7 +23,7 @@ a run is checked and reproduced against its approved head, never against the cur
 | S2-tracer | #836 | `tracer/` | `expectations/tracer.v1.json` | one occurrence through the reference composition into the collector |
 | S2-outages | #837 | `outages/` | `expectations/outages.v1.json` | a small pass, then a volume pass, of the ten outage scenarios below |
 | S2-load | #838 | `load/` | `expectations/load.v1.json` | bursts against backpressure and shutdown, and `best_effort` drops, in the phases below |
-| S2-copies | #839 | `copies/` | `expectations/copies.v1.json` | redeliveries, duplicates, conflicts, re-executions, collector and consumer restarts, and storage-less capacity |
+| S2-copies | #839 | `copies/` | `expectations/copies.v2.json` | redeliveries, duplicates, conflicts, re-executions, collector and consumer restarts, and storage-less capacity (v2 supersedes v1) |
 
 The outages probe reuses the tracer's two role processes unchanged: `outages/sender-process.mjs` and
 `outages/ingress-process.mjs` import the role guard, then the tracer's role. Each pass is one exchange between a
@@ -71,6 +71,26 @@ Shutdown time covers the composition's report return, including bookkeeping, mea
 Backpressure callbacks, operation starts, exchanges and results carry an occurrence-attributed sequence trace. Each rejected overload must have its callback before the result, and its operation must never start. Drop callbacks must cover dropped event IDs bijectively, including after saturation. Accounting results retain the full planned denominator.
 
 Every load sender runs deterministic planted/null accounting controls before constructing the SDK. The runtime control checks include missing/duplicate drops, omitted admission, missing occurrence, strict deadline, rejection ordering, retry delay/exhaustion reporting and storage absence. These consume no SDK calls. Final read-back follows actual sender closure and ingress quiescence, including pending fault tasks; both role closes are recorded. Closure failure invalidates the run and never masks an S2 condition.
+
+### Copies probe (S2-copies, #839)
+
+`expectations/copies.v2.json` supersedes `copies.v1.json` for new runs. `copies.v1.json` and historical runs 5-6 are retained unchanged. The rebuilt v2 probe spans five phases across an upper bound of 149 planned calls: `identities` (3 distinct occurrences: clean, clean, retry_once, including a sanctioned re-execution preserving original event correlation), `collector_restart` (2 distinct occurrences across an in-process SQLite reopen with restart boundary tracking recording storage closure, reopening, and before-restart record counts), `consumer_restart` (4 distinct occurrences with mid-burst retry shutdown, post-shutdown fencing, timer release to fence, and byte-identical unacknowledged redelivery via the core SDK redelivery path with total accounting), `storage_less` (33 distinct occurrences enforcing the in-memory ledger's 32-record admission bound and capacity rejection), and `duplicates_volume` (50 distinct occurrences sent twice, totaling 100 calls). Workload generators determine distinct occurrences per phase independent of retry attempts. HTTP status mappings (including storage-less admitted → 202 and conflict → 409) are harness-owned transport behavior from `lib/ingress.mjs` `statusFor`, not product behavior; the collector package is transport-neutral. Eleven cases (C-01 to C-11) verify byte identity, attempt ordinal exclusion with constant `correlation.retry_attempt`, duplicate acknowledgment without readmission, schema-valid storage conflict rejection (`COLLECTOR_STORAGE_CONFLICT`), sanctioned re-execution persistence with original event ID correlation, post-restart duplicate retention with restart boundary and durable read-back, total consumer restart accounting across redeliveries, storage-less capacity rejection (`COLLECTOR_DEDUPLICATION_CAPACITY`), pre-traffic planted controls exercising real observers, pre-traffic isolation controls (exact 192.0.2.1 violation), and volume duplicate inflation freedom.
+
+Role logic is partitioned into kit-free role modules (`copies/ingress-role.mjs`, `copies/sender-phases.mjs`) driven by thin process shells (`copies/ingress-process.mjs`, `copies/sender-process.mjs`). Process shells install `lib/role-guard.mjs` and wire resolved kit dependencies, while role modules remain pure and testable under in-process doubles. Composition and SDK adapters reside in `copies/sender-phases.mjs` as `senderFactories({ sdkNode, senderSdk })` and `senderRun({ deps, message })`, allowing both the governed run and in-process rehearsals to exercise the pure role logic, call plan, and composition structure. During collector restart, the sender and orchestrator coordinate via an explicit `{ step: "ingress_restart" }` IPC handshake: the sender requests the restart, pauses traffic until acknowledged, and validates continuity.
+
+An in-process rehearsal gate (`tests/copies-session-rehearsal.test.mjs`) exercises the pure role logic, the call plan, the evaluation, the IPC sequencing and the composition structure over a fake SDK, a fake Node binding, a fake collector and in-process loopback HTTP, validating submitted events against the real generated JSON schema. The rehearsal fakes the Node binding and SDK primitives, and clones IPC messages via JSON serialization in both directions. Seam defect tests prove the rehearsal fails closed: roleExchange dropping restarts causes a C-06 mismatch (`restart_count === 0`); a sender dropping `request_ingress_restart` on IPC stops on deadline; a composition with a retry wait that never resolves stops on deadline (with a null control completing under the same 15000 ms deadline); and a schema-invalid conflicting copy causes a C-04 mismatch. C-07's shutdown arm requires matching exchange counts at shutdown and is verified with a forwarding fence plant.
+
+**Residual risks:** The rehearsal does not cover:
+- Real OS child processes, IPC channels, and stdio streams;
+- Runtime permission models (`--permission --allow-net --allow-fs-read`);
+- Native SQLite file storage and cross-process filesystem locking;
+- Real SDK event construction beyond the generated JSON schema validation check;
+- Real collector behavior beyond schema validation, deduplication and storage-conflict handling;
+- Real controls producers executing in a live environment;
+- Kit installation into the own service under npm/tarball packaging;
+- `lib/sender-role.mjs` and `lib/role-guard.mjs`;
+- The S2 halt path;
+- The bodies of both process shells (`copies/sender-process.mjs`, `copies/ingress-process.mjs`), which are only pinned as text.
 
 ## The seam
 

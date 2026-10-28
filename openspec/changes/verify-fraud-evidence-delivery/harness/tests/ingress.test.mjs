@@ -222,3 +222,48 @@ test("a delayed answer past the client's deadline is a timeout after ingest, and
     if (!closed) await server.close();
   }
 });
+
+test("the ingress records retry_attempt and original_event_id when present in correlation, null when absent", async () => {
+  const fixture = fixtureCollector();
+  const server = await startIngress({ collector: fixture.collector, ingress: fixture.ingress, faults: faultInjector({ default: "acknowledge", rules: [] }) });
+  try {
+    const bodyWithout = JSON.stringify({ event: { id: "e-plain" } });
+    const bodyWith = JSON.stringify({
+      event: { id: "e-retry" },
+      correlation: { retry_attempt: 2, original_event_id: "e-orig" },
+    });
+    await post({ port: server.port, body: bodyWithout });
+    await post({ port: server.port, body: bodyWith });
+    assert.equal(server.state.records[0].retry_attempt, null);
+    assert.equal(server.state.records[0].original_event_id, null);
+    assert.equal(server.state.records[1].retry_attempt, 2);
+    assert.equal(server.state.records[1].original_event_id, "e-orig");
+  } finally {
+    await server.close();
+  }
+});
+
+test("startIngress rejects its promise if listen emits an error", async () => {
+  const http = (await import("node:http")).default;
+  const fixture = fixtureCollector();
+  const originalListen = http.Server.prototype.listen;
+  http.Server.prototype.listen = function listenMock() {
+    setImmediate(() => this.emit("error", new Error("listen failure")));
+    return this;
+  };
+  try {
+    await assert.rejects(
+      startIngress({ collector: fixture.collector, ingress: fixture.ingress, faults: faultInjector({ default: "acknowledge", rules: [] }) }),
+      /listen failure/,
+    );
+  } finally {
+    http.Server.prototype.listen = originalListen;
+  }
+});
+
+test("close rejects when server.close calls back with an error", async () => {
+  const fixture = fixtureCollector();
+  const server = await startIngress({ collector: fixture.collector, ingress: fixture.ingress, faults: faultInjector({ default: "acknowledge", rules: [] }) });
+  await server.close();
+  await assert.rejects(() => server.close(), /Server is not running/);
+});

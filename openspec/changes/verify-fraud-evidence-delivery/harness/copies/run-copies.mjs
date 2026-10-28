@@ -7,13 +7,8 @@ import { PROBE_FILES } from "./files.mjs";
 import { copiesSession } from "./session.mjs";
 
 const session = await runProbe({
-  probe: "S2-copies",
-  ticket: 839,
-  probeDirectory: "copies",
-  entrypoint: import.meta.url,
-  validate: validateExpectations,
-  files: PROBE_FILES,
-  session: copiesSession,
-  evaluate: evaluateCases,
+  probe: "S2-copies", ticket: 839, probeDirectory: "copies", entrypoint: import.meta.url,
+  expectationsVersion: 2, supportedVersions: [2],
+  validate: validateExpectations, files: PROBE_FILES, session: copiesSession, evaluate: evaluateCases,
 });
 process.exitCode = session.exitCode;

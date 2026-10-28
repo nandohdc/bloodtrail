@@ -61,15 +61,19 @@ function checkResolutions({ service, resolved }) {
 // (plan.mjs ROLE_SCRIPTS) under `probeDirectory`. The started roles are set on `roles`, an object owned by
 // this exchange, so the caller can kill them and attach their stderr whatever happens. `proceed` is asked
 // again just before the sender spawns: a session halted while its ingress started spawns no sender.
-export async function roleExchange({ service, directory, flags, probeDirectory, senderInput, faultPlan, roles, token, proceed = () => true }) {
+export async function roleExchange({
+  service, directory, flags, probeDirectory, senderInput, faultPlan, roles, token,
+  proceed = () => true, ingressOptions = {}, afterSenderStart, spawn = spawnRole,
+}) {
   const script = (role) => roleProcessPath({ prefix: join(service, "harness"), probeDirectory, role });
-  roles.ingress = spawnRole({ service, script: script("ingress"), flags: flags.ingress });
-  roles.ingress.send({ type: "start", token, fault_plan: faultPlan, storage_directory: directory, owners: OWNERS });
+  roles.ingress = spawn({ service, script: script("ingress"), flags: flags.ingress, role: "ingress" });
+  roles.ingress.send({ type: "start", token, fault_plan: faultPlan, storage_directory: directory, owners: OWNERS, ...ingressOptions });
   const ready = await roles.ingress.next("ready", "ingress");
   checkResolutions({ service, resolved: ready.resolved });
   if (!proceed()) throw new Error("session halted before the sender started");
-  roles.sender = spawnRole({ service, script: script("sender"), flags: flags.sender });
+  roles.sender = spawn({ service, script: script("sender"), flags: flags.sender, role: "sender" });
   roles.sender.send({ type: "start", expectations: senderInput, origin: `http://127.0.0.1:${ready.port}`, token, port: ready.port });
+  if (afterSenderStart) await afterSenderStart({ roles, ready });
   const report = await roles.sender.next("report", "sender");
   checkResolutions({ service, resolved: report.resolved });
   const senderClosed = await stopRole("sender", roles.sender);
@@ -77,9 +81,10 @@ export async function roleExchange({ service, directory, flags, probeDirectory, 
   const back = await roles.ingress.next("read_back", "ingress");
   assert.equal(back.quiescent, true, "final read-back requires ingress quiescence");
   const ingressClosed = await stopRole("ingress", roles.ingress);
-  const { type: _ready, ...ingress } = ready;
+  const { type: _ready, ...readyData } = ready;
+  const { type: _back, ...backData } = back;
   const { type: _report, ...sender } = report;
-  return { ingress: { ...ingress, records: back.records, read_back: back.read_back, quiescent: back.quiescent }, sender, role_closure: { sender: senderClosed, ingress: ingressClosed }, occurrence_count: report.ledger.occurrence_count };
+  return { ingress: { ...readyData, ...backData }, sender, role_closure: { sender: senderClosed, ingress: ingressClosed }, occurrence_count: report.ledger.occurrence_count };
 }
 
 // The failure that ends a session carries each started role's bounded stderr, with the run's token
