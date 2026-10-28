@@ -1,7 +1,7 @@
 # Stage 2 harness: delivery and per-source evidence
 
 Authorization: `../proposal.md#run-authorization` at each run's exact approved head, under
-[G42](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6346915049) (environment and limits) and
+[G42](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6346915049) (environment and limits) as amended by [G46](https://github.com/nandohdc/bloodtrail/issues/833#issuecomment-6449640834) and
 G44 (delegated S1). See `run-ledger.md` for the shared run budget.
 
 **Four Stage 2 probes have executed:** the tracer, as run 1 (`results/tracer-run-1.json`), the outages
@@ -162,7 +162,7 @@ node openspec/changes/verify-fraud-evidence-delivery/harness/kit-cli.mjs --dry-r
   --driver-lane claude-code --driver-model "$MODEL"
 ```
 
-For #838's owner-authorized Codex lane, use `--driver-lane codex` and the actual driver model. The exception covers the load probe and build-only checks; other probe executions retain G45's historical lane.
+Probe runs require `--driver-lane claude-code` (G46 Q94). Runs 3 and 4 recorded lane `codex` under the owner's 2026-10-24 addendum for #838 (see `design.md`).
 
 It requires a clean tree. It builds the governed kit from HEAD, verifies the kit identity, refuses kit
 manifests that declare install lifecycle scripts, installs the own service with `--ignore-scripts`, proves a
@@ -171,23 +171,30 @@ It runs no kit code and spends no run.
 
 ## Approved run
 
-Only after a delegated S1 under G44 names the exact head:
+Only after a delegated S1 under G44 names the exact head, and, for a rerun after a harness defect or any reserve slot (13–16), after an owner disposition recorded on the probe ticket (G46, Q68):
 
 ```bash
 node openspec/changes/verify-fraud-evidence-delivery/harness/$PROBE/run-$PROBE.mjs \
   --approved-head "$HEAD" --run-number "$N" --window-opened-at "$OPENED" \
   --approval-body-file "$BODY" --approval-url "$URL" --approval-created-at "$CREATED" \
   --approval-updated-at "$UPDATED" --approval-sha256 "$BODY_SHA256" \
+  --disposition-body-file "$DISPOSITION_BODY" \
+  --disposition-url "$DISPOSITION_URL" \
+  --disposition-created-at "$DISPOSITION_CREATED" \
+  --disposition-updated-at "$DISPOSITION_UPDATED" \
+  --disposition-sha256 "$DISPOSITION_SHA256" \
   --once-marker "$HOME/.bloodtrail/stage-2/once-markers/run-$N" --results "$CHANGE/harness/results/$PROBE-run-$N.json" \
   --driver-lane claude-code --driver-model "$MODEL"
 ```
 
-`$PROBE` is `tracer`, `outages` or `load`. `--window-opened-at` is `2026-10-23T13:18:26Z` for every run (`run-ledger.md`).
+They are required for runs 13–16 and recorded whenever given.
+
+`$PROBE` is `tracer`, `outages`, `load` or `copies`. `--window-opened-at` is `2026-10-23T13:18:26Z` for every run (`run-ledger.md`).
 
 `results/` is created empty before the run; an empty directory leaves the tree clean. The once-marker lives in
 the one pinned control directory `~/.bloodtrail/stage-2/once-markers/` (created once, mode 700), shared by every
 Stage 2 run: the marker is `run-<N>`, so a run number is claimed at most once whatever approval names it, and the
-directory never holds more than the 12 G42 runs. The run ledger is the cross-check. Each
+directory never holds more than the 16 runs G42 allows as amended by G46. The run ledger is the cross-check. Each
 marker records the head, the approval body sha256 and the G42 window opening; the first claim declares the
 opening, and every later run must pass the same `--window-opened-at`, so no run restarts the 14 days. The
 approval, clean tree, HEAD, expectations, results path and once-marker are checked before the marker is

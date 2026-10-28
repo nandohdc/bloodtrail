@@ -1,13 +1,10 @@
 # Stage 2 run ledger
 
 Authorization: `../proposal.md#run-authorization` at each run's exact approved head, under
-[G42](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6346915049). This ledger grants no
+[G42](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6346915049) as amended by [G46](https://github.com/nandohdc/bloodtrail/issues/833#issuecomment-6449640834). This ledger grants no
 approval.
 
-G42 limits are shared across every Stage 2 probe ticket (#836–#842): **12 runs**, at most **50,000 SDK calls per
-run**, accepted or refused (delivery attempts are recorded but not capped), within **14 days** of the first Stage 2
-S1. Expiry needs an authorization amendment, never a window extended by convention. The planned budget is: six
-runs for the single-run probes, three for #841, and three spare.
+G42 limits, as amended by G46, are shared across every Stage 2 probe ticket (#836–#842): **16 runs**, at most **50,000 SDK calls per run** (accepted or refused; delivery attempts are recorded but not capped), within **14 days** of the first Stage 2 S1. The limit was 12 until the head that merges the G46 amendment; runs 1–7 executed under it, which their results pin (`executed_file_hashes` for `lib/results.mjs`). Expiry needs an authorization amendment, never a window extended by convention. Run slots: runs 1–7 as used (rows below); then, per G46 Q74, 8 #840, 9 #842, 10–12 #841, 13–16 reserve. A reserve slot is used only under an owner disposition recorded on the probe ticket (G46, Q68). A reserve run's row cites its owner disposition beside the S1.
 
 Window: opened at `2026-10-23T13:18:26Z`, the `createdAt` of run 1's S1 comment, the first Stage 2 S1. It
 closes at `2026-11-06T13:18:26Z`. That value is passed as `--window-opened-at` for every run after it. Run 1
@@ -23,10 +20,18 @@ Delegated S1 under G44
 An S1 the owner posts directly omits the delegation line; its results record `delegation: null`, and its row
 names the owner as the approver.
 
-Run numbers are shared across the probes, 1 to 12. Every run claims its once-marker `run-<N>` in the one pinned
+An owner disposition is an unedited comment on the probe ticket:
+
+```
+Owner disposition: <probe> run <N> for #<ticket>
+```
+
+The harness checks this line's form, not who posted it: every Stage 2 comment, including delegated S1s, is posted from the owner's account. Q68 requires the comment to record the owner's decision, audited from the ticket.
+
+Run numbers are shared across the probes, 1 to 16. Every run claims its once-marker `run-<N>` in the one pinned
 control directory, `~/.bloodtrail/stage-2/once-markers/`, so a run number cannot be spent twice. Dry runs are build-only: they are not
 Stage 2 executions, consume no run number and create no row. Before each
-S1, reconcile this ledger: runs used, SDK calls used, and time left in the window. A failed run whose
+S1, reconcile this ledger: runs used, SDK calls used, and time left in the window. For a rerun or a reserve slot, also confirm the owner disposition on the probe ticket (Q68). A failed run whose
 results carry `occurrence_count: null` is entered at its `call_bound`. An S2 stop halts the run
 and goes to the owner.
 
@@ -40,4 +45,4 @@ and goes to the owner.
 | 6 | S2-copies | #839 | ac6c5516cca96ea3f70cd054541415160598a9d7 | https://github.com/nandohdc/bloodtrail/issues/839#issuecomment-6447734314, delegated (G44) | 45 | 8 of 11 cases matched (small pass mismatched C-06 and C-10; C-11 volume pass skipped), no invalidations: `results/copies-run-6.json`. Port continuity and isolation evaluator finding #905. | yes, `recursively_absent: true` |
 | 7 | S2-copies | #839 | 707b1dc9abc67fb8b58d5564d5727dbbbda74f00 | https://github.com/nandohdc/bloodtrail/issues/839#issuecomment-6465595030, delegated (G44); body sha256 `f1c359a6f6b90ded3e5a2a643b82741b0b4754a198be9a23ad61667566a4b257`, byte-exact | 147 | 11 of 11 cases matched (copies.v2.json), no invalidations: `results/copies-run-7.json`. Disclosures: the S1 listed storage_less under the volume pass, but copies.v2.json freezes it in the small pass, where it ran; C-08 measures the 32-identity capacity and its at-capacity outcome, while the five-minute retention is the collector's documented bound, not measured (frozen 120 s deadline); the accounting identity is reported for consumer_restart only (finding #910); port continuity across the collector restart holds by construction (one listening server) and is not separately recorded. Run 6's C-04 and C-07 matches were false positives (Q99; #839 issuecomment-6450407160, #905 issuecomment-6453644518). | yes, `recursively_absent: true` |
 
-After run 7: **7 of 12 runs used, 2350 SDK calls recorded** (147 calls consumed by run 7). #839's frozen v2 cases all matched; see the row's disclosures. All three planned spare runs are spent (runs 4, 6 and 7): five runs remain, exactly for #840 (run 8), #842 (run 9) and #841 (runs 10–12). Any further harness defect needs an owner decision, until the G46 amendment raises the run limit to 16. Raw results for run 7 preserved.
+After run 7: **7 of 16 runs used, 2350 SDK calls recorded** (147 calls consumed by run 7; runs 1–7 ran under the 12-run limit). #839's frozen v2 cases all matched; see the row's disclosures. Nine runs remain: 8 #840, 9 #842, 10–12 #841, and the reserve 13–16, which needs an owner disposition (Q68). Raw results for run 7 preserved.

@@ -9,7 +9,7 @@ This change is the Stage 2 that #795 defers, specified by #833 and ticketed as #
   faults, at volume.
 
 **Authority.** The decision log is #795's G1–G37 comment, plus the later owner decisions recorded as their own
-comments on #795: G38–G40 and G41–G45. Where #833's body and the log differ, the log wins. The grilling
+comments on #795 (G38–G40 and G41–G45) and, after #795 closed, on #833 (G46–G47). Where #833's body and the log differ, the log wins. The grilling
 decisions taken with the owner on 2026-10-22, in Claude Code session
 https://claude.ai/code/session_012Y6oT9KjPZ1BMvT63hU3ay, are recorded below with that source. No table entry
 grants a run approval.
@@ -190,11 +190,10 @@ levels (Q17).
 
 **Results** are raw observations, tagged with provenance:
 - kit identity commit, package-set digest and kit digest;
-- Node version, environment, authoring lane;
+- Node version, environment, the declared driver lane (a self-reported flag, G45). Under G46 Q45, AGY writes the code and Claude Code reviews it, and Claude Code alone executes runs (G46 Q94);
 - authorization reference and approving-comment hash.
 
-A mismatch is reported, never fixed by editing expectations. An invalidation needs a fix, a new head, a new S1
-and a new run number. Reproduction starts from the kit identity commit and the committed harness.
+A mismatch is reported, never fixed by editing expectations. An invalidation needs a fix, a new head, an owner disposition recorded on the probe ticket (G46, Q68), a new S1 and a new run number. Reproduction starts from the kit identity commit and the committed harness.
 
 **Controls.** Before any traffic, each stop condition and each accounting check must fire on a planted defect and
 stay silent on its null control:
@@ -209,12 +208,11 @@ second. It stops before the volume pass on any mismatch.
 
 ## Budget
 
-- **Runs:** at most 12 under G42: one each for #836, #837, #838, #839, #840 and #842; three for #841, for
-  run-to-run spread; three spare for invalidations.
+- **Runs:** at most 16 under G42 as amended by G46 (12 before it; runs 1–7 ran under 12): 1 #836; 2 #837; 3–4 #838; 5–7 #839; 8 #840; 9 #842; 10–12 #841, for run-to-run spread; 13–16 reserve, used only under an owner disposition (Q68).
 - **The cap:** it counts SDK calls, accepted or refused, at most 50,000 per run (Q35). Delivery attempts are
   recorded but not capped; the retry budget bounds them.
-- **Before each S1:** the orchestrator checks runs used, occurrences used and window time left. If the window
-  would lapse, it stops and asks.
+- **Before each S1:** the orchestrator checks runs used, occurrences used and window time left. For a rerun or a reserve slot, it confirms the owner disposition on the probe ticket (G46, Q68). If the window
+  would lapse, it stops and asks. Window checkpoint (G46 Q73): "The slack is computed before each S1. If #841's build has not merged by 2026-11-02T12:00Z, the owner is asked about a window amendment."
 
 ## Probes and hypotheses
 
@@ -252,7 +250,7 @@ Serial PRs, each a build commit followed by an evidence commit after its S1 (Q18
   once. A relay crash and restart deduplicates by event ID and transaction ID.
 - **#841, per-source counts and performance (criterion 4).** Runs last, because it depends on #837–#840.
   Per-source counts equal ground truth under every fault plan, with duplicates not inflating them. Throughput and
-  latency are recorded as labelled observations, with spread across at least three runs.
+  latency are recorded as labelled observations, with spread across exactly three runs, in slots 10–12; any further run needs a reserve slot and an owner disposition (G46, Q68).
 
 ## Verdict and later records
 
@@ -323,6 +321,17 @@ G41–G45 come from https://github.com/nandohdc/bloodtrail/issues/795#issuecomme
 | G43 | **Verdict ADR and change name.** The Stage 2 verdict is recorded in a **new system ADR 0015**, approved by the owner against a named head, with no contract version move (the G6 precedent). The change is named **`verify-fraud-evidence-delivery`**. |
 | G44 | **Stage 2 S1 is delegated under the G39 rule.** For each run, the orchestrator posts a new, unedited comment on the probe's ticket. It contains the exact approval line plus `Delegated S1 under G44`, and is posted only after the full TEST_CMD, all-green CI, review and the expectations hash are verified. It is recorded as delegated in the ledger and the results. Any S2 halt stops the run and goes to the owner. No run follows an S2 halt without the owner. |
 | G45 | **Authoring lane.** As G40a did for #805–#808, Stage 2 and the SDK/Node fixes (#859–#862) are written by the orchestrator (Claude Code, `claude-opus-5-5`) without Tamandua or pi. Every PR is reviewed read-only by the AGY CLI, run as `agy --dangerously-skip-permissions --model "gemini-3.8-flash-high"` in plan mode and sandboxed, and told not to execute harness, SDK or kit code. Build PRs also get `/code-review high`. After each review the orchestrator verifies that HEAD and the tree are unchanged. The orchestrator merges on all-green (the ten required contexts and DeepScan) as a **merge commit**, and closes each ticket after its PR shows MERGED. |
+
+### Stage 2 re-plan decisions (2026-10-27, #833)
+
+The G46 row quotes Q45, Q48, Q68, Q74 and Q94 verbatim, and Q73 is quoted under Budget; the full comment is linked for the rest. G47 is a summary, with its link.
+
+| ID | Decision |
+|---|---|
+| G46 | (https://github.com/nandohdc/bloodtrail/issues/833#issuecomment-6449640834)<br><br>- **Q45. Lane.**<br>  - **AGY** (`agy --dangerously-skip-permissions --model "gemini-3.8-flash-high"`) writes every repository change on `verify-fraud-evidence-delivery`.<br>  - **Claude Code** (Opus 5.5) reviews with `/code-review xhigh` and orchestrates: worktrees, TEST_CMD, commits, PRs, merges, S1s and probe runs.<br>  - This replaces D1 (Claude writes, AGY reviews). The reason is quota.<br>- **Q48. Budget.** Amend G42 from 12 runs to **16**. The window (closing 2026-11-06T13:18:26Z) and the cap of 50,000 SDK calls per run are unchanged. The amendment PR changes `proposal.md`, the ledger header and `RUN_LIMIT` in `harness/lib/results.mjs`, and merges after run 7's evidence.<br>- **Q68. Rerun rule.** A run lost to a harness defect is executed again only under an explicit owner disposition recorded on the probe ticket. G44 delegates the S1, not that disposition. The amendment writes this into the run authorization.<br>- **Q74. Run slots:**<br>  - 7: #839;<br>  - 8: #840;<br>  - 9: #842;<br>  - 10–12: #841;<br>  - 13–16: reserve, under Q68.<br>- **Q94.** Only Claude executes probe runs. |
+| G47 | (summary) **Copies probe rebuilt under copies.v2.json.** Owner decision on #833 (https://github.com/nandohdc/bloodtrail/issues/833#issuecomment-6450406225): the copies probe is rebuilt under `copies.v2.json`, with v1 and runs 5–6 unchanged. |
+
+Note (the orchestrator's reading, not owner text): for work on this change from G46's posting (2026-10-27T17:57:10Z), G46 Q45 and Q87 replace the authoring and review lane. AGY writes every repository change, Claude Code reviews the final head at xhigh, and AGY never reviews its own code. Only Claude executes probe runs (Q94).
 
 ### Stage 2 design decisions (grilling, 2026-10-22, this session)
 
