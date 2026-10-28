@@ -59,8 +59,7 @@ Stage P.
 
 ## Run authorization
 
-These are **proposed terms**, not an execution grant. The owner decisions are recorded verbatim in `design.md`
-(G41–G45 on #795).
+These are **proposed terms**, not an execution grant. The owner decisions are recorded in `design.md`: G41–G45 (#795), the G46 terms this authorization rests on (Q45, Q48, Q68, Q73, Q74 and Q94; #833), and a summary of G47 (#833), each with its comment link.
 
 - **Environment (G42):** this workstation (macOS, Apple Silicon), under G38's environment terms.
   - Node 26 is installed outside the repository.
@@ -68,11 +67,12 @@ These are **proposed terms**, not an execution grant. The owner decisions are re
     commit, and consumed outside the repository.
   - The kit build's `npm ci` may use the npm registry or the local cache.
   - Probe traffic stays on loopback (`127.0.0.1`/`::1`), enforced by the loopback guard described in `design.md`.
-  - Each run's provenance records the environment and the authoring lane (G45).
+  - Each run's provenance records the environment and the declared driver lane (a self-reported flag, G45). Under G46 Q45, AGY writes the code and Claude Code reviews it, and Claude Code alone executes runs (G46 Q94).
 - **Data class:** synthetic opaque identifiers, never email-like. Addresses come only from `192.0.2.0/24`,
   `198.51.100.0/24`, `203.0.113.0/24` and `2001:db8::/32`. No real-user data is used or derived.
 - **Volume and window (G42):**
-  - at most **12 runs**, shared across the Stage 2 probe tickets and not renewed per ticket;
+  - at most **16 runs**, shared across the Stage 2 probe tickets and not renewed per ticket (amended from 12 by G46, owner 2026-10-27, after the copies probe lost runs 5 and 6 to harness defects). The 16-run limit applies from the head that merges this amendment; runs 1–7 executed under the 12-run limit, which their results pin (`executed_file_hashes` for `lib/results.mjs`).
+    - run slots (G46, Q74): runs 1–7 are used (see the ledger); 8 is #840, 9 is #842, 10–12 are #841, and 13–16 are **reserve**. A reserve slot is used only under an explicit owner disposition recorded on the probe ticket, whatever the reason;
   - at most **50,000 SDK calls per run**, accepted or refused, with delivery attempts recorded but not capped;
   - a **14-day window** from the first Stage 2 run approval.
 
@@ -92,6 +92,8 @@ These are **proposed terms**, not an execution grant. The owner decisions are re
     verified.
   - The kit identity commit must equal that head.
   - The approval and its comment hash are recorded before execution, in the run ledger and in the results.
+  - A run lost to a harness defect is re-executed, and a reserve slot (13–16) is used, only under an explicit owner disposition recorded on the probe ticket (G46, Q68). G44 delegates the S1 approval, never that disposition. From the head that merges this amendment, a rerun inside a ticket's own slots (for example within #841's 10–12) supplies its disposition, which the harness then validates and records but cannot require, since it cannot tell a rerun from a planned run. Run 7's disposition is G46 Q47 (#833 issuecomment-6449640834), relayed on #839 at issuecomment-6449678473 and cited in run 7's S1; it predates the amendment.
+  - The harness checks a disposition's form, not who posted it. A reserve run (13–16) needs an unedited comment on the probe ticket containing the exact line `Owner disposition: <probe> run <N> for #<ticket>` and no "delegated" text in any letter case, created at or after the window opens and at or before the run's S1. Its sha256 is recorded in the results. Every Stage 2 comment, including the orchestrator's delegated S1s, is posted from the owner's GitHub account. Q68 requires the disposition to record the owner's decision; that it does is audited from the ticket, not proven by the harness.
 - **Stop conditions (S2):** halt and report, and do not continue under this authorization, if any of these occurs:
   - non-synthetic data appears;
   - a critical security defect is found;
@@ -103,4 +105,4 @@ These are **proposed terms**, not an execution grant. The owner decisions are re
 
 ## Status
 
-This is a proposal only. No Stage 2 run has executed, and none is authorized by merging this change.
+Stage 2 runs execute only under these terms, each with its own exact-head S1; see `harness/run-ledger.md` for the runs executed. Merging this change, or any amendment to it, authorizes no run.

@@ -11,7 +11,7 @@ import { kitPipeline } from "./kit-pipeline.mjs";
 import { copyApprovedFiles } from "./launcher.mjs";
 import { command, jsonFile, sha256 } from "./io.mjs";
 import { validateProbeInventory } from "./import-closure.mjs";
-import { CHANGE, G42, RUN_LIMIT, deliverResults, invalidationOf, resultRecord } from "./results.mjs";
+import { CHANGE, G42, G46, RUN_LIMIT, deliverResults, invalidationOf, resultRecord } from "./results.mjs";
 import { runApprovedSession } from "./orchestrate.mjs";
 import { ROLE_SCRIPTS, requireProbe } from "./plan.mjs";
 
@@ -33,7 +33,7 @@ export function fallbackRecord(context, { provenance, observations, cases, inval
   const { plan, options } = context;
   return {
     probe: plan.probe, ticket: plan.ticket, run_id: Number(options["run-number"]), record_fault: true, started_at: context.started, ended_at: ended,
-    authorization: { reference: `${CHANGE}/proposal.md#run-authorization at ${options.approvedHead}`, G42 }, approval: context.approval ?? null,
+    authorization: { reference: `${CHANGE}/proposal.md#run-authorization at ${options.approvedHead}`, G42, G46 }, approval: context.approval ?? null,
     expectations: { path: context.expectationsPath, sha256: context.expectationHash }, provenance, cases,
     occurrence_count: occurrenceCount, call_bound: context.expectations.planned_call_budget.total,
     invalidations: [...invalidations, invalidationOf(`result record fault: ${error.message}`)], observations,

@@ -39,7 +39,7 @@
     "implementation-single-seam": {"task_ids": ["2.1", "2.2", "11.2"], "evidence_ids": ["Planned: every run records a kit identity equal to its approved head and imports only the kit's packed core, Node binding and collector from the outside-repository own service."]},
     "implementation-expectations-before-results": {"task_ids": ["2.1", "3.1", "4.1", "5.1", "6.1", "7.1", "8.1", "11.2"], "evidence_ids": ["Planned: each probe's expectations file is committed and hashed before its S1, and its results record that hash unchanged."]},
     "implementation-accounting-identity": {"task_ids": ["2.1", "3.2", "4.2", "5.2", "8.2"], "evidence_ids": ["Planned: every run reports each generated occurrence in exactly one terminal bucket, with unexplained equal to 0 or reported as a finding, and the planted dropped-occurrence control breaks the identity."]},
-    "implementation-bounded-authorization": {"task_ids": ["2.1", "2.2", "11.2"], "evidence_ids": ["Planned: the loopback guard's planted control halts before traffic, the ledger stays within 12 runs and 50,000 SDK calls per run inside the 14-day window, and scratch deletion is proven after every run."]}
+    "implementation-bounded-authorization": {"task_ids": ["2.1", "2.2", "11.2"], "evidence_ids": ["Planned: the loopback guard's planted control halts before traffic, the ledger stays within 16 runs (12 before the G46 amendment) and 50,000 SDK calls per run inside the 14-day window, and scratch deletion is proven after every run."]}
   },
   "security_sensitive": true,
   "security_justification": {
@@ -52,7 +52,7 @@
     "error_disclosure": "The collector's bounded diagnostic triples are recorded as returned; no secret or real data exists to disclose.",
     "external_security_integration": "No external system is reached: probe traffic is loopback only, enforced by the guard and an S2 stop.",
     "fail_posture": "Any S2 stop condition halts the run; a mismatch is reported, never fixed by editing expectations.",
-    "lifecycle": "Each run is one execution guarded by a once-marker; an invalidation needs a new head, S1 and run number.",
+    "lifecycle": "Each run is one execution guarded by a once-marker; an invalidation needs a fix, a new head, an owner disposition recorded on the probe ticket (G46, Q68), a new S1 and a new run number.",
     "mutation_ownership": "Only this change directory and documentation change; no contract, package or canonical spec path is touched.",
     "privacy_transformation": "Failed authentication carries an anonymous actor and no target, per the fraud-evidence profile; no real-user data is processed.",
     "resource_retention": "Kit, collector storage, synthetic database and logs must be deleted after confirmed role closure, including after a stop. Unconfirmed closure is a cleanup failure: retain scratch for owner-directed recovery, record its path and failed deletion state, and grant no retention exception.",

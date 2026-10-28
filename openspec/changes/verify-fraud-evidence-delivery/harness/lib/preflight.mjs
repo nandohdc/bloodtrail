@@ -46,7 +46,7 @@ function recordedWindow({ parent, prior }) {
 
 // One marker per run number in one control directory shared by every Stage 2 probe. A run number is
 // claimed at most once whatever approval names it, and with run numbers bounded by RUN_LIMIT the directory
-// never holds more claims than G42 allows. The claims already made are returned for the results.
+// never holds more claims than G42 allows as amended by G46. The claims already made are returned for the results.
 export function markerDestination({ path, repo, runNumber, windowOpenedAt }) {
   assert.equal(basename(path), `run-${runNumber}`, "once-marker basename must be run-<run number>");
   const parent = dirname(path);
@@ -55,7 +55,7 @@ export function markerDestination({ path, repo, runNumber, windowOpenedAt }) {
   assert(outside, "once-marker parent must be outside repository");
   const prior = readdirSync(parent).filter((name) => RUN_MARKER.test(name)).sort((left, right) => Number(left.slice(4)) - Number(right.slice(4)));
   assert(!prior.includes(basename(path)), `run ${runNumber} is already claimed`);
-  assert(prior.length < RUN_LIMIT, "the G42 run limit is already spent");
+  assert(prior.length < RUN_LIMIT, "the G42 run limit, as amended by G46, is already spent");
   const window = recordedWindow({ parent, prior });
   assert(window === null || window === windowOpenedAt, `the G42 window opened at ${window}, not ${windowOpenedAt}`);
   return { name: basename(path), prior_claims: prior, window_recorded_by_prior_claims: window };

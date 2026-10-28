@@ -4,7 +4,7 @@ Each probe ticket is its own PR: a build commit, then an evidence commit after i
 order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 - **Merging is not a run approval.** Merging the proposal (#835) authorizes no run.
 - **Per run.** Each run needs its own exact-head S1 approval (G44) and honours the S2 stop conditions in
-  `proposal.md`, within the shared G42 limits.
+  `proposal.md`, within the shared G42 limits as amended by G46.
 - **Later work.** The verdict (#843) and the profile (#844) follow the probes. The fold (#845) is not planned,
   because the change carries no spec deltas. The archive (#846) is a separate later PR.
 
@@ -99,7 +99,8 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 - [ ] 8.1 Build the at-volume per-source count comparison under every earlier fault plan, and the labelled
   throughput and latency recorder.
-- [ ] 8.2 Under its own S1 approvals, run at least three times. Record per-source counts against ground truth
+- [ ] 8.2 Under its own S1 approvals, run exactly three times, in slots 10–12 (any further run needs a
+  reserve slot and an owner disposition, G46, Q68). Record per-source counts against ground truth
   (criterion 4) and the run-to-run spread.
 
 ## 9. Stage 2 verdict and system ADR 0015 (#843)
@@ -128,7 +129,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 - [ ] 11.2 Before declaring Stage 2 complete, verify:
   - each run's kit identity equals its approved head;
   - expectations hashes are unchanged;
-  - the ledger stays within the G42 limits;
+  - the ledger stays within the G42 limits as amended by G46;
   - scratch is deleted.
 
 ## 12. Fold (#845)

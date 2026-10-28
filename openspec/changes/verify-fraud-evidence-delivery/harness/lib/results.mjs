@@ -4,8 +4,11 @@ import { requireProbe } from "./plan.mjs";
 
 // G42: Stage 2 environment and limits (owner, 2026-10-22).
 export const G42 = "https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6346915049";
+// G46: the owner's amendment of G42's run limit (2026-10-27).
+export const G46 = "https://github.com/nandohdc/bloodtrail/issues/833#issuecomment-6449640834";
 export const CHANGE = "openspec/changes/verify-fraud-evidence-delivery";
-export const RUN_LIMIT = 12;
+// Stage 2 shared run limit under G42 as amended by G46.
+export const RUN_LIMIT = 16;
 
 function codePointCompare(left, right) {
   const a = Array.from(left, (character) => character.codePointAt(0));
@@ -72,7 +75,7 @@ export function resultRecord({ runNumber, approvedHead, approval, expectations, 
   return {
     probe, run_id: runNumber, started_at: started, ended_at: ended,
     ...provenanceFields(provenance),
-    authorization: { reference: `${CHANGE}/proposal.md#run-authorization at ${approvedHead}`, G42 },
+    authorization: { reference: `${CHANGE}/proposal.md#run-authorization at ${approvedHead}`, G42, G46 },
     approval, expectations, cases, invalidations, occurrence_count: occurrenceCount, call_bound: callBound,
   };
 }
