@@ -4,8 +4,8 @@ Authorization: `../proposal.md#run-authorization` at each run's exact approved h
 [G42](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6346915049) (environment and limits) and
 G44 (delegated S1). See `run-ledger.md` for the shared run budget.
 
-**Three Stage 2 probes have executed:** the tracer, as run 1 (`results/tracer-run-1.json`), the outages
-probe, as run 2 (`results/outages-run-2.json`), and the load probe, as run 3 (`results/load-run-3.json`). Self-tests here use fixtures and public-shape doubles only.
+**Four Stage 2 probes have executed:** the tracer, as run 1 (`results/tracer-run-1.json`), the outages
+probe, as run 2 (`results/outages-run-2.json`), the load probe, as run 3 (`results/load-run-3.json`), and the copies probe, as runs 5, 6 and 7 (`results/copies-run-7.json` matched all 11 cases of `copies.v2.json`). Self-tests here use fixtures and public-shape doubles only.
 They never import a kit package or execute a harness role; fixture subprocesses, temporary files and loopback sockets are permitted.
 
 Run 3 matched seven cases. Four executed small-pass cases mismatched (L-04, L-07, L-10 and L-11); all six volume cases were unexecuted. The 200 ms shutdown reports returned in 200.77874999999997 ms and 201.91920900000002 ms (#890). L-11's absence counter expected `not_found`, while the collector's public result and all four final read-backs say `absent` (#889). All 46 executed occurrences were accounted for, with zero unexplained; the original JSON still records L-11 as a mismatch. #838 remains open and no automatic rerun follows these measurements.
