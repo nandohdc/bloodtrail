@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { CALL_LIMIT, occurrenceLedger, planBudget } from "../lib/ledger.mjs";
 import { CHANGE, RUN_LIMIT, resultRecord } from "../lib/results.mjs";
 import { requireProbe, roleProcessPath } from "../lib/plan.mjs";
 import { StopCondition, withDeadline } from "../lib/deadline.mjs";
 import { COMMAND_TIMEOUT_MS, command } from "../lib/io.mjs";
-import { fallbackRecord } from "../lib/probe-runner.mjs";
+import { fallbackRecord, runProbe } from "../lib/probe-runner.mjs";
 
 test("G42: the per-run SDK call cap is 50,000", () => {
   assert.equal(CALL_LIMIT, 50_000);
@@ -46,8 +47,11 @@ test("a result record cites G42 and the change, and refuses a run outside the au
   assert.throws(() => resultRecord({ ...base, occurrenceCount: 2 }), /outside its bound/);
   assert.throws(() => resultRecord({ ...base, callBound: undefined }), /call bound/);
   assert.match(record.authorization.G42, /issuecomment-6346915049$/);
+  assert.match(record.authorization.G46, /issuecomment-6449640834$/);
   assert.equal(record.authorization.reference, `${CHANGE}/proposal.md#run-authorization at ${"1".repeat(40)}`);
   assert.deepEqual(record.scratch_deletion, { not_created: true });
+  assert.equal(RUN_LIMIT, 16, "G46 amends the G42 run limit to 16");
+  assert.equal(resultRecord({ ...base, runNumber: 16 }).run_id, 16);
   assert.throws(() => resultRecord({ ...base, runNumber: RUN_LIMIT + 1 }), /run number outside/);
   assert.throws(() => resultRecord({ ...base, ended: "2026-10-22T23:59:59.000Z" }), /invalid UTC interval/);
 });
@@ -93,6 +97,69 @@ test("a fault while building the record keeps the spent run's provenance and obs
   assert.equal(record.record_fault, true);
   assert.deepEqual([record.ticket, record.call_bound, record.started_at, record.ended_at], [836, 1, "2026-10-23T00:00:01.000Z", "2026-10-23T00:00:00.000Z"]);
   assert.match(record.authorization.G42, /issuecomment-6346915049$/);
+  assert.match(record.authorization.G46, /issuecomment-6449640834$/);
   assert.deepEqual([record.provenance, record.observations, record.occurrence_count], [{ kit_digest: "k" }, { sender: {} }, null]);
   assert.deepEqual(record.invalidations, [{ message: "m" }, { message: "result record fault: invalid UTC interval" }]);
+});
+
+test("runProbe refuses run 17 before any I/O", async () => {
+  const originalArgv = process.argv;
+  const args = [
+    "--approved-head", "1".repeat(40),
+    "--approval-body-file", "f",
+    "--approval-url", "u",
+    "--approval-created-at", "c",
+    "--approval-updated-at", "u",
+    "--approval-sha256", "s",
+    "--once-marker", "m",
+    "--run-number", "17",
+    "--results", "r",
+    "--window-opened-at", "w",
+    "--driver-lane", "claude-code",
+    "--driver-model", "test",
+  ];
+  process.argv = [originalArgv[0], "probe.mjs", ...args];
+  try {
+    await assert.rejects(
+      () => runProbe({ probe: "S2-tracer", ticket: 836 }),
+      /run number outside shared authorization/,
+    );
+  } finally {
+    process.argv = originalArgv;
+  }
+});
+
+test("run cap consistency: proposal, ledger, design, README and assessment match RUN_LIMIT", () => {
+  const proposalPath = new URL("../../proposal.md", import.meta.url);
+  const ledgerPath = new URL("../run-ledger.md", import.meta.url);
+  const designPath = new URL("../../design.md", import.meta.url);
+  const readmePath = new URL("../README.md", import.meta.url);
+  const assessmentPath = new URL("../../assessment.json", import.meta.url);
+
+  const proposalText = readFileSync(proposalPath, "utf8");
+  const ledgerText = readFileSync(ledgerPath, "utf8");
+  const designText = readFileSync(designPath, "utf8");
+  const readmeText = readFileSync(readmePath, "utf8");
+  const assessmentText = readFileSync(assessmentPath, "utf8");
+
+  const proposalMatch = proposalText.match(/at most \*\*([0-9]+) runs\*\*/);
+  const ledgerHeaderMatch = ledgerText.match(/\*\*([0-9]+) runs\*\*/);
+  const designMatch = designText.match(/at most ([0-9]+) under G42/);
+  const readmeMatch = readmeText.match(/never holds more than the ([0-9]+) runs/);
+  const ledgerRangeMatch = ledgerText.match(/1 to ([0-9]+)/);
+  const assessmentMatch = assessmentText.match(/within ([0-9]+) runs/);
+
+  assert(proposalMatch !== null, "proposal must declare at most **N runs**");
+  assert(ledgerHeaderMatch !== null, "run-ledger.md header must declare **N runs**");
+  assert(designMatch !== null, "design.md Budget must declare at most N under G42");
+  assert(readmeMatch !== null, "README must declare never holds more than the N runs");
+  assert(ledgerRangeMatch !== null, "run-ledger.md must declare 1 to N");
+  assert(assessmentMatch !== null, "assessment.json must declare within N runs");
+
+  assert.equal(Number(proposalMatch[1]), RUN_LIMIT, "proposal run limit must match RUN_LIMIT");
+  assert.equal(Number(ledgerHeaderMatch[1]), RUN_LIMIT, "ledger header run limit must match RUN_LIMIT");
+  assert.equal(Number(designMatch[1]), RUN_LIMIT, "design run limit must match RUN_LIMIT");
+  assert.equal(Number(readmeMatch[1]), RUN_LIMIT, "README run limit must match RUN_LIMIT");
+  assert.equal(Number(ledgerRangeMatch[1]), RUN_LIMIT, "ledger range must match RUN_LIMIT");
+  assert.equal(Number(assessmentMatch[1]), RUN_LIMIT, "assessment run limit must match RUN_LIMIT");
 });
