@@ -67,7 +67,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
   - re-execution;
   - the callback-timed collector restart;
   - the storage-less bound phase.
-- [x] 5.2 Under its own S1, record the collector outcomes and durable identity across the restart. Run 7 (G44 S1, approved head 707b1dc) matched 11 of 11 cases of copies.v2.json in 147 SDK calls, with no invalidations and confirmed scratch deletion: results/copies-run-7.json.
+- [x] 5.2 Under its own S1, record the collector outcomes and durable identity across the restart. Run 7 (G44 S1, approved head 707b1dc) matched 11 of 11 cases of copies.v2.json in 147 SDK calls, with no invalidations and confirmed scratch deletion: results/copies-run-7.json. The five-minute deduplication retention is reported as the collector's documented bound, not measured. The accounting identity is reported for consumer_restart only, and is filed as finding #910.
 - [x] 5.3 Rebuild the copies probe under expectations/copies.v2.json (#905, G47):
   - in-process collector restart tracking restart boundaries (before-restart record count, storage closure, and reopening) keeping server, port, storage mode, and fault ordinals across SQLite reopen;
   - observable-only verdicts deriving from ingress records, sender calls/logs, and read-back without unobservable constants;
