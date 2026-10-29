@@ -131,15 +131,18 @@ test("G45: the run CLI requires every argument and the historical Claude Code la
     const args = toArgs(Object.fromEntries(Object.entries(values).filter(([key]) => key !== missing)));
     assert.throws(() => argumentsFor({ args, run: true }), /required argument/, missing);
   }
-  assert.throws(() => argumentsFor({ args: toArgs({ ...values, "driver-lane": "pi" }), run: true }), /Claude Code lane/);
+  assert.throws(() => argumentsFor({ args: toArgs({ ...values, "driver-lane": "pi" }), run: true }), /driver lane/);
 });
 
-test("probe runs require the Claude Code lane (G46 Q94); Codex is accepted only for build-only checks", () => {
+test("Codex run provenance is limited to remaining Stage 2 slots", () => {
   const values = Object.fromEntries(["approved-head", ...RUN_ARGS, ...DRIVER_ARGS].map((key) => [key, key === "driver-lane" ? "codex" : "fixture"]));
-  const args = Object.entries(values).flatMap(([key, value]) => [`--${key}`, value]);
-  assert.throws(() => argumentsFor({ args, run: true, probe: "S2-load", ticket: 838 }), /G46 Q94/);
-  assert.throws(() => argumentsFor({ args, run: true, probe: "S2-outages", ticket: 837 }), /Claude Code lane/);
-  assert.throws(() => argumentsFor({ args, run: true }), /Claude Code lane/);
+  const args = (runNumber) => Object.entries({ ...values, "run-number": runNumber }).flatMap(([key, value]) => [`--${key}`, value]);
+  for (const runNumber of ["9", "10", "11", "12", "13", "14", "15", "16"]) {
+    assert.equal(argumentsFor({ args: args(runNumber), run: true }).driver.lane, "codex");
+  }
+  for (const runNumber of ["1", "8", "17", "09", "9.0", "fixture"]) {
+    assert.throws(() => argumentsFor({ args: args(runNumber), run: true }), /driver lane/);
+  }
   assert.equal(argumentsFor({ args: ["--dry-run", "--driver-lane", "codex", "--driver-model", "fixture"] }).driver.lane, "codex");
 });
 

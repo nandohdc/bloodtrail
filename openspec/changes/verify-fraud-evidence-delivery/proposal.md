@@ -59,7 +59,7 @@ Stage P.
 
 ## Run authorization
 
-These are **proposed terms**, not an execution grant. The owner decisions are recorded in `design.md`: G41–G45 (#795), the G46 terms this authorization rests on (Q45, Q48, Q68, Q73, Q74 and Q94; #833), and a summary of G47 (#833), each with its comment link.
+These are **proposed terms**, not an execution grant. The decisions are recorded in `design.md`: G41–G45 (#795), G46 (Q45, Q48, Q68, Q73, Q74 and Q94; #833), G47 (#833), and the Codex continuation record (#833). The continuation is prospective and does not change any recorded run.
 
 - **Environment (G42):** this workstation (macOS, Apple Silicon), under G38's environment terms.
   - Node 26 is installed outside the repository.
@@ -67,7 +67,7 @@ These are **proposed terms**, not an execution grant. The owner decisions are re
     commit, and consumed outside the repository.
   - The kit build's `npm ci` may use the npm registry or the local cache.
   - Probe traffic stays on loopback (`127.0.0.1`/`::1`), enforced by the loopback guard described in `design.md`.
-  - Each run's provenance records the environment and the declared driver lane (a self-reported flag, G45). Under G46 Q45, AGY writes the code and Claude Code reviews it, and Claude Code alone executes runs (G46 Q94).
+  - Each run's provenance records the environment and the declared driver lane (a self-reported flag, G45). G46 Q94 originally named Claude Code alone. Following the user's instruction to continue without Claude Code and Antigravity, Codex may drive remaining slots 9–16 after this amendment merges, using the `codex` lane and its actual model; the exact-head S1 and all other terms still apply.
 - **Data class:** synthetic opaque identifiers, never email-like. Addresses come only from `192.0.2.0/24`,
   `198.51.100.0/24`, `203.0.113.0/24` and `2001:db8::/32`. No real-user data is used or derived.
 - **Volume and window (G42):**

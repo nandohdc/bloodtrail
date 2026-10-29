@@ -190,7 +190,7 @@ levels (Q17).
 
 **Results** are raw observations, tagged with provenance:
 - kit identity commit, package-set digest and kit digest;
-- Node version, environment, the declared driver lane (a self-reported flag, G45). Under G46 Q45, AGY writes the code and Claude Code reviews it, and Claude Code alone executes runs (G46 Q94);
+- Node version, environment, the declared driver lane (a self-reported flag, G45). G46 Q94 originally restricted execution to Claude Code; the prospective continuation below adds Codex for remaining slots 9–16 after its amendment merges;
 - authorization reference and approving-comment hash.
 
 A mismatch is reported, never fixed by editing expectations. An invalidation needs a fix, a new head, an owner disposition recorded on the probe ticket (G46, Q68), a new S1 and a new run number. Reproduction starts from the kit identity commit and the committed harness.
@@ -331,7 +331,13 @@ The G46 row quotes Q45, Q48, Q68, Q74 and Q94 verbatim, and Q73 is quoted under 
 | G46 | (https://github.com/nandohdc/bloodtrail/issues/833#issuecomment-6449640834)<br><br>- **Q45. Lane.**<br>  - **AGY** (`agy --dangerously-skip-permissions --model "gemini-3.8-flash-high"`) writes every repository change on `verify-fraud-evidence-delivery`.<br>  - **Claude Code** (Opus 5.5) reviews with `/code-review xhigh` and orchestrates: worktrees, TEST_CMD, commits, PRs, merges, S1s and probe runs.<br>  - This replaces D1 (Claude writes, AGY reviews). The reason is quota.<br>- **Q48. Budget.** Amend G42 from 12 runs to **16**. The window (closing 2026-11-06T13:18:26Z) and the cap of 50,000 SDK calls per run are unchanged. The amendment PR changes `proposal.md`, the ledger header and `RUN_LIMIT` in `harness/lib/results.mjs`, and merges after run 7's evidence.<br>- **Q68. Rerun rule.** A run lost to a harness defect is executed again only under an explicit owner disposition recorded on the probe ticket. G44 delegates the S1, not that disposition. The amendment writes this into the run authorization.<br>- **Q74. Run slots:**<br>  - 7: #839;<br>  - 8: #840;<br>  - 9: #842;<br>  - 10–12: #841;<br>  - 13–16: reserve, under Q68.<br>- **Q94.** Only Claude executes probe runs. |
 | G47 | (summary) **Copies probe rebuilt under copies.v2.json.** Owner decision on #833 (https://github.com/nandohdc/bloodtrail/issues/833#issuecomment-6450406225): the copies probe is rebuilt under `copies.v2.json`, with v1 and runs 5–6 unchanged. |
 
-Note (the orchestrator's reading, not owner text): for work on this change from G46's posting (2026-10-27T17:57:10Z), G46 Q45 and Q87 replace the authoring and review lane. AGY writes every repository change, Claude Code reviews the final head at xhigh, and AGY never reviews its own code. Only Claude executes probe runs (Q94).
+Note (the orchestrator's reading, not owner text): from G46's posting (2026-10-27T17:57:10Z), G46 Q45 and Q87 replaced the authoring and review lane, and Q94 restricted probe execution to Claude. The prospective continuation below records the later instruction; this historical text is unchanged.
+
+### Codex continuation (2026-10-29)
+
+The user said “There is no more Claude Code or Antigravity quota” and “You must continue on your own because there is no Claude Code avaiable.” Codex recorded its interpretation in [#833](https://github.com/nandohdc/bloodtrail/issues/833#issuecomment-6506408946): it continues the remaining work in the Codex lane. This is the orchestrator's record of the instruction, not a separately authored owner approval or an S1.
+
+After this amendment merges, Codex may execute remaining slots 9–16, with its real lane and model recorded. Slots 13–16 still require the separate owner disposition under G46 Q68; each execution still requires its own exact-head S1, frozen expectations, all-green checks, and the existing window, budget and S2 controls. This amendment authorizes no run and changes no historical provenance. The previously specified Claude model review is unavailable and is recorded as `NOT_PERFORMED`; Codex analysis is identified as AI analysis, not a human review or approval.
 
 ### Stage 2 design decisions (grilling, 2026-10-22, this session)
 

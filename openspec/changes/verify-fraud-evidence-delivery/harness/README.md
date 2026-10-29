@@ -224,7 +224,7 @@ node openspec/changes/verify-fraud-evidence-delivery/harness/kit-cli.mjs --dry-r
   --driver-lane claude-code --driver-model "$MODEL"
 ```
 
-Probe runs require `--driver-lane claude-code` (G46 Q94). Runs 3 and 4 recorded lane `codex` under the owner's 2026-10-24 addendum for #838 (see `design.md`).
+G46 Q94 originally required `--driver-lane claude-code`. After the Codex-continuation amendment merges, slots 9–16 also accept `--driver-lane codex` with the actual model; all S1, reserve disposition, budget, window and S2 gates still apply. Runs 3 and 4 recorded lane `codex` under the earlier #838 addendum. See `design.md`; no amendment by itself approves a run.
 
 It requires a clean tree. It builds the governed kit from HEAD, verifies the kit identity, refuses kit
 manifests that declare install lifecycle scripts, installs the own service with `--ignore-scripts`, proves a
