@@ -27,6 +27,7 @@ a run is checked and reproduced against its approved head, never against the cur
 | S2-outages | #837 | `outages/` | `expectations/outages.v1.json` | a small pass, then a volume pass, of the ten outage scenarios below |
 | S2-load | #838 | `load/` | `expectations/load.v1.json` | bursts against backpressure and shutdown, and `best_effort` drops, in the phases below |
 | S2-copies | #839 | `copies/` | `expectations/copies.v2.json` | redeliveries, duplicates, conflicts, re-executions, collector and consumer restarts, and storage-less capacity (v2 supersedes v1) |
+| S2-chains | #840 | `chains/` | `expectations/chains.v1.json` | account-takeover chain reconstruction across tenants, sessions, and shared-source addresses |
 
 The outages probe reuses the tracer's two role processes unchanged: `outages/sender-process.mjs` and
 `outages/ingress-process.mjs` import the role guard, then the tracer's role. Each pass is one exchange between a
@@ -94,6 +95,43 @@ An in-process rehearsal gate (`tests/copies-session-rehearsal.test.mjs`) exercis
 - `lib/sender-role.mjs` and `lib/role-guard.mjs`;
 - The S2 halt path;
 - The bodies of both process shells (`copies/sender-process.mjs`, `copies/ingress-process.mjs`), which are only pinned as text.
+
+### Chains probe (S2-chains, #840)
+
+`expectations/chains.v1.json` governs the Stage 2 chains probe (#840, Q201–Q242). The probe exercises account-takeover chain reconstruction across two passes: a small pass (`chains_small`, 6 chains, 3 tenants, 2 shared-source pairs, 6 failed authentications, 72 planned calls) and a volume pass (`chains_volume`, 60 chains, 10 tenants, 60 failed authentications, 720 planned calls) across an upper bound of 792 planned calls. Each chain spans five lifecycle events per account (`authentication.succeeded`, `session.created`, `authentication.mfa.removed`, `account.password_reset.completed`, `session.revoked`), plus independent `authentication.failed` events. Per transaction-bound event, 3 SDK calls are planned and executed (`beginOperation`, `markCommitted`, and emit); per non-bound event, 1 call is planned. Workload generators use opaque synthetic IDs (`syn-account-...`), documentation addresses (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`), keyed session fingerprints (`syn-handle-...` hashed under an in-memory HMAC key), and a seeded submission permutation giving an arrival order that differs from event-time order.
+
+For `passwordResetCompleted`, causation and original event IDs carry a deterministic, opaque, per-chain synthetic recovery-request ID (`syn-recovery-…`). This refers to an out-of-band recovery request that the run does not emit (it does not claim to point at an emitted event).
+
+Round 3 incorporates decisions Q231–Q242:
+- Every SDK call is counted in the ledger with its own label: `beginOperation`, `markCommitted`, and event emission. `beginOperation` is taken from the ledger before it runs. The call plan and budget freeze at 72 small and 720 volume (792 total), and results record the measured ledger count (Q231).
+- The operation handle setup fails closed: `sdk.beginOperation` is required to be a function (throwing otherwise); if `beginOperation` or `markCommitted` returns `ok: false`, the event call is omitted, the failure is recorded with the SDK error code in the ledger, and the run continues without optional chaining `?.()` (Q232).
+- The expectations validator strictly ties occurrences, distinct occurrences, and schedule lengths to submission steps (36 small, 360 volume), and per-phase budgets to derived call plans (72 small, 720 volume, 792 total) (Q233).
+- `passwordResetCompleted` carries required catalog recovery policy authorization evidence, and its causation/original event IDs refer to deterministic synthetic out-of-band recovery requests (`syn-recovery-…`) (Q234).
+- The evaluator and observers iterate `expectations.phases` dynamically without hardcoding phase names; missing observations or ground truth yield named mismatches, and volume comparisons apply only when the gate admitted the volume pass (Q235).
+- The fake SDK uses real SDK error codes (`SDK_SEMANTIC_VALIDATION_FAILED` at `/subject/type` for non-credential targets) instead of invented codes; builds resources directly from input rather than keeping canonical example resources; and enforces `TENANT_RESOURCE_CONFLICT` against the scope tenant (Q236).
+- R-05 failed authentications count is derived from reconstruction; the G13 check enforces that no failed body names targets in `resource.id`, `authorization.resource_context`, or `authenticated_principal` unless `resource.type` is "credential"; and the unlinked check verifies that no failed event ID or event name appears in any reconstructed chain (Q237).
+- Planted mismatches for round 2/3 decisions verify: failed body with account actor or credential reference mismatches R-05; volume-only reconstruction defects mismatch R-01 to R-05 and R-08; and an extra chain mismatches R-01 (Q238).
+- R-07 scans the entire serialized body of every persisted event for the raw session handle value prefix (`syn-handle-…`), catching leaks in credential references (Q239).
+- The call plan is derived directly from `generateWorkloadDefinition` using the frozen seed without fallback seeds, and is used by the sender (Q240).
+- One shared fixture builder (`makeControlsBodiesFixture` in `chains/controls.mjs`) produces run-shaped bodies across planted controls and evaluate tests (Q241).
+- Session accounting uses `roleExchange`'s returned `occurrence_count` directly without recomputation or `?? 0`; single shared `codePointCompare` is imported across probe modules; tasks.md task 6.1 references Q201–Q242 (Q242).
+
+Reconstruction (`chains/reconstruct.mjs`) is pure, kit-free, and rule-free. It produces no thresholds, scores, flags, or verdicts. The collector has no list API; the ingress role finalizer reads persisted bodies by admitted event ID using `storage.get(scope, eventId)`. Reconstruction reads persisted bodies only, grouping occurrences by tenant, account opaque ID, and session fingerprint, and ordering strictly by event timestamp (`event.timestamp`), with failed authentications grouped by observed source and event time, unlinked to accounts.
+
+Eleven cases (R-01 to R-11) verify exact chains matching ground truth, no shared-source merge, source counts, tenant partitions, failed authentications grouped by source and timestamp without account linkage, opaque non-email identifiers with documentation-range addresses, keyed session fingerprints without raw handles, event-time ordering independent of arrival order, pre-traffic planted controls exercising real observers (merge-by-source defect and arrival-order defect detected, null controls passed), pre-traffic isolation controls (loopback guard, writes outside grant, synthetic data), and total accounting identity across both passes.
+
+An in-process rehearsal gate (`tests/chains-session-rehearsal.test.mjs`) exercises the pure role logic, the call plan, the evaluation, and the reference composition over a fake SDK (supporting all six methods with real SDK semantic validation matching contract catalog data), a fake Node binding, a fake collector (`FakeSqliteStorage` with `storage.get` and schema rejection), and in-process loopback HTTP. Seam defect tests prove the rehearsal fails closed: dropped `persisted_bodies` fails R-01 and gates the volume pass; and an arrival-order reconstruction fails R-08 under the same shortened deadline (25000 ms), with a null control completing cleanly.
+
+**Residual risks:** The rehearsal does not cover:
+- Real OS child processes, IPC channels, and stdio streams;
+- Runtime permission models (`--permission --allow-net --allow-fs-read`);
+- Native SQLite file storage and cross-process filesystem locking;
+- Real collector behavior beyond schema validation, deduplication and storage-conflict handling;
+- Real controls producers executing in a live environment;
+- Kit installation into the own service under npm/tarball packaging;
+- `lib/sender-role.mjs` and `lib/role-guard.mjs`;
+- The S2 halt path;
+- The bodies of both process shells (`chains/sender-process.mjs`, `chains/ingress-process.mjs`), which are only pinned as text.
 
 ## The seam
 
