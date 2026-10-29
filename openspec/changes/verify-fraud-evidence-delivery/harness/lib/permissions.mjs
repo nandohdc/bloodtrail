@@ -1,28 +1,33 @@
 // Node permission-model grants for the two Stage 2 probe processes.
 //
-// - sender: network (loopback, enforced by the loopback guard) and read access to the own service only.
-// - ingress: the same, plus read and write access to one collector-storage directory inside scratch.
+// - sender: network (loopback guard) and own-service read access; outbox alone declares an extra
+//   read/write grant to one harness-local host-database directory under scratch.
+// - ingress: loopback network and own-service reads, plus read/write on one collector-storage directory.
 // Neither process may spawn children. The orchestrator itself runs without the permission model.
 import assert from "node:assert/strict";
 import { mkdirSync, realpathSync, statSync } from "node:fs";
 import { join, sep } from "node:path";
 import { inside } from "./io.mjs";
 
-function disjoint(left, right) {
-  assert(left !== right, "storage scope overlaps a protected tree");
-  assert(!left.startsWith(right + sep), "storage scope overlaps a protected tree");
-  assert(!right.startsWith(left + sep), "storage scope overlaps a protected tree");
+function disjoint(left, right, kind) {
+  assert(left !== right, `${kind} scope overlaps a protected tree`);
+  assert(!left.startsWith(right + sep), `${kind} scope overlaps a protected tree`);
+  assert(!right.startsWith(left + sep), `${kind} scope overlaps a protected tree`);
 }
 
-export function storageDirectory({ scratch, repo, service, directory }) {
+function scopedDirectory({ scratch, repo, service, directory }, kind) {
   const real = realpathSync(directory);
-  assert(statSync(real).isDirectory(), "storage path must be a directory");
+  assert(statSync(real).isDirectory(), `${kind} path must be a directory`);
   const root = realpathSync(scratch);
-  disjoint(root, realpathSync(repo));
+  disjoint(root, realpathSync(repo), kind);
   inside({ root, path: real });
   inside({ root, path: realpathSync(service) });
-  disjoint(real, realpathSync(service));
+  disjoint(real, realpathSync(service), kind);
   return real;
+}
+
+export function storageDirectory(options) {
+  return scopedDirectory(options, "storage");
 }
 
 export function prepareStorage({ scratch, repo, service }) {
@@ -31,16 +36,30 @@ export function prepareStorage({ scratch, repo, service }) {
   return storageDirectory({ scratch, repo, service, directory });
 }
 
-export function senderFlags({ service }) {
-  return ["--permission", "--allow-net", `--allow-fs-read=${service}`];
+export function hostDatabaseDirectory(options) {
+  return scopedDirectory(options, "host-database");
+}
+
+export function prepareHostDatabase({ scratch, repo, service }) {
+  const directory = join(realpathSync(scratch), "host-database");
+  mkdirSync(directory);
+  return hostDatabaseDirectory({ scratch, repo, service, directory });
+}
+
+export function senderFlags({ service, hostDatabase }) {
+  const flags = ["--permission", "--allow-net", `--allow-fs-read=${service}`];
+  if (hostDatabase !== undefined) {
+    flags.push(`--allow-fs-read=${hostDatabase}`, `--allow-fs-write=${hostDatabase}`);
+  }
+  return flags;
 }
 
 export function ingressFlags({ service, storage }) {
   return [...senderFlags({ service }), `--allow-fs-read=${storage}`, `--allow-fs-write=${storage}`];
 }
 
-export function roleFlags({ role, service, storage }) {
-  if (role === "sender") return senderFlags({ service });
+export function roleFlags({ role, service, storage, hostDatabase }) {
+  if (role === "sender") return senderFlags({ service, hostDatabase });
   assert.equal(role, "ingress", `unknown role: ${role}`);
   return ingressFlags({ service, storage });
 }
