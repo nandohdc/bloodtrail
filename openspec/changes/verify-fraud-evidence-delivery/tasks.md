@@ -86,7 +86,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 - [x] 6.1 Build the seeded ground-truth chain workload and the rule-free reconstruction step. Freeze the chains,
   including chains that share a source address. Built under expectations/chains.v1.json (#840, Q201–Q242).
-- [ ] 6.2 Under its own S1, compare the reconstructed chains with ground truth (criterion 3).
+- [x] 6.2 Under its own S1, compare the reconstructed chains with ground truth (criterion 3). Run 8 (G44 S1, approved head 2aa872f) matched 11 of 11 cases of chains.v1.json, with both passes, in 792 SDK calls, no invalidations and confirmed scratch deletion: results/chains-run-8.json.
 
 ## 7. Host-outbox relaying (#842)
 
