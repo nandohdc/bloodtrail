@@ -84,8 +84,8 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 ## 6. Account-takeover chain reconstruction (#840)
 
-- [ ] 6.1 Build the seeded ground-truth chain workload and the rule-free reconstruction step. Freeze the chains,
-  including chains that share a source address.
+- [x] 6.1 Build the seeded ground-truth chain workload and the rule-free reconstruction step. Freeze the chains,
+  including chains that share a source address. Built under expectations/chains.v1.json (#840, Q201–Q242).
 - [ ] 6.2 Under its own S1, compare the reconstructed chains with ground truth (criterion 3).
 
 ## 7. Host-outbox relaying (#842)
