@@ -28,6 +28,7 @@ a run is checked and reproduced against its approved head, never against the cur
 | S2-load | #838 | `load/` | `expectations/load.v1.json` | bursts against backpressure and shutdown, and `best_effort` drops, in the phases below |
 | S2-copies | #839 | `copies/` | `expectations/copies.v2.json` | redeliveries, duplicates, conflicts, re-executions, collector and consumer restarts, and storage-less capacity (v2 supersedes v1) |
 | S2-chains | #840 | `chains/` | `expectations/chains.v1.json` | account-takeover chain reconstruction across tenants, sessions, and shared-source addresses |
+| S2-outbox | #842 | `outbox/` | `expectations/outbox.v1.json` | host-outbox relaying across transactions, rollbacks, crashes, and outages |
 
 The outages probe reuses the tracer's two role processes unchanged: `outages/sender-process.mjs` and
 `outages/ingress-process.mjs` import the role guard, then the tracer's role. Each pass is one exchange between a
@@ -133,6 +134,29 @@ An in-process rehearsal gate (`tests/chains-session-rehearsal.test.mjs`) exercis
 - The S2 halt path;
 - The bodies of both process shells (`chains/sender-process.mjs`, `chains/ingress-process.mjs`), which are only pinned as text.
 
+### Outbox probe (S2-outbox, #842)
+
+`expectations/outbox.v1.json` governs the Stage 2 outbox probe (#842, Q243–Q258). The probe exercises host-outbox relaying across transactions, rollbacks, in-process relay crashes, and downstream collector outages. The workload spans five phases across an upper bound of 539 planned calls: `commit_relay` (6 business changes, 6 committed outbox rows, 6 relayed, 24 calls), `rollback` (4 changes rolled back, 0 outbox rows, 0 relayed, 12 calls), `crash_restart` (6 changes committed, crash after 3rd acknowledgment, resume and redeliver row 3, 25 workload calls plus 23 planted-control and 25 null-control calls, 73 total), `outage_defer` (6 changes committed, deferred across 503 outage, delivered from durable record on recovery, 30 calls), and `commit_relay_volume` (100 changes, 100 relayed, 400 calls). Both H-08 controls run only in `crash_restart` and spend the run ledger, including every SDK and composition call.
+
+The host database is a harness-local `node:sqlite` `DatabaseSync` file in a declared directory under scratch (`--allow-fs-read=<dir> --allow-fs-write=<dir>`); neither the database nor the outbox is Bloodtrail storage or a Bloodtrail outbox product (Q244, Q257). Each business change runs `BEGIN`, inserts the business row, and emits its audit event through a transaction-bound sink that inserts the outbox row inside the open transaction, followed by `COMMIT` or `ROLLBACK` (Q245). Contract cells measured from `delivery-policy.md` (`transaction_critical`): "persistent retry after commit" and "defer downstream delivery from durable record"; H-06 also observes downstream deduplication by event id and transaction id.
+
+The relay crash is in-process and disclosed (ADR 0015): the relay is abandoned after the collector acknowledges row k but before marking it, the database handle is closed, and a fresh relay over a fresh `DatabaseSync` on the same file resumes (Q248).
+
+Eleven cases (H-01 to H-11) verify commit atomicity with SQLite `isTransaction` state recording for both inserts between the same begin and commit, rollback discard with zero rows relayed or persisted after a drain attempt, at-least-once relay with exact persisted acknowledgment, crash persistence identity with exactly one stored copy per event and redelivered row k arriving as duplicate, deduplication downstream by event id and transaction id matching the business row bound by business id, deferral during collector 503 outage and delivery of the failed ids re-read from durable host records with no rows pending after recovery, pre-traffic planted controls (mark-before-ack relay defect fails H-04, null control passes), pre-traffic host-database grant isolation (planted sibling write inside scratch refused under `--permission`), pre-traffic runtime isolation controls, and total accounting identity across every phase, including rollback.
+
+An in-process rehearsal gate (`tests/outbox-session-rehearsal.test.mjs`) exercises the pure role logic, call plan, host transactions, relay drain, and composition over a scoped fake SDK (modeling the two workload events’ branded context, selected catalog-required context, operation authority and sink refusals; it does not model the full SDK), fake Node binding, and fake collector. The fake never uses canonical examples as templates. The outage composition uses one attempt per delivery; both relay passes re-read SQLite pending rows. Reports include every SDK/composition call, sink insertion state, transaction order, pending rows after the outage and crash/resume evidence. H-08 executes both relay algorithms on dedicated control files only in the crash phase, with fresh DatabaseSync handles after the planted crash, a recording stub composition and the run ledger. Seam defect tests prove the rehearsal fails closed: dropped `persisted_bodies` fails H-04 and gates the volume pass; missing host observations fails H-01; plain context fails H-01; a binding retry absorbing the outage fails H-07; constant H-08 claims fail H-08; and empty rollback fails H-02. Each gates volume under the same 25000 ms deadline as its honest null control. Evaluator fixtures are produced by the rehearsal; field-read parity checks every observation read against those fixtures.
+
+**Residual risks:** The rehearsal does not cover:
+- Real OS child processes, IPC channels, and stdio streams;
+- Runtime permission models (`--permission --allow-net --allow-fs-read --allow-fs-write`);
+- Native cross-process filesystem locking;
+- Real collector behavior beyond schema validation, deduplication and storage-conflict handling;
+- Real controls producers executing in a live environment;
+- Kit installation into the own service under npm/tarball packaging;
+- `lib/sender-role.mjs` and `lib/role-guard.mjs`;
+- The S2 halt path;
+- The bodies of both process shells (`outbox/sender-process.mjs`, `outbox/ingress-process.mjs`), which are only pinned as text.
+
 ## The seam
 
 The kit's packed core, Node binding and collector are installed as an evaluator's own service outside the
@@ -145,8 +169,8 @@ expectations are frozen and before every run (`lib/install.mjs` `SYMBOLS`).
 | Process | Runs | Permissions |
 |---|---|---|
 | orchestrator (`<probe>/run-<probe>.mjs`) | the kit pipeline, the approval checks, the session, the evaluation | unrestricted; loads no SDK |
-| sender (`<probe>/sender-process.mjs`; the outages shim loads `tracer/sender-process.mjs`) | the SDK, the reference composition, the in-process controls | `--permission --allow-net --allow-fs-read=<own service>` |
-| ingress (`<probe>/ingress-process.mjs`; the outages shim loads `tracer/ingress-process.mjs`) | the kit collector with SQLite storage, behind the fault injector | the sender's, plus read and write on `<scratch>/collector-storage` |
+| sender (`<probe>/sender-process.mjs`; the outages shim loads `tracer/sender-process.mjs`) | the SDK, the reference composition, the in-process controls; outbox also owns the host database and relay | `--permission --allow-net --allow-fs-read=<own service>`; outbox alone adds `--allow-fs-read=<scratch>/host-database --allow-fs-write=<scratch>/host-database` |
+| ingress (`<probe>/ingress-process.mjs`; the outages shim loads `tracer/ingress-process.mjs`) | the kit collector with SQLite storage, behind the fault injector | `--permission --allow-net --allow-fs-read=<own service>`, plus read and write on `<scratch>/collector-storage` |
 
 The orchestrator forks both roles with an IPC channel. The ingress token is generated per run, held only in
 memory, and never recorded. Both roles import `lib/role-guard.mjs` first, so the loopback guard

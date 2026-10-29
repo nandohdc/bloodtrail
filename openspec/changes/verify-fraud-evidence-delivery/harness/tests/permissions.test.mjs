@@ -5,7 +5,15 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { test } from "node:test";
-import { ingressFlags, prepareStorage, roleFlags, senderFlags, storageDirectory } from "../lib/permissions.mjs";
+import {
+  hostDatabaseDirectory,
+  ingressFlags,
+  prepareHostDatabase,
+  prepareStorage,
+  roleFlags,
+  senderFlags,
+  storageDirectory,
+} from "../lib/permissions.mjs";
 import { deleteScratch, finalizeScratch, scratchSession } from "../lib/kit-pipeline.mjs";
 import { stopRoles } from "../lib/session.mjs";
 import { StopCondition } from "../lib/deadline.mjs";
@@ -27,21 +35,6 @@ test("the sender may read its own service and use the network; the ingress may a
   assert.throws(() => roleFlags({ role: "orchestrator", service: "/s", storage: "/d" }), /unknown role/);
   for (const flags of [senderFlags({ service: "/s" }), ingressFlags({ service: "/s", storage: "/d" })]) {
     assert(!flags.some((flag) => flag.startsWith("--allow-child-process") || flag.startsWith("--allow-worker") || flag.startsWith("--allow-addons")));
-  }
-});
-
-test("collector storage lives inside scratch, apart from the repository and the own service", () => {
-  const { root, scratch, repo, service } = layout();
-  try {
-    const storage = prepareStorage({ scratch, repo, service });
-    assert.equal(storage, join(scratch, "collector-storage"));
-    assert.throws(() => storageDirectory({ scratch, repo, service, directory: service }), /overlaps a protected tree/);
-    mkdirSync(join(service, "inner"));
-    assert.throws(() => storageDirectory({ scratch, repo, service, directory: join(service, "inner") }), /overlaps a protected tree/);
-    assert.throws(() => storageDirectory({ scratch, repo, service, directory: repo }));
-    assert.throws(() => storageDirectory({ scratch: root, repo, service, directory: storage }), /overlaps a protected tree/, "a scratch that contains the repository is refused");
-  } finally {
-    rmSync(root, { recursive: true, force: true });
   }
 });
 
@@ -154,22 +147,120 @@ test("a deadline kill failure keeps S2 and partial results; later confirmed clos
   }
 });
 
-// The write control runs under a real permission grant in a child process, as in the sender: no write
-// grant, a read grant over the harness. Its null control (a read inside the grant) must pass, and a read
-// outside the grant must make the control fail rather than hold.
-test("planted defect and null control: under --permission the write is refused and a granted read passes", () => {
+test("Q244: probe-declared host-database grant gives sender read and write, other probes unchanged", () => {
+  const flagsWithDb = senderFlags({ service: "/s", hostDatabase: "/h" });
+  assert.deepEqual(flagsWithDb, [
+    "--permission",
+    "--allow-net",
+    "--allow-fs-read=/s",
+    "--allow-fs-read=/h",
+    "--allow-fs-write=/h",
+  ]);
+
+  const flagsWithoutDb = senderFlags({ service: "/s" });
+  assert.deepEqual(flagsWithoutDb, ["--permission", "--allow-net", "--allow-fs-read=/s"]);
+
+  const roleSenderWithDb = roleFlags({ role: "sender", service: "/s", storage: "/d", hostDatabase: "/h" });
+  assert.deepEqual(roleSenderWithDb, flagsWithDb);
+
+  const roleSenderWithoutDb = roleFlags({ role: "sender", service: "/s", storage: "/d" });
+  assert.deepEqual(roleSenderWithoutDb, flagsWithoutDb);
+
+  const ingressWithDb = roleFlags({ role: "ingress", service: "/s", storage: "/d", hostDatabase: "/h" });
+  const ingressWithoutDb = roleFlags({ role: "ingress", service: "/s", storage: "/d" });
+  assert.deepEqual(ingressWithDb, ingressWithoutDb);
+  assert.deepEqual(ingressWithDb, [
+    "--permission",
+    "--allow-net",
+    "--allow-fs-read=/s",
+    "--allow-fs-read=/d",
+    "--allow-fs-write=/d",
+  ]);
+});
+
+
+const DIRECTORY_CASES = [
+  ["collector-storage", prepareStorage, storageDirectory],
+  ["host-database", prepareHostDatabase, hostDatabaseDirectory],
+];
+test("scratch deletion lists the host database only when prepared", () => {
+  for (const withDatabase of [false, true]) {
+    const { root, scratch, repo, service } = layout();
+    try {
+      if (withDatabase) prepareHostDatabase({ scratch, repo, service });
+      const includes = ["evaluation-kit", "own-service", "collector-storage"];
+      if (withDatabase) includes.push("host-database");
+      includes.push("logs");
+      assert.equal(JSON.stringify(deleteScratch({ scratch })), JSON.stringify({
+        root: scratch, recursively_absent: true, includes,
+      }));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+for (const [name, prepare, validate] of DIRECTORY_CASES) {
+  test(`${name} is inside scratch and apart from repository and own service`, () => {
+    const { root, scratch, repo, service } = layout();
+    try {
+      const directory = prepare({ scratch, repo, service });
+      assert.equal(directory, join(scratch, name));
+      const inner = join(service, "inner");
+      mkdirSync(inner);
+      for (const forbidden of [service, inner]) {
+        assert.throws(() => validate({ scratch, repo, service, directory: forbidden }), /overlaps a protected tree/);
+      }
+      assert.throws(() => validate({ scratch, repo, service, directory: repo }));
+      assert.throws(() => validate({ scratch: root, repo, service, directory }), /overlaps a protected tree/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}
+
+function permissionControl({ harness, root, database, allowed, outbox = false }) {
+  const controls = pathToFileURL(join(harness, outbox ? "outbox" : "lib", "controls.mjs")).href;
+  const args = ["--permission", `--allow-fs-read=${harness}`];
+  const field = database ? "allowedPath" : "allowedReadPath";
+  if (database) args.push(`--allow-fs-read=${database}`, `--allow-fs-write=${database}`);
+  const invocation = outbox ? `hostDbIsolationControl(${JSON.stringify(database)})`
+    : `writeControls({ refusedPath: ${JSON.stringify(join(root, "planted"))}, ${field}: ${JSON.stringify(allowed)} })`;
+  args.push("--input-type=module", "-e",
+    `import * as controls from ${JSON.stringify(controls)}; console.log(JSON.stringify(controls.${invocation}));`);
+  return JSON.parse(execFileSync(process.execPath, args, { encoding: "utf8" }));
+}
+
+test("outbox isolation refuses the sibling inside scratch while allowing its database", () => {
   const harness = dirname(dirname(fileURLToPath(import.meta.url)));
-  const { root } = layout();
+  const { root, scratch, repo, service } = layout();
   try {
-    const controls = pathToFileURL(join(harness, "lib", "controls.mjs")).href;
-    const run = (allowedReadPath) => JSON.parse(execFileSync(process.execPath, [
-      "--permission", `--allow-fs-read=${harness}`, "--input-type=module", "-e",
-      `import { writeControls } from ${JSON.stringify(controls)}; console.log(JSON.stringify(writeControls({ refusedPath: ${JSON.stringify(join(root, "planted"))}, allowedReadPath: ${JSON.stringify(allowedReadPath)} })));`,
-    ], { encoding: "utf8" }));
-    assert.deepEqual(run(join(harness, "README.md")), { planted_refused: true, null_control_allowed: true, holds: true });
-    assert.deepEqual(run(join(root, "outside-the-grant")), { planted_refused: true, null_control_allowed: false, holds: false });
-    assert(!existsSync(join(root, "planted")));
+    const database = prepareHostDatabase({ scratch, repo, service });
+    const result = permissionControl({ harness, root: scratch, database, outbox: true });
+    assert.deepEqual(result, {
+      host_database_grant_isolated: true, planted_write_refused: true,
+      null_control_allowed: true, holds: true,
+    });
+    assert.equal(existsSync(join(scratch, "planted-host-write")), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+for (const withDatabase of [false, true]) {
+  test(`permission planted/null controls, host-database grant = ${withDatabase}`, () => {
+    const harness = dirname(dirname(fileURLToPath(import.meta.url)));
+    const { root, scratch } = layout();
+    try {
+      const database = withDatabase ? join(scratch, "host-database") : undefined;
+      if (database) mkdirSync(database);
+      const allowed = database ? join(database, "null-control") : join(harness, "README.md");
+      const run = (path) => permissionControl({ harness, root, database, allowed: path });
+      assert.deepEqual(run(allowed), { planted_refused: true, null_control_allowed: true, holds: true });
+      assert.deepEqual(run(join(root, "outside")), { planted_refused: true, null_control_allowed: false, holds: false });
+      assert(!existsSync(join(root, "planted")));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}

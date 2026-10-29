@@ -6,7 +6,7 @@ import { command, inside } from "./io.mjs";
 import { readIdentity } from "./identity.mjs";
 import { installService } from "./install.mjs";
 import { runtimeFacts } from "./runtime-facts.mjs";
-import { prepareStorage, roleFlags } from "./permissions.mjs";
+import { prepareHostDatabase, prepareStorage, roleFlags } from "./permissions.mjs";
 import { invalidationOf } from "./results.mjs";
 
 export function approvedRepository({ repo, approvedHead, dryRun }) {
@@ -21,9 +21,12 @@ export function approvedRepository({ repo, approvedHead, dryRun }) {
 
 // Removing the scratch ancestor proves the kit, own service, collector storage and logs are all gone.
 export function deleteScratch({ scratch }) {
+  const includes = ["evaluation-kit", "own-service", "collector-storage"];
+  if (existsSync(join(scratch, "host-database"))) includes.push("host-database");
+  includes.push("logs");
   rmSync(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   assert(!existsSync(scratch), "scratch deletion failed");
-  return { root: scratch, recursively_absent: !existsSync(scratch), includes: ["evaluation-kit", "own-service", "collector-storage", "logs"] };
+  return { root: scratch, recursively_absent: !existsSync(scratch), includes };
 }
 
 export function finalizeScratch({ result, scratch, remove = deleteScratch, roleClosureConfirmed = true }) {
@@ -79,8 +82,9 @@ export async function kitPipeline(options, consume = async () => null) {
     Object.assign(result, runtimeFacts({ scratch }));
     const service = buildAndInstall({ approved, scratch, result, log });
     const storage = prepareStorage({ scratch, repo: approved.repo, service });
-    result.permission_flags = { sender: roleFlags({ role: "sender", service, storage }), ingress: roleFlags({ role: "ingress", service, storage }) };
+    const hostDatabase = options.hostDatabase ? prepareHostDatabase({ scratch, repo: approved.repo, service }) : undefined;
+    result.permission_flags = { sender: roleFlags({ role: "sender", service, storage, hostDatabase }), ingress: roleFlags({ role: "ingress", service, storage }) };
     writeFileSync(join(scratch, "provenance.json"), JSON.stringify(result, null, 2) + "\n");
-    if (!options.dryRun) result.observations = await consume({ ...approved, scratch, service, storage, provenance: result });
+    if (!options.dryRun) result.observations = await consume({ ...approved, scratch, service, storage, hostDatabase, provenance: result });
   } });
 }
