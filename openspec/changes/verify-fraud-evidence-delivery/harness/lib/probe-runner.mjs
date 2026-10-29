@@ -1,7 +1,8 @@
 // The shared approval-gated runner for every Stage 2 probe.
 //
-// plan = { probe, ticket, probeDirectory, entrypoint, validate, files, session, evaluate }
-//   - session({ service, storage, flags, expectations }) runs the probe's two processes and returns raw
+// plan = { probe, ticket, probeDirectory, entrypoint, validate, files, session, evaluate, hostDatabase? }
+//   - hostDatabase: true prepares the optional sender host-database grant.
+//   - session({ service, storage, hostDatabase, flags, expectations }) runs the probe's two processes and returns raw
 //     observations; evaluate({ observations, expectations }) compares them with the frozen expectations.
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
@@ -62,9 +63,9 @@ function writeSession(context, { provenance, observations, invalidations, occurr
 
 async function runSession(context) {
   const { options, plan, expectations } = context;
-  const provenance = await kitPipeline(options, ({ service, storage, approvedHead, repo, provenance: built }) => {
+  const provenance = await kitPipeline({ ...options, hostDatabase: plan.hostDatabase === true }, ({ service, storage, hostDatabase, approvedHead, repo, provenance: built }) => {
     built.role_files = copyApprovedFiles({ repo, approvedHead, service, prefix: PREFIX, paths: plan.files.map((path) => `${PREFIX}/${path}`) });
-    return plan.session({ service, storage, flags: built.permission_flags, expectations });
+    return plan.session({ service, storage, hostDatabase, flags: built.permission_flags, expectations });
   });
   const observations = provenance.observations ?? null;
   delete provenance.observations;

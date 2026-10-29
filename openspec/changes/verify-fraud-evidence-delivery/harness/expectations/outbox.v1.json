@@ -1,0 +1,484 @@
+{
+  "probe": "S2-outbox",
+  "version": 1,
+  "ticket": 842,
+  "base": "efdf42a7348d08e475c2aa83277b2fbd6b124a63",
+  "contract_version": "2.1.0",
+  "workload": {
+    "seed": 842001
+  },
+  "clock": {
+    "start": "2026-10-23T00:00:00.000Z",
+    "step_ms": 1000
+  },
+  "composition": {
+    "exchange_timeout_ms": 2000,
+    "max_attempts": 3,
+    "base_delay_ms": 50,
+    "max_delay_ms": 500,
+    "jitter_seed": 842,
+    "capacity": 16,
+    "shutdown_deadline_ms": 5000
+  },
+  "scenarios": {
+    "clean": [],
+    "outage": [
+      {
+        "attempt": 0,
+        "action": "status",
+        "status": 503
+      }
+    ]
+  },
+  "phases": [
+    {
+      "name": "commit_relay",
+      "pass": "small",
+      "kind": "commit_relay",
+      "occurrences": 6,
+      "distinct_occurrences": 6,
+      "schedule": [
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean"
+      ],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 3,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 842,
+        "capacity": 16,
+        "shutdown_deadline_ms": 5000
+      },
+      "change_count": 6
+    },
+    {
+      "name": "rollback",
+      "pass": "small",
+      "kind": "rollback",
+      "occurrences": 4,
+      "distinct_occurrences": 4,
+      "schedule": [
+        "clean",
+        "clean",
+        "clean",
+        "clean"
+      ],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 3,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 842,
+        "capacity": 16,
+        "shutdown_deadline_ms": 5000
+      },
+      "change_count": 4
+    },
+    {
+      "name": "crash_restart",
+      "pass": "small",
+      "kind": "crash_restart",
+      "occurrences": 6,
+      "distinct_occurrences": 6,
+      "schedule": [
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean"
+      ],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 3,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 842,
+        "capacity": 16,
+        "shutdown_deadline_ms": 5000
+      },
+      "change_count": 6,
+      "crash_after_acknowledgment": 3
+    },
+    {
+      "name": "outage_defer",
+      "pass": "small",
+      "kind": "outage_defer",
+      "occurrences": 6,
+      "distinct_occurrences": 6,
+      "schedule": [
+        "outage",
+        "outage",
+        "outage",
+        "outage",
+        "outage",
+        "outage"
+      ],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 1,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 842,
+        "capacity": 16,
+        "shutdown_deadline_ms": 5000
+      },
+      "change_count": 6
+    },
+    {
+      "name": "commit_relay_volume",
+      "pass": "volume",
+      "kind": "commit_relay",
+      "occurrences": 100,
+      "distinct_occurrences": 100,
+      "schedule": [
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean"
+      ],
+      "cycles": 1,
+      "composition": {
+        "exchange_timeout_ms": 2000,
+        "max_attempts": 3,
+        "base_delay_ms": 50,
+        "max_delay_ms": 500,
+        "jitter_seed": 842,
+        "capacity": 64,
+        "shutdown_deadline_ms": 5000
+      },
+      "change_count": 100
+    }
+  ],
+  "deadline_ms": 120000,
+  "planned_call_budget": {
+    "processes": {
+      "commit_relay": 24,
+      "rollback": 12,
+      "crash_restart": 73,
+      "outage_defer": 30,
+      "commit_relay_volume": 400
+    },
+    "total": 539
+  },
+  "cases": [
+    {
+      "case_id": "H-01",
+      "pass": "small",
+      "phases": [
+        "commit_relay"
+      ],
+      "observer": "commit_atomicity",
+      "setup": "Business and outbox inserts occur between the same SQLite begin and commit, with isTransaction active for both inserts and inactive at phase completion.",
+      "expected": {
+        "atomicity_holds": true,
+        "business_count": 6,
+        "outbox_count": 6
+      },
+      "basis": [
+        "packages/security-audit-sdk-core/src/operations.ts:108",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/host-execution.mjs:30"
+      ]
+    },
+    {
+      "case_id": "H-02",
+      "pass": "small",
+      "phases": [
+        "rollback"
+      ],
+      "observer": "rollback_discard",
+      "setup": "Rollback in SQLite discards both business and outbox rows; nothing is relayed and nothing is persisted.",
+      "expected": {
+        "rollback_discarded": true,
+        "business_count": 0,
+        "outbox_count": 0,
+        "inserted_count": 4,
+        "relayed_count": 0,
+        "persisted_count": 0
+      },
+      "basis": [
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/host-execution.mjs:29",
+        "packages/security-audit-sdk-core/src/sdk.ts:328"
+      ]
+    },
+    {
+      "case_id": "H-03",
+      "pass": "small",
+      "phases": [
+        "commit_relay"
+      ],
+      "observer": "at_least_once_relay",
+      "setup": "Every committed outbox record is delivered through referenceComposition at least once with exact persisted acknowledgment.",
+      "expected": {
+        "all_committed_relayed": true,
+        "relayed_count": 6,
+        "persisted_count": 6
+      },
+      "basis": [
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/relay.mjs:23",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:15"
+      ]
+    },
+    {
+      "case_id": "H-04",
+      "pass": "small",
+      "phases": [
+        "crash_restart"
+      ],
+      "observer": "crash_persistence_identity",
+      "setup": "Across the in-process relay crash after the 3rd acknowledgment, every committed record is persisted exactly once by identity in collector storage.",
+      "expected": {
+        "persisted_exactly_once": true,
+        "persisted_count": 6,
+        "unique_event_ids": 6,
+        "crash_fired": true,
+        "pending_after_resume": 0
+      },
+      "basis": [
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/phase-relay.mjs:28",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/observer-predicates.mjs:73",
+        "packages/security-audit-collector/src/sqlite-storage.ts:86",
+        "packages/security-audit-collector/src/sqlite-storage.ts:178"
+      ]
+    },
+    {
+      "case_id": "H-05",
+      "pass": "small",
+      "phases": [
+        "crash_restart"
+      ],
+      "observer": "redelivery_duplicate",
+      "setup": "Redelivered row k after the relay crash arrives at the collector and is recognized as duplicate.",
+      "expected": {
+        "duplicates_recognized": true,
+        "duplicate_count": 1
+      },
+      "basis": [
+        "packages/security-audit-collector/src/sqlite-storage.ts:178",
+        "packages/security-audit-collector/src/ingress.ts:196"
+      ]
+    },
+    {
+      "case_id": "H-06",
+      "pass": "small",
+      "phases": [
+        "crash_restart"
+      ],
+      "observer": "deduplication_identity",
+      "setup": "Deduplication downstream by event id and transaction id, with every transaction id unique and equal to the host row's.",
+      "expected": {
+        "deduplication_by_event_and_transaction_id": true,
+        "transaction_ids_match_host": true,
+        "transaction_ids_unique": true
+      },
+      "basis": [
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/host.mjs:74",
+        "packages/security-audit-sdk-core/src/events.ts:249"
+      ]
+    },
+    {
+      "case_id": "H-07",
+      "pass": "small",
+      "phases": [
+        "outage_defer"
+      ],
+      "observer": "outage_deferral",
+      "setup": "Outage phase runs collector with scheduled 503 window; rows stay pending in host DB, then are delivered from durable record after recovery.",
+      "expected": {
+        "deferred_during_outage": true,
+        "delivered_from_durable_record": true,
+        "initial_failures": 6,
+        "recovered_persisted": 6,
+        "pending_outbox": 6,
+        "pending_after_recovery": 0,
+        "relayed_count": 6
+      },
+      "basis": [
+        "openspec/changes/verify-fraud-evidence-delivery/harness/lib/faults.mjs:65",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/phase-relay.mjs:57"
+      ]
+    },
+    {
+      "case_id": "H-08",
+      "pass": "small",
+      "phases": [
+        "crash_restart"
+      ],
+      "observer": "planted_controls",
+      "setup": "Planted defect with mark-before-ack relay loses record across crash and fails H-04; null control passes.",
+      "expected": {
+        "mark_before_ack_defect_detected": true,
+        "null_control_passed": true,
+        "lost_records": 1
+      },
+      "basis": [
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/controls.mjs:30",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/controls.mjs:32"
+      ]
+    },
+    {
+      "case_id": "H-09",
+      "pass": "small",
+      "phases": [
+        "commit_relay"
+      ],
+      "observer": "host_db_isolation",
+      "setup": "Sender has a host-database read/write grant; a planted write to its sibling inside scratch is refused and a write inside host-database succeeds under --permission.",
+      "expected": {
+        "host_database_grant_isolated": true,
+        "planted_write_refused": true,
+        "null_control_allowed": true
+      },
+      "basis": [
+        "openspec/changes/verify-fraud-evidence-delivery/harness/lib/permissions.mjs:52",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/controls.mjs:109"
+      ]
+    },
+    {
+      "case_id": "H-10",
+      "pass": "small",
+      "phases": [
+        "commit_relay"
+      ],
+      "observer": "isolation_controls",
+      "setup": "The loopback, permission and synthetic-data checks are the harness's own pre-traffic attestations.",
+      "expected": {
+        "loopback_holds": true,
+        "permissions_hold": true,
+        "synthetic_data_holds": true,
+        "guard_violations_match": true,
+        "guard_violation_count": 1
+      },
+      "basis": [
+        "openspec/changes/verify-fraud-evidence-delivery/harness/lib/controls.mjs:107"
+      ]
+    },
+    {
+      "case_id": "H-11",
+      "pass": "volume",
+      "phases": [
+        "commit_relay",
+        "rollback",
+        "crash_restart",
+        "outage_defer",
+        "commit_relay_volume"
+      ],
+      "observer": "accounting_identity",
+      "setup": "The accounting identity holds for every phase against the frozen occurrences.",
+      "expected": {
+        "all_phases_hold": true,
+        "unexplained_total": 0,
+        "every_occurrence_accounted": true
+      },
+      "basis": [
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/observer-accounting.mjs:29",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/outbox/observer-accounting.mjs:42"
+      ]
+    }
+  ]
+}
