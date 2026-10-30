@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { parseArgs } from "node:util";
 
-// Probe runs require the Claude Code lane (G46 Q94). Codex is accepted only for build-only checks; runs 3 and 4 recorded lane codex under the owner's 2026-10-24 addendum for #838.
+// G46 Q94 is superseded for remaining slots by the 2026-10-29 continuation. Earlier run provenance is unchanged.
 export const DRIVER_ARGS = ["driver-lane", "driver-model"];
 const PIPELINE_ARGS = ["repo", "approved-head", ...DRIVER_ARGS];
 export const RUN_ARGS = ["approval-body-file", "approval-url", "approval-created-at", "approval-updated-at", "approval-sha256", "once-marker", "run-number", "results", "window-opened-at"];
@@ -15,9 +15,10 @@ export const OPTIONAL_RUN_ARGS = [
   "disposition-updated-at",
 ];
 
-function validateDriverLane(lane, { run }) {
-  const codex = lane === "codex" && !run;
-  assert(codex || lane === "claude-code", "Stage 2 probe runs require the Claude Code lane (G46 Q94); Codex is accepted only for build-only checks");
+function validateDriverLane(lane, { run, runNumber }) {
+  const remainingSlot = /^(?:9|1[0-6])$/.test(runNumber ?? "");
+  const codex = lane === "codex" && (!run || remainingSlot);
+  assert(codex || lane === "claude-code", "Stage 2 driver lane must be Claude Code, or Codex for remaining slots 9–16");
 }
 
 function parseExpectationsVersion(raw) {
@@ -35,7 +36,7 @@ export function argumentsFor({ args, run = false }) {
   const { values } = parseArgs({ args, options, strict: true });
   const required = run ? ["approved-head", ...RUN_ARGS, ...DRIVER_ARGS] : DRIVER_ARGS;
   for (const key of required) assert(values[key], `required argument: --${key}`);
-  validateDriverLane(values["driver-lane"], { run });
+  validateDriverLane(values["driver-lane"], { run, runNumber: values["run-number"] });
   const expectationsVersion = parseExpectationsVersion(values["expectations-version"]);
   return {
     ...values, repo: values.repo, approvedHead: values["approved-head"], dryRun: values["dry-run"],
