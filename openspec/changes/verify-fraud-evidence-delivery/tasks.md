@@ -93,7 +93,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 - [x] 7.1 Build the harness-local `node:sqlite` outbox with a transaction-bound sink, the relay through the
   composition, and the rollback and relay crash-and-restart phases. Built under expectations/outbox.v1.json (#842, Q243–Q258).
 - [ ] 7.2 Under its own S1, record that a rollback relays nothing and a commit relays at least once, with
-  deduplication by event ID and transaction ID.
+  deduplication by event ID and transaction ID. Run 9 matched 11 of 11 frozen cases, with no invalidations and confirmed scratch deletion: `results/outbox-run-9.json`. The observed duplicate shares an event ID and the transaction ID matches the host row; the probe does not establish an independently effective transaction-ID deduplication key (#921). The relay restart is in-process. This task remains open pending disposition of the transaction-ID criterion.
 
 ## 8. Per-source counts, throughput and latency (#841)
 
