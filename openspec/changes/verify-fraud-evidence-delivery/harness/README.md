@@ -4,11 +4,11 @@ Authorization: `../proposal.md#run-authorization` at each run's exact approved h
 [G42](https://github.com/nandohdc/bloodtrail/issues/795#issuecomment-6346915049) (environment and limits) as amended by [G46](https://github.com/nandohdc/bloodtrail/issues/833#issuecomment-6449640834) and
 G44 (delegated S1). See `run-ledger.md` for the shared run budget.
 
-**Five Stage 2 probes have executed:** the tracer, as run 1 (`results/tracer-run-1.json`), the outages
+**Six Stage 2 probes have executed:** the tracer, as run 1 (`results/tracer-run-1.json`), the outages
 probe, as run 2 (`results/outages-run-2.json`), the load probe, as runs 3 and 4 (`results/load-run-3.json`;
 `results/load-run-4.json` matched all 17 cases of `load.v2.json`), the copies probe, as runs 5, 6 and 7
 (`results/copies-run-5.json` was invalidated before traffic; `results/copies-run-6.json`; `results/copies-run-7.json`
-matched all 11 cases of `copies.v2.json`), and the chains probe, as run 8 (`results/chains-run-8.json` matched all 11 cases of `chains.v1.json`). Self-tests here use fixtures and public-shape doubles only.
+matched all 11 cases of `copies.v2.json`), the chains probe, as run 8 (`results/chains-run-8.json` matched all 11 cases of `chains.v1.json`), and the outbox probe, as run 9 (`results/outbox-run-9.json` matched all 11 cases of `outbox.v1.json`). Run 9 used an in-process relay restart; its H-06 observation does not establish an independently effective transaction-ID deduplication key (#921). Self-tests here use fixtures and public-shape doubles only.
 They never import a kit package or execute a harness role; fixture subprocesses, temporary files and loopback sockets are permitted.
 
 Run 3 matched seven cases. Four executed small-pass cases mismatched (L-04, L-07, L-10 and L-11); all six volume cases were unexecuted. The 200 ms shutdown reports returned in 200.77874999999997 ms and 201.91920900000002 ms (#890). L-11's absence counter expected `not_found`, while the collector's public result and all four final read-backs say `absent` (#889). All 46 executed occurrences were accounted for, with zero unexplained; the original JSON still records L-11 as a mismatch. Run 4, under `load.v2.json`, then matched all 17 cases, and #838 was accepted.
