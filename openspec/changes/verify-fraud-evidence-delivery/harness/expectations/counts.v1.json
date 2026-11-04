@@ -1,0 +1,2876 @@
+{
+  "probe": "S2-counts",
+  "ticket": 841,
+  "version": 1,
+  "base": "7ca3db88bba27f9140bff0d491b25e8058fdf3b5",
+  "contract_version": "2.1.0",
+  "workload": {
+    "seed": 841001
+  },
+  "clock": {
+    "start": "2026-10-23T00:00:00.000Z",
+    "step_ms": 1000
+  },
+  "observations": {
+    "ingress_throughput": {
+      "measured_at": "collector",
+      "unit": "persisted_events_per_second",
+      "numerator": "distinct persisted event.id",
+      "window": "collector role initialization through final ingress quiescence"
+    },
+    "delivery_latency": {
+      "measured_at": "sender",
+      "unit": "milliseconds",
+      "from": "SDK emit or redeliver call",
+      "to": "persisted acknowledgment",
+      "quantiles": [
+        "p50",
+        "p95",
+        "maximum"
+      ],
+      "empty_samples": "null quantiles with samples = 0"
+    },
+    "environment_fields": [
+      "node",
+      "platform",
+      "cpu_count"
+    ]
+  },
+  "reconciliation": "persisted_distinct_by_event_id + reported_undelivered_and_not_persisted = ground_truth; persisted_despite_failure_report itemized; unexplained or outside_ground_truth is a mismatch",
+  "per_target": "not_attempted",
+  "per_target_reference": "G33",
+  "deadline_ms": 300000,
+  "planned_call_budget": {
+    "processes": {
+      "outages_clean": 108,
+      "outages_status_503": 108,
+      "outages_status_429": 108,
+      "outages_status_408": 108,
+      "outages_timeout": 108,
+      "outages_transport_failure": 108,
+      "outages_lost_acknowledgment": 108,
+      "outages_exhausted": 108,
+      "outages_permanent_400": 108,
+      "outages_malformed_acknowledgment": 108,
+      "load_overload": 48,
+      "load_drain": 48,
+      "load_abandon": 48,
+      "load_retry_shutdown": 48,
+      "load_overload_volume": 2004,
+      "load_drain_volume": 408,
+      "copies_identities": 50,
+      "copies_collector_restart": 49,
+      "copies_consumer_restart": 72,
+      "copies_duplicates_volume": 162
+    },
+    "total": 4017
+  },
+  "plans": [
+    {
+      "file": "outages.v1.json",
+      "id": "clean",
+      "sha256": "9e26e1ca16aa78b7dd1d3506fbb173935a32d30ab6aa5ea43feae4697af2c6e3",
+      "phase": "outages_clean"
+    },
+    {
+      "file": "outages.v1.json",
+      "id": "status_503",
+      "sha256": "9e26e1ca16aa78b7dd1d3506fbb173935a32d30ab6aa5ea43feae4697af2c6e3",
+      "phase": "outages_status_503"
+    },
+    {
+      "file": "outages.v1.json",
+      "id": "status_429",
+      "sha256": "9e26e1ca16aa78b7dd1d3506fbb173935a32d30ab6aa5ea43feae4697af2c6e3",
+      "phase": "outages_status_429"
+    },
+    {
+      "file": "outages.v1.json",
+      "id": "status_408",
+      "sha256": "9e26e1ca16aa78b7dd1d3506fbb173935a32d30ab6aa5ea43feae4697af2c6e3",
+      "phase": "outages_status_408"
+    },
+    {
+      "file": "outages.v1.json",
+      "id": "timeout",
+      "sha256": "9e26e1ca16aa78b7dd1d3506fbb173935a32d30ab6aa5ea43feae4697af2c6e3",
+      "phase": "outages_timeout"
+    },
+    {
+      "file": "outages.v1.json",
+      "id": "transport_failure",
+      "sha256": "9e26e1ca16aa78b7dd1d3506fbb173935a32d30ab6aa5ea43feae4697af2c6e3",
+      "phase": "outages_transport_failure"
+    },
+    {
+      "file": "outages.v1.json",
+      "id": "lost_acknowledgment",
+      "sha256": "9e26e1ca16aa78b7dd1d3506fbb173935a32d30ab6aa5ea43feae4697af2c6e3",
+      "phase": "outages_lost_acknowledgment"
+    },
+    {
+      "file": "outages.v1.json",
+      "id": "exhausted",
+      "sha256": "9e26e1ca16aa78b7dd1d3506fbb173935a32d30ab6aa5ea43feae4697af2c6e3",
+      "phase": "outages_exhausted"
+    },
+    {
+      "file": "outages.v1.json",
+      "id": "permanent_400",
+      "sha256": "9e26e1ca16aa78b7dd1d3506fbb173935a32d30ab6aa5ea43feae4697af2c6e3",
+      "phase": "outages_permanent_400"
+    },
+    {
+      "file": "outages.v1.json",
+      "id": "malformed_acknowledgment",
+      "sha256": "9e26e1ca16aa78b7dd1d3506fbb173935a32d30ab6aa5ea43feae4697af2c6e3",
+      "phase": "outages_malformed_acknowledgment"
+    },
+    {
+      "file": "load.v2.json",
+      "id": "overload",
+      "sha256": "4639afcc6ab53aa1223222b960fa45c3bca8bda9f1e8998bed6ca2fe0a3a6bec",
+      "phase": "load_overload"
+    },
+    {
+      "file": "load.v2.json",
+      "id": "drain",
+      "sha256": "4639afcc6ab53aa1223222b960fa45c3bca8bda9f1e8998bed6ca2fe0a3a6bec",
+      "phase": "load_drain"
+    },
+    {
+      "file": "load.v2.json",
+      "id": "abandon",
+      "sha256": "4639afcc6ab53aa1223222b960fa45c3bca8bda9f1e8998bed6ca2fe0a3a6bec",
+      "phase": "load_abandon"
+    },
+    {
+      "file": "load.v2.json",
+      "id": "best_effort",
+      "sha256": "4639afcc6ab53aa1223222b960fa45c3bca8bda9f1e8998bed6ca2fe0a3a6bec",
+      "excluded_reason": "The catalog permits best_effort only for authorization.allowed; chains reconstruction events use security_significant or transaction_critical delivery."
+    },
+    {
+      "file": "load.v2.json",
+      "id": "retry_shutdown",
+      "sha256": "4639afcc6ab53aa1223222b960fa45c3bca8bda9f1e8998bed6ca2fe0a3a6bec",
+      "phase": "load_retry_shutdown"
+    },
+    {
+      "file": "load.v2.json",
+      "id": "overload_volume",
+      "sha256": "4639afcc6ab53aa1223222b960fa45c3bca8bda9f1e8998bed6ca2fe0a3a6bec",
+      "phase": "load_overload_volume"
+    },
+    {
+      "file": "load.v2.json",
+      "id": "drain_volume",
+      "sha256": "4639afcc6ab53aa1223222b960fa45c3bca8bda9f1e8998bed6ca2fe0a3a6bec",
+      "phase": "load_drain_volume"
+    },
+    {
+      "file": "load.v2.json",
+      "id": "best_effort_volume",
+      "sha256": "4639afcc6ab53aa1223222b960fa45c3bca8bda9f1e8998bed6ca2fe0a3a6bec",
+      "excluded_reason": "The catalog permits best_effort only for authorization.allowed; chains reconstruction events use security_significant or transaction_critical delivery."
+    },
+    {
+      "file": "copies.v2.json",
+      "id": "identities",
+      "sha256": "450a4e044d0e71dd99ca1c6055f5e0f38a764570b1819977ba24c99ba81bfc56",
+      "phase": "copies_identities"
+    },
+    {
+      "file": "copies.v2.json",
+      "id": "collector_restart",
+      "sha256": "450a4e044d0e71dd99ca1c6055f5e0f38a764570b1819977ba24c99ba81bfc56",
+      "phase": "copies_collector_restart"
+    },
+    {
+      "file": "copies.v2.json",
+      "id": "consumer_restart",
+      "sha256": "450a4e044d0e71dd99ca1c6055f5e0f38a764570b1819977ba24c99ba81bfc56",
+      "phase": "copies_consumer_restart"
+    },
+    {
+      "file": "copies.v2.json",
+      "id": "storage_less",
+      "sha256": "450a4e044d0e71dd99ca1c6055f5e0f38a764570b1819977ba24c99ba81bfc56",
+      "excluded_reason": "Storage-less admission has no persisted acknowledgment or durable storage; it cannot carry the persisted chains reconstruction workload."
+    },
+    {
+      "file": "copies.v2.json",
+      "id": "duplicates_volume",
+      "sha256": "450a4e044d0e71dd99ca1c6055f5e0f38a764570b1819977ba24c99ba81bfc56",
+      "phase": "copies_duplicates_volume"
+    }
+  ],
+  "phases": [
+    {
+      "name": "outages_clean",
+      "pass": "small",
+      "chain_count": 9,
+      "tenant_count": 1,
+      "failed_count": 9,
+      "occurrences": 54,
+      "seed_offset": 0,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 50,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionCreated": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "mfaRemoved": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "passwordResetCompleted": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionRevoked": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "authenticationFailed": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "beginOperation": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "markCommitted": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "outages_status_503",
+      "pass": "small",
+      "chain_count": 9,
+      "tenant_count": 1,
+      "failed_count": 9,
+      "occurrences": 54,
+      "seed_offset": 1,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 50,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionCreated": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "mfaRemoved": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "passwordResetCompleted": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionRevoked": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "authenticationFailed": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "beginOperation": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "markCommitted": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "outages_status_429",
+      "pass": "small",
+      "chain_count": 9,
+      "tenant_count": 1,
+      "failed_count": 9,
+      "occurrences": 54,
+      "seed_offset": 2,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 50,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionCreated": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "mfaRemoved": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "passwordResetCompleted": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionRevoked": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "authenticationFailed": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "beginOperation": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "markCommitted": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "outages_status_408",
+      "pass": "small",
+      "chain_count": 9,
+      "tenant_count": 1,
+      "failed_count": 9,
+      "occurrences": 54,
+      "seed_offset": 3,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 50,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionCreated": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "mfaRemoved": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "passwordResetCompleted": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionRevoked": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "authenticationFailed": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "beginOperation": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "markCommitted": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "outages_timeout",
+      "pass": "small",
+      "chain_count": 9,
+      "tenant_count": 1,
+      "failed_count": 9,
+      "occurrences": 54,
+      "seed_offset": 4,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 50,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionCreated": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "mfaRemoved": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "passwordResetCompleted": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionRevoked": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "authenticationFailed": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "beginOperation": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "markCommitted": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "outages_transport_failure",
+      "pass": "small",
+      "chain_count": 9,
+      "tenant_count": 1,
+      "failed_count": 9,
+      "occurrences": 54,
+      "seed_offset": 5,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 50,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionCreated": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "mfaRemoved": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "passwordResetCompleted": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionRevoked": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "authenticationFailed": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "beginOperation": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "markCommitted": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "outages_lost_acknowledgment",
+      "pass": "small",
+      "chain_count": 9,
+      "tenant_count": 1,
+      "failed_count": 9,
+      "occurrences": 54,
+      "seed_offset": 6,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 50,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionCreated": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "mfaRemoved": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "passwordResetCompleted": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionRevoked": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "authenticationFailed": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "beginOperation": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "markCommitted": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "outages_exhausted",
+      "pass": "small",
+      "chain_count": 9,
+      "tenant_count": 1,
+      "failed_count": 9,
+      "occurrences": 54,
+      "seed_offset": 7,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 50,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionCreated": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "mfaRemoved": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "passwordResetCompleted": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionRevoked": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "authenticationFailed": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "beginOperation": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "markCommitted": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "outages_permanent_400",
+      "pass": "small",
+      "chain_count": 9,
+      "tenant_count": 1,
+      "failed_count": 9,
+      "occurrences": 54,
+      "seed_offset": 8,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 50,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionCreated": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "mfaRemoved": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "passwordResetCompleted": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionRevoked": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "authenticationFailed": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "beginOperation": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "markCommitted": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "outages_malformed_acknowledgment",
+      "pass": "small",
+      "chain_count": 9,
+      "tenant_count": 1,
+      "failed_count": 9,
+      "occurrences": 54,
+      "seed_offset": 9,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 50,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionCreated": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "mfaRemoved": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "passwordResetCompleted": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionRevoked": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "authenticationFailed": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "beginOperation": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "markCommitted": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "load_overload",
+      "pass": "small",
+      "chain_count": 4,
+      "tenant_count": 1,
+      "failed_count": 4,
+      "occurrences": 24,
+      "seed_offset": 10,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 10,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionCreated": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "mfaRemoved": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "passwordResetCompleted": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionRevoked": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "authenticationFailed": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "beginOperation": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "markCommitted": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "load_drain",
+      "pass": "small",
+      "chain_count": 4,
+      "tenant_count": 1,
+      "failed_count": 4,
+      "occurrences": 24,
+      "seed_offset": 11,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 8,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionCreated": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "mfaRemoved": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "passwordResetCompleted": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionRevoked": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "authenticationFailed": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "beginOperation": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "markCommitted": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "load_abandon",
+      "pass": "small",
+      "chain_count": 4,
+      "tenant_count": 1,
+      "failed_count": 4,
+      "occurrences": 24,
+      "seed_offset": 12,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 6,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionCreated": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "mfaRemoved": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "passwordResetCompleted": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionRevoked": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "authenticationFailed": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "beginOperation": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "markCommitted": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "load_retry_shutdown",
+      "pass": "small",
+      "chain_count": 4,
+      "tenant_count": 1,
+      "failed_count": 4,
+      "occurrences": 24,
+      "seed_offset": 13,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 10,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionCreated": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "mfaRemoved": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "passwordResetCompleted": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionRevoked": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "authenticationFailed": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "beginOperation": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "markCommitted": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "load_overload_volume",
+      "pass": "volume",
+      "chain_count": 167,
+      "tenant_count": 1,
+      "failed_count": 167,
+      "occurrences": 1002,
+      "seed_offset": 14,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 1000,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 167,
+          "maximum": 167
+        },
+        "sessionCreated": {
+          "minimum": 167,
+          "maximum": 167
+        },
+        "mfaRemoved": {
+          "minimum": 167,
+          "maximum": 167
+        },
+        "passwordResetCompleted": {
+          "minimum": 167,
+          "maximum": 167
+        },
+        "sessionRevoked": {
+          "minimum": 167,
+          "maximum": 167
+        },
+        "authenticationFailed": {
+          "minimum": 167,
+          "maximum": 167
+        },
+        "beginOperation": {
+          "minimum": 501,
+          "maximum": 501
+        },
+        "markCommitted": {
+          "minimum": 501,
+          "maximum": 501
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "load_drain_volume",
+      "pass": "volume",
+      "chain_count": 34,
+      "tenant_count": 1,
+      "failed_count": 34,
+      "occurrences": 204,
+      "seed_offset": 15,
+      "extra_call_bound": 0,
+      "basis": {
+        "frozen_occurrences": 200,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 34,
+          "maximum": 34
+        },
+        "sessionCreated": {
+          "minimum": 34,
+          "maximum": 34
+        },
+        "mfaRemoved": {
+          "minimum": 34,
+          "maximum": 34
+        },
+        "passwordResetCompleted": {
+          "minimum": 34,
+          "maximum": 34
+        },
+        "sessionRevoked": {
+          "minimum": 34,
+          "maximum": 34
+        },
+        "authenticationFailed": {
+          "minimum": 34,
+          "maximum": 34
+        },
+        "beginOperation": {
+          "minimum": 102,
+          "maximum": 102
+        },
+        "markCommitted": {
+          "minimum": 102,
+          "maximum": 102
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "name": "copies_identities",
+      "pass": "small",
+      "chain_count": 4,
+      "tenant_count": 1,
+      "failed_count": 4,
+      "occurrences": 24,
+      "seed_offset": 16,
+      "extra_call_bound": 2,
+      "basis": {
+        "frozen_occurrences": 3,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionCreated": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "mfaRemoved": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "passwordResetCompleted": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionRevoked": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "authenticationFailed": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "beginOperation": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "markCommitted": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "redeliver": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    },
+    {
+      "name": "copies_collector_restart",
+      "pass": "small",
+      "chain_count": 4,
+      "tenant_count": 1,
+      "failed_count": 4,
+      "occurrences": 24,
+      "seed_offset": 17,
+      "extra_call_bound": 1,
+      "basis": {
+        "frozen_occurrences": 2,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionCreated": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "mfaRemoved": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "passwordResetCompleted": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionRevoked": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "authenticationFailed": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "beginOperation": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "markCommitted": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "redeliver": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    {
+      "name": "copies_consumer_restart",
+      "pass": "small",
+      "chain_count": 4,
+      "tenant_count": 1,
+      "failed_count": 4,
+      "occurrences": 24,
+      "seed_offset": 18,
+      "extra_call_bound": 24,
+      "basis": {
+        "frozen_occurrences": 4,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionCreated": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "mfaRemoved": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "passwordResetCompleted": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "sessionRevoked": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "authenticationFailed": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "beginOperation": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "markCommitted": {
+          "minimum": 12,
+          "maximum": 12
+        },
+        "redeliver": {
+          "minimum": 0,
+          "maximum": 24
+        }
+      }
+    },
+    {
+      "name": "copies_duplicates_volume",
+      "pass": "volume",
+      "chain_count": 9,
+      "tenant_count": 1,
+      "failed_count": 9,
+      "occurrences": 54,
+      "seed_offset": 19,
+      "extra_call_bound": 54,
+      "basis": {
+        "frozen_occurrences": 50,
+        "formula": "chain_count = max(4, ceil(frozen_occurrences / 6)); failed_count = chain_count"
+      },
+      "call_plan": {
+        "authenticationSucceeded": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionCreated": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "mfaRemoved": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "passwordResetCompleted": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "sessionRevoked": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "authenticationFailed": {
+          "minimum": 9,
+          "maximum": 9
+        },
+        "beginOperation": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "markCommitted": {
+          "minimum": 27,
+          "maximum": 27
+        },
+        "redeliver": {
+          "minimum": 54,
+          "maximum": 54
+        }
+      }
+    }
+  ],
+  "ground_truth": {
+    "outages_clean": {
+      "203.0.113.77": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "198.51.100.13": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "203.0.113.188": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.152": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.61": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.32": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.112": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "outages_status_503": {
+      "198.51.100.209": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.170": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.217": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.225": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.63": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.153": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.219": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "outages_status_429": {
+      "192.0.2.161": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "198.51.100.205": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.9": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.11": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.244": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.230": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.140": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "outages_status_408": {
+      "192.0.2.139": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "203.0.113.248": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.133": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.218": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.103": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.61": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.49": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "outages_timeout": {
+      "198.51.100.55": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.164": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.134": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.234": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.18": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.59": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.88": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "outages_transport_failure": {
+      "198.51.100.170": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "203.0.113.137": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.3": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.60": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.181": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.225": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.81": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "outages_lost_acknowledgment": {
+      "192.0.2.117": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.62": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "198.51.100.177": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.80": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.155": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.180": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.78": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "outages_exhausted": {
+      "192.0.2.19": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.18": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "203.0.113.118": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.176": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.200": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.92": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.215": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "outages_permanent_400": {
+      "198.51.100.234": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "203.0.113.66": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "203.0.113.154": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.122": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.75": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.245": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.114": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "outages_malformed_acknowledgment": {
+      "198.51.100.57": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "198.51.100.109": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "198.51.100.208": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.76": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.78": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.124": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.53": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "load_overload": {
+      "203.0.113.109": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "203.0.113.135": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      }
+    },
+    "load_drain": {
+      "192.0.2.178": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "198.51.100.61": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      }
+    },
+    "load_abandon": {
+      "203.0.113.16": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.200": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      }
+    },
+    "load_retry_shutdown": {
+      "203.0.113.20": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "198.51.100.89": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      }
+    },
+    "load_overload_volume": {
+      "198.51.100.153": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.83": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.86": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.45": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.176": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.136": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.159": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.240": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.117": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.237": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.101": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.116": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.155": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.247": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.202": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.71": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.123": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.34": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.33": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.40": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.115": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.91": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.114": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.159": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.120": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.142": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.181": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.80": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.82": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.87": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.71": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.188": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.138": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.80": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.228": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.128": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.20": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.122": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.204": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.12": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.105": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.110": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.64": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.75": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.6": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.253": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.186": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.45": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.17": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.214": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.66": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.43": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.186": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.114": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.98": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.118": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.114": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.55": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.207": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.188": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.93": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.80": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.119": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.124": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.193": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.118": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.223": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.31": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.77": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.132": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.23": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.182": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.66": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.222": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.157": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.239": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.196": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.157": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.202": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.133": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.202": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.94": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.192": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.40": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.79": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.216": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.83": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.53": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.101": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.13": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.121": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.232": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.212": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.98": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.176": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.96": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.158": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.140": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.117": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.185": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.183": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.79": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.226": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.141": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.48": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.25": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.181": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.90": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.235": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.15": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.139": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.100": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.107": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.169": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.131": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.235": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.216": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.150": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.161": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.36": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.78": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.23": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.58": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.164": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.40": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.187": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.142": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.141": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.70": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.241": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.85": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.126": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.200": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.131": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.90": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.56": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.212": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.229": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.169": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.54": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.207": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.112": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.5": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.3": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.226": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.164": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.34": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.208": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.200": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.184": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.4": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.220": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.70": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.244": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.210": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.19": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.250": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.228": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.243": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.134": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.72": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.22": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.15": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.185": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.146": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "load_drain_volume": {
+      "198.51.100.221": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "203.0.113.106": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.174": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.245": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.245": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.2": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.171": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.195": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.206": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.182": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.206": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.196": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.119": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.82": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.238": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.123": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.113": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.111": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.182": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.51": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.230": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.71": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.19": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.23": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.238": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.222": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.80": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.184": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.13": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.64": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.124": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.228": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    },
+    "copies_identities": {
+      "192.0.2.110": {
+        "successful": 3,
+        "failed": 2,
+        "other": 8
+      },
+      "203.0.113.89": {
+        "successful": 1,
+        "failed": 2,
+        "other": 8
+      }
+    },
+    "copies_collector_restart": {
+      "192.0.2.241": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "198.51.100.154": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      }
+    },
+    "copies_consumer_restart": {
+      "198.51.100.213": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "198.51.100.121": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      }
+    },
+    "copies_duplicates_volume": {
+      "203.0.113.10": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "203.0.113.74": {
+        "successful": 2,
+        "failed": 2,
+        "other": 8
+      },
+      "192.0.2.221": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "198.51.100.31": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.210": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "192.0.2.228": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      },
+      "203.0.113.242": {
+        "successful": 1,
+        "failed": 1,
+        "other": 4
+      }
+    }
+  },
+  "cases": [
+    {
+      "case_id": "N-01",
+      "observer": "plans",
+      "pass": "small",
+      "setup": "Every referenced fault plan is hash-verified before traffic and executed.",
+      "expected": {
+        "holds": true
+      },
+      "basis": [
+        "openspec/changes/verify-fraud-evidence-delivery/harness/lib/faults.mjs:60",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/lib/ingress.mjs:126",
+        "Q260: referenced frozen plans verified before traffic"
+      ]
+    },
+    {
+      "case_id": "N-02",
+      "observer": "successful",
+      "pass": "small",
+      "setup": "Successful authentications reconcile per source against frozen counts.",
+      "expected": {
+        "holds": true
+      },
+      "basis": [
+        "packages/security-audit-collector/src/sqlite-storage.ts:55",
+        "packages/security-audit-collector/src/ingress.ts:194",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:19",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:20"
+      ]
+    },
+    {
+      "case_id": "N-03",
+      "observer": "failed",
+      "pass": "small",
+      "setup": "Failed authentications reconcile per source against frozen counts.",
+      "expected": {
+        "holds": true
+      },
+      "basis": [
+        "packages/security-audit-collector/src/sqlite-storage.ts:55",
+        "packages/security-audit-collector/src/ingress.ts:194",
+        "packages/security-audit-sdk-node/src/http-response-classification.ts:52"
+      ]
+    },
+    {
+      "case_id": "N-04",
+      "observer": "remainder",
+      "pass": "small",
+      "setup": "Remainders are itemized by source and composition reason, with no unexplained occurrence.",
+      "expected": {
+        "holds": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/http-handoff.ts:19",
+        "packages/security-audit-sdk-node/src/http-handoff.ts:20",
+        "packages/security-audit-sdk-node/src/delivery-retry.ts:103",
+        "packages/security-audit-sdk-node/src/delivery-backpressure.ts:54",
+        "packages/security-audit-sdk-node/src/delivery-shutdown.ts:57",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/lib/composition.mjs"
+      ]
+    },
+    {
+      "case_id": "N-05",
+      "observer": "duplicates",
+      "pass": "small",
+      "setup": "Raw persisted observations include duplicates; distinct ids never inflate counts.",
+      "expected": {
+        "holds": true
+      },
+      "basis": [
+        "packages/security-audit-collector/src/sqlite-storage.ts:55",
+        "packages/security-audit-collector/src/ingress.ts:194"
+      ]
+    },
+    {
+      "case_id": "N-06",
+      "observer": "per_target",
+      "pass": "small",
+      "setup": "Per-target counts are not attempted under G33.",
+      "expected": {
+        "holds": true
+      },
+      "basis": [
+        "Q266: per-target not_attempted under G33",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/counts/session.mjs"
+      ]
+    },
+    {
+      "case_id": "N-07",
+      "observer": "observations",
+      "pass": "small",
+      "setup": "Collector ingress throughput and sender persisted-ack latency are well-formed labelled observations only.",
+      "expected": {
+        "holds": true
+      },
+      "basis": [
+        "Q267: labelled observations only; no throughput or latency limits",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/counts/observations.mjs"
+      ]
+    },
+    {
+      "case_id": "N-08",
+      "observer": "planted",
+      "pass": "small",
+      "setup": "The raw duplicate counter fails on this run's full persisted data; the distinct null control passes.",
+      "expected": {
+        "holds": true
+      },
+      "basis": [
+        "packages/security-audit-collector/src/sqlite-storage.ts:55",
+        "packages/security-audit-collector/src/ingress.ts:194",
+        "Q269: live raw duplicate counter and distinct null control"
+      ]
+    },
+    {
+      "case_id": "N-09",
+      "observer": "isolation",
+      "pass": "small",
+      "setup": "Sender and ingress isolation controls hold and both roles close.",
+      "expected": {
+        "holds": true
+      },
+      "basis": [
+        "packages/security-audit-sdk-node/src/fetch-exchange.ts:45",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/lib/controls.mjs",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/lib/role-guard.mjs"
+      ]
+    },
+    {
+      "case_id": "N-10",
+      "observer": "accounting",
+      "pass": "small",
+      "setup": "Every phase's frozen occurrences are classified exactly once.",
+      "expected": {
+        "holds": true
+      },
+      "basis": [
+        "packages/security-audit-collector/src/sqlite-storage.ts:55",
+        "packages/security-audit-collector/src/ingress.ts:194",
+        "openspec/changes/verify-fraud-evidence-delivery/harness/lib/ledger.mjs:3",
+        "Q263 and Q270 N-10: frozen occurrences and per-phase call plan"
+      ]
+    }
+  ]
+}

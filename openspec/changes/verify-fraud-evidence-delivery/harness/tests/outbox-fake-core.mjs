@@ -1,15 +1,13 @@
 // Scoped context branding mirrors context.ts for the constructors used by this probe.
-const brands = new WeakMap();
+import { createBrandRegistry } from "./fake-sdk-common.mjs";
+
+const brands = createBrandRegistry();
 const FIELDS = [
   ["actor", "actor"], ["subject", "subject"], ["tenant", "tenant"],
   ["resource", "resource"], ["authorization", "authorization"],
 ];
 
-function brand(kind, input) {
-  const value = Object.freeze(structuredClone(input));
-  brands.set(value, kind);
-  return value;
-}
+const brand = brands.brand;
 
 function actor(type, input) {
   return brand("actor", {
@@ -32,7 +30,7 @@ export function outboxCore() {
 export function unbrandedPath(input) {
   for (const [field, kind] of FIELDS) {
     if (input[field] === undefined) continue;
-    if (brands.get(input[field]) !== kind) return `/${field}`;
+    if (!brands.has(input[field], kind)) return `/${field}`;
   }
   return null;
 }
