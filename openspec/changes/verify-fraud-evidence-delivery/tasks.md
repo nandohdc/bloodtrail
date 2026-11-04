@@ -97,8 +97,8 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 ## 8. Per-source counts, throughput and latency (#841)
 
-- [ ] 8.1 Build the at-volume per-source count comparison under every earlier fault plan, and the labelled
-  throughput and latency recorder.
+- [x] 8.1 Build the at-volume per-source count comparison under every earlier fault plan, and the labelled
+  throughput and latency recorder. Built under expectations/counts.v1.json (#841, Q259–Q276).
 - [ ] 8.2 Under its own S1 approvals, run exactly three times, in slots 10–12 (any further run needs a
   reserve slot and an owner disposition, G46, Q68). Record per-source counts against ground truth
   (criterion 4) and the run-to-run spread.

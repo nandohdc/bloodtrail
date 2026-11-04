@@ -1,9 +1,8 @@
 // Operation authority belongs to one SDK instance, as operations.ts does.
 import { randomUUID } from "node:crypto";
+import { checkOperationEvidence, fakeFailure } from "./fake-sdk-common.mjs";
 
-export function failure(code, path, category = "validation") {
-  return { ok: false, error: { code, path, category } };
-}
+export const failure = fakeFailure;
 
 function createHandle(options) {
   let state = "started";
@@ -37,10 +36,7 @@ export function operationAuthority() {
     },
     check(handle, method) {
       if (handle === undefined) return null;
-      if (!handles.has(handle)) return failure("SDK_INVALID_OPERATION_TRANSITION", "/operation", "lifecycle");
-      const mismatch = handle.boundEvent !== undefined && handle.boundEvent !== method;
-      if (mismatch) return failure("SDK_OPERATION_EVENT_MISMATCH", "/operation/bound_event", "lifecycle");
-      return null;
+      return checkOperationEvidence(handles.has(handle) ? handle : null, method);
     },
   };
 }
