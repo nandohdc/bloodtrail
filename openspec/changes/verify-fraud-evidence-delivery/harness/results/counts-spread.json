@@ -1,0 +1,1330 @@
+{
+  "phases": {
+    "copies_collector_restart": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 20.509958000000005,
+          "median": 19.726125000000003,
+          "minimum": 19.541291,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 10.468166999999994,
+          "median": 9.84020799999999,
+          "minimum": 9.753540999999998,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 13.478750000000005,
+          "median": 11.534875,
+          "minimum": 10.677249999999987,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 146.6091672843036,
+          "median": 143.52303678097155,
+          "minimum": 143.07288740347965,
+          "samples": 3
+        }
+      }
+    },
+    "copies_consumer_restart": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 49.54966700000023,
+          "median": 49.46320899999955,
+          "minimum": 47.55766700000004,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 5.411959000000024,
+          "median": 4.9589169999999285,
+          "minimum": 4.89233299999978,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 35.95666600000004,
+          "median": 32.682041999999456,
+          "minimum": 32.67783299999974,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 4.523100285620553,
+          "median": 4.52023898129821,
+          "minimum": 4.51620452996484,
+          "samples": 3
+        }
+      }
+    },
+    "copies_duplicates_volume": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 23.137208,
+          "median": 21.017750000000007,
+          "minimum": 20.422832999999997,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 1.1313330000000121,
+          "median": 0.6965419999999938,
+          "minimum": 0.6907080000000008,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 3.2364590000000106,
+          "median": 1.600875000000002,
+          "minimum": 1.56087500000001,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 238.50128442879216,
+          "median": 238.0525975009988,
+          "minimum": 181.79691096748783,
+          "samples": 3
+        }
+      }
+    },
+    "copies_identities": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 55.332042,
+          "median": 54.737292,
+          "minimum": 54.389583000000016,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 10.894625000000005,
+          "median": 10.676625000000001,
+          "minimum": 10.459750000000014,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 50.58854099999999,
+          "median": 49.944916000000006,
+          "minimum": 49.512709,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 83.24175786156752,
+          "median": 82.43045028643242,
+          "minimum": 79.96276187487994,
+          "samples": 3
+        }
+      }
+    },
+    "load_abandon": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 3046.552041,
+          "median": 3044.1025409999997,
+          "minimum": 3043.5532080000003,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 3036.609333,
+          "median": 3035.404833,
+          "minimum": 3034.7173749999997,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 3046.552041,
+          "median": 3044.1025409999997,
+          "minimum": 3043.5532080000003,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 5.011895028051342,
+          "median": 5.004301223486937,
+          "minimum": 4.96846294077509,
+          "samples": 3
+        }
+      }
+    },
+    "load_drain": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 347.08925000000005,
+          "median": 344.51466700000003,
+          "minimum": 342.82266699999997,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 336.042917,
+          "median": 335.844417,
+          "minimum": 333.857292,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 347.08925000000005,
+          "median": 344.51466700000003,
+          "minimum": 342.82266699999997,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 32.719510209381866,
+          "median": 32.59200389650444,
+          "minimum": 31.29848110270871,
+          "samples": 3
+        }
+      }
+    },
+    "load_drain_volume": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 607.759208,
+          "median": 606.904875,
+          "minimum": 605.425458,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 594.303042,
+          "median": 585.893584,
+          "minimum": 584.561416,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 598.118375,
+          "median": 597.041875,
+          "minimum": 595.77675,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 246.0003675194769,
+          "median": 244.9338643341273,
+          "minimum": 236.43431460175367,
+          "samples": 3
+        }
+      }
+    },
+    "load_overload": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 344.626292,
+          "median": 343.384459,
+          "minimum": 342.432791,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 335.47375,
+          "median": 334.816291,
+          "minimum": 334.80875000000003,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 344.626292,
+          "median": 343.384459,
+          "minimum": 342.432791,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 8.090919687255614,
+          "median": 7.976468763078479,
+          "minimum": 7.9270676796867265,
+          "samples": 3
+        }
+      }
+    },
+    "load_overload_volume": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 781.52725,
+          "median": 762.8406669999999,
+          "minimum": 759.641958,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 765.493584,
+          "median": 748.258417,
+          "minimum": 745.2859169999999,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 771.2580419999999,
+          "median": 755.109417,
+          "minimum": 751.2777080000001,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 106.06518744995506,
+          "median": 105.8864762477622,
+          "minimum": 101.12557824869711,
+          "samples": 3
+        }
+      }
+    },
+    "load_retry_shutdown": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 0,
+          "median": 0,
+          "minimum": 0,
+          "samples": 3
+        }
+      }
+    },
+    "outages_clean": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 26.048250000000003,
+          "median": 24.954499999999996,
+          "minimum": 24.740292000000004,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 2.676291000000006,
+          "median": 2.2492910000000137,
+          "minimum": 2.1516249999999957,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 16.525,
+          "median": 15.970166999999996,
+          "minimum": 15.762874999999994,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 277.0368509853203,
+          "median": 275.7111271588602,
+          "minimum": 226.1767865113794,
+          "samples": 3
+        }
+      }
+    },
+    "outages_exhausted": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 0,
+          "median": 0,
+          "minimum": 0,
+          "samples": 3
+        }
+      }
+    },
+    "outages_lost_acknowledgment": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 31.880875000000003,
+          "median": 31.659667,
+          "minimum": 31.591667,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 17.513417000000004,
+          "median": 17.058749999999975,
+          "minimum": 16.60175000000001,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 24.714540999999997,
+          "median": 24.325082999999992,
+          "minimum": 23.11550000000001,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 126.95841435993708,
+          "median": 124.6071175082477,
+          "minimum": 121.16724445491569,
+          "samples": 3
+        }
+      }
+    },
+    "outages_malformed_acknowledgment": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 284.2205607974833,
+          "median": 275.7574121600807,
+          "minimum": 233.74764020394483,
+          "samples": 3
+        }
+      }
+    },
+    "outages_permanent_400": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": null,
+          "median": null,
+          "minimum": null,
+          "samples": 0
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 0,
+          "median": 0,
+          "minimum": 0,
+          "samples": 3
+        }
+      }
+    },
+    "outages_status_408": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 38.50149999999999,
+          "median": 32.240832999999995,
+          "minimum": 31.462083,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 16.614416999999946,
+          "median": 16.070833000000007,
+          "minimum": 15.883749999999992,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 27.527333999999996,
+          "median": 23.500917000000015,
+          "minimum": 22.393874999999994,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 126.52769272597988,
+          "median": 125.09435183573157,
+          "minimum": 122.16875549371966,
+          "samples": 3
+        }
+      }
+    },
+    "outages_status_429": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 64.70208299999999,
+          "median": 62.931083000000015,
+          "minimum": 62.120791999999994,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 35.698958000000005,
+          "median": 35.38266699999997,
+          "minimum": 35.14391699999999,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 61.487084000000095,
+          "median": 58.64245900000003,
+          "minimum": 58.04708300000004,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 63.34687030534804,
+          "median": 62.551845996196796,
+          "minimum": 60.132274300050575,
+          "samples": 3
+        }
+      }
+    },
+    "outages_status_503": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 34.467332999999996,
+          "median": 31.330999999999996,
+          "minimum": 30.272167000000003,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 16.708375000000018,
+          "median": 16.13345899999996,
+          "minimum": 15.344583,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 23.61025,
+          "median": 23.562124999999995,
+          "minimum": 23.330292000000014,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 127.83293980870269,
+          "median": 127.48318024102493,
+          "minimum": 125.62272171853223,
+          "samples": 3
+        }
+      }
+    },
+    "outages_timeout": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 1034.8555000000001,
+          "median": 1034.095083,
+          "minimum": 1031.064333,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 1017.7302080000009,
+          "median": 1017.6004169999997,
+          "minimum": 1016.2693750000017,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 1025.2709160000004,
+          "median": 1024.9683750000004,
+          "minimum": 1024.901417,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 3.387708591784981,
+          "median": 3.3862777599819647,
+          "minimum": 3.386051640621777,
+          "samples": 3
+        }
+      }
+    },
+    "outages_transport_failure": {
+      "environments": [
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        },
+        {
+          "ingress": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          },
+          "sender": {
+            "cpu_count": 10,
+            "node": "26.13.0",
+            "platform": "darwin"
+          }
+        }
+      ],
+      "observations": {
+        "delivery_latency_maximum_ms": {
+          "maximum": 32.166,
+          "median": 30.782874999999997,
+          "minimum": 29.489083000000008,
+          "samples": 3
+        },
+        "delivery_latency_p50_ms": {
+          "maximum": 16.771541999999982,
+          "median": 16.031166999999982,
+          "minimum": 16.01049999999998,
+          "samples": 3
+        },
+        "delivery_latency_p95_ms": {
+          "maximum": 24.109083,
+          "median": 24.09308299999998,
+          "minimum": 23.792,
+          "samples": 3
+        },
+        "ingress_persisted_events_per_second": {
+          "maximum": 129.08911711664175,
+          "median": 124.12928735576254,
+          "minimum": 121.6225803581785,
+          "samples": 3
+        }
+      }
+    }
+  },
+  "probe": "S2-counts",
+  "run_ids": [
+    10,
+    11,
+    12
+  ]
+}

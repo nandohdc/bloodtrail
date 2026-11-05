@@ -99,9 +99,9 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 - [x] 8.1 Build the at-volume per-source count comparison under every earlier fault plan, and the labelled
   throughput and latency recorder. Built under expectations/counts.v1.json (#841, Q259–Q276).
-- [ ] 8.2 Under its own S1 approvals, run exactly three times, in slots 10–12 (any further run needs a
+- [x] 8.2 Under its own S1 approvals, run exactly three times, in slots 10–12 (any further run needs a
   reserve slot and an owner disposition, G46, Q68). Record per-source counts against ground truth
-  (criterion 4) and the run-to-run spread.
+  (criterion 4) and the run-to-run spread. Runs 10, 11 and 12 each matched all 10 frozen cases, with no invalidations and confirmed scratch deletion: `results/counts-run-10.json`, `results/counts-run-11.json`, `results/counts-run-12.json`; spread in `results/counts-spread.json`.
 
 ## 9. Stage 2 verdict and system ADR 0015 (#843)
 
