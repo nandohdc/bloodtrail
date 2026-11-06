@@ -117,7 +117,13 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 ## 10. Consumer integration profile (#844)
 
-- [ ] 10.1 Rewrite the profile's demonstrated versus host-composed delivery-guarantees table from the measurements.
+- [x] 10.1 Rewrite the profile's demonstrated versus host-composed delivery-guarantees table from the measurements.
+  Rewritten in `docs/fraud-evidence/consumer-integration-profile.md` by #934 (merge commit `b2cdf12`), with two
+  glossary definitions corrected in `docs/fraud-evidence/CONTEXT.md`.
+  - 11 guarantees are marked demonstrated, each citing its Stage 2 run and cases, and 3 are host-composed only.
+  - The collector's storage-less bound of 32 live identities is measured. Its 300-second retention is stated as
+    the collector specification's bound, not measured.
+  - Claude Code wrote it on the owner's instruction. Independent review was not performed.
 
 ## 11. Verification
 
