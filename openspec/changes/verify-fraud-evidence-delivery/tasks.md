@@ -92,8 +92,8 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 - [x] 7.1 Build the harness-local `node:sqlite` outbox with a transaction-bound sink, the relay through the
   composition, and the rollback and relay crash-and-restart phases. Built under expectations/outbox.v1.json (#842, Q243–Q258).
-- [ ] 7.2 Under its own S1, record that a rollback relays nothing and a commit relays at least once, with
-  deduplication by event ID and transaction ID. Run 9 matched 11 of 11 frozen cases, with no invalidations and confirmed scratch deletion: `results/outbox-run-9.json`. The observed duplicate shares an event ID and the transaction ID matches the host row; the probe does not establish an independently effective transaction-ID deduplication key (#921). The relay restart is in-process. This task remains open pending disposition of the transaction-ID criterion.
+- [x] 7.2 Under its own S1, record that a rollback relays nothing and a commit relays at least once, with
+  deduplication by event ID and transaction ID. Run 9 matched 11 of 11 frozen cases, with no invalidations and confirmed scratch deletion: `results/outbox-run-9.json`. The transaction-ID criterion is accepted as narrowed by the owner's H-06 disposition (#842, issuecomment-6674456274). Redeliveries arrive as collector duplicates. With storage, the collector's identity is the storage scope and `event.id` with whole-body equality, so a duplicate shares both the event ID and the transaction ID. Every persisted transaction ID equals its host row's and is unique. Not demonstrated, and not claimed: pair-keyed deduplication in the Node binding's sense, which this probe does not use (Q257), and that a transaction ID shared by two distinct events suppresses neither, since every run-9 transaction carries one event (#921). The relay restart is in-process.
 
 ## 8. Per-source counts, throughput and latency (#841)
 
