@@ -9,7 +9,7 @@ This change is the Stage 2 that #795 defers, specified by #833 and ticketed as #
   faults, at volume.
 
 **Authority.** The decision log is #795's G1–G37 comment, plus the later owner decisions recorded as their own
-comments on #795 (G38–G40 and G41–G45) and, after #795 closed, on #833 (G46–G47). Where #833's body and the log differ, the log wins. The grilling
+comments on #795 (G38–G40 and G41–G45) and, after #795 closed, on #833 (G46–G48). Where #833's body and the log differ, the log wins. The grilling
 decisions taken with the owner on 2026-10-22, in Claude Code session
 https://claude.ai/code/session_012Y6oT9KjPZ1BMvT63hU3ay, are recorded below with that source. No table entry
 grants a run approval.
@@ -338,6 +338,20 @@ Note (the orchestrator's reading, not owner text): from G46's posting (2026-10-2
 The user said “There is no more Claude Code or Antigravity quota” and “You must continue on your own because there is no Claude Code avaiable.” Codex recorded its interpretation in [#833](https://github.com/nandohdc/bloodtrail/issues/833#issuecomment-6506408946): it continues the remaining work in the Codex lane. This is the orchestrator's record of the instruction, not a separately authored owner approval or an S1.
 
 After this amendment merges, Codex may execute remaining slots 9–16, with its real lane and model recorded. Slots 13–16 still require the separate owner disposition under G46 Q68; each execution still requires its own exact-head S1, frozen expectations, all-green checks, and the existing window, budget and S2 controls. This amendment authorizes no run and changes no historical provenance. The previously specified Claude model review is unavailable and is recorded as `NOT_PERFORMED`; Codex analysis is identified as AI analysis, not a human review or approval.
+
+### ADR 0015 decisions (2026-11-06, #833)
+
+The owner gave these answers in a Claude Code session, after a read-only planning pass for #843. The
+orchestrator recorded them verbatim in G48 (https://github.com/nandohdc/bloodtrail/issues/833#issuecomment-6675845498).
+This table summarizes them; the comment is authoritative. They authorize no run.
+
+| ID | Decision |
+|---|---|
+| G48 D1 | G4's "bounded flush" and criterion 5's "shutdown drains within its deadline" are judged at the reference composition's outer deadline, not at the shutdown primitive's own configured deadline, as the #838 owner addendum above assigns. ADR 0015 discloses the primitive's late report in all 10 samples, and run 3's failed `load.v1.json` parameters. |
+| G48 D2 | #910, option (b): copies coverage is run 7's C-07 plus runs 10–12's N-10, and `storage_less`'s missing terminal bucket is disclosed. No run. |
+| G48 D3 | Claude Code (`claude-opus-5-5`) writes ADR 0015, and independent review of it is recorded as `NOT_PERFORMED`. |
+| G48 D4 | The owner merges the ADR 0015 PR after approving the ADR at its exact head. #843 is closed by hand once the PR shows MERGED. |
+| G48 D5 | The shutdown primitive's late report is filed as a Bloodtrail-package issue (#932) before ADR 0015 cites it (G37). |
 
 ### Stage 2 design decisions (grilling, 2026-10-22, this session)
 

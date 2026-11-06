@@ -105,9 +105,15 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 ## 9. Stage 2 verdict and system ADR 0015 (#843)
 
-- [ ] 9.1 Record criteria 3, 4 (per source) and 5 with their evidence and fix owners, and answer G4 by its four
+- [x] 9.1 Record criteria 3, 4 (per source) and 5 with their evidence and fix owners, and answer G4 by its four
   predicates. If G4 fails, state the requirement for a separate Node-binding change. Seek the owner's approval
-  against a named head.
+  against a named head. Recorded in system ADR 0015
+  (`docs/adr/0015-stage-2-requires-no-security-significant-binding-on-contract-2-1-0.md`), under G48
+  (#833, issuecomment-6675845498).
+  - Criteria 3, 4 (per source) and 5 are met on synthetic evidence, within the limits the ADR states.
+  - All four G4 predicates hold at the reference composition's deadline (G48 D1), so no
+    `security_significant` binding is required. The shutdown primitive's late report is #932.
+  - The owner's approval is sought on #843 against the PR's exact head, and the PR merges only after it.
 
 ## 10. Consumer integration profile (#844)
 
