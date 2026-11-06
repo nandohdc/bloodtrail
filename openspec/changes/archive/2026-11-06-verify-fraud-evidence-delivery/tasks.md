@@ -166,4 +166,8 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 ## 13. Archive (#846)
 
-- [ ] 13.1 In a separate later PR, archive the completed change, after the verdict and the profile land.
+- [x] 13.1 In a separate later PR, archive the completed change, after the verdict and the profile land.
+  Relocated to `openspec/changes/archive/2026-11-06-verify-fraud-evidence-delivery/` in this dedicated archive PR,
+  after the verdict PR #933 merged as `f0ea30b2a9fce80c76e00ef55f32a7d293d694e5` and the profile PR #934 merged as
+  `b2cdf12025c2727e568fd047071ea83a257549ec`. No fold preceded it: the change carries no spec deltas, and #845 was
+  closed as not planned.
