@@ -41,14 +41,17 @@ that stands in for the session identifier. It is never the session's bearer valu
 _Avoid_: session token, raw session ID, device fingerprint
 
 **Reference composition**:
-The host-side delivery stack the integration profile measures. It nests deadline-bounded shutdown admission
-around the backpressure admission gate, which goes around bounded delivery retry, which goes around the
-single-attempt HTTP handoff over the governed fetch adapter. Backpressure admits or rejects; it is not a queue.
+The host-side delivery stack that Stage 2 measured (ADR 0015) and the integration profile describes. It nests
+deadline-bounded shutdown admission around the backpressure admission gate, which goes around bounded delivery
+retry, which goes around the single-attempt HTTP handoff over the governed fetch adapter. Backpressure admits or
+rejects; it is not a queue.
 _Avoid_: delivery pipeline, outbox, queue
 
 **Terminal bucket**:
 The single place a generated occurrence's delivery ends: persisted at the collector, reported undelivered by a
-delivery result, reported by an admission signal, abandoned in the shutdown report, or unexplained.
+delivery result, reported by an admission signal, abandoned in the shutdown report, or unexplained. An
+occurrence that was persisted is counted as persisted, even when a delivery result, an admission signal or the
+shutdown report also reports it.
 _Avoid_: delivery status, outcome
 
 **Accounting identity**:
