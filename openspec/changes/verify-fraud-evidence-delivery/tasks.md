@@ -127,7 +127,7 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
 
 ## 11. Verification
 
-- [ ] 11.1 On each PR head, run:
+- [x] 11.1 On each PR head, run:
   - strict validation;
   - assessment- and final-phase governance;
   - the dual check;
@@ -138,15 +138,31 @@ order #836 → #837 → #838 → #839 → #840 → #842 → #841.
   - `node --test` on the harness tests.
 
   Verify every required CI context plus DeepScan.
-- [ ] 11.2 Before declaring Stage 2 complete, verify:
+  Checked through the GitHub API on the heads of the 29 merged PRs that touched this change, #876 to #935.
+  - All 10 required contexts concluded `success` on every head.
+  - DeepScan passed on 28 heads. #903's head `ceca85c` carries no DeepScan status.
+  - Each PR records its own gate run in its body. This PR records the gates on its own head, and the archive
+    PR (#846) runs them again on its head.
+- [x] 11.2 Before declaring Stage 2 complete, verify:
   - each run's kit identity equals its approved head;
   - expectations hashes are unchanged;
   - the ledger stays within the G42 limits as amended by G46;
   - scratch is deleted.
 
+  Verified at `main` `1843ff6` by a script that imports no harness code. It passed all 215 checks over runs 1–12:
+  - Each run's `kit_identity.commit` equals its ledger head and the head its S1 comment names, and every
+    executed file's blob equals that head's.
+  - Each expectations file equals its recorded sha256 at the approved head and on `main`.
+  - 12 of 16 runs were used, with 15,708 ledger calls, and no run exceeds its call bound or 50,000.
+  - Every S1 is unedited and inside the window, and every run ended before it closed.
+  - Every run records `scratch_deletion.recursively_absent: true`. The once-markers sit on the run host and
+    were not read.
+  - Runs 5 and 6's S1 hashes cover a trailing newline, as #907 records. Every other S1 hash is byte-exact.
+
 ## 12. Fold (#845)
 
-- [ ] 12.1 Close #845 as not planned, citing this change's no-delta declaration, after #843 and #844 merge.
+- [x] 12.1 Close #845 as not planned, citing this change's no-delta declaration, after #843 and #844 merge.
+  Closed as not planned on 2026-11-06T17:53:03Z (#845, issuecomment-6691615204), after #933 and #934 merged.
 
 ## 13. Archive (#846)
 
