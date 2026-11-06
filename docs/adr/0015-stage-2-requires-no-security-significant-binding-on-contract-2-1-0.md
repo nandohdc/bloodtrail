@@ -74,7 +74,8 @@ Stage 2 ran under the OpenSpec change `verify-fraud-evidence-delivery`, inside t
 ## Evidence
 
 Every results file and expectations file lives in
-`openspec/changes/verify-fraud-evidence-delivery/harness/`, under `results/` and `expectations/`.
+`openspec/changes/archive/2026-11-06-verify-fraud-evidence-delivery/harness/` (the change's directory since #846
+archived it), under `results/` and `expectations/`.
 
 For every run below:
 - the kit identity commit equals the approved head;
