@@ -1,0 +1,175 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "A host whose business change already committed needs a governed way to make the audit record durable without committing the change again.",
+    "No new recovery API, no change to deliver() behaviour, and the frozen Node surface stays at 19 value and 44 type-only exports (10-26 plan §E, #111).",
+    "The binding introduces no outbox, queue, storage or persistent retry, so crash recovery stays with the host's own durable record (G5).",
+    "Every statement about calling deliver() again must be true of the current binding, and that behaviour must be pinned by tests that can fail."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node",
+      "fraud-evidence-profile"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/document-transaction-critical-redelivery/.openspec.yaml",
+    "openspec/changes/document-transaction-critical-redelivery/assessment.json",
+    "openspec/changes/document-transaction-critical-redelivery/assessment.source.json",
+    "openspec/changes/document-transaction-critical-redelivery/design.md",
+    "openspec/changes/document-transaction-critical-redelivery/proposal.md",
+    "openspec/changes/document-transaction-critical-redelivery/specs/fraud-evidence-profile/spec.md",
+    "openspec/changes/document-transaction-critical-redelivery/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/document-transaction-critical-redelivery/tasks.md",
+    "openspec/specs/fraud-evidence-profile/spec.md",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/CONTEXT.md",
+    "packages/security-audit-sdk-node/README.md",
+    "packages/security-audit-sdk-node/adr/005-transaction-critical-delivery-claims-only-what-it-checks.md",
+    "packages/security-audit-sdk-node/adr/006-durability-only-redelivery-uses-a-reconciling-commit-gate.md",
+    "packages/security-audit-sdk-node/tests/transaction-critical-claims.test.ts",
+    "docs/fraud-evidence/consumer-integration-profile.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-reconciling-commit-gate",
+      "kind": "direct_implementation",
+      "summary": "Specify and document that calling deliver() again is a durability-only redelivery when the host supplies a reconciling commit gate keyed on the transaction identifier, and pin the binding's rerun of the probe and gate with tests, with no change to the binding's source.",
+      "forces_addressed": [
+        "A host whose business change already committed needs a governed way to make the audit record durable without committing the change again.",
+        "No new recovery API, no change to deliver() behaviour, and the frozen Node surface stays at 19 value and 44 type-only exports (10-26 plan §E, #111).",
+        "The binding introduces no outbox, queue, storage or persistent retry, so crash recovery stays with the host's own durable record (G5).",
+        "Every statement about calling deliver() again must be true of the current binding, and that behaviour must be pinned by tests that can fail."
+      ]
+    },
+    {
+      "id": "approach-outbox-only-guidance",
+      "kind": "alternative",
+      "summary": "Document that calling deliver() again is never a durability-only redelivery, and that after a failure following the commit the host relays the record from its own outbox.",
+      "forces_addressed": [
+        "No new recovery API, no change to deliver() behaviour, and the frozen Node surface stays at 19 value and 44 type-only exports (10-26 plan §E, #111).",
+        "The binding introduces no outbox, queue, storage or persistent retry, so crash recovery stays with the host's own durable record (G5)."
+      ]
+    },
+    {
+      "id": "approach-binding-remembers-committed-pairs",
+      "kind": "alternative",
+      "summary": "Record, in memory, each pair whose commit gate committed, and skip the gate when the same pair is delivered again through the same binding instance.",
+      "forces_addressed": [
+        "A host whose business change already committed needs a governed way to make the audit record durable without committing the change again.",
+        "The binding introduces no outbox, queue, storage or persistent retry, so crash recovery stays with the host's own durable record (G5)."
+      ]
+    },
+    {
+      "id": "approach-redeliver-export",
+      "kind": "alternative",
+      "summary": "Add a redeliver() export that hands an already-committed occurrence to the durability point without invoking the commit gate.",
+      "forces_addressed": [
+        "A host whose business change already committed needs a governed way to make the audit record durable without committing the change again."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-reconciling-commit-gate",
+  "rejected_alternative_ids": [
+    "approach-outbox-only-guidance",
+    "approach-binding-remembers-committed-pairs",
+    "approach-redeliver-export"
+  ],
+  "rejection_reasons": {
+    "approach-outbox-only-guidance": {
+      "forces": [
+        "A host whose business change already committed needs a governed way to make the audit record durable without committing the change again.",
+        "Every statement about calling deliver() again must be true of the current binding, and that behaviour must be pinned by tests that can fail."
+      ],
+      "reason": "Stated without its condition the claim is false, because a reconciling gate already commits once and reaches durability on the current binding. It would also leave a host without an outbox only a second commit or a path the transaction_critical row does not govern."
+    },
+    "approach-binding-remembers-committed-pairs": {
+      "forces": [
+        "No new recovery API, no change to deliver() behaviour, and the frozen Node surface stays at 19 value and 44 type-only exports (10-26 plan §E, #111).",
+        "Every statement about calling deliver() again must be true of the current binding, and that behaviour must be pinned by tests that can fail."
+      ],
+      "reason": "It changes deliver() behaviour, beyond a documentation and specification resolution, and holds within one binding instance only, so a restarted host would still need a reconciling commit gate."
+    },
+    "approach-redeliver-export": {
+      "forces": [
+        "No new recovery API, no change to deliver() behaviour, and the frozen Node surface stays at 19 value and 44 type-only exports (10-26 plan §E, #111).",
+        "The binding introduces no outbox, queue, storage or persistent retry, so crash recovery stays with the host's own durable record (G5)."
+      ],
+      "reason": "The 10-26 plan's §E rules out a new recovery API. The export would widen the frozen surface, and without persistence in the binding it could not survive a crash either."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-redelivery-reruns-commit-gate",
+    "implementation-reconciling-gate-commits-once",
+    "implementation-documented-host-obligations",
+    "implementation-unchanged-surface-and-source"
+  ],
+  "invariant_evidence": {
+    "implementation-redelivery-reruns-commit-gate": {
+      "task_ids": [
+        "2.1",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "transaction-critical claims tests (A, B) prove a second deliver() after audit_durability_failed_after_commit and after business_commit_unconfirmed runs the commit gate again, and fail against a planted binding that skips the commit gate for any pair whose earlier attempt ran it"
+      ]
+    },
+    "implementation-reconciling-gate-commits-once": {
+      "task_ids": [
+        "3.1",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "transaction-critical claims tests (C, shared transaction) prove a reconciling gate reaches committed_and_durable with one business commit, and fail against a planted binding that records a pair failed after the commit as delivered or deduplicates on the transaction identifier alone"
+      ]
+    },
+    "implementation-documented-host-obligations": {
+      "task_ids": [
+        "2.2",
+        "3.2",
+        "3.3",
+        "3.4",
+        "3.5"
+      ],
+      "evidence_ids": [
+        "the Node binding README subsection, the consumer integration profile Persistence bullet, the CONTEXT.md term and ADR-NODE-006 state the reconciling commit gate exactly as the ADDED fraud-evidence-profile requirement does"
+      ]
+    },
+    "implementation-unchanged-surface-and-source": {
+      "task_ids": [
+        "4.1",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "npm run test:exports reports 19 value and 44 type-only exports, and git diff against origin/main is empty for the Node binding's src and compatibility.json"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "Pins that a redelivery reruns the commit gate and states the reconciling gate, so a committed change's audit record can become durable once, without a second business commit or an unverified commit claim.",
+    "authentication_or_authorization": "No authentication or authorization logic changes; the binding's class, identity and transaction-identifier refusals are untouched.",
+    "authority_provenance": "Commit state still comes from the validated occurrence, a commit claim still requires the host gate to return committed, and the specification states that redelivery never skips the gate.",
+    "concurrency": "Admission and in-flight reservation are unchanged; a concurrent redelivery of the same pair is still refused, and the new tests run sequential redeliveries only.",
+    "confidentiality": "Documentation, specification and tests only; results still carry identifiers, status, code and flags, and the tests use the contract's synthetic example events.",
+    "cryptography": "No cryptographic primitive, hash, signature or key handling is added, removed or changed.",
+    "error_disclosure": "Failure codes are unchanged; the documentation names existing codes only and adds no diagnostic that could echo caller data.",
+    "external_security_integration": "No transport, exporter, collector or SIEM integration is added; the durability handoff and the exchange stay host-owned and unchanged.",
+    "fail_posture": "Fail-closed behaviour before and after the commit is unchanged; a reconciling gate that cannot tell rejects, which keeps business_commit_unconfirmed failing closed.",
+    "lifecycle": "The fixed probe, gate and durability order is unchanged and is now stated to hold on redelivery; no lifecycle state is introduced.",
+    "mutation_ownership": "Edits are confined to the change directory, the two canonical specs at fold, the Node binding's README, CONTEXT.md, ADRs and claims tests, and the consumer integration profile; no binding source.",
+    "privacy_transformation": "No privacy transform, field policy or transformation hook is touched.",
+    "resource_retention": "The binding's in-memory settled and reserved sets are unchanged; the host's redelivery bound is a stated host obligation, not new state retained by the binding.",
+    "retry_or_redelivery": "This is the dimension the change addresses: redelivery after a failure following the commit is specified to rerun the gate, and a reconciling gate with a host bound and alert makes it durability-only without persistent retry in the binding.",
+    "trust_boundary": "The host's gate stays untrusted runtime input checked strictly; the binding cannot verify that a gate reconciles, so the obligation is placed on the host in the profile rather than asserted by the binding."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "9f2ab64826d1d3d2d28ef4e2e7da3152941c6f48"
+  }
+}
