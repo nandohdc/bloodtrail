@@ -259,10 +259,6 @@ the occurrence to the durability point, in one attempt (ADR-NODE-005).
 `deliver()` returns one of these results and does not reject because a probe, gate or handoff did. Every
 failure also records `commitGateInvoked` and `durabilityAttempted`.
 
-`audit_durability_failed_after_commit` means the business change has committed. `business_commit_unconfirmed`
-means the gate ran, so the change may have committed. Calling `deliver()` again for the same pair runs the commit
-gate again, so reconcile the business change first (#870).
-
 The result is not commit evidence: read whether the business change committed from the occurrence's own
 `event.commit_state`. The binding does not provide the following, which are not implemented:
 
@@ -271,6 +267,49 @@ The result is not commit evidence: read whether the business change committed fr
 - **persistent retry.** It makes one handoff attempt and holds nothing for later;
 - **deduplication across instances.** The event id and transaction id pair is remembered in memory, inside
   one binding instance only.
+
+### Redelivering after a failure following the commit
+
+A pair that failed closed is not recorded as delivered, so the host can offer it again. Two failures after the
+commit gate ran leave a business change that has, or may have, committed, and they tell the host different things:
+
+| Result | What the host knows |
+|---|---|
+| `audit_durability_failed_after_commit` | The gate returned `"committed"`: the business change has committed, and its record is not durable |
+| `business_commit_unconfirmed` | The gate ran but confirmed nothing: the change may or may not have committed |
+
+Calling `deliver()` again for the same event id and transaction id runs the whole order again: the durability
+probe; once it returns `true`, the commit gate; and once the gate returns `"committed"`, the handoff. The binding
+does not skip the gate because an earlier attempt ran it, and it cannot tell what that gate did. A gate that
+commits every time it runs therefore commits the business change a second time. The same holds through a new
+binding instance, which remembers nothing of the first.
+
+The redelivery is durability-only when the gate is a **reconciling commit gate**, one that confirms a business
+change that already committed instead of committing it again:
+
+- **Built for one transaction.** The binding calls the gate with no arguments, so the host builds a gate for one
+  transaction identifier on each delivery, closing over that identifier. A single gate shared across transactions
+  cannot know which one a call concerns, so it cannot reconcile.
+- **`"committed"`** only for a business change it confirms committed, whether it commits the change on that call
+  or finds it already committed. It never commits the change twice, including for two occurrences that share the
+  transaction identifier. The binding refuses only a concurrent delivery of the same pair, so two such occurrences
+  can reach the gate at once. The gate's check and its commit must therefore be atomic against any other gate call
+  for the same transaction identifier, so that two calls cannot both find the change uncommitted and both commit it.
+- **`"declined"`** for a change that has not committed and will not be. The record then never becomes durable
+  (`business_commit_declined`), which is correct, because the occurrence claims a commit that did not happen.
+- **A rejection** when it cannot tell. The binding reports `business_commit_unconfirmed` again.
+
+The host also:
+
+- **bounds** how many times it redelivers one pair;
+- **alerts** while the record of a committed change is still not durable. That is the `transaction_critical`
+  row's backlog alert after commit, and the binding raises none itself;
+- **keeps its own durable record for crashes.** The binding retains nothing of a failed delivery: in memory, it
+  records only the pairs that reached durability. To redeliver after the process stops, the host keeps the
+  occurrence in its own durable store (G5), such as an outbox, and relays it from there.
+
+The fraud evidence profile's requirement "Host redelivery after a failure following the commit" states these
+obligations, and ADR-NODE-006 records the decision (#870).
 
 ### Migration (#859, #860, #869)
 

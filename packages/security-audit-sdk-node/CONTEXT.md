@@ -44,6 +44,12 @@ commit. Only `committed_and_durable` makes one. It is never evidence that the bu
 occurrence's own commit state is.
 _Avoid_: commit evidence, commit proof
 
+**Reconciling commit gate**:
+A business commit gate that answers for one transaction and confirms a business change that already committed
+instead of committing it again. With one, a redelivery after a failure following the commit makes the audit record
+durable without a second business commit.
+_Avoid_: idempotent gate, retry-safe gate
+
 ## Sinks and Handoffs
 
 **HTTP audit sink**:
