@@ -228,7 +228,11 @@ data (ADR 0014):
   with a host outbox (the table above).
 - **Persistence.** The binding has no persistent retry and no retry scheduler; the bounded delivery retry
   retries in memory only. The binding deduplicates only inside one instance, so a second instance delivers the
-  same occurrence again.
+  same occurrence again. After `audit_durability_failed_after_commit` or `business_commit_unconfirmed`, the host
+  can offer the pair again in process, but `deliver()` then runs the commit gate again (#870). The redelivery
+  commits nothing a second time only if the host supplies a reconciling commit gate built for that transaction
+  identifier. The host also bounds those redeliveries and alerts while a committed change's record is not durable.
+  Crash recovery stays with the host's own durable record (G5), because the binding keeps nothing to redeliver.
 - **Operations.** The binding has no backlog alert and no shutdown drain. Shutdown draining belongs to the
   reference composition.
 - **Crashes.** Durability across crashes belongs to the host (G4).

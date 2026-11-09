@@ -12,6 +12,10 @@
 //   - and a rejected probe, gate or handoff confirms nothing either, so it fails
 //     closed the same way instead of rejecting `deliver()`.
 //
+// It also pins what offering a pair again does after a failure following the
+// commit (#870): the probe and the commit gate run again, so only a reconciling
+// commit gate keeps the redelivery durability-only.
+//
 // Events come from the contract's own positive example set, so the committed
 // and the uncommitted arms run against real catalog entries.
 
@@ -62,12 +66,12 @@ function recordingHandoff(outcome: (event: SecurityAuditEvent) => HttpExchangeOu
   return { handoff, attempts };
 }
 
+function acceptedOutcome(event: SecurityAuditEvent): HttpExchangeOutcome {
+  return { kind: "response", status: 202, acknowledgments: [{ event_id: event.event.id, outcome: "accepted" }] };
+}
+
 function acknowledging() {
-  return recordingHandoff((event) => ({
-    kind: "response",
-    status: 202,
-    acknowledgments: [{ event_id: event.event.id, outcome: "accepted" }],
-  }));
+  return recordingHandoff(acceptedOutcome);
 }
 
 function failing() {
@@ -457,5 +461,276 @@ describe("transaction_critical: qualified durability claims for partial and comp
       durabilityAttempted: false,
     });
     assert.equal(attempts.length, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #870: a redelivery after a failure following the commit runs the gate again
+// ---------------------------------------------------------------------------
+
+// A handoff whose first attempt fails and whose later attempts are acknowledged.
+function failingOnce() {
+  let calls = 0;
+  return recordingHandoff((event) => {
+    calls += 1;
+    return calls === 1 ? { kind: "transport_failure" } : acceptedOutcome(event);
+  });
+}
+
+// A durability probe that always confirms, and counts how often it ran.
+function countingProbe() {
+  const probe = {
+    calls: 0,
+    run: async () => {
+      probe.calls += 1;
+      return true;
+    },
+  };
+  return probe;
+}
+
+// A commit gate whose first run rejects, as when the connection drops after the
+// commit was sent, and whose later runs confirm the commit.
+function rejectingOnceGate() {
+  const gate = {
+    calls: 0,
+    run: async (): Promise<"committed"> => {
+      gate.calls += 1;
+      if (gate.calls === 1) throw new Error("synthetic gate rejection: commit outcome unknown");
+      return "committed";
+    },
+  };
+  return gate;
+}
+
+describe("transaction_critical: a redelivery after a failure following the commit runs the gate again (#870)", () => {
+  it("(A) after audit_durability_failed_after_commit, a gate that commits on every call commits twice", async () => {
+    const { handoff, attempts } = failingOnce();
+    const probe = countingProbe();
+    const gate = countingGate("committed");
+    const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: probe.run });
+
+    const first = await binding.deliver(COMMITTED, "txn-870-a", gate.run);
+    const second = await binding.deliver(COMMITTED, "txn-870-a", gate.run);
+
+    assert.deepEqual(first, {
+      status: "failed_closed",
+      code: "audit_durability_failed_after_commit",
+      event_id: COMMITTED.event.id,
+      commitGateInvoked: true,
+      durabilityAttempted: true,
+    });
+    assert.deepEqual(second, {
+      status: "committed_and_durable",
+      event_id: COMMITTED.event.id,
+      transaction_id: "txn-870-a",
+    });
+    assert.equal(probe.calls, 2, "the redelivery probes audit durability again");
+    assert.equal(gate.calls, 2, "the redelivery runs the commit gate again, which committed the change again");
+    assert.deepEqual(attempts, [COMMITTED.event.id, COMMITTED.event.id]);
+  });
+
+  it("(B) after business_commit_unconfirmed, the redelivery runs the gate again", async () => {
+    const { handoff, attempts } = acknowledging();
+    const probe = countingProbe();
+    const gate = rejectingOnceGate();
+    const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: probe.run });
+
+    const first = await binding.deliver(COMMITTED, "txn-870-b", gate.run);
+    const second = await binding.deliver(COMMITTED, "txn-870-b", gate.run);
+
+    assert.deepEqual(first, {
+      status: "failed_closed",
+      code: "business_commit_unconfirmed",
+      event_id: COMMITTED.event.id,
+      commitGateInvoked: true,
+      durabilityAttempted: false,
+    });
+    assert.deepEqual(second, {
+      status: "committed_and_durable",
+      event_id: COMMITTED.event.id,
+      transaction_id: "txn-870-b",
+    });
+    assert.equal(probe.calls, 2, "the redelivery probes audit durability again");
+    assert.equal(gate.calls, 2, "the redelivery runs the commit gate again");
+    assert.deepEqual(attempts, [COMMITTED.event.id]);
+  });
+
+  it("runs the probe, then the gate, then the handoff again, in that order", async () => {
+    const steps: string[] = [];
+    let handoffs = 0;
+    const { handoff } = recordingHandoff((event) => {
+      steps.push("handoff");
+      handoffs += 1;
+      return handoffs === 1 ? { kind: "transport_failure" } : acceptedOutcome(event);
+    });
+    const binding = createTransactionCriticalDelivery({
+      handoff,
+      durabilityProbe: async () => {
+        steps.push("probe");
+        return true;
+      },
+    });
+    const gate: BusinessCommitGate = async () => {
+      steps.push("gate");
+      return "committed";
+    };
+
+    await binding.deliver(COMMITTED, "txn-870-order", gate);
+    const second = await binding.deliver(COMMITTED, "txn-870-order", gate);
+
+    assert.equal(second.status, "committed_and_durable");
+    assert.deepEqual(steps, ["probe", "gate", "handoff", "probe", "gate", "handoff"]);
+  });
+
+  it("does not run the gate again when the redelivery's probe no longer confirms durability", async () => {
+    const { handoff, attempts } = failing();
+    let probes = 0;
+    const gate = countingGate("committed");
+    const binding = createTransactionCriticalDelivery({
+      handoff,
+      durabilityProbe: async () => {
+        probes += 1;
+        return probes === 1;
+      },
+    });
+
+    const first = await binding.deliver(COMMITTED, "txn-870-probe", gate.run);
+    const second = await binding.deliver(COMMITTED, "txn-870-probe", gate.run);
+
+    assert.equal(first.status === "failed_closed" && first.code, "audit_durability_failed_after_commit");
+    assert.deepEqual(second, {
+      status: "failed_closed",
+      code: "audit_durability_unreachable",
+      event_id: COMMITTED.event.id,
+      commitGateInvoked: false,
+      durabilityAttempted: false,
+    });
+    assert.equal(gate.calls, 1, "the gate runs only once the probe confirms");
+    assert.equal(attempts.length, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #870: a reconciling commit gate keeps the redelivery durability-only
+// ---------------------------------------------------------------------------
+
+// A synthetic host whose business store records each committed transaction. The
+// gate it builds for one transaction identifier is a reconciling commit gate: it
+// confirms a business change that already committed instead of committing it
+// again. The binding passes the gate no arguments, so the host closes over the
+// transaction identifier.
+function reconcilingHost() {
+  const committedTransactions = new Set<string>();
+  const host = {
+    businessCommits: 0,
+    gateFor(transactionId: string): BusinessCommitGate {
+      return async () => {
+        if (!committedTransactions.has(transactionId)) {
+          committedTransactions.add(transactionId);
+          host.businessCommits += 1;
+        }
+        return "committed";
+      };
+    },
+  };
+  return host;
+}
+
+describe("transaction_critical: a reconciling commit gate commits once (#870)", () => {
+  it("(C) after audit_durability_failed_after_commit, the redelivery commits nothing again and becomes durable", async () => {
+    const { handoff, attempts } = failingOnce();
+    const host = reconcilingHost();
+    const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: async () => true });
+
+    const first = await binding.deliver(COMMITTED, "txn-870-c", host.gateFor("txn-870-c"));
+    const second = await binding.deliver(COMMITTED, "txn-870-c", host.gateFor("txn-870-c"));
+
+    assert.equal(first.status === "failed_closed" && first.code, "audit_durability_failed_after_commit");
+    assert.deepEqual(second, {
+      status: "committed_and_durable",
+      event_id: COMMITTED.event.id,
+      transaction_id: "txn-870-c",
+    });
+    assert.equal(host.businessCommits, 1, "the business change committed once");
+    assert.deepEqual(attempts, [COMMITTED.event.id, COMMITTED.event.id], "two handoff attempts");
+  });
+
+  it("commits once for two occurrences sharing one transaction identifier, and makes both durable", async () => {
+    const { handoff, attempts } = acknowledging();
+    const host = reconcilingHost();
+    const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: async () => true });
+    const second = withNewEventId(COMMITTED);
+
+    const results = [
+      await binding.deliver(COMMITTED, "txn-870-shared", host.gateFor("txn-870-shared")),
+      await binding.deliver(second, "txn-870-shared", host.gateFor("txn-870-shared")),
+    ];
+
+    assert.deepEqual(results.map((result) => result.status), ["committed_and_durable", "committed_and_durable"]);
+    assert.equal(host.businessCommits, 1, "the shared business change committed once");
+    assert.deepEqual(attempts, [COMMITTED.event.id, second.event.id]);
+  });
+
+  it("keeps the record non-durable when reconciliation after business_commit_unconfirmed declines", async () => {
+    const { handoff, attempts } = acknowledging();
+    let calls = 0;
+    // The first run cannot tell; the reconciliation then finds a change that never committed and will not.
+    const gate: BusinessCommitGate = async () => {
+      calls += 1;
+      if (calls === 1) throw new Error("synthetic gate rejection: commit outcome unknown");
+      return "declined";
+    };
+    const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: async () => true });
+
+    const first = await binding.deliver(COMMITTED, "txn-870-declined", gate);
+    const second = await binding.deliver(COMMITTED, "txn-870-declined", gate);
+
+    assert.equal(first.status === "failed_closed" && first.code, "business_commit_unconfirmed");
+    assert.deepEqual(second, {
+      status: "failed_closed",
+      code: "business_commit_declined",
+      event_id: COMMITTED.event.id,
+      commitGateInvoked: true,
+      durabilityAttempted: false,
+    });
+    assert.equal(attempts.length, 0, "the record never reaches the durability point");
+  });
+
+  it("lets two occurrences sharing a transaction identifier reach the gate at the same time", async () => {
+    const { handoff } = acknowledging();
+    const binding = createTransactionCriticalDelivery({ handoff, durabilityProbe: async () => true });
+    const second = withNewEventId(COMMITTED);
+    let inGate = 0;
+    let mostInGate = 0;
+    let releaseBoth = () => {};
+    const bothInGate = new Promise<void>((resolve) => {
+      releaseBoth = resolve;
+    });
+    let deadline: ReturnType<typeof setTimeout> | undefined;
+    const giveUp = new Promise<void>((resolve) => {
+      deadline = setTimeout(resolve, 2000);
+    });
+    // Each call waits until both are inside the gate, or until the deadline if the binding never lets them be.
+    const gate: BusinessCommitGate = async () => {
+      inGate += 1;
+      mostInGate = Math.max(mostInGate, inGate);
+      if (inGate === 2) releaseBoth();
+      await Promise.race([bothInGate, giveUp]);
+      inGate -= 1;
+      return "committed";
+    };
+
+    try {
+      const results = await Promise.all([
+        binding.deliver(COMMITTED, "txn-870-concurrent", gate),
+        binding.deliver(second, "txn-870-concurrent", gate),
+      ]);
+
+      assert.deepEqual(results.map((result) => result.status), ["committed_and_durable", "committed_and_durable"]);
+      assert.equal(mostInGate, 2, "the binding does not serialise deliveries that share only a transaction identifier");
+    } finally {
+      clearTimeout(deadline);
+    }
   });
 });
