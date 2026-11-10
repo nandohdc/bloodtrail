@@ -78,9 +78,14 @@
 
 ## 5. Merge, fold and archive
 
-- [ ] 5.1 Verify that every required context plus DeepScan is green on the implementation PR head.
-- [ ] 5.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here.
-- [ ] 5.3 In a separate fold PR, fold both deltas into the canonical specs while the change is still active. Verify
-  that each requirement and scenario heading occurs exactly once and that no delta header survives.
+- [x] 5.1 Verify that every required context plus DeepScan is green on the implementation PR head. Green: #940, head
+  `d487f9d`, with all ten required contexts and DeepScan.
+- [x] 5.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here. Merged: #940,
+  merge commit `be1ebd6`.
+- [x] 5.3 In a separate fold PR, fold both deltas into the canonical specs while the change is still active. Verify
+  that each requirement and scenario heading occurs exactly once and that no delta header survives. Folded: each
+  of the deltas' 15 headings occurs once in its canonical spec, and no delta header survives. Both canonical files
+  match `openspec archive` from `be1ebd6` byte for byte. The sdk-node spec's repeated heading "A redirect is never
+  followed" sits under two other requirements and predates the fold.
 - [ ] 5.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change, then close
   #870 by hand. Verify that the archived directory carries the UTC date of the archive.

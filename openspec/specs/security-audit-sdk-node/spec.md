@@ -518,6 +518,14 @@ across instances is the host's.
 - **THEN** it is attempted again rather than reported as a duplicate, the reservation having been
   released
 
+#### Scenario: A redelivery after a failure following the commit runs the commit gate again
+- **WHEN** a delivery fails closed after the commit gate ran, because the durability point did not
+  acknowledge or because the commit gate's result could not be confirmed, and the same pair is offered
+  again
+- **THEN** the durability probe runs again and, once it confirms that audit durability is reachable, so
+  does the commit gate, before the durability point; the binding does not skip the commit gate because
+  an earlier attempt ran it
+
 #### Scenario: A concurrently reachable duplicate is refused, not claimed delivered
 - **WHEN** the same pair is offered again while the first attempt is still in flight
 - **THEN** the second is refused with an outcome distinct from already-delivered, and only one
