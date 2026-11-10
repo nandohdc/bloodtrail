@@ -177,6 +177,16 @@ function bestEffortArm(acknowledging: AcknowledgingHandoffFactory): ClassArm {
   };
 }
 
+// Every status by which a transaction_critical binding reports that an occurrence
+// reached the durability point. Which one applies follows the occurrence's commit
+// state (#869, #913), so "delivered" means any of them, not only the full commit.
+const TRANSACTION_CRITICAL_DURABLE_STATUSES: ReadonlySet<string> = new Set([
+  "committed_and_durable",
+  "partially_committed_and_durable",
+  "compensated_and_durable",
+  "durable_without_commit",
+]);
+
 function transactionCriticalArm(acknowledging: AcknowledgingHandoffFactory): ClassArm {
   const event = eventForClass("transaction_critical");
   const { handoff, attempts } = acknowledging(event);
@@ -188,7 +198,7 @@ function transactionCriticalArm(acknowledging: AcknowledgingHandoffFactory): Cla
     async deliverOwn() {
       transaction += 1;
       const result = await binding.deliver(event, `txn-${transaction}`, async () => "committed");
-      return { claimsDelivered: result.status === "committed_and_durable", attempts };
+      return { claimsDelivered: TRANSACTION_CRITICAL_DURABLE_STATUSES.has(result.status), attempts };
     },
     async deliverForeign(foreign) {
       const result = await binding.deliver(foreign, "txn-foreign", async () => "committed");

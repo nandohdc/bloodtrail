@@ -16,6 +16,11 @@
 // commit (#870): the probe and the commit gate run again, so only a reconciling
 // commit gate keeps the redelivery durability-only.
 //
+// And it pins what admission decides before the probe runs (#913): a commit
+// state the occurrence's own catalog entry does not allow is refused, an
+// occurrence that cannot be serialized is refused, and one admitted snapshot is
+// what reaches the durability point and what the result reports.
+//
 // Events come from the contract's own positive example set, so the committed
 // and the uncommitted arms run against real catalog entries.
 
@@ -25,7 +30,7 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
+import { EVENT_CATALOG, type SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
 import {
   createHttpDeliveryHandoff,
   createTransactionCriticalDelivery,
@@ -732,5 +737,278 @@ describe("transaction_critical: a reconciling commit gate commits once (#870)", 
     } finally {
       clearTimeout(deadline);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #913: admission checks the commit claim, and one snapshot is delivered
+// ---------------------------------------------------------------------------
+
+// One binding whose probe, commit gate and handoff each record that they ran.
+// The hooks let a test act as a caller that changes its own object while a step
+// is running. `handedOff` holds what reached the durability point, and `bodies`
+// holds the bytes each exchange carried.
+function instrumented(hooks: Readonly<{ probe?: () => void; gate?: () => void; exchange?: () => void }> = {}) {
+  const steps: string[] = [];
+  const handedOff: unknown[] = [];
+  const bodies: string[] = [];
+  const http = createHttpDeliveryHandoff({
+    path: "/v1/security-audit",
+    exchange: async (request) => {
+      bodies.push(request.body);
+      hooks.exchange?.();
+      return { kind: "response", status: 202, acknowledgments: [{ event_id: request.event_id, outcome: "accepted" }] };
+    },
+  });
+  const handoff: HttpDeliveryHandoff = {
+    handoff: async (event, attempt) => {
+      steps.push("handoff");
+      handedOff.push(event);
+      return http.handoff(event, attempt);
+    },
+  };
+  const binding = createTransactionCriticalDelivery({
+    handoff,
+    durabilityProbe: async () => {
+      steps.push("probe");
+      hooks.probe?.();
+      return true;
+    },
+  });
+  const gate: BusinessCommitGate = async () => {
+    steps.push("gate");
+    hooks.gate?.();
+    return "committed";
+  };
+  return { binding, gate, steps, handedOff, bodies };
+}
+
+// A copy of `event` with a fresh identifier and the given commit state, or none.
+function withCommitState(event: SecurityAuditEvent, commitState: string | undefined): SecurityAuditEvent {
+  const copy = withNewEventId(event);
+  const fields = copy.event as { commit_state?: string };
+  if (commitState === undefined) delete fields.commit_state;
+  else fields.commit_state = commitState;
+  return copy;
+}
+
+function catalogCommitStates(name: string): readonly string[] {
+  const entry = EVENT_CATALOG.find((definition) => definition.name === name);
+  assert.ok(entry, `the catalog carries no ${name} entry`);
+  return entry.commit as readonly string[];
+}
+
+function assertFrozenThroughout(value: unknown, path: string): void {
+  if (value === null || typeof value !== "object") return;
+  assert.ok(Object.isFrozen(value), `${path} must be frozen`);
+  for (const [key, child] of Object.entries(value)) assertFrozenThroughout(child, `${path}.${key}`);
+}
+
+describe("transaction_critical: a commit state its own catalog entry does not allow is refused (#913)", () => {
+  for (const commitState of ["pending", "unknown", "not_started", "not_applicable", undefined]) {
+    const label = commitState ?? "an absent commit state";
+    it(`refuses ${label} as commit_state_not_allowed, with no probe, gate or handoff`, async () => {
+      const occurrence = withCommitState(COMMITTED, commitState);
+      const run = instrumented();
+
+      const result = await run.binding.deliver(occurrence, "txn-913-unlisted", run.gate);
+
+      assert.deepEqual(result, { status: "refused", code: "commit_state_not_allowed", event_id: occurrence.event.id });
+      assert.deepEqual(run.steps, [], "nothing runs for a refused occurrence");
+    });
+  }
+
+  it("refuses a commit state that another entry allows but the occurrence's own entry does not", async () => {
+    assert.ok(!catalogCommitStates(COMMITTED.event.name).includes("compensated"), "precondition: own entry forbids it");
+    assert.ok(
+      catalogCommitStates("bloodtrail.audit.data.sensitive_resource.modified").includes("compensated"),
+      "precondition: another transaction_critical entry allows it",
+    );
+    const occurrence = withCommitState(COMMITTED, "compensated");
+    const run = instrumented();
+
+    const result = await run.binding.deliver(occurrence, "txn-913-foreign-state", run.gate);
+
+    assert.deepEqual(result, { status: "refused", code: "commit_state_not_allowed", event_id: occurrence.event.id });
+    assert.deepEqual(run.steps, []);
+  });
+
+  it("leaves the pair deliverable once the refused occurrence is corrected", async () => {
+    const refused = withCommitState(COMMITTED, "pending");
+    const corrected = structuredClone(refused) as SecurityAuditEvent;
+    (corrected.event as { commit_state?: string }).commit_state = "committed";
+    const run = instrumented();
+
+    const first = await run.binding.deliver(refused, "txn-913-corrected", run.gate);
+    const second = await run.binding.deliver(corrected, "txn-913-corrected", run.gate);
+
+    assert.equal(first.status === "refused" && first.code, "commit_state_not_allowed");
+    assert.deepEqual(second, {
+      status: "committed_and_durable",
+      event_id: corrected.event.id,
+      transaction_id: "txn-913-corrected",
+    });
+    assert.deepEqual(run.steps, ["probe", "gate", "handoff"]);
+  });
+});
+
+describe("transaction_critical: the admitted snapshot is what is delivered and reported (#913)", () => {
+  for (const phase of ["probe", "gate", "exchange"] as const) {
+    it(`a caller's change during the ${phase} reaches neither the handed-off body nor the result`, async () => {
+      const occurrence = withNewEventId(PARTIALLY_COMMITTED);
+      const admittedBody = JSON.stringify(occurrence);
+      const admittedId = occurrence.event.id;
+      const change = () => {
+        const fields = occurrence.event as { id: string; commit_state?: string };
+        fields.commit_state = "committed";
+        fields.id = randomUUID();
+      };
+      const run = instrumented({ [phase]: change });
+
+      const result = await run.binding.deliver(occurrence, `txn-913-${phase}`, run.gate);
+
+      assert.deepEqual(run.bodies, [admittedBody], "the durable bytes are the occurrence as admitted");
+      assert.deepEqual(result, {
+        status: "partially_committed_and_durable",
+        event_id: admittedId,
+        transaction_id: `txn-913-${phase}`,
+      });
+    });
+  }
+
+  it("hands the durability point an occurrence frozen at every depth", async () => {
+    const occurrence = withNewEventId(COMMITTED);
+    const run = instrumented();
+
+    const result = await run.binding.deliver(occurrence, "txn-913-frozen", run.gate);
+
+    assert.equal(result.status, "committed_and_durable");
+    assert.equal(run.handedOff.length, 1);
+    assert.notEqual(run.handedOff[0], occurrence, "the caller's own object is never handed off");
+    assertFrozenThroughout(run.handedOff[0], "occurrence");
+  });
+
+  for (const example of ALL_EVENTS.filter((candidate) => candidate.event.delivery_class === "transaction_critical")) {
+    it(`hands off exactly the JSON serialization of the ${example.event.name} example`, async () => {
+      const occurrence = structuredClone(example) as SecurityAuditEvent;
+      const run = instrumented();
+
+      await run.binding.deliver(occurrence, `txn-913-bytes-${example.event.id}`, run.gate);
+
+      assert.deepEqual(run.bodies, [JSON.stringify(example)]);
+    });
+  }
+});
+
+describe("transaction_critical: an occurrence that cannot be serialized is refused before the commit (#913)", () => {
+  const UNSERIALIZABLE: readonly (readonly [string, (event: SecurityAuditEvent) => void])[] = [
+    ["a BigInt", (event) => {
+      (event.event as unknown as Record<string, unknown>).poison = 1n;
+    }],
+    ["a cycle", (event) => {
+      (event.event as unknown as Record<string, unknown>).self = event;
+    }],
+    ["a throwing toJSON", (event) => {
+      (event as unknown as Record<string, unknown>).toJSON = () => {
+        throw new Error("synthetic toJSON failure");
+      };
+    }],
+    ["a toJSON that returns nothing", (event) => {
+      (event as unknown as Record<string, unknown>).toJSON = () => undefined;
+    }],
+  ];
+
+  for (const [label, poison] of UNSERIALIZABLE) {
+    it(`refuses an occurrence holding ${label} as occurrence_not_serializable, with no probe, gate or handoff`, async () => {
+      const occurrence = withNewEventId(COMMITTED);
+      poison(occurrence);
+      const run = instrumented();
+
+      const result = await run.binding.deliver(occurrence, "txn-913-unserializable", run.gate);
+
+      assert.deepEqual(result, { status: "refused", code: "occurrence_not_serializable", event_id: occurrence.event.id });
+      assert.deepEqual(run.steps, []);
+    });
+  }
+
+  it("refuses an occurrence whose event getter throws, reporting an empty event_id", async () => {
+    const hostile = Object.defineProperty({}, "event", {
+      enumerable: true,
+      get() {
+        throw new Error("synthetic getter failure");
+      },
+    }) as SecurityAuditEvent;
+    const run = instrumented();
+
+    const result = await run.binding.deliver(hostile, "txn-913-getter", run.gate);
+
+    assert.deepEqual(result, { status: "refused", code: "occurrence_not_serializable", event_id: "" });
+    assert.deepEqual(run.steps, []);
+  });
+
+  for (const value of [null, 42]) {
+    it(`refuses ${String(value)} as unknown_event_name rather than rejecting`, async () => {
+      const run = instrumented();
+
+      const result = await run.binding.deliver(value as unknown as SecurityAuditEvent, "txn-913-not-an-object", run.gate);
+
+      assert.deepEqual(result, { status: "refused", code: "unknown_event_name", event_id: "" });
+      assert.deepEqual(run.steps, []);
+    });
+  }
+});
+
+describe("transaction_critical: every allowed commit state has one outcome, in a fixed order (#913)", () => {
+  // The documented table: the status each commit state reaches once acknowledged,
+  // and whether the commit gate runs for it.
+  const DOCUMENTED_OUTCOMES: Readonly<Record<string, readonly [string, boolean]>> = {
+    committed: ["committed_and_durable", true],
+    partially_committed: ["partially_committed_and_durable", true],
+    compensated: ["compensated_and_durable", true],
+    not_committed: ["durable_without_commit", false],
+  };
+  const TRANSACTION_CRITICAL_ENTRIES = EVENT_CATALOG.filter((entry) => entry.delivery === "transaction_critical");
+
+  it("walks a non-empty set of transaction_critical catalog entries", () => {
+    assert.ok(TRANSACTION_CRITICAL_ENTRIES.length > 0);
+  });
+
+  for (const entry of TRANSACTION_CRITICAL_ENTRIES) {
+    it(`maps each commit state ${entry.name} allows to its documented outcome`, async () => {
+      for (const commitState of entry.commit as readonly string[]) {
+        const documented = DOCUMENTED_OUTCOMES[commitState];
+        assert.ok(documented, `${entry.name} allows ${commitState}, which the documented table does not cover`);
+        const [status, gateRuns] = documented;
+        const occurrence = withCommitState(COMMITTED, commitState);
+        (occurrence.event as { name: string }).name = entry.name;
+        const run = instrumented();
+
+        const result = await run.binding.deliver(occurrence, `txn-913-${commitState}`, run.gate);
+
+        assert.deepEqual(result, { status, event_id: occurrence.event.id, transaction_id: `txn-913-${commitState}` },
+          `${entry.name} / ${commitState}`);
+        assert.deepEqual(run.steps, gateRuns ? ["probe", "gate", "handoff"] : ["probe", "handoff"],
+          `${entry.name} / ${commitState}`);
+      }
+    });
+  }
+
+  it("runs the probe, then the gate, then the handoff, once each", async () => {
+    const run = instrumented();
+
+    await run.binding.deliver(withNewEventId(COMMITTED), "txn-913-order", run.gate);
+
+    assert.deepEqual(run.steps, ["probe", "gate", "handoff"]);
+  });
+
+  it("reports a repeat of a settled pair already delivered, running nothing again", async () => {
+    const occurrence = withNewEventId(COMMITTED);
+    const run = instrumented();
+
+    await run.binding.deliver(occurrence, "txn-913-repeat", run.gate);
+    const repeat = await run.binding.deliver(occurrence, "txn-913-repeat", run.gate);
+
+    assert.deepEqual(repeat, { status: "already_delivered", event_id: occurrence.event.id, transaction_id: "txn-913-repeat" });
+    assert.deepEqual(run.steps, ["probe", "gate", "handoff"], "the repeat runs no probe, gate or handoff");
   });
 });

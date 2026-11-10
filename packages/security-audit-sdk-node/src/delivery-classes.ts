@@ -36,6 +36,13 @@ const CATALOG_DELIVERY_BY_NAME: ReadonlyMap<string, GovernedDeliveryClass> = new
   EVENT_CATALOG.map((definition) => [definition.name, definition.delivery]),
 );
 
+// The commit states each event's own catalog entry allows. They are copied once
+// from sdk-core's exported catalog, so a later change to that array cannot widen
+// what `transaction_critical` admission accepts (#913).
+const CATALOG_COMMIT_STATES_BY_NAME: ReadonlyMap<string, ReadonlySet<string>> = new Map(
+  EVENT_CATALOG.map((definition) => [definition.name, new Set<string>(definition.commit)]),
+);
+
 /**
  * What a class binding is permitted to claim. Exposed so a caller can read the
  * guarantee off the binding rather than inferring it from the class name, and
@@ -59,6 +66,16 @@ export type DeliveryClassRefusalCode =
   | "delivery_class_mismatch"
   | "unknown_event_name"
   | "transaction_id_required"
+  /**
+   * `transaction_critical` only: the occurrence's commit state is absent, or is
+   * not one its own catalog entry allows. Refused before the probe runs (#913).
+   */
+  | "commit_state_not_allowed"
+  /**
+   * `transaction_critical` only: the occurrence has no JSON serialization, so it
+   * could never become durable. Refused before the probe runs (#913).
+   */
+  | "occurrence_not_serializable"
   | "duplicate_transaction_delivery"
   | "audit_durability_unreachable"
   | "audit_durability_failed_after_commit"
@@ -277,23 +294,33 @@ export interface TransactionCriticalDelivery {
  * `transaction_critical`: orders audit durability around the caller's business
  * commit, deduplicated by event id *and* transaction id.
  *
- * The order is fixed and is the whole point of the class:
+ * Admission comes first and runs no caller code except serialization (#913). It
+ * takes one snapshot of the occurrence: its JSON serialization, parsed back and
+ * deeply frozen. Every later step reads only that snapshot: the admission
+ * checks, the deduplication key, the occurrence handed to the durability point,
+ * and the result. Before anything runs, admission refuses, in this order:
+ *
+ *   - an occurrence with no JSON serialization (`occurrence_not_serializable`);
+ *   - an event name outside the catalog, or one of another class;
+ *   - an empty transaction identifier;
+ *   - a commit state that the occurrence's own catalog entry does not allow, or
+ *     none (`commit_state_not_allowed`).
+ *
+ * After admission the order is fixed, and it is the whole point of the class:
  *
  *   1. probe audit durability — anything but `true` means fail closed and the
  *      commit gate is never invoked, so no business commit happens without an
  *      audit record being possible;
  *   2. run the caller's commit gate — anything but `"committed"` stops here, so
  *      the audit record never becomes durable ahead of the commit;
- *   3. only then hand the occurrence to the durability point.
+ *   3. only then hand the snapshot to the durability point.
  *
- * An occurrence whose commit state is `not_committed` skips step 2 and is
- * reported `durable_without_commit`: there is no business commit to gate, and
- * the result must not claim one.
- *
- * An occurrence whose commit state is `partially_committed` or `compensated`
- * runs step 2 and is reported `partially_committed_and_durable` or
- * `compensated_and_durable` respectively (#869): the result claims only what
- * the occurrence's commit state attests.
+ * The snapshot's commit state selects one entry of `OUTCOME_BY_COMMIT_STATE`,
+ * which decides both whether step 2 runs and which status a durable occurrence
+ * reports. `not_committed` skips step 2 and is reported
+ * `durable_without_commit`, because there is no business commit to gate.
+ * `partially_committed` and `compensated` are reported with their qualified
+ * statuses (#869). No commit state reaches a commit claim by default.
  *
  * What it does not provide: business and audit atomicity (a failure after the
  * gate committed is reported as `audit_durability_failed_after_commit`, but the
@@ -332,7 +359,13 @@ export function createTransactionCriticalDelivery(
       const key = admission.key;
       reserved.add(key);
       try {
-        const result = await runTransactionPipeline({ handoff, durabilityProbe, commitGate, event, transactionId });
+        const result = await runTransactionPipeline({
+          ...admission.admitted,
+          handoff,
+          durabilityProbe,
+          commitGate,
+          transactionId,
+        });
         if (reachedDurability(result)) settled.add(key);
         return result;
       } finally {
@@ -342,14 +375,59 @@ export function createTransactionCriticalDelivery(
   } satisfies TransactionCriticalDelivery);
 }
 
-interface TransactionAdmission {
-  readonly key: string;
-  readonly refusal: TransactionCriticalDeliveryResult | null;
+type DurableTransactionStatus =
+  | "committed_and_durable"
+  | "partially_committed_and_durable"
+  | "compensated_and_durable"
+  | "durable_without_commit";
+
+/** What one commit state decides: whether the commit gate runs, and the status once durable. */
+type TransactionOutcome = Readonly<{
+  readonly runsCommitGate: boolean;
+  readonly status: DurableTransactionStatus;
+}>;
+
+/** Every commit state that some `transaction_critical` catalog entry allows. */
+type TransactionCriticalCommitState = Extract<
+  (typeof EVENT_CATALOG)[number],
+  { readonly delivery: "transaction_critical" }
+>["commit"][number];
+
+/**
+ * The one mapping from commit state to outcome (#913). It is total over the
+ * commit states the catalog allows for this class: the `satisfies` clause stops
+ * compiling if the catalog gains one. It has no default, so a commit state
+ * without an entry is refused at admission and never claimed.
+ */
+const OUTCOME_BY_COMMIT_STATE = Object.freeze({
+  committed: Object.freeze({ runsCommitGate: true, status: "committed_and_durable" }),
+  partially_committed: Object.freeze({ runsCommitGate: true, status: "partially_committed_and_durable" }),
+  compensated: Object.freeze({ runsCommitGate: true, status: "compensated_and_durable" }),
+  not_committed: Object.freeze({ runsCommitGate: false, status: "durable_without_commit" }),
+} satisfies Record<TransactionCriticalCommitState, TransactionOutcome>);
+
+/** An occurrence that passed every admission check. */
+interface AdmittedOccurrence {
+  /** The snapshot: the only view of the occurrence that any later step reads. */
+  readonly occurrence: Readonly<SecurityAuditEvent>;
+  /** The snapshot's own identifier, used as it is in the key and the result. */
+  readonly eventId: string;
+  readonly outcome: TransactionOutcome;
 }
+
+type AdmissionRefusal = Readonly<{ readonly refusal: TransactionCriticalDeliveryResult }>;
+
+type TransactionAdmission =
+  | AdmissionRefusal
+  | Readonly<{ readonly refusal: null; readonly key: string; readonly admitted: AdmittedOccurrence }>;
 
 /**
  * Decides admission in one synchronous step, so no `await` can interleave
  * between the duplicate check and the reservation that follows it.
+ *
+ * Every refusal from the occurrence checks is decided before the duplicate
+ * check (#913). A refused occurrence is therefore never recorded or reserved,
+ * and once corrected, its pair stays deliverable.
  *
  * A key already settled is reported as already delivered. A key currently in
  * flight is *refused* rather than reported delivered: the first attempt has not
@@ -357,81 +435,147 @@ interface TransactionAdmission {
  * second pipeline would put the same audit record through two commit gates.
  */
 function admitTransaction(
-  event: Readonly<SecurityAuditEvent>,
+  event: unknown,
   transactionId: string,
   settled: ReadonlySet<string>,
   reserved: ReadonlySet<string>,
 ): TransactionAdmission {
-  const eventId = event.event.id;
-  const mismatch = classMismatch(event, "transaction_critical");
-  if (mismatch !== null) {
-    return { key: "", refusal: { status: "refused", code: mismatch, event_id: eventId } };
-  }
-  if (!isFilledString(transactionId)) {
-    return { key: "", refusal: { status: "refused", code: "transaction_id_required", event_id: eventId } };
-  }
+  const checked = checkOccurrence(event, transactionId);
+  if ("refusal" in checked) return checked;
 
+  const eventId = checked.eventId;
   const key = deduplicationKey(eventId, transactionId);
   if (settled.has(key)) {
-    return { key, refusal: { status: "already_delivered", event_id: eventId, transaction_id: transactionId } };
+    return { refusal: { status: "already_delivered", event_id: eventId, transaction_id: transactionId } };
   }
   if (reserved.has(key)) {
-    return { key, refusal: { status: "refused", code: "duplicate_transaction_delivery", event_id: eventId } };
+    return { refusal: { status: "refused", code: "duplicate_transaction_delivery", event_id: eventId } };
   }
-  return { key, refusal: null };
+  return { refusal: null, key, admitted: checked };
 }
 
-interface TransactionPipelineInput {
+/**
+ * The occurrence checks, in their fixed order (#913). Each reads the snapshot
+ * through guarded access, so no input makes admission throw. Each refusal
+ * reports the identifier it can read as a string, or the empty string.
+ */
+function checkOccurrence(event: unknown, transactionId: string): AdmittedOccurrence | AdmissionRefusal {
+  const snapshot = snapshotOf(event);
+  if (snapshot === null) return refusedFor("occurrence_not_serializable", event);
+
+  const fields = fieldOf(snapshot.value, "event");
+  const name = fieldOf(fields, "name");
+  const mismatch = classMismatchFor(name, "transaction_critical");
+  if (mismatch !== null) return refusedFor(mismatch, snapshot.value);
+  if (!isFilledString(transactionId)) return refusedFor("transaction_id_required", snapshot.value);
+  const outcome = outcomeFor(name as string, fieldOf(fields, "commit_state"));
+  if (outcome === null) return refusedFor("commit_state_not_allowed", snapshot.value);
+
+  const occurrence = snapshot.value as Readonly<SecurityAuditEvent>;
+  return { occurrence, eventId: occurrence.event.id, outcome };
+}
+
+/**
+ * The occurrence's one snapshot: its JSON serialization, parsed back and frozen
+ * at every depth (#913). The handoff serializes it again into the same bytes,
+ * so the bytes made durable are the bytes admitted. `null` when there is no such
+ * serialization: a BigInt, a cycle, a throwing getter or `toJSON`, or a value
+ * whose serialization is not a string.
+ */
+function snapshotOf(event: unknown): Readonly<{ readonly value: unknown }> | null {
+  try {
+    const serialized: unknown = JSON.stringify(event);
+    if (typeof serialized !== "string") return null;
+    return { value: deepFreeze(JSON.parse(serialized)) };
+  } catch {
+    return null;
+  }
+}
+
+/** Freezes parsed JSON at every depth. Iterative, so nesting depth cannot exhaust the stack. */
+function deepFreeze<T>(root: T): T {
+  const pending: unknown[] = [root];
+  while (pending.length > 0) {
+    const value = pending.pop();
+    if (value !== null && typeof value === "object") {
+      for (const child of Object.values(Object.freeze(value))) pending.push(child);
+    }
+  }
+  return root;
+}
+
+/** Reads one property without letting a getter or a proxy throw out of admission. */
+function fieldOf(value: unknown, key: string): unknown {
+  if (value === null || typeof value !== "object") return undefined;
+  try {
+    return (value as Readonly<Record<string, unknown>>)[key];
+  } catch {
+    return undefined;
+  }
+}
+
+/** The identifier a refusal reports: a string read without throwing, or the empty string. */
+function identifierOf(source: unknown): string {
+  const id = fieldOf(fieldOf(source, "event"), "id");
+  return typeof id === "string" ? id : "";
+}
+
+function refusedFor(code: DeliveryClassRefusalCode, source: unknown): AdmissionRefusal {
+  return { refusal: { status: "refused", code, event_id: identifierOf(source) } };
+}
+
+/**
+ * The outcome for a commit state that the occurrence's own catalog entry
+ * allows, or `null` to refuse it. The entry is the event's own, never the union
+ * of every `transaction_critical` entry: the catalog allows commit states per
+ * event, which is the rule sdk-core's semantic validation applies.
+ */
+function outcomeFor(name: string, commitState: unknown): TransactionOutcome | null {
+  if (typeof commitState !== "string") return null;
+  if (CATALOG_COMMIT_STATES_BY_NAME.get(name)?.has(commitState) !== true) return null;
+  if (!Object.hasOwn(OUTCOME_BY_COMMIT_STATE, commitState)) return null;
+  return OUTCOME_BY_COMMIT_STATE[commitState as TransactionCriticalCommitState];
+}
+
+interface TransactionPipelineInput extends AdmittedOccurrence {
   readonly handoff: HttpDeliveryHandoff;
   readonly durabilityProbe: () => Promise<boolean>;
   readonly commitGate: BusinessCommitGate;
-  readonly event: Readonly<SecurityAuditEvent>;
   readonly transactionId: string;
 }
 
 /**
  * The fixed order: prove audit durability is reachable, run the business
- * commit unless the occurrence records that nothing committed, then reach the
- * durability point. Returns the settled result and never rejects.
+ * commit when the admitted outcome calls for one, then reach the durability
+ * point. Returns the settled result and never rejects.
  */
 async function runTransactionPipeline(
   input: TransactionPipelineInput,
 ): Promise<TransactionCriticalDeliveryResult> {
-  const eventId = input.event.event.id;
-
   if ((await settledValue(input.durabilityProbe)) !== true) {
-    return failClosed("audit_durability_unreachable", eventId, false, false);
+    return failClosed("audit_durability_unreachable", input.eventId, false, false);
   }
-  return input.event.event.commit_state === "not_committed"
-    ? deliverWithoutCommit(input)
-    : deliverWithCommit(input);
+  return input.outcome.runsCommitGate ? deliverWithCommit(input) : deliverWithoutCommit(input);
 }
 
 /** An occurrence that claims a commit: only a confirmed commit lets it become durable. */
 async function deliverWithCommit(input: TransactionPipelineInput): Promise<TransactionCriticalDeliveryResult> {
-  const eventId = input.event.event.id;
+  const eventId = input.eventId;
   const decision = await settledValue(input.commitGate);
   if (decision === "declined") return failClosed("business_commit_declined", eventId, true, false);
   if (decision !== "committed") return failClosed("business_commit_unconfirmed", eventId, true, false);
   if (!(await acknowledged(input))) {
     return failClosed("audit_durability_failed_after_commit", eventId, true, true);
   }
-  const commitState = input.event.event.commit_state;
-  if (commitState === "partially_committed") {
-    return durable(input, "partially_committed_and_durable");
-  }
-  if (commitState === "compensated") {
-    return durable(input, "compensated_and_durable");
-  }
-  return durable(input, "committed_and_durable");
+  return durable(input);
 }
 
 /** A `not_committed` occurrence: there is no business commit to gate, and the result claims none. */
 async function deliverWithoutCommit(input: TransactionPipelineInput): Promise<TransactionCriticalDeliveryResult> {
   if (!(await acknowledged(input))) {
-    return failClosed("audit_durability_unreachable", input.event.event.id, false, true);
+    return failClosed("audit_durability_unreachable", input.eventId, false, true);
   }
-  return durable(input, "durable_without_commit");
+  return durable(input);
 }
 
 /**
@@ -451,21 +595,15 @@ async function settledValue(read: () => Promise<unknown>): Promise<unknown> {
 /** True only when the durability point acknowledged; a rejecting handoff has not. */
 async function acknowledged(input: TransactionPipelineInput): Promise<boolean> {
   try {
-    return (await input.handoff.handoff(input.event, 0)).status === "acknowledged";
+    return (await input.handoff.handoff(input.occurrence, 0)).status === "acknowledged";
   } catch {
     return false;
   }
 }
 
-function durable(
-  input: TransactionPipelineInput,
-  status:
-    | "committed_and_durable"
-    | "partially_committed_and_durable"
-    | "compensated_and_durable"
-    | "durable_without_commit",
-): TransactionCriticalDeliveryResult {
-  return Object.freeze({ status, event_id: input.event.event.id, transaction_id: input.transactionId });
+/** The status is the admitted outcome's, never one read from the occurrence again. */
+function durable(input: TransactionPipelineInput): TransactionCriticalDeliveryResult {
+  return Object.freeze({ status: input.outcome.status, event_id: input.eventId, transaction_id: input.transactionId });
 }
 
 /** Only a result that reached the durability point is recorded for deduplication. */
@@ -555,6 +693,14 @@ export function createPolicyCriticalDelivery(options: PolicyCriticalDeliveryOpti
   } satisfies PolicyCriticalDelivery);
 }
 
+/** The class check for a binding's own occurrence; see `classMismatchFor`. */
+function classMismatch(
+  event: Readonly<SecurityAuditEvent>,
+  boundClass: GovernedDeliveryClass,
+): DeliveryClassRefusalCode | null {
+  return classMismatchFor(event.event.name, boundClass);
+}
+
 /**
  * Exact-match class binding. A binding accepts only occurrences whose catalog
  * entry declares its own class.
@@ -566,22 +712,22 @@ export function createPolicyCriticalDelivery(options: PolicyCriticalDeliveryOpti
  * a `best_effort` occurrence through `transaction_critical` gives an event
  * whose posture is `fail_open` the power to block a business commit.
  */
-function classMismatch(
-  event: Readonly<SecurityAuditEvent>,
-  boundClass: GovernedDeliveryClass,
-): DeliveryClassRefusalCode | null {
-  const declared = CATALOG_DELIVERY_BY_NAME.get(event.event.name);
+function classMismatchFor(name: unknown, boundClass: GovernedDeliveryClass): DeliveryClassRefusalCode | null {
+  const declared = typeof name === "string" ? CATALOG_DELIVERY_BY_NAME.get(name) : undefined;
   if (declared === undefined) return "unknown_event_name";
   return declared === boundClass ? null : "delivery_class_mismatch";
 }
 
 /**
- * Dedupe by event id *and* transaction id, as the row requires. The separator
- * is excluded from the UUID and transaction-id alphabets in use, so two
- * distinct pairs cannot collide into one key.
+ * Dedupe by event id *and* transaction id, as the row requires. The key is a
+ * JSON array of the identifier's type, the identifier and the transaction id.
+ * Two distinct pairs therefore cannot share a key, whatever either identifier
+ * holds. Building it cannot throw either: the identifier comes from the
+ * snapshot, which is JSON data, and nothing in JSON data can change how it
+ * serializes (#913).
  */
-function deduplicationKey(eventId: string, transactionId: string): string {
-  return `${eventId} ${transactionId}`;
+function deduplicationKey(eventId: unknown, transactionId: string): string {
+  return JSON.stringify([typeof eventId, eventId, transactionId]);
 }
 
 function failClosed(

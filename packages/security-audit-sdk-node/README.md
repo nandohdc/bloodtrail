@@ -9,7 +9,7 @@ exports and 24 type-only exports. It widens only additively, each time through a
 an amendment: ADR-NODE-002 (#112), ADR-NODE-003 (#113) and ADR-NODE-004 (#589), which added the HTTP audit
 sink. It now has 19 value exports and 44 type-only exports. `npm run test:exports` fails on any export added,
 removed or renamed outside such a change. ADR-NODE-005 (#859, #860) widened two result unions without adding
-an export.
+an export, and ADR-NODE-007 (#913) widened `DeliveryClassRefusalCode` the same way.
 
 ## Overview
 
@@ -244,8 +244,21 @@ repeated calls return the identical accounting from the first call.
 `transaction_critical` events. It probes audit durability, runs the caller's commit gate, and only then hands
 the occurrence to the durability point, in one attempt (ADR-NODE-005).
 
+When `deliver()` is called, the binding takes one snapshot of the occurrence: its JSON serialization, parsed back
+and frozen at every depth. It checks, delivers and reports only that snapshot, so a change the caller makes to its
+own object afterwards reaches neither the durable bytes nor the result (ADR-NODE-007). Before anything runs, it
+refuses, in this order:
+- an occurrence it cannot serialize;
+- an event outside the catalog, or one of another class;
+- an empty transaction identifier;
+- a commit state that the event's own catalog entry does not allow.
+
+A refused occurrence is not recorded for deduplication, so a corrected one can be offered under the same pair.
+
 | Situation | Result |
 |---|---|
+| The occurrence has no JSON serialization, such as one holding a BigInt or a cycle | `refused` / `occurrence_not_serializable`; nothing runs (#913) |
+| The occurrence's commit state is absent, or its event's catalog entry does not allow it | `refused` / `commit_state_not_allowed`; nothing runs (#913) |
 | The probe returns anything but `true`, or rejects | `failed_closed` / `audit_durability_unreachable`; the gate never runs |
 | The gate returns `"declined"` | `failed_closed` / `business_commit_declined` |
 | The gate returns anything but `"committed"` or `"declined"`, or rejects | `failed_closed` / `business_commit_unconfirmed` |
@@ -254,10 +267,11 @@ the occurrence to the durability point, in one attempt (ADR-NODE-005).
 | The occurrence's commit state is `compensated` | the gate runs; `compensated_and_durable` once committed and acknowledged (#869) |
 | The handoff fails or rejects for a `not_committed` occurrence | `failed_closed` / `audit_durability_unreachable`, with `durabilityAttempted: true` |
 | The handoff fails or rejects after the gate committed | `failed_closed` / `audit_durability_failed_after_commit` |
-| The gate committed and the handoff acknowledged (and commit state is `committed`) | `committed_and_durable` |
+| The occurrence's commit state is `committed`, the gate committed and the handoff acknowledged | `committed_and_durable` |
 
-`deliver()` returns one of these results and does not reject because a probe, gate or handoff did. Every
-failure also records `commitGateInvoked` and `durabilityAttempted`.
+`deliver()` returns one of these results and does not reject, whether a probe, gate or handoff rejects or the
+occurrence cannot be read. Every `failed_closed` result also records `commitGateInvoked` and `durabilityAttempted`.
+A refusal records neither, because nothing has run.
 
 The result is not commit evidence: read whether the business change committed from the occurrence's own
 `event.commit_state`. The binding does not provide the following, which are not implemented:
@@ -311,7 +325,26 @@ The host also:
 The fraud evidence profile's requirement "Host redelivery after a failure following the commit" states these
 obligations, and ADR-NODE-006 records the decision (#870).
 
-### Migration (#859, #860, #869)
+### Migration (#859, #860, #869, #913)
+
+- **Admission refusals (#913).** `DeliveryClassRefusalCode` gains `commit_state_not_allowed` and
+  `occurrence_not_serializable`. Both are refused before the probe runs:
+  - An occurrence whose commit state is absent, or not one its event's catalog entry allows, used to run the gate
+    and claim a commit. Examples are `pending`, `unknown`, `not_started`, `not_applicable`, and `compensated` for
+    an event other than `bloodtrail.audit.data.sensitive_resource.modified`. Such an occurrence is now refused as
+    `commit_state_not_allowed`.
+  - An occurrence with no JSON serialization used to run the gate and fail as
+    `audit_durability_failed_after_commit`. It is now refused as `occurrence_not_serializable`.
+
+  `null` and other values that are not occurrence objects used to make `deliver()` reject. They are now refused as
+  `unknown_event_name`. Occurrences that sdk-core built see no runtime change. A host that switches exhaustively
+  over the code gets a type error until it handles both values.
+- **One snapshot (#913).** The binding delivers and reports the occurrence as it was when `deliver()` was called.
+  A change the caller made to its object during delivery used to reach the durable bytes or the status. It no
+  longer does.
+- **Equality on `committed_and_durable` (#869).** Since #869, a check that the status equals
+  `committed_and_durable` no longer matches a `partially_committed` or `compensated` occurrence that reached
+  durability. A host that means "reached durability" tests for any of the four durable statuses.
 
 - **Qualified durable values (#869).** `TransactionCriticalDeliveryResult` gains the statuses
   `partially_committed_and_durable` and `compensated_and_durable`. An occurrence whose commit state is
