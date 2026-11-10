@@ -56,9 +56,12 @@
   - keep the duplicate check and the reservation in one synchronous step after these checks;
   - map commit state to gate behaviour and status through one frozen table with no default branch, consulted
     once;
-  - hand the snapshot to the durability point, and build every result from the snapshot.
+  - hand the snapshot to the durability point, and build every result from the snapshot;
+  - build the deduplication key so that it cannot throw for any identifier the snapshot can hold.
 
-  Add the two literals to `DeliveryClassRefusalCode`, and update the binding's doc comments.
+  Add the two literals to `DeliveryClassRefusalCode`, and update the binding's doc comments. The snapshot adds the
+  `JSON` language global to the binding's source, so move the scope gate's null-control baseline from 90 to 91
+  references. Verify that the scope gate still reports no host coupling.
 - [ ] 3.2 Verify that every test from group 2 passes. Then, in a disposable copy, verify that each fails against its
   planted defect:
   - the commit-state check removed, with the table defaulting to `committed_and_durable`;

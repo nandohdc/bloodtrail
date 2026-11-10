@@ -113,7 +113,9 @@ is not an occurrence object, such as `null` or a number, has no event name, so i
 Every refusal reports its `event_id` through a guarded read that yields the empty string when the read throws or
 does not give a string. For a serialization refusal the read is of the caller's object, and otherwise of the
 snapshot. An admitted occurrence's identifier is used as it is today, in both the deduplication key and the
-result. A fallback value there would let two distinct occurrences share one key.
+result. A fallback value there would let two distinct occurrences share one key. The snapshot can hold any JSON
+value as that identifier, and a template literal throws on one that shadows `toString`. So the key is encoded as
+JSON, which cannot throw on the snapshot's data and needs no separator.
 
 *Why JSON rather than `structuredClone`:*
 - **The snapshot is what the wire carries.** The handoff serializes with `JSON.stringify`. So the status and the
