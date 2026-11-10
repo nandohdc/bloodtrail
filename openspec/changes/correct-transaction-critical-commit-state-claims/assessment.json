@@ -1,0 +1,249 @@
+{
+  "schema_version": "1.1",
+  "change_id": "correct-transaction-critical-commit-state-claims",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "No transaction-critical result may claim a commit that the occurrence's own catalog entry does not allow it to attest (#913).",
+    "The status, the deduplication key and the bytes made durable must describe the one occurrence admitted, whatever the caller later does to its object (#913).",
+    "A refusal that can be decided before the business commit must be decided before the commit gate runs.",
+    "The frozen Node surface widens only additively: no export changes, and test:exports stays at 19 value and 44 type-only exports (#111, ADR-NODE-001).",
+    "Occurrences built by sdk-core keep every result they get today, and the contract, the catalog and sdk-core stay unchanged."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "lifecycle_or_state",
+      "concurrency",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/correct-transaction-critical-commit-state-claims/.openspec.yaml",
+    "openspec/changes/correct-transaction-critical-commit-state-claims/assessment.json",
+    "openspec/changes/correct-transaction-critical-commit-state-claims/assessment.source.json",
+    "openspec/changes/correct-transaction-critical-commit-state-claims/design.md",
+    "openspec/changes/correct-transaction-critical-commit-state-claims/proposal.md",
+    "openspec/changes/correct-transaction-critical-commit-state-claims/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/correct-transaction-critical-commit-state-claims/tasks.md",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/src/delivery-classes.ts",
+    "packages/security-audit-sdk-node/tests/transaction-critical-claims.test.ts",
+    "packages/security-audit-sdk-node/tests/delivery-classes.test.ts",
+    "packages/security-audit-sdk-node/README.md",
+    "packages/security-audit-sdk-node/CONTEXT.md",
+    "packages/security-audit-sdk-node/compatibility.json",
+    "packages/security-audit-sdk-node/adr/005-transaction-critical-delivery-claims-only-what-it-checks.md",
+    "packages/security-audit-sdk-node/adr/007-transaction-critical-delivery-claims-from-one-checked-snapshot.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-catalog-admission-on-one-json-snapshot",
+      "kind": "direct_implementation",
+      "summary": "Snapshot the occurrence first as its JSON serialization, parsed back and deeply frozen; refuse an unserializable occurrence and a commit state its own catalog entry does not allow before the probe, with two new refusal codes; map commit state to outcome through one table with no default; read every later step from the snapshot.",
+      "forces_addressed": [
+        "No transaction-critical result may claim a commit that the occurrence's own catalog entry does not allow it to attest (#913).",
+        "The status, the deduplication key and the bytes made durable must describe the one occurrence admitted, whatever the caller later does to its object (#913).",
+        "A refusal that can be decided before the business commit must be decided before the commit gate runs.",
+        "The frozen Node surface widens only additively: no export changes, and test:exports stays at 19 value and 44 type-only exports (#111, ADR-NODE-001).",
+        "Occurrences built by sdk-core keep every result they get today, and the contract, the catalog and sdk-core stay unchanged."
+      ]
+    },
+    {
+      "id": "approach-capture-commit-state-only",
+      "kind": "alternative",
+      "summary": "Read the commit state once at pipeline entry and choose the status from that value, as #913 suggested, leaving every other read on the caller's object.",
+      "forces_addressed": [
+        "The frozen Node surface widens only additively: no export changes, and test:exports stays at 19 value and 44 type-only exports (#111, ADR-NODE-001).",
+        "Occurrences built by sdk-core keep every result they get today, and the contract, the catalog and sdk-core stay unchanged."
+      ]
+    },
+    {
+      "id": "approach-fail-closed-after-gate",
+      "kind": "alternative",
+      "summary": "Keep admission unchanged and report an unlisted commit state as a new failed-closed outcome once the gate and the handoff have run.",
+      "forces_addressed": [
+        "No transaction-critical result may claim a commit that the occurrence's own catalog entry does not allow it to attest (#913).",
+        "Occurrences built by sdk-core keep every result they get today, and the contract, the catalog and sdk-core stay unchanged."
+      ]
+    },
+    {
+      "id": "approach-union-of-transaction-critical-states",
+      "kind": "alternative",
+      "summary": "Refuse at admission any commit state outside the union of every transaction_critical catalog entry's allowed list, rather than the occurrence's own entry.",
+      "forces_addressed": [
+        "A refusal that can be decided before the business commit must be decided before the commit gate runs.",
+        "Occurrences built by sdk-core keep every result they get today, and the contract, the catalog and sdk-core stay unchanged."
+      ]
+    },
+    {
+      "id": "approach-full-core-revalidation",
+      "kind": "alternative",
+      "summary": "Run sdk-core's complete structural and semantic validation on every occurrence the binding is offered, and refuse any occurrence it rejects.",
+      "forces_addressed": [
+        "No transaction-critical result may claim a commit that the occurrence's own catalog entry does not allow it to attest (#913).",
+        "A refusal that can be decided before the business commit must be decided before the commit gate runs."
+      ]
+    },
+    {
+      "id": "approach-structured-clone-snapshot",
+      "kind": "alternative",
+      "summary": "Take the admission snapshot with structuredClone and a deep freeze instead of a JSON round trip.",
+      "forces_addressed": [
+        "The status, the deduplication key and the bytes made durable must describe the one occurrence admitted, whatever the caller later does to its object (#913).",
+        "Occurrences built by sdk-core keep every result they get today, and the contract, the catalog and sdk-core stay unchanged."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-catalog-admission-on-one-json-snapshot",
+  "rejected_alternative_ids": [
+    "approach-capture-commit-state-only",
+    "approach-fail-closed-after-gate",
+    "approach-union-of-transaction-critical-states",
+    "approach-full-core-revalidation",
+    "approach-structured-clone-snapshot"
+  ],
+  "rejection_reasons": {
+    "approach-capture-commit-state-only": {
+      "forces": [
+        "No transaction-critical result may claim a commit that the occurrence's own catalog entry does not allow it to attest (#913).",
+        "The status, the deduplication key and the bytes made durable must describe the one occurrence admitted, whatever the caller later does to its object (#913)."
+      ],
+      "reason": "It still admits an unlisted or absent commit state, and a caller's change during the probe or the gate still reaches the durable bytes, the event identifier and the deduplication key."
+    },
+    "approach-fail-closed-after-gate": {
+      "forces": [
+        "A refusal that can be decided before the business commit must be decided before the commit gate runs."
+      ],
+      "reason": "The gate would already have run, so a business change could commit for an occurrence that can never carry a commit claim."
+    },
+    "approach-union-of-transaction-critical-states": {
+      "forces": [
+        "No transaction-critical result may claim a commit that the occurrence's own catalog entry does not allow it to attest (#913)."
+      ],
+      "reason": "It admits a commit state that the occurrence's own entry forbids, such as compensated on an event only bloodtrail.audit.data.sensitive_resource.modified may carry it for, while sdk-core's rule is per event."
+    },
+    "approach-full-core-revalidation": {
+      "forces": [
+        "Occurrences built by sdk-core keep every result they get today, and the contract, the catalog and sdk-core stay unchanged."
+      ],
+      "reason": "It refuses occurrences that pass today for reasons #913 does not raise, and the best_effort and policy_critical bindings would need the same decision, so it is a separate governed choice."
+    },
+    "approach-structured-clone-snapshot": {
+      "forces": [
+        "The status, the deduplication key and the bytes made durable must describe the one occurrence admitted, whatever the caller later does to its object (#913).",
+        "A refusal that can be decided before the business commit must be decided before the commit gate runs."
+      ],
+      "reason": "It copies a BigInt and a cycle without complaint, so they still reach the gate and fail after the commit, and it ignores toJSON, so the snapshot can differ from the JSON the handoff sends."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-catalog-commit-state-admission",
+    "implementation-one-admitted-snapshot",
+    "implementation-pre-commit-serialization-refusal",
+    "implementation-total-commit-state-table",
+    "implementation-additive-refusal-code-widening",
+    "implementation-corrected-live-records",
+    "implementation-recorded-assessment-ordering"
+  ],
+  "invariant_evidence": {
+    "implementation-catalog-commit-state-admission": {
+      "task_ids": [
+        "2.1",
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "transaction-critical claims tests refuse pending, unknown, not_started, not_applicable, an absent commit state and a commit state allowed only for another event as commit_state_not_allowed with zero probe, gate and handoff calls, deliver a corrected occurrence under the same pair afterwards, fail on the unchanged binding, and fail against plants that remove the check, widen it to the union or reserve the key first"
+      ]
+    },
+    "implementation-one-admitted-snapshot": {
+      "task_ids": [
+        "2.1",
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "transaction-critical claims tests change the caller occurrence during the probe, the gate and the exchange, assert the handed-off object is frozen at every depth and each contract example body equals its JSON.stringify, and fail against plants that read the caller object, freeze only the top level or reorder keys"
+      ]
+    },
+    "implementation-pre-commit-serialization-refusal": {
+      "task_ids": [
+        "2.1",
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "transaction-critical claims tests refuse a BigInt and a cycle as occurrence_not_serializable with zero gate runs, refuse null and a number as unknown_event_name, and refuse a throwing event getter with an empty event_id, deliver() resolving each time, and fail against plants that remove the check or read unguarded"
+      ]
+    },
+    "implementation-total-commit-state-table": {
+      "task_ids": [
+        "2.2",
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "a catalog walk asserts every commit state any transaction_critical entry allows reaches its documented status and gate behaviour, with the order and duplicate-gate tests and the conformance arm, and each fails against its planted defect"
+      ]
+    },
+    "implementation-additive-refusal-code-widening": {
+      "task_ids": [
+        "4.4",
+        "5.1"
+      ],
+      "evidence_ids": [
+        "npm run test:exports reports 19 value and 44 type-only exports, and compatibility.json gains one freezeRecord amendment naming commit_state_not_allowed and occurrence_not_serializable with earlier amendments byte-identical"
+      ]
+    },
+    "implementation-corrected-live-records": {
+      "task_ids": [
+        "4.1",
+        "4.2",
+        "4.3"
+      ],
+      "evidence_ids": [
+        "the README table and migration section, the CONTEXT.md Commit claim entry, ADR-NODE-007 and the ADR-NODE-005 pointer state the admission check, the snapshot, the two codes and the #869 equality warning as the MODIFIED requirement does"
+      ]
+    },
+    "implementation-recorded-assessment-ordering": {
+      "task_ids": [
+        "6.1"
+      ],
+      "evidence_ids": [
+        "ordering records the proposal commit as assessment_commit with the history-derived earliest and final technical commits, check-design-pattern-governance --phase final passes, and a disposable copy recording an implementation commit as assessment_commit fails assessment-follows-implementation"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "1a365e7c5fe463b39f41468bb7ab20705a33cfe2"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4",
+    "5.1",
+    "5.2",
+    "5.3",
+    "6.1",
+    "7.1",
+    "7.2",
+    "7.3",
+    "7.4"
+  ]
+}
