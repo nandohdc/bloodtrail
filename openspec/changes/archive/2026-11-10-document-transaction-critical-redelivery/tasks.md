@@ -87,5 +87,8 @@
   of the deltas' 15 headings occurs once in its canonical spec, and no delta header survives. Both canonical files
   match `openspec archive` from `be1ebd6` byte for byte. The sdk-node spec's repeated heading "A redirect is never
   followed" sits under two other requirements and predates the fold.
-- [ ] 5.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change, then close
-  #870 by hand. Verify that the archived directory carries the UTC date of the archive.
+- [x] 5.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change, then close
+  #870 by hand. Verify that the archived directory carries the UTC date of the archive. Archived to
+  `openspec/changes/archive/2026-11-10-document-transaction-critical-redelivery/` after the fold PR #941 merged as
+  `65bbd63`. `TZ=UTC date +%F` gave `2026-11-10`, the archive day. This PR merges with a merge commit, and the
+  owner then closes #870 by hand.
