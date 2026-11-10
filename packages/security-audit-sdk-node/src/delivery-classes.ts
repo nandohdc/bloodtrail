@@ -294,9 +294,10 @@ export interface TransactionCriticalDelivery {
  * `transaction_critical`: orders audit durability around the caller's business
  * commit, deduplicated by event id *and* transaction id.
  *
- * Admission comes first and runs no caller code except serialization (#913). It
- * takes one snapshot of the occurrence: its JSON serialization, parsed back and
- * deeply frozen. Every later step reads only that snapshot: the admission
+ * Admission comes first (#913). It takes one snapshot of the occurrence: its
+ * JSON serialization, parsed back and deeply frozen. Serialization is the only
+ * caller code admission runs, except that a serialization refusal reads the
+ * caller's identifier once more, through a guarded read. Every later step reads only that snapshot: the admission
  * checks, the deduplication key, the occurrence handed to the durability point,
  * and the result. Before anything runs, admission refuses, in this order:
  *

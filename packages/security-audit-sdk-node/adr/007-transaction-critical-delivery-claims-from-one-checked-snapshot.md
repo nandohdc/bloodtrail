@@ -74,7 +74,9 @@ build reaches these faults: one the host built itself, copied, or read back from
 
 ## Consequences
 
-- An occurrence built by sdk-core sees no runtime change.
+- An occurrence built by sdk-core gets the same result as before. The handoff receives a frozen copy of it
+  rather than the object passed to `deliver()`, so a host handoff that keys anything on object identity no longer
+  matches.
 - A host that delivers occurrences it built, copied or reloaded gets a refusal where it used to get a claim, or a
   failure after the commit.
 - Every delivery serializes the occurrence twice, once for the snapshot and once in the handoff, whose interface

@@ -93,7 +93,7 @@
 
   Record each plant and its failing test.
 
-  All 248 runtime tests pass. In a disposable copy, with an unplanted null control green, each plant failed its
+  All 253 runtime tests pass. In a disposable copy, with an unplanted null control green, each plant failed its
   named test:
 
   | Plant | Failing test |
@@ -111,6 +111,8 @@
   | gate before the probe | probe, gate, handoff in order |
   | settled check after the gate | a settled repeat runs nothing |
   | `failed_closed` for the class's own example | the conformance arm, both transports |
+  | duplicate check before the occurrence refusals | a settled pair offered again with a disallowed state is refused |
+  | template-literal key with a separator | an identifier that shadows `toString`, and `1` against `"1"` |
 
 ## 4. Records
 

@@ -1012,3 +1012,102 @@ describe("transaction_critical: every allowed commit state has one outcome, in a
     assert.deepEqual(run.steps, ["probe", "gate", "handoff"], "the repeat runs no probe, gate or handoff");
   });
 });
+
+// A binding whose handoff acknowledges whatever it is handed. It stands in for
+// the durability point where the identifier is not one the HTTP handoff's
+// acknowledgment check would echo back.
+function acknowledgingStub() {
+  const handedOff: unknown[] = [];
+  const binding = createTransactionCriticalDelivery({
+    handoff: {
+      handoff: async (event, attempt = 0) => {
+        handedOff.push(event);
+        return { status: "acknowledged", code: "acknowledged", event_id: "stub", attempt };
+      },
+    },
+    durabilityProbe: async () => true,
+  });
+  return { binding, handedOff };
+}
+
+describe("transaction_critical: refusals are decided before the duplicate check (#913)", () => {
+  it("refuses a settled pair offered again with a commit state its entry does not allow", async () => {
+    const occurrence = withNewEventId(COMMITTED);
+    const repeat = structuredClone(occurrence) as SecurityAuditEvent;
+    (repeat.event as { commit_state?: string }).commit_state = "pending";
+    const run = instrumented();
+
+    const first = await run.binding.deliver(occurrence, "txn-913-settled-repeat", run.gate);
+    const second = await run.binding.deliver(repeat, "txn-913-settled-repeat", run.gate);
+
+    assert.equal(first.status, "committed_and_durable");
+    assert.deepEqual(second, { status: "refused", code: "commit_state_not_allowed", event_id: occurrence.event.id });
+    assert.deepEqual(run.steps, ["probe", "gate", "handoff"], "the refused repeat runs nothing");
+  });
+
+  it("refuses a settled pair offered again with no JSON serialization", async () => {
+    const occurrence = withNewEventId(COMMITTED);
+    const repeat = structuredClone(occurrence) as SecurityAuditEvent;
+    (repeat.event as unknown as Record<string, unknown>).poison = 1n;
+    const run = instrumented();
+
+    await run.binding.deliver(occurrence, "txn-913-settled-unserializable", run.gate);
+    const second = await run.binding.deliver(repeat, "txn-913-settled-unserializable", run.gate);
+
+    assert.deepEqual(second, { status: "refused", code: "occurrence_not_serializable", event_id: occurrence.event.id });
+    assert.deepEqual(run.steps, ["probe", "gate", "handoff"]);
+  });
+
+  it("refuses an in-flight pair offered again with a commit state its entry does not allow, not as a duplicate", async () => {
+    const occurrence = withNewEventId(COMMITTED);
+    const repeat = structuredClone(occurrence) as SecurityAuditEvent;
+    (repeat.event as { commit_state?: string }).commit_state = "unknown";
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const run = instrumented();
+    const heldGate: BusinessCommitGate = async () => {
+      await held;
+      return "committed";
+    };
+
+    const first = run.binding.deliver(occurrence, "txn-913-in-flight", heldGate);
+    try {
+      const second = await run.binding.deliver(repeat, "txn-913-in-flight", heldGate);
+      assert.deepEqual(second, { status: "refused", code: "commit_state_not_allowed", event_id: occurrence.event.id });
+    } finally {
+      release();
+    }
+    assert.equal((await first).status, "committed_and_durable");
+  });
+});
+
+describe("transaction_critical: the deduplication key holds for any identifier the snapshot carries (#913)", () => {
+  it("delivers an occurrence whose identifier shadows toString, rather than rejecting", async () => {
+    const occurrence = withNewEventId(COMMITTED);
+    (occurrence.event as unknown as { id: unknown }).id = { toString: 1 };
+    const stub = acknowledgingStub();
+
+    const result = await stub.binding.deliver(occurrence, "txn-913-shadowed-id", countingGate("committed").run);
+
+    assert.equal(result.status, "committed_and_durable");
+    assert.equal(stub.handedOff.length, 1);
+  });
+
+  it("keeps the identifiers 1 and \"1\" apart under one transaction identifier", async () => {
+    const numeric = withNewEventId(COMMITTED);
+    (numeric.event as unknown as { id: unknown }).id = 1;
+    const text = withNewEventId(COMMITTED);
+    (text.event as { id: string }).id = "1";
+    const stub = acknowledgingStub();
+
+    const results = [
+      await stub.binding.deliver(numeric, "txn-913-one", countingGate("committed").run),
+      await stub.binding.deliver(text, "txn-913-one", countingGate("committed").run),
+    ];
+
+    assert.deepEqual(results.map((result) => result.status), ["committed_and_durable", "committed_and_durable"]);
+    assert.equal(stub.handedOff.length, 2, "neither is mistaken for the other");
+  });
+});

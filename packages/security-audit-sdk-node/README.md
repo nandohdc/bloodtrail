@@ -258,6 +258,9 @@ A refused occurrence is not recorded for deduplication, so a corrected one can b
 | Situation | Result |
 |---|---|
 | The occurrence has no JSON serialization, such as one holding a BigInt or a cycle | `refused` / `occurrence_not_serializable`; nothing runs (#913) |
+| The event name is not in the catalog, or the value is not an occurrence object | `refused` / `unknown_event_name`; nothing runs |
+| The event's catalog entry declares another delivery class | `refused` / `delivery_class_mismatch`; nothing runs |
+| The transaction identifier is empty | `refused` / `transaction_id_required`; nothing runs |
 | The occurrence's commit state is absent, or its event's catalog entry does not allow it | `refused` / `commit_state_not_allowed`; nothing runs (#913) |
 | The probe returns anything but `true`, or rejects | `failed_closed` / `audit_durability_unreachable`; the gate never runs |
 | The gate returns `"declined"` | `failed_closed` / `business_commit_declined` |
@@ -268,6 +271,8 @@ A refused occurrence is not recorded for deduplication, so a corrected one can b
 | The handoff fails or rejects for a `not_committed` occurrence | `failed_closed` / `audit_durability_unreachable`, with `durabilityAttempted: true` |
 | The handoff fails or rejects after the gate committed | `failed_closed` / `audit_durability_failed_after_commit` |
 | The occurrence's commit state is `committed`, the gate committed and the handoff acknowledged | `committed_and_durable` |
+| The pair already reached durability through this binding instance | `already_delivered`; nothing runs |
+| The pair is still being delivered through this binding instance | `refused` / `duplicate_transaction_delivery`; nothing runs |
 
 `deliver()` returns one of these results and does not reject, whether a probe, gate or handoff rejects or the
 occurrence cannot be read. Every `failed_closed` result also records `commitGateInvoked` and `durabilityAttempted`.
@@ -337,7 +342,8 @@ obligations, and ADR-NODE-006 records the decision (#870).
     `audit_durability_failed_after_commit`. It is now refused as `occurrence_not_serializable`.
 
   `null` and other values that are not occurrence objects used to make `deliver()` reject. They are now refused as
-  `unknown_event_name`. Occurrences that sdk-core built see no runtime change. A host that switches exhaustively
+  `unknown_event_name`. Occurrences that sdk-core built get the same results, but the handoff now receives a
+  frozen copy rather than the object passed to `deliver()`. A host that switches exhaustively
   over the code gets a type error until it handles both values.
 - **One snapshot (#913).** The binding delivers and reports the occurrence as it was when `deliver()` was called.
   A change the caller made to its object during delivery used to reach the durable bytes or the status. It no
