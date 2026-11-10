@@ -282,7 +282,8 @@ binding that reports `failed_closed` for the class's own example. Changing a tes
 
 ## Migration Plan
 
-- **A host that delivers sdk-core-built occurrences:** no runtime change. The type-level change below still applies.
+- **A host that delivers sdk-core-built occurrences:** the same results. The handoff receives a frozen copy rather
+  than the caller's own object, and the type-level change below still applies.
 - **A host that builds, copies or reloads occurrences:** it gets `commit_state_not_allowed` or
   `occurrence_not_serializable` where it used to get a claim, or a failure after the commit.
 - **A host that switches exhaustively over `DeliveryClassRefusalCode`:** it handles the two new codes.
