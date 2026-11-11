@@ -50,6 +50,13 @@
         "adr": "adr/005-transaction-critical-delivery-claims-only-what-it-checks.md",
         "valueExportCount": 19,
         "typeExportCount": 44
+      },
+      {
+        "issue": 913,
+        "reason": "Governed widening of the DeliveryClassRefusalCode public union without a new export (#913): gains commit_state_not_allowed and occurrence_not_serializable, so transaction-critical delivery refuses, before the durability probe, an occurrence whose commit state its own catalog entry does not allow or that has no JSON serialization.",
+        "adr": "adr/007-transaction-critical-delivery-claims-from-one-checked-snapshot.md",
+        "valueExportCount": 19,
+        "typeExportCount": 44
       }
     ]
   },

@@ -2,19 +2,20 @@
 
 ## 1. Proposal
 
-- [ ] 1.1 Author the proposal, design, delta spec (`security-audit-sdk-node`) and tasks from the #913 decision record.
+- [x] 1.1 Author the proposal, design, delta spec (`security-audit-sdk-node`) and tasks from the #913 decision record.
   Verify that `openspec validate correct-transaction-critical-commit-state-claims --strict` passes.
-- [ ] 1.2 Author `assessment.source.json`, then generate `assessment.json` from it. Verify that
+- [x] 1.2 Author `assessment.source.json`, then generate `assessment.json` from it. Verify that
   `node openspec/scripts/generate-assessment.mjs --change correct-transaction-critical-commit-state-claims --check`
   and
   `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change correct-transaction-critical-commit-state-claims`
   both pass, and that the proposal commit changes no path outside this change's directory.
-- [ ] 1.3 Once every required context plus DeepScan is green, merge the proposal PR as a merge commit. Verify by
-  recording the proposal commit and the merge commit here.
+- [x] 1.3 Once every required context plus DeepScan is green, merge the proposal PR as a merge commit. Verify by
+  recording the proposal commit and the merge commit here. Merged: #944, proposal commit `520f70e`, merge commit
+  `e729cbc`, with all ten required contexts and DeepScan green.
 
 ## 2. Tests that expose the defects
 
-- [ ] 2.1 Add tests to the transaction-critical claims tests, run through the public binding with the contract's
+- [x] 2.1 Add tests to the transaction-critical claims tests, run through the public binding with the contract's
   example events. Each test counts probe, gate and handoff calls:
   - each of `pending`, `unknown`, `not_started`, `not_applicable` and an absent commit state is refused as
     `commit_state_not_allowed`, with zero probe, gate and handoff calls;
@@ -31,7 +32,18 @@
     delivered.
 
   Verify that each test fails on the unchanged binding, and record the failing assertions.
-- [ ] 2.2 Add tests that pin behaviour the fix must keep:
+
+  Failed on the unchanged binding at `e729cbc`, 18 of 136 tests in the two files:
+  - each unlisted or absent commit state, and `compensated` for `account.registration.completed`, reported a durable
+    status after one gate run;
+  - the corrected pair's first delivery was not refused;
+  - a change during the probe or the gate reached the handed-off body, and one during the exchange reached the
+    status and `event_id`;
+  - the caller's own object was handed off;
+  - the BigInt, the cycle, a throwing `toJSON` and a `toJSON` returning nothing each failed as
+    `audit_durability_failed_after_commit` after the gate ran;
+  - the throwing getter, `null` and `42` made `deliver()` reject.
+- [x] 2.2 Add tests that pin behaviour the fix must keep:
   - a walk over every `transaction_critical` catalog entry asserts that each allowed commit state reaches its
     documented status and gate behaviour;
   - one delivery records the call order probe → gate → handoff;
@@ -39,11 +51,12 @@
   - for each contract example delivered, the handed-off body equals `JSON.stringify` of the example.
 
   In the class conformance tests, change the `transaction_critical` arm's "delivered" predicate to "reached any
-  durable status". Verify that these tests pass on the unchanged binding.
+  durable status". Verify that these tests pass on the unchanged binding. They passed: the walk over 11 entries, the order,
+  the repeat, byte identity for 11 examples, and both transports' conformance arms.
 
 ## 3. Runtime implementation
 
-- [ ] 3.1 In the `transaction_critical` binding:
+- [x] 3.1 In the `transaction_critical` binding:
   - take the snapshot first in admission: `JSON.stringify`, then `JSON.parse`, then a deep freeze. Refuse as
     `occurrence_not_serializable` when serialization throws or returns no string;
   - read the snapshot with guarded property access, so a snapshot that is not an occurrence object is refused as
@@ -56,10 +69,13 @@
   - keep the duplicate check and the reservation in one synchronous step after these checks;
   - map commit state to gate behaviour and status through one frozen table with no default branch, consulted
     once;
-  - hand the snapshot to the durability point, and build every result from the snapshot.
+  - hand the snapshot to the durability point, and build every result from the snapshot;
+  - build the deduplication key so that it cannot throw for any identifier the snapshot can hold.
 
-  Add the two literals to `DeliveryClassRefusalCode`, and update the binding's doc comments.
-- [ ] 3.2 Verify that every test from group 2 passes. Then, in a disposable copy, verify that each fails against its
+  Add the two literals to `DeliveryClassRefusalCode`, and update the binding's doc comments. The snapshot adds the
+  `JSON` language global to the binding's source, so move the scope gate's null-control baseline from 90 to 91
+  references. Verify that the scope gate still reports no host coupling.
+- [x] 3.2 Verify that every test from group 2 passes. Then, in a disposable copy, verify that each fails against its
   planted defect:
   - the commit-state check removed, with the table defaulting to `committed_and_durable`;
   - the check replaced by the union of every `transaction_critical` entry's list;
@@ -77,9 +93,30 @@
 
   Record each plant and its failing test.
 
+  All 253 runtime tests pass. In a disposable copy, with an unplanted null control green, each plant failed its
+  named test:
+
+  | Plant | Failing test |
+  |---|---|
+  | check removed, table defaulting to `committed_and_durable` | each unlisted commit state is refused |
+  | union of every entry's list | a commit state another entry allows is refused |
+  | `compensated` entry removed | the catalog walk for `data.sensitive_resource.modified` |
+  | pipeline reading the caller's object | a change during the probe, the gate and the exchange |
+  | serialization check removed | BigInt, cycle and both `toJSON` cases, and the throwing getter |
+  | unguarded read of the snapshot | `null` is refused |
+  | unguarded read of the caller's identifier | the throwing getter is refused |
+  | top-level freeze only | frozen at every depth |
+  | key reserved at the commit-state refusal | the corrected pair is delivered |
+  | snapshot reordering keys | byte identity for every example |
+  | gate before the probe | probe, gate, handoff in order |
+  | settled check after the gate | a settled repeat runs nothing |
+  | `failed_closed` for the class's own example | the conformance arm, both transports |
+  | duplicate check before the occurrence refusals | a settled pair offered again with a disallowed state is refused |
+  | template-literal key with a separator | an identifier that shadows `toString`, and `1` against `"1"` |
+
 ## 4. Records
 
-- [ ] 4.1 In the Node binding's README transaction-critical section:
+- [x] 4.1 In the Node binding's README transaction-critical section:
   - add rows for `commit_state_not_allowed` and `occurrence_not_serializable`;
   - qualify the committed row to an occurrence whose commit state is `committed`;
   - state that the binding delivers and reports one snapshot taken when `deliver()` is called.
@@ -88,17 +125,17 @@
   after the commit, and a #869 warning: an equality check on `committed_and_durable` no longer matches a
   `partially_committed` or `compensated` occurrence. Verify that no row still implies that the commit state is
   unchecked.
-- [ ] 4.2 Rewrite the `CONTEXT.md` entry "Commit claim" so that it names the three statuses that make one, each only
+- [x] 4.2 Rewrite the `CONTEXT.md` entry "Commit claim" so that it names the three statuses that make one, each only
   for the commit state it names. Verify that it contains no implementation detail.
-- [ ] 4.3 Write ADR-NODE-007 recording Decisions 1 to 5 and their rejected alternatives. It cites the #913 decision
+- [x] 4.3 Write ADR-NODE-007 recording Decisions 1 to 5 and their rejected alternatives. It cites the #913 decision
   record as its source, and is accepted when this change merges. Add a one-line pointer to #896 and ADR-NODE-007 on
   ADR-NODE-005's #869 known limit.
-- [ ] 4.4 Add a `freezeRecord.amendments` entry to the Node binding's `compatibility.json` naming the two literals,
+- [x] 4.4 Add a `freezeRecord.amendments` entry to the Node binding's `compatibility.json` naming the two literals,
   with unchanged counts. Verify that the earlier amendments are byte-identical.
 
 ## 5. Integration checks
 
-- [ ] 5.1 Verify that `npm run validate --prefix packages/security-audit-sdk-node` passes, with `test:exports` at
+- [x] 5.1 Verify that `npm run validate --prefix packages/security-audit-sdk-node` passes, with `test:exports` at
   19 value and 44 type-only exports, and that `git diff --check` is clean.
 - [ ] 5.2 Run `make governance-gates`, then the post-commit governance battery (`--phase final`, the dual check, the
   governance tests). Verify that every step passes.

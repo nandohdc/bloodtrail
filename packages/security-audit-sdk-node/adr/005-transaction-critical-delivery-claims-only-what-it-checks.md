@@ -60,6 +60,7 @@ Hosts compose those themselves (G4, G5). Stage 2 (#833) measures the host-outbox
 
 **Known limits, filed separately:**
 - `partially_committed` and `compensated` occurrences still receive a full commit claim (#869).
+  #896 corrected this, and ADR-NODE-007 (#913) then limited every claim to a commit state the catalog allows.
 - No retry of durability alone exists after a commit. Calling `deliver()` again after
   `audit_durability_failed_after_commit` or `business_commit_unconfirmed` runs the gate again (#870).
   ADR-NODE-006 resolves this with a reconciling commit gate.

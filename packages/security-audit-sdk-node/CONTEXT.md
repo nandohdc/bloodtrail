@@ -40,8 +40,9 @@ _Avoid_: duplicate, duplicate event
 
 **Commit claim**:
 A transaction-critical delivery result's statement that the caller's business commit gate confirmed the
-commit. Only `committed_and_durable` makes one. It is never evidence that the business change committed; the
-occurrence's own commit state is.
+commit. Three results make one, each only for the commit state it names: `committed_and_durable` for
+`committed`, `partially_committed_and_durable` for `partially_committed`, and `compensated_and_durable` for
+`compensated`. It is never evidence that the business change committed; the occurrence's own commit state is.
 _Avoid_: commit evidence, commit proof
 
 **Reconciling commit gate**:

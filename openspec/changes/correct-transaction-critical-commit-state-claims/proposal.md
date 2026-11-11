@@ -83,12 +83,15 @@ None.
 ## Impact
 
 - **Code:** `packages/security-audit-sdk-node/src/delivery-classes.ts`.
-- **Tests:** the Node binding's transaction-critical claims tests, and its class conformance tests.
+- **Tests:** the Node binding's transaction-critical claims tests, and its class conformance tests. The scope
+  gate's null control pins how many platform references the binding's source makes. The snapshot adds the `JSON`
+  language global, which raises that count from 90 to 91 with no host coupling, so its baseline moves too.
 - **Records:**
   - the Node binding's README, `CONTEXT.md` and `compatibility.json`;
   - ADR-NODE-005, and a new ADR-NODE-007.
 - **Hosts:**
-  - A host that delivers sdk-core-built occurrences sees no runtime change.
+  - A host that delivers sdk-core-built occurrences gets the same results. Its handoff receives a frozen copy
+    rather than the caller's own object.
   - A host that delivers an occurrence with an unlisted or absent commit state now gets a refusal, not a commit
     claim.
   - A host that switches exhaustively over `DeliveryClassRefusalCode` gets a type error until it handles the two

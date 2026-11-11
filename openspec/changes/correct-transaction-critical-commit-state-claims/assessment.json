@@ -35,6 +35,7 @@
     "packages/security-audit-sdk-node/src/delivery-classes.ts",
     "packages/security-audit-sdk-node/tests/transaction-critical-claims.test.ts",
     "packages/security-audit-sdk-node/tests/delivery-classes.test.ts",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
     "packages/security-audit-sdk-node/README.md",
     "packages/security-audit-sdk-node/CONTEXT.md",
     "packages/security-audit-sdk-node/compatibility.json",

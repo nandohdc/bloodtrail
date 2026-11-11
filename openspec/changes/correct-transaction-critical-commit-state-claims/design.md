@@ -113,7 +113,9 @@ is not an occurrence object, such as `null` or a number, has no event name, so i
 Every refusal reports its `event_id` through a guarded read that yields the empty string when the read throws or
 does not give a string. For a serialization refusal the read is of the caller's object, and otherwise of the
 snapshot. An admitted occurrence's identifier is used as it is today, in both the deduplication key and the
-result. A fallback value there would let two distinct occurrences share one key.
+result. A fallback value there would let two distinct occurrences share one key. The snapshot can hold any JSON
+value as that identifier, and a template literal throws on one that shadows `toString`. So the key is encoded as
+JSON, which cannot throw on the snapshot's data and needs no separator.
 
 *Why JSON rather than `structuredClone`:*
 - **The snapshot is what the wire carries.** The handoff serializes with `JSON.stringify`. So the status and the
@@ -280,7 +282,8 @@ binding that reports `failed_closed` for the class's own example. Changing a tes
 
 ## Migration Plan
 
-- **A host that delivers sdk-core-built occurrences:** no runtime change. The type-level change below still applies.
+- **A host that delivers sdk-core-built occurrences:** the same results. The handoff receives a frozen copy rather
+  than the caller's own object, and the type-level change below still applies.
 - **A host that builds, copies or reloads occurrences:** it gets `commit_state_not_allowed` or
   `occurrence_not_serializable` where it used to get a claim, or a failure after the commit.
 - **A host that switches exhaustively over `DeliveryClassRefusalCode`:** it handles the two new codes.
