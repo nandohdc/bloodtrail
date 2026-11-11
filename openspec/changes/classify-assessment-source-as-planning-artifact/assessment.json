@@ -1,0 +1,155 @@
+{
+  "schema_version": "1.1",
+  "change_id": "classify-assessment-source-as-planning-artifact",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "An assessment commit must not count as governed implementation for writing its own assessment, whether that assessment is hand-written or generated from assessment.source.json (R10).",
+    "Path classification stays in the policy, the one source that both the ordering check and the association check read.",
+    "The governed implementation surface narrows by the generator's input file alone, a planning artifact with no runtime effect.",
+    "The fix must be shown against real Git history with a test that fails on the unchanged policy.",
+    "The broader trust gap in #943, the optional ordering fields and archived changes stay out of scope."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior",
+      "governance_core_path"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/classify-assessment-source-as-planning-artifact/.openspec.yaml",
+    "openspec/changes/classify-assessment-source-as-planning-artifact/assessment.json",
+    "openspec/changes/classify-assessment-source-as-planning-artifact/assessment.source.json",
+    "openspec/changes/classify-assessment-source-as-planning-artifact/design.md",
+    "openspec/changes/classify-assessment-source-as-planning-artifact/proposal.md",
+    "openspec/changes/classify-assessment-source-as-planning-artifact/tasks.md",
+    "openspec/governance/design-pattern-policy.json",
+    "openspec/tests/design-pattern-governance/assessment-source-ordering.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-policy-pattern-for-assessment-source",
+      "kind": "direct_implementation",
+      "summary": "Add openspec/changes/*/assessment.source.json to the policy's planning_artifact_patterns beside assessment.json, name it in planning_artifact_note, and prove the fix with a real-history checker test and a null control.",
+      "forces_addressed": [
+        "An assessment commit must not count as governed implementation for writing its own assessment, whether that assessment is hand-written or generated from assessment.source.json (R10).",
+        "Path classification stays in the policy, the one source that both the ordering check and the association check read.",
+        "The governed implementation surface narrows by the generator's input file alone, a planning artifact with no runtime effect.",
+        "The fix must be shown against real Git history with a test that fails on the unchanged policy.",
+        "The broader trust gap in #943, the optional ordering fields and archived changes stay out of scope."
+      ]
+    },
+    {
+      "id": "approach-hardcoded-checker-exclusion",
+      "kind": "alternative",
+      "summary": "Exclude assessment.source.json inside orderingGovernedPatterns in the checker code rather than in the policy list.",
+      "forces_addressed": [
+        "An assessment commit must not count as governed implementation for writing its own assessment, whether that assessment is hand-written or generated from assessment.source.json (R10).",
+        "The broader trust gap in #943, the optional ordering fields and archived changes stay out of scope."
+      ]
+    },
+    {
+      "id": "approach-exclude-whole-change-directory",
+      "kind": "alternative",
+      "summary": "Replace the named planning patterns with openspec/changes/*/ so that every file in an active change directory is a planning artifact.",
+      "forces_addressed": [
+        "An assessment commit must not count as governed implementation for writing its own assessment, whether that assessment is hand-written or generated from assessment.source.json (R10).",
+        "Path classification stays in the policy, the one source that both the ordering check and the association check read."
+      ]
+    },
+    {
+      "id": "approach-evidence-only-ordering-record",
+      "kind": "alternative",
+      "summary": "Leave the policy unchanged and record #913's ordering as script-checked evidence in its tasks.md instead of in the assessment's ordering field.",
+      "forces_addressed": [
+        "The broader trust gap in #943, the optional ordering fields and archived changes stay out of scope."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-policy-pattern-for-assessment-source",
+  "rejected_alternative_ids": [
+    "approach-hardcoded-checker-exclusion",
+    "approach-exclude-whole-change-directory",
+    "approach-evidence-only-ordering-record"
+  ],
+  "rejection_reasons": {
+    "approach-hardcoded-checker-exclusion": {
+      "forces": [
+        "Path classification stays in the policy, the one source that both the ordering check and the association check read."
+      ],
+      "reason": "The association check reads the same policy list, so a code-only exclusion would leave the two readers disagreeing about one path, and classification would no longer live in the policy alone."
+    },
+    "approach-exclude-whole-change-directory": {
+      "forces": [
+        "The governed implementation surface narrows by the generator's input file alone, a planning artifact with no runtime effect."
+      ],
+      "reason": "It would exempt any file an author places in a change directory, executable files included, where only named planning files are exempt today."
+    },
+    "approach-evidence-only-ordering-record": {
+      "forces": [
+        "An assessment commit must not count as governed implementation for writing its own assessment, whether that assessment is hand-written or generated from assessment.source.json (R10).",
+        "The fix must be shown against real Git history with a test that fails on the unchanged policy."
+      ],
+      "reason": "The owner chose to fix the policy instead. Evidence in tasks.md is not checked by the gate, and every later change written with the generator would still be unable to record its ordering."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-assessment-source-is-planning",
+    "implementation-real-history-ordering-control",
+    "implementation-913-ordering-recordable"
+  ],
+  "invariant_evidence": {
+    "implementation-assessment-source-is-planning": {
+      "task_ids": [
+        "2.2",
+        "3.1",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "the policy's planning_artifact_patterns list openspec/changes/*/assessment.source.json beside openspec/changes/*/assessment.json, a test asserts it, requiresOpenSpecAssociation is false for that path and true for another change-directory file and for an archived source, and the governance test suite passes"
+      ]
+    },
+    "implementation-real-history-ordering-control": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "a fixture history whose assessment commit writes assessment.source.json passes the checker's assessment phase and its final phase with the ordering recorded, fails assessment-shares-implementation-commit in both phases on the unchanged policy, and fails the same way when the null control removes the pattern"
+      ]
+    },
+    "implementation-913-ordering-recordable": {
+      "task_ids": [
+        "4.3"
+      ],
+      "evidence_ids": [
+        "in a disposable copy of the implementation head, with the governed set built as orderingGovernedPatterns builds it, verifyAssessmentOrdering reports no failure for #913 with assessment_commit 520f70e and the earliest commit derived by findEarliestGovernedImplementationCommit, while the old list derives 520f70e itself"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "a1639465e240e9496fd55cfbc65bb06d7eed78f2"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "2.2",
+    "3.1",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4",
+    "5.1",
+    "5.2",
+    "5.3"
+  ]
+}
