@@ -80,8 +80,12 @@
 
 ## 5. Merge and archive
 
-- [ ] 5.1 Verify that every required context plus DeepScan is green on the implementation PR head.
-- [ ] 5.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here.
-- [ ] 5.3 In a separate archive PR, merged with a merge commit after the implementation lands, archive the change.
+- [x] 5.1 Verify that every required context plus DeepScan is green on the implementation PR head. On #948's head
+  `87f7354`, all ten required contexts and DeepScan were green. `sonar` passed on a rerun, after its first attempt
+  could not reach the SonarQube server (HTTP 530).
+- [x] 5.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here. Merged: #948,
+  merge commit `3f88b28`.
+- [x] 5.3 In a separate archive PR, merged with a merge commit after the implementation lands, archive the change.
   There is no fold, because the change has no spec delta. Verify that the archived directory carries the UTC date of
-  the archive.
+  the archive. Archived to `openspec/changes/archive/2026-11-13-classify-assessment-source-as-planning-artifact/`
+  after #948 merged. `TZ=UTC date +%F` gave `2026-11-13`, the archive day. This PR merges with a merge commit.
