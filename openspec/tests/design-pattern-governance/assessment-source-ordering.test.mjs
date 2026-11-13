@@ -23,16 +23,15 @@ import { after, describe, it } from "node:test";
 
 import { requiresOpenSpecAssociation } from "../../scripts/design-pattern-governance/perimeter.mjs";
 import { ASSESSMENT, createRepository, liveRepositoryRoot } from "./support/disposable-repo.mjs";
-import { assertDiagnostic, assertPasses, runChecker } from "./support/harness.mjs";
+import { POLICY_PATH, assertDiagnostic, assertPasses, runChecker } from "./support/harness.mjs";
 
-const POLICY = "openspec/governance/design-pattern-policy.json";
 const SOURCE = ASSESSMENT.replace(/assessment\.json$/, "assessment.source.json");
 const SOURCE_PATTERN = "openspec/changes/*/assessment.source.json";
 const ASSESSMENT_PATTERN = "openspec/changes/*/assessment.json";
 /** A governed implementation path in the fixture's own classification. */
 const IMPLEMENTATION = "packages/example/src/feature.mjs";
 
-const livePolicy = () => JSON.parse(readFileSync(resolve(liveRepositoryRoot, POLICY), "utf8"));
+const livePolicy = () => JSON.parse(readFileSync(resolve(liveRepositoryRoot, POLICY_PATH), "utf8"));
 
 const repositories = [];
 function fixture() {
@@ -51,11 +50,11 @@ function setOrdering(repository, ordering) {
   });
 }
 
-/** Commits a fixture policy whose planning list carries, or lacks, the source pattern. */
-function withSourcePattern(repository, present) {
-  repository.mutateJson(POLICY, (policy) => {
-    const others = policy.planning_artifact_patterns.filter((pattern) => pattern !== SOURCE_PATTERN);
-    policy.planning_artifact_patterns = present ? [...others, SOURCE_PATTERN] : others;
+/** Commits a fixture policy whose planning list lacks the source pattern. */
+function withoutSourcePattern(repository) {
+  repository.mutateJson(POLICY_PATH, (policy) => {
+    policy.planning_artifact_patterns = policy.planning_artifact_patterns
+      .filter((pattern) => pattern !== SOURCE_PATTERN);
     return policy;
   });
   repository.commit("chore: set the fixture's planning artifact patterns");
@@ -105,7 +104,7 @@ describe("R10: an assessment's generator source is a planning artifact", () => {
 
   it("null control: without the pattern, the same history shares implementation, in both phases", () => {
     const repository = fixture();
-    withSourcePattern(repository, false);
+    withoutSourcePattern(repository);
     const baseline = orderedHistory(repository);
 
     for (const [phase, result] of phases(repository, baseline)) {
@@ -127,7 +126,8 @@ describe("R10: an assessment's generator source is a planning artifact", () => {
   it("lists the source pattern next to assessment.json in the live policy", () => {
     const patterns = livePolicy().planning_artifact_patterns;
 
+    assert.ok(patterns.includes(ASSESSMENT_PATTERN), `the live policy must list ${ASSESSMENT_PATTERN}`);
+    assert.ok(patterns.includes(SOURCE_PATTERN), `the live policy must list ${SOURCE_PATTERN}`);
     assert.equal(patterns.indexOf(SOURCE_PATTERN), patterns.indexOf(ASSESSMENT_PATTERN) + 1);
-    assert.ok(patterns.includes(ASSESSMENT_PATTERN));
   });
 });
