@@ -21,7 +21,7 @@ const suiteRoot = mkdtempSync(resolve(tmpdir(), "bloodtrail-sdk-node-scope-"));
 test.after(() => rmSync(suiteRoot, { recursive: true, force: true }));
 
 const BASELINE_INVENTORY =
-  "platform coupling inventory: authored: 15 artifacts, 91 references, host couplings: [none]; fetchExchange: 1 artifacts, 9 references, host couplings: [AbortSignal (1 site), fetch (1 site)]";
+  "platform coupling inventory: authored: 15 artifacts, 92 references, host couplings: [none]; fetchExchange: 1 artifacts, 9 references, host couplings: [AbortSignal (1 site), fetch (1 site)]";
 
 const PROBE_ARTIFACT = "src/probe.ts";
 

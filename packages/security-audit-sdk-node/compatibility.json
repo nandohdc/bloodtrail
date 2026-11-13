@@ -57,6 +57,13 @@
         "adr": "adr/007-transaction-critical-delivery-claims-from-one-checked-snapshot.md",
         "valueExportCount": 19,
         "typeExportCount": 44
+      },
+      {
+        "issue": 945,
+        "reason": "Governed widening of the DeliveryClassRefusalCode public union without a new export (#945): gains occurrence_too_large, so transaction-critical delivery refuses, before the durability probe, an occurrence whose JSON serialization is larger than the contract's event size limit.",
+        "adr": "adr/008-oversized-occurrences-are-refused-before-the-commit.md",
+        "valueExportCount": 19,
+        "typeExportCount": 44
       }
     ]
   },

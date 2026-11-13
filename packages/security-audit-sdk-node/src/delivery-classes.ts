@@ -19,7 +19,8 @@
 import type { SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
 import { EVENT_CATALOG } from "@bloodtrail/security-audit-sdk-core";
 
-import type { HttpDeliveryHandoff } from "./http-handoff.js";
+import { nodeByteLength } from "./byte-length.js";
+import { EVENT_MAX_BYTES, type HttpDeliveryHandoff } from "./http-handoff.js";
 
 /** The four governed classes, as the frozen contract names them. */
 export type GovernedDeliveryClass = SecurityAuditEvent["event"]["delivery_class"];
@@ -76,6 +77,12 @@ export type DeliveryClassRefusalCode =
    * could never become durable. Refused before the probe runs (#913).
    */
   | "occurrence_not_serializable"
+  /**
+   * `transaction_critical` only: the occurrence's JSON serialization is larger
+   * than the contract's event size limit, so it could never become durable.
+   * Refused before the probe runs (#945).
+   */
+  | "occurrence_too_large"
   | "duplicate_transaction_delivery"
   | "audit_durability_unreachable"
   | "audit_durability_failed_after_commit"
@@ -456,12 +463,20 @@ function admitTransaction(
 }
 
 /**
- * The occurrence checks, in their fixed order (#913). Each reads the snapshot
- * through guarded access, so no input makes admission throw. Each refusal
- * reports the identifier it can read as a string, or the empty string.
+ * The occurrence checks, in their fixed order (#913, #945). Each reads the
+ * snapshot through guarded access, so no input makes admission throw. Each
+ * refusal reports the identifier it can read as a string, or the empty string.
+ *
+ * The size is checked on the serialization alone, before it is parsed and
+ * frozen, so an oversized input costs one serialization and one byte count.
+ * No snapshot exists yet for those two refusals, so they read the identifier
+ * from the caller's object.
  */
 function checkOccurrence(event: unknown, transactionId: string): AdmittedOccurrence | AdmissionRefusal {
-  const snapshot = snapshotOf(event);
+  const serialized = serializationOf(event);
+  if (serialized === null) return refusedFor("occurrence_not_serializable", event);
+  if (nodeByteLength.byteLength(serialized) > EVENT_MAX_BYTES) return refusedFor("occurrence_too_large", event);
+  const snapshot = snapshotOf(serialized);
   if (snapshot === null) return refusedFor("occurrence_not_serializable", event);
 
   const fields = fieldOf(snapshot.value, "event");
@@ -477,16 +492,28 @@ function checkOccurrence(event: unknown, transactionId: string): AdmittedOccurre
 }
 
 /**
- * The occurrence's one snapshot: its JSON serialization, parsed back and frozen
- * at every depth (#913). The handoff serializes it again into the same bytes,
- * so the bytes made durable are the bytes admitted. `null` when there is no such
- * serialization: a BigInt, a cycle, a throwing getter or `toJSON`, or a value
- * whose serialization is not a string.
+ * The occurrence's JSON serialization, or `null` when there is none: a BigInt,
+ * a cycle, a throwing getter or `toJSON`, or a value whose serialization is not
+ * a string.
  */
-function snapshotOf(event: unknown): Readonly<{ readonly value: unknown }> | null {
+function serializationOf(event: unknown): string | null {
   try {
     const serialized: unknown = JSON.stringify(event);
-    if (typeof serialized !== "string") return null;
+    return typeof serialized === "string" ? serialized : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The occurrence's one snapshot: its JSON serialization, parsed back and frozen
+ * at every depth (#913). The handoff serializes it again into a body of the
+ * same size, and for an ordinary object into the same bytes, so what is made
+ * durable is what was admitted. `null` when the serialization cannot be parsed
+ * back.
+ */
+function snapshotOf(serialized: string): Readonly<{ readonly value: unknown }> | null {
+  try {
     return { value: deepFreeze(JSON.parse(serialized)) };
   } catch {
     return null;

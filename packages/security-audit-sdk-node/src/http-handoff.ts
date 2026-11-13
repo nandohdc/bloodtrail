@@ -3,7 +3,14 @@ import type { SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
 import { nodeByteLength } from "./byte-length.js";
 import { classifyHttpExchangeOutcome, type HttpResponseClassification } from "./http-response-classification.js";
 
-const MAX_REQUEST_BODY_BYTES = 65_536;
+/**
+ * The canonical contract's event size limit (`bounds.event_max_bytes`), in UTF-8
+ * bytes. Declared once in this package: the handoff applies it to a request
+ * body, and `transaction_critical` admission applies it before the durability
+ * probe (#945). The tests build their sizes from the contract source, so a
+ * value that differs from the contract's fails them.
+ */
+export const EVENT_MAX_BYTES = 65_536;
 // A bounded absolute request path, with no query or fragment. The HTTP audit
 // sink checks its path against this same pattern.
 export const BOUNDED_ABSOLUTE_PATH = /^\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]{1,2047}$/;
@@ -101,7 +108,7 @@ export function createHttpDeliveryHandoff(options: HttpDeliveryHandoffOptions): 
       if (request === null) {
         return result("non_retryable", "request_serialization_failed", identity);
       }
-      if (nodeByteLength.byteLength(request.body) > MAX_REQUEST_BODY_BYTES) {
+      if (nodeByteLength.byteLength(request.body) > EVENT_MAX_BYTES) {
         return result("non_retryable", "request_too_large", identity);
       }
 

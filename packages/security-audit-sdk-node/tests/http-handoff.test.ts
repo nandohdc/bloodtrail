@@ -15,6 +15,13 @@ import type { SecurityAuditEvent } from "@bloodtrail/security-audit-sdk-core";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturePath = resolve(__dirname, "../../../contracts/security-audit/examples/positive/all-events.json");
 const fixtureEvent = JSON.parse(readFileSync(fixturePath, "utf8"))[0] as SecurityAuditEvent;
+// The contract's own event size limit (#945). The size tests build their bodies
+// from it, never from a literal, so they fail if the handoff applies another one.
+const CONTRACT_EVENT_MAX_BYTES = (
+  JSON.parse(
+    readFileSync(resolve(__dirname, "../../../contracts/security-audit/source/contract.source.json"), "utf8"),
+  ) as { readonly bounds: { readonly event_max_bytes: number } }
+).bounds.event_max_bytes;
 
 type Handler = (request: IncomingMessage, response: ServerResponse) => void;
 
@@ -80,6 +87,15 @@ function response(
   acknowledgments: readonly { readonly event_id: string; readonly outcome: "accepted" }[] = [],
 ): HttpExchangeOutcome {
   return { kind: "response", status, acknowledgments };
+}
+
+// The fixture event padded so that its JSON serialization is exactly `bytes` UTF-8 bytes.
+function eventOfBytes(bytes: number): SecurityAuditEvent {
+  const sized = (padding: number) =>
+    ({ ...eventFixture(), extension_padding: "x".repeat(padding) }) as SecurityAuditEvent;
+  const event = sized(bytes - Buffer.byteLength(JSON.stringify(sized(0)), "utf8"));
+  assert.equal(Buffer.byteLength(JSON.stringify(event), "utf8"), bytes, "precondition: the body has the requested size");
+  return event;
 }
 
 function handoffWith(outcome: HttpExchangeOutcome) {
@@ -190,8 +206,8 @@ describe("HTTP delivery handoff", () => {
     }
   });
 
-  it("rejects oversized projection before calling the injected exchange", async () => {
-    const event = { ...eventFixture(), extension_padding: "x".repeat(65_537) } as SecurityAuditEvent;
+  it("rejects a projection one byte over the contract's size limit before calling the injected exchange", async () => {
+    const event = eventOfBytes(CONTRACT_EVENT_MAX_BYTES + 1);
     const { handoff, requests } = handoffWith({ kind: "timeout" });
 
     const result = await handoff.handoff(event);
@@ -203,6 +219,20 @@ describe("HTTP delivery handoff", () => {
       attempt: 0,
     });
     assert.equal(requests.length, 0);
+  });
+
+  it("exchanges a projection exactly at the contract's size limit", async () => {
+    const event = eventOfBytes(CONTRACT_EVENT_MAX_BYTES);
+    const { handoff, requests } = handoffWith({
+      kind: "response",
+      status: 202,
+      acknowledgments: [{ event_id: event.event.id, outcome: "accepted" }],
+    });
+
+    const result = await handoff.handoff(event);
+
+    assert.equal(result.code, "acknowledged");
+    assert.deepEqual(requests.map((request) => Buffer.byteLength(request.body, "utf8")), [CONTRACT_EVENT_MAX_BYTES]);
   });
 
   it("keeps a caller-supplied attempt ordinal in the request and the result, outside the occurrence", async () => {

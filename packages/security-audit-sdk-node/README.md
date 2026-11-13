@@ -249,6 +249,8 @@ and frozen at every depth. It checks, delivers and reports only that snapshot, s
 own object afterwards reaches neither the durable bytes nor the result (ADR-NODE-007). Before anything runs, it
 refuses, in this order:
 - an occurrence it cannot serialize;
+- an occurrence whose serialization is larger than the contract's event size limit, 65,536 UTF-8 bytes
+  (ADR-NODE-008);
 - an event outside the catalog, or one of another class;
 - an empty transaction identifier;
 - a commit state that the event's own catalog entry does not allow.
@@ -258,6 +260,7 @@ A refused occurrence is not recorded for deduplication, so a corrected one can b
 | Situation | Result |
 |---|---|
 | The occurrence has no JSON serialization, such as one holding a BigInt or a cycle | `refused` / `occurrence_not_serializable`; nothing runs (#913) |
+| The occurrence's JSON serialization is larger than 65,536 UTF-8 bytes, whatever its commit state | `refused` / `occurrence_too_large`; nothing runs (#945) |
 | The event name is not in the catalog, or the value is not an occurrence object | `refused` / `unknown_event_name`; nothing runs |
 | The event's catalog entry declares another delivery class | `refused` / `delivery_class_mismatch`; nothing runs |
 | The transaction identifier is empty | `refused` / `transaction_id_required`; nothing runs |
@@ -330,8 +333,18 @@ The host also:
 The fraud evidence profile's requirement "Host redelivery after a failure following the commit" states these
 obligations, and ADR-NODE-006 records the decision (#870).
 
-### Migration (#859, #860, #869, #913)
+### Migration (#859, #860, #869, #913, #945)
 
+- **Size refusal (#945).** `DeliveryClassRefusalCode` gains `occurrence_too_large`. An occurrence whose JSON
+  serialization is larger than the contract's event size limit, 65,536 UTF-8 bytes, used to run the commit gate and
+  then fail as `audit_durability_failed_after_commit`, because the handoff was the first to measure it. It is now
+  refused before the probe runs, whatever its commit state, and before every other refusal except
+  `occurrence_not_serializable`. An occurrence of exactly 65,536 bytes is delivered as before. Occurrences that
+  sdk-core built get the same results, because sdk-core never returns an event over the limit. A host that switches
+  exhaustively over the code gets a type error until it handles the new value.
+
+  The binding still does not check an occurrence's depth, array lengths, string lengths or schema validity. A
+  host-built occurrence that the collector rejects for one of those still runs the gate and fails afterwards.
 - **Admission refusals (#913).** `DeliveryClassRefusalCode` gains `commit_state_not_allowed` and
   `occurrence_not_serializable`. Both are refused before the probe runs:
   - An occurrence whose commit state is absent, or not one its event's catalog entry allows, used to run the gate

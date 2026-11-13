@@ -21,6 +21,10 @@
 // occurrence that cannot be serialized is refused, and one admitted snapshot is
 // what reaches the durability point and what the result reports.
 //
+// And it pins the size refusal (#945): an occurrence whose serialization is
+// larger than the contract's event size limit is refused before the probe, so
+// no business change commits for a record that can never become durable.
+//
 // Events come from the contract's own positive example set, so the committed
 // and the uncommitted arms run against real catalog entries.
 
@@ -1109,5 +1113,177 @@ describe("transaction_critical: the deduplication key holds for any identifier t
 
     assert.deepEqual(results.map((result) => result.status), ["committed_and_durable", "committed_and_durable"]);
     assert.equal(stub.handedOff.length, 2, "neither is mistaken for the other");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #945: an occurrence too large to become durable is refused before the commit
+// ---------------------------------------------------------------------------
+
+// The contract's own event size limit. Every size below is built from it, never
+// from a literal, so these tests fail if admission or the handoff applies any
+// other limit.
+const CONTRACT_EVENT_MAX_BYTES = (
+  JSON.parse(
+    readFileSync(resolve(__dirname, "../../../contracts/security-audit/source/contract.source.json"), "utf8"),
+  ) as { readonly bounds: { readonly event_max_bytes: number } }
+).bounds.event_max_bytes;
+
+function serializedBytes(value: unknown): number {
+  return Buffer.byteLength(JSON.stringify(value), "utf8");
+}
+
+// A copy of `event` with a fresh identifier and a padding member of `filler`
+// repeated `count` times.
+function padded(event: SecurityAuditEvent, filler: string, count: number): SecurityAuditEvent {
+  const copy = withNewEventId(event) as SecurityAuditEvent & { extension_padding: string };
+  copy.extension_padding = filler.repeat(count);
+  return copy;
+}
+
+// A copy of `event` whose JSON serialization is exactly `bytes` UTF-8 bytes.
+function sizedTo(event: SecurityAuditEvent, bytes: number): SecurityAuditEvent {
+  const empty = serializedBytes(padded(event, "x", 0));
+  assert.ok(bytes >= empty, "precondition: the example fits under the requested size");
+  const copy = padded(event, "x", bytes - empty);
+  assert.equal(serializedBytes(copy), bytes, "precondition: the occurrence has the requested size");
+  return copy;
+}
+
+function tooLarge(occurrence: unknown) {
+  const id = (occurrence as { event?: { id?: unknown } } | null)?.event?.id;
+  return { status: "refused", code: "occurrence_too_large", event_id: typeof id === "string" ? id : "" };
+}
+
+describe("transaction_critical: an occurrence over the contract's size limit is refused before the commit (#945)", () => {
+  it("reads a usable limit from the contract source", () => {
+    assert.ok(Number.isSafeInteger(CONTRACT_EVENT_MAX_BYTES) && CONTRACT_EVENT_MAX_BYTES > serializedBytes(COMMITTED));
+  });
+
+  for (const [label, excess] of [["one byte over the limit", 1], ["well over the limit", 8192]] as const) {
+    it(`refuses an occurrence ${label} as occurrence_too_large, with no probe, gate or handoff`, async () => {
+      const occurrence = sizedTo(COMMITTED, CONTRACT_EVENT_MAX_BYTES + excess);
+      const run = instrumented();
+
+      const result = await run.binding.deliver(occurrence, "txn-945-oversized", run.gate);
+
+      assert.deepEqual(result, tooLarge(occurrence));
+      assert.deepEqual(run.steps, [], "nothing runs for a refused occurrence");
+    });
+  }
+
+  it("counts UTF-8 bytes, not characters", async () => {
+    const occurrence = padded(COMMITTED, "\u00e9", Math.floor(CONTRACT_EVENT_MAX_BYTES * 0.6));
+    assert.ok(JSON.stringify(occurrence).length < CONTRACT_EVENT_MAX_BYTES, "precondition: under the limit in characters");
+    assert.ok(serializedBytes(occurrence) > CONTRACT_EVENT_MAX_BYTES, "precondition: over the limit in bytes");
+    const run = instrumented();
+
+    const result = await run.binding.deliver(occurrence, "txn-945-multibyte", run.gate);
+
+    assert.deepEqual(result, tooLarge(occurrence));
+    assert.deepEqual(run.steps, []);
+  });
+
+  it("refuses an oversized not_committed occurrence, which runs no commit gate", async () => {
+    const occurrence = sizedTo(NOT_COMMITTED, CONTRACT_EVENT_MAX_BYTES + 1);
+    const run = instrumented();
+
+    const result = await run.binding.deliver(occurrence, "txn-945-not-committed", run.gate);
+
+    assert.deepEqual(result, tooLarge(occurrence));
+    assert.deepEqual(run.steps, []);
+  });
+
+  it("delivers an occurrence exactly at the limit, with a body of that size", async () => {
+    const occurrence = sizedTo(COMMITTED, CONTRACT_EVENT_MAX_BYTES);
+    const run = instrumented();
+
+    const result = await run.binding.deliver(occurrence, "txn-945-at-limit", run.gate);
+
+    assert.deepEqual(result, {
+      status: "committed_and_durable",
+      event_id: occurrence.event.id,
+      transaction_id: "txn-945-at-limit",
+    });
+    assert.deepEqual(run.steps, ["probe", "gate", "handoff"]);
+    assert.deepEqual(run.bodies.map((body) => Buffer.byteLength(body, "utf8")), [CONTRACT_EVENT_MAX_BYTES]);
+  });
+
+  it("leaves the pair deliverable once the refused occurrence is made to fit", async () => {
+    const refused = sizedTo(COMMITTED, CONTRACT_EVENT_MAX_BYTES + 1);
+    const corrected = structuredClone(refused) as SecurityAuditEvent & { extension_padding?: string };
+    delete corrected.extension_padding;
+    const run = instrumented();
+
+    const first = await run.binding.deliver(refused, "txn-945-corrected", run.gate);
+    const second = await run.binding.deliver(corrected, "txn-945-corrected", run.gate);
+
+    assert.deepEqual(first, tooLarge(refused));
+    assert.deepEqual(second, {
+      status: "committed_and_durable",
+      event_id: corrected.event.id,
+      transaction_id: "txn-945-corrected",
+    });
+    assert.deepEqual(run.steps, ["probe", "gate", "handoff"]);
+  });
+});
+
+describe("transaction_critical: the size refusal comes before every refusal but the serialization one (#945)", () => {
+  it("refuses an oversized occurrence of another delivery class as too large, not as a class mismatch", async () => {
+    const other = ALL_EVENTS.find((candidate) => candidate.event.delivery_class !== "transaction_critical");
+    assert.ok(other, "precondition: the example set carries another delivery class");
+    const occurrence = sizedTo(other, CONTRACT_EVENT_MAX_BYTES + 1);
+    const run = instrumented();
+
+    const result = await run.binding.deliver(occurrence, "txn-945-other-class", run.gate);
+
+    assert.deepEqual(result, tooLarge(occurrence));
+    assert.deepEqual(run.steps, []);
+  });
+
+  it("refuses an oversized occurrence with a commit state its entry does not allow as too large", async () => {
+    const occurrence = sizedTo(withCommitState(COMMITTED, "unknown"), CONTRACT_EVENT_MAX_BYTES + 1);
+    assert.equal(occurrence.event.commit_state, "unknown", "precondition: the commit state is not one the entry allows");
+    const run = instrumented();
+
+    const result = await run.binding.deliver(occurrence, "txn-945-unlisted-state", run.gate);
+
+    assert.deepEqual(result, tooLarge(occurrence));
+    assert.deepEqual(run.steps, []);
+  });
+
+  it("refuses an oversized string, which is not an occurrence object, as too large", async () => {
+    const text = "x".repeat(CONTRACT_EVENT_MAX_BYTES);
+    const run = instrumented();
+
+    const result = await run.binding.deliver(text as unknown as SecurityAuditEvent, "txn-945-text", run.gate);
+
+    assert.deepEqual(result, tooLarge(text));
+    assert.deepEqual(run.steps, []);
+  });
+
+  it("refuses a settled pair offered again oversized, rather than reporting it delivered", async () => {
+    const occurrence = withNewEventId(COMMITTED);
+    const oversized = structuredClone(occurrence) as SecurityAuditEvent & { extension_padding: string };
+    oversized.extension_padding = "x".repeat(CONTRACT_EVENT_MAX_BYTES);
+    const run = instrumented();
+
+    const first = await run.binding.deliver(occurrence, "txn-945-settled", run.gate);
+    const second = await run.binding.deliver(oversized, "txn-945-settled", run.gate);
+
+    assert.equal(first.status, "committed_and_durable");
+    assert.deepEqual(second, tooLarge(oversized));
+    assert.deepEqual(run.steps, ["probe", "gate", "handoff"], "the repeat ran nothing");
+  });
+
+  it("still refuses an occurrence with no JSON serialization as not serializable, however large", async () => {
+    const occurrence = sizedTo(COMMITTED, CONTRACT_EVENT_MAX_BYTES + 1) as SecurityAuditEvent & { cyclic?: unknown };
+    occurrence.cyclic = occurrence;
+    const run = instrumented();
+
+    const result = await run.binding.deliver(occurrence, "txn-945-cyclic", run.gate);
+
+    assert.deepEqual(result, { status: "refused", code: "occurrence_not_serializable", event_id: occurrence.event.id });
+    assert.deepEqual(run.steps, []);
   });
 });
