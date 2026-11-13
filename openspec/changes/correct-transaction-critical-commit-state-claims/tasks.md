@@ -194,7 +194,12 @@
   `3808300`, all ten required contexts and DeepScan were green.
 - [x] 7.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here. Merged by the
   owner: #946, merge commit `a163946`, on 2026-11-11, before 5.2, 5.3 and 6.1 were recorded.
-- [ ] 7.3 In a separate fold PR, fold the delta into the canonical spec while the change is still active. Verify
+- [x] 7.3 In a separate fold PR, fold the delta into the canonical spec while the change is still active. Verify
   that each scenario heading occurs once in the requirement, and that no delta header survives.
+  Folded after the ordering record merged (#950, `ff174f5`). The delta has one MODIFIED requirement, so the fold is an
+  amendment: the canonical diff is 60 insertions and 3 deletions. The canonical requirement is byte-identical to the
+  delta's, has 16 scenarios with no duplicate heading, and occurs once among the spec's 33 requirements. No delta
+  header survives. The canonical file is byte-identical to what `openspec archive` produces from `ff174f5` in a
+  disposable copy, and archiving the folded tree again does not change it.
 - [ ] 7.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify
   that the archived directory carries the UTC date of the archive. The owner then closes the issue by hand.
