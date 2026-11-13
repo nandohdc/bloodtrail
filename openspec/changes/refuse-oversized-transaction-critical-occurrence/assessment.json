@@ -1,0 +1,247 @@
+{
+  "schema_version": "1.1",
+  "change_id": "refuse-oversized-transaction-critical-occurrence",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "No business change may commit for a transaction-critical occurrence that is too large to become durable (#945).",
+    "A refusal that can be decided before the business commit must be decided before the commit gate runs, and must name its cause.",
+    "Inside the Node binding the event size limit is written once and equals the contract's event_max_bytes.",
+    "The frozen Node surface widens only additively: no export changes, and test:exports stays at 19 value and 44 type-only exports (#111, ADR-NODE-001).",
+    "Every occurrence at or under the limit keeps the result it gets today, and the contract, the catalog, sdk-core and the HttpDeliveryHandoff interface stay unchanged.",
+    "The Node binding gains no generator or drift gate: tests tie the limit to the contract's event_max_bytes (decision 2 of the #945 triage)."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "lifecycle_or_state",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/refuse-oversized-transaction-critical-occurrence/.openspec.yaml",
+    "openspec/changes/refuse-oversized-transaction-critical-occurrence/assessment.json",
+    "openspec/changes/refuse-oversized-transaction-critical-occurrence/assessment.source.json",
+    "openspec/changes/refuse-oversized-transaction-critical-occurrence/design.md",
+    "openspec/changes/refuse-oversized-transaction-critical-occurrence/proposal.md",
+    "openspec/changes/refuse-oversized-transaction-critical-occurrence/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/refuse-oversized-transaction-critical-occurrence/tasks.md",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/src/delivery-classes.ts",
+    "packages/security-audit-sdk-node/src/http-handoff.ts",
+    "packages/security-audit-sdk-node/tests/transaction-critical-claims.test.ts",
+    "packages/security-audit-sdk-node/tests/http-handoff.test.ts",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
+    "packages/security-audit-sdk-node/README.md",
+    "packages/security-audit-sdk-node/compatibility.json",
+    "packages/security-audit-sdk-node/adr/007-transaction-critical-delivery-claims-from-one-checked-snapshot.md",
+    "packages/security-audit-sdk-node/adr/008-oversized-occurrences-are-refused-before-the-commit.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-admission-size-refusal-on-the-snapshot-serialization",
+      "kind": "direct_implementation",
+      "summary": "At admission, measure the snapshot's JSON serialization in UTF-8 bytes right after the serialization check and before the parse and the freeze; refuse an occurrence over the contract's event size limit with one new refusal code before the probe and before every other refusal but the serialization one; keep the limit declared once, in the handoff's module, read by admission too; and tie it to the contract's event_max_bytes through tests that build their sizes from the contract source.",
+      "forces_addressed": [
+        "No business change may commit for a transaction-critical occurrence that is too large to become durable (#945).",
+        "A refusal that can be decided before the business commit must be decided before the commit gate runs, and must name its cause.",
+        "Inside the Node binding the event size limit is written once and equals the contract's event_max_bytes.",
+        "The frozen Node surface widens only additively: no export changes, and test:exports stays at 19 value and 44 type-only exports (#111, ADR-NODE-001).",
+        "Every occurrence at or under the limit keeps the result it gets today, and the contract, the catalog, sdk-core and the HttpDeliveryHandoff interface stay unchanged.",
+        "The Node binding gains no generator or drift gate: tests tie the limit to the contract's event_max_bytes (decision 2 of the #945 triage)."
+      ]
+    },
+    {
+      "id": "approach-surface-the-cause-after-the-commit",
+      "kind": "alternative",
+      "summary": "Keep the probe, gate and handoff order, and carry request_too_large in the failed-closed result so that the host can tell why durability failed.",
+      "forces_addressed": [
+        "The frozen Node surface widens only additively: no export changes, and test:exports stays at 19 value and 44 type-only exports (#111, ADR-NODE-001).",
+        "Every occurrence at or under the limit keeps the result it gets today, and the contract, the catalog, sdk-core and the HttpDeliveryHandoff interface stay unchanged.",
+        "The Node binding gains no generator or drift gate: tests tie the limit to the contract's event_max_bytes (decision 2 of the #945 triage)."
+      ]
+    },
+    {
+      "id": "approach-ask-the-handoff-before-the-gate",
+      "kind": "alternative",
+      "summary": "Add a method to HttpDeliveryHandoff that says whether it would accept an occurrence, and call it before the commit gate.",
+      "forces_addressed": [
+        "No business change may commit for a transaction-critical occurrence that is too large to become durable (#945).",
+        "A refusal that can be decided before the business commit must be decided before the commit gate runs, and must name its cause.",
+        "The Node binding gains no generator or drift gate: tests tie the limit to the contract's event_max_bytes (decision 2 of the #945 triage)."
+      ]
+    },
+    {
+      "id": "approach-refuse-only-gate-running-commit-states",
+      "kind": "alternative",
+      "summary": "Refuse an oversized occurrence at admission only when its commit state runs the commit gate, leaving not_committed occurrences to fail at the handoff.",
+      "forces_addressed": [
+        "No business change may commit for a transaction-critical occurrence that is too large to become durable (#945).",
+        "The frozen Node surface widens only additively: no export changes, and test:exports stays at 19 value and 44 type-only exports (#111, ADR-NODE-001).",
+        "The Node binding gains no generator or drift gate: tests tie the limit to the contract's event_max_bytes (decision 2 of the #945 triage)."
+      ]
+    },
+    {
+      "id": "approach-two-literals-compared-by-a-test",
+      "kind": "alternative",
+      "summary": "Keep the handoff's literal, add a second one for admission, and add a test that the two are equal.",
+      "forces_addressed": [
+        "No business change may commit for a transaction-critical occurrence that is too large to become durable (#945).",
+        "A refusal that can be decided before the business commit must be decided before the commit gate runs, and must name its cause.",
+        "The frozen Node surface widens only additively: no export changes, and test:exports stays at 19 value and 44 type-only exports (#111, ADR-NODE-001).",
+        "Every occurrence at or under the limit keeps the result it gets today, and the contract, the catalog, sdk-core and the HttpDeliveryHandoff interface stay unchanged.",
+        "The Node binding gains no generator or drift gate: tests tie the limit to the contract's event_max_bytes (decision 2 of the #945 triage)."
+      ]
+    },
+    {
+      "id": "approach-generate-the-limit-from-the-contract",
+      "kind": "alternative",
+      "summary": "Generate the Node binding's limit from the contract source, as the collector's bounds are generated, behind a drift gate.",
+      "forces_addressed": [
+        "No business change may commit for a transaction-critical occurrence that is too large to become durable (#945).",
+        "A refusal that can be decided before the business commit must be decided before the commit gate runs, and must name its cause.",
+        "Inside the Node binding the event size limit is written once and equals the contract's event_max_bytes.",
+        "The frozen Node surface widens only additively: no export changes, and test:exports stays at 19 value and 44 type-only exports (#111, ADR-NODE-001)."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-admission-size-refusal-on-the-snapshot-serialization",
+  "rejected_alternative_ids": [
+    "approach-surface-the-cause-after-the-commit",
+    "approach-ask-the-handoff-before-the-gate",
+    "approach-refuse-only-gate-running-commit-states",
+    "approach-two-literals-compared-by-a-test",
+    "approach-generate-the-limit-from-the-contract"
+  ],
+  "rejection_reasons": {
+    "approach-surface-the-cause-after-the-commit": {
+      "forces": [
+        "No business change may commit for a transaction-critical occurrence that is too large to become durable (#945).",
+        "A refusal that can be decided before the business commit must be decided before the commit gate runs, and must name its cause."
+      ],
+      "reason": "The business change would still commit with no durable audit record, and no redelivery could repair it; the owner rejected it in the #945 triage."
+    },
+    "approach-ask-the-handoff-before-the-gate": {
+      "forces": [
+        "The frozen Node surface widens only additively: no export changes, and test:exports stays at 19 value and 44 type-only exports (#111, ADR-NODE-001).",
+        "Every occurrence at or under the limit keeps the result it gets today, and the contract, the catalog, sdk-core and the HttpDeliveryHandoff interface stay unchanged."
+      ],
+      "reason": "It changes a frozen interface that hosts implement, and the limit that matters is the contract's, not a property of whichever handoff was injected."
+    },
+    "approach-refuse-only-gate-running-commit-states": {
+      "forces": [
+        "A refusal that can be decided before the business commit must be decided before the commit gate runs, and must name its cause."
+      ],
+      "reason": "An oversized not_committed occurrence would still run the probe and fail at the handoff, giving two codes for one cause."
+    },
+    "approach-two-literals-compared-by-a-test": {
+      "forces": [
+        "Inside the Node binding the event size limit is written once and equals the contract's event_max_bytes."
+      ],
+      "reason": "The limit would still be written twice inside the binding; the owner decided on one source."
+    },
+    "approach-generate-the-limit-from-the-contract": {
+      "forces": [
+        "The Node binding gains no generator or drift gate: tests tie the limit to the contract's event_max_bytes (decision 2 of the #945 triage)."
+      ],
+      "reason": "The owner decided in the #945 triage to tie the limit to the contract by a test; a generator and its drift gate for one number stay open as a later change."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-pre-commit-size-refusal",
+    "implementation-size-measured-as-the-handoff-measures",
+    "implementation-one-contract-tied-size-limit",
+    "implementation-additive-size-refusal-code",
+    "implementation-size-refusal-records",
+    "implementation-recorded-assessment-ordering"
+  ],
+  "invariant_evidence": {
+    "implementation-pre-commit-size-refusal": {
+      "task_ids": [
+        "2.1",
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "tests refuse an occurrence one byte over the limit, one well over it, an oversized not_committed one, an oversized wrong-class one, an oversized string and an oversized repeat of a settled pair as occurrence_too_large with zero probe, gate and handoff calls, keep a corrected pair deliverable, and each fails against its planted defect"
+      ]
+    },
+    "implementation-size-measured-as-the-handoff-measures": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "an occurrence of exactly the contract's limit in UTF-8 bytes is delivered with one exchange whose body is that size, an occurrence under the limit in characters and over it in bytes is refused, and the off-by-one and character-count plants fail their tests"
+      ]
+    },
+    "implementation-one-contract-tied-size-limit": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "every size test builds its occurrence from bounds.event_max_bytes read from the contract source and runs through the public entry, for admission and for the handoff called directly; the handoff's module declares the limit once; and the plants that change the constant or give the handoff another literal fail their tests"
+      ]
+    },
+    "implementation-additive-size-refusal-code": {
+      "task_ids": [
+        "4.3",
+        "5.1"
+      ],
+      "evidence_ids": [
+        "npm run test:exports reports 19 value and 44 type-only exports, and compatibility.json gains one freezeRecord amendment naming occurrence_too_large with earlier amendments byte-identical"
+      ]
+    },
+    "implementation-size-refusal-records": {
+      "task_ids": [
+        "4.1",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "the README row and migration note, ADR-NODE-008 with its two known limits and the ADR-NODE-007 pointer state the size refusal, its timing and its code as the MODIFIED requirement does"
+      ]
+    },
+    "implementation-recorded-assessment-ordering": {
+      "task_ids": [
+        "6.1"
+      ],
+      "evidence_ids": [
+        "ordering records the proposal commit as assessment_commit with the history-derived earliest and final technical commits, check-design-pattern-governance --phase final passes, and disposable copies recording an implementation commit or the record's own commit as assessment_commit fail their diagnostics"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "69fb0457bea8de1fcd13042691b267090fd003d6"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "4.1",
+    "4.2",
+    "4.3",
+    "5.1",
+    "5.2",
+    "5.3",
+    "6.1",
+    "7.1",
+    "7.2",
+    "7.3",
+    "7.4"
+  ]
+}
