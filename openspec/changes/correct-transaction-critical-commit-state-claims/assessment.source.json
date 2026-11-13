@@ -238,6 +238,9 @@
     "trust_boundary": "An occurrence the host built, copied or reloaded is untrusted input at deliver(); the binding now checks the one field its claim depends on against the catalog, refuses any input it cannot serialize or read, and isolates itself from later caller mutation."
   },
   "ordering": {
-    "proposal_baseline_commit": "1a365e7c5fe463b39f41468bb7ab20705a33cfe2"
+    "proposal_baseline_commit": "1a365e7c5fe463b39f41468bb7ab20705a33cfe2",
+    "assessment_commit": "520f70e98323e172a5f411131e2f06021ab443ba",
+    "earliest_governed_implementation_commit": "ae29cbeef4106dc65fb78abbf9b2899150add2a7",
+    "final_technical_commit": "b98537c73f2933a331b89b3d50a13983b70ff212"
   }
 }
