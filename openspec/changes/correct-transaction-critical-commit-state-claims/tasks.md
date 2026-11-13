@@ -137,14 +137,21 @@
 
 - [x] 5.1 Verify that `npm run validate --prefix packages/security-audit-sdk-node` passes, with `test:exports` at
   19 value and 44 type-only exports, and that `git diff --check` is clean.
-- [ ] 5.2 Run `make governance-gates`, then the post-commit governance battery (`--phase final`, the dual check, the
+- [x] 5.2 Run `make governance-gates`, then the post-commit governance battery (`--phase final`, the dual check, the
   governance tests). Verify that every step passes.
-- [ ] 5.3 Run `/code-review xhigh` on the implementation range. Verify that no correctness finding is left open,
+  `make governance-gates` passed on `ae29cbe` before the merge, and again on `main` at `3f88b28`, which holds the
+  merged implementation and the policy from #948. It was not run on the PR head `3808300` itself. The final phase,
+  the dual check and the governance tests (374 of 374) passed on the record commit that 6.1 names.
+- [x] 5.3 Run `/code-review xhigh` on the implementation range. Verify that no correctness finding is left open,
   and that the PR body discloses its authorship and that independent review was `NOT_PERFORMED`.
+  Run on the implementation range before the merge: 8 findings, 5 fixed in `b98537c` and `3808300`, 3 skipped. None
+  of the skipped ones is an open correctness defect: this ordering record, which 6.1 now makes; a non-string
+  `event_id` kept as Decision 2 specifies; and a defensive branch the public API cannot reach. #946's body discloses
+  both.
 
 ## 6. Assessment ordering record
 
-- [ ] 6.1 After the implementation commits, record in `assessment.source.json`'s `ordering` and regenerate:
+- [x] 6.1 After the implementation commits, record in `assessment.source.json`'s `ordering` and regenerate:
   - `assessment_commit`, the proposal commit from 1.3;
   - `earliest_governed_implementation_commit`, found by walking the history forward from the proposal baseline;
   - `final_technical_commit`.
@@ -159,10 +166,34 @@
   If a technical commit lands after this record, for example a review or CI fix, record the ordering again before
   the merge.
 
+  Recorded in the commit titled `docs(openspec): record assessment ordering for
+  correct-transaction-critical-commit-state-claims (#913)`, called the record commit below. Its hash is not written
+  here, because a rebase before the merge changes it. It was made after the merge and not before it as Decision 7
+  planned. Until the policy listed the
+  generator's source as a planning artifact (#948, `3f88b28`), the record failed
+  `assessment-shares-implementation-commit`. The values:
+  - `assessment_commit` `520f70e`. A later planning commit, `5516039`, amended the assessment before any
+    implementation: it added one owned path. It also precedes the earliest implementation commit;
+  - `earliest_governed_implementation_commit` `ae29cbe`, returned by `findEarliestGovernedImplementationCommit`
+    walking forward from the proposal baseline `1a365e7`;
+  - `final_technical_commit` `b98537c`, the last commit that changes a governed implementation path. The PR head
+    `3808300` changes planning text only.
+
+  The record commit changes only `ordering` in the two assessment files. The checker passes in the final phase from
+  the record's base on `main` and in the assessment phase, and the dual check passes. In disposable clones of the
+  record commit:
+  - with `ae29cbe` as `assessment_commit`, both phases fail `assessment-shares-implementation-commit`;
+  - with the record commit itself as `assessment_commit`, both phases fail `assessment-follows-implementation`;
+  - the record as committed passes.
+
+  The checker still takes these recorded commits as given (#943).
+
 ## 7. Merge, fold and archive
 
-- [ ] 7.1 Verify that every required context plus DeepScan is green on the implementation PR head.
-- [ ] 7.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here.
+- [x] 7.1 Verify that every required context plus DeepScan is green on the implementation PR head. On #946's head
+  `3808300`, all ten required contexts and DeepScan were green.
+- [x] 7.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here. Merged by the
+  owner: #946, merge commit `a163946`, on 2026-11-11, before 5.2, 5.3 and 6.1 were recorded.
 - [ ] 7.3 In a separate fold PR, fold the delta into the canonical spec while the change is still active. Verify
   that each scenario heading occurs once in the requirement, and that no delta header survives.
 - [ ] 7.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify
