@@ -201,5 +201,9 @@
   delta's, has 16 scenarios with no duplicate heading, and occurs once among the spec's 33 requirements. No delta
   header survives. The canonical file is byte-identical to what `openspec archive` produces from `ff174f5` in a
   disposable copy, and archiving the folded tree again does not change it.
-- [ ] 7.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify
-  that the archived directory carries the UTC date of the archive. The owner then closes the issue by hand.
+- [x] 7.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify
+  that the archived directory carries the UTC date of the archive. The owner then closes the issue by hand. Archived to
+  `openspec/changes/archive/2026-11-13-correct-transaction-critical-commit-state-claims/` after the fold PR #951
+  merged as `38cd28c`. `TZ=UTC date +%F` gave `2026-11-13`, the archive day. The fold already carried the delta into
+  the canonical spec, so the archive writes no canonical spec. This PR merges with a merge commit, and the issue
+  stays open for the owner.
