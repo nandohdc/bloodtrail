@@ -171,10 +171,11 @@
     "openspec/changes/*/design.md",
     "openspec/changes/*/tasks.md",
     "openspec/changes/*/assessment.json",
+    "openspec/changes/*/assessment.source.json",
     "openspec/changes/*/.openspec.yaml",
     "openspec/changes/*/specs/"
   ],
-  "planning_artifact_note": "Planning artifacts are normative — changing one after signing makes the signed record stale — but they are not governed *implementation*. Ordering excludes them, because an assessment commit necessarily writes the assessment, and counting that as implementation would make every correctly ordered assessment fail as though it had shipped code alongside itself.",
+  "planning_artifact_note": "Planning artifacts are normative — changing one after signing makes the signed record stale — but they are not governed *implementation*. Ordering excludes them, because an assessment commit necessarily writes the assessment, and for a generated assessment its assessment.source.json as well, and counting that as implementation would make every correctly ordered assessment fail as though it had shipped code alongside itself.",
   "path_class_notes": {
     "resolution": "The longest matching pattern wins, then the most specific class. A path matching no pattern is unclassified and fails closed.",
     "floors_not_ceilings": "A path class establishes the minimum trigger set. Behavioural evidence may raise it and never lowers it.",
