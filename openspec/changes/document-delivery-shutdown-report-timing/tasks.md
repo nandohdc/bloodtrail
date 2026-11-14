@@ -1,0 +1,100 @@
+# Tasks: Document what the delivery shutdown deadline bounds (#932)
+
+## 1. Proposal
+
+- [ ] 1.1 Author the proposal, design, delta spec (`security-audit-sdk-node`) and tasks from the #932 decision
+  record. Verify that `openspec validate document-delivery-shutdown-report-timing --strict` passes.
+- [ ] 1.2 Author `assessment.source.json`, then generate `assessment.json` from it. Verify that
+  `node openspec/scripts/generate-assessment.mjs --change document-delivery-shutdown-report-timing --check` and
+  `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change document-delivery-shutdown-report-timing`
+  both pass, and that the proposal commit changes no path outside this change's directory.
+- [ ] 1.3 Once every required context plus DeepScan is green, merge the proposal PR as a merge commit. Verify by
+  recording the proposal commit and the merge commit here.
+
+## 2. Pin the order the requirement states
+
+- [ ] 2.1 Add two tests to the Node binding's delivery shutdown tests:
+  - **the order test**, using the file's `fakeDeadlineTimer`: admit two operations, settle one, initiate shutdown,
+    let pending work run for one macrotask turn and assert the report has not resolved, then fire the timer and
+    assert the report is `{ accepted: 2, completed: 1, abandoned: 1 }`;
+  - **the source check**: parse `src/delivery-shutdown.ts` with the TypeScript compiler API and assert two things:
+    - no free identifier is `setTimeout`, `clearTimeout`, `setInterval`, `setImmediate`, `Date`, `performance`,
+      `process` or `AbortSignal`. Property names such as `timers.setTimeout` do not count;
+    - the module's only import is the type-only import of `AuditTimerProvider` from sdk-core.
+
+  Verify that `npm test --prefix packages/security-audit-sdk-node` passes. Then, in a disposable copy, verify each
+  plant below beside a null control, the unchanged source, that stays green:
+  - `drain()` races a real `setImmediate`: the existing tests pass and the order test fails;
+  - `drain()` races a real global `setTimeout(0)`: the existing tests and the order test pass, and the source check
+    fails;
+  - `drain()` resolves at a `Date.now()` deadline: the source check fails;
+  - `drain()` races a `setTimeout` imported from `node:timers`: the source check fails on the import.
+
+  The scope null control's reference count moves under every one of these plants. Record which other tests fail,
+  so that the recorded catch is the intended test and not only that count.
+
+  Record each plant and the test that fails.
+
+## 3. Records
+
+- [ ] 3.1 Bring the doc comments in `src/delivery-shutdown.ts` into line with the MODIFIED requirement:
+  - `DeliveryShutdownOptions.deadlineMs`;
+  - `DeliveryShutdownReport.completed` and `abandoned`;
+  - `DeliveryShutdown.shutdown()`.
+
+  Verify that the edit changes comments only: `git diff` shows no line outside a comment changed.
+- [ ] 3.2 In the Node binding's README section "Deadline-bounded delivery shutdown", state:
+  - that `deadlineMs` is the delay passed to the injected timer provider, and outstanding work is counted
+    abandoned only once that timer fires;
+  - that the report returns after that, with no stated bound;
+  - that a composer with an outer deadline passes a smaller `deadlineMs` and keeps the difference for the report.
+
+  Cite the Stage 2 reference composition (180 ms inside 200 ms, #899) as one workstation's observation. Verify
+  three things:
+  - no sentence states or implies a service level;
+  - no numeric bound on the report's return is introduced;
+  - the text agrees with the MODIFIED requirement.
+
+## 4. Integration checks
+
+- [ ] 4.1 Verify that `npm run validate --prefix packages/security-audit-sdk-node` passes, with `test:exports` at
+  19 value and 44 type-only exports, and that `git diff --check` is clean.
+- [ ] 4.2 Verify that `git diff --exit-code origin/main...HEAD -- packages/security-audit-sdk-node/compatibility.json`
+  is empty.
+- [ ] 4.3 Run `make governance-gates` on the implementation PR's final technical commit, then the post-commit
+  governance battery (`--phase final`, the dual check, the governance tests). Verify that every step passes, and
+  record the commit each ran on.
+- [ ] 4.4 Run `/code-review xhigh` on the implementation range. Verify two things:
+  - no correctness finding is left open;
+  - the PR body discloses its authorship and that independent review was `NOT_PERFORMED`.
+
+## 5. Assessment ordering record
+
+- [ ] 5.1 After the implementation commits, and before the implementation PR merges, record in
+  `assessment.source.json`'s `ordering` and regenerate:
+  - `assessment_commit`, the proposal commit from 1.3;
+  - `earliest_governed_implementation_commit`, found by walking the history forward from the proposal baseline;
+  - `final_technical_commit`.
+
+  Verify that the commit changes only `ordering` in the two assessment files, and that `--phase final` passes.
+  Then, in disposable copies, verify two controls:
+  - recording the earliest implementation commit as `assessment_commit` fails
+    `assessment-shares-implementation-commit`;
+  - recording the record's own commit as `assessment_commit` fails `assessment-follows-implementation`.
+
+  If the branch is rebased, or a technical commit lands after this record, record the ordering again and run both
+  controls again before the merge. Name branch commits here by their titles, not their hashes.
+
+## 6. Merge, fold and archive
+
+- [ ] 6.1 Verify two things on the implementation PR head:
+  - every required context plus DeepScan is green;
+  - the recorded ordering commits exist on that head.
+- [ ] 6.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here.
+- [ ] 6.3 In a separate fold PR, fold the delta into the canonical spec while the change is still active. Verify
+  three things:
+  - each scenario heading occurs once in the requirement;
+  - no delta header survives;
+  - the canonical file equals what `openspec archive` produces in a disposable copy.
+- [ ] 6.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify that
+  the archived directory carries the UTC date of the archive. The issue stays open for the owner.
