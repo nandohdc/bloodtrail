@@ -1,7 +1,11 @@
 import type { AuditTimerProvider } from "@bloodtrail/security-audit-sdk-core";
 
 export interface DeliveryShutdownOptions {
-  /** Deadline in milliseconds for draining admitted operations, a non-negative integer. */
+  /**
+   * Delay in milliseconds, a non-negative integer, that `shutdown()` passes to
+   * `timers`. No admitted operation is counted abandoned before that timer
+   * fires. Not a bound on when the report resolves.
+   */
   readonly deadlineMs: number;
   readonly timers: AuditTimerProvider;
 }
@@ -15,9 +19,9 @@ export type DeliveryShutdownSubmitResult<TResult> =
 export type DeliveryShutdownReport = Readonly<{
   /** Total operations admitted before shutdown was initiated. */
   readonly accepted: number;
-  /** Admitted operations that settled before the deadline. */
+  /** Admitted operations counted as settled. */
   readonly completed: number;
-  /** Admitted operations still outstanding when the deadline expired. */
+  /** Admitted operations counted as still outstanding after the deadline timer fired. */
   readonly abandoned: number;
 }>;
 
@@ -32,6 +36,11 @@ export interface DeliveryShutdown {
    * Stops admitting new work immediately, drains every operation admitted
    * before this call against the configured deadline, and returns an exact
    * accounting. Idempotent: repeated calls return the same report.
+   *
+   * While admitted work is outstanding, the report does not resolve before the
+   * deadline timer fires. If work is still outstanding when it fires, the
+   * report resolves after it, with no bound on how long after. A caller with an
+   * outer deadline passes a smaller `deadlineMs`.
    */
   shutdown(): Promise<DeliveryShutdownReport>;
 }

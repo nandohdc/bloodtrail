@@ -1,7 +1,26 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { describe, it } from "node:test";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import ts from "typescript";
 import type { AuditTimerHandle, AuditTimerProvider } from "@bloodtrail/security-audit-sdk-core";
 import { createDeliveryShutdown } from "../dist/index.js";
+
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const SHUTDOWN_SOURCE = resolve(packageRoot, "src/delivery-shutdown.ts");
+
+const COUPLING_POLICY = resolve(packageRoot, "scripts/platform-coupling-policy.mjs");
+
+// Every global the shutdown module may name. Any other free identifier fails the source check, so a clock or timer
+// reached through a global (`setTimeout`, `Date`, `performance`, `Temporal`, `Intl`, `MessageChannel`, `globalThis`,
+// `eval`, ...) cannot arrive without this list changing.
+const PERMITTED_GLOBALS = ["Number", "Object", "Promise", "Set", "TypeError"];
+
+interface CouplingReferences {
+  readonly identifiers: readonly string[];
+  readonly failures: readonly unknown[];
+}
 
 function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
   let resolve!: (value: T) => void;
@@ -11,20 +30,30 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
   return { promise, resolve };
 }
 
-/** A deadline timer that only fires when the test calls `fire()`; records whether it was cleared. */
-function fakeDeadlineTimer(): { timers: AuditTimerProvider; fire: () => void; wasCleared: () => boolean } {
+/**
+ * A deadline timer that only fires when the test calls `fire()`; records the delay of every timer scheduled and
+ * whether one was cleared.
+ */
+function fakeDeadlineTimer(): {
+  timers: AuditTimerProvider;
+  fire: () => void;
+  wasCleared: () => boolean;
+  delays: () => number[];
+} {
   let scheduled: (() => void) | undefined;
   let cleared = false;
+  const delays: number[] = [];
   const timers: AuditTimerProvider = Object.freeze({
-    setTimeout(callback: () => void): AuditTimerHandle {
+    setTimeout(callback: () => void, delayMs: number): AuditTimerHandle {
       scheduled = callback;
+      delays.push(delayMs);
       return { unref() {} };
     },
     clearTimeout(): void {
       cleared = true;
     },
   });
-  return { timers, fire: () => scheduled?.(), wasCleared: () => cleared };
+  return { timers, fire: () => scheduled?.(), wasCleared: () => cleared, delays: () => [...delays] };
 }
 
 describe("Deadline-bounded delivery shutdown", () => {
@@ -116,4 +145,61 @@ describe("Deadline-bounded delivery shutdown", () => {
       assert.throws(() => createDeliveryShutdown({ deadlineMs, timers }), TypeError);
     }
   });
+
+  // A bounded test timeout, so a module that never schedules through the provider fails here instead of hanging.
+  it("does not resolve the report before the deadline timer fires while work is outstanding", { timeout: 2_000 }, async () => {
+    const { timers, fire, delays } = fakeDeadlineTimer();
+    const gate = createDeliveryShutdown({ deadlineMs: 5000, timers });
+    const settles = deferred<string>();
+    const neverSettles = deferred<string>();
+
+    const settledSubmit = gate.submit(() => settles.promise);
+    gate.submit(() => neverSettles.promise);
+    settles.resolve("done");
+    await settledSubmit;
+
+    let resolved = false;
+    const shutdownPromise = gate.shutdown().then((report) => {
+      resolved = true;
+      return report;
+    });
+    await new Promise<void>((done) => setImmediate(done));
+    assert.equal(resolved, false, "the report resolved before the deadline timer fired");
+    assert.deepEqual(delays(), [5000], "shutdown must schedule one deadline timer for deadlineMs");
+
+    fire();
+    assert.deepEqual(await shutdownPromise, { accepted: 2, completed: 1, abandoned: 1 });
+  });
+
+  it("reads no clock or timer other than the injected timer provider", async () => {
+    const text = readFileSync(SHUTDOWN_SOURCE, "utf8");
+    const { collectCouplingReferences } = (await import(pathToFileURL(COUPLING_POLICY).href)) as {
+      collectCouplingReferences(artifactPath: string, sourceText: string): CouplingReferences;
+    };
+    const references = collectCouplingReferences("src/delivery-shutdown.ts", text);
+    assert.deepEqual(references.failures, []);
+    assert.deepEqual(references.identifiers, PERMITTED_GLOBALS);
+
+    const source = ts.createSourceFile(SHUTDOWN_SOURCE, text, ts.ScriptTarget.Latest, true);
+    assert.deepEqual(moduleReferences(source), [
+      'import type { AuditTimerProvider } from "@bloodtrail/security-audit-sdk-core"',
+    ]);
+  });
 });
+
+/** Every way the module reaches another module: imports, re-exports and dynamic `import()`. */
+function moduleReferences(source: ts.SourceFile): string[] {
+  const found: string[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) || ts.isImportEqualsDeclaration(node)) {
+      found.push(node.getText(source).replace(/;$/, ""));
+    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier !== undefined) {
+      found.push(node.getText(source));
+    } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      found.push(node.getText(source));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return found;
+}
