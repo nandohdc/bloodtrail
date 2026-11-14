@@ -1276,6 +1276,40 @@ describe("transaction_critical: the size refusal comes before every refusal but 
     assert.deepEqual(run.steps, ["probe", "gate", "handoff"], "the repeat ran nothing");
   });
 
+  it("refuses an oversized occurrence delivered with an empty transaction identifier as too large", async () => {
+    const occurrence = sizedTo(COMMITTED, CONTRACT_EVENT_MAX_BYTES + 1);
+    const run = instrumented();
+
+    const result = await run.binding.deliver(occurrence, "", run.gate);
+
+    assert.deepEqual(result, tooLarge(occurrence));
+    assert.deepEqual(run.steps, []);
+  });
+
+  it("refuses an in-flight pair offered again oversized, not as a duplicate", async () => {
+    const occurrence = withNewEventId(COMMITTED);
+    const oversized = structuredClone(occurrence) as SecurityAuditEvent & { extension_padding: string };
+    oversized.extension_padding = "x".repeat(CONTRACT_EVENT_MAX_BYTES);
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const run = instrumented();
+    const heldGate: BusinessCommitGate = async () => {
+      await held;
+      return "committed";
+    };
+
+    const first = run.binding.deliver(occurrence, "txn-945-in-flight", heldGate);
+    try {
+      const second = await run.binding.deliver(oversized, "txn-945-in-flight", heldGate);
+      assert.deepEqual(second, tooLarge(oversized));
+    } finally {
+      release();
+    }
+    assert.equal((await first).status, "committed_and_durable");
+  });
+
   it("still refuses an occurrence with no JSON serialization as not serializable, however large", async () => {
     const occurrence = sizedTo(COMMITTED, CONTRACT_EVENT_MAX_BYTES + 1) as SecurityAuditEvent & { cyclic?: unknown };
     occurrence.cyclic = occurrence;

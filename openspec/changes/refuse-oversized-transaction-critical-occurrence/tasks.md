@@ -34,8 +34,11 @@
 
   Added, with two more that the delta's fourth scenario calls for: an oversized occurrence whose commit state its
   entry does not allow is refused as too large, and an oversized occurrence with no JSON serialization is still
-  refused as `occurrence_not_serializable`. On the unchanged binding, 9 of the new tests fail: every one that expects
+  refused as `occurrence_not_serializable`. On the unchanged binding, 9 of these tests fail: every one that expects
   `occurrence_too_large`. The tests in 2.2 and the not-serializable one pass there.
+
+  Two more followed from the review: an oversized occurrence delivered with an empty transaction identifier, and an
+  in-flight pair offered again oversized. Both fail on the unchanged binding too, which makes 11 failing there.
 - [x] 2.2 Add tests that pin behaviour the fix must keep:
   - an occurrence of exactly the contract's limit is delivered, with one probe, one gate run and one exchange, and
     the exchanged body is that many bytes;
@@ -58,9 +61,9 @@
 
   Verify that `npm run typecheck` passes and that the scope gate reports no host coupling. If the null control's
   count of platform references changes, move its baseline in the same commit and say why.
-  Done. The handoff's test file is unchanged by this task. The null control's count moved from 91 to 92 with no host
-  coupling: `delivery-classes.ts` now imports two values from sibling modules, `./byte-length.js` and
-  `./http-handoff.js`, where it imported only a type before.
+  Done. The null control's count moved from 91 to 92 with no host coupling. The one new reference is
+  `delivery-classes.ts` importing `./byte-length.js`. Measured in a disposable copy: that import alone moves the
+  count to 92, and turning the existing `./http-handoff.js` type import into a value import leaves it at 91.
 - [x] 3.2 Verify that every test from group 2 passes. Then, in a disposable copy, verify that each fails against its
   planted defect, beside a null control that stays green:
   - the size check removed;
@@ -76,19 +79,21 @@
 
   Record each plant and its failing test.
 
-  All 266 runtime tests pass. In a disposable copy, the unplanted null control passed 112 of 112 in the two test
+  All 268 runtime tests pass. In a disposable copy, the unplanted null control passed 114 of 114 in the two test
   files, and each plant failed at least the test named here:
 
   | Plant | Failing test |
   |---|---|
-  | the size check removed | every test that expects `occurrence_too_large` (9) |
+  | the size check removed | every test that expects `occurrence_too_large` (11) |
   | the comparison refuses the limit itself | delivers an occurrence exactly at the limit |
   | the comparison allows one byte more | refuses an occurrence one byte over the limit |
   | the string's length in place of its byte count | counts UTF-8 bytes, not characters |
   | the check applied only when the gate runs | refuses an oversized `not_committed` occurrence |
   | the size check moved after the class check | refuses an oversized occurrence of another delivery class; an oversized string |
   | the key reserved before the size check | leaves the pair deliverable once the refused occurrence is made to fit |
-  | the size check moved after the duplicate check | refuses a settled pair offered again oversized |
+  | the size check moved after the duplicate check | refuses a settled pair offered again oversized; an in-flight pair offered again oversized |
+  | the size check moved after the transaction identifier check | refuses an oversized occurrence delivered with an empty transaction identifier |
+  | the size check moved between the settled and the in-flight checks | refuses a settled pair offered again oversized |
   | the constant lowered by one | the at-the-limit tests, for admission and for the handoff |
   | the constant raised to 70,000 | the over-the-limit tests, for admission and for the handoff |
   | the handoff reading 70,000 | the handoff's over-the-limit test |
@@ -115,7 +120,7 @@
 
 - [x] 5.1 Verify that `npm run validate --prefix packages/security-audit-sdk-node` passes, with `test:exports` at
   19 value and 44 type-only exports, and that `git diff --check` is clean.
-  Passed: 266 runtime tests, 19 value and 44 type-only exports, and a clean `git diff --check`.
+  Passed: 268 runtime tests, 19 value and 44 type-only exports, and a clean `git diff --check`.
 - [ ] 5.2 Run `make governance-gates` on the implementation PR's final technical commit, then the post-commit
   governance battery (`--phase final`, the dual check, the governance tests). Verify that every step passes, and
   record the commit each ran on.
