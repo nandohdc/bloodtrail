@@ -121,15 +121,28 @@
 - [x] 5.1 Verify that `npm run validate --prefix packages/security-audit-sdk-node` passes, with `test:exports` at
   19 value and 44 type-only exports, and that `git diff --check` is clean.
   Passed: 268 runtime tests, 19 value and 44 type-only exports, and a clean `git diff --check`.
-- [ ] 5.2 Run `make governance-gates` on the implementation PR's final technical commit, then the post-commit
+- [x] 5.2 Run `make governance-gates` on the implementation PR's final technical commit, then the post-commit
   governance battery (`--phase final`, the dual check, the governance tests). Verify that every step passes, and
   record the commit each ran on.
-- [ ] 5.3 Run `/code-review xhigh` on the implementation range. Verify that no correctness finding is left open,
+  On the commit titled `test(sdk-node): pin the size refusal against the transaction identifier and in-flight checks
+  (#945)`, the final technical commit: `make governance-gates` passed on every workspace. The final phase passed
+  from base `893ea04`, the dual check passed for candidate and baseline, and the governance tests passed 374 of
+  374. The ordering record and these ticks change planning files only, and the final phase and the dual check
+  passed again on each.
+- [x] 5.3 Run `/code-review xhigh` on the implementation range. Verify that no correctness finding is left open,
   and that the PR body discloses its authorship and that independent review was `NOT_PERFORMED`.
+  Run on the implementation commit before the review fixes: 7 findings. Three are fixed: the two missing tests in
+  2.1, and a wrong sentence in 3.1's record. Four are left, none an open correctness defect:
+  - a refusal echoes the caller's event identifier at any length, which every earlier refusal already does;
+  - the contract-limit loader and padding helper appear in both test files, and a shared helper would be a path
+    this change does not own;
+  - admission's serialization repeats the handoff's inline one, and sharing it would change the handoff further;
+  - the README states the limit as a literal.
+  CodeScene's delta gate passed locally against `893ea04`.
 
 ## 6. Assessment ordering record
 
-- [ ] 6.1 After the implementation commits, and before the implementation PR merges, record in
+- [x] 6.1 After the implementation commits, and before the implementation PR merges, record in
   `assessment.source.json`'s `ordering` and regenerate:
   - `assessment_commit`, the proposal commit from 1.3;
   - `earliest_governed_implementation_commit`, found by walking the history forward from the proposal baseline;
@@ -143,6 +156,21 @@
 
   If the branch is rebased, or a technical commit lands after this record, record the ordering again and run both
   controls again before the merge. Name branch commits here by their titles, not their hashes.
+
+  Recorded in the commit titled `docs(openspec): record assessment ordering for
+  refuse-oversized-transaction-critical-occurrence (#945)`, called the record commit below, before the
+  implementation PR merges. The values:
+  - `assessment_commit` `5829957`, the proposal commit;
+  - `earliest_governed_implementation_commit`: the commit titled `fix(sdk-node): refuse an oversized
+    transaction-critical occurrence before the commit (#945)`, returned by `findEarliestGovernedImplementationCommit`
+    walking forward from the proposal baseline `69fb045`;
+  - `final_technical_commit`: the commit named in 5.2.
+
+  The record commit changes only `ordering` in the two assessment files. The checker passes in the final phase and
+  the assessment phase, and the dual check passes. In disposable clones of the record commit:
+  - with the earliest implementation commit as `assessment_commit`, both phases fail
+    `assessment-shares-implementation-commit`;
+  - with the record commit itself as `assessment_commit`, both phases fail `assessment-follows-implementation`.
 
 ## 7. Merge, fold and archive
 
