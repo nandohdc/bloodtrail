@@ -185,11 +185,19 @@
 
 ## 7. Merge, fold and archive
 
-- [ ] 7.1 Verify that every required context plus DeepScan is green on the implementation PR head, and that the
+- [x] 7.1 Verify that every required context plus DeepScan is green on the implementation PR head, and that the
   recorded ordering commits exist on that head.
-- [ ] 7.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here.
-- [ ] 7.3 In a separate fold PR, fold the delta into the canonical spec while the change is still active. Verify
+  On #954's head `3879b9b`, all ten required contexts and DeepScan were green, and `5829957`, `366e458` and
+  `f9e3fc5` were all on that head. `codescene delta` had failed on the earlier head `b3f18bf`; 5.3 records why.
+- [x] 7.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here. Merged: #954,
+  merge commit `156ee64`, with the three recorded ordering commits on `main`.
+- [x] 7.3 In a separate fold PR, fold the delta into the canonical spec while the change is still active. Verify
   that each scenario heading occurs once in the requirement, that no delta header survives, and that the canonical
   file equals what `openspec archive` produces in a disposable copy.
+  Folded after the implementation merged. The delta has one MODIFIED requirement, and the amendment only adds text,
+  so the canonical diff is 34 insertions and no deletions. The canonical requirement is byte-identical to the
+  delta's, has 20 scenarios with no duplicate heading, and occurs once among the spec's 33 requirements. No delta
+  header survives. The canonical file is byte-identical to what `openspec archive` produces from `156ee64` in a
+  disposable copy, and archiving the folded tree again does not change it.
 - [ ] 7.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify
   that the archived directory carries the UTC date of the archive. The issue stays open for the owner.

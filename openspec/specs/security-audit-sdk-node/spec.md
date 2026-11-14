@@ -405,6 +405,17 @@ point SHALL NOT be reached. A snapshot that is not an occurrence object SHALL be
 no catalogued event name, and the binding SHALL return the refusal rather than reject.
 
 Before the durability probe runs, the binding SHALL refuse, with a distinct outcome, an occurrence
+whose JSON serialization is larger than the canonical contract's event size limit, 65,536 bytes,
+counted in UTF-8 bytes and not in characters. An occurrence whose serialization is exactly at the
+limit SHALL NOT be refused for its size. The refusal SHALL apply whatever the occurrence's commit
+state is. A refused occurrence SHALL NOT invoke the durability probe or the commit gate, SHALL NOT
+reach the durability point, and SHALL NOT be recorded or reserved for deduplication. The size refusal
+SHALL be decided before every other refusal except the refusal of an occurrence that cannot be
+serialized. The limit the binding applies at admission and the limit the Node binding's own HTTP
+delivery handoff applies to a request body SHALL be one value, equal to the contract's, so that an
+occurrence admitted for its size is not then refused for its size by that handoff.
+
+Before the durability probe runs, the binding SHALL refuse, with a distinct outcome, an occurrence
 whose commit state is absent or is not one of the commit states that the occurrence's own catalog
 entry allows. The check SHALL use that event's own catalog entry, not the commit states that any
 `transaction_critical` entry allows. A refused occurrence SHALL NOT invoke the durability probe or
@@ -527,6 +538,29 @@ commit SHALL cover only failures before the commit gate runs.
 - **WHEN** an occurrence cannot be serialized to JSON
 - **THEN** it is refused with an outcome distinct from every other refusal, neither the durability
   probe nor the commit gate runs, and the binding returns the refusal rather than rejecting
+
+#### Scenario: An occurrence over the size limit is refused before the commit
+- **WHEN** an occurrence's JSON serialization is larger than the contract's event size limit
+- **THEN** it is refused with an outcome distinct from every other refusal, neither the durability
+  probe nor the commit gate runs, and the occurrence never reaches the durability point
+
+#### Scenario: An occurrence exactly at the size limit is delivered
+- **WHEN** an occurrence whose JSON serialization is exactly the contract's event size limit is
+  delivered through the Node binding's own HTTP delivery handoff, the business commit gate commits,
+  and the durability point acknowledges
+- **THEN** it is not refused for its size, at admission or by that handoff, and it is reported
+  according to its commit state
+
+#### Scenario: An oversized input is refused as too large whatever else is wrong with it
+- **WHEN** an input whose JSON serialization is larger than the contract's event size limit is also
+  not an occurrence object, or is of another delivery class, or carries a commit state its catalog
+  entry does not allow
+- **THEN** it is refused as too large, not with any of those other outcomes
+
+#### Scenario: The size limit counts bytes, not characters
+- **WHEN** an occurrence's JSON serialization has fewer characters than the contract's event size
+  limit but more UTF-8 bytes
+- **THEN** it is refused as too large, and the commit gate never runs
 
 #### Scenario: A refused occurrence leaves its pair deliverable
 - **WHEN** an occurrence is refused at admission and a corrected occurrence with the same event
