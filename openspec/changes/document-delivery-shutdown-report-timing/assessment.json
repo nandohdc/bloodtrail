@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.1",
+  "change_id": "document-delivery-shutdown-report-timing",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "Composers with an outer deadline need to know what the delivery shutdown deadline bounds and what it does not, because the report returns after the deadline timer fires.",
+    "The primitive reads no clock, so every timing statement the binding makes must be about the injected timer provider, and none may state or imply a service level or numeric bound.",
+    "No change to the primitive's behaviour, and the frozen Node surface stays at 19 value and 44 type-only exports (#111).",
+    "Every statement about the report's timing must be true of the current binding, including while #957 is open, and pinned by a test that can fail."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "lifecycle_or_state",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/document-delivery-shutdown-report-timing/.openspec.yaml",
+    "openspec/changes/document-delivery-shutdown-report-timing/assessment.json",
+    "openspec/changes/document-delivery-shutdown-report-timing/assessment.source.json",
+    "openspec/changes/document-delivery-shutdown-report-timing/design.md",
+    "openspec/changes/document-delivery-shutdown-report-timing/proposal.md",
+    "openspec/changes/document-delivery-shutdown-report-timing/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/document-delivery-shutdown-report-timing/tasks.md",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/src/delivery-shutdown.ts",
+    "packages/security-audit-sdk-node/tests/delivery-shutdown.test.ts",
+    "packages/security-audit-sdk-node/README.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-document-the-bound",
+      "kind": "direct_implementation",
+      "summary": "State in the canonical requirement, the README and the doc comments that deadlineMs is the delay passed to the injected timer provider, that abandonment is decided when that timer fires, and that the report resolves after that with no stated bound, and pin that order with an injected-timer test and a source check that the module reads no clock; no statement of the primitive changes.",
+      "forces_addressed": [
+        "Composers with an outer deadline need to know what the delivery shutdown deadline bounds and what it does not, because the report returns after the deadline timer fires.",
+        "The primitive reads no clock, so every timing statement the binding makes must be about the injected timer provider, and none may state or imply a service level or numeric bound.",
+        "No change to the primitive's behaviour, and the frozen Node surface stays at 19 value and 44 type-only exports (#111).",
+        "Every statement about the report's timing must be true of the current binding, including while #957 is open, and pinned by a test that can fail."
+      ]
+    },
+    {
+      "id": "approach-return-by-deadline",
+      "kind": "alternative",
+      "summary": "Fire the deadline timer early by a reserve so that the report returns by deadlineMs.",
+      "forces_addressed": [
+        "Composers with an outer deadline need to know what the delivery shutdown deadline bounds and what it does not, because the report returns after the deadline timer fires."
+      ]
+    },
+    {
+      "id": "approach-reserve-option",
+      "kind": "alternative",
+      "summary": "Add a report-reserve option to DeliveryShutdownOptions that the primitive subtracts from deadlineMs.",
+      "forces_addressed": [
+        "Composers with an outer deadline need to know what the delivery shutdown deadline bounds and what it does not, because the report returns after the deadline timer fires."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-document-the-bound",
+  "rejected_alternative_ids": [
+    "approach-return-by-deadline",
+    "approach-reserve-option"
+  ],
+  "rejection_reasons": {
+    "approach-return-by-deadline": {
+      "forces": [
+        "The primitive reads no clock, so every timing statement the binding makes must be about the injected timer provider, and none may state or imply a service level or numeric bound.",
+        "No change to the primitive's behaviour, and the frozen Node surface stays at 19 value and 44 type-only exports (#111)."
+      ],
+      "reason": "It abandons work sooner than configured, needs a reserve policy, and still cannot hold on a busy event loop because the primitive sees only the injected timer; the owner rejected it in the #932 triage."
+    },
+    "approach-reserve-option": {
+      "forces": [
+        "No change to the primitive's behaviour, and the frozen Node surface stays at 19 value and 44 type-only exports (#111)."
+      ],
+      "reason": "It widens the frozen Node surface for something a composer already does by passing a smaller deadlineMs, and it would still promise a clock bound the primitive cannot keep."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-report-follows-deadline-timer",
+    "implementation-documented-deadline-bound",
+    "implementation-unchanged-surface-and-behaviour"
+  ],
+  "invariant_evidence": {
+    "implementation-report-follows-deadline-timer": {
+      "task_ids": [
+        "2.1",
+        "4.1"
+      ],
+      "evidence_ids": [
+        "the delivery shutdown order test proves the report stays unresolved until the injected deadline timer fires and then counts the settled operation completed and the unsettled one abandoned, failing against a planted drain() that races a real setImmediate; the source check proves delivery-shutdown.ts references no clock or timer global and imports only the timer provider type, failing against planted drain() variants that race a global setTimeout(0), read Date.now() or import setTimeout from node:timers"
+      ]
+    },
+    "implementation-documented-deadline-bound": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "the README section and the delivery-shutdown.ts doc comments state what deadlineMs bounds, that the report's return is unbounded and the composer's reserve, exactly as the MODIFIED requirement does, with no service level or numeric bound"
+      ]
+    },
+    "implementation-unchanged-surface-and-behaviour": {
+      "task_ids": [
+        "3.1",
+        "4.1",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "npm run test:exports reports 19 value and 44 type-only exports, the delivery-shutdown.ts diff changes comments only, and compatibility.json is unchanged"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "b3573b15f732c48768f16a824ea68ed3a57e36fc"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "2.1",
+    "3.1",
+    "3.2",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4",
+    "5.1",
+    "6.1",
+    "6.2",
+    "6.3",
+    "6.4"
+  ]
+}
