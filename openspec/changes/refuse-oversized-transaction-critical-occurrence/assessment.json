@@ -225,7 +225,7 @@
     "proposal_baseline_commit": "69fb0457bea8de1fcd13042691b267090fd003d6",
     "assessment_commit": "58299577d50a4fddeab314c024414e946495a01d",
     "earliest_governed_implementation_commit": "366e458ce0f993aee82d7178cdd1bb40cef4abc5",
-    "final_technical_commit": "0bd70204b57f9c2bb377588bd6d4469c0fe530ac"
+    "final_technical_commit": "f9e3fc5e27b93cbe4086cc90e9dd54e31b91beae"
   },
   "verification_task_ids": [
     "1.1",
