@@ -199,5 +199,9 @@
   delta's, has 20 scenarios with no duplicate heading, and occurs once among the spec's 33 requirements. No delta
   header survives. The canonical file is byte-identical to what `openspec archive` produces from `156ee64` in a
   disposable copy, and archiving the folded tree again does not change it.
-- [ ] 7.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify
-  that the archived directory carries the UTC date of the archive. The issue stays open for the owner.
+- [x] 7.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify
+  that the archived directory carries the UTC date of the archive. The issue stays open for the owner. Archived to
+  `openspec/changes/archive/2026-11-14-refuse-oversized-transaction-critical-occurrence/` after the fold PR #955
+  merged as `0f14050`. `TZ=UTC date +%F` gave `2026-11-14`, the archive day; the change was created on 2026-11-13.
+  The fold already carried the delta into the canonical spec, so the archive writes no canonical spec. This PR
+  merges with a merge commit, and the issue stays open for the owner.
