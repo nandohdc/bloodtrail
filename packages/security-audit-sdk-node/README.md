@@ -238,6 +238,23 @@ own `submit()` call still resolves once it eventually settles — shutdown
 never causes an admitted operation to be lost. `shutdown()` is idempotent:
 repeated calls return the identical accounting from the first call.
 
+`deadlineMs` is not a bound on when `shutdown()` returns. It is the delay
+`shutdown()` passes to the injected timer provider, and the shutdown module
+reads no clock or timer of its own. While admitted work is still outstanding,
+nothing is counted `abandoned` and the report does not resolve before that
+timer fires. Once it fires, the report resolves afterwards, and the binding
+states no bound on how long after: that depends on the timer provider and on
+whatever else the event loop is running. With `nodeTimers`, the report usually
+returns somewhat after `deadlineMs`, and occasionally slightly before it,
+because a Node timer can fire early.
+
+A host with its own outer shutdown deadline should therefore pass a smaller
+`deadlineMs` and keep the difference for the report to return. How much to
+keep depends on the host. One observation, not a recommended value or a bound:
+Stage 2's reference composition passed 180 ms inside a 200 ms outer deadline
+(#899), and on one workstation its reports returned 0.58 to 2.73 ms after the
+180 ms.
+
 ## Transaction-critical delivery
 
 `createTransactionCriticalDelivery` orders audit durability around the caller's business commit for

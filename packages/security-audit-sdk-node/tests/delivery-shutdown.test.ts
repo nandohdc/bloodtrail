@@ -1,7 +1,31 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
+import ts from "typescript";
 import type { AuditTimerHandle, AuditTimerProvider } from "@bloodtrail/security-audit-sdk-core";
 import { createDeliveryShutdown } from "../dist/index.js";
+
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const SHUTDOWN_SOURCE = resolve(packageRoot, "src/delivery-shutdown.ts");
+
+// Globals through which the shutdown module could reach a clock or timer other than the injected provider.
+const CLOCK_GLOBALS = new Set([
+  "setTimeout",
+  "clearTimeout",
+  "setInterval",
+  "clearInterval",
+  "setImmediate",
+  "clearImmediate",
+  "Date",
+  "performance",
+  "process",
+  "AbortSignal",
+  "globalThis",
+  "global",
+  "require",
+]);
 
 function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
   let resolve!: (value: T) => void;
@@ -116,4 +140,81 @@ describe("Deadline-bounded delivery shutdown", () => {
       assert.throws(() => createDeliveryShutdown({ deadlineMs, timers }), TypeError);
     }
   });
+
+  it("does not resolve the report before the deadline timer fires while work is outstanding", async () => {
+    const { timers, fire } = fakeDeadlineTimer();
+    const gate = createDeliveryShutdown({ deadlineMs: 5000, timers });
+    const settles = deferred<string>();
+    const neverSettles = deferred<string>();
+
+    const settledSubmit = gate.submit(() => settles.promise);
+    gate.submit(() => neverSettles.promise);
+    settles.resolve("done");
+    await settledSubmit;
+
+    let resolved = false;
+    const shutdownPromise = gate.shutdown().then((report) => {
+      resolved = true;
+      return report;
+    });
+    await new Promise<void>((done) => setImmediate(done));
+    assert.equal(resolved, false, "the report resolved before the deadline timer fired");
+
+    fire();
+    assert.deepEqual(await shutdownPromise, { accepted: 2, completed: 1, abandoned: 1 });
+  });
+
+  it("reads no clock or timer other than the injected timer provider", () => {
+    const source = ts.createSourceFile(SHUTDOWN_SOURCE, readFileSync(SHUTDOWN_SOURCE, "utf8"), ts.ScriptTarget.Latest, true);
+    assert.deepEqual(clockReferences(source), []);
+    assert.deepEqual(moduleReferences(source), [
+      'import type { AuditTimerProvider } from "@bloodtrail/security-audit-sdk-core"',
+    ]);
+  });
 });
+
+/** Every identifier naming a clock or timer global, outside a property-name position, as `name@line`. */
+function clockReferences(source: ts.SourceFile): string[] {
+  const found: string[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node) && CLOCK_GLOBALS.has(node.text) && !isPropertyName(node)) {
+      found.push(`${node.text}@${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1}`);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return found;
+}
+
+function isPropertyName(node: ts.Identifier): boolean {
+  const parent = node.parent;
+  if (ts.isPropertyAccessExpression(parent)) return parent.name === node;
+  if (ts.isQualifiedName(parent)) return parent.right === node;
+  if (
+    ts.isPropertyAssignment(parent) ||
+    ts.isPropertySignature(parent) ||
+    ts.isMethodSignature(parent) ||
+    ts.isMethodDeclaration(parent) ||
+    ts.isPropertyDeclaration(parent)
+  ) {
+    return parent.name === node;
+  }
+  return false;
+}
+
+/** Every way the module reaches another module: imports, re-exports and dynamic `import()`. */
+function moduleReferences(source: ts.SourceFile): string[] {
+  const found: string[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) || ts.isImportEqualsDeclaration(node)) {
+      found.push(node.getText(source).replace(/;$/, ""));
+    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier !== undefined) {
+      found.push(node.getText(source));
+    } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      found.push(node.getText(source));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return found;
+}
