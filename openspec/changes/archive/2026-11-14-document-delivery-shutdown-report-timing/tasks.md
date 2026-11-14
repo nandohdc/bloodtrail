@@ -187,14 +187,28 @@
 
 ## 6. Merge, fold and archive
 
-- [ ] 6.1 Verify two things on the implementation PR head:
+- [x] 6.1 Verify two things on the implementation PR head:
   - every required context plus DeepScan is green;
   - the recorded ordering commits exist on that head.
-- [ ] 6.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here.
-- [ ] 6.3 In a separate fold PR, fold the delta into the canonical spec while the change is still active. Verify
+
+  On #960's head `31b8c86`, all ten required contexts and DeepScan were green, and `eb0a889`, `0867d49` and
+  `c36fd8a` were all on that head.
+- [x] 6.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here. Merged: #960,
+  merge commit `5b19686`, with the three recorded ordering commits on `main`.
+- [x] 6.3 In a separate fold PR, fold the delta into the canonical spec while the change is still active. Verify
   three things:
   - each scenario heading occurs once in the requirement;
   - no delta header survives;
   - the canonical file equals what `openspec archive` produces in a disposable copy.
-- [ ] 6.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify that
-  the archived directory carries the UTC date of the archive. The issue stays open for the owner.
+
+  Folded in #961, merged by the owner as `1ef08f0`. The delta has one MODIFIED requirement, and the amendment only
+  adds text, so the canonical diff is 6 insertions and no deletions. The canonical requirement is byte-identical to
+  the delta's, has 6 scenarios with no duplicate heading, and occurs once among the spec's 33 requirements. No delta
+  header survives. The canonical file is byte-identical to what `openspec archive` produces from `5b19686` in a
+  disposable copy.
+- [x] 6.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify that
+  the archived directory carries the UTC date of the archive. The issue stays open for the owner. Archived to
+  `openspec/changes/archive/2026-11-14-document-delivery-shutdown-report-timing/` after the fold PR #961 merged as
+  `1ef08f0`. `TZ=UTC date +%F` gave `2026-11-14`, the archive day. The fold already carried the delta into the
+  canonical spec, so the archive writes no canonical spec. This PR merges with a merge commit, and the issue stays
+  open for the owner.
