@@ -238,15 +238,15 @@ own `submit()` call still resolves once it eventually settles — shutdown
 never causes an admitted operation to be lost. `shutdown()` is idempotent:
 repeated calls return the identical accounting from the first call.
 
-`deadlineMs` is not a bound on when `shutdown()` returns. It is the delay
-`shutdown()` passes to the injected timer provider, and the shutdown module
-reads no clock or timer of its own. While admitted work is still outstanding,
-nothing is counted `abandoned` and the report does not resolve before that
-timer fires. Once it fires, the report resolves afterwards, and the binding
-states no bound on how long after: that depends on the timer provider and on
-whatever else the event loop is running. With `nodeTimers`, the report usually
-returns somewhat after `deadlineMs`, and occasionally slightly before it,
-because a Node timer can fire early.
+`deadlineMs` is not a bound on when the shutdown report resolves. It is the
+delay `shutdown()` passes to the injected timer provider, and the shutdown
+module reads no clock or timer of its own. While admitted work is still
+outstanding, nothing is counted `abandoned` and the report does not resolve
+before that timer fires. If work is still outstanding when it fires, the report
+resolves after it, and the binding states no bound on how long after: that
+depends on the timer provider and on whatever else the event loop is running.
+With `nodeTimers`, measured on a clock, the report can resolve after
+`deadlineMs`, or slightly before it, because a Node timer can fire early.
 
 A host with its own outer shutdown deadline should therefore pass a smaller
 `deadlineMs` and keep the difference for the report to return. How much to
