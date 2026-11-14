@@ -808,6 +808,58 @@ function assertFrozenThroughout(value: unknown, path: string): void {
   for (const [key, child] of Object.entries(value)) assertFrozenThroughout(child, `${path}.${key}`);
 }
 
+// Offers `refused` and then `corrected` under one pair, and asserts that the
+// refusal recorded nothing: the corrected occurrence is delivered, and only its
+// delivery ran the probe, the gate and the handoff.
+async function assertRefusalLeavesPairDeliverable(
+  refused: SecurityAuditEvent,
+  corrected: SecurityAuditEvent,
+  transactionId: string,
+  expectedRefusal: unknown,
+): Promise<void> {
+  const run = instrumented();
+
+  const first = await run.binding.deliver(refused, transactionId, run.gate);
+  const second = await run.binding.deliver(corrected, transactionId, run.gate);
+
+  assert.deepEqual(first, expectedRefusal);
+  assert.deepEqual(second, {
+    status: "committed_and_durable",
+    event_id: corrected.event.id,
+    transaction_id: transactionId,
+  });
+  assert.deepEqual(run.steps, ["probe", "gate", "handoff"]);
+}
+
+// Offers `repeat` under the pair of `occurrence` while the first delivery is
+// still held in the commit gate, and returns the repeat's result. The first
+// delivery is then released and must still commit.
+async function deliverAgainWhileInFlight(
+  occurrence: SecurityAuditEvent,
+  repeat: SecurityAuditEvent,
+  transactionId: string,
+): Promise<unknown> {
+  let release = () => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const run = instrumented();
+  const heldGate: BusinessCommitGate = async () => {
+    await held;
+    return "committed";
+  };
+
+  const first = run.binding.deliver(occurrence, transactionId, heldGate);
+  let second: unknown;
+  try {
+    second = await run.binding.deliver(repeat, transactionId, heldGate);
+  } finally {
+    release();
+  }
+  assert.equal((await first).status, "committed_and_durable");
+  return second;
+}
+
 describe("transaction_critical: a commit state its own catalog entry does not allow is refused (#913)", () => {
   for (const commitState of ["pending", "unknown", "not_started", "not_applicable", undefined]) {
     const label = commitState ?? "an absent commit state";
@@ -841,18 +893,12 @@ describe("transaction_critical: a commit state its own catalog entry does not al
     const refused = withCommitState(COMMITTED, "pending");
     const corrected = structuredClone(refused) as SecurityAuditEvent;
     (corrected.event as { commit_state?: string }).commit_state = "committed";
-    const run = instrumented();
 
-    const first = await run.binding.deliver(refused, "txn-913-corrected", run.gate);
-    const second = await run.binding.deliver(corrected, "txn-913-corrected", run.gate);
-
-    assert.equal(first.status === "refused" && first.code, "commit_state_not_allowed");
-    assert.deepEqual(second, {
-      status: "committed_and_durable",
-      event_id: corrected.event.id,
-      transaction_id: "txn-913-corrected",
+    await assertRefusalLeavesPairDeliverable(refused, corrected, "txn-913-corrected", {
+      status: "refused",
+      code: "commit_state_not_allowed",
+      event_id: refused.event.id,
     });
-    assert.deepEqual(run.steps, ["probe", "gate", "handoff"]);
   });
 });
 
@@ -1066,24 +1112,10 @@ describe("transaction_critical: refusals are decided before the duplicate check 
     const occurrence = withNewEventId(COMMITTED);
     const repeat = structuredClone(occurrence) as SecurityAuditEvent;
     (repeat.event as { commit_state?: string }).commit_state = "unknown";
-    let release = () => {};
-    const held = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    const run = instrumented();
-    const heldGate: BusinessCommitGate = async () => {
-      await held;
-      return "committed";
-    };
 
-    const first = run.binding.deliver(occurrence, "txn-913-in-flight", heldGate);
-    try {
-      const second = await run.binding.deliver(repeat, "txn-913-in-flight", heldGate);
-      assert.deepEqual(second, { status: "refused", code: "commit_state_not_allowed", event_id: occurrence.event.id });
-    } finally {
-      release();
-    }
-    assert.equal((await first).status, "committed_and_durable");
+    const second = await deliverAgainWhileInFlight(occurrence, repeat, "txn-913-in-flight");
+
+    assert.deepEqual(second, { status: "refused", code: "commit_state_not_allowed", event_id: occurrence.event.id });
   });
 });
 
@@ -1213,18 +1245,8 @@ describe("transaction_critical: an occurrence over the contract's size limit is 
     const refused = sizedTo(COMMITTED, CONTRACT_EVENT_MAX_BYTES + 1);
     const corrected = structuredClone(refused) as SecurityAuditEvent & { extension_padding?: string };
     delete corrected.extension_padding;
-    const run = instrumented();
 
-    const first = await run.binding.deliver(refused, "txn-945-corrected", run.gate);
-    const second = await run.binding.deliver(corrected, "txn-945-corrected", run.gate);
-
-    assert.deepEqual(first, tooLarge(refused));
-    assert.deepEqual(second, {
-      status: "committed_and_durable",
-      event_id: corrected.event.id,
-      transaction_id: "txn-945-corrected",
-    });
-    assert.deepEqual(run.steps, ["probe", "gate", "handoff"]);
+    await assertRefusalLeavesPairDeliverable(refused, corrected, "txn-945-corrected", tooLarge(refused));
   });
 });
 
@@ -1290,24 +1312,10 @@ describe("transaction_critical: the size refusal comes before every refusal but 
     const occurrence = withNewEventId(COMMITTED);
     const oversized = structuredClone(occurrence) as SecurityAuditEvent & { extension_padding: string };
     oversized.extension_padding = "x".repeat(CONTRACT_EVENT_MAX_BYTES);
-    let release = () => {};
-    const held = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    const run = instrumented();
-    const heldGate: BusinessCommitGate = async () => {
-      await held;
-      return "committed";
-    };
 
-    const first = run.binding.deliver(occurrence, "txn-945-in-flight", heldGate);
-    try {
-      const second = await run.binding.deliver(oversized, "txn-945-in-flight", heldGate);
-      assert.deepEqual(second, tooLarge(oversized));
-    } finally {
-      release();
-    }
-    assert.equal((await first).status, "committed_and_durable");
+    const second = await deliverAgainWhileInFlight(occurrence, oversized, "txn-945-in-flight");
+
+    assert.deepEqual(second, tooLarge(oversized));
   });
 
   it("still refuses an occurrence with no JSON serialization as not serializable, however large", async () => {
