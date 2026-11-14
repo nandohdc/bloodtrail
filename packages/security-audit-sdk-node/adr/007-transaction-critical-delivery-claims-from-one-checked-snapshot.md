@@ -85,6 +85,7 @@ build reaches these faults: one the host built itself, copied, or read back from
   identifier. The snapshot can carry any JSON value as an identifier, and a template literal would throw on one
   that shadows `toString`. The array form cannot throw, and it is unambiguous without a separator.
 - The handoff's size limit is still checked only after the commit. That is a separate decision (#945).
+  ADR-NODE-008 makes it: admission now refuses an oversized occurrence before the probe.
 
 ## What changed in the surface
 
