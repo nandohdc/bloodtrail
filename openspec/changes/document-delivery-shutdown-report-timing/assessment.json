@@ -119,7 +119,10 @@
   },
   "security_sensitive": true,
   "ordering": {
-    "proposal_baseline_commit": "b3573b15f732c48768f16a824ea68ed3a57e36fc"
+    "proposal_baseline_commit": "b3573b15f732c48768f16a824ea68ed3a57e36fc",
+    "assessment_commit": "eb0a88980deb8e1ec05400901eca80fdc6ded02b",
+    "earliest_governed_implementation_commit": "0867d49f8e26bc51082575834a103cab06cce9b6",
+    "final_technical_commit": "c36fd8aaf6ef0b4171aacb268ce9240cd85fd50f"
   },
   "verification_task_ids": [
     "1.1",
