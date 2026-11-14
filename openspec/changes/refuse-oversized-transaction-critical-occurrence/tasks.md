@@ -124,11 +124,12 @@
 - [x] 5.2 Run `make governance-gates` on the implementation PR's final technical commit, then the post-commit
   governance battery (`--phase final`, the dual check, the governance tests). Verify that every step passes, and
   record the commit each ran on.
-  On the commit titled `test(sdk-node): pin the size refusal against the transaction identifier and in-flight checks
-  (#945)`, the final technical commit: `make governance-gates` passed on every workspace. The final phase passed
-  from base `893ea04`, the dual check passed for candidate and baseline, and the governance tests passed 374 of
-  374. The ordering record and these ticks change planning files only, and the final phase and the dual check
-  passed again on each.
+  On the commit titled `test(sdk-node): share the pair-deliverable and in-flight test helpers (#945)`, the final
+  technical commit: `make governance-gates` passed on every workspace. The final phase passed from base `893ea04`,
+  the dual check passed for candidate and baseline, and the governance tests passed 374 of 374. The same battery
+  had passed earlier on the commit titled `test(sdk-node): pin the size refusal against the transaction identifier
+  and in-flight checks (#945)`, the final technical commit before CodeScene's finding below. The ordering records
+  and these ticks change planning files only, and the final phase and the dual check passed again on each.
 - [x] 5.3 Run `/code-review xhigh` on the implementation range. Verify that no correctness finding is left open,
   and that the PR body discloses its authorship and that independent review was `NOT_PERFORMED`.
   Run on the implementation commit before the review fixes: 7 findings. Three are fixed: the two missing tests in
@@ -138,7 +139,15 @@
     this change does not own;
   - admission's serialization repeats the handoff's inline one, and sharing it would change the handoff further;
   - the README states the limit as a literal.
-  CodeScene's delta gate passed locally against `893ea04`.
+
+  CodeScene's delta gate then failed in CI on the PR. The two tests added for the review copied the structure of
+  #913's corrected-pair and in-flight tests, so the module held six functions with similar structure, and the
+  file's score fell from 10.0 to 9.38. My earlier local run had predated those two tests. The commit titled
+  `test(sdk-node): share the pair-deliverable and in-flight test helpers (#945)` extracts two shared helpers that
+  all four tests call, keeping each test's registration and assertions. #913's corrected-pair test now compares the
+  whole refusal, including its `event_id`. In a disposable copy, every plant in 3.2 still fails the tests it failed
+  before, and #913's plant that reserves the key before the commit-state check still fails its corrected-pair
+  test. The workflow's own `cs delta` command is clean locally against `893ea04`.
 
 ## 6. Assessment ordering record
 
@@ -157,9 +166,11 @@
   If the branch is rebased, or a technical commit lands after this record, record the ordering again and run both
   controls again before the merge. Name branch commits here by their titles, not their hashes.
 
-  Recorded in the commit titled `docs(openspec): record assessment ordering for
-  refuse-oversized-transaction-critical-occurrence (#945)`, called the record commit below, before the
-  implementation PR merges. The values:
+  First recorded in the commit titled `docs(openspec): record assessment ordering for
+  refuse-oversized-transaction-critical-occurrence (#945)`. The shared test helpers in 5.3 then landed as a new
+  technical commit, so the ordering was recorded again in the commit titled `docs(openspec): record assessment
+  ordering again for refuse-oversized-transaction-critical-occurrence (#945)`, called the record commit below,
+  before the implementation PR merges. The values:
   - `assessment_commit` `5829957`, the proposal commit;
   - `earliest_governed_implementation_commit`: the commit titled `fix(sdk-node): refuse an oversized
     transaction-critical occurrence before the commit (#945)`, returned by `findEarliestGovernedImplementationCommit`
