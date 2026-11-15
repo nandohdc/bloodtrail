@@ -48,7 +48,8 @@ Decision 5 keeps. The prototype is evidence for this design, not the implementat
   defect that a row catches.
 
 **Non-Goals:**
-- When the report returns, which #932 settled.
+- When the report returns against the deadline timer, which #932 settled. Decision 3 orders it only against the last
+  counted `submit()` call.
 - A throwing timer provider: recorded on #957, not filed.
 - Any change to what `submit()` returns for an operation that resolves, or for a rejected admission attempt.
 
@@ -116,7 +117,8 @@ tallies `submit()` outcomes, or exits, as soon as the report resolves would then
 
 This was measured with one operation settling after `shutdown()`, and a caller awaiting its `submit()` through 0 to 4
 awaiting async functions, for an operation that resolves and for one that rejects:
-- today, callers up to 3 layers deep see their outcome before the report; a caller 4 layers deep sees it after;
+- today, callers up to 3 layers deep see their outcome before the report; a caller 4 layers deep sees it after. A
+  caller that catches a rejection with `.catch()` instead of `try`/`catch` counts the `.catch()` as one more layer;
 - one reaction restores only the direct caller;
 - four reactions match today's order at every depth measured.
 
