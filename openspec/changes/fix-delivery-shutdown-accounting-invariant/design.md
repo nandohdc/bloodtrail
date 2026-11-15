@@ -119,6 +119,9 @@ value, and from there it is handled exactly like an asynchronous rejection:
 - the admission counts as completed once it is observed;
 - `submit()` rejects with the error, as it already does for an asynchronous rejection.
 
+Because the rejection is observed a microtask turn after the throw, like any other, a deadline callback that runs in
+the same synchronous run as the throw counts the admission abandoned, not completed (R14).
+
 A submission that is not a function throws a `TypeError` when it is called, so it takes the same path. The owner
 chose this over refusing non-functions before admission. It needs no new outcome, and the frozen surface (#111) stays
 as it is.
@@ -140,7 +143,7 @@ the same. It also keeps two existing tests unchanged:
 **Rejected: schedule no timer when nothing is outstanding.** It saves one call, but it would mean editing an existing
 assertion and changing what a host's provider observes, for no gain in the accounting.
 
-### Decision 6: The source check's identifier list follows the code
+### Decision 6: The pins on the module's names follow the code
 
 #932's source check pins the module's free identifiers to an exact list: `Number`, `Object`, `Promise`, `Set` and
 `TypeError`. If Decision 2 removes the module's last use of `Set`, the list loses `Set`. The test's list changes in
@@ -148,6 +151,15 @@ the same commit, and the task records the change.
 
 Any other change to the list fails the check, as #932 intended. The import check is unchanged: the module imports only
 the timer provider's type.
+
+A second pin follows from the same names. The scope gate's null control, in `tests/scope-mutations.test.ts`, pins
+the package's platform coupling inventory, including its count of authored references. Measured on one base with only
+`src/delivery-shutdown.ts` changed, the count is 92 with today's module and 91 once the module stops naming `Set`,
+with no host coupling either way. The pinned count changes to 91 in the same commit as the module. It stays an exact
+value, not a range, so a new reference still fails the gate.
+
+The implementation found this second pin, and it was not in this change's owned paths. Task 1.4 brings it into the
+plan in a separate planning PR, before any implementation commit, as #423 did for its own pinned count (#435).
 
 ### Decision 7: One table-driven test, with a planted defect for each root cause
 
@@ -172,6 +184,7 @@ the timer provider's type.
 | R11 | two admissions share a promise that settles before the timer | two completed | passes |
 | R12 | `shutdown()` is called inside the operation, which never settles | unresolved until the timer fires, then abandoned | fails |
 | R13 | the operation returns a plain value, not a promise | completed; `submit()` resolves `admitted` with that value | passes |
+| R14 | throws synchronously, and the deadline callback runs in the same synchronous run as `shutdown()` | abandoned; `submit()` rejects with the error | fails |
 
 The rows run through one shared harness: a table of row definitions driven by one helper, not one hand-written `it()`
 per row. #954's `codescene delta` check failed on six near-identical test functions, and was fixed with shared
@@ -186,26 +199,36 @@ Planted defects run in a disposable copy, beside a null control that stays green
 | Plant | Root cause restored | Row that must fail |
 |---|---|---|
 | P1 | `abandoned` is the size of a `Set` of the returned promises | R10 |
-| P2 | `completed` is read one microtask turn after `abandoned` | R4 |
+| P2 | `completed` is read one microtask turn after `abandoned` | R4 and R14 |
 | P3 | `outstanding` rises only after the operation returns | R12 |
-| P4 | the operation is called outside the `try` | R8 and R9, by timeout: the report never resolves |
-| P5 | the counts are taken one microtask turn after the callback, not in it | R4 |
+| P4 | the operation is called before `submit()`'s `try`/`finally`, so a synchronous throw never settles | R8 and R9, by timeout: the report never resolves |
+| P5 | the counts are taken one microtask turn after the callback, not in it | R4 and R14 |
+| P6 | the operation is called inside `submit()`'s `try`/`finally` without the `catch`, so a synchronous throw is observed in the same turn | R14 |
 
-These catches were measured on 2026-11-14. The rows were run, as a scratch script, against the scratch prototype and
-a copy of it per plant:
+These catches were measured on 2026-11-14, for R1 to R13 and P1 to P5. The rows were run, as a scratch script, against
+the scratch prototype and a copy of it per plant:
 - the prototype passed every row;
-- each plant failed exactly the rows above and no other;
+- each plant failed exactly its rows above among R1 to R13, and no other;
 - today's built binding failed R4, R5, R6 at `k` = 1, R8, R9, R10 and R12, as the table says;
 - R13 passed against all three.
 
+R14 and P6 were added on 2026-11-15, after review of the planning amendment found that no row caught P6: without R14,
+a synchronous throw observed in the same turn passes every row. They were measured the same way. Today's source, from
+`origin/main`, failed every row the table says it fails, R14 included. The prototype and the implementation's
+uncommitted source passed every row. Each of P1 to P6 failed exactly the rows above, in the prototype and, for P4 and
+P6, in the implementation's source too.
+
 Of today's failures, R4 and R5 already sum correctly, as `{ accepted: 1, completed: 1, abandoned: 0 }`. They fail
-because Decision 3 reclassifies a same-run settlement as abandoned. The other five rows fail because an admission is
+because Decision 3 reclassifies a same-run settlement as abandoned. The other six rows fail because an admission is
 miscounted.
 
 P2 and P5 are both caught by R4, not R5. A late read lets the observation of a settlement queued before the callback
-slip in, while one queued after it still runs later. The implementation repeats these runs against the real module
+slip in, while one queued after it still runs later. R14 catches them for the same reason: the throw's observation is
+queued before the callback. The implementation repeats these runs against the real module
 and the real test, and records every test each plant fails, so the recorded catch is the intended row and not a
-neighbour.
+neighbour. Each plant and the null control run the package's whole runtime suite, so every pin sees the plant. In the
+real module, P1 names `Set` again, so it also fails both pins of Decision 6. The other plants name no new global: P2
+and P5 defer with a promise reaction, not `queueMicrotask`.
 
 ### Decision 8: Records
 

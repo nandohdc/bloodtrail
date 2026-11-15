@@ -73,8 +73,9 @@ None.
 ## Impact
 
 - **Code:** `packages/security-audit-sdk-node/src/delivery-shutdown.ts`, the module's internals and doc comments only.
-- **Tests:** the Node binding's delivery shutdown tests: the table-driven accounting test. The source check's list of
-  permitted globals changes if the module stops naming `Set`.
+- **Tests:** the Node binding's delivery shutdown tests: the table-driven accounting test. If the module stops naming
+  `Set`, two pins on its names change with it: the source check's list of permitted globals, and the scope gate's
+  null control count in `tests/scope-mutations.test.ts`, from 92 to 91 authored references.
 - **Documentation:** the Node binding's README section "Deadline-bounded delivery shutdown".
 - **Hosts:**
   - a host whose operation throws synchronously now sees it counted as completed. Its `submit()` rejects with the
