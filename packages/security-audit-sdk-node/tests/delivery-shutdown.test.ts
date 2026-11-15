@@ -5,7 +5,13 @@ import { describe, it } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
 import type { AuditTimerHandle, AuditTimerProvider } from "@bloodtrail/security-audit-sdk-core";
-import { createDeliveryShutdown } from "../dist/index.js";
+import {
+  createDeliveryShutdown,
+  type DeliveryShutdown,
+  type DeliveryShutdownReport,
+  type DeliveryShutdownSubmission,
+  type DeliveryShutdownSubmitResult,
+} from "../dist/index.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SHUTDOWN_SOURCE = resolve(packageRoot, "src/delivery-shutdown.ts");
@@ -15,7 +21,7 @@ const COUPLING_POLICY = resolve(packageRoot, "scripts/platform-coupling-policy.m
 // Every global the shutdown module may name. Any other free identifier fails the source check, so a clock or timer
 // reached through a global (`setTimeout`, `Date`, `performance`, `Temporal`, `Intl`, `MessageChannel`, `globalThis`,
 // `eval`, ...) cannot arrive without this list changing.
-const PERMITTED_GLOBALS = ["Number", "Object", "Promise", "Set", "TypeError"];
+const PERMITTED_GLOBALS = ["Number", "Object", "Promise", "TypeError"];
 
 interface CouplingReferences {
   readonly identifiers: readonly string[];
@@ -54,6 +60,267 @@ function fakeDeadlineTimer(): {
     },
   });
   return { timers, fire: () => scheduled?.(), wasCleared: () => cleared, delays: () => [...delays] };
+}
+
+/** A promise that never settles. */
+function pending<T>(): Promise<T> {
+  return new Promise<T>(() => {});
+}
+
+function macrotask(): Promise<void> {
+  return new Promise<void>((done) => setImmediate(done));
+}
+
+/** Calls `settle` after `turns` microtask turns; with 0, in the current synchronous run. */
+function afterMicrotasks(turns: number, settle: () => void): void {
+  if (turns === 0) settle();
+  else queueMicrotask(() => afterMicrotasks(turns - 1, settle));
+}
+
+/** Asserts that `report` is still unresolved once a macrotask turn has passed, so only the deadline timer can end it. */
+async function assertWaitsForTimer(report: Promise<DeliveryShutdownReport>): Promise<void> {
+  let resolved = false;
+  void report.then(() => {
+    resolved = true;
+  });
+  await macrotask();
+  assert.equal(resolved, false, "the report resolved before the deadline timer fired");
+}
+
+interface AccountingScene {
+  readonly gate: DeliveryShutdown;
+  readonly fire: () => void;
+}
+
+interface DrivenAdmissions {
+  readonly report: Promise<DeliveryShutdownReport>;
+  /** The `submit()` call whose outcome the row names, if it names one. */
+  readonly submitted?: Promise<DeliveryShutdownSubmitResult<unknown>>;
+}
+
+type SubmitOutcome =
+  | { readonly resolves: DeliveryShutdownSubmitResult<unknown> }
+  | { readonly rejects: (error: unknown) => boolean };
+
+type SettledOutcome = { readonly value: unknown } | { readonly error: unknown };
+
+/** One row of the accounting table (design Decision 7 of fix-delivery-shutdown-accounting-invariant). */
+interface AccountingRow {
+  readonly row: string;
+  readonly scenario: string;
+  readonly report: DeliveryShutdownReport;
+  readonly outcome?: SubmitOutcome;
+  drive(scene: AccountingScene): DrivenAdmissions | Promise<DrivenAdmissions>;
+}
+
+const DONE: DeliveryShutdownSubmitResult<string> = { status: "admitted", result: "done" };
+const ONE_COMPLETED: DeliveryShutdownReport = { accepted: 1, completed: 1, abandoned: 0 };
+const ONE_ABANDONED: DeliveryShutdownReport = { accepted: 1, completed: 0, abandoned: 1 };
+const ASYNC_FAILURE = new Error("the operation rejected");
+const SYNC_FAILURE = new Error("the operation threw synchronously");
+
+/** Submits one operation, then initiates shutdown; the timer never fires. */
+function submitThenShutdown(operation: DeliveryShutdownSubmission<unknown>): AccountingRow["drive"] {
+  return ({ gate }) => {
+    const submitted = gate.submit(operation);
+    return { report: gate.shutdown(), submitted };
+  };
+}
+
+/** One admission whose operation settles just before the deadline callback, or `turns` microtask turns after it. */
+function settlesAroundCallback(turns: number | "before"): AccountingRow["drive"] {
+  return async ({ gate, fire }) => {
+    const operation = deferred<string>();
+    const submitted = gate.submit(() => operation.promise);
+    const report = gate.shutdown();
+    await assertWaitsForTimer(report);
+    const settle = () => operation.resolve("done");
+    if (turns === "before") {
+      settle();
+      fire();
+    } else {
+      fire();
+      afterMicrotasks(turns, settle);
+    }
+    return { report, submitted };
+  };
+}
+
+const ACCOUNTING_ROWS: readonly AccountingRow[] = [
+  {
+    row: "R1",
+    scenario: "settles before shutdown()",
+    report: ONE_COMPLETED,
+    outcome: { resolves: DONE },
+    async drive({ gate }) {
+      const submitted = gate.submit(async () => "done");
+      await submitted;
+      return { report: gate.shutdown(), submitted };
+    },
+  },
+  {
+    row: "R2",
+    scenario: "settles after shutdown(), before the timer fires, and the report resolves without the timer",
+    report: ONE_COMPLETED,
+    outcome: { resolves: DONE },
+    drive({ gate }) {
+      const operation = deferred<string>();
+      const submitted = gate.submit(() => operation.promise);
+      const report = gate.shutdown();
+      operation.resolve("done");
+      return { report, submitted };
+    },
+  },
+  {
+    row: "R3",
+    scenario: "never settles",
+    report: ONE_ABANDONED,
+    async drive({ gate, fire }) {
+      void gate.submit(() => pending<string>());
+      const report = gate.shutdown();
+      await assertWaitsForTimer(report);
+      fire();
+      return { report };
+    },
+  },
+  {
+    row: "R4",
+    scenario: "settles in the same synchronous run as the deadline callback, before it",
+    report: ONE_ABANDONED,
+    outcome: { resolves: DONE },
+    drive: settlesAroundCallback("before"),
+  },
+  {
+    row: "R5",
+    scenario: "settles in the same synchronous run as the deadline callback, after it",
+    report: ONE_ABANDONED,
+    outcome: { resolves: DONE },
+    drive: settlesAroundCallback(0),
+  },
+  ...[1, 2, 3, 4, 5, 6].map(
+    (turns): AccountingRow => ({
+      row: `R6 (k = ${turns})`,
+      scenario: `settles ${turns} microtask turn(s) after the deadline callback`,
+      report: ONE_ABANDONED,
+      outcome: { resolves: DONE },
+      drive: settlesAroundCallback(turns),
+    }),
+  ),
+  {
+    row: "R7",
+    scenario: "rejects asynchronously",
+    report: ONE_COMPLETED,
+    outcome: { rejects: (error) => error === ASYNC_FAILURE },
+    drive: submitThenShutdown(() => Promise.reject(ASYNC_FAILURE)),
+  },
+  {
+    row: "R8",
+    scenario: "throws synchronously",
+    report: ONE_COMPLETED,
+    outcome: { rejects: (error) => error === SYNC_FAILURE },
+    drive: submitThenShutdown(() => {
+      throw SYNC_FAILURE;
+    }),
+  },
+  {
+    row: "R9",
+    scenario: "the submission is not a function",
+    report: ONE_COMPLETED,
+    outcome: { rejects: (error) => error instanceof TypeError },
+    drive: submitThenShutdown("not a function" as unknown as DeliveryShutdownSubmission<unknown>),
+  },
+  {
+    row: "R10",
+    scenario: "two admissions share a pending promise",
+    report: { accepted: 2, completed: 0, abandoned: 2 },
+    async drive({ gate, fire }) {
+      const shared = pending<string>();
+      void gate.submit(() => shared);
+      void gate.submit(() => shared);
+      const report = gate.shutdown();
+      await assertWaitsForTimer(report);
+      fire();
+      return { report };
+    },
+  },
+  {
+    row: "R11",
+    scenario: "two admissions share a promise that settles before the timer fires",
+    report: { accepted: 2, completed: 2, abandoned: 0 },
+    outcome: { resolves: DONE },
+    drive({ gate }) {
+      const shared = deferred<string>();
+      void gate.submit(() => shared.promise);
+      const submitted = gate.submit(() => shared.promise);
+      const report = gate.shutdown();
+      shared.resolve("done");
+      return { report, submitted };
+    },
+  },
+  {
+    row: "R12",
+    scenario: "shutdown() is called inside the operation, which never settles",
+    report: ONE_ABANDONED,
+    async drive({ gate, fire }) {
+      let report: Promise<DeliveryShutdownReport> = pending();
+      let calledShutdown = false;
+      void gate.submit(() => {
+        report = gate.shutdown();
+        calledShutdown = true;
+        return pending<string>();
+      });
+      // Otherwise the wait below would be checked against the placeholder, which never resolves.
+      assert.equal(calledShutdown, true, "the operation must call shutdown() before submit() returns");
+      await assertWaitsForTimer(report);
+      fire();
+      return { report };
+    },
+  },
+  {
+    row: "R13",
+    scenario: "the operation returns a plain value, not a promise",
+    report: ONE_COMPLETED,
+    outcome: { resolves: { status: "admitted", result: "a plain value" } },
+    drive: submitThenShutdown((() => "a plain value") as unknown as DeliveryShutdownSubmission<unknown>),
+  },
+  {
+    row: "R14",
+    scenario: "throws synchronously, and the deadline callback runs in the same synchronous run as shutdown()",
+    report: ONE_ABANDONED,
+    outcome: { rejects: (error) => error === SYNC_FAILURE },
+    drive({ gate, fire }) {
+      const submitted = gate.submit(() => {
+        throw SYNC_FAILURE;
+      });
+      const report = gate.shutdown();
+      fire();
+      return { report, submitted };
+    },
+  },
+];
+
+/** Drives one row through the public module and asserts its report, the identity, and the named `submit()` outcome. */
+async function runAccountingRow(row: AccountingRow): Promise<void> {
+  const { timers, fire } = fakeDeadlineTimer();
+  const gate = createDeliveryShutdown({ deadlineMs: 5000, timers });
+  const driven = await row.drive({ gate, fire });
+  const outcome = driven.submitted?.then(
+    (value): SettledOutcome => ({ value }),
+    (error: unknown): SettledOutcome => ({ error }),
+  );
+  const report = await driven.report;
+  assert.equal(report.completed + report.abandoned, report.accepted, "completed + abandoned must equal accepted");
+  assert.deepEqual(report, row.report);
+  if (row.outcome !== undefined) assertSubmitOutcome(await outcome, row.outcome);
+}
+
+function assertSubmitOutcome(actual: SettledOutcome | undefined, expected: SubmitOutcome): void {
+  if ("resolves" in expected) {
+    assert.deepEqual(actual, { value: expected.resolves });
+    return;
+  }
+  assert.ok(actual !== undefined && "error" in actual, "the admission attempt must reject");
+  assert.ok(expected.rejects(actual.error), "the admission attempt rejected with another error");
 }
 
 describe("Deadline-bounded delivery shutdown", () => {
@@ -184,6 +451,13 @@ describe("Deadline-bounded delivery shutdown", () => {
     assert.deepEqual(moduleReferences(source), [
       'import type { AuditTimerProvider } from "@bloodtrail/security-audit-sdk-core"',
     ]);
+  });
+
+  describe("counts every admission exactly once", () => {
+    for (const row of ACCOUNTING_ROWS) {
+      // A bounded timeout, so a report that never resolves fails its row instead of hanging the run.
+      it(`${row.row}: ${row.scenario}`, { timeout: 2_000 }, () => runAccountingRow(row));
+    }
   });
 });
 
