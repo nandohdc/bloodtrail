@@ -32,6 +32,7 @@
     "openspec/specs/security-audit-sdk-node/spec.md",
     "packages/security-audit-sdk-node/src/delivery-shutdown.ts",
     "packages/security-audit-sdk-node/tests/delivery-shutdown.test.ts",
+    "packages/security-audit-sdk-node/tests/scope-mutations.test.ts",
     "packages/security-audit-sdk-node/README.md"
   ],
   "candidate_approaches": [
@@ -99,7 +100,7 @@
         "2.4"
       ],
       "evidence_ids": [
-        "the delivery shutdown accounting table asserts the exact report and completed plus abandoned equals accepted for rows R1 to R13, failing on today's source where an admission is miscounted (R6 with k = 1, R8, R9, R10 and R12), and failing against planted defects that count a promise set (R10), call the operation outside the try (R8, R9) and raise outstanding only after the operation returns (R12)"
+        "the delivery shutdown accounting table asserts the exact report and completed plus abandoned equals accepted for rows R1 to R14, failing on today's source where an admission is miscounted (R6 with k = 1, R8, R9, R10, R12 and R14), and failing against planted defects that count a promise set (R10), call the operation before submit's try (R8, R9) and raise outstanding only after the operation returns (R12)"
       ]
     },
     "implementation-counts-taken-in-one-step": {
@@ -109,7 +110,8 @@
         "2.4"
       ],
       "evidence_ids": [
-        "rows R4 to R6 pin that an operation the module has not observed settle when the deadline callback runs is counted abandoned and never also completed; R4 and R5 fail on today's source because it counts a same-run settlement completed, and R4 fails against planted defects that read completed one turn after abandoned or take the counts one turn after the callback; the order test and source check added by #932 still pass"
+        "rows R4 to R6 pin that an operation the module has not observed settle when the deadline callback runs is counted abandoned and never also completed; R4 and R5 fail on today's source because it counts a same-run settlement completed, and R4 fails against planted defects that read completed one turn after abandoned or take the counts one turn after the callback; the order test and source check added by #932 still pass",
+        "R14 pins that a synchronous throw is observed a microtask turn later like any rejection, so a deadline callback in the same synchronous run counts it abandoned; it fails on today's source and against planted defects that observe the throw in the same turn, read completed one turn late or take the counts one turn after the callback"
       ]
     },
     "implementation-records-state-the-counting-rule": {
@@ -122,11 +124,14 @@
     },
     "implementation-unchanged-surface": {
       "task_ids": [
+        "1.4",
+        "2.2",
         "3.1",
         "3.2"
       ],
       "evidence_ids": [
-        "npm run test:exports reports 19 value and 44 type-only exports, no exported signature changes, and compatibility.json is unchanged"
+        "npm run test:exports reports 19 value and 44 type-only exports, no exported signature changes, and compatibility.json is unchanged",
+        "the scope gate reports no host coupling, and its null control count moves from 92 to 91 authored references only because the module no longer names Set, measured on one base with only delivery-shutdown.ts changed"
       ]
     }
   },
@@ -138,6 +143,7 @@
     "1.1",
     "1.2",
     "1.3",
+    "1.4",
     "2.1",
     "2.2",
     "2.3",
