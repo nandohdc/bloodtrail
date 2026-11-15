@@ -377,11 +377,16 @@ jobs:
     # ci-topology permits a visible skip for untrusted PRs. Keep this at job
     # level: an empty successful scan step would misreport analysis as passed.
     # Check the author too, so maintainer updates do not trust a Dependabot PR.
+    # Setting the repository variable SONAR_ANALYSIS to exactly `disabled`
+    # pauses analysis while the server is unavailable (#963); unset runs it.
+    # Delete the variable before making `sonar` a required check again: a
+    # skipped required check counts as passed.
     if: >-
-      github.event_name != 'pull_request' ||
+      vars.SONAR_ANALYSIS != 'disabled' &&
+      (github.event_name != 'pull_request' ||
       (github.actor != 'dependabot[bot]' &&
       github.event.pull_request.user.login != 'dependabot[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository)
+      github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
     permissions:
       contents: read

@@ -19,8 +19,16 @@ function conditionFor(source) {
   return expression.replace(/^\$\{\{\s*|\s*\}\}$/g, "");
 }
 
-function context({ actor = "maintainer", author = "contributor", head = "owner/repo", eventName = "pull_request" } = {}) {
+function context({
+  actor = "maintainer",
+  author = "contributor",
+  head = "owner/repo",
+  eventName = "pull_request",
+  vars = {},
+} = {}) {
   return {
+    // GitHub resolves an unset repository variable to an empty string.
+    vars: new Proxy(vars, { get: (target, name) => target[name] ?? "" }),
     github: {
       actor,
       repository: "owner/repo",
@@ -50,6 +58,34 @@ for (const [name, event, expected] of cases) {
     assert.equal(runs(workflow, context(event)), expected);
   });
 }
+
+// #963: SONAR_ANALYSIS=disabled pauses analysis for trusted events. Any other
+// value, including unset, must run it, so a lost setting cannot fail open.
+const disabled = { SONAR_ANALYSIS: "disabled" };
+const switchCases = [
+  ["disabled main push skips", { eventName: "push", vars: disabled }, false],
+  ["disabled trusted PR skips", { vars: disabled }, false],
+  ["disabled fork PR still skips", { head: "contributor/fork", vars: disabled }, false],
+  ["unset variable runs a main push", { eventName: "push" }, true],
+  ["unset variable runs a trusted PR", {}, true],
+  ["empty variable runs", { vars: { SONAR_ANALYSIS: "" } }, true],
+  ["enabled runs", { vars: { SONAR_ANALYSIS: "enabled" } }, true],
+  ["a near-miss value runs", { vars: { SONAR_ANALYSIS: "Disabled" } }, true],
+  ["untrusted PR with the default still skips", { actor: "dependabot[bot]" }, false],
+];
+
+for (const [name, event, expected] of switchCases) {
+  test(`Sonar analysis switch: ${name}`, () => {
+    assert.equal(runs(workflow, context(event)), expected);
+  });
+}
+
+test("removing the analysis switch makes a disabled trusted event run", () => {
+  const predicate = "vars.SONAR_ANALYSIS != 'disabled'";
+  assert.ok(conditionFor(workflow).includes(predicate), `missing switch predicate: ${predicate}`);
+  assert.equal(runs(workflow.replace(predicate, "true"), context({ vars: disabled })), true);
+  assert.equal(runs(workflow.replace(predicate, "true"), context({ eventName: "push", vars: disabled })), true);
+});
 
 test("removing the job guard reproduces scheduling analysis without secrets", () => {
   const unguarded = workflow.replace(/^    if: >-\n(?:      .+\n)+/m, "");

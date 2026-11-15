@@ -7,18 +7,18 @@
 
 ## 2. Implement the switch
 
-- [ ] 2.1 Extend `.github/scripts/sonar-trust-boundary.test.mjs` with a `vars` context and the
+- [x] 2.1 Extend `.github/scripts/sonar-trust-boundary.test.mjs` with a `vars` context and the
   disabled, default and other-value cases. Observe the disabled cases fail against the unchanged
   workflow.
-- [ ] 2.2 Prefix the `sonar` job's `if:` with `vars.SONAR_ANALYSIS != 'disabled' &&` and wrap the
+- [x] 2.2 Prefix the `sonar` job's `if:` with `vars.SONAR_ANALYSIS != 'disabled' &&` and wrap the
   existing trust expression in parentheses, unchanged. Verify every trust-boundary test passes and
   that replacing the switch predicate with `true` makes a disabled event run.
 
 ## 3. Verify
 
-- [ ] 3.1 Run `node --test .github/scripts/*.test.mjs`, `openspec validate --strict` for the
+- [x] 3.1 Run `node --test .github/scripts/*.test.mjs`, `openspec validate --strict` for the
   change and `git diff --check`. Verify each passes.
-- [ ] 3.2 Commit the candidate, then run the final design-pattern governance phase against the
+- [x] 3.2 Commit the candidate, then run the final design-pattern governance phase against the
   recorded baseline and the repository governance-gate chain. Verify each passes.
 
 ## 4. Archive
