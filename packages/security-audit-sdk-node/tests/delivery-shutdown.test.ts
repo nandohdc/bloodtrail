@@ -299,6 +299,37 @@ const ACCOUNTING_ROWS: readonly AccountingRow[] = [
   },
 ];
 
+/**
+ * Admits one operation, initiates shutdown, then settles the operation. Returns the order in which a caller awaiting
+ * that `submit()` call through `layers` awaiting async functions, and a caller awaiting the report, saw their results.
+ */
+async function firstToSee(layers: number): Promise<string[]> {
+  const { timers } = fakeDeadlineTimer();
+  const gate = createDeliveryShutdown({ deadlineMs: 5000, timers });
+  const operation = deferred<string>();
+  const seen: string[] = [];
+  let call = (): Promise<unknown> => gate.submit(() => operation.promise);
+  for (let layer = 0; layer < layers; layer += 1) {
+    const inner = call;
+    call = async () => {
+      const outcome = await inner();
+      return outcome;
+    };
+  }
+
+  const caller = (async () => {
+    await call();
+    seen.push("submit() outcome");
+  })();
+  const host = (async () => {
+    await gate.shutdown();
+    seen.push("shutdown report");
+  })();
+  operation.resolve("done");
+  await Promise.all([caller, host]);
+  return seen;
+}
+
 /** Drives one row through the public module and asserts its report, the identity, and the named `submit()` outcome. */
 async function runAccountingRow(row: AccountingRow): Promise<void> {
   const { timers, fire } = fakeDeadlineTimer();
@@ -436,6 +467,14 @@ describe("Deadline-bounded delivery shutdown", () => {
 
     fire();
     assert.deepEqual(await shutdownPromise, { accepted: 2, completed: 1, abandoned: 1 });
+  });
+
+  // The order the module had before it counted admissions, measured: a caller awaiting the last counted submit() call
+  // directly, or through up to three awaiting async functions, saw its outcome before a caller awaiting the report.
+  it("resolves the report only after the submit() call whose settlement it counted last", { timeout: 2_000 }, async () => {
+    for (const layers of [0, 1, 2, 3]) {
+      assert.deepEqual(await firstToSee(layers), ["submit() outcome", "shutdown report"], `${layers} awaiting layer(s)`);
+    }
   });
 
   it("reads no clock or timer other than the injected timer provider", async () => {

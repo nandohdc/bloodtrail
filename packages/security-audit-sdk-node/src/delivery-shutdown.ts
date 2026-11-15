@@ -61,6 +61,13 @@ export interface DeliveryShutdown {
    * operation that settles in the same synchronous run as the deadline
    * callback is counted abandoned.
    *
+   * The report resolves a few promise reactions after that step, never in it.
+   * When the step is the last outstanding operation's settlement, that
+   * operation's `submit()` call has settled before the report resolves, so a
+   * caller awaiting that call directly sees its outcome before a caller
+   * awaiting the report. The binding promises no ordering further along a
+   * chain of awaits.
+   *
    * While admitted work is outstanding, the report does not resolve before the
    * deadline timer fires. If work is still outstanding when it fires, the
    * report resolves after it, with no bound on how long after. A caller with an
@@ -123,7 +130,10 @@ interface AdmissionCounts {
   admit(): void;
   /** Moves one admission from outstanding to completed, once its settlement is observed. */
   settle(): void;
-  /** Schedules the deadline timer and resolves with the counts taken at the first counting trigger. */
+  /**
+   * Schedules the deadline timer, takes the counts at the first counting trigger, and resolves with them
+   * `REPORT_REACTIONS` promise reactions later.
+   */
   close(deadlineMs: number, timers: AuditTimerProvider): Promise<DeliveryShutdownReport>;
 }
 
@@ -156,8 +166,9 @@ function createAdmissionCounts(): AdmissionCounts {
         const takeCounts = (): void => {
           if (taken) return;
           taken = true;
+          const counts: DeliveryShutdownReport = Object.freeze({ accepted, completed, abandoned: outstanding });
           cancelDeadline?.();
-          resolve(Object.freeze({ accepted, completed, abandoned: outstanding }));
+          resolveAfterReactions(counts, REPORT_REACTIONS, resolve);
         };
         cancelDeadline = scheduleDeadline(deadlineMs, timers, takeCounts);
         onLastSettled = takeCounts;
@@ -165,6 +176,26 @@ function createAdmissionCounts(): AdmissionCounts {
       });
     },
   };
+}
+
+/**
+ * How many promise reactions after the step that takes the counts the report resolves. When the last settlement takes
+ * them, that step runs inside that admission's `submit()`, before `submit()` returns. Four reactions keep the order
+ * the module had before it counted admissions: code awaiting that `submit()` call directly, or through up to three
+ * awaiting async functions, runs before code awaiting the report. The number is measured against that module, not
+ * derived; the binding promises only the direct await.
+ */
+const REPORT_REACTIONS = 4;
+
+/** Resolves with `report` after `reactions` promise reactions, each a plain hand-off of the same frozen report. */
+function resolveAfterReactions(
+  report: DeliveryShutdownReport,
+  reactions: number,
+  resolve: (report: DeliveryShutdownReport) => void,
+): void {
+  let handoff = Promise.resolve(report);
+  for (let reaction = 1; reaction < reactions; reaction += 1) handoff = handoff.then((passed) => passed);
+  void handoff.then(resolve);
 }
 
 /** Schedules the one deadline timer through the provider and returns a function that clears it. */
