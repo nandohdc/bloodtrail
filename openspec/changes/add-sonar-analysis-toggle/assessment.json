@@ -1,0 +1,142 @@
+{
+  "schema_version": "1.1",
+  "change_id": "add-sonar-analysis-toggle",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The self-hosted SonarQube server is unavailable during the SonarQube Cloud migration (#963), so the sonar job fails red on every trusted pull request and main push even though it is no longer a required check.",
+    "The ci-topology requirement forbids a pass-shaped green that verified nothing, so disabled analysis must render as a skip, never as a success.",
+    "The existing job guard keeps restricted Sonar secrets away from fork and Dependabot pull requests, and that trust boundary must not weaken.",
+    "A lost or mistyped setting must not silently turn analysis off once the migration ends."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "governance_core_path",
+      "security_sensitive_behavior"
+    ],
+    "material_capability_modification": false,
+    "capabilities": [
+      "ci-topology"
+    ]
+  },
+  "owned_paths": [
+    ".github/workflows/ci.yml",
+    ".github/scripts/sonar-trust-boundary.test.mjs",
+    "openspec/changes/add-sonar-analysis-toggle/.openspec.yaml",
+    "openspec/changes/add-sonar-analysis-toggle/assessment.json",
+    "openspec/changes/add-sonar-analysis-toggle/assessment.source.json",
+    "openspec/changes/add-sonar-analysis-toggle/design.md",
+    "openspec/changes/add-sonar-analysis-toggle/proposal.md",
+    "openspec/changes/add-sonar-analysis-toggle/tasks.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-variable-gated-job-skip",
+      "kind": "direct_implementation",
+      "summary": "Prefix the sonar job-level if with vars.SONAR_ANALYSIS != 'disabled', keeping the trust predicates byte-identical, so only the exact value disabled skips the job and an unset variable runs it.",
+      "forces_addressed": [
+        "The self-hosted SonarQube server is unavailable during the SonarQube Cloud migration (#963), so the sonar job fails red on every trusted pull request and main push even though it is no longer a required check.",
+        "The ci-topology requirement forbids a pass-shaped green that verified nothing, so disabled analysis must render as a skip, never as a success.",
+        "The existing job guard keeps restricted Sonar secrets away from fork and Dependabot pull requests, and that trust boundary must not weaken.",
+        "A lost or mistyped setting must not silently turn analysis off once the migration ends."
+      ]
+    },
+    {
+      "id": "approach-notice-step-exits-zero",
+      "kind": "alternative",
+      "summary": "Keep the job running but replace the scan with a step that prints a notice and exits 0 while the server is unavailable.",
+      "forces_addressed": [
+        "The self-hosted SonarQube server is unavailable during the SonarQube Cloud migration (#963), so the sonar job fails red on every trusted pull request and main push even though it is no longer a required check."
+      ]
+    },
+    {
+      "id": "approach-continue-on-error",
+      "kind": "alternative",
+      "summary": "Mark the sonar job continue-on-error so a failed scan no longer shows as a failure.",
+      "forces_addressed": [
+        "The self-hosted SonarQube server is unavailable during the SonarQube Cloud migration (#963), so the sonar job fails red on every trusted pull request and main push even though it is no longer a required check."
+      ]
+    },
+    {
+      "id": "approach-positive-opt-in",
+      "kind": "alternative",
+      "summary": "Run the job only when a repository variable equals enabled, so analysis is off unless explicitly switched on.",
+      "forces_addressed": [
+        "The self-hosted SonarQube server is unavailable during the SonarQube Cloud migration (#963), so the sonar job fails red on every trusted pull request and main push even though it is no longer a required check.",
+        "The ci-topology requirement forbids a pass-shaped green that verified nothing, so disabled analysis must render as a skip, never as a success."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-variable-gated-job-skip",
+  "rejected_alternative_ids": [
+    "approach-notice-step-exits-zero",
+    "approach-continue-on-error",
+    "approach-positive-opt-in"
+  ],
+  "rejection_reasons": {
+    "approach-notice-step-exits-zero": {
+      "forces": [
+        "The ci-topology requirement forbids a pass-shaped green that verified nothing, so disabled analysis must render as a skip, never as a success."
+      ],
+      "reason": "The job would report success having analysed nothing, which is exactly the pass-shaped green the ci-topology requirement forbids."
+    },
+    "approach-continue-on-error": {
+      "forces": [
+        "The ci-topology requirement forbids a pass-shaped green that verified nothing, so disabled analysis must render as a skip, never as a success."
+      ],
+      "reason": "A continue-on-error job reports success while its scan fails, so it reproduces the pass-shaped green and also hides real quality-gate failures once the server returns."
+    },
+    "approach-positive-opt-in": {
+      "forces": [
+        "A lost or mistyped setting must not silently turn analysis off once the migration ends."
+      ],
+      "reason": "An unset or deleted variable would disable analysis, so the switch would fail open toward running nothing; the selected negative comparison fails closed toward running the analysis."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-disabled-analysis-renders-as-skip",
+    "implementation-unset-switch-runs-analysis",
+    "implementation-trust-predicates-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-disabled-analysis-renders-as-skip": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "Workflow-condition tests evaluate the real sonar if with SONAR_ANALYSIS set to disabled and observe a skip for a main push and a trusted PR."
+      ]
+    },
+    "implementation-unset-switch-runs-analysis": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "Workflow-condition tests run the job for an unset variable and for values other than disabled, and replacing the switch predicate with true makes a disabled event run."
+      ]
+    },
+    "implementation-trust-predicates-unchanged": {
+      "task_ids": [
+        "2.2",
+        "3.1"
+      ],
+      "evidence_ids": [
+        "The existing fork, Dependabot-actor and Dependabot-author cases and predicate-removal mutations still pass, and the untrusted-events test still asserts static and mutation jobs stay unconditional."
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "4650bb18a4f46c5c7d75a4f02549636308c6e0cf"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2"
+  ]
+}
