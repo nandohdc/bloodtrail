@@ -39,11 +39,12 @@
   - admissions are counted with `accepted`, `outstanding` and `completed`;
   - both counts are taken in one synchronous step, in the deadline callback or on the settlement that brings
     `outstanding` to zero;
+  - the report resolves four promise reactions after that step, and a test pins the order of Decision 3;
   - the operation is called inside a `try`;
   - one deadline timer is still scheduled at every `shutdown()`, and cleared.
 
   Verify three things:
-  - `npm test --prefix packages/security-audit-sdk-node` passes, including every row of 2.1;
+  - `npm test --prefix packages/security-audit-sdk-node` passes, including every row of 2.1 and the order test;
   - the existing tests pass, including #932's order test. None of them changes, except the two pins that follow the
     module's names (Decision 6): the source check's list of permitted globals, and the scope gate's null control
     count;
@@ -54,19 +55,22 @@
     `DeliveryShutdown.shutdown()`;
   - the README section "Deadline-bounded delivery shutdown": the identity, what `completed` means (settled, whether
     resolved or rejected), when the counts are taken, that a synchronous throw or a non-function submission counts as
-    a rejection, and that an operation awaiting its own `shutdown()` waits for the deadline timer.
+    a rejection, that a caller awaiting the last counted `submit()` call directly sees its outcome before the report
+    resolves, and that an operation awaiting its own `shutdown()` waits for the deadline timer.
 
   Verify that the text agrees with the MODIFIED requirement, and that no sentence states or implies a service level or
   a numeric bound on when the report returns.
-- [ ] 2.4 In a disposable copy, plant each defect of design Decision 7 (P1 to P6) in `src/delivery-shutdown.ts`, beside
+- [ ] 2.4 In a disposable copy, plant each defect of design Decision 7 (P1 to P8) in `src/delivery-shutdown.ts`, beside
   a null control, the unchanged source, that stays green. Each plant and the null control run the package's whole
-  runtime suite, `npm run test:runtime`. Verify that each plant fails the rows the design names:
+  runtime suite, `npm run test:runtime`. Verify that each plant fails the tests the design names:
   - P1 fails R10;
   - P2 fails R4 and R14;
   - P3 fails R12;
   - P4 fails R8 and R9;
   - P5 fails R4 and R14;
-  - P6 fails R14.
+  - P6 fails R14;
+  - P7 fails the order test at 0 layers, and no row;
+  - P8 fails the order test at 1 layer, and no row.
 
   P1 names `Set` again, so it is also expected to fail the source check and the scope gate's null control. The
   other plants name no global the source check does not permit: P2 and P5 defer with a promise reaction, not
