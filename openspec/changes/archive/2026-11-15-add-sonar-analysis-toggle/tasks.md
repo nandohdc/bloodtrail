@@ -23,5 +23,9 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After the owner merges the implementation, archive `add-sonar-analysis-toggle` in a
-  separate pull request.
+- [x] 4.1 After the owner merges the implementation, archive `add-sonar-analysis-toggle` in a
+  separate pull request. The proposal merged in #965 as `7809ab5` and the implementation in #966 as
+  `4ea5e0c`. Archived to `openspec/changes/archive/2026-11-15-add-sonar-analysis-toggle/`;
+  `TZ=UTC date +%F` gave `2026-11-15`, the archive day. The change has no spec delta, so the
+  archive writes no canonical spec. This PR merges with a merge commit, and #963 stays open until
+  Sonar is restored.
