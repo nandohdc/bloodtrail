@@ -238,6 +238,39 @@ own `submit()` call still resolves once it eventually settles — shutdown
 never causes an admitted operation to be lost. `shutdown()` is idempotent:
 repeated calls return the identical accounting from the first call.
 
+The report counts admissions, not promises. Each admitted `submit()` call is
+counted exactly once, so `completed + abandoned` always equals `accepted`, even
+when two calls' operations return the same promise. `completed` means settled,
+whether the operation resolved or rejected. An operation that throws
+synchronously instead of returning a promise, and a submission that is not a
+function, count as an operation that rejected with that error: the admission
+is accepted, its `submit()` call rejects with the error, and it counts as
+completed once the module observes that rejection.
+
+Both counts are taken in one synchronous step, at the first of: `shutdown()`
+being called with nothing outstanding, the timer provider calling the deadline
+callback, or the module observing the last outstanding operation settle. An
+operation counts as completed only if the module has observed it settle by that
+step, and the module observes a settlement at least one microtask turn after
+the operation's promise settles. So an operation that settles in the same
+synchronous run as the deadline callback, before or after it, counts as
+`abandoned`; its own `submit()` call still resolves with its result.
+
+The report resolves a few promise reactions after that step, never in it.
+When the step is the last outstanding operation's settlement, that operation's
+`submit()` call has settled before the report resolves, so code awaiting that
+call directly runs before code awaiting the report. The binding promises no
+ordering further along a chain of awaits. A host that needs every outcome
+before it acts on the report, for example before it exits, awaits the
+`submit()` calls themselves.
+
+A `shutdown()` called from inside an admitted operation counts that operation
+as outstanding, like any other. An operation that calls `shutdown()` and then
+awaits the report waits for the deadline timer: the report waits for the
+operation, so only the timer ends the wait, and the operation is counted
+`abandoned`. To shut down from inside an operation without that wait, call
+`shutdown()` there without awaiting it.
+
 `deadlineMs` is not a bound on when the shutdown report resolves. It is the
 delay `shutdown()` passes to the injected timer provider, and the shutdown
 module reads no clock or timer of its own. While admitted work is still
