@@ -1,0 +1,151 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The shutdown report must count every admitted operation exactly once, so completed plus abandoned equals accepted, in every case the binding can meet, including a synchronous throw, a shared pending promise and a re-entrant shutdown.",
+    "The instant at which the counts are taken must be one synchronous step that the requirement can state and a test with an injected timer can pin, independent of internal promise chains.",
+    "Abandoned work must never drop out of the report or be reported delivered, and nothing may be counted abandoned before the deadline timer fires.",
+    "No change to the frozen Node surface: 19 value and 44 type-only exports, no signature change and no new outcome (#111), and the module still reads no clock of its own."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "lifecycle_or_state",
+      "concurrency",
+      "security_sensitive_behavior",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-sdk-node"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/fix-delivery-shutdown-accounting-invariant/.openspec.yaml",
+    "openspec/changes/fix-delivery-shutdown-accounting-invariant/assessment.json",
+    "openspec/changes/fix-delivery-shutdown-accounting-invariant/assessment.source.json",
+    "openspec/changes/fix-delivery-shutdown-accounting-invariant/design.md",
+    "openspec/changes/fix-delivery-shutdown-accounting-invariant/proposal.md",
+    "openspec/changes/fix-delivery-shutdown-accounting-invariant/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/fix-delivery-shutdown-accounting-invariant/tasks.md",
+    "openspec/specs/security-audit-sdk-node/spec.md",
+    "packages/security-audit-sdk-node/src/delivery-shutdown.ts",
+    "packages/security-audit-sdk-node/tests/delivery-shutdown.test.ts",
+    "packages/security-audit-sdk-node/README.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-count-admissions-at-one-instant",
+      "kind": "direct_implementation",
+      "summary": "Count admissions with accepted, outstanding and completed counters that move together, take both counts in one synchronous step in the deadline callback or on the settlement that brings outstanding to zero, call the operation inside a try so a synchronous throw is a rejection, and pin every way an admission can end with one table-driven test and a planted defect per root cause.",
+      "forces_addressed": [
+        "The shutdown report must count every admitted operation exactly once, so completed plus abandoned equals accepted, in every case the binding can meet, including a synchronous throw, a shared pending promise and a re-entrant shutdown.",
+        "The instant at which the counts are taken must be one synchronous step that the requirement can state and a test with an injected timer can pin, independent of internal promise chains.",
+        "Abandoned work must never drop out of the report or be reported delivered, and nothing may be counted abandoned before the deadline timer fires.",
+        "No change to the frozen Node surface: 19 value and 44 type-only exports, no signature change and no new outcome (#111), and the module still reads no clock of its own."
+      ]
+    },
+    {
+      "id": "approach-single-read-after-race",
+      "kind": "alternative",
+      "summary": "Keep the promise set and the race against Promise.allSettled, and read completed and abandoned in the same turn once the race resolves, as #957 first proposed.",
+      "forces_addressed": [
+        "No change to the frozen Node surface: 19 value and 44 type-only exports, no signature change and no new outcome (#111), and the module still reads no clock of its own."
+      ]
+    },
+    {
+      "id": "approach-per-issue-fixes",
+      "kind": "alternative",
+      "summary": "Fix #957 and #958 as separate changes, each scoped to its own measured case, and leave the shared pending promise and the re-entrant shutdown to later issues.",
+      "forces_addressed": [
+        "No change to the frozen Node surface: 19 value and 44 type-only exports, no signature change and no new outcome (#111), and the module still reads no clock of its own."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-count-admissions-at-one-instant",
+  "rejected_alternative_ids": [
+    "approach-single-read-after-race",
+    "approach-per-issue-fixes"
+  ],
+  "rejection_reasons": {
+    "approach-single-read-after-race": {
+      "forces": [
+        "The shutdown report must count every admitted operation exactly once, so completed plus abandoned equals accepted, in every case the binding can meet, including a synchronous throw, a shared pending promise and a re-entrant shutdown.",
+        "The instant at which the counts are taken must be one synchronous step that the requirement can state and a test with an injected timer can pin, independent of internal promise chains."
+      ],
+      "reason": "It fixes only the one-turn double count: a promise set still counts a shared pending promise once, a re-entrant shutdown still snapshots a set without its caller, and the counting instant stays tied to an internal promise chain the requirement cannot state; the owner chose the timer callback."
+    },
+    "approach-per-issue-fixes": {
+      "forces": [
+        "The shutdown report must count every admitted operation exactly once, so completed plus abandoned equals accepted, in every case the binding can meet, including a synchronous throw, a shared pending promise and a re-entrant shutdown.",
+        "Abandoned work must never drop out of the report or be reported delivered, and nothing may be counted abandoned before the deadline timer fires."
+      ],
+      "reason": "Each fix leaves its neighbours standing, so the next review files them again; the owner chose one change for the invariant as a whole."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-every-admission-counted-once",
+    "implementation-counts-taken-in-one-step",
+    "implementation-records-state-the-counting-rule",
+    "implementation-unchanged-surface"
+  ],
+  "invariant_evidence": {
+    "implementation-every-admission-counted-once": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "the delivery shutdown accounting table asserts the exact report and completed plus abandoned equals accepted for rows R1 to R13, failing on today's source where an admission is miscounted (R6 with k = 1, R8, R9, R10 and R12), and failing against planted defects that count a promise set (R10), call the operation outside the try (R8, R9) and raise outstanding only after the operation returns (R12)"
+      ]
+    },
+    "implementation-counts-taken-in-one-step": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "2.4"
+      ],
+      "evidence_ids": [
+        "rows R4 to R6 pin that an operation the module has not observed settle when the deadline callback runs is counted abandoned and never also completed; R4 and R5 fail on today's source because it counts a same-run settlement completed, and R4 fails against planted defects that read completed one turn after abandoned or take the counts one turn after the callback; the order test and source check added by #932 still pass"
+      ]
+    },
+    "implementation-records-state-the-counting-rule": {
+      "task_ids": [
+        "2.3"
+      ],
+      "evidence_ids": [
+        "the README section and the delivery-shutdown.ts doc comments state the identity, that completed means settled, when the counts are taken, that a synchronous throw counts as a rejection and that an operation awaiting its own shutdown waits for the deadline timer, exactly as the MODIFIED requirement and the design do, with no service level or numeric bound"
+      ]
+    },
+    "implementation-unchanged-surface": {
+      "task_ids": [
+        "3.1",
+        "3.2"
+      ],
+      "evidence_ids": [
+        "npm run test:exports reports 19 value and 44 type-only exports, no exported signature changes, and compatibility.json is unchanged"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "This is the dimension the change addresses: the shutdown report counts every admitted audit delivery exactly once, so no abandoned delivery can drop out of the accounting and none is counted delivered.",
+    "authentication_or_authorization": "No authentication or authorization logic changes; the shutdown primitive gates admission only by lifecycle.",
+    "authority_provenance": "No authority, actor, tenant or commit-state value is read or produced by the shutdown primitive or by this change.",
+    "concurrency": "The counts are taken in one synchronous step from counters that move together, so no microtask interleaving, shared promise or re-entrant shutdown can split them; the admission boundary is unchanged.",
+    "confidentiality": "The report carries counts only; a rejected admission attempt carries the operation's own error back to its own caller, as an asynchronous rejection already does, and the tests use no caller data.",
+    "cryptography": "No cryptographic primitive, hash, signature or key handling is added, removed or changed.",
+    "error_disclosure": "A synchronous throw already reaches the caller as a rejection of the admission attempt, and still does; only how it is counted changes, the module adds no diagnostic of its own, and the deadline validation error is unchanged.",
+    "external_security_integration": "No transport, exporter, collector or SIEM integration is added; the timer provider stays injected and host-owned.",
+    "fail_posture": "Work the module has not observed settle when the counts are taken is counted abandoned, never completed or delivered; ambiguity at the deadline resolves toward abandoned.",
+    "lifecycle": "The shutdown lifecycle keeps its states and transitions; the change fixes the instant at which the drain is decided and makes a re-entrant shutdown wait like any other.",
+    "mutation_ownership": "Edits are confined to the change directory, the canonical sdk-node spec at fold, the binding's README, delivery-shutdown.ts and its test.",
+    "privacy_transformation": "No privacy transform, field policy or transformation hook is touched.",
+    "resource_retention": "The module drops its set of in-flight promises for three counters and still schedules and clears one deadline timer per shutdown; abandoned operations are not retained by the module.",
+    "retry_or_redelivery": "No retry or redelivery behaviour changes; an abandoned operation's own submit call still resolves with its result when it settles.",
+    "trust_boundary": "The wrapped operation is caller-supplied: a synchronous throw or a non-function no longer escapes the accounting, and the timer provider stays an injected input."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "4650bb18a4f46c5c7d75a4f02549636308c6e0cf"
+  }
+}
