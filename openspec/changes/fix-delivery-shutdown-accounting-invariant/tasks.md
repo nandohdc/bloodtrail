@@ -205,14 +205,24 @@
 
 ## 5. Merge, fold and archive
 
-- [ ] 5.1 Verify two things on the implementation PR head:
+- [x] 5.1 Verify two things on the implementation PR head:
   - every required context plus DeepScan is green;
   - the recorded ordering commits exist on that head.
-- [ ] 5.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here.
-- [ ] 5.3 In a separate fold PR, fold the delta into the canonical spec while the change is still active. Verify
+
+  On #969's head `9707ecf`, all nine required contexts and DeepScan were green, and `43d10aa`, `27dff5c` and
+  `cd17337` were all on that head.
+- [x] 5.2 Merge the implementation PR as a merge commit. Verify by recording the merge commit here. Merged: #969,
+  merge commit `f8cc4d0`, with the three recorded ordering commits on `main`.
+- [x] 5.3 In a separate fold PR, fold the delta into the canonical spec while the change is still active. Verify
   three things:
   - each scenario heading occurs once in the requirement;
   - no delta header survives;
   - the canonical file equals what `openspec archive` produces in a disposable copy.
+
+  Folded after the implementation merged. The delta has one MODIFIED requirement, and the amendment only adds text:
+  every line of the old body survives, so the canonical diff is 18 insertions and no deletions. The canonical
+  requirement is byte-identical to the delta's, has 10 scenarios with no duplicate heading, and occurs once among
+  the spec's 33 requirements. No delta header survives. The canonical file is byte-identical to what
+  `openspec archive` produces from `f8cc4d0` in a disposable copy.
 - [ ] 5.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify that
   the archived directory carries the UTC date of the archive. Both issues stay open for the owner.
