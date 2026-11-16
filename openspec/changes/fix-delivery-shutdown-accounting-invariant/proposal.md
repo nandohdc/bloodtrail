@@ -73,7 +73,8 @@ None.
 ## Impact
 
 - **Code:** `packages/security-audit-sdk-node/src/delivery-shutdown.ts`, the module's internals and doc comments only.
-- **Tests:** the Node binding's delivery shutdown tests: the table-driven accounting test. If the module stops naming
+- **Tests:** the Node binding's delivery shutdown tests: the table-driven accounting test, and a test that pins when
+  the report resolves against the last counted `submit()` call (design Decision 3). If the module stops naming
   `Set`, two pins on its names change with it: the source check's list of permitted globals, and the scope gate's
   null control count in `tests/scope-mutations.test.ts`, from 92 to 91 authored references.
 - **Documentation:** the Node binding's README section "Deadline-bounded delivery shutdown".
@@ -91,6 +92,6 @@ None.
 - **Out of scope:**
   - a timer provider whose `setTimeout` throws: `shutdown()` then rejects. That is error containment, not accounting.
     It is recorded on #957 and not filed;
-  - when the report returns, which #932 settled, and any numeric bound or service level;
+  - when the report returns against the deadline timer, which #932 settled, and any numeric bound or service level;
   - the HTTP audit sink's `shutdownTimeoutMs` and sdk-core's shutdown timeout;
   - Stage 2's results, expectations and ledger, and ADR 0015. No run is authorized.

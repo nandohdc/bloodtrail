@@ -48,7 +48,8 @@ Decision 5 keeps. The prototype is evidence for this design, not the implementat
   defect that a row catches.
 
 **Non-Goals:**
-- When the report returns, which #932 settled.
+- When the report returns against the deadline timer, which #932 settled. Decision 3 orders it only against the last
+  counted `submit()` call.
 - A throwing timer provider: recorded on #957, not filed.
 - Any change to what `submit()` returns for an operation that resolves, or for a rejected admission attempt.
 
@@ -93,7 +94,8 @@ The owner chose the timer callback as the counting instant. The module freezes
 - the module observes the settlement that brings `outstanding` to zero.
 
 That step also clears the timer, whichever trigger took it, as `drain()` does today. It then resolves the report with
-the frozen object. Every later trigger is a no-op, and every later `shutdown()` returns the same promise.
+the frozen object, four promise reactions later (below). Every later trigger is a no-op, and every later `shutdown()`
+returns the same promise.
 
 An operation counts as completed if its settlement was observed by that step, including the settlement whose
 observation is the step. The requirement defines "outstanding" and "completed" this way for all of its text, so the
@@ -107,6 +109,24 @@ synchronous run as the deadline callback is counted abandoned, whether it settle
 
 After this change, every such case counts abandoned. The abandoned operation's own `submit()` still resolves with its
 result, as the requirement already says.
+
+The report resolves four promise reactions after that step, not in it. When the step is the settlement that brings
+`outstanding` to zero, it runs inside that admission's `submit()`, before `submit()` returns. Resolved in the step,
+the report ran code awaiting it before code awaiting that `submit()` call, the reverse of today's order. A host that
+tallies `submit()` outcomes, or exits, as soon as the report resolves would then miss the last completed result.
+
+This was measured with one operation settling after `shutdown()`, and a caller awaiting its `submit()` through 0 to 4
+awaiting async functions, for an operation that resolves and for one that rejects:
+- today, callers up to 3 layers deep see their outcome before the report; a caller 4 layers deep sees it after. A
+  caller that catches a rejection with `.catch()` instead of `try`/`catch` counts the `.catch()` as one more layer;
+- one reaction restores only the direct caller;
+- four reactions match today's order at every depth measured.
+
+The four is measured against today's module, not derived. The doc comment and the README promise only the direct
+await, and tell a host that needs every outcome to await the `submit()` calls themselves. A test pins today's order
+for 0 to 3 layers (Decision 7). Nothing else about when the report resolves changes, and #932's rule that it does not
+resolve before the timer fires while work is outstanding stands. The counts are unaffected. Review of the
+implementation found the reversed order on 2026-11-15.
 
 **Rejected: one read once the race resolves.** This is the minimal patch #957 proposed: keep the race, and read both
 counts in the same turn when it resolves. It fixes #957 but leaves the counting instant at an internal promise
@@ -204,6 +224,8 @@ Planted defects run in a disposable copy, beside a null control that stays green
 | P4 | the operation is called before `submit()`'s `try`/`finally`, so a synchronous throw never settles | R8 and R9, by timeout: the report never resolves |
 | P5 | the counts are taken one microtask turn after the callback, not in it | R4 and R14 |
 | P6 | the operation is called inside `submit()`'s `try`/`finally` without the `catch`, so a synchronous throw is observed in the same turn | R14 |
+| P7 | the report resolves in the step that takes the counts | the order test, at 0 layers; no row |
+| P8 | the report resolves one promise reaction after that step, not four | the order test, at 1 layer; no row |
 
 These catches were measured on 2026-11-14, for R1 to R13 and P1 to P5. The rows were run, as a scratch script, against
 the scratch prototype and a copy of it per plant:
@@ -229,6 +251,12 @@ and the real test, and records every test each plant fails, so the recorded catc
 neighbour. Each plant and the null control run the package's whole runtime suite, so every pin sees the plant. In the
 real module, P1 names `Set` again, so it also fails both pins of Decision 6. The other plants name no new global: P2
 and P5 defer with a promise reaction, not `queueMicrotask`.
+
+One test outside the table pins when the report resolves (Decision 3). One admission settles after `shutdown()`, and
+for 0 to 3 awaiting layers, a caller awaiting that `submit()` call through those layers must see its outcome before a
+caller awaiting the report. Today's module passes it. P7 and P8 were added on 2026-11-15, with the test, after review
+of the implementation found the reversed order. They are the two partial fixes of that order: P7 is the reviewed
+implementation, and P8 restores only the direct caller.
 
 ### Decision 8: Records
 
