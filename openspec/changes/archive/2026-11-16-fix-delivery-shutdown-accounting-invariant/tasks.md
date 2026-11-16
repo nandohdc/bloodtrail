@@ -224,5 +224,10 @@
   requirement is byte-identical to the delta's, has 10 scenarios with no duplicate heading, and occurs once among
   the spec's 33 requirements. No delta header survives. The canonical file is byte-identical to what
   `openspec archive` produces from `f8cc4d0` in a disposable copy.
-- [ ] 5.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify that
+- [x] 5.4 In a separate archive PR, merged with a merge commit after the fold lands, archive the change. Verify that
   the archived directory carries the UTC date of the archive. Both issues stay open for the owner.
+
+  Archived after the implementation (#969, merge commit `f8cc4d0`) and the fold (#970, merge commit `b42e3c1`)
+  merged, as `openspec/changes/archive/2026-11-16-fix-delivery-shutdown-accounting-invariant/`. The date is the UTC
+  date of the archive, from `TZ=UTC openspec archive`. The fold already carried the delta, so the archive reported
+  "Specs already in sync" and writes no canonical spec. #957 and #958 stay open for the owner.
