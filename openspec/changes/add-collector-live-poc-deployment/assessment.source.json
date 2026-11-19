@@ -1,0 +1,295 @@
+{
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "The owner authorized on 2026-11-18 a local PoC on LocalStack and a live PoC on AWS in which one business application sends three real authentication events to the collector.",
+    "A 2xx answer must mean a stored record, and the server must speak the acknowledgment protocol the Node binding's delivery handoff already classifies.",
+    "The collector library keeps zero runtime dependencies, its single SQLite backend, its outcome union and its authenticate-before-read and size-limit ordering.",
+    "Stored records are kept for 30 days without breaking the ratified rule that a deployment may decline a retention class but never shorten one.",
+    "Database login uses IAM tokens and client-enforced TLS, the endpoint is reachable only by backends inside the network, and no key or payload appears in a response, log or metric.",
+    "Required CI stays license-free and green for every slice, and the LocalStack emulation, which validates neither IAM tokens nor TLS, is never a required check."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "public_api",
+      "integration",
+      "lifecycle_or_state",
+      "concurrency",
+      "persistence",
+      "security_sensitive_behavior",
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "security-audit-collector-server",
+      "security-audit-collector",
+      "collector-storage-semantics",
+      "security-audit-sdk-core",
+      "security-audit-sdk-node",
+      "repository-topology",
+      "ci-topology"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/add-collector-live-poc-deployment/.openspec.yaml",
+    "openspec/changes/add-collector-live-poc-deployment/assessment.json",
+    "openspec/changes/add-collector-live-poc-deployment/assessment.source.json",
+    "openspec/changes/add-collector-live-poc-deployment/design.md",
+    "openspec/changes/add-collector-live-poc-deployment/proposal.md",
+    "openspec/changes/add-collector-live-poc-deployment/tasks.md",
+    "openspec/changes/add-collector-live-poc-deployment/specs/security-audit-collector-server/spec.md",
+    "openspec/changes/add-collector-live-poc-deployment/specs/security-audit-collector/spec.md",
+    "openspec/changes/add-collector-live-poc-deployment/specs/collector-storage-semantics/spec.md",
+    "openspec/changes/add-collector-live-poc-deployment/specs/security-audit-sdk-core/spec.md",
+    "openspec/changes/add-collector-live-poc-deployment/specs/security-audit-sdk-node/spec.md",
+    "openspec/changes/add-collector-live-poc-deployment/specs/repository-topology/spec.md",
+    "openspec/changes/add-collector-live-poc-deployment/specs/ci-topology/spec.md",
+    "packages/security-audit-collector/src/storage.ts",
+    "packages/security-audit-collector/src/sqlite-storage.ts",
+    "packages/security-audit-collector/src/ingress.ts",
+    "packages/security-audit-collector/src/index.ts",
+    "packages/security-audit-collector/tests/storage.test.ts",
+    "packages/security-audit-collector/tests/ingress.test.ts",
+    "packages/security-audit-collector/tests/deduplication.test.ts",
+    "packages/security-audit-collector/tests/scope-mutations.test.ts",
+    "packages/security-audit-collector/scripts/check-package-contents.mjs",
+    "packages/security-audit-collector/scripts/check-scope.mjs",
+    "packages/security-audit-collector/README.md",
+    "packages/security-audit-collector/CONTEXT.md",
+    "packages/security-audit-collector-server/",
+    "Makefile",
+    ".github/scripts/check-package-discovery.mjs",
+    ".github/workflows/ci.yml",
+    "CLAUDE.md",
+    "AGENTS.md",
+    ".hermes.md",
+    "README.md",
+    "SECURITY.md",
+    "packages/security-audit-sdk-node/examples/evaluation-receiver.ts",
+    "packages/security-audit-sdk-node/scripts/check-evaluation-kit-receiver-controls.mjs",
+    "sonar-project.properties",
+    ".github/scripts/check-package-discovery.test.mjs",
+    "CONTEXT-MAP.md"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-server-workspace-over-async-port",
+      "kind": "direct_implementation",
+      "summary": "Make the storage port and submit() asynchronous with a stream body read only after authentication, let a deployment declare the retention classes it stores, and put the HTTP endpoint, API-key authenticator, PostgreSQL backend with IAM login and client-enforced TLS, image and manifests in a new dependency-limited server workspace that answers with the Node binding's acknowledgment protocol.",
+      "forces_addressed": [
+        "The owner authorized on 2026-11-18 a local PoC on LocalStack and a live PoC on AWS in which one business application sends three real authentication events to the collector.",
+        "A 2xx answer must mean a stored record, and the server must speak the acknowledgment protocol the Node binding's delivery handoff already classifies.",
+        "The collector library keeps zero runtime dependencies, its single SQLite backend, its outcome union and its authenticate-before-read and size-limit ordering.",
+        "Stored records are kept for 30 days without breaking the ratified rule that a deployment may decline a retention class but never shorten one.",
+        "Database login uses IAM tokens and client-enforced TLS, the endpoint is reachable only by backends inside the network, and no key or payload appears in a response, log or metric.",
+        "Required CI stays license-free and green for every slice, and the LocalStack emulation, which validates neither IAM tokens nor TLS, is never a required check."
+      ]
+    },
+    {
+      "id": "approach-server-inside-the-collector-package",
+      "kind": "alternative",
+      "summary": "Build the HTTP endpoint, PostgreSQL backend and AWS signing into security-audit-collector itself and loosen its zero-dependency and scope gates.",
+      "forces_addressed": [
+        "The owner authorized on 2026-11-18 a local PoC on LocalStack and a live PoC on AWS in which one business application sends three real authentication events to the collector.",
+        "A 2xx answer must mean a stored record, and the server must speak the acknowledgment protocol the Node binding's delivery handoff already classifies."
+      ]
+    },
+    {
+      "id": "approach-s3-object-store",
+      "kind": "alternative",
+      "summary": "Store each record as an S3 object with conditional writes and lifecycle expiry instead of PostgreSQL.",
+      "forces_addressed": [
+        "The owner authorized on 2026-11-18 a local PoC on LocalStack and a live PoC on AWS in which one business application sends three real authentication events to the collector.",
+        "Required CI stays license-free and green for every slice, and the LocalStack emulation, which validates neither IAM tokens nor TLS, is never a required check."
+      ]
+    },
+    {
+      "id": "approach-retention-ceiling",
+      "kind": "alternative",
+      "summary": "Add a deployment retention ceiling that shortens every class to 30 days and stores events of every class.",
+      "forces_addressed": [
+        "The owner authorized on 2026-11-18 a local PoC on LocalStack and a live PoC on AWS in which one business application sends three real authentication events to the collector."
+      ]
+    },
+    {
+      "id": "approach-server-pre-authenticates",
+      "kind": "alternative",
+      "summary": "Keep a string body in submit(), and have the server check the API key from headers before reading the body while submit() checks it again.",
+      "forces_addressed": [
+        "The owner authorized on 2026-11-18 a local PoC on LocalStack and a live PoC on AWS in which one business application sends three real authentication events to the collector.",
+        "Database login uses IAM tokens and client-enforced TLS, the endpoint is reachable only by backends inside the network, and no key or payload appears in a response, log or metric."
+      ]
+    },
+    {
+      "id": "approach-server-own-response-format",
+      "kind": "alternative",
+      "summary": "Answer with the server's own response format and statuses, and let producers adapt to it.",
+      "forces_addressed": [
+        "The owner authorized on 2026-11-18 a local PoC on LocalStack and a live PoC on AWS in which one business application sends three real authentication events to the collector."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-server-workspace-over-async-port",
+  "rejected_alternative_ids": [
+    "approach-server-inside-the-collector-package",
+    "approach-s3-object-store",
+    "approach-retention-ceiling",
+    "approach-server-pre-authenticates",
+    "approach-server-own-response-format"
+  ],
+  "rejection_reasons": {
+    "approach-server-inside-the-collector-package": {
+      "forces": [
+        "The collector library keeps zero runtime dependencies, its single SQLite backend, its outcome union and its authenticate-before-read and size-limit ordering."
+      ],
+      "reason": "It turns the audited library into a network service and removes the gates that keep it narrow; a separate workspace keeps every new dependency and privilege reviewable in one place."
+    },
+    "approach-s3-object-store": {
+      "forces": [
+        "A 2xx answer must mean a stored record, and the server must speak the acknowledgment protocol the Node binding's delivery handoff already classifies.",
+        "Stored records are kept for 30 days without breaking the ratified rule that a deployment may decline a retention class but never shorten one."
+      ],
+      "reason": "Duplicate and conflict decisions would be rebuilt from conditional writes and reads, expiry is asynchronous and unreported, two replicas and SQL reads during the PoC fit a relational store, and the owner chose RDS."
+    },
+    "approach-retention-ceiling": {
+      "forces": [
+        "Stored records are kept for 30 days without breaking the ratified rule that a deployment may decline a retention class but never shorten one."
+      ],
+      "reason": "It breaks the ratified rule that a deployment never shortens a record's retention, and a stored record would claim a class it is not kept for; the owner chose declining undeclared classes."
+    },
+    "approach-server-pre-authenticates": {
+      "forces": [
+        "The collector library keeps zero runtime dependencies, its single SQLite backend, its outcome union and its authenticate-before-read and size-limit ordering."
+      ],
+      "reason": "The authenticate-before-read rule would live in two modules and the library could no longer prove it; the owner chose a stream body read by the ingress itself."
+    },
+    "approach-server-own-response-format": {
+      "forces": [
+        "A 2xx answer must mean a stored record, and the server must speak the acknowledgment protocol the Node binding's delivery handoff already classifies."
+      ],
+      "reason": "The Node binding classifies any 2xx without its exact acknowledgment as malformed, so every stored event would look failed to the producer and retries would never finish."
+    }
+  },
+  "implementation_invariant_ids": [
+    "implementation-async-ingress-keeps-ordering",
+    "implementation-declared-retention-classes",
+    "implementation-postgres-port-conformance",
+    "implementation-iam-login-and-client-tls",
+    "implementation-node-binding-acknowledgment-protocol",
+    "implementation-no-storage-no-server",
+    "implementation-content-free-operations",
+    "implementation-declared-seventh-workspace",
+    "implementation-license-free-required-ci",
+    "implementation-go-live-checklist"
+  ],
+  "invariant_evidence": {
+    "implementation-async-ingress-keeps-ordering": {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "evidence_ids": [
+        "collector tests show submit() resolves asynchronously with and without storage, a rejected stream is never read, an oversized stream stops at event_max_bytes, string and stream bodies agree, and two concurrent submissions of one identity give one persisted and one duplicate, each failing on the synchronous ingress"
+      ]
+    },
+    "implementation-declared-retention-classes": {
+      "task_ids": [
+        "2.3"
+      ],
+      "evidence_ids": [
+        "collector tests show an undeclared class is declined with COLLECTOR_RETENTION_CLASS_DECLINED before the port is called, an empty or unknown class fails construction, and no declaration stores all three classes"
+      ]
+    },
+    "implementation-postgres-port-conformance": {
+      "task_ids": [
+        "2.6"
+      ],
+      "evidence_ids": [
+        "one storage-port conformance suite passes against SqliteStorage and against PostgresStorage on a postgres CI container, and a severed connection after a sent write reports indeterminate"
+      ]
+    },
+    "implementation-iam-login-and-client-tls": {
+      "task_ids": [
+        "2.7"
+      ],
+      "evidence_ids": [
+        "server tests show an untrusted or mismatched certificate is refused, one IAM token is requested per new connection, and startup refuses local database mode together with the live environment"
+      ]
+    },
+    "implementation-node-binding-acknowledgment-protocol": {
+      "task_ids": [
+        "3.2",
+        "3.3"
+      ],
+      "evidence_ids": [
+        "conformance tests drive createHttpDeliveryHandoff over createFetchHttpExchange with bounded retry against the real server and show a stored event and its retry acknowledged, storage failure retryable, every other rejection permanent, and two replicas storing one record"
+      ]
+    },
+    "implementation-no-storage-no-server": {
+      "task_ids": [
+        "3.2"
+      ],
+      "evidence_ids": [
+        "a server started without storage or with any owner role unnamed exits with a configuration error and never opens its listening port"
+      ]
+    },
+    "implementation-content-free-operations": {
+      "task_ids": [
+        "3.1",
+        "3.4"
+      ],
+      "evidence_ids": [
+        "sentinel values in body, API key, sender and tenant appear in no response, log line or metric, and the metrics port is absent from the load-balanced Service"
+      ]
+    },
+    "implementation-declared-seventh-workspace": {
+      "task_ids": [
+        "2.5",
+        "2.8"
+      ],
+      "evidence_ids": [
+        "check-package-discovery passes with the server declared, the server's dependency gate fails on a planted third runtime dependency, and test:coherence passes with the updated workspace statements"
+      ]
+    },
+    "implementation-license-free-required-ci": {
+      "task_ids": [
+        "4.4",
+        "5.1"
+      ],
+      "evidence_ids": [
+        "the localstack job renders as a skip without LOCALSTACK_AUTH_TOKEN and is absent from branch protection's required contexts, and make governance-gates passes on the final technical commit"
+      ]
+    },
+    "implementation-go-live-checklist": {
+      "task_ids": [
+        "4.5",
+        "4.6"
+      ],
+      "evidence_ids": [
+        "the server README lists every go-live item from the server spec with its evidence, and SDK tarballs packed from a recorded commit install outside the repository and deliver a synthetic event to the local PoC as persisted"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "security_justification": {
+    "audit_integrity": "A 2xx answer is issued only after the storage port confirms the write, the server cannot start without storage, and duplicates are acknowledged only for an already stored identity.",
+    "authentication_or_authorization": "Senders authenticate with per-application API keys checked as SHA-256 hashes in constant time before any body byte is read, and the authorization is bounded to one application and three events.",
+    "authority_provenance": "The sender identity is the configured application name, never a caller claim, and authentication identifies a sender without promoting trust in the event content.",
+    "concurrency": "Two replicas share one PostgreSQL store, and concurrent writes of one identity resolve through the primary key to one record, one persisted and one duplicate outcome.",
+    "confidentiality": "Real login events are personal data at rest in an encrypted RDS instance, reachable only inside the VPC, and no key, payload, sender or tenant appears in any response, log or metric.",
+    "cryptography": "TLS to the database verifies the RDS certificate authority and host name, IAM tokens replace passwords, and API keys are compared as SHA-256 hashes with timingSafeEqual.",
+    "error_disclosure": "Responses and logs carry only fixed outcome codes, statuses and latency, never request content, keys, sender or tenant identities.",
+    "external_security_integration": "The change adds AWS EKS, RDS, IAM and KMS for the live PoC and LocalStack for the local PoC, and no exporter, SIEM, analytics or detection integration.",
+    "fail_posture": "Missing storage or owners stops startup, an unverified database certificate refuses the connection, a refused or lost write is answered retryable, and every other rejection is permanent.",
+    "lifecycle": "The ingress stage order is unchanged; submit() becomes asynchronous, reads a stream body only after authentication, and the server listens only after configuration checks pass.",
+    "mutation_ownership": "The collector library, a new server workspace and the repository topology and CI files are edited; the frozen contract and the SDK code are unchanged.",
+    "privacy_transformation": "No privacy transform or field policy changes; the three events carry operational_short as a recorded deviation from the catalog's security_standard retention.",
+    "resource_retention": "Only operational_short records are stored, for 30 days; the deletion job is a go-live blocker tracked separately, and VACUUM and backup residue are recorded limits.",
+    "retry_or_redelivery": "Producers retry through the Node binding's bounded retry, and the server acknowledges a stored identity's duplicate so that a retry after a lost response completes.",
+    "trust_boundary": "The HTTP endpoint is a new trust boundary for backend senders inside the VPC, with bodies bounded by the contract's event size limit and front ends never holding a key."
+  },
+  "ordering": {
+    "proposal_baseline_commit": "9acf99507dfa936179714e250b62a4f413ff6acc"
+  }
+}
