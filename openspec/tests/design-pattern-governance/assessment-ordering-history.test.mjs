@@ -196,7 +196,10 @@ describe("R10: the assessment's decision content is frozen once the change imple
     assertPasses(finalPhase(repository, implementation));
   });
 
-  it("an archive move, which deletes the active assessment, is not an amendment", () => {
+  // The archive PR's shape: implementation already merged, the range holds only the move. A relocated change is not
+  // judged, so this shows the archive passes; it cannot show the deletion skip on its own, because no governed commit
+  // of the change is in the range for an amendment to follow.
+  it("the archive move of a change whose implementation merged earlier passes ordering", () => {
     const repository = fixture();
     assess(repository, "alpha-change", "alpha");
     const implementation = implement(repository, "alpha", 1);
@@ -397,4 +400,34 @@ describe("R10: recorded ordering commits are checked against history", () => {
       bothPhasesPass(repository, commits.c0, variant.name);
     });
   }
+
+  it("rejects a recorded assessment commit when no commit adding the assessment is reachable", () => {
+    const repository = fixture();
+    const c0 = repository.head();
+    writeAssessment(repository, "zeta-change", ownerOf("zeta"), (assessment) => {
+      assessment.ordering.assessment_commit = c0;
+    });
+
+    assertDiagnostic(assessmentPhase(repository), INCONSISTENT);
+  });
+
+  it("rejects an unresolvable final technical commit even when no assessment commit is recorded", () => {
+    const repository = fixture();
+    recordedHistory(repository);
+    recordOrdering(repository, "rho-change", { final_technical_commit: "2".repeat(40) });
+
+    assertDiagnostic(assessmentPhase(repository), "technical-commit-unresolvable");
+  });
+
+  it("still reports an assessment commit carrying implementation when the recorded earliest commit is unresolvable", () => {
+    const repository = fixture();
+    const commits = recordedHistory(repository, { mixedFirst: true });
+    recordOrdering(repository, "rho-change", {
+      assessment_commit: commits.first, earliest_governed_implementation_commit: "1".repeat(40),
+    });
+
+    const result = assessmentPhase(repository);
+    assertDiagnostic(result, "implementation-ancestry-unavailable");
+    assertDiagnostic(result, SHARES);
+  });
 });
