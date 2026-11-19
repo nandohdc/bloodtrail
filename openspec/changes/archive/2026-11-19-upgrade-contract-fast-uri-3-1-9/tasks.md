@@ -20,3 +20,10 @@ The completed tasks below record original replacement candidate `7dc8aed1bfda832
 - Record two-axis and independent model reviews on the exact final candidate; require all declared CI contexts and DeepScan before merge.
 - Record that #888 is already owner-merged and retain the original alternative's history under #893; no bot supersession action remains.
 - Archive these historical skip-specs change records in a separate later PR; no canonical fold is needed.
+  Done under #990. The dependency update merged in #888 as `2ae8c92`. This change's assessment, verification
+  record and reconciliation merged in #894 as `dd7dbd2`, whose PR body also records the other two follow-ups:
+  the two-axis and independent reviews on its exact head with all ten required contexts plus DeepScan green,
+  and that #888 was already owner-merged with the original alternative retained under #893.
+  Archived to `openspec/changes/archive/2026-11-19-upgrade-contract-fast-uri-3-1-9/`;
+  `TZ=UTC date +%F` gave `2026-11-19`, the archive day. The change declares `skip_specs: true`, so the
+  archive writes no canonical spec, and its contract reuse record moves with it.
