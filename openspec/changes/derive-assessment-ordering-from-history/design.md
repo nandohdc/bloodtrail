@@ -46,6 +46,9 @@ from the checked head, that adds `openspec/changes/<id>/assessment.json`. The ch
 - *Alternative:* the last edit to the assessment before implementation. That needs the change's earliest
   implementation commit across all history, which brings back the shared-`main` walk.
 - *Alternative:* trust `ordering.assessment_commit`. That is the gap itself.
+- *Limit:* a change id reused after an earlier change with that id was archived inherits the first incarnation's add
+  as its anchor. Within one range the amendment rule (D5) still fails a later add, and association still requires an
+  owner, but reusing an archived change's id is not supported.
 
 **D2. Ordering is checked over the reviewed range, per owning change.**
 - **Where it runs.** At the final phase, after association, `checkPerimeter` passes its range and its changes to a
@@ -69,6 +72,10 @@ any change in the range covers a path. Without it, the CB-018 commit `d749dc8` f
 `define-normative-precedence-lifecycle`'s work, but it touches paths that `correct-sequential-authorization-lifecycle`
 also owns, and that change was assessed later.
 - *Alternative:* every owner's anchor must precede the commit, which fails the active change above.
+- *Interplay with D5:* D3 decides the commit's order, not the later owner's assessment. If that owner's assessment is
+  first added after the shared commit in the same range, the add counts as an amendment after its own governed commit
+  and fails `assessment-amended-after-implementation`. D3 therefore matters across ranges, as in `d749dc8`'s case, or
+  when the later owner's assessment lands on a parallel branch.
 
 **D4. The anchor commit must carry no governed implementation path (unchanged).** The existing
 `assessment-shares-implementation-commit` diagnostic now also fires on the derived anchor, not only on a recorded
@@ -101,7 +108,9 @@ an anchor exists, and apply only to fields that are present:
 - **`final_technical_commit`** must be a descendant of the anchor.
 
 A violation fails `assessment-ordering-record-inconsistent`. A recorded `assessment_commit` with no derivable anchor
-also fails. The existing ancestry relations between the recorded commits stay.
+also fails. The existing ancestry relations between the recorded commits stay. Every recorded commit is now resolved
+whether or not an assessment commit is recorded, and each unresolvable one fails with its existing diagnostic; before
+this change an unresolvable earliest or final technical commit went unreported when no assessment commit was recorded.
 
 Against the six records on `main`:
 - **All six** pass the checks that need no range: each recorded commit changes the assessment, is or descends from the

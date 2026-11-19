@@ -126,6 +126,14 @@ the unchanged checker, and record here which ones fail and with what.
   and `node --test openspec/tests/contract-reuse/*.test.mjs` pass. On the implementation commit, all 29 group-2
   tests, the 403 governance tests and the 73 contract-reuse tests passed.
 
+  The implementation's `/code-review xhigh` added three tests, in the commit titled `test(governance): cover review
+  findings on derived R10 ordering (#943)`: a recorded assessment commit with no derivable anchor, an unresolvable
+  final technical commit with no assessment commit recorded, and an assessment commit carrying implementation beside
+  an unresolvable earliest commit. The last failed until the commit titled `fix(governance): keep every
+  recorded-ordering diagnostic and derive each anchor once (#943)`. With it, all 32 tests in the file, the 406
+  governance tests and the 73 contract-reuse tests pass. The design now states the review's three disclosures: the
+  reused-id limit (D1), the D3 and D5 interplay, and the stricter resolution of recorded commits (D6).
+
 ## 4. Verification
 
 - [ ] 4.1 On the committed implementation head, run the final phase with the PR's merge base, the baseline and
