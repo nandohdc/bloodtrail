@@ -18,7 +18,11 @@
 
 ## 4. Lifecycle
 
-- [ ] 4.1 After owner review and merge, fold or archive in a separate change as applicable.
+- [x] 4.1 After owner review and merge, fold or archive in a separate change as applicable. The
+  assessment, CI repair, lockfile and verification record merged in #888 as `2ae8c92`. The change declares
+  `skip_specs: true`, so there is nothing to fold. Archived under #990 to
+  `openspec/changes/archive/2026-11-19-fix-contract-dependabot-ci/`; `TZ=UTC date +%F` gave `2026-11-19`,
+  the archive day. Its contract reuse record moves with it.
 
 ## Author verification
 

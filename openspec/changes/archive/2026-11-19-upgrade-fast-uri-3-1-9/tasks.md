@@ -22,5 +22,8 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After the owner merges the implementation, archive `upgrade-fast-uri-3-1-9` in a separate pull
-  request.
+- [x] 4.1 After the owner merges the implementation, archive `upgrade-fast-uri-3-1-9` in a separate pull
+  request. The proposal, implementation and verification record merged together in #884 as `a5c35fd`.
+  Archived under #990 to `openspec/changes/archive/2026-11-19-upgrade-fast-uri-3-1-9/`; `TZ=UTC date +%F`
+  gave `2026-11-19`, the archive day. The change declares `skip_specs: true`, so the archive writes no
+  canonical spec.
