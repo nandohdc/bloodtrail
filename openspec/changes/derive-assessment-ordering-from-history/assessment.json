@@ -1,0 +1,220 @@
+{
+  "schema_version": "1.1",
+  "change_id": "derive-assessment-ordering-from-history",
+  "assessment_level": "full",
+  "decision": "direct_implementation",
+  "forces": [
+    "R10 ordering must be proven from Git history for every change, not only for the assessments that record their own commits (#943).",
+    "A change is judged only by its own governed commits in the reviewed range; another change's commit on the shared mainline never counts against it.",
+    "Recorded ordering commits stay optional and are cross-checked against history, never trusted as a substitute for derivation.",
+    "Authors record nothing by hand, and rebasing a branch onto a moved mainline never invalidates a correct ordering.",
+    "No assessment schema change, schema version move, generator change or archived-change edit; archived records stay structurally valid.",
+    "Ordering reuses the final phase's range and ownership data, so association and ordering never disagree about which change owns a path.",
+    "Each new rule is proven on real Git history to fail on a planted defect and pass on its null control, with the tests shown red against the unchanged checker first."
+  ],
+  "applicability": {
+    "triggers_matched": [
+      "security_sensitive_behavior",
+      "governance_core_path",
+      "canonical_capability_requirement"
+    ],
+    "material_capability_modification": true,
+    "capabilities": [
+      "software-design-pattern-governance"
+    ]
+  },
+  "owned_paths": [
+    "openspec/changes/derive-assessment-ordering-from-history/.openspec.yaml",
+    "openspec/changes/derive-assessment-ordering-from-history/assessment.json",
+    "openspec/changes/derive-assessment-ordering-from-history/assessment.source.json",
+    "openspec/changes/derive-assessment-ordering-from-history/design.md",
+    "openspec/changes/derive-assessment-ordering-from-history/proposal.md",
+    "openspec/changes/derive-assessment-ordering-from-history/tasks.md",
+    "openspec/changes/derive-assessment-ordering-from-history/specs/software-design-pattern-governance/spec.md",
+    "openspec/governance/design-pattern-policy.json",
+    "openspec/scripts/check-design-pattern-governance.mjs",
+    "openspec/scripts/design-pattern-governance/ancestry.mjs",
+    "openspec/tests/design-pattern-governance/assessment-ordering-history.test.mjs"
+  ],
+  "candidate_approaches": [
+    {
+      "id": "approach-derive-ordering-within-reviewed-range",
+      "kind": "direct_implementation",
+      "summary": "At the final phase, derive each owning change's anchor as the first commit that adds its assessment, and require it to strictly precede every governed commit in the reviewed range that the change owns, any owner sufficing for a shared commit. Fail a decision-content amendment after an owned commit in the same range, cross-check recorded ordering commits against history, classify contract-reuse.json as a planning artifact, and delete the unused baseline walk.",
+      "forces_addressed": [
+        "R10 ordering must be proven from Git history for every change, not only for the assessments that record their own commits (#943).",
+        "A change is judged only by its own governed commits in the reviewed range; another change's commit on the shared mainline never counts against it.",
+        "Recorded ordering commits stay optional and are cross-checked against history, never trusted as a substitute for derivation.",
+        "Authors record nothing by hand, and rebasing a branch onto a moved mainline never invalidates a correct ordering.",
+        "No assessment schema change, schema version move, generator change or archived-change edit; archived records stay structurally valid.",
+        "Ordering reuses the final phase's range and ownership data, so association and ordering never disagree about which change owns a path.",
+        "Each new rule is proven on real Git history to fail on a planted defect and pass on its null control, with the tests shown red against the unchanged checker first."
+      ]
+    },
+    {
+      "id": "approach-walk-forward-from-proposal-baseline",
+      "kind": "alternative",
+      "summary": "Wire the existing findEarliestGovernedImplementationCommit helper into verifyAssessmentOrdering, deriving the earliest governed implementation commit by walking forward from the proposal baseline and comparing it with the derived assessment commit.",
+      "forces_addressed": [
+        "R10 ordering must be proven from Git history for every change, not only for the assessments that record their own commits (#943).",
+        "Authors record nothing by hand, and rebasing a branch onto a moved mainline never invalidates a correct ordering.",
+        "No assessment schema change, schema version move, generator change or archived-change edit; archived records stay structurally valid."
+      ]
+    },
+    {
+      "id": "approach-require-recorded-ordering-at-final-phase",
+      "kind": "alternative",
+      "summary": "Make ordering.assessment_commit required at the final phase, keep it optional while the proposal is in flight, and keep trusting the recorded earliest implementation and final technical commits.",
+      "forces_addressed": [
+        "R10 ordering must be proven from Git history for every change, not only for the assessments that record their own commits (#943).",
+        "No assessment schema change, schema version move, generator change or archived-change edit; archived records stay structurally valid."
+      ]
+    },
+    {
+      "id": "approach-document-ordering-as-optional",
+      "kind": "alternative",
+      "summary": "Leave the checker unchanged and reword R10 so that it states ordering is checked only when an assessment records its own commits.",
+      "forces_addressed": [
+        "No assessment schema change, schema version move, generator change or archived-change edit; archived records stay structurally valid.",
+        "Authors record nothing by hand, and rebasing a branch onto a moved mainline never invalidates a correct ordering."
+      ]
+    }
+  ],
+  "selected_approach_id": "approach-derive-ordering-within-reviewed-range",
+  "rejected_alternative_ids": [
+    "approach-walk-forward-from-proposal-baseline",
+    "approach-require-recorded-ordering-at-final-phase",
+    "approach-document-ordering-as-optional"
+  ],
+  "rejection_reasons": {
+    "approach-walk-forward-from-proposal-baseline": {
+      "forces": [
+        "A change is judged only by its own governed commits in the reviewed range; another change's commit on the shared mainline never counts against it."
+      ],
+      "reason": "The walk crosses the shared mainline, so once main moves it returns another change's commit: for #957 it stops at #963's 021e643, which is not a descendant of #957's assessment, and would fail a correctly ordered change."
+    },
+    "approach-require-recorded-ordering-at-final-phase": {
+      "forces": [
+        "Recorded ordering commits stay optional and are cross-checked against history, never trusted as a substitute for derivation.",
+        "Authors record nothing by hand, and rebasing a branch onto a moved mainline never invalidates a correct ordering."
+      ],
+      "reason": "An author who records the assessment commit can still record a later earliest commit, or none, and #943's control shows both pass; recording also needs a follow-up commit, and every rebase onto a moved main invalidates the hashes it records."
+    },
+    "approach-document-ordering-as-optional": {
+      "forces": [
+        "R10 ordering must be proven from Git history for every change, not only for the assessments that record their own commits (#943)."
+      ],
+      "reason": "It would keep 126 of 132 assessments unchecked and leave #896's implementation-before-assessment sequence passing every gate, turning the requirement's promise into a description of the gap."
+    }
+  },
+  "selected_pattern_ids": [],
+  "implementation_invariant_ids": [
+    "implementation-derived-anchor-precedes-owned-commits",
+    "implementation-own-commits-only",
+    "implementation-amendment-checked-within-range",
+    "implementation-recorded-ordering-cross-checked",
+    "implementation-contract-reuse-is-planning",
+    "implementation-baseline-walk-removed",
+    "implementation-audit-replay-unchanged"
+  ],
+  "invariant_evidence": {
+    "implementation-derived-anchor-precedes-owned-commits": {
+      "task_ids": [
+        "2.1",
+        "2.2",
+        "2.6",
+        "3.2",
+        "3.3",
+        "3.4"
+      ],
+      "evidence_ids": [
+        "in real-history fixtures run through the checker as a process, every history-A variant (implementation before the first commit that adds the assessment, with nothing recorded or with each recorded variant from #943) fails assessment-follows-implementation in the final phase, a commit that adds the assessment and an owned governed path together fails assessment-shares-implementation-commit, an owned governed commit with no committed assessment fails assessment-anchor-missing, and the same history in the correct order passes in the assessment and final phases; the tests fail against the unchanged checker"
+      ]
+    },
+    "implementation-own-commits-only": {
+      "task_ids": [
+        "2.4",
+        "2.5",
+        "3.4"
+      ],
+      "evidence_ids": [
+        "history B, where another change lands a governed commit only it owns on the shared line between this change's assessment and its implementation, passes with nothing recorded; a commit owned by two changes passes when one owner's assessment strictly precedes it and fails assessment-follows-implementation when neither does"
+      ]
+    },
+    "implementation-amendment-checked-within-range": {
+      "task_ids": [
+        "2.3",
+        "3.4"
+      ],
+      "evidence_ids": [
+        "a placeholder assessment, an owned governed commit and a decision-content rewrite in one range fails assessment-amended-after-implementation; the same history editing only ordering, invariant_evidence, verification_task_ids or owned_paths passes, a decision-content edit in a later range with no owned governed commit passes as the disclosed limit, and an archive move is not an amendment"
+      ]
+    },
+    "implementation-recorded-ordering-cross-checked": {
+      "task_ids": [
+        "2.1",
+        "2.8",
+        "3.4",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "each recorded assessment commit, earliest governed implementation commit or final technical commit that history contradicts fails assessment-ordering-record-inconsistent, each consistent one passes, including a later pre-implementation edit recorded as the assessment commit; five of the six ordering records on main pass at the final phase over their own ranges, and #423's archived record, whose implementation does not descend from its recorded assessment commit, is reported"
+      ]
+    },
+    "implementation-contract-reuse-is-planning": {
+      "task_ids": [
+        "2.7",
+        "3.1",
+        "3.4"
+      ],
+      "evidence_ids": [
+        "the policy lists openspec/changes/*/contract-reuse.json among planning_artifact_patterns; a proposal commit that adds the contract-reuse record beside the assessment, followed by implementation, passes in both phases, and fails assessment-shares-implementation-commit when the fixture's policy drops the pattern"
+      ]
+    },
+    "implementation-baseline-walk-removed": {
+      "task_ids": [
+        "3.2"
+      ],
+      "evidence_ids": [
+        "findEarliestGovernedImplementationCommit no longer exists anywhere under openspec/, and no ordering code walks forward from the proposal baseline"
+      ]
+    },
+    "implementation-audit-replay-unchanged": {
+      "task_ids": [
+        "1.3",
+        "4.1",
+        "4.2"
+      ],
+      "evidence_ids": [
+        "the one-off audit replayed over every range since activation ee6fb3c reports 28 historical findings, plus #423's archived record inconsistency from the recorded-field checks, and none in an active change, at the proposal's base and again at the implementation head with the real checker's rules, and the baseline and candidate dual check passes"
+      ]
+    }
+  },
+  "security_sensitive": true,
+  "ordering": {
+    "proposal_baseline_commit": "bdd4c479ac1216038c02fcad27a138166691ebef"
+  },
+  "verification_task_ids": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "2.5",
+    "2.6",
+    "2.7",
+    "2.8",
+    "3.1",
+    "3.2",
+    "3.3",
+    "3.4",
+    "4.1",
+    "4.2",
+    "4.3",
+    "5.1",
+    "6.1"
+  ]
+}
