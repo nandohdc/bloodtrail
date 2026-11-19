@@ -42,9 +42,17 @@ export function requireCompleteHistory(cwd, sink) {
 /**
  * The anchor of a change: the oldest commit reachable from `head` that adds its
  * assessment. `undefined` when history cannot be read, `null` when no such
- * commit exists. Never read from the assessment.
+ * commit exists. Never read from the assessment. Both phases ask for the same
+ * anchors, so each full-history lookup runs once per run.
  */
+const anchors = new Map();
 function findAssessmentAnchor(changeId, head, cwd) {
+  const key = `${cwd}\0${head}\0${changeId}`;
+  if (!anchors.has(key)) anchors.set(key, lookUpAnchor(changeId, head, cwd));
+  return anchors.get(key);
+}
+
+function lookUpAnchor(changeId, head, cwd) {
   const result = tryGit(["log", "--diff-filter=A", "--reverse", "--format=%H", head, "--", assessmentPathFor(changeId)], { cwd });
   if (!result.ok) return undefined;
   return splitLines(result.value)[0] ?? null;
@@ -68,8 +76,12 @@ export function verifyAssessmentOrdering(ordering, options) {
     return;
   }
 
+  // Every recorded commit is resolved and each unresolvable one reported. The
+  // assessment commit's own paths are judged even then, as they always were;
+  // the relations between commits need all of them.
   const recorded = resolveRecordedOrdering(ordering, { cwd, documentPath, sink });
-  if (recorded === null) return;
+  if (recorded.assessment !== null) checkAssessmentCommitPaths(recorded.assessment, options);
+  if (recorded.invalid) return;
   if (recorded.assessment !== null) checkRecordedRelations(recorded, baseline, options);
   checkRecordAgainstHistory(recorded, options);
 }
@@ -83,13 +95,11 @@ function resolveRecordedOrdering(ordering, { cwd, documentPath, sink }) {
     ["technical", ordering.final_technical_commit, "technical-commit-unresolvable",
       `final technical commit ${ordering.final_technical_commit} is not in this history`],
   ];
-  const recorded = {};
+  const recorded = { invalid: false };
   for (const [name, reference, id, message] of fields) {
     const resolved = resolveOptionalCommit(reference, cwd);
-    if (resolved.invalid) {
-      sink.fail(id, documentPath, message);
-      return null;
-    }
+    if (resolved.invalid) sink.fail(id, documentPath, message);
+    recorded.invalid ||= resolved.invalid;
     recorded[name] = resolved.commit;
   }
   return recorded;
@@ -102,8 +112,7 @@ function resolveOptionalCommit(reference, cwd) {
   return { commit: null, invalid: true };
 }
 
-function checkRecordedRelations(recorded, baseline, { governedPatterns, cwd, documentPath, sink }) {
-  checkAssessmentCommitPaths(recorded.assessment, { governedPatterns, cwd, documentPath, sink });
+function checkRecordedRelations(recorded, baseline, { cwd, documentPath, sink }) {
   checkEarliestRelation(recorded.assessment, recorded.earliest, { cwd, documentPath, sink });
   checkTechnicalRelation(recorded.assessment, recorded.technical, { cwd, documentPath, sink });
   if (!isAncestor(baseline, recorded.assessment, cwd)) {
@@ -145,8 +154,8 @@ function checkTechnicalRelation(assessmentCommit, technical, { cwd, documentPath
  * the anchor rather than equal it.
  */
 function checkRecordAgainstHistory(recorded, { changeId, ownedPaths, governedPatterns, cwd, documentPath, sink }) {
-  if (Object.values(recorded).every((commit) => commit === null)) return;
-  const anchor = findAssessmentAnchor(changeId, "HEAD", cwd);
+  if ([recorded.assessment, recorded.earliest, recorded.technical].every((commit) => commit === null)) return;
+  const anchor = findAssessmentAnchor(changeId, resolveCommit("HEAD", cwd), cwd);
   if (anchor === undefined) {
     sink.fail("history-unavailable", documentPath, `cannot read the history of ${assessmentPathFor(changeId)}`);
     return;
