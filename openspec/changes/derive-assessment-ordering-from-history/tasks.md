@@ -136,13 +136,27 @@ the unchanged checker, and record here which ones fail and with what.
 
 ## 4. Verification
 
-- [ ] 4.1 On the committed implementation head, run the final phase with the PR's merge base, the baseline and
+- [x] 4.1 On the committed implementation head, run the final phase with the PR's merge base, the baseline and
   candidate dual check, the contract-reuse check for every active change, `openspec validate --all --strict`, `make`
   and `make governance-gates`. Verify each passes, and read the final phase's inspected counts.
-- [ ] 4.2 Replay the audit at the implementation head with the real checker's rules. Verify that it still reports the
+
+  On the head before this record, the commit titled `docs(openspec): disclose the review's ordering limits (#943,
+  #974)`, with base `c1ee9f8`:
+  - the final phase passed, with 8 commits and 6 paths inspected;
+  - both dual-check arms passed: the candidate checker blob `481ad7030cf4` and the baseline `57a7075c6e1f`;
+  - the contract-reuse check reported an approved skip for each of the four active changes;
+  - `openspec validate --all` passed 19 of 19. `--strict` failed only the 16 long-requirement items that fail on
+    `main` too, with no errors, and this change passed;
+  - `make` passed in 543 s, and `make governance-gates` in 1176 s, with `test:git` passing on an empty index.
+- [x] 4.2 Replay the audit at the implementation head with the real checker's rules. Verify that it still reports the
   same 28 historical findings, plus #423's archived record inconsistency from the recorded-field checks (design D6),
   and none in an active change, and that every active change passes the final phase over its own ranges. Report any
   failure to the owner before the implementation lands; none is waived.
+
+  Replayed on the same head over the 547 ranges from activation to `c1ee9f8`, through the checker's own
+  derived-ordering function: the same 28 findings, plus #423's archived record inconsistency, and none in any of the
+  four active changes, this one included. No active change has a finding over any of its own ranges, so there is
+  nothing to report.
 - [ ] 4.3 Once every required context plus DeepScan is green, the owner merges the implementation PR as a merge
   commit. Record the implementation commits and the merge commit here.
 
