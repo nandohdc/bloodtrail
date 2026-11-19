@@ -2,9 +2,10 @@
 
 ## 1. Proposal
 
-- [ ] 1.1 Author the proposal, design, R10 delta spec (`software-design-pattern-governance`) and tasks from the #943
+- [x] 1.1 Author the proposal, design, R10 delta spec (`software-design-pattern-governance`) and tasks from the #943
   triage and the #974 spec. Verify that `openspec validate derive-assessment-ordering-from-history --strict` passes.
-- [ ] 1.2 Author `assessment.source.json`, then generate `assessment.json` from it. The assessment is full and
+  Passed on the proposal commit titled `docs(openspec): propose derive-assessment-ordering-from-history (#943, #974)`.
+- [x] 1.2 Author `assessment.source.json`, then generate `assessment.json` from it. The assessment is full and
   matches `governance_core_path`, `canonical_capability_requirement` and `security_sensitive_behavior`. Verify three
   things:
   - `node openspec/scripts/generate-assessment.mjs --change derive-assessment-ordering-from-history --check`
@@ -12,12 +13,24 @@
   - `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change derive-assessment-ordering-from-history`
     passes;
   - the proposal commit changes no path outside this change's directory.
-- [ ] 1.3 Re-run the one-off, read-only audit of design §"Audit of the ranges since activation" against the
+
+  On the proposal commit titled
+  `docs(openspec): propose derive-assessment-ordering-from-history (#943, #974)`, `--check` and the assessment phase
+  passed, and the commit added seven files, all in this change's directory.
+- [x] 1.3 Re-run the one-off, read-only audit of design §"Audit of the ranges since activation" against the
   proposal's base, with every change active on that base. Verify that it reports 28 historical findings and none in an
   active change, and record the base, the range count and the active set in the design. If any active change has a
   finding, stop and report it to the owner before the proposal PR opens.
-- [ ] 1.4 Once the Track 1 archive PR (#991, tracked by #990) has merged and every required context plus DeepScan is
+
+  Re-run on 2026-11-19 at `8d4e411`, with `add-collector-live-poc-deployment` and the three dependency changes active:
+  545 ranges, the same 28 findings as the 2026-11-18 run, none in an active change. Re-run again at `bdd4c47`, after
+  #991 archived the three dependency changes: 546 ranges, the same 28 findings, none in the three changes still
+  active. The design records all three runs.
+- [x] 1.4 Once the Track 1 archive PR (#991, tracked by #990) has merged and every required context plus DeepScan is
   green, the owner merges the proposal PR as a merge commit. Record the proposal commit and the merge commit here.
+  #991 merged as `bdd4c47`. Proposal commit `ef8bc73`, merged in #992 as the merge commit `c1ee9f8`, with every
+  required context plus DeepScan green. The merge was made under the owner's delegation of 2026-11-19 to merge a PR
+  whose CI is fully green.
 
 ## 2. Real-history tests, red first
 
@@ -40,7 +53,8 @@ the unchanged checker, and record here which ones fail and with what.
   Null control: the same commits in the correct order (assessment, then C1, then C3) pass in both phases, with
   nothing recorded and with every field recorded consistently.
 
-  Red on the unchanged checker, at the commit titled `test(governance): add real-history R10 ordering tests (#943, #974)`. Every variant failed:
+  Red on the unchanged checker, at the commit titled
+  `test(governance): add real-history R10 ordering tests (#943, #974)`. Every variant failed:
   - nothing recorded, earliest C3 and earliest omitted reported no diagnostic at all;
   - earliest C1 reported `assessment-follows-implementation`, from the recorded relation, but no
     `assessment-ordering-record-inconsistent`;
@@ -91,18 +105,26 @@ the unchanged checker, and record here which ones fail and with what.
 
 ## 3. Implementation
 
-- [ ] 3.1 Add `openspec/changes/*/contract-reuse.json` to `planning_artifact_patterns` in
+- [x] 3.1 Add `openspec/changes/*/contract-reuse.json` to `planning_artifact_patterns` in
   `openspec/governance/design-pattern-policy.json`, beside the assessment patterns, and name it in
-  `planning_artifact_note` (design D7).
-- [ ] 3.2 In `openspec/scripts/design-pattern-governance/ancestry.mjs`, derive each change's anchor from history and
+  `planning_artifact_note` (design D7). Done in the commit titled `fix(governance): classify the contract-reuse
+  record as a planning artifact (#943)`. The pattern sits right after the two assessment patterns, and the note names
+  the contract-reuse record.
+- [x] 3.2 In `openspec/scripts/design-pattern-governance/ancestry.mjs`, derive each change's anchor from history and
   check its owned governed commits, the amendment rule and the recorded fields (design D1–D6). Remove
-  `findEarliestGovernedImplementationCommit` (D8).
-- [ ] 3.3 In `openspec/scripts/check-design-pattern-governance.mjs`, run the derived check in the final phase after
+  `findEarliestGovernedImplementationCommit` (D8). Done in the commit titled `fix(governance): derive R10
+  assessment ordering from Git history (#943)`. A missing anchor fails whatever the commit's other owners show
+  (D2). `findEarliestGovernedImplementationCommit` no longer appears under `openspec/` outside this change's own
+  documents.
+- [x] 3.3 In `openspec/scripts/check-design-pattern-governance.mjs`, run the derived check in the final phase after
   association, from the range and the changes' owned paths that the perimeter already collected, and run the
   recorded-field checks wherever an anchor exists (D2, D6). No assessment schema, generator or rule-registry change
-  (D9).
-- [ ] 3.4 Verify that every test of group 2 passes, and that `node --test openspec/tests/design-pattern-governance/*.test.mjs`
-  and `node --test openspec/tests/contract-reuse/*.test.mjs` pass.
+  (D9). Done in the same commit: `checkAssessments` passes the change id and its owned paths, and `checkPerimeter`
+  runs the derived check at the final phase with the range, the changes and the reader association used. The commit
+  changes only `ancestry.mjs` and `check-design-pattern-governance.mjs`.
+- [x] 3.4 Verify that every test of group 2 passes, and that `node --test openspec/tests/design-pattern-governance/*.test.mjs`
+  and `node --test openspec/tests/contract-reuse/*.test.mjs` pass. On the implementation commit, all 29 group-2
+  tests, the 403 governance tests and the 73 contract-reuse tests passed.
 
 ## 4. Verification
 
