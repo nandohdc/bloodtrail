@@ -54,6 +54,7 @@ import {
   reportRetrospectiveException,
   requireCompleteHistory,
   verifyAssessmentOrdering,
+  verifyDerivedOrdering,
 } from "./design-pattern-governance/ancestry.mjs";
 import { activationState, verifyActivation, verifyBootstrap } from "./design-pattern-governance/activation.mjs";
 import { verifySignedReviewFreshness } from "./design-pattern-governance/review-freshness.mjs";
@@ -237,7 +238,12 @@ function checkAssessments(opts, context, schemas, diagnostics) {
       // reconstructed, so re-deriving it would fail on exactly the history the
       // exception exists to acknowledge is missing.
     } else if (document.ordering) {
+      // Ownership comes from the association's own derivation, so a recorded
+      // earliest commit is judged against the paths association says it owns.
+      const [{ ownedPaths }] = collectOpenSpecChanges([], () => document, [changeId]);
       verifyAssessmentOrdering(document.ordering, {
+        changeId,
+        ownedPaths,
         governedPatterns: orderingGovernedPatterns(context.policy),
         cwd: context.cwd,
         documentPath: path,
@@ -348,13 +354,23 @@ function checkPerimeter(opts, context, diagnostics) {
   const governed = range.paths.filter((path) => requiresOpenSpecAssociation(path, policy));
   const relocated = collectRelocatedChangeIds(range.paths, cwd, diagnostics);
   checkRelocationCompleteness({ relocated, base, cwd, sink: diagnostics });
-  const changes = collectOpenSpecChanges(
-    range.paths,
-    (id) => readAssessmentFor(context.repositoryRoot, id, [...(relocated.get(id) ?? [])][0]),
-    activeChangeIds(context.repositoryRoot),
-    relocated,
-  );
+  const readAssessment = (id) => readAssessmentFor(context.repositoryRoot, id, [...(relocated.get(id) ?? [])][0]);
+  const changes = collectOpenSpecChanges(range.paths, readAssessment, activeChangeIds(context.repositoryRoot), relocated);
   checkOpenSpecAssociation(governed, changes, diagnostics);
+  if (opts.phase === "final") {
+    // R10 at the final phase: ordering derived from history over this range,
+    // judged with the same changes and owned paths association just used.
+    verifyDerivedOrdering({
+      range,
+      head,
+      changes,
+      relocated,
+      readAssessment,
+      governedPatterns: orderingGovernedPatterns(policy),
+      cwd,
+      sink: diagnostics,
+    });
+  }
   checkGrandfatheredScopes(policy, governed, changes, { context, diagnostics });
   checkSchemaEvolution(range.paths, base, policy, { context, diagnostics });
   checkPathClassWidening({ base, policyPath: opts.policyPath, policy, cwd, sink: diagnostics });
