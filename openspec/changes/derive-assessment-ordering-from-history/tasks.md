@@ -157,14 +157,32 @@ the unchanged checker, and record here which ones fail and with what.
   derived-ordering function: the same 28 findings, plus #423's archived record inconsistency, and none in any of the
   four active changes, this one included. No active change has a finding over any of its own ranges, so there is
   nothing to report.
-- [ ] 4.3 Once every required context plus DeepScan is green, the owner merges the implementation PR as a merge
+- [x] 4.3 Once every required context plus DeepScan is green, the owner merges the implementation PR as a merge
   commit. Record the implementation commits and the merge commit here.
+
+  #993 merged as the merge commit `a0af595`, under the owner's delegation of 2026-11-19 to merge a PR whose CI is
+  fully green: all nine required contexts, DeepScan, CodeScene and Codecov passed, and `sonar` was skipped. Its nine
+  commits, in order: `f87890c` (tests), `125f2a6` (red record), `64c20ac` (policy), `e869290` (derived check),
+  `d02e9df` (evidence), `0117f25` (review tests), `e80c986` (review fix), `9886887` (disclosures) and `956f637`
+  (verification record).
 
 ## 5. Fold
 
 - [ ] 5.1 In a separate PR, fold the MODIFIED R10 into `openspec/specs/software-design-pattern-governance/spec.md`.
   Verify that every existing scenario name is kept, that `openspec validate --all --strict` passes, and that the
   owner merges it as a merge commit.
+
+  Folded in the fold PR, from `a0af595`. The canonical R10 is byte-identical to the delta's and keeps all nine
+  existing scenario names among its 16, with no duplicate heading. It occurs once among the spec's 26 requirements,
+  and no delta header survives. The canonical file is byte-identical to what `openspec archive` produces from
+  `a0af595` in a disposable copy. `openspec validate --all --strict` fails only the 16 long-requirement items that fail
+  on `main` too, with no errors, and this change passes, so that clause is judged against `main` rather than met
+  outright. The spec itself gives 16 long-requirement warnings, R10's among them, exactly as `main`'s copy does.
+
+  The fold PR's review qualified one sentence of R10, in the delta and the canonical file alike, to match the merged
+  checker: the assessment commit SHALL NOT change a governed path the change owns, subject to the several-owner rule,
+  and a recorded assessment commit SHALL change no governed implementation path. The merge is recorded when this task
+  is ticked, in the archive PR.
 
 ## 6. Archive
 
