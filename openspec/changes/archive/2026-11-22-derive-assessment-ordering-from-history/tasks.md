@@ -168,7 +168,7 @@ the unchanged checker, and record here which ones fail and with what.
 
 ## 5. Fold
 
-- [ ] 5.1 In a separate PR, fold the MODIFIED R10 into `openspec/specs/software-design-pattern-governance/spec.md`.
+- [x] 5.1 In a separate PR, fold the MODIFIED R10 into `openspec/specs/software-design-pattern-governance/spec.md`.
   Verify that every existing scenario name is kept, that `openspec validate --all --strict` passes, and that the
   owner merges it as a merge commit.
 
@@ -185,11 +185,18 @@ the unchanged checker, and record here which ones fail and with what.
 
   The fold failed the required `design-pattern-governance` check on one test, F's `R3-T038`, which pinned this spec to
   its blob at F's base `49ab0c2` (design D10). On the owner's instruction, the test now expects the exact folded blob
-  `54510e4` for this capability, and this change owns the test file too. The merge is recorded when this task is
-  ticked, in the archive PR.
+  `54510e4` for this capability, and this change owns the test file too.
+
+  #994 merged on the owner's go-ahead as the merge commit `a6f48e0`, with all nine required contexts, DeepScan,
+  CodeScene and Codecov green and `sonar` skipped. The canonical spec on `main` is the folded blob `54510e4`.
 
 ## 6. Archive
 
-- [ ] 6.1 After the fold merges, archive the change in a separate PR with `TZ=UTC openspec archive`, staging both
+- [x] 6.1 After the fold merges, archive the change in a separate PR with `TZ=UTC openspec archive`, staging both
   sides of the move. The owner merges it as a merge commit, and #943 and #974 stay open for the owner to close by
   hand.
+
+  Archived from `a6f48e0` to `openspec/changes/archive/2026-11-22-derive-assessment-ordering-from-history/`;
+  `TZ=UTC date +%F` gave `2026-11-22`, the archive day. The fold already carried R10 into the canonical spec, so
+  `openspec archive` changed no canonical spec. Both sides of the move are staged, and this task is ticked in the same
+  commit. #943 and #974 stay open for the owner to close by hand.
