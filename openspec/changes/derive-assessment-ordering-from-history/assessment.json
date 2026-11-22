@@ -34,7 +34,8 @@
     "openspec/governance/design-pattern-policy.json",
     "openspec/scripts/check-design-pattern-governance.mjs",
     "openspec/scripts/design-pattern-governance/ancestry.mjs",
-    "openspec/tests/design-pattern-governance/assessment-ordering-history.test.mjs"
+    "openspec/tests/design-pattern-governance/assessment-ordering-history.test.mjs",
+    "openspec/tests/design-pattern-governance/mutation-assurance.test.mjs"
   ],
   "candidate_approaches": [
     {

@@ -152,6 +152,14 @@ the updated files.
 - **The canonical spec.** The R10 fold edits `openspec/specs/software-design-pattern-governance/spec.md`. Its blob is
   not bound by any normative-precedence pin: those pins bind the contract-applicable capabilities only (checked on
   `9acf995`; no governance script, policy, pin or this spec changed between `9acf995` and `bdd4c47`).
+- **F's assurance test binds that blob (found at the fold).** F's `R3-T038`, in
+  `openspec/tests/design-pattern-governance/mutation-assurance.test.mjs`, asserts that every canonical spec of F's
+  capabilities except the contract one equals its blob at F's proposal baseline `49ab0c2`, as F's design decision 24
+  states. The R10 fold is the first change to this spec since then, so the fold failed that test. On the owner's
+  instruction of 2026-11-21, the fold PR pins the exact folded blob `54510e4` as the expected value for
+  `software-design-pattern-governance`, and this change adds the test to its owned paths. F's own delta stays
+  unapplied, so the test still proves what it was written for. F's decision 24 text, "every other canonical capability
+  must equal base", now has this one exception, which F's re-freeze (#972) reconciles.
 - **The collector live PoC change.** `add-collector-live-poc-deployment`, active since `8d4e411`, owns none of the
   files this change edits.
 - **F's delta.** F's delta for this capability only adds requirements and does not touch R10.
