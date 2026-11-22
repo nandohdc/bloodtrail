@@ -181,8 +181,12 @@ the unchanged checker, and record here which ones fail and with what.
 
   The fold PR's review qualified one sentence of R10, in the delta and the canonical file alike, to match the merged
   checker: the assessment commit SHALL NOT change a governed path the change owns, subject to the several-owner rule,
-  and a recorded assessment commit SHALL change no governed implementation path. The merge is recorded when this task
-  is ticked, in the archive PR.
+  and a recorded assessment commit SHALL change no governed implementation path.
+
+  The fold failed the required `design-pattern-governance` check on one test, F's `R3-T038`, which pinned this spec to
+  its blob at F's base `49ab0c2` (design D10). On the owner's instruction, the test now expects the exact folded blob
+  `54510e4` for this capability, and this change owns the test file too. The merge is recorded when this task is
+  ticked, in the archive PR.
 
 ## 6. Archive
 
