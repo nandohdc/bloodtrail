@@ -347,6 +347,13 @@ test("R3-T037 contract-version debt remains activation-blocking after correct fo
   });
 });
 
+// Canonical specs that another governed change has folded into since `base`, each pinned to the exact folded blob
+// so the assertion stays an equality. derive-assessment-ordering-from-history (#943) folded its MODIFIED R10 into
+// software-design-pattern-governance; that is not this change's delta, which stays unapplied.
+const FOLDED_SINCE_BASE = Object.freeze({
+  "software-design-pattern-governance": "54510e4909990013ee7e61f2f6197b35823941ca",
+});
+
 test("R3-T038 all three CB-001 deltas remain active and only the resolving contract capability changes", () => {
   const result = inspectRepository(root, policy, { stage: "candidate", baseCommit: base });
   const active = result.discovered.active.filter((entry) => entry.change_id === policy.change_id);
@@ -356,7 +363,7 @@ test("R3-T038 all three CB-001 deltas remain active and only the resolving contr
     const canonicalPath = `openspec/specs/${entry.capability_id}/spec.md`;
     const expected = entry.capability_id === "security-audit-event-contract"
       ? "487a4f066afa74696411ee782b0008673fd6ca14"
-      : gitObjectAt(root, base, canonicalPath);
+      : FOLDED_SINCE_BASE[entry.capability_id] ?? gitObjectAt(root, base, canonicalPath);
     assert.equal(gitObject(root, canonicalPath), expected);
   }
 });
