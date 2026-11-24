@@ -9,7 +9,8 @@ network, its only authenticator checks hard-coded test tokens, and its only stor
 file. A business application now needs to send it real authentication events in a **live PoC**: a
 proof of concept that processes real data and is therefore production as far as data protection is
 concerned, whatever it is called. First comes a **local PoC**: the same stack emulated on LocalStack
-with synthetic data. The owner authorized both on 2026-11-18. This change records that
+with synthetic data. The owner authorized both on 2026-11-18, and Claude Code posted the record on the owner's
+behalf (https://github.com/nandohdc/bloodtrail/issues/973#issuecomment-7147593442). This change records that
 authorization and the design, and it lifts the non-production boundary only for the parts it names.
 
 ## What Changes

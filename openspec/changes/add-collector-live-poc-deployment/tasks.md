@@ -6,11 +6,15 @@
   `collector-storage-semantics`, `security-audit-sdk-core`, `security-audit-sdk-node`, `repository-topology`,
   `ci-topology`) and tasks from the 2026-11-18 owner decisions.
   Verify that `openspec validate add-collector-live-poc-deployment --strict` passes.
+  Passed with OpenSpec 1.9.0 on the proposal commit `74208eb`, and again on `82da9f6`. OpenSpec 2.1.1 fails
+  `--strict` here and across the repository, on its requirement-length warning alone (#999).
 - [x] 1.2 Author `assessment.source.json`, then generate `assessment.json` from it. Verify that
   `node openspec/scripts/generate-assessment.mjs --change add-collector-live-poc-deployment --check` and
   `node openspec/scripts/check-design-pattern-governance.mjs --phase assessment --change add-collector-live-poc-deployment`
   both pass, and that the proposal commit changes no path outside this change's directory.
-- [ ] 1.3 Record the owner's 2026-11-18 authorization on the tracking issue, quoting its scope:
+  On the proposal commit `74208eb`, `--check` and the assessment phase passed, and the commit changed only this
+  change's directory (13 files).
+- [x] 1.3 Record the owner's 2026-11-18 authorization on the tracking issue, quoting its scope:
   - the local PoC and the live PoC;
   - one business application;
   - the three authentication events;
@@ -18,8 +22,25 @@
   - SDK use through the frozen delivery primitives, from a commit to be recorded there.
 
   Verify that the issue comment exists and that proposal.md links it.
-- [ ] 1.4 Once every required context is green, merge the proposal PR as a merge commit. Verify by recording the
+
+  Recorded on 2026-11-24, after the proposal merged (1.4), in
+  https://github.com/nandohdc/bloodtrail/issues/973#issuecomment-7147593442, which `proposal.md` links. #975 asked the
+  owner to write this record in the owner's own words and barred an agent from writing it. The owner delegated that
+  step to Claude Code in session https://claude.ai/code/session_01VNy2QSCVTw45j4KtMoCTsW, writing, verbatim:
+
+  > Man i cant do this kind of thing every time, for example post an authorization.
+
+  > I authorize you to act on my behalf. Im going to work and i cant interact with you. You must deal with it
+  > yourself. Use mattpocock skills to help
+
+  Claude Code then wrote and posted the comment on the owner's behalf, quoting both sentences. Its scope list is
+  Claude's restatement, not the owner's words. It names each item above, quotes them from `proposal.md` and the
+  server spec at `8d4e411`, and adds nothing. The SDK tarball commit is left to a later comment on the issue, which
+  the go-live checklist written under task 4.5 requires.
+- [x] 1.4 Once every required context is green, merge the proposal PR as a merge commit. Verify by recording the
   proposal commit and the merge commit here.
+  Proposal commit `74208eb`, merged in #989 as the merge commit `8d4e411`, with all nine required contexts,
+  DeepScan, CodeScene and Codecov green, and `sonar` skipped (paused, #963).
 
 ## 2. Slice 1: asynchronous port, stored retention classes, PostgreSQL backend
 
